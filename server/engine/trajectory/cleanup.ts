@@ -172,7 +172,7 @@ export class TrajectoryCleanupManager {
 
   async executeCleanup(policy: CleanupPolicy): Promise<TrajectoryCleanupResult> {
     const sessions = await this.listSessions();
-    let totalBytes = sessions.reduce((sum, s) => sum + s.sizeBytes, 0);
+    const totalBytes = sessions.reduce((sum, s) => sum + s.sizeBytes, 0);
 
     const result: TrajectoryCleanupResult = {
       deletedSessions: [],

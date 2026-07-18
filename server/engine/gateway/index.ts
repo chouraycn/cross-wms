@@ -592,3 +592,159 @@ export type {
 // Startup control UI origins
 export { maybeSeedControlUiAllowedOriginsAtStartup } from './startup-control-ui-origins.js';
 export type { GatewayNonLoopbackBindMode } from './startup-control-ui-origins.js';
+
+// ============================================================================
+// 降级 stub 导出 — 移植自 openclaw/src/gateway 剩余文件
+// 仅导出无命名冲突的 stub 文件（所有导出符号唯一）。冲突文件见下方注释。
+// stub 实现：函数抛出 "not implemented"，类型为 unknown，常量为 undefined。
+// ============================================================================
+export * from "./active-sessions-shutdown-tracker.js";
+export * from "./agent-list.js";
+export * from "./agent-prompt.js";
+export * from "./auth-install-policy.js";
+export * from "./auth-resolve.js";
+export * from "./auth-token-source-conflict.js";
+export * from "./chat-display-projection.js";
+export * from "./chat-sanitize.js";
+export * from "./cli-session-history.claude.js";
+export * from "./cli-session-history.merge.js";
+export * from "./cli-session-history.js";
+export * from "./client-bootstrap.js";
+export * from "./connection-auth.js";
+export * from "./connection-details.js";
+export * from "./control-ui-contract.js";
+export * from "./control-ui-csp.js";
+export * from "./control-ui-http-utils.js";
+export * from "./control-ui-links.js";
+export * from "./control-ui-routing.js";
+export * from "./control-ui-shared.js";
+export * from "./control-ui.js";
+export * from "./credentials-secret-inputs.js";
+export * from "./device-auth.js";
+export * from "./device-metadata-normalization.js";
+export * from "./embeddings-http.js";
+export * from "./exec-approval-ios-push.js";
+export * from "./gateway-cli-backend.live-helpers.js";
+export * from "./gateway-cli-backend.live-probe-helpers.js";
+export * from "./gateway-codex-harness.live-helpers.js";
+export * from "./gateway-config-prompts.shared.js";
+export * from "./hooks-mapping.js";
+export * from "./hooks-policy.js";
+export * from "./hosted-plugin-surface-url.js";
+export * from "./live-agent-probes.js";
+export * from "./live-chat-projector.js";
+export * from "./local-request-context.js";
+export * from "./managed-image-attachments.js";
+export * from "./mcp-http.handlers.js";
+export * from "./mcp-http.protocol.js";
+export * from "./mcp-http.request.js";
+export * from "./mcp-http.runtime.js";
+export * from "./mcp-http.schema.js";
+export * from "./models-http.js";
+export * from "./node-catalog.js";
+export * from "./node-connect-reconcile.js";
+export * from "./node-invoke-system-run-approval-errors.js";
+export * from "./node-invoke-system-run-approval-match.js";
+export * from "./node-invoke-system-run-approval.js";
+export * from "./node-pairing-auto-approve.js";
+export * from "./node-pending-work.js";
+export * from "./node-reapproval-coordinator.js";
+export * from "./open-responses.schema.js";
+export * from "./openai-http.js";
+export * from "./openresponses-file-content.js";
+export * from "./openresponses-shape.js";
+export * from "./operator-approval-runtime-token.js";
+export * from "./operator-approvals-client.js";
+export * from "./resolve-configured-secret-input-string.js";
+export * from "./runtime-plugin-config.js";
+export * from "./server-broadcast.js";
+export * from "./server-channel-runtime.types.js";
+export * from "./server-chat.load-gateway-session-row.runtime.js";
+export * from "./server-chat.persist-session-lifecycle.runtime.js";
+export * from "./server-close.runtime.js";
+export * from "./server-close.js";
+export * from "./server-control-ui-root.js";
+export * from "./server-cron-lazy.js";
+export * from "./server-cron-notifications.js";
+export * from "./server-cron.js";
+export * from "./server-discovery-runtime.js";
+export * from "./server-http.js";
+export * from "./server-lanes.js";
+export * from "./server-maintenance.js";
+export * from "./server-methods-list.js";
+export * from "./server-methods.js";
+export * from "./server-network-runtime.js";
+export * from "./server-node-events-types.js";
+export * from "./server-node-events.js";
+export * from "./server-node-session-runtime.js";
+export * from "./server-node-subscriptions.js";
+export * from "./server-plugin-bootstrap.js";
+export * from "./server-plugins.js";
+export * from "./server-reload-handlers.js";
+export * from "./server-request-context.js";
+export * from "./server-restart-sentinel.js";
+export * from "./server-runtime-handles.js";
+export * from "./server-runtime-service-shared.js";
+export * from "./server-runtime-startup-services.js";
+export * from "./server-runtime-subscriptions.js";
+export * from "./server-session-events.js";
+export * from "./server-session-key.js";
+export * from "./server-shared-auth-generation.js";
+export * from "./server-startup-config.js";
+export * from "./server-startup-memory.js";
+export * from "./server-startup-plugins.js";
+export * from "./server-tailscale.js";
+export * from "./server-talk-nodes.js";
+export * from "./server-utils.js";
+export * from "./server-wizard-sessions.js";
+export * from "./server-ws-runtime.js";
+export * from "./session-event-payload.js";
+export * from "./session-history-state.js";
+export * from "./session-kill-http.js";
+export * from "./session-store-key.js";
+export * from "./session-subagent-reactivation.runtime.js";
+export * from "./session-subagent-reactivation.js";
+export * from "./session-transcript-index.fs.js";
+export * from "./sessions-history-http.js";
+export * from "./talk-agent-consult.js";
+export * from "./talk-handoff.js";
+export * from "./talk-realtime-relay.js";
+export * from "./talk-relay-session-lifecycle.js";
+export * from "./talk-session-registry.js";
+export * from "./talk-transcription-relay.js";
+
+// 以下 stub 文件因导出符号与其他文件冲突，未通过 export * 导出（可通过相对路径直接导入）：
+//   - call.runtime.ts
+//   - chat-abort.ts
+//   - chat-attachments.ts
+//   - config-reload-plan.ts
+//   - config-reload.ts
+//   - credential-planner.ts
+//   - credentials.ts
+//   - hooks.ts
+//   - hooks.types.ts
+//   - http-auth-utils.ts
+//   - http-utils.ts
+//   - mcp-http.loopback-runtime.ts
+//   - mcp-http.ts
+//   - model-pricing-cache.ts
+//   - node-registry.ts
+//   - openresponses-http.ts
+//   - openresponses-prompt.ts
+//   - probe-auth.ts
+//   - probe-target.ts
+//   - server-aux-handlers.ts
+//   - server-aux-methods.ts
+//   - server-channels.ts
+//   - server-chat-state.ts
+//   - server-chat.ts
+//   - server-discovery.ts
+//   - server-model-catalog.ts
+//   - server-node-events.runtime.ts
+//   - server-shared.ts
+//   - server.impl.ts
+//   - session-archive.fs.ts
+//   - session-archive.runtime.ts
+//   - session-transcript-files.fs.ts
+//   - session-utils.fs.ts
+//   - tools-invoke-shared.ts

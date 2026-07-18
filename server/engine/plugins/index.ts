@@ -479,3 +479,299 @@ export type {
   PluginInstallSourceInfo,
   DescribePluginInstallSourceOptions,
 } from './install-source-info.js';
+
+// ===================== 深化模块（v3.4 — openclaw 高依赖移植） =====================
+// 以下模块从 openclaw/src/plugins/ 移植，包含 manifest、host-hook、web-、embedding、
+// install、provider、runtime、plugin-* 聚类以及其他高依赖文件。
+// 依赖 @openclaw/* 外部包的模块已降级为本地实现，详见各文件顶部注释。
+// 使用 `export *` 语法：TypeScript 会自动处理同名冲突（ambiguous exports 会被静默排除），
+// 仅在下游实际引用冲突名称时才会报错。
+
+// manifest 聚类
+export * from './manifest.js';
+// export * from './manifest-command-aliases.js';  // removed: TS2308 conflict
+export * from './manifest-command-aliases.runtime.js';
+export * from './manifest-contract-eligibility.js';
+export * from './manifest-contract-runtime.js';
+// export * from './manifest-contribution-ids.js';  // removed: TS2308 conflict
+export * from './manifest-metadata-scan.js';
+export * from './manifest-model-id-normalization.js';
+export * from './manifest-model-suppression.js';
+export * from './manifest-owner-policy.js';
+// export * from './manifest-registry.js';  // removed: TS2308 conflict
+export * from './manifest-registry-installed.js';
+export * from './manifest-tool-availability.js';
+
+// host-hook 聚类
+export * from './host-hooks.js';
+export * from './host-hook-runtime.js';
+export * from './host-hook-state.js';
+export * from './host-hook-attachments.js';
+export * from './host-hook-scheduled-turns.js';
+export * from './host-hook-cleanup.js';
+export * from './host-hook-cleanup-timeout.js';
+export * from './host-hook-json.js';
+export * from './host-tool-param-parsers.js';
+export * from './hook-agent-context.js';
+export * from './hook-before-agent-start.types.js';
+export * from './hook-channel-context.types.js';
+export * from './hook-decision-types.js';
+export * from './hook-runner-global-state.js';
+export * from './hook-runner-global.js';
+export * from './hooks.js';
+
+// web- 聚类
+export * from './web-content-extractor-public-artifacts.js';
+export * from './web-content-extractor-types.js';
+export * from './web-content-extractors.runtime.js';
+export * from './web-fetch-providers.runtime.js';
+export * from './web-fetch-providers.shared.js';
+export * from './web-provider-public-artifacts.explicit.js';
+export * from './web-provider-public-artifacts.js';
+export * from './web-provider-resolution-shared.js';
+export * from './web-provider-runtime-shared.js';
+export * from './web-provider-types.js';
+export * from './web-search-credential-presence.js';
+export * from './web-search-install-catalog.js';
+export * from './web-search-providers.runtime.js';
+export * from './web-search-providers.shared.js';
+
+// embedding 聚类
+export * from './embedding-provider-config.js';
+export * from './embedding-provider-runtime-shared.js';
+export * from './embedding-provider-runtime.js';
+export * from './embedding-providers.js';
+export * from './memory-embedding-provider-runtime.js';
+export * from './memory-embedding-providers.js';
+export * from './openai-compatible-embedding-provider.js';
+
+// install 聚类
+export * from './install.js';
+export * from './install.runtime.js';
+export * from './install-paths.js';
+export * from './install-overrides.js';
+export * from './install-policy-context.js';
+export * from './install-channel-specs.js';
+export * from './install-security-scan.js';
+// export * from './install-security-scan.runtime.js';  // removed: TS2308 conflict
+export * from './path-safety.js';
+
+// provider 聚类
+export * from './provider-api-key-auth.js';
+export * from './provider-api-key-auth.runtime.js';
+// export * from './provider-auth-choice.js';  // removed: TS2308 conflict
+// export * from './provider-auth-choice.runtime.js';  // removed: TS2308 conflict
+export * from './provider-auth-choice-helpers.js';
+export * from './provider-auth-choice-preference.js';
+export * from './provider-auth-choices.js';
+export * from './provider-auth-helpers.js';
+export * from './provider-auth-input.js';
+export * from './provider-auth-mode.js';
+export * from './provider-auth-ref.js';
+export * from './provider-auth-token.js';
+export * from './provider-auth-types.js';
+export * from './provider-catalog.js';
+export * from './provider-catalog-result.js';
+export * from './provider-catalog-unified-text.js';
+export * from './provider-claude-thinking.js';
+export * from './provider-config-context.types.js';
+export * from './provider-config-owner.js';
+export * from './provider-contract-public-artifacts.js';
+export * from './provider-discovery.js';
+export * from './provider-discovery.runtime.js';
+export * from './provider-hook-runtime.js';
+export * from './provider-install-catalog.js';
+export * from './provider-model-compat.js';
+export * from './provider-model-helpers.js';
+export * from './provider-model-primary.js';
+export * from './provider-oauth-flow.js';
+export * from './provider-openai-chatgpt-oauth-tls.js';
+export * from './provider-openai-chatgpt-oauth.js';
+export * from './provider-public-artifacts.js';
+export * from './provider-registry-shared.js';
+export * from './provider-replay-helpers.js';
+// provider-runtime.js 已从 barrel 移除：其导出的 `testing` 与多个模块冲突（TS2308）。
+// 下游可直接从 './provider-runtime.js' 显式导入。
+export * from './provider-runtime.runtime.js';
+export * from './provider-self-hosted-setup.js';
+export * from './provider-thinking.js';
+export * from './provider-thinking.types.js';
+export * from './provider-validation.js';
+export * from './provider-wizard.js';
+export * from './providers.js';
+export * from './providers.runtime.js';
+export * from './compaction-provider.js';
+
+// runtime 聚类
+export * from './runtime.js';
+// export * from './runtime-channel-state.js';  // removed: TS2308 conflict
+export * from './runtime-plugins.runtime.js';
+export * from './runtime-sidecar-paths.js';
+export * from './runtime-sidecar-paths-baseline.js';
+// export * from './runtime-state.js';  // removed: TS2308 conflict
+export * from './runtime-workspace-state.js';
+
+// plugin-* 聚类
+export * from './plugin-cache-primitives.js';
+export * from './plugin-control-plane-context.js';
+// export * from './plugin-lookup-table.js';  // removed: TS2308 conflict
+export * from './plugin-metadata-lifecycle.js';
+export * from './plugin-metadata-snapshot.js';
+// export * from './plugin-module-loader-cache.js';  // removed: TS2308 conflict
+export * from './plugin-peer-link.js';
+export * from './plugin-registry.js';
+export * from './plugin-registry-contributions.js';
+export * from './plugin-registry-id-normalizer.js';
+export * from './plugin-registry-snapshot.js';
+export * from './plugin-scan-existence-cache.js';
+export * from './plugin-sdk-dist-alias.js';
+// export * from './plugin-sdk-native-resolver.js';  // removed: TS2308 conflict
+export * from './plugin-snapshot-fingerprint.js';
+export * from './plugin-version-drift.js';
+export * from './plugin-load-profile.js';
+
+// installed-plugin-index 聚类
+export * from './installed-plugin-index.js';
+export * from './installed-plugin-index-config-path-scope.js';
+export * from './installed-plugin-index-hash.js';
+export * from './installed-plugin-index-install-records.js';
+export * from './installed-plugin-index-invalidation.js';
+export * from './installed-plugin-index-manifest.js';
+export * from './installed-plugin-index-policy.js';
+export * from './installed-plugin-index-record-builder.js';
+export * from './installed-plugin-index-record-cache.js';
+export * from './installed-plugin-index-record-reader.js';
+export * from './installed-plugin-index-records.js';
+export * from './installed-plugin-index-registry.js';
+export * from './installed-plugin-index-scope-lookup.js';
+export * from './installed-plugin-index-store-path.js';
+export * from './installed-plugin-index-store.js';
+export * from './installed-plugin-index-types.js';
+
+// 其他高依赖文件（降级 stub）
+export * from './activation-context.js';
+export * from './activation-planner.js';
+export * from './activation-source-config.js';
+export * from './active-runtime-registry.js';
+export * from './agent-event-emission.js';
+export * from './agent-tool-result-middleware-loader.js';
+export * from './agent-tool-result-middleware.js';
+export * from './api-builder.js';
+export * from './api-facades.js';
+export * from './api-lifecycle.js';
+export * from './build-smoke-entry.js';
+export * from './bundle-commands.js';
+export * from './bundle-config-shared.js';
+export * from './bundle-lsp.js';
+export * from './bundle-manifest.js';
+export * from './bundle-mcp.js';
+export * from './bundled-capability-runtime.js';
+export * from './bundled-channel-config-metadata.js';
+export * from './bundled-channel-runtime.js';
+export * from './bundled-compat.js';
+export * from './bundled-dir.js';
+export * from './bundled-load-path-aliases.js';
+export * from './bundled-manifest-contract-plugins.js';
+// export * from './bundled-package-channel-metadata.js';  // removed: TS2308 conflict
+export * from './bundled-plugin-metadata.js';
+export * from './bundled-plugin-scan.js';
+export * from './bundled-source-overlays.js';
+export * from './bundled-sources.js';
+export * from './capability-provider-runtime.js';
+export * from './captured-registration.js';
+export * from './channel-catalog-registry.js';
+// export * from './channel-plugin-ids.js';  // removed: TS2308 conflict
+export * from './channel-presence-policy.js';
+export * from './channel-validation.js';
+export * from './clawhub-install-records.js';
+export * from './clawhub.js';
+export * from './cli-backend.types.js';
+export * from './cli-backends.runtime.js';
+export * from './cli-gateway-nodes-runtime.js';
+// export * from './cli-registry-loader.js';  // removed: TS2308 conflict
+export * from './cli.js';
+export * from './codex-app-server-extension-factory.js';
+export * from './command-registration.js';
+export * from './command-registry-state.js';
+export * from './command-specs.js';
+export * from './commands.js';
+export * from './config-activation-shared.js';
+export * from './config-contract-matches.js';
+export * from './config-contracts.js';
+// export * from './config-normalization-shared.js';  // removed: TS2308 conflict
+// export * from './config-policy.js';  // removed: TS2308 conflict
+export * from './config-schema.js';
+export * from './config-state.js';
+export * from './conversation-binding.js';
+export * from './conversation-binding.types.js';
+export * from './current-plugin-metadata-snapshot.js';
+export * from './current-plugin-metadata-state.js';
+export * from './dev-source-root.js';
+export * from './discovery.js';
+export * from './doctor-contract-registry.js';
+export * from './document-extractor-public-artifacts.js';
+export * from './document-extractor-types.js';
+export * from './document-extractors.runtime.js';
+export * from './effective-plugin-ids.js';
+export * from './enable.js';
+export * from './externalized-bundled-plugins.js';
+export * from './gateway-startup-plugin-ids.js';
+export * from './gateway-startup-speech-providers.js';
+export * from './generated-plugin-test-helpers.js';
+export * from './git-install.js';
+export * from './hardlink-policy.js';
+export * from './http-registry.js';
+export * from './http-route-overlap.js';
+export * from './inspect-shape.js';
+export * from './interactive-binding-helpers.js';
+export * from './interactive-registry.js';
+export * from './interactive-shared.js';
+export * from './interactive-state.js';
+export * from './interactive.js';
+export * from './lazy-service-module.js';
+export * from './legacy-npm-declaration.js';
+export * from './loader-cache-state.js';
+export * from './loader-channel-setup.js';
+export * from './loader-provenance.js';
+export * from './loader-records.js';
+export * from './logger.js';
+export * from './managed-npm-retention.js';
+export * from './memory-runtime.js';
+export * from './memory-state.js';
+export * from './migration-provider-runtime.js';
+export * from './model-catalog-registration.js';
+export * from './native-module-require.js';
+export * from './npm-project-roots.js';
+export * from './official-external-install-records.js';
+export * from './official-external-plugin-catalog.js';
+export * from './official-external-plugin-repair-hints.js';
+export * from './package-entry-resolution.js';
+export * from './package-entrypoints.js';
+export * from './public-surface-loader.js';
+export * from './public-surface-runtime.js';
+export * from './register-plugin-cli-command-groups.js';
+export * from './registry-empty.js';
+export * from './registry-lifecycle.js';
+export * from './registry-types.js';
+export * from './schema-validator.js';
+export * from './sdk-alias.js';
+export * from './security-events.js';
+export * from './services.js';
+export * from './session-entry-slot-keys.js';
+export * from './setup-descriptors.js';
+export * from './setup-registry.runtime.js';
+export * from './setup-registry.js';
+export * from './slots.js';
+export * from './source-display.js';
+export * from './stale-local-bundled-plugin-install-records.js';
+export * from './status-dependencies-core.js';
+export * from './status-snapshot.js';
+export * from './synthetic-auth.runtime.js';
+export * from './text-transforms.runtime.js';
+export * from './toggle-config.js';
+export * from './tool-contracts.js';
+export * from './tool-descriptor-cache.js';
+export * from './tools.js';
+export * from './trusted-tool-policy.js';
+export * from './uninstall.js';
+export * from './validation-diagnostics.js';

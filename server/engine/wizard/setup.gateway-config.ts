@@ -195,7 +195,7 @@ export async function configureGatewayForSetup(
           initialValue: defaultAuthMode,
         });
 
-  let tailscaleMode: GatewayTailscaleMode =
+  const tailscaleMode: GatewayTailscaleMode =
     flow === "quickstart"
       ? defaultTailscaleMode
       : await prompter.select<GatewayTailscaleMode>({

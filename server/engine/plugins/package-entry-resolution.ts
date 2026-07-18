@@ -1,0 +1,16 @@
+/**
+ * Resolves package entry files for plugin loading and public surfaces.
+ * 移植自 openclaw/src/plugins/package-entry-resolution.ts。
+ * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
+ * 类型定义保留形状供下游引用。
+ */
+
+
+export function resolvePackageSetupSource(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePackageSetupSource");
+}
+
+export function resolvePackageRuntimeExtensionSources(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePackageRuntimeExtensionSources");
+}
+

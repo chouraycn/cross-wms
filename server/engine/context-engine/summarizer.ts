@@ -257,7 +257,7 @@ export class Summarizer {
     const chinesePattern = /[^。！？!?]+[。！？!?]+/g;
     const englishPattern = /[^.!?]+[.!?]+/g;
 
-    let remaining = text;
+    const remaining = text;
     const allMatches: Array<{ start: number; end: number; text: string }> = [];
 
     let match;
