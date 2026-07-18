@@ -198,3 +198,12 @@ export { formatIssue, createIssue, parseIssue, getSeverityColor, getTypeLabel } 
 
 export * from './clawhub.js';
 export * from './clawhub-spec.js';
+
+export type { ConcurrencyErrorMode, RunTasksWithConcurrencyOptions, RunTasksWithConcurrencyResult } from './run-with-concurrency.js';
+export { runTasksWithConcurrency } from './run-with-concurrency.js';
+
+export { safeJsonStringify } from './safe-json.js';
+
+export { maskApiKey } from './mask-api-key.js';
+
+export { parseJsonWithJson5Fallback } from './parse-json-compat.js';
