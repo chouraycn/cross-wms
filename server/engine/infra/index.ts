@@ -423,3 +423,73 @@ export {
   type ExecHostRunResult,
   type ExecHostResponse,
 } from './exec-host.js';
+
+// 容器环境检测
+export {
+  isContainerEnvironment,
+  resetContainerEnvironmentCacheForTest,
+} from './container-environment.js';
+
+// 安全随机数生成
+export {
+  generateSecureUuid,
+  generateSecureToken,
+  generateSecureHex,
+  generateSecureFraction,
+  generateSecureInt,
+} from './secure-random.js';
+
+// SQLite number/bigint 规范化
+export { normalizeSqliteNumber } from './sqlite-number.js';
+
+// 严格普通对象守卫
+export { isPlainObject } from './plain-object.js';
+
+// HTTP 响应体片段读取
+export { readResponseBodySnippet } from './http-error-body.js';
+
+// 锁文件失效检测
+export {
+  readLockFileOwnerPayload,
+  shouldRemoveDeadOwnerOrExpiredLock,
+  type LockFileOwnerPayload,
+} from './stale-lock-file.js';
+
+// ESM 入口判断
+export { isMainModule } from './is-main.js';
+
+// WSL 环境检测
+export {
+  isWSLEnv,
+  isWSLSync,
+  isWSL2Sync,
+  isWSL,
+  resetWSLStateForTests,
+} from './wsl.js';
+
+// 嵌入模式标志
+export { setEmbeddedMode, isEmbeddedMode } from './embedded-mode.js';
+
+// SCP 远程主机与路径规范化
+export {
+  normalizeScpRemoteHost,
+  isSafeScpRemoteHost,
+  normalizeScpRemotePath,
+  isSafeScpRemotePath,
+} from './scp-host.js';
+
+// Shell inline-command 标志解析
+export {
+  POSIX_INLINE_COMMAND_FLAGS,
+  POWERSHELL_INLINE_COMMAND_FLAGS,
+  advancePosixInlineOptionScan,
+  resolveInlineCommandMatch,
+  isDirectShellPositionalCarrierCommand,
+  resolvePowerShellInlineCommandMatch,
+  isPowerShellInlineRestCommandFlag,
+  isPowerShellInlineFileCommandFlag,
+  hasPosixInteractiveStartupBeforeInlineCommand,
+  hasPosixLoginStartupBeforeInlineCommand,
+  hasFishInitCommandOption,
+  hasFishAttachedCommandOption,
+} from './shell-inline-command.js';

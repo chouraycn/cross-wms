@@ -13,3 +13,10 @@ export {
   clampPositiveTimerTimeoutMs,
   resolveTimerTimeoutMs,
 } from "./number-coercion.js";
+
+// PID 存活检测
+export {
+  isPidAlive,
+  isPidDefinitelyDead,
+  getProcessStartTime,
+} from "./pid-alive.js";
