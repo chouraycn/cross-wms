@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { extensionLoader } from '../../../../extensions/index.js';
+import { UnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
 
 export const extensionCommand = new Command('extension')
   .description('Manage extensions')
@@ -7,71 +7,71 @@ export const extensionCommand = new Command('extension')
 
 extensionCommand
   .command('list')
-  .description('List all extensions')
+  .description('List extension-provided capabilities registered with the plugin SDK')
   .action(async () => {
-    const extensions = extensionLoader.list();
-    
-    console.log('Extensions:');
-    for (const ext of extensions) {
-      console.log(`  ${ext.id} - ${ext.manifest.name} (${ext.enabled ? 'enabled' : 'disabled'})`);
+    const registry = UnifiedPluginRegistry.getInstance();
+    const ids = registry.listPluginIds();
+
+    console.log('Extensions (registered with plugin SDK):');
+    if (ids.length === 0) {
+      console.log('  (none - load extensions via the server runtime to populate the registry)');
+      return;
+    }
+    for (const id of ids) {
+      const runtime = registry.getRuntime(id);
+      const name = runtime?.definition.name ?? id;
+      const status = runtime?.status ?? 'unknown';
+      console.log(`  ${id} - ${name} (${status})`);
     }
   });
 
 extensionCommand
-  .command('load')
-  .description('Load all extensions')
+  .command('channels')
+  .description('List extension-provided channels')
   .action(async () => {
-    const count = await extensionLoader.loadAll();
-    console.log(`Loaded ${count} extensions`);
-  });
+    const registry = UnifiedPluginRegistry.getInstance();
+    const channels = registry.getChannels();
 
-extensionCommand
-  .command('enable <extensionId>')
-  .description('Enable an extension')
-  .action(async (extensionId) => {
-    const result = await extensionLoader.enable(extensionId);
-    
-    if (result) {
-      console.log(`Extension ${extensionId} enabled`);
-    } else {
-      console.log(`Failed to enable extension ${extensionId}`);
+    console.log('Channels:');
+    if (channels.length === 0) {
+      console.log('  (none)');
+      return;
+    }
+    for (const ch of channels) {
+      console.log(`  ${ch.pluginId}: ${ch.kind}`);
     }
   });
 
 extensionCommand
-  .command('disable <extensionId>')
-  .description('Disable an extension')
-  .action(async (extensionId) => {
-    const result = await extensionLoader.disable(extensionId);
-    
-    if (result) {
-      console.log(`Extension ${extensionId} disabled`);
-    } else {
-      console.log(`Failed to disable extension ${extensionId}`);
-    }
-  });
-
-extensionCommand
-  .command('discover')
-  .description('Discover available extensions')
+  .command('providers')
+  .description('List extension-provided LLM providers')
   .action(async () => {
-    const manifests = await extensionLoader.discover();
-    
-    console.log('Discovered extensions:');
-    for (const manifest of manifests) {
-      console.log(`  ${manifest.id} - ${manifest.name}`);
+    const registry = UnifiedPluginRegistry.getInstance();
+    const providers = registry.getProviders();
+
+    console.log('Providers:');
+    if (providers.length === 0) {
+      console.log('  (none)');
+      return;
+    }
+    for (const p of providers) {
+      console.log(`  ${p.pluginId}: ${p.kind}`);
     }
   });
 
 extensionCommand
-  .command('info <extensionId>')
-  .description('Get extension info')
-  .action(async (extensionId) => {
-    const ext = extensionLoader.get(extensionId);
-    
-    if (ext) {
-      console.log(JSON.stringify(ext, null, 2));
-    } else {
-      console.log(`Extension ${extensionId} not found`);
+  .command('tools')
+  .description('List extension-provided tools')
+  .action(async () => {
+    const registry = UnifiedPluginRegistry.getInstance();
+    const tools = registry.getActiveTools();
+
+    console.log('Tools:');
+    if (tools.length === 0) {
+      console.log('  (none)');
+      return;
+    }
+    for (const t of tools) {
+      console.log(`  ${t.pluginId}: ${t.name} - ${t.description}`);
     }
   });

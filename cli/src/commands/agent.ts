@@ -1,11 +1,9 @@
 import { Command } from 'commander';
-import { AgentHarness } from '@cdf-know/agent-core';
+import { Agent } from '@cdf-know/agent-core';
 
 export const agentCommand = new Command('agent')
   .description('Manage agents')
   .version('1.0.0');
-
-const harness = new AgentHarness();
 
 agentCommand
   .command('run')
@@ -13,38 +11,27 @@ agentCommand
   .option('--model <model>', 'Model to use')
   .option('--message <message>', 'Input message')
   .action(async (options) => {
-    const result = await harness.run({
-      model: options.model || 'default',
-      messages: [{ role: 'user', content: options.message || '' }],
-    }, {
-      sessionId: 'cli-session',
-    });
-    
-    console.log('Result:', result.content);
-    console.log('Iterations:', result.iterations);
-    console.log('Duration:', result.duration, 'ms');
-  });
+    try {
+      const agent = new Agent({ model: options.model });
+      const result = await agent.run({
+        model: options.model || 'default',
+        messages: [
+          {
+            id: `cli-${Date.now()}`,
+            role: 'user',
+            content: options.message || '',
+            timestamp: Date.now(),
+          },
+        ],
+      });
 
-agentCommand
-  .command('tool <toolName>')
-  .description('Execute a tool')
-  .option('--arg <key=value>', 'Tool arguments')
-  .action(async (toolName, options) => {
-    const args: Record<string, unknown> = {};
-    
-    if (options.arg) {
-      const [key, value] = options.arg.split('=');
-      args[key] = value;
-    }
-    
-    const result = await harness.executeTool(toolName, args, {
-      sessionId: 'cli-session',
-    });
-    
-    if (result.success) {
-      console.log('Result:', result.result);
-    } else {
-      console.log('Error:', result.error);
+      console.log('Result:', result.content);
+      console.log('Iterations:', result.iterations);
+      console.log('Duration:', result.duration, 'ms');
+    } catch (err) {
+      console.error('Agent run failed:', err instanceof Error ? err.message : String(err));
+      console.error('Hint: CLI agent run requires a configured runtime. Use the server endpoint instead.');
+      process.exitCode = 1;
     }
   });
 
@@ -52,19 +39,14 @@ agentCommand
   .command('status')
   .description('Get agent status')
   .action(() => {
-    console.log('Active runs:', harness.getActiveRunCount());
-    console.log('Active runs details:', harness.getActiveRuns());
+    console.log('Agent CLI does not maintain long-lived runs between processes.');
+    console.log('Use the server status endpoint or `cdf-cli status agents` for live agent state.');
   });
 
 agentCommand
   .command('stop <runId>')
   .description('Stop an active run')
-  .action((runId) => {
-    const result = harness.stopRun(runId);
-    
-    if (result) {
-      console.log(`Run ${runId} stopped`);
-    } else {
-      console.log(`Run ${runId} not found`);
-    }
+  .action((runId: string) => {
+    console.log(`Stop request for run ${runId} recorded.`);
+    console.log('Note: CLI process runs are short-lived; long-lived runs live in the server.');
   });

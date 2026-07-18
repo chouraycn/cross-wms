@@ -10,21 +10,24 @@ pluginCommand
   .description('List all plugins')
   .action(async () => {
     const registry = UnifiedPluginRegistry.getInstance();
-    const plugins = registry.listPlugins();
-    
+    const ids = registry.listPluginIds();
+
     console.log('Plugins:');
-    for (const plugin of plugins) {
-      console.log(`  ${plugin.id} - ${plugin.name} (${plugin.status})`);
+    for (const id of ids) {
+      const runtime = registry.getRuntime(id);
+      const status = runtime?.status ?? 'unknown';
+      const name = runtime?.definition.name ?? id;
+      console.log(`  ${id} - ${name} (${status})`);
     }
   });
 
 pluginCommand
   .command('enable <pluginId>')
   .description('Enable a plugin')
-  .action(async (pluginId) => {
+  .action(async (pluginId: string) => {
     const registry = UnifiedPluginRegistry.getInstance();
     const result = await registry.activate(pluginId);
-    
+
     if (result) {
       console.log(`Plugin ${pluginId} enabled`);
     } else {
@@ -35,10 +38,10 @@ pluginCommand
 pluginCommand
   .command('disable <pluginId>')
   .description('Disable a plugin')
-  .action(async (pluginId) => {
+  .action(async (pluginId: string) => {
     const registry = UnifiedPluginRegistry.getInstance();
     const result = await registry.deactivate(pluginId);
-    
+
     if (result) {
       console.log(`Plugin ${pluginId} disabled`);
     } else {
@@ -49,12 +52,12 @@ pluginCommand
 pluginCommand
   .command('info <pluginId>')
   .description('Get plugin info')
-  .action(async (pluginId) => {
+  .action(async (pluginId: string) => {
     const registry = UnifiedPluginRegistry.getInstance();
-    const plugin = registry.getPlugin(pluginId);
-    
-    if (plugin) {
-      console.log(JSON.stringify(plugin, null, 2));
+    const runtime = registry.getRuntime(pluginId);
+
+    if (runtime) {
+      console.log(JSON.stringify(runtime, null, 2));
     } else {
       console.log(`Plugin ${pluginId} not found`);
     }
@@ -66,6 +69,6 @@ pluginCommand
   .action(async () => {
     const registry = UnifiedPluginRegistry.getInstance();
     const stats = registry.getStats();
-    
+
     console.log(JSON.stringify(stats, null, 2));
   });
