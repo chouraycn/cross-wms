@@ -301,7 +301,7 @@ export function t(key: string, params?: Record<string, unknown>): string {
 
   // 处理复数形式（如果 params 中有 count 且翻译包含 |）
   if (params?.count !== undefined && typeof translation === 'string' && translation.includes('|')) {
-    return pluralize(translation, params.count, params);
+    return pluralize(translation, params.count as number, params);
   }
 
   return translation;
@@ -359,7 +359,7 @@ import zhCN from './locales/zh-CN.json';
 import enUS from './locales/en-US.json';
 
 function buildResources(localeData: Record<string, Record<string, unknown>>): Record<I18nNamespace, Record<string, unknown>> {
-  const result: Record<I18nNamespace, Record<string, unknown>> = {};
+  const result = {} as Record<I18nNamespace, Record<string, unknown>>;
   Object.keys(localeData).forEach((ns) => {
     if (NAMESPACES.includes(ns as I18nNamespace)) {
       result[ns as I18nNamespace] = localeData[ns];

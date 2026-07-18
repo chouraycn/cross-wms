@@ -29,6 +29,7 @@ import {
   InputLabel,
   Stack,
   FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -47,6 +48,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
 import {
   getModels,
@@ -378,7 +380,7 @@ export default function ModelsPage() {
                   control={
                     <Checkbox
                       checked={showHidden}
-                      onChange={(e) => setShowHidden(e.target.checked)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowHidden(e.target.checked)}
                       size="small"
                     />
                   }

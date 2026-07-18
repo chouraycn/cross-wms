@@ -98,8 +98,8 @@ describe('i18n 多语言系统', () => {
   // 测试 10: 语言切换事件
   it('语言切换事件 - EventEmitter', async () => {
     let eventData: { previous: string; current: string } | null = null;
-    const handler = (data: { previous: string; current: string }) => {
-      eventData = data;
+    const handler = (data: unknown) => {
+      eventData = data as { previous: string; current: string };
     };
 
     const unsubscribe = i18nEvents.on('languageChanged', handler);
@@ -107,7 +107,7 @@ describe('i18n 多语言系统', () => {
     await changeLanguage('en-US');
 
     expect(eventData).not.toBeNull();
-    expect(eventData.current).toBe('en-US');
+    expect(eventData!.current).toBe('en-US');
 
     unsubscribe();
     await changeLanguage('zh-CN');

@@ -154,3 +154,14 @@ export type {
   TranscriptFormat,
   TranscriptWriteMode,
 } from './sessions/index.js';
+
+// ===================== 配置 Schema 验证体系 =====================
+// 新增模块：zod-schema、merge-patch、materialize、validation、schema-base、schema-meta
+// 使用命名空间导出以避免与现有 schema.ts 的 validateConfig / ConfigSchema 命名冲突
+
+export * as zodSchema from './zod-schema.js';
+export * as mergePatch from './merge-patch.js';
+export * as materialize from './materialize.js';
+export * as validation from './validation.js';
+export * as schemaBase from './schema-base.js';
+export * as schemaMeta from './schema-meta.js';

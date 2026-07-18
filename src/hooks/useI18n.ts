@@ -10,6 +10,7 @@ import {
   i18nEvents,
   loadLanguage,
   type SupportedLanguage,
+  type I18nNamespace,
   SUPPORTED_LANGUAGES,
 } from '../i18n';
 
@@ -42,8 +43,9 @@ export function useI18n(): UseI18nReturn {
 
   // 监听语言切换事件
   useEffect(() => {
-    const handler = (data: { current: SupportedLanguage }) => {
-      setLocaleState(data.current);
+    const handler = (data: unknown) => {
+      const { current } = data as { current: SupportedLanguage };
+      setLocaleState(current);
     };
 
     const unsubscribe = i18nEvents.on('languageChanged', handler);
@@ -110,7 +112,7 @@ export function useI18n(): UseI18nReturn {
    * @param namespace - 命名空间（可选）
    */
   const loadLang = useCallback(async (localeToLoad: SupportedLanguage, namespace?: string): Promise<void> => {
-    await loadLanguage(localeToLoad, namespace);
+    await loadLanguage(localeToLoad, namespace as I18nNamespace | undefined);
   }, []);
 
   const availableLocales = useMemo(() => getAvailableLocales(), []);

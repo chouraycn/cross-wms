@@ -151,3 +151,31 @@ export type {
   InboundEnvelopeParams,
   InboundFromLabelParams,
 } from './envelope.js';
+
+export {
+  buildStatusMessage,
+  buildCommandsMessage,
+  buildHelpMessage,
+  buildToolsMessage,
+} from './status.js';
+export type {
+  ToolInventorySource,
+  ToolInventoryEntry,
+  ToolInventoryGroup,
+  ToolInventoryResult,
+  StatusMessageParams,
+} from './status.js';
+
+export { ThinkingModeController, hasReasoningContent } from './thinking.js';
+export type {
+  ThinkingParseResult,
+  ThinkingChunk,
+  ThinkingModeControllerOptions,
+} from './thinking.js';
+
+export { TokenCounter, countTokens } from './tokens.js';
+export type {
+  TokenStats,
+  TokenCounterOptions,
+  UsageInput,
+} from './tokens.js';

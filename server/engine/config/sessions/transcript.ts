@@ -11,7 +11,7 @@ import {
 } from './transcript-jsonl.js';
 import { TranscriptStream, createTranscriptStream } from './transcript-stream.js';
 import { appendMessage, appendMessages, AppendBuffer, createAppendBuffer } from './transcript-append.js';
-import type { TranscriptMessage, TranscriptFormat, TranscriptWriteMode } from './types.js';
+import type { TranscriptMessage, TranscriptMessageRole, TranscriptFormat, TranscriptWriteMode } from './types.js';
 import type { TranscriptReadResult } from './transcript-jsonl.js';
 import type { AppendResult } from './transcript-append.js';
 import type { TranscriptWriteOptions } from './transcript-write-context.js';
@@ -214,4 +214,121 @@ export function getTranscript(baseDir?: string): Transcript {
     throw new Error('Transcript not initialized');
   }
   return globalTranscript;
+}
+
+// ===== 会话回放精简实现 =====
+
+/**
+ * 会话回放条目，描述一条可被追加或镜像的记录。
+ * 参考 openclaw transcript-append.ts 中的结构，仅保留核心字段。
+ */
+export interface TranscriptEntry {
+  /** 条目 ID，缺省时由底层自动生成 */
+  id?: string;
+  /** 所属会话 ID */
+  sessionId?: string;
+  /** 消息角色：user / assistant / system / tool */
+  role: string;
+  /** 文本内容 */
+  content: string;
+  /** ISO 时间戳 */
+  timestamp: string;
+  /** 父条目 ID，用于构建父子链结构 */
+  parentId?: string | null;
+  /** 附加元数据 */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 回放读取选项。
+ */
+export interface TranscriptReadOptions {
+  /** 返回消息的最大条数 */
+  limit?: number;
+  /** 起始偏移（以消息条数计） */
+  offset?: number;
+  /** 文件格式，默认 jsonl */
+  format?: TranscriptFormat;
+  /** 是否读取归档文件 */
+  isArchived?: boolean;
+}
+
+/**
+ * 将一条回放条目追加到指定会话的 transcript 文件中。
+ * 内部复用全局 Transcript 单例的 append 能力。
+ */
+export async function appendTranscript(
+  sessionId: string,
+  entry: TranscriptEntry,
+): Promise<boolean> {
+  try {
+    const transcript = getTranscript();
+    const message: TranscriptMessage = {
+      role: entry.role as TranscriptMessageRole,
+      content: entry.content,
+      timestamp: entry.timestamp || new Date().toISOString(),
+      metadata: entry.metadata || {},
+      ...(entry.id ? { id: entry.id } : {}),
+    };
+    const result = await transcript.append(sessionId, message);
+    return result.success;
+  } catch (err) {
+    logger.error('[transcript] appendTranscript 失败:', sessionId, err);
+    return false;
+  }
+}
+
+/**
+ * 将指定会话的 transcript 镜像（复制）到目标路径。
+ * 用于把当前会话内容快照到外部文件，便于回放或备份。
+ */
+export function mirrorTranscript(
+  sessionId: string,
+  targetPath: string,
+): boolean {
+  try {
+    const transcript = getTranscript();
+    const result = transcript.read(sessionId);
+    if (!result || result.messages.length === 0) return false;
+
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const lines = result.messages.map(m => JSON.stringify({ message: m }));
+    fs.writeFileSync(targetPath, lines.join('\n') + '\n', 'utf-8');
+    return true;
+  } catch (err) {
+    logger.error('[transcript] mirrorTranscript 失败:', sessionId, err);
+    return false;
+  }
+}
+
+/**
+ * 读取指定会话的回放内容。
+ * 支持 limit/offset 分页以及归档文件读取。
+ */
+export function readTranscript(
+  sessionId: string,
+  options?: TranscriptReadOptions,
+): TranscriptReadResult {
+  const transcript = getTranscript();
+  if (options?.limit !== undefined || options?.offset !== undefined) {
+    const limit = options?.limit ?? 50;
+    const beforeIndex = options?.offset;
+    const paged = transcript.readPaged(sessionId, limit, beforeIndex, {
+      format: options?.format,
+      isArchived: options?.isArchived,
+    });
+    return {
+      header: null,
+      messages: paged.messages,
+      totalLines: paged.totalCount,
+    };
+  }
+  return transcript.read(sessionId, {
+    format: options?.format,
+    isArchived: options?.isArchived,
+  });
 }

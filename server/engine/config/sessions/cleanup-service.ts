@@ -254,4 +254,43 @@ export class CleanupService {
     this.config = { ...this.config, ...config };
     logger.info('[CleanupService] 配置已更新');
   }
+
+  /**
+   * 立即执行一次清理，等同于 runCleanup 的语义别名。
+   * 提供 runOnce 接口以便与 openclaw 的清理服务保持调用方式一致。
+   */
+  async runOnce(): Promise<CleanupResult> {
+    return this.runCleanup();
+  }
+
+  /**
+   * 以指定间隔（毫秒）调度周期性清理。
+   * 若已有定时器在运行则会先停止再重建，保证仅保留一个调度。
+   */
+  schedule(intervalMs: number): void {
+    this.stop();
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+      logger.warn('[CleanupService] 无效的调度间隔，忽略:', intervalMs);
+      return;
+    }
+    this.config.cleanupIntervalMs = intervalMs;
+    this.start();
+  }
+}
+
+/**
+ * 创建清理服务时所需的选项。
+ */
+export interface CleanupOptions {
+  /** 关联的会话存储实例 */
+  store: SessionStore;
+  /** 可选的清理配置覆盖项 */
+  config?: Partial<CleanupConfig>;
+}
+
+/**
+ * 工厂函数：基于选项创建一个 CleanupService 实例。
+ */
+export function createCleanupService(options: CleanupOptions): CleanupService {
+  return new CleanupService(options.store, options.config);
 }
