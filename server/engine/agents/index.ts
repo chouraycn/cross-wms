@@ -586,3 +586,84 @@ export {
   encodeKeySequence,
   encodePaste,
 } from "./pty-keys.js";
+
+// 从 openclaw 移植的低依赖 agent 模块
+export {
+  resolveMaxTokensParam,
+  canonicalizeMaxTokensParam,
+} from "./model-max-tokens-params.js";
+
+export { supportsGptParallelToolCallsPayload } from "./provider-api-families.js";
+
+export {
+  resolveImageSanitizationLimits,
+  DEFAULT_IMAGE_MAX_DIMENSION_PX,
+  DEFAULT_IMAGE_MAX_BYTES,
+} from "./image-sanitization.js";
+export type { ImageSanitizationLimits } from "./image-sanitization.js";
+
+export { buildModelAliasLines } from "./model-alias-lines.js";
+
+export {
+  shouldAllowCooldownProbeForReason,
+  shouldUseTransientCooldownProbeSlot,
+  shouldPreserveTransientCooldownProbeSlot,
+} from "./failover-policy.js";
+export type { FailoverReason } from "./failover-policy.js";
+
+export {
+  mediaUrlsFromGeneratedAttachments,
+  formatGeneratedAttachmentLines,
+} from "./generated-attachments.js";
+export type { AgentGeneratedAttachment } from "./generated-attachments.js";
+
+export {
+  formatAgentInternalEventsForPrompt,
+  formatAgentInternalEventsForPlainPrompt,
+  INTERNAL_RUNTIME_CONTEXT_BEGIN,
+  INTERNAL_RUNTIME_CONTEXT_END,
+} from "./internal-events.js";
+export type { AgentInternalEvent } from "./internal-events.js";
+
+export {
+  OPENAI_PROVIDER_ID,
+  OPENAI_CODEX_PROVIDER_ID,
+  isOpenAIProvider,
+  openAIProviderUsesCodexRuntimeByDefault,
+  parseModelRefProvider,
+  modelSelectionShouldEnsureCodexPlugin,
+  listOpenAIAuthProfileProvidersForAgentRuntime,
+  resolveOpenAIRuntimeProvider,
+  resolveSelectedOpenAIRuntimeProvider,
+  resolveContextConfigProviderForRuntime,
+} from "./openai-routing.js";
+
+export {
+  normalizeOpenAIReasoningEffort,
+  isOpenAIGpt54MiniModel,
+  isOpenAIGpt55Model,
+  resolveOpenAISupportedReasoningEfforts,
+  supportsOpenAIReasoningEffort,
+  resolveOpenAIReasoningEffortForModel,
+} from "./openai-reasoning-effort.js";
+export type {
+  OpenAIReasoningEffort,
+  OpenAIApiReasoningEffort,
+} from "./openai-reasoning-effort.js";
+
+export {
+  REQUIRED_PARAM_GROUPS,
+  getToolParamsRecord,
+  stripMalformedXmlArgValueSuffix,
+  normalizeHallucinatedOfficePathExtension,
+  normalizeFileToolPathParam,
+  stripMalformedXmlArgValueSuffixFromKeys,
+  normalizeFileToolPathParamsFromKeys,
+  assertRequiredParams,
+  wrapToolParamValidation,
+} from "./agent-tools.params.js";
+export type { RequiredParamGroup } from "./agent-tools.params.js";
+
+export { resolveConfiguredProviderFallback } from "./configured-provider-fallback.js";
+
+export { applyUpdateHunk } from "./apply-patch-update.js";

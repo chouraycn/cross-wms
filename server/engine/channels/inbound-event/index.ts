@@ -1,3 +1,6 @@
+// 高层入站事件类别（移植自 openclaw inbound-event/kind.ts）
+export type { InboundEventKind } from "./kind.js";
+
 export type {
   InboundEventType,
   InboundEventSource,

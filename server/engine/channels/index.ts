@@ -84,6 +84,11 @@ export type { ChannelMessageRoute } from './routing.js';
 
 export * from './message/index.js';
 
+// 频道入站/消息访问图（移植自 openclaw channels/message-access/）
+// 注意：仅含低依赖的类型与白名单诊断；decision/runtime/state 等运行时
+// 解析器依赖 cross-wms 中实现不同的 command-gating/allow-from/pairing-store，暂未移植。
+export * from './message-access/index.js';
+
 export * from './turn/index.js';
 
 export * from './plugins/index.js';
