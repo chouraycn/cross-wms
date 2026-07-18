@@ -1,7 +1,5 @@
 import { Command } from 'commander';
 import { UnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
-import { extensionLoader } from '../../../../extensions/index.js';
-import { AgentHarness } from '@cdf-know/agent-core';
 
 export const statusCommand = new Command('status')
   .description('Show system status')
@@ -11,74 +9,78 @@ statusCommand
   .command('all')
   .description('Show all status')
   .action(async () => {
-    const pluginRegistry = UnifiedPluginRegistry.getInstance();
-    const plugins = pluginRegistry.listPlugins();
-    const extensions = extensionLoader.list();
-    const harness = new AgentHarness();
-    
+    const registry = UnifiedPluginRegistry.getInstance();
+    const ids = registry.listPluginIds();
+    const health = registry.getHealth();
+
     console.log('=== cdf-know Status ===');
     console.log('');
-    
+
     console.log('Plugins:');
-    console.log(`  Total: ${plugins.length}`);
-    console.log(`  Active: ${plugins.filter(p => p.status === 'activated').length}`);
-    console.log(`  Registered: ${plugins.filter(p => p.status === 'registered').length}`);
+    console.log(`  Total: ${health.total}`);
+    console.log(`  Active: ${health.activated}`);
+    if (health.errors.length > 0) {
+      console.log(`  Errors:`);
+      for (const err of health.errors) {
+        console.log(`    - ${err}`);
+      }
+    }
     console.log('');
-    
-    console.log('Extensions:');
-    console.log(`  Total: ${extensions.length}`);
-    console.log(`  Enabled: ${extensions.filter(e => e.enabled).length}`);
+
+    console.log('Capabilities:');
+    const tools = registry.getActiveTools();
+    const channels = registry.getChannels();
+    const providers = registry.getProviders();
+    console.log(`  Tools: ${tools.length}`);
+    console.log(`  Channels: ${channels.length}`);
+    console.log(`  Providers: ${providers.length}`);
     console.log('');
-    
-    console.log('Agents:');
-    console.log(`  Active runs: ${harness.getActiveRunCount()}`);
-    console.log('');
-    
+
     console.log('System:');
     console.log(`  Node.js: ${process.version}`);
     console.log(`  Platform: ${process.platform}`);
     console.log(`  Memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
+    console.log(`  Registered plugin IDs: ${ids.join(', ') || '(none)'}`);
   });
 
 statusCommand
   .command('plugins')
   .description('Show plugin status')
   .action(async () => {
-    const pluginRegistry = UnifiedPluginRegistry.getInstance();
-    const plugins = pluginRegistry.listPlugins();
-    
+    const registry = UnifiedPluginRegistry.getInstance();
+    const ids = registry.listPluginIds();
+
     console.log('Plugin Status:');
-    for (const plugin of plugins) {
-      console.log(`  ${plugin.id}: ${plugin.status}`);
+    if (ids.length === 0) {
+      console.log('  (no plugins registered - load via the server runtime)');
+      return;
+    }
+    for (const id of ids) {
+      const runtime = registry.getRuntime(id);
+      const status = runtime?.status ?? 'unknown';
+      console.log(`  ${id}: ${status}`);
     }
   });
 
 statusCommand
   .command('extensions')
-  .description('Show extension status')
+  .description('Show extension-provided capabilities')
   .action(async () => {
-    const extensions = extensionLoader.list();
-    
-    console.log('Extension Status:');
-    for (const ext of extensions) {
-      console.log(`  ${ext.id}: ${ext.enabled ? 'enabled' : 'disabled'}`);
-    }
+    const registry = UnifiedPluginRegistry.getInstance();
+    const channels = registry.getChannels();
+    const providers = registry.getProviders();
+    const tools = registry.getActiveTools();
+
+    console.log('Extension Capabilities:');
+    console.log(`  Channels: ${channels.length}`);
+    console.log(`  Providers: ${providers.length}`);
+    console.log(`  Tools: ${tools.length}`);
   });
 
 statusCommand
   .command('agents')
   .description('Show agent status')
   .action(async () => {
-    const harness = new AgentHarness();
-    
     console.log('Agent Status:');
-    console.log(`  Active runs: ${harness.getActiveRunCount()}`);
-    
-    const runs = harness.getActiveRuns();
-    if (runs.length > 0) {
-      console.log('  Active run details:');
-      for (const run of runs) {
-        console.log(`    - ${run.runId} (session: ${run.sessionId})`);
-      }
-    }
+    console.log('  Agent runs live in the server process. Use the server status endpoint for live data.');
   });
