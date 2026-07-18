@@ -13,7 +13,7 @@ export type { SsrFPolicy } from './ssrf.js';
 export { acquireFileLock, withFileLock } from './file-lock.js';
 export type { FileLockHandle, FileLockOptions } from './file-lock.js';
 export { resolveFetch, wrapFetchWithAbortSignal } from './fetch.js';
-export { readLocalFileSafely, writeExternalFileWithinRoot } from './fs-safe.js';
+export { readLocalFileSafely, writeExternalFileWithinRoot, withTimeout } from './fs-safe.js';
 
 export type { ArchiveEntry, ArchiveOptions } from './archive.js';
 export { createArchive, readArchive, createArchiveFromFiles } from './archive.js';
@@ -238,6 +238,28 @@ export {
   normalizeOptionalLowercaseString,
 } from './string-coerce.js';
 
+// 字符串列表规范化（去空白、去重、排序等）
+export {
+  normalizeStringEntries,
+  normalizeStringEntriesLower,
+  uniqueValues,
+  uniqueStrings,
+  sortUniqueStrings,
+  normalizeUniqueStringEntries,
+  normalizeUniqueStringEntriesLower,
+  normalizeSortedUniqueStringEntries,
+  normalizeTrimmedStringList,
+  normalizeUniqueTrimmedStringList,
+  normalizeSortedUniqueTrimmedStringList,
+  normalizeOptionalTrimmedStringList,
+  normalizeArrayBackedTrimmedStringList,
+  normalizeSingleOrTrimmedStringList,
+  normalizeUniqueSingleOrTrimmedStringList,
+  normalizeCsvOrLooseStringList,
+  normalizeHyphenSlug,
+  normalizeAtHashSlug,
+} from './string-normalization.js';
+
 // CJK 字符感知的 Token 估算
 export {
   CHARS_PER_TOKEN_ESTIMATE,
@@ -345,6 +367,7 @@ export {
   parseStrictNonNegativeInteger,
   parseStrictPositiveInteger,
   parseFiniteNumber,
+  parseStrictInteger,
 } from './parse-finite-number.js';
 
 // HTTP 请求体读取（带限制）
