@@ -800,14 +800,26 @@ export type TempWorkspaceOptions = {
   prefix?: string;
 };
 
+/**
+ * 临时工作区接口（与 openclaw `@openclaw/fs-safe/temp` 的 TempWorkspace 一致）。
+ *
+ * - `dir`: 工作区目录路径
+ * - `path(fileName?)`: 在工作区内构建文件路径（可选文件名）
+ * - `cleanup`: 清理工作区
+ * - `[Symbol.asyncDispose]`: 异步释放（用于 `using await` 语法）
+ */
 export type TempWorkspace = {
-  path: string;
+  dir: string;
+  path(fileName?: string): string;
   cleanup: () => Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
 };
 
 export type TempWorkspaceSync = {
-  path: string;
+  dir: string;
+  path(fileName?: string): string;
   cleanup: () => void;
+  [Symbol.dispose](): void;
 };
 
 /**
@@ -819,11 +831,14 @@ export async function tempWorkspace(options?: TempWorkspaceOptions): Promise<Tem
   const prefix = options?.prefix ?? "ws";
   const dirPath = path.join(rootDir, `${prefix}-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   await fsPromises.mkdir(dirPath, { recursive: true, mode: 0o700 });
+  const cleanup = async () => {
+    await fsPromises.rm(dirPath, { recursive: true, force: true }).catch(() => {});
+  };
   return {
-    path: dirPath,
-    cleanup: async () => {
-      await fsPromises.rm(dirPath, { recursive: true, force: true }).catch(() => {});
-    },
+    dir: dirPath,
+    path: (fileName?: string) => (fileName ? path.join(dirPath, fileName) : dirPath),
+    cleanup,
+    [Symbol.asyncDispose]: cleanup,
   };
 }
 
@@ -836,11 +851,14 @@ export function tempWorkspaceSync(options?: TempWorkspaceOptions): TempWorkspace
     `${prefix}-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   fs.mkdirSync(dirPath, { recursive: true, mode: 0o700 });
+  const cleanup = () => {
+    fs.rmSync(dirPath, { recursive: true, force: true });
+  };
   return {
-    path: dirPath,
-    cleanup: () => {
-      fs.rmSync(dirPath, { recursive: true, force: true });
-    },
+    dir: dirPath,
+    path: (fileName?: string) => (fileName ? path.join(dirPath, fileName) : dirPath),
+    cleanup,
+    [Symbol.dispose]: cleanup,
   };
 }
 
