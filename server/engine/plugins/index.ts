@@ -259,3 +259,188 @@ export {
   isManifestContractValid,
   formatContractReport,
 } from './contract.js';
+
+// ===================== 深化模块（v3.2 — openclaw 低依赖移植） =====================
+// 以下模块从 openclaw/src/plugins/ 移植，仅包含纯类型、常量、简单工具函数。
+// 依赖 @openclaw/* 外部包的模块已降级为本地实现，详见各文件顶部注释。
+
+// 纯类型模块
+export type { PluginKind } from './plugin-kind.types.js';
+export type { PluginOrigin } from './plugin-origin.types.js';
+export type {
+  PluginConfigUiHint,
+  PluginFormat,
+  PluginBundleFormat,
+  PluginDiagnosticCode,
+  PluginDiagnostic,
+} from './manifest-types.js';
+export type { DoctorSessionRouteStateOwner } from './doctor-session-route-state-owner-types.js';
+export type { PluginRegistrySnapshotSource } from './plugin-registry-snapshot.types.js';
+
+// 常量 + 类型模块
+export {
+  PluginApprovalResolutions,
+  type PluginApprovalResolution,
+  type PluginHookBeforeToolCallResult,
+} from './hook-before-tool-call-result.js';
+export {
+  CLAWHUB_INSTALL_ERROR_CODE,
+  type ClawHubInstallErrorCode,
+} from './clawhub-error-codes.js';
+
+// 类型集合模块
+export type {
+  ActiveChannelPluginRuntimeShape,
+  ActivePluginChannelRegistration,
+  ActivePluginChannelRegistry,
+} from './channel-registry-state.types.js';
+
+// 工具函数模块
+export { unwrapDefaultModuleExport } from './module-export.js';
+export {
+  normalizeAgentPromptSurfaceKind,
+  isOpenClawMainPromptSurface,
+  type AgentPromptSurfaceKind,
+} from './agent-prompt-surface-kind.js';
+export { encodeStartupTraceSegment } from './startup-trace-segment.js';
+export { normalizePluginHttpPath } from './http-path.js';
+
+// hook 系统类型与函数
+// 注意：PluginHookRegistration 已从 ./hook-registry.js 导出（接口定义），
+// 此处不再从 ./hook-types.js 重复导出泛型版本以避免 TS2300 冲突。
+export {
+  PLUGIN_HOOK_NAMES,
+  DEPRECATED_PLUGIN_HOOKS,
+  PROMPT_INJECTION_HOOK_NAMES,
+  CONVERSATION_HOOK_NAMES,
+  isDeprecatedPluginHookName,
+  isPluginHookName,
+  isPromptInjectionHookName,
+  isConversationHookName,
+} from './hook-types.js';
+export type {
+  PluginHookMessageContext,
+  PluginHookInboundClaimContext,
+  PluginHookInboundClaimEvent,
+  PluginHookMessageReceivedEvent,
+  PluginHookMessageSendingEvent,
+  PluginHookMessageSendingResult,
+  PluginHookMessageSentEvent,
+} from './hook-message.types.js';
+export type {
+  PluginLegacyHookRegistration,
+  HookRunnerRegistry,
+  GlobalHookRunnerRegistry,
+} from './hook-registry.types.js';
+
+// host-hook 轮次注入类型
+export type {
+  PluginNextTurnInjectionPlacement,
+  PluginNextTurnInjection,
+  PluginNextTurnInjectionRecord,
+  PluginNextTurnInjectionEnqueueResult,
+  PluginAgentTurnPrepareEvent,
+  PluginAgentTurnPrepareResult,
+  PluginHeartbeatPromptContributionEvent,
+  PluginHeartbeatPromptContributionResult,
+} from './host-hook-turn-types.js';
+
+// codex 扩展与中间件类型
+export type {
+  CodexAppServerToolResultEvent,
+  CodexAppServerExtensionContext,
+  CodexAppServerToolResultHandlerResult,
+  CodexAppServerExtensionRuntime,
+  CodexAppServerExtensionFactory,
+} from './codex-app-server-extension-types.js';
+export type {
+  AgentToolResultMiddlewareRuntime,
+  AgentToolResultMiddlewareHarness,
+  AgentToolResultMiddlewareEvent,
+  AgentToolResultMiddlewareContext,
+  AgentToolResultMiddlewareResult,
+  AgentToolResultMiddleware,
+  AgentToolResultMiddlewareOptions,
+} from './agent-tool-result-middleware-types.js';
+
+// 嵌入与 provider 类型
+export type {
+  EmbeddingInput,
+  EmbeddingProviderCallOptions,
+  EmbeddingProviderRuntime,
+  EmbeddingProviderIndexIdentity,
+  EmbeddingProvider,
+  EmbeddingProviderCreateOptions,
+  EmbeddingProviderCreateResult,
+  EmbeddingProviderAdapter,
+  RegisteredEmbeddingProvider,
+} from './embedding-provider-types.js';
+export type { InstallSafetyOverrides } from './install-security-scan.types.js';
+export type {
+  OpenClawPluginActiveModelContext,
+  OpenClawPluginToolContext,
+  OpenClawPluginToolFactory,
+  OpenClawPluginToolOptions,
+  OpenClawPluginHookOptions,
+} from './tool-types.js';
+export type {
+  ModelProviderAuthMode,
+  ProviderResolveSyntheticAuthContext,
+  ProviderSyntheticAuthResult,
+  ProviderResolveExternalAuthProfilesContext,
+  ProviderResolveExternalOAuthProfilesContext,
+  ProviderExternalAuthProfile,
+  ProviderExternalOAuthProfile,
+} from './provider-external-auth.types.js';
+export type { ProviderRuntimeModel } from './provider-runtime-model.types.js';
+
+// 元数据快照类型
+export type {
+  PluginMetadataSnapshotPluginIdScope,
+  PluginMetadataSnapshotOwnerMaps,
+  PluginMetadataSnapshotMetrics,
+  PluginMetadataSnapshotRegistryDiagnostic,
+  PluginMetadataSnapshot,
+  PluginMetadataRegistryView,
+  PluginMetadataManifestView,
+  LoadPluginMetadataSnapshotParams,
+  ResolvePluginMetadataSnapshotParams,
+} from './plugin-metadata-snapshot.types.js';
+
+// 插件作用域与默认启用
+export {
+  normalizePluginIdScope,
+  hasExplicitPluginIdScope,
+  hasNonEmptyPluginIdScope,
+  createPluginIdScopeSet,
+  serializePluginIdScope,
+} from './plugin-scope.js';
+export {
+  isPluginEnabledByDefaultForPlatform,
+  type PluginDefaultEnablement,
+} from './default-enablement.js';
+
+// 插件生命周期追踪
+export {
+  tracePluginLifecyclePhase,
+  tracePluginLifecyclePhaseAsync,
+} from './plugin-lifecycle-trace.js';
+
+// 依赖拒绝列表
+export {
+  blockedInstallDependencyPackageNames,
+  findBlockedManifestDependencies,
+  findBlockedNodeModulesDirectory,
+  findBlockedNodeModulesFileAlias,
+  findBlockedPackageDirectoryInPath,
+  findBlockedPackageFileAliasInPath,
+  type BlockedManifestDependencyFinding,
+  type BlockedPackageDirectoryFinding,
+  type BlockedPackageFileFinding,
+} from './dependency-denylist.js';
+
+// 插件配置信任策略
+export {
+  normalizePluginConfigId,
+  isWorkspacePluginAllowedByConfig,
+} from './plugin-config-trust.js';

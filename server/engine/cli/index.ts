@@ -1,0 +1,120 @@
+// CLI 模块 barrel — 汇总现有模块与 openclaw 低依赖移植模块的导出。
+//
+// 现有模块保持原有导出；移植模块从 openclaw/src/cli/ 迁入，依赖 @openclaw/*
+// 外部包的模块已降级为本地实现，详见各文件顶部注释。
+
+// ===================== 现有模块 =====================
+
+// cli-name.ts
+export { resolveCliName, replaceCliName } from './cli-name.js';
+
+// command-format.ts
+export { formatCliCommand } from './command-format.js';
+
+// config-recovery-hints.ts
+export {
+  formatInvalidConfigRecoveryHint,
+  formatPluginPackagingRuntimeOutputRecoveryHint,
+} from './config-recovery-hints.js';
+
+// parse-bytes.ts
+export { parseByteSize } from './parse-bytes.js';
+
+// parse-duration.ts
+export { parseDurationMs } from './parse-duration.js';
+export type { DurationMsParseOptions } from './parse-duration.js';
+
+// profile-utils.ts
+export { isValidProfileName, normalizeProfileName } from './profile-utils.js';
+
+// quote-cli-arg.ts
+export { quoteCliArg } from './quote-cli-arg.js';
+
+// ===================== openclaw 移植模块（低依赖） =====================
+
+// error-format.ts
+export {
+  formatPortRangeHint,
+  formatInvalidPortOption,
+  formatInvalidConfigPort,
+  formatUnknownChannelMessage,
+  formatUnsupportedChannelActionMessage,
+  formatStrictJsonParseFailure,
+  formatGatewayCommandFailure,
+  formatLookupMiss,
+  formatMissingPluginMessage,
+} from './error-format.js';
+
+// gateway-port-option.ts
+export { parseGatewayPortOption } from './gateway-port-option.js';
+
+// gateway-rpc.types.ts
+export type { GatewayRpcOpts } from './gateway-rpc.types.js';
+
+// install-spec.ts
+export { looksLikeLocalInstallSpec } from './install-spec.js';
+
+// parse-timeout.ts
+export { parseTimeoutMs, parseTimeoutMsWithFallback } from './parse-timeout.js';
+
+// tagline.ts
+export { pickTagline, DEFAULT_TAGLINE } from './tagline.js';
+export type { TaglineMode, TaglineOptions } from './tagline.js';
+
+// wait.ts
+export { waitForever } from './wait.js';
+
+// windows-argv.ts
+export { normalizeWindowsArgv } from './windows-argv.js';
+
+// startup-trace.ts
+export { createGatewayStartupTrace } from './startup-trace.js';
+export type { GatewayStartupTraceSource } from './startup-trace.js';
+
+// command-path-matches.ts
+export { matchesCommandPath } from './command-path-matches.js';
+
+// command-options.ts
+export { hasExplicitOptions, inheritOptionFromParent } from './command-options.js';
+
+// requirements-test-fixtures.ts
+export { createEmptyInstallChecks } from './requirements-test-fixtures.js';
+
+// cli-root-options.ts（本地 stub，替代未移植的 infra/cli-root-options.js）
+export { FLAG_TERMINATOR, isValueToken, consumeRootOptionToken } from './cli-root-options.js';
+
+// inline-option-token.ts（本地 stub，替代未移植的 infra/inline-option-token.js）
+export { parseInlineOptionToken } from './inline-option-token.js';
+export type { InlineOptionToken } from './inline-option-token.js';
+
+// root-option-forward.ts
+export { forwardConsumedCliRootOption } from './root-option-forward.js';
+
+// root-option-scan.ts
+export { scanCliRootOptions } from './root-option-scan.js';
+
+// root-option-value.ts
+export { takeCliRootOptionValue } from './root-option-value.js';
+
+// daemon-cli-compat.ts
+export {
+  LEGACY_DAEMON_CLI_EXPORTS,
+  resolveLegacyDaemonCliRegisterAccessor,
+  resolveLegacyDaemonCliRunnerAccessors,
+  resolveLegacyDaemonCliAccessors,
+  type LegacyDaemonCliAccessors,
+} from './daemon-cli-compat.js';
+
+// startup-metadata.ts
+export { readCliStartupMetadata } from './startup-metadata.js';
+
+// channel-options.ts
+export { resolveCliChannelOptions, formatCliChannelOptions } from './channel-options.js';
+
+// cli-utils.ts
+export {
+  withManager,
+  runCommandWithRuntime,
+  resolveOptionFromCommand,
+  formatErrorMessage,
+} from './cli-utils.js';

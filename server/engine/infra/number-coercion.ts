@@ -84,7 +84,8 @@ export function parseStrictFiniteNumber(value: unknown): number | undefined {
 }
 
 const UNIX_EPOCH_ISO_STRING = "1970-01-01T00:00:00.000Z";
-const MAX_TIMER_TIMEOUT_MS = 2 ** 31 - 1;
+/** Node 定时器最大安全延迟毫秒数（2^31 - 1） */
+export const MAX_TIMER_TIMEOUT_MS = 2 ** 31 - 1;
 const MAX_DATE_TIMESTAMP_MS = 8_640_000_000_000_000;
 
 /** 仅当输入为 Date-valid 毫秒时间戳时返回它 */

@@ -165,3 +165,26 @@ export * as materialize from './materialize.js';
 export * as validation from './validation.js';
 export * as schemaBase from './schema-base.js';
 export * as schemaMeta from './schema-meta.js';
+
+// ===================== 移植自 openclaw 的配置模块 =====================
+// 以下命名空间导出对应从 openclaw/src/config 移植的低依赖文件，
+// 避免与已有具名导出冲突。
+
+// 配置版本守卫与未来版本拦截
+export * as futureVersionGuard from './future-version-guard.js';
+// 危险名称匹配检测
+export * as dangerousNameMatching from './dangerous-name-matching.js';
+// 遗留配置规则契约（共享）
+export * as legacyShared from './legacy.shared.js';
+// Gateway Control UI 源解析
+export * as gatewayControlUiOrigins from './gateway-control-ui-origins.js';
+// Plugin allowlist 规范化
+export * as pluginsAllowlist from './plugins-allowlist.js';
+// 配置值环境变量替换
+export * as envSubstitution from './env-substitution.js';
+// 配置环境变量元数据与保留规则
+export * as configEnvVars from './config-env-vars.js';
+// Plugin web-search 配置解析
+export * as pluginWebSearchConfig from './plugin-web-search-config.js';
+// Plugin install 配置迁移
+export * as pluginInstallConfigMigration from './plugin-install-config-migration.js';
