@@ -329,3 +329,31 @@ export {
   LEGACY_MANIFEST_KEYS,
   MACOS_APP_SOURCES_DIR,
 } from "./legacy-names.js";
+
+// ===== 深度完善 - 第 3 批 =====
+
+// Subagent 格式化工具（token 数量、截断等）
+export {
+  formatTokenShort,
+  truncateLine,
+  resolveTotalTokens,
+  resolveIoTokens,
+  formatTokenUsageDisplay,
+} from "./subagents-format.js";
+
+// Assistant 错误格式化（API 错误解析、HTML 错误检测等）
+export {
+  MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE,
+  parseApiErrorPayload,
+  extractLeadingHttpStatus,
+  isCloudflareOrHtmlErrorPage,
+  isGenericProviderInternalError,
+  parseApiErrorInfo,
+  formatRawAssistantErrorForUi,
+} from "./assistant-error-format.js";
+
+// 会话使用时间序列类型
+export type {
+  SessionUsageTimePoint,
+  SessionUsageTimeSeries,
+} from "./session-usage-timeseries-types.js";
