@@ -575,3 +575,14 @@ export * from './agent-tools/index.js';
 export * from './agent-memory/index.js';
 export * from './agent-context/index.js';
 export * from './providers/index.js';
+
+// PTY 终端辅助
+export {
+  stripDsrRequests,
+  buildCursorPositionResponse,
+} from "./pty-dsr.js";
+export {
+  hasCursorModeSensitiveKeys,
+  encodeKeySequence,
+  encodePaste,
+} from "./pty-keys.js";

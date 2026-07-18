@@ -208,3 +208,11 @@ export {
   createTrackedAbortController,
   trackReader,
 } from './session-resources.js';
+
+// LLM 工具函数
+export { sanitizeSurrogates } from './utils/sanitize-unicode.js';
+export type { OpenAICodexJwtPayload } from './utils/openai-chatgpt-jwt.js';
+export {
+  decodeOpenAICodexJwtPayload,
+  resolveOpenAICodexAccountId,
+} from './utils/openai-chatgpt-jwt.js';
