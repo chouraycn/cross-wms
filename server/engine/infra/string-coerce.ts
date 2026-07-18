@@ -28,6 +28,20 @@ export function normalizeLowercaseStringOrEmpty(value: unknown): string {
   return normalizeOptionalLowercaseString(value) ?? "";
 }
 
+/**
+ * 将原始值（string/number/boolean/bigint）规范化为可选的已去除首尾空白的字符串。
+ * 与 openclaw `@openclaw/normalization-core/string-coerce` 中同名函数行为一致。
+ */
+export function normalizeStringifiedOptionalString(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return normalizeOptionalString(value);
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return normalizeOptionalString(String(value));
+  }
+  return undefined;
+}
+
 /** Fast 模式开关：boolean 或 "auto" */
 export type FastMode = boolean | "auto";
 
