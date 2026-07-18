@@ -99,6 +99,18 @@ export type ErasedAgentToolExecute = {
 };
 
 /**
+ * 擦除泛型的工具类型，便于在异构集合中统一存放。
+ *
+ * 参考 openclaw/src/agents/tools/common.ts 的 AnyAgentTool。
+ */
+export type AnyAgentTool = Omit<AgentToolWithMeta<unknown>, 'execute'> &
+  ErasedAgentToolExecute & {
+    displaySummary?: string;
+    prepareBeforeToolCallParams?: AgentToolWithMeta<unknown>['prepareBeforeToolCallParams'];
+    finalizeBeforeToolCallParams?: AgentToolWithMeta<unknown>['finalizeBeforeToolCallParams'];
+  };
+
+/**
  * 参数读取器：从参数记录中按 key 读取并转换为指定类型。
  */
 export type ParamReader<T = unknown> = (
