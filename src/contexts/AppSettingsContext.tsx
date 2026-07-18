@@ -608,10 +608,11 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // 监听外部语言变化（如直接调用 i18n 的 changeLanguage）
   useEffect(() => {
-    const handler = (data: { current: SupportedLanguage }) => {
+    const handler = (data: unknown) => {
+      const { current } = data as { current: SupportedLanguage };
       setSettings((prev) => {
-        if (prev.language === data.current) return prev;
-        return { ...prev, language: data.current };
+        if (prev.language === current) return prev;
+        return { ...prev, language: current };
       });
     };
     const unsubscribe = i18nEvents.on('languageChanged', handler);

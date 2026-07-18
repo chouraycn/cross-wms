@@ -1,7 +1,10 @@
 import { logger } from '../../../logger.js';
-import { SessionStore } from './store.js';
+import { SessionStore, getSessionStore } from './store.js';
 import type { SessionMetadata } from './types.js';
 import { SessionMetadataSchema } from './types.js';
+
+// 重新导出 SessionMetadata 类型，便于外部直接从本模块引入
+export type { SessionMetadata } from './types.js';
 
 export class SessionMetadataManager {
   private store: SessionStore;
@@ -160,5 +163,61 @@ export class SessionMetadataManager {
 
   getDateString(metadata: SessionMetadata): string {
     return metadata.sessionDate || metadata.createdAt.split('T')[0];
+  }
+}
+
+// ===== 会话元数据精简函数实现 =====
+
+/**
+ * 读取指定会话的元数据。
+ * 内部通过全局 SessionStore 单例获取，未初始化时返回 null。
+ */
+export function readSessionMetadata(sessionId: string): SessionMetadata | null {
+  try {
+    const store = getSessionStore();
+    return store.getMetadata(sessionId);
+  } catch (err) {
+    logger.error('[metadata] readSessionMetadata 失败:', sessionId, err);
+    return null;
+  }
+}
+
+/**
+ * 全量写入指定会话的元数据。
+ * 若会话已存在则替换其元数据；若不存在则基于给定元数据创建新会话。
+ */
+export async function writeSessionMetadata(
+  sessionId: string,
+  metadata: SessionMetadata,
+): Promise<SessionMetadata | null> {
+  try {
+    const store = getSessionStore();
+    const existing = store.getMetadata(sessionId);
+    if (existing) {
+      // 会话已存在：用完整 metadata 作为 patch 进行替换
+      return store.updateMetadata(sessionId, metadata);
+    }
+    // 会话不存在：创建新会话
+    return store.createSession({ ...metadata, id: sessionId });
+  } catch (err) {
+    logger.error('[metadata] writeSessionMetadata 失败:', sessionId, err);
+    return null;
+  }
+}
+
+/**
+ * 增量更新指定会话的元数据。
+ * 仅合并 patch 中提供的字段，未提供的字段保持不变。
+ */
+export async function updateSessionMetadata(
+  sessionId: string,
+  patch: Partial<SessionMetadata>,
+): Promise<SessionMetadata | null> {
+  try {
+    const store = getSessionStore();
+    return store.updateMetadata(sessionId, patch);
+  } catch (err) {
+    logger.error('[metadata] updateSessionMetadata 失败:', sessionId, err);
+    return null;
   }
 }

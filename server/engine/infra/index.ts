@@ -195,3 +195,6 @@ export { rotateBackups, getBackupFiles, createBackupFileName, getBackupCount, cl
 
 export type { IssueSeverity, IssueType, Issue, IssueFormatOptions } from './issue-format.js';
 export { formatIssue, createIssue, parseIssue, getSeverityColor, getTypeLabel } from './issue-format.js';
+
+export * from './clawhub.js';
+export * from './clawhub-spec.js';

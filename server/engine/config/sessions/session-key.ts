@@ -5,6 +5,24 @@ import type { SessionKey } from './types.js';
 const SESSION_KEY_PREFIX = 'sess';
 const SESSION_KEY_VERSION = 'v1';
 
+/**
+ * 会话密钥解析后的组成部分。
+ * 与 formatSessionKey 生成的字符串一一对应：
+ *   `{prefix}_{version}_{sessionId}_{timestamp}_{hash}`
+ */
+export interface SessionKeyParts {
+  /** 密钥前缀，固定为 "sess" */
+  prefix: string;
+  /** 密钥版本，固定为 "v1" */
+  version: string;
+  /** 会话 ID */
+  sessionId: string;
+  /** 生成时间戳（毫秒） */
+  timestamp: number;
+  /** 校验哈希 */
+  hash: string;
+}
+
 export function generateSessionId(): string {
   return randomUUID().replace(/-/g, '');
 }

@@ -31,8 +31,14 @@ const OMITTED_TALK_LOG_EVENT_TYPES = new Set<TalkEventType>([
 
 const TALK_LOGGER_BINDINGS = Object.freeze({ subsystem: "talk" });
 
-// 复用项目 logger 的 child 能力，绑定 talk 子系统。
-const talkLogger = rootLogger.child(TALK_LOGGER_BINDINGS);
+function createTalkLogger(): typeof rootLogger {
+  if (typeof (rootLogger as { child?: unknown }).child === "function") {
+    return (rootLogger as { child: (bindings: Record<string, unknown>) => typeof rootLogger }).child(TALK_LOGGER_BINDINGS as Record<string, unknown>);
+  }
+  return rootLogger;
+}
+
+const talkLogger = createTalkLogger();
 
 /**
  * Converts high-level Talk events into compact structured log records, skipping noisy deltas.
