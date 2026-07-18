@@ -1,0 +1,290 @@
+// Type contract for the generated installed plugin index persisted on disk.
+//
+// 移植自 openclaw/src/plugins/installed-plugin-index-types.ts。
+//
+// 降级策略：
+//  - 原文件依赖 ../config/types.js 的 OpenClawConfig。降级为本地宽松类型占位
+//    （与 ../gateway/_openclaw-stubs.js 中 OpenClawConfig 兼容）。
+//  - 原文件依赖 ../config/types.plugins.js 的 PluginInstallRecord。降级为本地
+//    最小结构占位（仅含 InstalledPluginInstallRecordInfo 中 Pick 的字段）。
+//  - 原文件依赖 ./compat/registry.js 的 PluginCompatCode。降级为本地 string 别名占位。
+//  - 原文件依赖 ./discovery.js 的 PluginCandidate 与 PluginDiscoveryResult。降级为
+//    unknown 占位（这些类型在 cross-wms 中尚未移植，InstalledPluginIndexTypes 仅作为
+//    类型契约，调用方在使用时再自行处理类型断言）。
+//  - 原文件依赖 ./manifest-registry.js 的 PluginManifestRecord。降级为本地最小结构占位。
+//  - 原文件依赖 ./manifest.js 的 PluginPackageChannel。降级为本地最小结构占位。
+//  - ./install-source-info.js 与 ./installed-plugin-index-hash.js 与 ./manifest-types.js
+//    在 cross-wms 中已存在或本次移植新建，直接引用。
+
+import type { PluginInstallSourceInfo } from "./install-source-info.js";
+import type { InstalledPluginFileSignature } from "./installed-plugin-index-hash.js";
+import type { PluginDiagnostic } from "./manifest-types.js";
+
+// ============================================================================
+// 内联降级类型占位：../config/types.js —— OpenClawConfig
+// ============================================================================
+
+/**
+ * OpenClaw 配置的宽松类型占位。
+ *
+ * 降级原因：cross-wms 尚未移植 openclaw 的完整配置类型层级。
+ * 这里定义结构化子集以满足 installed-plugin-index-types 对 config 字段的访问。
+ */
+type OpenClawConfig = {
+  plugins?: {
+    entries?: Record<string, { enabled?: boolean }>;
+    [key: string]: unknown;
+  };
+  channels?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+// ============================================================================
+// 内联降级类型占位：../config/types.plugins.js —— PluginInstallRecord
+// ============================================================================
+
+/**
+ * 插件安装记录的最小结构占位。
+ *
+ * 降级原因：cross-wms 的 installs.ts 已定义 PluginInstallRecord，但字段集与
+ * openclaw 不同。这里保留 openclaw 原版字段集以维持 InstalledPluginInstallRecordInfo
+ * 中 Pick 的类型契约。
+ */
+type PluginInstallRecord = {
+  source?: string;
+  spec?: string;
+  sourcePath?: string;
+  installPath?: string;
+  version?: string;
+  resolvedName?: string;
+  resolvedVersion?: string;
+  resolvedSpec?: string;
+  integrity?: string;
+  shasum?: string;
+  resolvedAt?: number;
+  installedAt?: number;
+  clawhubUrl?: string;
+  clawhubPackage?: string;
+  clawhubFamily?: string;
+  clawhubChannel?: string;
+  artifactKind?: string;
+  artifactFormat?: string;
+  npmIntegrity?: string;
+  npmShasum?: string;
+  npmTarballName?: string;
+  clawpackSha256?: string;
+  clawpackSpecVersion?: string;
+  clawpackManifestSha256?: string;
+  clawpackSize?: number;
+  gitUrl?: string;
+  gitRef?: string;
+  gitCommit?: string;
+  marketplaceName?: string;
+  marketplaceSource?: string;
+  marketplacePlugin?: string;
+};
+
+// ============================================================================
+// 内联降级类型占位：./compat/registry.js —— PluginCompatCode
+// ============================================================================
+
+/** 插件兼容性代码（降级 string 别名占位）。 */
+type PluginCompatCode = string;
+
+// ============================================================================
+// 内联降级类型占位：./discovery.js —— PluginCandidate / PluginDiscoveryResult
+// ============================================================================
+
+/** 插件候选项（降级 unknown 占位）。 */
+type PluginCandidate = unknown;
+
+/** 插件发现结果（降级 unknown 占位）。 */
+type PluginDiscoveryResult = unknown;
+
+// ============================================================================
+// 内联降级类型占位：./manifest-registry.js —— PluginManifestRecord
+// ============================================================================
+
+/**
+ * 插件清单记录的最小结构占位。
+ *
+ * 降级原因：cross-wms 的 manifest-registry.js 尚未移植。仅保留
+ * InstalledPluginIndexRecord 中引用的 format/bundleFormat/origin 字段类型契约。
+ */
+type PluginManifestRecord = {
+  format?: string;
+  bundleFormat?: string;
+  origin?: string;
+};
+
+// ============================================================================
+// 内联降级类型占位：./manifest.js —— PluginPackageChannel
+// ============================================================================
+
+/**
+ * 插件包通道元数据的最小结构占位。
+ *
+ * 降级原因：cross-wms 的 manifest.js 尚未移植。这里定义与 openclaw
+ * PluginPackageChannel 结构兼容的最小类型。
+ */
+type PluginPackageChannel = {
+  id?: string;
+  label?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================================
+// installed-plugin-index-types 实现
+// ============================================================================
+
+/** Schema version for installed plugin index files. */
+export const INSTALLED_PLUGIN_INDEX_VERSION = 1;
+export const INSTALLED_PLUGIN_INDEX_MIGRATION_VERSION = 1;
+export const INSTALLED_PLUGIN_INDEX_WARNING =
+  "DO NOT EDIT. This file is generated by OpenClaw from plugin manifests, install records, and config policy. Use `openclaw plugins registry --refresh`, `openclaw plugins install/update/uninstall`, or `openclaw plugins enable/disable` instead.";
+
+export type InstalledPluginIndexRefreshReason =
+  | "missing"
+  | "stale-manifest"
+  | "stale-package"
+  | "source-changed"
+  | "policy-changed"
+  | "migration"
+  | "host-contract-changed"
+  | "compat-registry-changed"
+  | "manual";
+
+export type InstalledPluginStartupInfo = {
+  sidecar: boolean;
+  memory: boolean;
+  deferConfiguredChannelFullLoadUntilAfterListen: boolean;
+  agentHarnesses: readonly string[];
+  /**
+   * Manifest activation.onConfigPaths copied into the installed index for
+   * pre-manifest startup scoping. Missing on older persisted index files.
+   */
+  configPaths?: readonly string[];
+};
+
+export type InstalledPluginContributionInfo = {
+  channels: readonly string[];
+  channelConfigs: readonly string[];
+  providers: readonly string[];
+  modelCatalogProviders: readonly string[];
+  modelSupportPrefixes: readonly string[];
+  modelSupportPatterns: readonly string[];
+  autoEnableProviderIds: readonly string[];
+  commandAliases: readonly string[];
+  contracts: Readonly<Record<string, readonly string[]>>;
+};
+
+export type InstalledPluginInstallRecordInfo = Pick<
+  PluginInstallRecord,
+  | "source"
+  | "spec"
+  | "sourcePath"
+  | "installPath"
+  | "version"
+  | "resolvedName"
+  | "resolvedVersion"
+  | "resolvedSpec"
+  | "integrity"
+  | "shasum"
+  | "resolvedAt"
+  | "installedAt"
+  | "clawhubUrl"
+  | "clawhubPackage"
+  | "clawhubFamily"
+  | "clawhubChannel"
+  | "artifactKind"
+  | "artifactFormat"
+  | "npmIntegrity"
+  | "npmShasum"
+  | "npmTarballName"
+  | "clawpackSha256"
+  | "clawpackSpecVersion"
+  | "clawpackManifestSha256"
+  | "clawpackSize"
+  | "gitUrl"
+  | "gitRef"
+  | "gitCommit"
+  | "marketplaceName"
+  | "marketplaceSource"
+  | "marketplacePlugin"
+>;
+
+export type InstalledPluginPackageChannelInfo = PluginPackageChannel;
+
+/** One manifest-backed plugin entry in the generated installed plugin index. */
+export type InstalledPluginIndexRecord = {
+  pluginId: string;
+  packageName?: string;
+  packageVersion?: string;
+  /**
+   * Legacy embedded install record accepted when reading earlier index files.
+   * New index writes keep install records in InstalledPluginIndex.installRecords.
+   */
+  installRecord?: InstalledPluginInstallRecordInfo;
+  /** Hash of the top-level installRecords entry; used to detect source-changed invalidation. */
+  installRecordHash?: string;
+  /**
+   * Package-authored openclaw.install metadata. This describes catalog/package
+   * install intent and must not be treated as the durable install record.
+   */
+  packageInstall?: PluginInstallSourceInfo;
+  packageChannel?: InstalledPluginPackageChannelInfo;
+  manifestPath: string;
+  manifestHash: string;
+  manifestFile?: InstalledPluginFileSignature;
+  format?: PluginManifestRecord["format"];
+  bundleFormat?: PluginManifestRecord["bundleFormat"];
+  source?: string;
+  setupSource?: string;
+  packageJson?: {
+    path: string;
+    hash: string;
+    fileSignature?: InstalledPluginFileSignature;
+  };
+  rootDir: string;
+  origin: PluginManifestRecord["origin"];
+  enabled: boolean;
+  enabledByDefault?: boolean;
+  enabledByDefaultOnPlatforms?: readonly string[];
+  syntheticAuthRefs?: readonly string[];
+  startup: InstalledPluginStartupInfo;
+  contributions?: InstalledPluginContributionInfo;
+  compat: readonly PluginCompatCode[];
+};
+
+/** Full installed-index payload used by control-plane plugin registry loading. */
+export type InstalledPluginIndex = {
+  version: typeof INSTALLED_PLUGIN_INDEX_VERSION;
+  warning?: string;
+  hostContractVersion: string;
+  compatRegistryVersion: string;
+  migrationVersion: typeof INSTALLED_PLUGIN_INDEX_MIGRATION_VERSION;
+  policyHash: string;
+  generatedAtMs: number;
+  refreshReason?: InstalledPluginIndexRefreshReason;
+  installRecords: Readonly<Record<string, InstalledPluginInstallRecordInfo>>;
+  plugins: readonly InstalledPluginIndexRecord[];
+  diagnostics: readonly PluginDiagnostic[];
+};
+
+export type LoadInstalledPluginIndexParams = {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  stateDir?: string;
+  pluginIndexFilePath?: string;
+  installRecords?: Record<string, PluginInstallRecord>;
+  candidates?: PluginCandidate[];
+  diagnostics?: PluginDiagnostic[];
+  discovery?: PluginDiscoveryResult;
+  now?: () => Date;
+};
+
+export type RefreshInstalledPluginIndexParams = LoadInstalledPluginIndexParams & {
+  reason: InstalledPluginIndexRefreshReason;
+  policyPluginIds?: readonly string[];
+};

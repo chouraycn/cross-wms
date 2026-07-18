@@ -1,0 +1,107 @@
+// 移植自 openclaw/src/infra/approval-view-model.types.ts（降级实现）
+// 审批提示与决议的 view-model 形状。
+import type { ChannelApprovalKind } from "./approval-types.js";
+import type {
+  ExecApprovalDecision,
+  ExecApprovalRequest,
+  ExecApprovalResolved,
+} from "./exec-approvals.js";
+import type { PluginApprovalRequest, PluginApprovalResolved } from "./plugin-approvals.js";
+
+// 降级类型：openclaw 的 ../interactive/payload.js、./command-analysis/explain.js 未移植
+type InteractiveReplyButtonStyle = "success" | "primary" | "danger" | "secondary";
+type CommandExplanationSummary = {
+  commandCount: number;
+  nestedCommandCount: number;
+  riskKinds: string[];
+  warningLines: string[];
+};
+
+type ApprovalPhase = "pending" | "resolved" | "expired";
+
+export type ApprovalActionView = {
+  kind?: "command" | "decision";
+  decision: ExecApprovalDecision;
+  label: string;
+  style: InteractiveReplyButtonStyle;
+  command: string;
+};
+
+export type ApprovalMetadataView = {
+  label: string;
+  value: string;
+};
+
+type ApprovalViewBase = {
+  approvalId: string;
+  approvalKind: ChannelApprovalKind;
+  phase: ApprovalPhase;
+  title: string;
+  description?: string | null;
+  metadata: ApprovalMetadataView[];
+};
+
+export type ExecApprovalViewBase = ApprovalViewBase & {
+  approvalKind: "exec";
+  ask?: string | null;
+  agentId?: string | null;
+  warningText?: string | null;
+  commandAnalysis?: CommandExplanationSummary | null;
+  commandText: string;
+  commandPreview?: string | null;
+  cwd?: string | null;
+  envKeys?: readonly string[];
+  host?: string | null;
+  nodeId?: string | null;
+  sessionKey?: string | null;
+};
+
+export type ExecApprovalPendingView = ExecApprovalViewBase & {
+  phase: "pending";
+  actions: ApprovalActionView[];
+  expiresAtMs: number;
+};
+
+export type ExecApprovalResolvedView = ExecApprovalViewBase & {
+  phase: "resolved";
+  decision: ExecApprovalDecision;
+  resolvedBy?: string | null;
+};
+
+export type ExecApprovalExpiredView = ExecApprovalViewBase & {
+  phase: "expired";
+};
+
+export type PluginApprovalViewBase = ApprovalViewBase & {
+  approvalKind: "plugin";
+  agentId?: string | null;
+  pluginId?: string | null;
+  toolName?: string | null;
+  severity: "info" | "warning" | "critical";
+};
+
+export type PluginApprovalPendingView = PluginApprovalViewBase & {
+  phase: "pending";
+  actions: ApprovalActionView[];
+  expiresAtMs: number;
+};
+
+export type PluginApprovalResolvedView = PluginApprovalViewBase & {
+  phase: "resolved";
+  decision: ExecApprovalDecision;
+  resolvedBy?: string | null;
+};
+
+export type PluginApprovalExpiredView = PluginApprovalViewBase & {
+  phase: "expired";
+};
+
+export type PendingApprovalView = ExecApprovalPendingView | PluginApprovalPendingView;
+export type ResolvedApprovalView = ExecApprovalResolvedView | PluginApprovalResolvedView;
+export type ExpiredApprovalView = ExecApprovalExpiredView | PluginApprovalExpiredView;
+export type ApprovalViewModel = PendingApprovalView | ResolvedApprovalView | ExpiredApprovalView;
+
+export type ApprovalRequest = ExecApprovalRequest | PluginApprovalRequest;
+export type ApprovalResolved = ExecApprovalResolved | PluginApprovalResolved;
+
+export type { CommandExplanationSummary };

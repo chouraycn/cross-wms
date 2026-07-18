@@ -272,3 +272,64 @@ export type {
   ExternalizedBundledPluginBridge,
   PersistedBundledPluginRecoveryLocation,
 } from './plugins-location-bridges.js';
+
+// ===================== openclaw 移植模块（program/plugin/run-main 聚类） =====================
+// 以下模块从 openclaw/src/cli/ 移植，包含 program barrel、plugin-registry loader、
+// plugin install plan/policy、run-main 入口编排等。
+// 依赖未移植子系统（program/build-program、plugins/runtime/runtime-registry-loader、
+// config/types.openclaw、infra/npm-registry-spec、plugins/bundled-sources 等）的部分
+// 已降级为 stub，详见各文件顶部注释。
+
+// program.ts（barrel：forceFreePort + buildProgram stub）
+export { forceFreePort } from './program.js';
+export { buildProgram } from './program.js';
+
+// program.nodes-test-helpers.ts（测试固件，无外部依赖）
+export { IOS_NODE, createIosNodeListResponse } from './program.nodes-test-helpers.js';
+
+// plugin-registry.ts（barrel：ensurePluginRegistryLoaded stub）
+export {
+  ensurePluginRegistryLoaded,
+  testing as pluginRegistryTesting,
+} from './plugin-registry.js';
+export type { PluginRegistryScope } from './plugin-registry.js';
+
+// plugin-registry-loader.ts（ensureCliPluginRegistryLoaded 降级 stub）
+export { ensureCliPluginRegistryLoaded } from './plugin-registry-loader.js';
+
+// plugin-install-config-policy.ts（插件安装预动作策略降级 stub）
+export {
+  resolvePluginInstallRequestContext,
+  resolvePluginInstallPreactionRequest,
+  resolvePluginInstallInvalidConfigPolicy,
+} from './plugin-install-config-policy.js';
+export type { PluginInstallRequestContext } from './plugin-install-config-policy.js';
+
+// plugin-install-plan.ts（插件安装计划助手，依赖回调，保持原始逻辑）
+export {
+  resolveBundledInstallPlanForCatalogEntry,
+  resolveBundledInstallPlanBeforeNpm,
+  resolveOfficialExternalInstallPlanBeforeNpm,
+  resolveOfficialExternalNpmPackageTrust,
+  resolveBundledInstallPlanForNpmFailure,
+} from './plugin-install-plan.js';
+export type { BundledPluginSource } from './plugin-install-plan.js';
+
+// run-main.ts（主 CLI 入口编排降级 stub）
+export {
+  resolvePrecomputedSubcommandHelpFastPath as resolvePrecomputedSubcommandHelpFastPathFromRunMain,
+  rewriteUpdateFlagArgv as rewriteUpdateFlagArgvFromRunMain,
+  shouldEnsureCliPath as shouldEnsureCliPathFromRunMain,
+  shouldStartCrestodianForBareRoot as shouldStartCrestodianForBareRootFromRunMain,
+  shouldStartCrestodianForModernOnboard as shouldStartCrestodianForModernOnboardFromRunMain,
+  shouldStartProxyForCli as shouldStartProxyForCliFromRunMain,
+  shouldUseBrowserHelpFastPath as shouldUseBrowserHelpFastPathFromRunMain,
+  shouldUseNodesHelpFastPath as shouldUseNodesHelpFastPathFromRunMain,
+  shouldUseRootHelpFastPath as shouldUseRootHelpFastPathFromRunMain,
+  shouldUseSecretsHelpFastPath as shouldUseSecretsHelpFastPathFromRunMain,
+  shouldUseSetupOnboardConfigureHelpFastPath as shouldUseSetupOnboardConfigureHelpFastPathFromRunMain,
+  resolveMissingPluginCommandMessage as resolveMissingPluginCommandMessageFromRunMain,
+  isGatewayRunFastPathArgv,
+  shouldStartOnboardingForFreshInstall,
+  runCli,
+} from './run-main.js';
