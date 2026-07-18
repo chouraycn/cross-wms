@@ -336,3 +336,17 @@ export {
   buildTimeoutAbortSignal,
   fetchWithTimeout,
 } from './fetch-timeout.js';
+
+// JSONL socket（Unix domain socket 上一次性 JSONL 请求）
+export {
+  requestJsonlSocket,
+  testApi as jsonlSocketTestApi,
+} from './jsonl-socket.js';
+
+// Exec host（HMAC 保护的本地 socket exec 请求）
+export {
+  requestExecHostViaSocket,
+  type ExecHostRequest,
+  type ExecHostRunResult,
+  type ExecHostResponse,
+} from './exec-host.js';

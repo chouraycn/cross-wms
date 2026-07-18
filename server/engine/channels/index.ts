@@ -261,3 +261,10 @@ export {
   normalizeConversationTargetParams,
   type ConversationTargetParams,
 } from './conversation-target.js';
+
+// Default account 警告文本（用于 doctor/setup 消息）
+export {
+  formatChannelAccountsDefaultPath,
+  formatSetExplicitDefaultInstruction,
+  formatSetExplicitDefaultToConfiguredInstruction,
+} from './default-account-warnings.js';
