@@ -667,3 +667,51 @@ export type { RequiredParamGroup } from "./agent-tools.params.js";
 export { resolveConfiguredProviderFallback } from "./configured-provider-fallback.js";
 
 export { applyUpdateHunk } from "./apply-patch-update.js";
+
+// 工具结果错误检测（移植自 openclaw agents/tool-result-error）
+export {
+  readToolResultDetails,
+  readToolResultStatus,
+  isToolResultError,
+} from "./tool-result-error.js";
+
+// Agent run 超时归因（移植自 openclaw agents/run-timeout-attribution）
+export {
+  normalizeAgentRunTimeoutPhase,
+  normalizeProviderStarted,
+  type AgentRunTimeoutPhase,
+} from "./run-timeout-attribution.js";
+
+// 待处理 tool-call 状态跟踪（移植自 openclaw agents/session-tool-result-state）
+export { createPendingToolCallState } from "./session-tool-result-state.js";
+
+// Provider system prompt 贡献类型（移植自 openclaw agents/system-prompt-contribution）
+export type {
+  ProviderSystemPromptSectionId,
+  ProviderSystemPromptContribution,
+} from "./system-prompt-contribution.js";
+
+// 运行时工具输入 schema JSON 投影（移植自 openclaw agents/tool-schema-json-projection）
+export {
+  projectRuntimeToolInputSchema,
+  type RuntimeToolInputSchemaJson,
+  type RuntimeToolInputSchemaProjection,
+} from "./tool-schema-json-projection.js";
+
+// Async stream iterator 包装器（移植自 openclaw agents/stream-iterator-wrapper）
+export { createStreamIteratorWrapper } from "./stream-iterator-wrapper.js";
+
+// MCP server/tool 名称净化（移植自 openclaw agents/agent-bundle-mcp-names）
+export {
+  sanitizeServerName,
+  buildSafeToolName,
+  normalizeReservedToolNames,
+  TOOL_NAME_SEPARATOR,
+} from "./agent-bundle-mcp-names.js";
+
+// 紧凑工具错误摘要类型（移植自 openclaw agents/tool-error-summary）
+export {
+  isExecLikeToolName,
+  type ToolErrorSummary,
+  type FileTarget,
+} from "./tool-error-summary.js";

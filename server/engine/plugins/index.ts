@@ -444,3 +444,38 @@ export {
   normalizePluginConfigId,
   isWorkspacePluginAllowedByConfig,
 } from './plugin-config-trust.js';
+
+// ===================== 深化模块（v3.3 — openclaw 中依赖移植） =====================
+// 以下模块从 openclaw/src/plugins/ 移植，包含简单工具函数与少量 @openclaw/* 外部包依赖。
+// 依赖 @openclaw/* 外部包的模块已降级为本地实现，详见各文件顶部注释。
+
+// 插件最小宿主版本兼容性检查
+export {
+  MIN_HOST_VERSION_FORMAT,
+  parseMinHostVersionRequirement,
+  checkMinHostVersion,
+} from './min-host-version.js';
+export type {
+  MinHostVersionRequirement,
+  MinHostVersionCheckResult,
+} from './min-host-version.js';
+
+// 包兼容性元数据检查
+export {
+  resolvePackagePluginApiRange,
+} from './package-compat.js';
+export type { PackagePluginApiRangeResult } from './package-compat.js';
+
+// 插件安装来源元数据描述与 pinning 警告
+export {
+  describePluginInstallSource,
+} from './install-source-info.js';
+export type {
+  PluginInstallSourceWarning,
+  PluginInstallNpmPinState,
+  PluginInstallNpmSourceInfo,
+  PluginInstallLocalSourceInfo,
+  PluginInstallClawHubSourceInfo,
+  PluginInstallSourceInfo,
+  DescribePluginInstallSourceOptions,
+} from './install-source-info.js';

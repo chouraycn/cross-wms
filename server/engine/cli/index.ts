@@ -118,3 +118,75 @@ export {
   resolveOptionFromCommand,
   formatErrorMessage,
 } from './cli-utils.js';
+
+// ===================== openclaw 移植模块（中等依赖） =====================
+
+// argv.ts（低级 argv 辅助）
+export {
+  hasHelpOrVersion,
+  isHelpOrVersionInvocation,
+  hasFlag,
+  hasRootVersionAlias,
+  isRootVersionInvocation,
+  isRootHelpInvocation,
+  normalizeGeneratedHelpCommandArgv,
+  normalizeRootHelpTargetArgv,
+  normalizeRootNoColorArgv,
+  normalizeRootLogLevelArgv,
+  getFlagValue,
+  getVerboseFlag,
+  getPositiveIntFlagValue,
+  getCommandPathWithRootOptions,
+  getPrimaryCommand,
+  getCommandPositionalsWithRootOptions,
+  buildParseArgv,
+  shouldMigrateStateFromPath,
+} from './argv.js';
+export type {
+  NormalizeRootNoColorArgvOptions,
+  NormalizeRootLogLevelArgvOptions,
+} from './argv.js';
+
+// argv-invocation.ts
+export { resolveCliArgvInvocation } from './argv-invocation.js';
+export type { CliArgvInvocation } from './argv-invocation.js';
+
+// container-target.ts
+export {
+  parseCliContainerArgs,
+  resolveCliContainerTarget,
+  maybeRunCliInContainer,
+} from './container-target.js';
+
+// respawn-policy.ts
+export {
+  isInteractiveTtyCommandArgv,
+  isTerminalInteractiveRespawnArgv,
+  shouldSkipRespawnForArgv,
+  shouldSkipStartupEnvironmentRespawnForArgv,
+} from './respawn-policy.js';
+
+// prompt.ts
+export {
+  promptYesNo,
+  setVerboseFlag,
+  setYesFlag,
+  isVerbose,
+  isYes,
+  PromptInputClosedError,
+} from './prompt.js';
+
+// help-format.ts
+export { formatHelpExamples } from './help-format.js';
+export type { HelpExample } from './help-format.js';
+
+// log-level-option.ts
+export {
+  parseCliLogLevelOption,
+  tryParseLogLevel,
+  CLI_LOG_LEVEL_VALUES,
+} from './log-level-option.js';
+export type { LogLevel } from './log-level-option.js';
+
+// dotenv.ts
+export { loadCliDotEnv } from './dotenv.js';
