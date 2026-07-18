@@ -1,35 +1,36 @@
-// 移植自 openclaw/src/infra/npm-managed-root.ts（降级实现）
-// npm 受管根目录解析。
-import os from "node:os";
-import path from "node:path";
+// 移植自 openclaw/src/infra/npm-managed-root.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-/** 解析 npm 受管根目录 */
-export function resolveNpmManagedRoot(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.OPENCLAW_NPM_MANAGED_ROOT) {
-    return path.resolve(env.OPENCLAW_NPM_MANAGED_ROOT);
-  }
-  return path.join(os.homedir(), ".openclaw", "npm-managed");
+export type ManagedNpmRootPeerDependencySnapshot = unknown;
+export type ManagedNpmRootInstalledDependency = unknown;
+export type MissingRequiredPlatformPackage = unknown;
+export function readOpenClawManagedNpmRootOverrides(...args: unknown[]): unknown {
+  throw new Error("not implemented: readOpenClawManagedNpmRootOverrides");
 }
-
-/** 解析 npm 包安装目录 */
-export function resolveNpmPackageInstallDir(params: {
-  packageName: string;
-  env?: NodeJS.ProcessEnv;
-}): string {
-  const root = resolveNpmManagedRoot(params.env);
-  return path.join(root, "packages", params.packageName);
+export function resolveManagedNpmRootDependencySpec(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveManagedNpmRootDependencySpec");
 }
-
-/** 解析 npm 全局根目录 */
-export function resolveNpmGlobalRoot(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.OPENCLAW_NPM_GLOBAL_ROOT) {
-    return path.resolve(env.OPENCLAW_NPM_GLOBAL_ROOT);
-  }
-  return path.join(os.homedir(), ".npm-global");
+export function upsertManagedNpmRootDependency(...args: unknown[]): unknown {
+  throw new Error("not implemented: upsertManagedNpmRootDependency");
 }
-
-/** 确保 npm 受管根目录存在 */
-export async function ensureNpmManagedRoot(env: NodeJS.ProcessEnv = process.env): Promise<void> {
-  const fs = await import("node:fs/promises");
-  await fs.mkdir(resolveNpmManagedRoot(env), { recursive: true });
+export function listMissingRequiredPlatformPackages(...args: unknown[]): unknown {
+  throw new Error("not implemented: listMissingRequiredPlatformPackages");
+}
+export function readManagedNpmRootPeerDependencySnapshot(...args: unknown[]): unknown {
+  throw new Error("not implemented: readManagedNpmRootPeerDependencySnapshot");
+}
+export function restoreManagedNpmRootPeerDependencySnapshot(...args: unknown[]): unknown {
+  throw new Error("not implemented: restoreManagedNpmRootPeerDependencySnapshot");
+}
+export function syncManagedNpmRootPeerDependencies(...args: unknown[]): unknown {
+  throw new Error("not implemented: syncManagedNpmRootPeerDependencies");
+}
+export function repairManagedNpmRootOpenClawPeer(...args: unknown[]): unknown {
+  throw new Error("not implemented: repairManagedNpmRootOpenClawPeer");
+}
+export function readManagedNpmRootInstalledDependency(...args: unknown[]): unknown {
+  throw new Error("not implemented: readManagedNpmRootInstalledDependency");
+}
+export function removeManagedNpmRootDependency(...args: unknown[]): unknown {
+  throw new Error("not implemented: removeManagedNpmRootDependency");
 }

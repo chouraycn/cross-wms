@@ -1,0 +1,32 @@
+// 移植自 openclaw/src/config/types.discord.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+
+export type DiscordStreamMode = unknown;
+export type DiscordChannelStreamingConfig = unknown;
+export type DiscordPluralKitConfig = unknown;
+export type DiscordMentionAliasesConfig = unknown;
+export type DiscordDmConfig = unknown;
+export type DiscordGuildChannelConfig = unknown;
+export type DiscordReactionNotificationMode = unknown;
+export type DiscordGuildEntry = unknown;
+export type DiscordActionConfig = unknown;
+export type DiscordIntentsConfig = unknown;
+export type DiscordVoiceAutoJoinConfig = unknown;
+export type DiscordVoiceAllowedChannelConfig = unknown;
+export type DiscordVoiceMode = unknown;
+export type DiscordVoiceRealtimeConsultPolicy = unknown;
+export type DiscordVoiceRealtimeToolPolicy = unknown;
+export type DiscordVoiceRealtimeBootstrapContextFile = unknown;
+export type DiscordVoiceRealtimeConfig = unknown;
+export type DiscordVoiceAgentSessionConfig = unknown;
+export type DiscordVoiceConfig = unknown;
+export type DiscordExecApprovalConfig = unknown;
+export type DiscordAgentComponentsConfig = unknown;
+export type DiscordUiComponentsConfig = unknown;
+export type DiscordUiConfig = unknown;
+export type DiscordThreadBindingsConfig = unknown;
+export type DiscordSlashCommandConfig = unknown;
+export type DiscordThreadConfig = unknown;
+export type DiscordAutoPresenceConfig = unknown;
+export type DiscordAccountConfig = unknown;
+export type DiscordConfig = unknown;

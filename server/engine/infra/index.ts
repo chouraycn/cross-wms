@@ -560,3 +560,205 @@ export {
   listWritableExplicitTrustedSafeBinDirs,
   type WritableTrustedSafeBinDir,
 } from './exec-safe-bin-trust.js';
+
+// ===================== 移植 stub（v4.0 — openclaw 降级 stub 批量移植） =====================
+export * from './abort.js';
+export * from './account-scoped-conversation-bindings.js';
+export * from './active-proxy-state.js';
+export * from './agent-delivery.js';
+export * from './approval-gateway-resolver.js';
+// export * from './approval-handler-adapter-runtime.js';  // removed: TS2308 conflict
+export * from './approval-handler-bootstrap.js';
+// export * from './approval-handler-runtime-types.js';  // removed: TS2308 conflict
+// export * from './approval-handler-runtime.js';  // removed: TS2308 conflict
+export * from './approval-native-delivery.js';
+export * from './approval-native-route-coordinator.js';
+export * from './approval-native-route-notice.js';
+// export * from './approval-native-runtime-types.js';  // removed: TS2308 conflict
+export * from './approval-native-runtime.js';
+export * from './approval-native-target-key.js';
+export * from './approval-request-account-binding.js';
+export * from './approval-request-filters.js';
+export * from './approval-turn-source.js';
+export * from './approval-view-model.js';
+export * from './approval-view-model.types.js';
+export * from './backup-create.js';
+export * from './base-session-key.js';
+export * from './best-effort-delivery.js';
+export * from './bound-delivery-router.js';
+export * from './channel-activity.js';
+export * from './channel-approval-auth.js';
+export * from './channel-bootstrap.runtime.js';
+export * from './channel-resolution.js';
+export * from './channel-runtime-context.js';
+// export * from './channel-selection.runtime.js';  // removed: TS2308 conflict
+// export * from './channel-selection.js';  // removed: TS2308 conflict
+export * from './channel-summary.js';
+export * from './channel-target-prefix.js';
+export * from './channel-target.js';
+export * from './channels-status-issues.js';
+export * from './command-carriers.js';
+export * from './configured-local-origin-bypass.js';
+export * from './conversation-id.js';
+export * from './current-conversation-bindings.js';
+// export * from './deliver-runtime.js';  // removed: TS2308 conflict
+// export * from './deliver-types.js';  // removed: TS2308 conflict
+// export * from './deliver.js';  // removed: TS2308 conflict
+export * from './delivery-commit-hooks.js';
+// export * from './delivery-queue-recovery.js';  // removed: TS2308 conflict
+// export * from './delivery-queue-storage.js';  // removed: TS2308 conflict
+export * from './delivery-queue.js';
+export * from './diagnostic-events.js';
+export * from './diagnostic-flags.js';
+export * from './directory-cache.js';
+export * from './dispatch-wrapper-resolution.js';
+export * from './envelope.js';
+export * from './event-session-routing.js';
+export * from './exec-allowlist-pattern.js';
+// export * from './exec-approval-channel-runtime.js';  // removed: TS2308 conflict
+export * from './exec-approval-channel-runtime.types.js';
+export * from './exec-approval-command-display.js';
+// export * from './exec-approval-forwarder.runtime.js';  // removed: TS2308 conflict
+export * from './exec-approval-forwarder.js';
+export * from './exec-approval-reply.js';
+export * from './exec-approval-session-target.js';
+export * from './exec-approval-surface.js';
+export * from './exec-approvals-allowlist.js';
+// export * from './exec-approvals-analysis.js';  // removed: TS2308 conflict
+export * from './exec-approvals-effective.js';
+export * from './exec-approvals-test-helpers.js';
+// export * from './exec-approvals.js';  // removed: TS2308 conflict
+export * from './exec-approvals.types.js';
+export * from './exec-argv-analysis.js';
+export * from './exec-authorization-plan.js';
+export * from './exec-authorization-render.js';
+export * from './exec-auto-review.js';
+export * from './exec-command-analysis-types.js';
+export * from './exec-command-resolution.js';
+export * from './exec-control-command-guard.js';
+export * from './exec-policy.js';
+export * from './exec-safe-bin-policy-validator.js';
+export * from './exec-safe-bin-runtime-policy.js';
+export * from './exec-safe-bin-trust.js';
+export * from './exec-safe-builtins.js';
+export * from './exec-wrapper-resolution.js';
+export * from './exec-wrapper-trust-plan.js';
+export * from './executable-path.js';
+export * from './explain.js';
+export * from './extract.js';
+export * from './file-lock-manager.js';
+export * from './fingerprint.js';
+export * from './form-data.js';
+export * from './format-datetime.js';
+export * from './format-duration.js';
+export * from './format-relative.js';
+export * from './format.js';
+export * from './formatting.js';
+export * from './gateway.js';
+export * from './heartbeat-cooldown.js';
+export * from './host-env-security-policy.js';
+// export * from './identity-types.js';  // removed: TS2308 conflict
+export * from './identity.js';
+export * from './inline-eval.js';
+export * from './install-flow.js';
+export * from './install-from-npm-spec.js';
+export * from './install-package-dir.js';
+export * from './install-source-utils.js';
+export * from './install-target.js';
+export * from './internal-source-reply.js';
+export * from './managed-proxy-undici.js';
+export * from './message-action-normalization.js';
+export * from './message-action-param-keys.js';
+export * from './message-action-params.js';
+export * from './message-action-runner.js';
+export * from './message-action-spec.js';
+export * from './message-action-test-fixtures.js';
+export * from './message-action-threading.js';
+export * from './message-action-tts.js';
+export * from './message-gateway-options.js';
+export * from './message-plan.js';
+export * from './message.config.runtime.js';
+export * from './message.gateway.runtime.js';
+export * from './message.js';
+export * from './mirror.js';
+export * from './network-discovery-display.js';
+export * from './node-pairing.js';
+export * from './node-proxy-agent.js';
+export * from './npm-integrity.js';
+export * from './npm-managed-root.js';
+export * from './npm-pack-install.js';
+export * from './outbound-policy.js';
+export * from './outbound-send-service.js';
+export * from './outbound-session.js';
+export * from './package-dist-inventory.js';
+export * from './package-json.js';
+export * from './package-update-steps.js';
+export * from './package-update-utils.js';
+export * from './parse-offsetless-zoned-datetime.js';
+export * from './payloads.js';
+export * from './policy.js';
+export * from './provider-usage-plugin-runtime.test-mocks.js';
+export * from './provider-usage.auth.js';
+// export * from './provider-usage.fetch.claude.js';  // removed: TS2308 conflict
+// export * from './provider-usage.fetch.codex.js';  // removed: TS2308 conflict
+// export * from './provider-usage.fetch.deepseek.js';  // removed: TS2308 conflict
+// export * from './provider-usage.fetch.gemini.js';  // removed: TS2308 conflict
+// export * from './provider-usage.fetch.minimax.js';  // removed: TS2308 conflict
+export * from './provider-usage.fetch.shared.js';
+// export * from './provider-usage.fetch.js';  // removed: TS2308 conflict
+export * from './provider-usage.fetch.zai.js';
+// export * from './provider-usage.format.js';  // removed: TS2308 conflict
+// export * from './provider-usage.load.js';  // removed: TS2308 conflict
+// export * from './provider-usage.shared.js';  // removed: TS2308 conflict
+// export * from './provider-usage.js';  // removed: TS2308 conflict
+export * from './provider-usage.types.js';
+export * from './proxy-fetch.js';
+export * from './proxy-lifecycle.js';
+export * from './proxy-tls.js';
+export * from './proxy-validation.js';
+// export * from './push-apns.relay.js';  // removed: TS2308 conflict
+export * from './push-apns.js';
+export * from './push-web.js';
+export * from './redirect-headers.js';
+export * from './reply-payload-normalize.js';
+export * from './reply-policy.js';
+export * from './restart-coordinator.js';
+export * from './restart-handoff.js';
+// export * from './restart-stale-pids.js';  // removed: TS2308 conflict
+export * from './restart.js';
+export * from './risks.js';
+export * from './runtime-fetch.js';
+export * from './safe-package-install.js';
+export * from './sanitize-text.js';
+export * from './scripts-modules.js';
+export * from './send-deps.js';
+export * from './session-binding-normalization.js';
+// export * from './session-binding-service.js';  // removed: TS2308 conflict
+export * from './session-binding.types.js';
+export * from './session-context.js';
+export * from './session-cost-usage.js';
+export * from './session-maintenance-warning.js';
+export * from './source-delivery-plan.js';
+export * from './source-reply-mirror.js';
+export * from './system-events.js';
+export * from './system-presence.js';
+export * from './system-run-approval-binding.js';
+export * from './system-run-approval-context.js';
+export * from './system-run-command.js';
+export * from './system-run-normalize.js';
+export * from './target-errors.js';
+// export * from './target-id-resolution.js';  // removed: TS2308 conflict
+export * from './target-normalization.js';
+export * from './target-resolver.js';
+export * from './targets-loaded.js';
+// export * from './targets-resolve-shared.js';  // removed: TS2308 conflict
+// export * from './targets-session.js';  // removed: TS2308 conflict
+// export * from './targets.runtime.js';  // removed: TS2308 conflict
+export * from './targets.shared-test.js';
+export * from './targets.js';
+export * from './thread-id.js';
+export * from './tree-sitter-runtime.js';
+export * from './undici-family-policy.js';
+export * from './undici-global-dispatcher.js';
+export * from './undici-runtime.js';
+export * from './update-post-core-context.js';

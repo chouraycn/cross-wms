@@ -333,3 +333,86 @@ export {
   shouldStartOnboardingForFreshInstall,
   runCli,
 } from './run-main.js';
+
+// ===================== openclaw 移植模块（重度降级 stub 批量移植） =====================
+// 以下模块从 openclaw/src/cli/ 移植，采用重度降级 stub 模式：
+// 函数体抛出 "not implemented" 错误，类型降级为 unknown，常量为 undefined。
+// 仅保留导出名以便后续替换为正式实现。如有 TS2308 冲突会以注释形式跳过。
+export * from './plugins-cli-test-helpers.js';
+export * from './post-core-plugin-convergence.js';
+export * from './pre-bootstrap.js';
+export * from './preaction.js';
+export * from './private-qa-cli.js';
+export * from './probe.js';
+export * from './program-context.js';
+export * from './program.test-mocks.js';
+export * from './qa-parent-watchdog.js';
+export * from './register-command-groups.js';
+export * from './register-lazy-command.js';
+export * from './register-service-commands.js';
+export * from './register.agent-turn.js';
+export * from './register.agent.js';
+export * from './register.backup.js';
+export * from './register.broadcast.js';
+export * from './register.camera.js';
+export * from './register.configure.js';
+export * from './register.crestodian.js';
+export * from './register.cron-add.js';
+export * from './register.cron-edit.js';
+export * from './register.cron-simple.js';
+export * from './register.discord-admin.js';
+export * from './register.emoji-sticker.js';
+export * from './register.invoke.js';
+export * from './register.location.js';
+export * from './register.maintenance.js';
+export * from './register.message.js';
+export * from './register.migrate.js';
+export * from './register.notify.js';
+export * from './register.onboard.js';
+export * from './register.pairing.js';
+export * from './register.permissions-search.js';
+export * from './register.pins.js';
+export * from './register.poll.js';
+export * from './register.push.js';
+export * from './register.reactions.js';
+export * from './register.read-edit-delete.js';
+export * from './register.screen.js';
+export * from './register.send.js';
+export * from './register.setup.js';
+export * from './register.status-health-sessions.js';
+export * from './register.status.js';
+export * from './register.subclis-core.js';
+// CONFLICT (TS2308): export * from './register.subclis.js';
+export * from './register.thread.js';
+export * from './register.transcripts.js';
+export * from './register.js';
+export * from './response.js';
+export * from './restart-health.js';
+export * from './restart-helper.js';
+export * from './root-help.js';
+export * from './route-args.js';
+export * from './route-specs.js';
+export * from './routed-command-definitions.js';
+export * from './routes.js';
+export * from './rpc.runtime.js';
+export * from './rpc.js';
+export * from './run-command.js';
+export * from './run-loop.js';
+export * from './run-options.js';
+export * from './run.js';
+export * from './runners.js';
+export * from './runtime-hooks.js';
+export * from './schedule-options.js';
+export * from './shared.js';
+export * from './start-repair.js';
+export * from './status.gather.js';
+export * from './status.print.js';
+// CONFLICT (TS2308): export * from './status.runtime.js';
+// CONFLICT (TS2308): export * from './status.js';
+export * from './suppress-deprecations.js';
+export * from './test-runtime-capture.js';
+export * from './test-runtime-mock.js';
+export * from './thread-id-shared.js';
+export * from './types.js';
+export * from './update-command.js';
+export * from './wizard.js';

@@ -1,11 +1,5 @@
 // 移植自 openclaw/src/infra/update-post-core-context.ts
-// 降级说明：OpenClawConfig 降级为 Record<string, unknown>。
-import type { OpenClawConfig } from "./_runtime-stubs.js";
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export const POST_CORE_UPDATE_SOURCE_CONFIG_PATH_ENV =
-  "OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH";
-
-export type PreUpdateConfigRestoreInput = {
-  sourceConfig: OpenClawConfig;
-  authoredConfig: OpenClawConfig;
-};
+export type PreUpdateConfigRestoreInput = unknown;
+export const POST_CORE_UPDATE_SOURCE_CONFIG_PATH_ENV: string = "OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH";

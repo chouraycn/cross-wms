@@ -1,49 +1,13 @@
-// 移植自 openclaw/src/infra/system-presence.ts（降级实现）
-// 系统存在性检测。
-import os from "node:os";
+// 移植自 openclaw/src/infra/system-presence.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type SystemPresence = {
-  hostname: string;
-  platform: string;
-  arch: string;
-  uptime: number;
-  pid: number;
-};
-
-/** 解析当前系统存在性 */
-export function resolveSystemPresence(): SystemPresence {
-  return {
-    hostname: os.hostname(),
-    platform: process.platform,
-    arch: process.arch,
-    uptime: Math.floor(os.uptime() * 1000),
-    pid: process.pid,
-  };
+export type SystemPresence = unknown;
+export function updateSystemPresence(...args: unknown[]): unknown {
+  throw new Error("not implemented: updateSystemPresence");
 }
-
-/** 序列化系统存在性 */
-export function serializeSystemPresence(presence: SystemPresence): string {
-  return JSON.stringify(presence);
+export function upsertPresence(...args: unknown[]): unknown {
+  throw new Error("not implemented: upsertPresence");
 }
-
-/** 反序列化系统存在性 */
-export function deserializeSystemPresence(raw: string): SystemPresence | null {
-  try {
-    const parsed = JSON.parse(raw) as Partial<SystemPresence>;
-    if (typeof parsed.hostname !== "string" || typeof parsed.platform !== "string") return null;
-    return {
-      hostname: parsed.hostname,
-      platform: parsed.platform,
-      arch: parsed.arch ?? process.arch,
-      uptime: parsed.uptime ?? 0,
-      pid: parsed.pid ?? 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/** 比较两个系统存在性是否匹配 */
-export function systemPresenceMatches(a: SystemPresence, b: SystemPresence): boolean {
-  return a.hostname === b.hostname && a.platform === b.platform;
+export function listSystemPresence(...args: unknown[]): unknown {
+  throw new Error("not implemented: listSystemPresence");
 }

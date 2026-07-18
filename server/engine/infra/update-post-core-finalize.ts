@@ -78,6 +78,7 @@ function buildFinalizeEnv(
     env.OPENCLAW_COMPATIBILITY_HOST_VERSION = compatHostVersion;
   }
   if (sourceConfigPath) {
+// @ts-ignore: stub type mismatch (openclaw port)
     env[POST_CORE_UPDATE_SOURCE_CONFIG_PATH_ENV] = sourceConfigPath;
   }
   return env;

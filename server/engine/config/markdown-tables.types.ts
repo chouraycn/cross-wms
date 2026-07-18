@@ -1,16 +1,5 @@
 // 移植自 openclaw/src/config/markdown-tables.types.ts
-// 定义渲染表面使用的 markdown 表格配置类型。
-import type { MarkdownTableMode } from './types/base.js';
-import type { OpenClawConfig } from './types/openclaw.js';
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-/** Parameters for resolving markdown table rendering per config and channel. */
-export type ResolveMarkdownTableModeParams = {
-  cfg?: Partial<OpenClawConfig>;
-  channel?: string | null;
-  accountId?: string | null;
-  supportsBlockTables?: boolean;
-};
-
-export type ResolveMarkdownTableMode = (
-  params: ResolveMarkdownTableModeParams,
-) => MarkdownTableMode;
+export type ResolveMarkdownTableModeParams = unknown;
+export type ResolveMarkdownTableMode = unknown;

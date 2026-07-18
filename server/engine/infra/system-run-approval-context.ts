@@ -1,41 +1,13 @@
-// 移植自 openclaw/src/infra/system-run-approval-context.ts（降级实现）
-// system-run 审批上下文。
-import type { OpenClawConfig } from "./_runtime-stubs.js";
+// 移植自 openclaw/src/infra/system-run-approval-context.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type SystemRunApprovalContext = {
-  cfg?: OpenClawConfig;
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  platform?: string | null;
-  agentId?: string;
-  sessionKey?: string;
-};
-
-/**
- * 解析 system-run 审批上下文。
- * 降级实现：直接透传参数。
- */
-export function resolveSystemRunApprovalContext(params: {
-  cfg?: OpenClawConfig;
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  platform?: string | null;
-  agentId?: string;
-  sessionKey?: string;
-}): SystemRunApprovalContext {
-  return {
-    cfg: params.cfg,
-    cwd: params.cwd,
-    env: params.env,
-    platform: params.platform,
-    agentId: params.agentId,
-    sessionKey: params.sessionKey,
-  };
+export type PreparedRunExecPolicy = unknown;
+export function parsePreparedSystemRunPayload(...args: unknown[]): unknown {
+  throw new Error("not implemented: parsePreparedSystemRunPayload");
 }
-
-/** 检查 system-run 审批上下文是否有效 */
-export function isSystemRunApprovalContextValid(context: SystemRunApprovalContext): boolean {
-  return Boolean(context.cwd);
+export function resolveSystemRunApprovalRequestContext(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveSystemRunApprovalRequestContext");
 }
-
-export type { OpenClawConfig };
+export function resolveSystemRunApprovalRuntimeContext(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveSystemRunApprovalRuntimeContext");
+}

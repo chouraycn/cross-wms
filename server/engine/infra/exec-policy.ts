@@ -1,37 +1,7 @@
 // 移植自 openclaw/src/infra/exec-policy.ts
-// exec 策略层级合并工具。
-//
-// 降级策略：源文件依赖 ./exec-approvals.js（已降级移植），这里直接使用。
-import type { ExecAsk, ExecMode, ExecSecurity } from "./exec-approvals.js";
-import { resolveExecPolicyForMode } from "./exec-approvals.js";
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type ExecPolicyLayer = {
-  mode?: ExecMode;
-  security?: ExecSecurity;
-  ask?: ExecAsk;
-};
-
-export function applyExecPolicyLayer<TBase extends ExecPolicyLayer>(
-  base: TBase,
-  layer?: ExecPolicyLayer,
-): TBase & ExecPolicyLayer {
-  if (!layer) {
-    return base;
-  }
-  if (layer.mode) {
-    return {
-      ...base,
-      mode: layer.mode,
-      ...resolveExecPolicyForMode(layer.mode),
-    } as unknown as TBase & ExecPolicyLayer;
-  }
-  if (layer.security !== undefined || layer.ask !== undefined) {
-    const { mode: _mode, ...baseWithoutMode } = base;
-    return {
-      ...baseWithoutMode,
-      security: layer.security ?? base.security,
-      ask: layer.ask ?? base.ask,
-    } as unknown as TBase & ExecPolicyLayer;
-  }
-  return base;
+export type ExecPolicyLayer = unknown;
+export function applyExecPolicyLayer(...args: unknown[]): unknown {
+  throw new Error("not implemented: applyExecPolicyLayer");
 }

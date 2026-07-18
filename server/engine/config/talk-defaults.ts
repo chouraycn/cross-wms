@@ -1,16 +1,6 @@
 // 移植自 openclaw/src/config/talk-defaults.ts
-// talk/语音轮次切分的平台相关静默窗口默认值。
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-/** Platform-specific silence windows for talk/voice turn segmentation. */
-const TALK_SILENCE_TIMEOUT_MS_BY_PLATFORM = {
-  macos: 700,
-  android: 700,
-  ios: 900,
-} as const;
-
-/** Formats the talk silence defaults for config help text. */
-export function describeTalkSilenceTimeoutDefaults(): string {
-  const macos = TALK_SILENCE_TIMEOUT_MS_BY_PLATFORM.macos;
-  const ios = TALK_SILENCE_TIMEOUT_MS_BY_PLATFORM.ios;
-  return `${macos} ms on macOS and Android, ${ios} ms on iOS`;
+export function describeTalkSilenceTimeoutDefaults(...args: unknown[]): unknown {
+  throw new Error("not implemented: describeTalkSilenceTimeoutDefaults");
 }

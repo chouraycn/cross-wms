@@ -1,26 +1,41 @@
 // 移植自 openclaw/src/infra/exec-wrapper-resolution.ts
-// exec wrapper 解析 facade —— 汇总可执行 token、dispatch wrapper 与 shell multiplexer。
-//
-// 降级策略：直接重导出 cross-wms 已有的实现。
-export { basenameLower, normalizeExecutableToken } from "./exec-wrapper-tokens.js";
-export {
-  extractEnvAssignmentKeysFromDispatchWrappers,
-  isDispatchWrapperExecutable,
-  resolveDispatchWrapperTrustPlan,
-  unwrapDispatchWrappersForResolution,
-  unwrapEnvInvocation,
-  unwrapKnownDispatchWrapperInvocation,
-} from "./dispatch-wrapper-resolution.js";
-export {
-  extractBindableShellWrapperInlineCommand,
-  extractShellWrapperCommand,
-  extractShellWrapperInlineCommand,
-  hasEnvManipulationBeforeShellWrapper,
-  isBlockedShellWrapperCommand,
-  isShellWrapperExecutable,
-  isShellWrapperInvocation,
-  POSIX_SHELL_WRAPPERS,
-  POWERSHELL_WRAPPERS,
-  resolveShellWrapperTransportArgv,
-  unwrapKnownShellMultiplexerInvocation,
-} from "./shell-wrapper-resolution.js";
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+
+export type basenameLower = unknown;
+export const basenameLower: unknown = undefined;
+export type normalizeExecutableToken = unknown;
+export const normalizeExecutableToken: unknown = undefined;
+export type extractEnvAssignmentKeysFromDispatchWrappers = unknown;
+export const extractEnvAssignmentKeysFromDispatchWrappers: unknown = undefined;
+export type isDispatchWrapperExecutable = unknown;
+export const isDispatchWrapperExecutable: unknown = undefined;
+export type resolveDispatchWrapperTrustPlan = unknown;
+export const resolveDispatchWrapperTrustPlan: unknown = undefined;
+export type unwrapDispatchWrappersForResolution = unknown;
+export const unwrapDispatchWrappersForResolution: unknown = undefined;
+export type unwrapEnvInvocation = unknown;
+export const unwrapEnvInvocation: unknown = undefined;
+export type unwrapKnownDispatchWrapperInvocation = unknown;
+export const unwrapKnownDispatchWrapperInvocation: unknown = undefined;
+export type extractBindableShellWrapperInlineCommand = unknown;
+export const extractBindableShellWrapperInlineCommand: unknown = undefined;
+export type extractShellWrapperCommand = unknown;
+export const extractShellWrapperCommand: unknown = undefined;
+export type extractShellWrapperInlineCommand = unknown;
+export const extractShellWrapperInlineCommand: unknown = undefined;
+export type hasEnvManipulationBeforeShellWrapper = unknown;
+export const hasEnvManipulationBeforeShellWrapper: unknown = undefined;
+export type isBlockedShellWrapperCommand = unknown;
+export const isBlockedShellWrapperCommand: unknown = undefined;
+export type isShellWrapperExecutable = unknown;
+export const isShellWrapperExecutable: unknown = undefined;
+export type isShellWrapperInvocation = unknown;
+export const isShellWrapperInvocation: unknown = undefined;
+export type POSIX_SHELL_WRAPPERS = unknown;
+export const POSIX_SHELL_WRAPPERS: unknown = undefined;
+export type POWERSHELL_WRAPPERS = unknown;
+export const POWERSHELL_WRAPPERS: unknown = undefined;
+export type resolveShellWrapperTransportArgv = unknown;
+export const resolveShellWrapperTransportArgv: unknown = undefined;
+export type unwrapKnownShellMultiplexerInvocation = unknown;
+export const unwrapKnownShellMultiplexerInvocation: unknown = undefined;

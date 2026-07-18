@@ -1,53 +1,25 @@
-// 移植自 openclaw/src/infra/system-run-approval-binding.ts（降级实现）
-// system-run 命令与审批的绑定。
-import type { ExecApprovalRequest } from "./exec-approvals.js";
+// 移植自 openclaw/src/infra/system-run-approval-binding.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type SystemRunApprovalBinding = {
-  approvalId: string;
-  commandText: string;
-  argv: string[];
-  boundAtMs: number;
-};
-
-export type SystemRunApprovalPlan = {
-  commandText: string;
-  commandPreview?: string | null;
-  argv: string[];
-  requiresApproval: boolean;
-};
-
-/**
- * 绑定 system-run 命令到审批请求。
- * 降级实现：返回 null。
- */
-export function bindSystemRunApproval(_params: {
-  commandText: string;
-  argv: string[];
-  approvalId: string;
-}): SystemRunApprovalBinding | null {
-  return null;
+export type SystemRunApprovalMatchResult = unknown;
+export function normalizeSystemRunApprovalPlan(...args: unknown[]): unknown {
+  throw new Error("not implemented: normalizeSystemRunApprovalPlan");
 }
-
-/**
- * 解析 system-run 审批计划。
- * 降级实现：requiresApproval 始终为 true。
- */
-export function resolveSystemRunApprovalPlan(params: {
-  commandText: string;
-  argv: string[];
-  commandPreview?: string | null;
-}): SystemRunApprovalPlan {
-  return {
-    commandText: params.commandText,
-    commandPreview: params.commandPreview ?? null,
-    argv: params.argv,
-    requiresApproval: true,
-  };
+export function buildSystemRunApprovalEnvBinding(...args: unknown[]): unknown {
+  throw new Error("not implemented: buildSystemRunApprovalEnvBinding");
 }
-
-/** 从审批请求解析 system-run 计划（降级：返回 undefined） */
-export function resolveSystemRunPlanFromApproval(_request: ExecApprovalRequest): SystemRunApprovalPlan | undefined {
-  return undefined;
+export function buildSystemRunApprovalBinding(...args: unknown[]): unknown {
+  throw new Error("not implemented: buildSystemRunApprovalBinding");
 }
-
-export type { ExecApprovalRequest };
+export function matchSystemRunApprovalEnvHash(...args: unknown[]): unknown {
+  throw new Error("not implemented: matchSystemRunApprovalEnvHash");
+}
+export function matchSystemRunApprovalBinding(...args: unknown[]): unknown {
+  throw new Error("not implemented: matchSystemRunApprovalBinding");
+}
+export function missingSystemRunApprovalBinding(...args: unknown[]): unknown {
+  throw new Error("not implemented: missingSystemRunApprovalBinding");
+}
+export function toSystemRunApprovalMismatchError(...args: unknown[]): unknown {
+  throw new Error("not implemented: toSystemRunApprovalMismatchError");
+}

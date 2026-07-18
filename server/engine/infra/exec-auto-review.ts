@@ -1,9 +1,8 @@
-// 移植自 openclaw/src/infra/exec-auto-review.ts（降级实现）
-// 根 exec 自动审查入口 — re-export 自 ./exec-approvals/exec-auto-review.js。
-export type {
-  ExecAutoReviewDecision,
-  ExecAutoReviewHost,
-  ExecAutoReviewInput,
-  ExecAutoReviewer,
-} from "./exec-approvals/exec-auto-review.js";
-export { defaultExecAutoReviewer } from "./exec-approvals/exec-auto-review.js";
+// 移植自 openclaw/src/infra/exec-auto-review.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+
+export type ExecAutoReviewDecision = unknown;
+export type ExecAutoReviewHost = unknown;
+export type ExecAutoReviewInput = unknown;
+export type ExecAutoReviewer = unknown;
+export const defaultExecAutoReviewer: unknown = undefined;

@@ -496,3 +496,132 @@ export {
   type ChannelProgressDraftCompositorLine,
   type ChannelProgressDraftUpdateOptions,
 } from './progress-draft-compositor.js';
+
+
+// ============================================================
+// 重度降级 stub 移植（移植自 openclaw/src/channels/plugins 等）
+// 说明：以下文件以 not implemented stub 形式移植，仅保证类型/导出存在。
+// ============================================================
+export * from './account-action-gate.js';
+export * from './acp-configured-binding-consumer.js';
+export * from './acp-stateful-target-driver.js';
+export * from './acp-stateful-target-reset.runtime.js';
+// export * from './approval-native.types.js';  // TS2308 冲突，跳过
+export * from './approvals.js';
+export * from './binding-provider.js';
+// export * from './binding-registry.js';  // TS2308 冲突，跳过
+export * from './binding-routing.js';
+export * from './binding-targets.js';
+export * from './binding-types.js';
+export * from './bootstrap-registry.js';
+// export * from './bundled-channel-plugin-loader.js';  // TS2308 冲突，跳过
+export * from './bundled-ids.js';
+export * from './bundled-root.js';
+// export * from './bundled.js';  // TS2308 冲突，跳过
+export * from './catalog.js';
+export * from './channel-catalog-contract.js';
+// export * from './channel-id.types.js';  // TS2308 冲突，跳过
+export * from './channel-meta.js';
+export * from './channel-plugin-catalog-contract-suites.js';
+export * from './channel-runtime-surface.types.js';
+export * from './config-schema.js';
+export * from './config-write-contract-suites.js';
+export * from './config-write-policy-shared.js';
+export * from './config-writes.js';
+export * from './configured-binding-builtins.js';
+export * from './configured-binding-compiler.js';
+export * from './configured-binding-consumers.js';
+export * from './configured-binding-match.js';
+export * from './configured-binding-registry.js';
+export * from './configured-binding-session-lookup.js';
+export * from './configured-state.js';
+export * from './conversation-bindings.js';
+export * from './decision.js';
+export * from './direct-text-media.js';
+export * from './directory-config-helpers.js';
+export * from './directory-types.js';
+export * from './dm-access.js';
+export * from './dm-allow-state.js';
+export * from './doctor-contract-api.js';
+export * from './effective-allow-from.js';
+export * from './exec-approval-local.js';
+export * from './gateway-auth-bypass.js';
+export * from './group-policy-contract-suites.js';
+export * from './group-policy-contract.js';
+export * from './group-policy-warnings.js';
+export * from './helpers.js';
+export * from './inbound-testkit.js';
+// export * from './interactive.js';  // TS2308 冲突，跳过
+export * from './legacy-config.js';
+// export * from './legacy-state-migration.types.js';  // TS2308 冲突，跳过
+export * from './lifecycle-startup.js';
+export * from './live.js';
+// export * from './load.js';  // TS2308 冲突，跳过
+export * from './load.types.js';
+export * from './manifest.js';
+export * from './media-limits.js';
+export * from './message-action-discovery.js';
+export * from './message-action-dispatch.js';
+// export * from './message-action-names.js';  // TS2308 冲突，跳过
+// export * from './message-capabilities.js';  // TS2308 冲突，跳过
+export * from './message-tool-api.js';
+export * from './meta-normalization.js';
+export * from './native-approval-prompt.js';
+export * from './outbound-bridge.js';
+export * from './outbound-payload-testkit.js';
+// export * from './outbound.types.js';  // TS2308 冲突，跳过
+export * from './package-state-probes.js';
+export * from './pairing-message.js';
+// export * from './pairing.js';  // TS2308 冲突，跳过
+// export * from './pairing.types.js';  // TS2308 冲突，跳过
+export * from './persisted-auth-state.js';
+export * from './presentation-limits.js';
+export * from './reaction-message-id.js';
+export * from './read-model.js';
+// export * from './read-only-command-defaults.js';  // TS2308 冲突，跳过
+export * from './read-only.js';
+export * from './receipt.js';
+export * from './registry-backed-contract-shards.js';
+export * from './registry-loaded-read.js';
+export * from './registry-loaded.js';
+export * from './registry-loader.js';
+export * from './registry-plugin.js';
+export * from './registry-session-binding.js';
+export * from './resolve-utils.js';
+export * from './runtime-access-groups.js';
+export * from './runtime-artifacts.js';
+export * from './runtime-forwarders.js';
+export * from './runtime-identity.js';
+export * from './runtime.js';
+export * from './sender-gates.js';
+export * from './session-binding-registry-backed-contract.js';
+export * from './session-conversation.js';
+export * from './session-thread-info-loaded.js';
+export * from './setup-group-access-configure.js';
+export * from './setup-group-access.js';
+export * from './setup-promotion-helpers.js';
+export * from './setup-promotion-keys.js';
+export * from './setup-registry.js';
+export * from './setup-wizard-binary.js';
+export * from './setup-wizard-helpers.js';
+export * from './setup-wizard-proxy.js';
+// export * from './setup-wizard-types.js';  // TS2308 冲突，跳过
+export * from './setup-wizard.js';
+export * from './shared.js';
+export * from './stateful-target-builtins.js';
+export * from './stateful-target-drivers.js';
+export * from './status-state.js';
+export * from './status.js';
+export * from './store-allow-from.js';
+export * from './surface-contract-registry.js';
+export * from './surface-contract-suite.js';
+export * from './target-parsing-loaded.js';
+export * from './test-helpers.js';
+export * from './thread-binding-api.js';
+export * from './threading-directory-contract-suites.js';
+export * from './tts-capabilities.js';
+// export * from './types.adapters.js';  // TS2308 冲突，跳过
+// export * from './types.config.js';  // TS2308 冲突，跳过
+// export * from './types.core.js';  // TS2308 冲突，跳过
+// export * from './types.plugin.js';  // TS2308 冲突，跳过
+export * from './types.public.js';
