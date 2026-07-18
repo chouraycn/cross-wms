@@ -277,3 +277,25 @@ export {
   type InlineDirectiveParseResult,
   type DisplayMessageWithContent,
 } from './directive-tags.js';
+
+// 原型污染防护
+export { isBlockedObjectKey } from './prototype-keys.js';
+
+// Account id 规范化（用于路由匹配）
+export {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from './account-id.js';
+
+// Map 大小限制
+export { pruneMapToMaxSize } from './map-size.js';
+
+// JSON UTF-8 字节计数
+export {
+  jsonUtf8Bytes,
+  jsonUtf8BytesOrInfinity,
+  firstEnumerableOwnKeys,
+  boundedJsonUtf8Bytes,
+  type BoundedJsonUtf8Bytes,
+} from './json-utf8-bytes.js';

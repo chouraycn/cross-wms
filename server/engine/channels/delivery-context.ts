@@ -9,6 +9,7 @@ import {
   normalizeMessageChannel,
   isDeliverableMessageChannel,
 } from "./message-channel.js";
+import { normalizeOptionalAccountId } from "../infra/account-id.js";
 
 /** 规范化的通道投递目标 */
 export type DeliveryContext = {
@@ -45,12 +46,8 @@ export type DeliveryContextSessionSource = {
 };
 
 /** 规范化账户 ID */
-function normalizeAccountId(value?: string | null): string | undefined {
-  if (!value || typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed || undefined;
+function normalizeAccountField(value?: string | null): string | undefined {
+  return normalizeOptionalAccountId(value);
 }
 
 /** 规范化交付上下文 */
@@ -60,7 +57,7 @@ export function normalizeDeliveryContext(context?: DeliveryContext): DeliveryCon
   }
   const channel = normalizeMessageChannel(context.channel);
   const to = typeof context.to === "string" ? context.to.trim() : undefined;
-  const accountId = normalizeAccountId(context.accountId);
+  const accountId = normalizeAccountField(context.accountId);
   const threadId = context.threadId;
 
   if (!channel && !to && !accountId) {
