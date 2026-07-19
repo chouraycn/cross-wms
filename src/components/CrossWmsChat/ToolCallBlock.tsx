@@ -479,6 +479,9 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
 
   return (
     <Box
+      data-testid="tool-card"
+      data-tool={toolCall.name}
+      data-status={isRunning ? 'executing' : (isFailed ? 'completed' : 'completed')}
       sx={{
         borderRadius: '10px',
         border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,

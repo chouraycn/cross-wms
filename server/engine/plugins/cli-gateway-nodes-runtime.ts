@@ -5,7 +5,7 @@ import { addTimerTimeoutGraceMs } from './_stub_openclaw__normalization_core__nu
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
-} from "../../packages/gateway-protocol/src/client-info.js";
+} from "@cdf-know/gateway-protocol/client-info";
 import { callGateway } from "../gateway/call.js";
 import type { PluginRuntime } from './_stub_local__runtime__types.js';
 

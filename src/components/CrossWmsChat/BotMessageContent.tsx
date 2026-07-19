@@ -559,7 +559,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
       ) : msg.isStreaming ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Box data-testid="streaming-indicator" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <CircularProgress size={14} thickness={5} sx={{ color: gs.textDisabled }} />
           <Typography sx={{ fontSize: 13, color: gs.textDisabled, fontStyle: 'italic' }}>
             {msg.thinking ? '思考中...' : '发送中...'}
@@ -583,7 +583,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
 
           const errorMessage = serverError || '内容生成失败，请重试';
           return (
-            <Box sx={{
+            <Box data-testid="error-message" sx={{
               display: 'flex', alignItems: 'flex-start', gap: 0.75,
               p: 1, borderRadius: 1.5,
               bgcolor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2',

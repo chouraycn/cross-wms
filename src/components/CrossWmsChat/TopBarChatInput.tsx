@@ -1320,6 +1320,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               )}
               <div
                 ref={editableRef}
+                data-testid="chat-input"
                 contentEditable
                 suppressContentEditableWarning
                 onBeforeInput={handleBeforeInput}

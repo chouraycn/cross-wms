@@ -3,32 +3,21 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-// 降级：tsconfig module 非 esnext，不支持 import attributes，改用 readFileSync
-// 兼容 ESM 和 CJS：通过 eval 在 CJS 全局拿到 __filename；ESM 下使用 import.meta.url
-// 使用 eval('...') 规避 TS 的 import.meta 静态检查，并允许在 CJS 模式下取到 __filename
-const __filename_here: string = (() => {
-  try {
-    // CJS 环境下 __filename 为全局变量
-    // eslint-disable-next-line no-eval
-    const fn = eval("typeof __filename !== 'undefined' ? __filename : null");
-    if (fn) return fn;
-  } catch {
-    // ignore
-  }
-  // ESM 环境：动态使用 import.meta.url（用 require 避免 ts 错误）
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-    const { fileURLToPath } = require("node:url") as typeof import("node:url");
-    // @ts-expect-error - import.meta 在 ESM 下存在，CJS 下不会执行到此分支
-    return fileURLToPath(import.meta.url);
-  } catch {
-    // 兜底：使用 process.cwd()
-    return process.cwd();
-  }
-})();
+import { fileURLToPath } from "node:url";
+
+let __dirname_here: string;
+try {
+  // ESM 环境
+  // @ts-expect-error - import.meta 在 ESM 下存在
+  __dirname_here = dirname(fileURLToPath(import.meta.url));
+} catch {
+  // CJS 环境
+  // eslint-disable-next-line no-eval
+  __dirname_here = eval("typeof __dirname !== 'undefined' ? __dirname : process.cwd()");
+}
 
 const HOST_ENV_SECURITY_POLICY_JSON = JSON.parse(
-  readFileSync(join(dirname(__filename_here), "host-env-security-policy.json"), "utf-8"),
+  readFileSync(join(__dirname_here, "host-env-security-policy.json"), "utf-8"),
 ) as RawHostEnvSecurityPolicy;
 
 /** 主机环境安全策略类型 */

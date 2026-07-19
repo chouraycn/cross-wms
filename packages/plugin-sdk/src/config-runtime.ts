@@ -21,7 +21,8 @@
  * kept only during the transition before SQLite migration. Callers must
  * migrate away from reading sessions.json directly.
  */
-export const loadSessionStore = loadSessionStoreImpl;
+// TODO: 依赖模块未移植，暂注释
+// export const loadSessionStore = loadSessionStoreImpl;
 
 // export { resolveDefaultAgentId } from "../agents/agent-scope.js"; // TODO: 依赖模块未移植
 // export {

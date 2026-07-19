@@ -13,11 +13,13 @@
     "clean": "rm -rf dist",
     "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@cdf-know/normalization-core": "1.0.0"
+  },
   "devDependencies": {
     "@types/node": "^25.9.4",
     "typescript": "^5.9.3",
     "vite": "^7",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.7"
   }
 }

@@ -270,7 +270,7 @@ export type {
 // 注意：部分模块因依赖未移植而内容被注释，对应导出也需注释
 
 // export * from './browser-config';  // 模块内容被注释，无导出
-export * from './config-runtime';
+// export * from './config-runtime';  // 模块依赖未移植，无导出
 // export * from './exec-approvals-runtime';  // 模块内容被注释，无导出
 export * from './gateway-method-runtime';
 export * from './outbound-media';
