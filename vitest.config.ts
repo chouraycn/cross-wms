@@ -106,6 +106,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@src': path.resolve(__dirname, './src'),
+      '@openclaw/media-core': path.resolve(__dirname, './packages/media-core/src'),
     },
     conditions: ['node'],
   },

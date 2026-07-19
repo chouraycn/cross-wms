@@ -1,17 +1,58 @@
-/**
- * Resolves npm project roots for plugin package inspection.
- * 移植自 openclaw/src/plugins/npm-project-roots.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Resolves npm project roots for plugin package inspection.
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { resolvePluginNpmProjectsDir } from "./install-paths.js";
 
-export function listManagedPluginNpmProjectRootsSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: listManagedPluginNpmProjectRootsSync");
+function isMissing(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
-
-export function listManagedPluginNpmRootsSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: listManagedPluginNpmRootsSync");
+function sortPaths(paths: string[]): string[] {
+  return paths.toSorted((left, right) => left.localeCompare(right));
 }
 
+/** Lists project-level npm roots managed below the plugin npm root. */
+export function listManagedPluginNpmProjectRootsSync(npmRoot: string): string[] {
+  const projectsDir = resolvePluginNpmProjectsDir(npmRoot);
+  try {
+    return sortPaths(
+      fs
+        .readdirSync(projectsDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => path.join(projectsDir, entry.name)),
+    );
+  } catch (error) {
+    if (isMissing(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
 
+/** Async variant of project-level managed npm root discovery. */
+export async function listManagedPluginNpmProjectRoots(npmRoot: string): Promise<string[]> {
+  const projectsDir = resolvePluginNpmProjectsDir(npmRoot);
+  try {
+    return sortPaths(
+      (await fsp.readdir(projectsDir, { withFileTypes: true }))
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => path.join(projectsDir, entry.name)),
+    );
+  } catch (error) {
+    if (isMissing(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/** Returns the root npm install plus all managed project npm roots. */
+export function listManagedPluginNpmRootsSync(npmRoot: string): string[] {
+  return [npmRoot, ...listManagedPluginNpmProjectRootsSync(npmRoot)];
+}
+
+/** Async variant of managed npm root discovery. */
+export async function listManagedPluginNpmRoots(npmRoot: string): Promise<string[]> {
+  return [npmRoot, ...(await listManagedPluginNpmProjectRoots(npmRoot))];
+}

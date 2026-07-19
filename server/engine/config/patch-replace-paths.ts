@@ -1,9 +1,25 @@
-// 移植自 openclaw/src/config/patch-replace-paths.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/config/patch-replace-paths.ts
+// 已升级为真实实现
 
-export function normalizeConfigPatchReplacePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeConfigPatchReplacePath");
+// Normalizes config.patch replacePaths shared by Gateway and agent preflight checks.
+export function normalizeConfigPatchReplacePath(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.endsWith("[]")) {
+    return trimmed.slice(0, -2).replace(/\[\d+\](?=\.)/g, "[]");
+  }
+  return trimmed.replace(/\[\d+\](?=\.)/g, "[]");
 }
-export function normalizeConfigPatchReplacePaths(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeConfigPatchReplacePaths");
+
+export function normalizeConfigPatchReplacePaths(
+  values: readonly unknown[] | undefined,
+): Set<string> {
+  if (!values) {
+    return new Set();
+  }
+  return new Set(
+    values
+      .filter((value): value is string => typeof value === "string")
+      .map(normalizeConfigPatchReplacePath)
+      .filter((value) => value.length > 0),
+  );
 }

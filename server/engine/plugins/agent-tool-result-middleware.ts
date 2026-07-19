@@ -1,23 +1,83 @@
-/**
- * Applies plugin middleware to agent tool results at runtime boundaries.
- * 移植自 openclaw/src/plugins/agent-tool-result-middleware.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Applies plugin middleware to agent tool results at runtime boundaries.
+import type {
+  AgentToolResultMiddleware,
+  AgentToolResultMiddlewareOptions,
+  AgentToolResultMiddlewareRuntime,
+} from "./agent-tool-result-middleware-types.js";
+import { getActivePluginRegistry } from "./runtime.js";
 
-export const AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES: unknown = undefined;
+export const AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES = [
+  "openclaw",
+  "codex",
+] as const satisfies AgentToolResultMiddlewareRuntime[];
 
-export function normalizeAgentToolResultMiddlewareRuntimes(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeAgentToolResultMiddlewareRuntimes");
+const AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIME_SET = new Set<string>(
+  AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES,
+);
+
+const LEGACY_AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES = {
+  "codex-app-server": "codex",
+} as const satisfies Record<string, AgentToolResultMiddlewareRuntime>;
+
+function normalizeAgentToolResultMiddlewareRuntime(
+  runtime: string,
+): AgentToolResultMiddlewareRuntime | undefined {
+  const normalized = runtime.trim().toLowerCase();
+  const legacyRuntime =
+    LEGACY_AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES[
+      normalized as keyof typeof LEGACY_AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES
+    ];
+  if (legacyRuntime) {
+    return legacyRuntime;
+  }
+  return AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIME_SET.has(normalized)
+    ? (normalized as AgentToolResultMiddlewareRuntime)
+    : undefined;
 }
 
-export const normalizeAgentToolResultMiddlewareHarnesses: unknown = undefined;
-
-export function normalizeAgentToolResultMiddlewareRuntimeIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeAgentToolResultMiddlewareRuntimeIds");
+export function normalizeAgentToolResultMiddlewareRuntimes(
+  options?: AgentToolResultMiddlewareOptions,
+): AgentToolResultMiddlewareRuntime[] {
+  const requested = options?.runtimes ?? options?.harnesses;
+  if (!requested) {
+    return [...AGENT_TOOL_RESULT_MIDDLEWARE_RUNTIMES];
+  }
+  const normalized: AgentToolResultMiddlewareRuntime[] = [];
+  for (const runtime of requested) {
+    const value = normalizeAgentToolResultMiddlewareRuntime(runtime);
+    if (!value) {
+      continue;
+    }
+    if (!normalized.includes(value)) {
+      normalized.push(value);
+    }
+  }
+  return normalized;
 }
 
-export function listAgentToolResultMiddlewares(...args: unknown[]): unknown {
-  throw new Error("not implemented: listAgentToolResultMiddlewares");
+/** @deprecated Use normalizeAgentToolResultMiddlewareRuntimes. */
+export const normalizeAgentToolResultMiddlewareHarnesses =
+  normalizeAgentToolResultMiddlewareRuntimes;
+
+export function normalizeAgentToolResultMiddlewareRuntimeIds(
+  runtimes: readonly string[] | undefined,
+): AgentToolResultMiddlewareRuntime[] {
+  const normalized: AgentToolResultMiddlewareRuntime[] = [];
+  for (const runtime of runtimes ?? []) {
+    const value = normalizeAgentToolResultMiddlewareRuntime(runtime);
+    if (value && !normalized.includes(value)) {
+      normalized.push(value);
+    }
+  }
+  return normalized;
 }
 
+export function listAgentToolResultMiddlewares(
+  runtime: AgentToolResultMiddlewareRuntime,
+): AgentToolResultMiddleware[] {
+  return (
+    getActivePluginRegistry()
+      ?.agentToolResultMiddlewares?.filter((entry) => entry.runtimes.includes(runtime))
+      .map((entry) => entry.handler) ?? []
+  );
+}

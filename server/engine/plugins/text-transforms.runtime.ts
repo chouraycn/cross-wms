@@ -1,11 +1,14 @@
-/**
- * Runtime bridge for plugin-provided text transforms.
- * 移植自 openclaw/src/plugins/text-transforms.runtime.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+// Runtime bridge for plugin-provided text transforms.
+import { mergePluginTextTransforms } from "../agents/plugin-text-transforms.js";
+import { getActiveRuntimePluginRegistry } from "./active-runtime-registry.js";
+import type { PluginTextTransforms } from "./types.js";
 
-export function resolveRuntimeTextTransforms(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRuntimeTextTransforms");
+/** Resolves merged text transforms from the active runtime plugin registry. */
+export function resolveRuntimeTextTransforms(): PluginTextTransforms | undefined {
+  const registry = getActiveRuntimePluginRegistry();
+  const pluginTextTransforms = Array.isArray(registry?.textTransforms)
+    ? registry.textTransforms.map((entry) => entry.transforms)
+    : [];
+  return mergePluginTextTransforms(...pluginTextTransforms);
 }
-

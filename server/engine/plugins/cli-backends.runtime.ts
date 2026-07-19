@@ -1,13 +1,15 @@
-/**
- * Runtime bridge for plugin-provided CLI backends.
- * 移植自 openclaw/src/plugins/cli-backends.runtime.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Runtime bridge for plugin-provided CLI backends.
+import { getActiveRuntimePluginRegistry } from "./active-runtime-registry.js";
+import type { CliBackendPlugin } from "./cli-backend.types.js";
 
-export type PluginCliBackendEntry = unknown;
+/** Runtime CLI backend registration with owning plugin id. */
+export type PluginCliBackendEntry = CliBackendPlugin & {
+  pluginId: string;
+};
 
-export function resolveRuntimeCliBackends(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRuntimeCliBackends");
+/** Resolves CLI backends from the active runtime plugin registry. */
+export function resolveRuntimeCliBackends(): PluginCliBackendEntry[] {
+  return (getActiveRuntimePluginRegistry()?.cliBackends ?? []).map((entry) =>
+    Object.assign({}, entry.backend, { pluginId: entry.pluginId }),
+  );
 }
-

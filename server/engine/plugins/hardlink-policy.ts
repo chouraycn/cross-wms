@@ -1,15 +1,42 @@
-/**
- * * Enforces plugin root hardlink policy with bundled and immutable Nix-store exceptions.
- * 移植自 openclaw/src/plugins/hardlink-policy.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Enforces plugin root hardlink policy with bundled and immutable Nix-store exceptions. */
+import path from "node:path";
+import { resolveIsNixMode } from "../config/paths.js";
+import { safeRealpathSync } from "./path-safety.js";
+import type { PluginOrigin } from "./plugin-origin.types.js";
 
-export function isNixStorePluginRoot(...args: unknown[]): unknown {
-  throw new Error("not implemented: isNixStorePluginRoot");
+const NIX_STORE_ROOT = "/nix/store";
+
+// Hardlinks are rejected for user/config/workspace plugin roots by default. A
+// hardlinked file can appear to live under a plugin root while sharing an inode
+// with a file created elsewhere, which weakens the root-boundary checks used
+// before loading plugin code.
+//
+// Two roots are allowed:
+// - bundled: plugins shipped with OpenClaw itself, not user-installed code.
+// - /nix/store in OPENCLAW_NIX_MODE: immutable Nix package outputs, where
+//   hardlinked files are normal package-store layout rather than user mutation.
+/** Returns true when a plugin root resolves inside the immutable Nix store. */
+export function isNixStorePluginRoot(
+  rootDir: string,
+  realpathCache?: Map<string, string>,
+): boolean {
+  const rootRealPath = safeRealpathSync(rootDir, realpathCache) ?? path.resolve(rootDir);
+  return rootRealPath === NIX_STORE_ROOT || rootRealPath.startsWith(`${NIX_STORE_ROOT}/`);
 }
 
-export function shouldRejectHardlinkedPluginFiles(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldRejectHardlinkedPluginFiles");
+/** Decides whether plugin file hardlinks should fail boundary validation for one root. */
+export function shouldRejectHardlinkedPluginFiles(params: {
+  origin: PluginOrigin;
+  rootDir: string;
+  env?: NodeJS.ProcessEnv;
+  realpathCache?: Map<string, string>;
+}): boolean {
+  if (params.origin === "bundled") {
+    return false;
+  }
+  if (resolveIsNixMode(params.env) && isNixStorePluginRoot(params.rootDir, params.realpathCache)) {
+    return false;
+  }
+  return true;
 }
-

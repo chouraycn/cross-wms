@@ -1,14 +1,34 @@
-/**
- * Channel presence and gateway startup plugin id helpers.
- * 移植自 openclaw/src/plugins/channel-plugin-ids.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+/** Channel presence and gateway startup plugin id helpers. */
+export {
+  hasConfiguredChannelsForReadOnlyScope,
+  hasExplicitChannelConfig,
+  listConfiguredAnnounceChannelIdsForConfig,
+  listConfiguredChannelIdsForReadOnlyScope,
+  listExplicitConfiguredChannelIdsForConfig,
+  resolveConfiguredChannelPluginIds,
+  resolveConfiguredChannelPresencePolicy,
+  resolveDiscoverableScopedChannelPluginIds,
+  type ConfiguredChannelBlockedReason,
+  type ConfiguredChannelPresencePolicyEntry,
+  type ConfiguredChannelPresenceSource,
+} from "./channel-presence-policy.js";
 
-export function resolveChannelPluginIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveChannelPluginIds");
-}
-
-export function resolveConfiguredDeferredChannelPluginIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredDeferredChannelPluginIds");
-}
+export {
+  collectConfiguredMemoryEmbeddingProviderIds,
+  collectConfiguredMemoryEmbeddingStartupProviderOwners,
+  collectUnregisteredConfiguredMemoryEmbeddingProviders,
+  resolveChannelPluginIds,
+  resolveChannelPluginIdsFromRegistry,
+  resolveConfiguredDeferredChannelPluginIds,
+  resolveConfiguredDeferredChannelPluginIdsFromRegistry,
+  createConfigValidationMetadataPluginIdScope,
+  createGatewayStartupMetadataPluginIdScope,
+  isMetadataSnapshotScopedForGatewayStartup,
+  resolveConfigValidationMetadataPluginIds,
+  resolveGatewayStartupMetadataPluginIds,
+  loadGatewayStartupPluginPlan,
+  resolveGatewayStartupPluginIds,
+  resolveGatewayStartupPluginPlanFromRegistry,
+  resolveGatewayStartupPluginIdsFromRegistry,
+  type GatewayStartupPluginPlan,
+} from "./gateway-startup-plugin-ids.js";

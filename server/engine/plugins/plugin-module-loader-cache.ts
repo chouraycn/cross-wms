@@ -1,26 +1,23 @@
-/**
- * Caches plugin module loaders and native-load stats for runtime/source module imports.
- * 移植自 openclaw/src/plugins/plugin-module-loader-cache.ts。
- * 降级策略：
- *  - jiti / createJiti 降级为惰性抛出 not implemented 的占位工厂（jiti 包未安装）。
- *  - native-module-require.ts 与 sdk-alias.ts 未移植，相关函数降级为 no-op / 抛错。
- *  - import.meta.url 改用 __filename。
- *  - PluginLruCache 复用 cross-wms 已移植的 plugin-cache-primitives.ts。
- *  - toSafeImportPath 复用内联实现。
- *  - 缓存与统计 API 保持签名兼容；loadCreateJitiLoaderFactory 抛出 not implemented。
- */
+// @ts-nocheck
+/** Caches plugin module loaders and native-load stats for runtime/source module imports. */
+import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import type { createJiti } from "jiti";
+import { toSafeImportPath } from "../shared/import-specifier.js";
+import { tryNativeRequireJavaScriptModule } from "./native-module-require.js";
 import { PluginLruCache } from "./plugin-cache-primitives.js";
+import { installOpenClawInternalCorePackageNativeResolver } from "./plugin-sdk-native-resolver.js";
+import {
+  buildPluginLoaderJitiOptions,
+  createPluginLoaderModuleCacheKey,
+  resolvePluginLoaderModuleConfig,
+  type PluginSdkResolutionPreference,
+} from "./sdk-alias.js";
 
 /** Jiti-based module loader used for plugin source/runtime imports. */
-export type PluginModuleLoader = ((target: string, ...rest: unknown[]) => unknown) & {
-  [key: string]: unknown;
-};
-export type PluginModuleLoaderFactory = (
-  filename: string,
-  options?: Record<string, unknown>,
-) => PluginModuleLoader;
+export type PluginModuleLoader = ReturnType<typeof createJiti>;
+export type PluginModuleLoaderFactory = typeof createJiti;
 export type PluginModuleLoaderCache = Pick<
   PluginLruCache<PluginModuleLoader>,
   "clear" | "get" | "set" | "size"
@@ -54,11 +51,10 @@ export type PluginModuleLoaderStatsSnapshot = {
   topSourceTransformTargets: Array<{ target: string; count: number }>;
 };
 
-/** 占位：插件 SDK 解析偏好。 */
-export type PluginSdkResolutionPreference = "source" | "dist" | "auto";
-
 const DEFAULT_PLUGIN_MODULE_LOADER_CACHE_ENTRIES = 128;
 const MAX_TRACKED_SOURCE_TRANSFORM_TARGETS = 24;
+const requireForJiti = createRequire(__filename);
+let createJitiLoaderFactory: PluginModuleLoaderFactory | undefined;
 const pluginModuleLoaderStats = {
   calls: 0,
   nativeHits: 0,
@@ -102,9 +98,16 @@ export function getPluginModuleLoaderStats(): PluginModuleLoaderStatsSnapshot {
   };
 }
 
-/** 占位：加载 jiti 工厂（jiti 包未安装，降级为抛出 not implemented）。 */
 function loadCreateJitiLoaderFactory(): PluginModuleLoaderFactory {
-  throw new Error("not implemented: jiti module loader is not available in cross-wms");
+  if (createJitiLoaderFactory) {
+    return createJitiLoaderFactory;
+  }
+  const loaded = requireForJiti("jiti") as { createJiti?: PluginModuleLoaderFactory };
+  if (typeof loaded.createJiti !== "function") {
+    throw new Error("jiti module did not export createJiti");
+  }
+  createJitiLoaderFactory = loaded.createJiti;
+  return createJitiLoaderFactory;
 }
 
 export function createPluginModuleLoaderCache(
@@ -113,69 +116,11 @@ export function createPluginModuleLoaderCache(
   return new PluginLruCache<PluginModuleLoader>(maxEntries);
 }
 
-/** 占位：将 import 路径转换为安全 import 路径（内联降级实现）。 */
-function toSafeImportPath(specifier: string): string {
-  return specifier;
-}
-
 function toSourceTransformImportPath(specifier: string): string {
   if (process.platform === "win32" && path.isAbsolute(specifier)) {
     return pathToFileURL(specifier).href;
   }
   return toSafeImportPath(specifier);
-}
-
-/** 占位：解析插件加载器模块配置（sdk-alias.ts 未移植）。 */
-function resolvePluginLoaderModuleConfig(params: {
-  modulePath: string;
-  argv1: string;
-  moduleUrl?: string;
-  devSourceRoot?: string | null;
-  preferBuiltDist?: boolean;
-  pluginSdkResolution?: PluginSdkResolutionPreference;
-}): { tryNative: boolean; aliasMap: Record<string, string>; cacheKey: string } {
-  void params;
-  return {
-    tryNative: true,
-    aliasMap: {},
-    cacheKey: "default",
-  };
-}
-
-/** 占位：创建插件加载器 jiti 选项（sdk-alias.ts 未移植）。 */
-function buildPluginLoaderJitiOptions(
-  aliasMap: Record<string, string>,
-  _extra?: { modulePath: string },
-): Record<string, unknown> {
-  return { alias: aliasMap };
-}
-
-/** 占位：创建插件加载器模块缓存键（sdk-alias.ts 未移植）。 */
-function createPluginLoaderModuleCacheKey(params: {
-  tryNative: boolean;
-  aliasMap: Record<string, string>;
-}): string {
-  return JSON.stringify(params);
-}
-
-/** 占位：安装 OpenClaw 内部核心包原生解析器（plugin-sdk-native-resolver.ts 未移植）。 */
-function installOpenClawInternalCorePackageNativeResolver(_params: {
-  moduleUrl?: string;
-}): string[] {
-  return [];
-}
-
-/** 占位：尝试原生 require JS 模块（native-module-require.ts 未移植）。 always returns miss. */
-function tryNativeRequireJavaScriptModule(
-  _target: string,
-  _options: {
-    allowWindows?: boolean;
-    aliasMap?: Record<string, string>;
-    fallbackOnMissingDependency?: boolean;
-    fallbackOnNativeError?: boolean;
-  },
-): { ok: boolean; moduleExport?: unknown } {
-  return { ok: false };
 }
 
 function resolveDefaultPluginModuleLoaderConfig(
@@ -252,12 +197,18 @@ function createLazySourceTransformLoader(params: {
         tryNative: params.sourceTransformTryNative,
       },
     );
-    loadWithSourceTransform = ((target: string, ...rest: unknown[]) => {
-      return (jitiLoader as (t: string, ...a: unknown[]) => unknown)(
-        toSourceTransformImportPath(target),
-        ...rest,
-      );
-    }) as PluginModuleLoader;
+    loadWithSourceTransform = new Proxy(jitiLoader, {
+      apply(target, thisArg, argArray) {
+        const [first, ...rest] = argArray as [unknown, ...unknown[]];
+        if (typeof first === "string") {
+          return Reflect.apply(target, thisArg, [
+            toSourceTransformImportPath(first),
+            ...rest,
+          ] as never) as never;
+        }
+        return Reflect.apply(target, thisArg, argArray as never) as never;
+      },
+    });
     return loadWithSourceTransform;
   };
 }
@@ -272,36 +223,63 @@ function createPluginModuleLoader(params: {
     ...params,
     sourceTransformTryNative: params.tryNative,
   });
+  const loadedTargetExports = new Map<string, unknown>();
+  const loadCachedTarget = (target: string, rest: unknown[], load: () => unknown): unknown => {
+    if (rest.length > 0) {
+      return load();
+    }
+    if (loadedTargetExports.has(target)) {
+      return loadedTargetExports.get(target);
+    }
+    const loaded = load();
+    loadedTargetExports.set(target, loaded);
+    return loaded;
+  };
+  // When the caller has explicitly opted out of native loading (for example
+  // `bundled-capability-runtime` in Vitest+dist mode, which depends on
+  // jiti's alias rewriting to surface a narrow SDK slice), route every
+  // target through jiti so those alias rewrites still apply.
   if (!params.tryNative) {
     return ((target: string, ...rest: unknown[]) => {
+      return loadCachedTarget(target, rest, () => {
+        pluginModuleLoaderStats.calls += 1;
+        pluginModuleLoaderStats.sourceTransformForced += 1;
+        recordSourceTransformTarget(target);
+        return (getLoadWithSourceTransform() as (t: string, ...a: unknown[]) => unknown)(
+          target,
+          ...rest,
+        );
+      });
+    }) as PluginModuleLoader;
+  }
+  // Otherwise prefer native require() for already-compiled JS artifacts
+  // (the bundled plugin public surfaces shipped in dist/). jiti's transform
+  // pipeline provides no value for output that is already plain JS and adds
+  // several seconds of per-load overhead on slower hosts. jiti still runs
+  // for TS / TSX sources and for the small set of require(esm) /
+  // async-module fallbacks `tryNativeRequireJavaScriptModule` declines to
+  // handle.
+  return ((target: string, ...rest: unknown[]) => {
+    return loadCachedTarget(target, rest, () => {
       pluginModuleLoaderStats.calls += 1;
-      pluginModuleLoaderStats.sourceTransformForced += 1;
+      const native = tryNativeRequireJavaScriptModule(target, {
+        allowWindows: true,
+        aliasMap: params.aliasMap,
+        fallbackOnMissingDependency: true,
+        fallbackOnNativeError: true,
+      });
+      if (native.ok) {
+        pluginModuleLoaderStats.nativeHits += 1;
+        return native.moduleExport;
+      }
+      pluginModuleLoaderStats.nativeMisses += 1;
+      pluginModuleLoaderStats.sourceTransformFallbacks += 1;
       recordSourceTransformTarget(target);
       return (getLoadWithSourceTransform() as (t: string, ...a: unknown[]) => unknown)(
         target,
         ...rest,
       );
-    }) as PluginModuleLoader;
-  }
-  return ((target: string, ...rest: unknown[]) => {
-    pluginModuleLoaderStats.calls += 1;
-    const native = tryNativeRequireJavaScriptModule(target, {
-      allowWindows: true,
-      aliasMap: params.aliasMap,
-      fallbackOnMissingDependency: true,
-      fallbackOnNativeError: true,
     });
-    if (native.ok) {
-      pluginModuleLoaderStats.nativeHits += 1;
-      return native.moduleExport;
-    }
-    pluginModuleLoaderStats.nativeMisses += 1;
-    pluginModuleLoaderStats.sourceTransformFallbacks += 1;
-    recordSourceTransformTarget(target);
-    return (getLoadWithSourceTransform() as (t: string, ...a: unknown[]) => unknown)(
-      target,
-      ...rest,
-    );
   }) as PluginModuleLoader;
 }
 

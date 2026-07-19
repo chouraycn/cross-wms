@@ -1,21 +1,29 @@
-/**
- * Generates tiny plugin fixtures for plugin loader tests.
- * 移植自 openclaw/src/plugins/generated-plugin-test-helpers.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+// Generates tiny plugin fixtures for plugin loader tests.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach } from "vitest";
 
-export const pluginTestRepoRoot: unknown = undefined;
+export const pluginTestRepoRoot = path.resolve(import.meta.dirname, "../..");
 
-export function writeJson(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeJson");
+const tempDirs: string[] = [];
+
+export function writeJson(filePath: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-export function createGeneratedPluginTempRoot(...args: unknown[]): unknown {
-  throw new Error("not implemented: createGeneratedPluginTempRoot");
+export function createGeneratedPluginTempRoot(prefix: string): string {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  tempDirs.push(tempRoot);
+  return tempRoot;
 }
 
-export function installGeneratedPluginTempRootCleanup(...args: unknown[]): unknown {
-  throw new Error("not implemented: installGeneratedPluginTempRootCleanup");
+export function installGeneratedPluginTempRootCleanup() {
+  afterEach(() => {
+    for (const dir of tempDirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
 }
-

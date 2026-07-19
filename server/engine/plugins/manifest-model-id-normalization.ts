@@ -1,29 +1,101 @@
-/**
- * Normalizes provider model ids using manifest-declared normalization rules.
- *
- * 移植自 openclaw/src/plugins/manifest-model-id-normalization.ts。
- *
- * 降级策略：原文件依赖 @openclaw/model-catalog-core/model-catalog-refs、
- * @openclaw/normalization-core/string-coerce。运行时函数降级为返回原始 modelId。
- */
+// @ts-nocheck
+/** Applies manifest-declared model-id normalization policies to provider model refs. */
+import {
+  collectManifestModelIdNormalizationPolicies,
+  normalizeProviderModelIdWithPolicies,
+} from './_stub_openclaw__model_catalog_core__provider_model_id_normalization.js';
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
+import type { PluginManifestRecord } from "./manifest-registry.js";
+import type { PluginManifestModelIdNormalizationProvider } from "./manifest.js";
+import { resolvePluginMetadataSnapshot } from "./plugin-metadata-snapshot.js";
+import { getActivePluginRegistryWorkspaceDirFromState } from "./runtime-workspace-state.js";
 
-/** Normalizes a provider model id using manifest-declared normalization rules. */
+type ManifestModelIdNormalizationLookupParams = {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  plugins?: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];
+};
+
+type ManifestModelIdNormalizationPolicyCache = {
+  configFingerprint: string;
+  policies: Map<string, PluginManifestModelIdNormalizationProvider>;
+};
+
+let cachedPolicies: ManifestModelIdNormalizationPolicyCache | undefined;
+
+function resolveMetadataSnapshotForPolicies(
+  params: ManifestModelIdNormalizationLookupParams = {},
+): {
+  plugins: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];
+  configFingerprint?: string;
+  cacheable: boolean;
+} {
+  const env = params.env ?? process.env;
+  const workspaceDir = params.workspaceDir ?? getActivePluginRegistryWorkspaceDirFromState();
+  if (params.config === undefined) {
+    const currentSnapshot = getCurrentPluginMetadataSnapshot({
+      env,
+      workspaceDir,
+      allowWorkspaceScopedSnapshot: true,
+      requireDefaultDiscoveryContext: true,
+    });
+    if (currentSnapshot) {
+      return {
+        plugins: currentSnapshot.plugins,
+        configFingerprint: currentSnapshot.configFingerprint,
+        cacheable: true,
+      };
+    }
+  }
+  const snapshot = resolvePluginMetadataSnapshot({
+    config: params.config ?? {},
+    env,
+    workspaceDir,
+    allowWorkspaceScopedCurrent: true,
+  });
+  return {
+    plugins: snapshot.plugins,
+    configFingerprint: snapshot.configFingerprint,
+    cacheable: false,
+  };
+}
+
+function loadManifestModelIdNormalizationPolicies(
+  params: ManifestModelIdNormalizationLookupParams = {},
+): Map<string, PluginManifestModelIdNormalizationProvider> {
+  if (params.plugins) {
+    return collectManifestModelIdNormalizationPolicies(params.plugins);
+  }
+  const { plugins, configFingerprint, cacheable } = resolveMetadataSnapshotForPolicies(params);
+  if (cacheable && configFingerprint && cachedPolicies?.configFingerprint === configFingerprint) {
+    return cachedPolicies.policies;
+  }
+  const policies = collectManifestModelIdNormalizationPolicies(plugins);
+  if (cacheable && configFingerprint) {
+    cachedPolicies = { configFingerprint, policies };
+  }
+  return policies;
+}
+
+/** Normalizes a provider model id using plugin manifest-declared model-id policies. */
 export function normalizeProviderModelIdWithManifest(params: {
-  providerId: string | undefined;
-  modelId: string;
-  normalization?:
-    | {
-        providers?: Record<
-          string,
-          {
-            aliases?: Record<string, string>;
-            stripPrefixes?: string[];
-            prefixWhenBare?: string;
-          }
-        >;
-      }
-    | undefined;
-}): string {
-  void params;
-  throw new Error("not implemented: normalizeProviderModelIdWithManifest");
+  provider: string;
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  plugins?: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];
+  context: {
+    provider: string;
+    modelId: string;
+  };
+}): string | undefined {
+  return normalizeProviderModelIdWithPolicies({
+    provider: params.provider,
+    policies: loadManifestModelIdNormalizationPolicies(params),
+    context: {
+      modelId: params.context.modelId,
+    },
+  });
 }

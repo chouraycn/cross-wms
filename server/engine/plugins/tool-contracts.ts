@@ -1,19 +1,27 @@
-/**
- * Normalizes plugin tool contracts from manifest metadata.
- * 移植自 openclaw/src/plugins/tool-contracts.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Normalizes plugin tool contracts from manifest metadata.
+import type { PluginManifestContracts } from "./manifest.js";
 
-export function normalizePluginToolContractNames(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizePluginToolContractNames");
+export function normalizePluginToolContractNames(
+  contracts: Pick<PluginManifestContracts, "tools"> | undefined,
+): string[] {
+  return normalizePluginToolNames(contracts?.tools);
 }
 
-export function normalizePluginToolNames(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizePluginToolNames");
+export function normalizePluginToolNames(names: readonly string[] | undefined): string[] {
+  const normalized = new Set<string>();
+  for (const name of names ?? []) {
+    const trimmed = name.trim();
+    if (trimmed) {
+      normalized.add(trimmed);
+    }
+  }
+  return [...normalized];
 }
 
-export function findUndeclaredPluginToolNames(...args: unknown[]): unknown {
-  throw new Error("not implemented: findUndeclaredPluginToolNames");
+export function findUndeclaredPluginToolNames(params: {
+  declaredNames: readonly string[];
+  toolNames: readonly string[];
+}): string[] {
+  const declared = new Set(normalizePluginToolNames(params.declaredNames));
+  return normalizePluginToolNames(params.toolNames).filter((name) => !declared.has(name));
 }
-

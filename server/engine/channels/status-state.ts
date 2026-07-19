@@ -1,6 +1,18 @@
-// 移植自 openclaw/src/channels/plugins/status-state.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/channels/plugins/status-state.ts
+// 已升级为真实实现
 
-export function formatChannelStatusState(..._args: unknown[]): unknown {
-  throw new Error("not implemented: formatChannelStatusState");
+/**
+ * Human-readable channel status-state labels for status output.
+ */
+export function formatChannelStatusState(statusState: string): string {
+  switch (statusState) {
+    case "linked":
+      return "linked";
+    case "not-linked":
+      return "not linked";
+    case "unstable":
+      return "auth stabilizing";
+    default:
+      return statusState;
+  }
 }

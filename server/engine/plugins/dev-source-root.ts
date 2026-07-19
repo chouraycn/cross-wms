@@ -1,17 +1,57 @@
-/**
- * Resolves development source roots for local plugin installs.
- * 移植自 openclaw/src/plugins/dev-source-root.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Resolves development source roots for local plugin installs.
+import fs from "node:fs";
+import path from "node:path";
+import { resolveUserPath } from './_stub_parent__utils.js';
+import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
-export const OPENCLAW_DEV_SOURCE_ROOT_ENV: unknown = undefined;
+/** Env var that points bundled-plugin lookup at an OpenClaw source checkout. */
+export const OPENCLAW_DEV_SOURCE_ROOT_ENV = "OPENCLAW_DEV_SOURCE_ROOT";
 
-export function resolveOpenClawDevSourceRoot(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveOpenClawDevSourceRoot");
+function readPackageName(packageJsonPath: string): string | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as { name?: unknown };
+    return typeof parsed.name === "string" ? parsed.name : null;
+  } catch {
+    return null;
+  }
 }
 
-export function isBundledPluginInsideDevSourceRoot(...args: unknown[]): unknown {
-  throw new Error("not implemented: isBundledPluginInsideDevSourceRoot");
+/** Resolves and validates the configured OpenClaw development source root. */
+export function resolveOpenClawDevSourceRoot(env: NodeJS.ProcessEnv = process.env): string | null {
+  const rawRoot = env[OPENCLAW_DEV_SOURCE_ROOT_ENV]?.trim();
+  if (!rawRoot) {
+    return null;
+  }
+  const resolvedRoot = resolveUserPath(rawRoot, env);
+  const realRoot = safeRealpathSync(resolvedRoot);
+  if (!realRoot) {
+    return null;
+  }
+  if (readPackageName(path.join(realRoot, "package.json")) !== "openclaw") {
+    return null;
+  }
+  if (!fs.existsSync(path.join(realRoot, "src"))) {
+    return null;
+  }
+  if (!fs.existsSync(path.join(realRoot, "extensions"))) {
+    return null;
+  }
+  return realRoot;
 }
 
+/** True when a bundled plugin root is inside the configured development source root. */
+export function isBundledPluginInsideDevSourceRoot(params: {
+  rootDir: string;
+  env: NodeJS.ProcessEnv;
+}): boolean {
+  const devSourceRoot = resolveOpenClawDevSourceRoot(params.env);
+  if (!devSourceRoot) {
+    return false;
+  }
+  const extensionsRoot = safeRealpathSync(path.join(devSourceRoot, "extensions"));
+  const pluginRoot = safeRealpathSync(resolveUserPath(params.rootDir, params.env));
+  if (!extensionsRoot || !pluginRoot) {
+    return false;
+  }
+  return isPathInside(extensionsRoot, pluginRoot);
+}

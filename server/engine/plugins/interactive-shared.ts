@@ -1,23 +1,49 @@
-/**
- * Shares interactive plugin metadata normalization across registries.
- * 移植自 openclaw/src/plugins/interactive-shared.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Shares interactive plugin metadata normalization across registries.
+import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
 
-export function toPluginInteractiveRegistryKey(...args: unknown[]): unknown {
-  throw new Error("not implemented: toPluginInteractiveRegistryKey");
+export function toPluginInteractiveRegistryKey(channel: string, namespace: string): string {
+  return `${normalizeOptionalLowercaseString(channel) ?? ""}:${namespace.trim()}`;
 }
 
-export function normalizePluginInteractiveNamespace(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizePluginInteractiveNamespace");
+export function normalizePluginInteractiveNamespace(namespace: string): string {
+  return namespace.trim();
 }
 
-export function validatePluginInteractiveNamespace(...args: unknown[]): unknown {
-  throw new Error("not implemented: validatePluginInteractiveNamespace");
+export function validatePluginInteractiveNamespace(namespace: string): string | null {
+  if (!namespace.trim()) {
+    return "Interactive handler namespace cannot be empty";
+  }
+  if (!/^[A-Za-z0-9._-]+$/.test(namespace.trim())) {
+    return "Interactive handler namespace must contain only letters, numbers, dots, underscores, and hyphens";
+  }
+  return null;
 }
 
-export function resolvePluginInteractiveMatch(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginInteractiveMatch");
-}
+export function resolvePluginInteractiveMatch<TRegistration>(params: {
+  interactiveHandlers: Map<string, TRegistration>;
+  channel: string;
+  data: string;
+}): { registration: TRegistration; namespace: string; payload: string } | null {
+  const trimmedData = params.data.trim();
+  if (!trimmedData) {
+    return null;
+  }
 
+  const separatorIndex = trimmedData.indexOf(":");
+  const namespace =
+    separatorIndex >= 0
+      ? trimmedData.slice(0, separatorIndex)
+      : normalizePluginInteractiveNamespace(trimmedData);
+  const registration = params.interactiveHandlers.get(
+    toPluginInteractiveRegistryKey(params.channel, namespace),
+  );
+  if (!registration) {
+    return null;
+  }
+
+  return {
+    registration,
+    namespace,
+    payload: separatorIndex >= 0 ? trimmedData.slice(separatorIndex + 1) : "",
+  };
+}

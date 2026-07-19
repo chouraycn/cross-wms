@@ -1,19 +1,40 @@
-/**
- * * Tracks plugin API lifecycle callbacks registered during runtime activation.
- * 移植自 openclaw/src/plugins/api-lifecycle.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Tracks plugin API lifecycle callbacks registered during runtime activation. */
+import type { OpenClawPluginApi } from "./types.js";
 
-export type PluginApiMethodName = unknown;
+type FunctionPropertyNames<T> = Extract<
+  {
+    [K in keyof T]-?: Exclude<T[K], undefined> extends (...args: unknown[]) => unknown ? K : never;
+  }[keyof T],
+  string
+>;
 
-export type PluginApiLifecyclePolicy = unknown;
+/** Names of plugin API methods exposed on the OpenClaw plugin API. */
+export type PluginApiMethodName = FunctionPropertyNames<OpenClawPluginApi>;
 
-export function getPluginApiMethodLifecyclePolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: getPluginApiMethodLifecyclePolicy");
+/** Lifecycle policy for whether a plugin API method can be called after registration. */
+export type PluginApiLifecyclePolicy = {
+  phase: "registration" | "runtime";
+  lateCallable: boolean;
+};
+
+const PLUGIN_API_METHOD_POLICIES: Partial<Record<PluginApiMethodName, PluginApiLifecyclePolicy>> = {
+  emitAgentEvent: { phase: "runtime", lateCallable: true },
+  sendSessionAttachment: { phase: "runtime", lateCallable: true },
+  scheduleSessionTurn: { phase: "runtime", lateCallable: true },
+  unscheduleSessionTurnsByTag: { phase: "runtime", lateCallable: true },
+};
+
+/** Returns lifecycle policy for one plugin API method name. */
+export function getPluginApiMethodLifecyclePolicy(
+  methodName: string,
+): PluginApiLifecyclePolicy | undefined {
+  return PLUGIN_API_METHOD_POLICIES[methodName as PluginApiMethodName];
 }
 
-export function isLateCallablePluginApiMethod(...args: unknown[]): unknown {
-  throw new Error("not implemented: isLateCallablePluginApiMethod");
+/** True when a plugin API method remains callable after registration. */
+export function isLateCallablePluginApiMethod(
+  methodName: string,
+): methodName is PluginApiMethodName {
+  return getPluginApiMethodLifecyclePolicy(methodName)?.lateCallable === true;
 }
-

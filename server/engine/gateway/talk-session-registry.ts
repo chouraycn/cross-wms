@@ -1,30 +1,59 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+// 移植自 openclaw/openclaw/src/gateway/talk-session-registry.ts
+// 已升级为真实实现
+
 /**
- * 降级 stub — 移植自 openclaw/src/gateway/talk-session-registry.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
+ * Process-local registry that lets Talk protocol methods resolve opaque
+ * `sessionId` values to the concrete relay or managed-room backend.
  */
+export type UnifiedTalkSessionRecord =
+  | {
+      kind: "realtime-relay";
+      connId: string;
+      relaySessionId: string;
+    }
+  | {
+      kind: "transcription-relay";
+      connId: string;
+      transcriptionSessionId: string;
+    }
+  | {
+      kind: "managed-room";
+      handoffId: string;
+      token: string;
+      roomId: string;
+    };
 
-export type UnifiedTalkSessionRecord = unknown;
+const unifiedTalkSessions = new Map<string, UnifiedTalkSessionRecord>();
 
-export function rememberUnifiedTalkSession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] rememberUnifiedTalkSession not implemented");
+/** Associates a public Talk session id with its concrete gateway backend. */
+export function rememberUnifiedTalkSession(
+  sessionId: string,
+  session: UnifiedTalkSessionRecord,
+): void {
+  unifiedTalkSessions.set(sessionId, session);
 }
 
-export function getUnifiedTalkSession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getUnifiedTalkSession not implemented");
+/** Resolves a Talk session id or throws the protocol-facing unknown-session error. */
+export function getUnifiedTalkSession(sessionId: string): UnifiedTalkSessionRecord {
+  const session = unifiedTalkSessions.get(sessionId);
+  if (!session) {
+    throw new Error("Unknown Talk session");
+  }
+  return session;
 }
 
-export function forgetUnifiedTalkSession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] forgetUnifiedTalkSession not implemented");
+/** Removes a Talk session id after the concrete backend closes. */
+export function forgetUnifiedTalkSession(sessionId: string): void {
+  unifiedTalkSessions.delete(sessionId);
 }
 
-export function requireUnifiedTalkSessionConn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] requireUnifiedTalkSessionConn not implemented");
+/** Enforces that a relay-backed Talk session is controlled by its owner socket. */
+export function requireUnifiedTalkSessionConn(
+  session: Extract<UnifiedTalkSessionRecord, { connId: string }>,
+  connId: string | undefined,
+): string {
+  if (!connId || session.connId !== connId) {
+    throw new Error("Talk session is not owned by this connection");
+  }
+  return connId;
 }

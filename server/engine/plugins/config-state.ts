@@ -1,53 +1,224 @@
-/**
- * * Normalizes plugin config and resolves effective enablement, slots, and activation sources.
- * 移植自 openclaw/src/plugins/config-state.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Normalizes plugin config and resolves effective enablement, slots, and activation sources. */
+import {
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from './_stub_openclaw__normalization_core__string_coerce.js';
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  createEffectiveEnableStateResolver,
+  createPluginEnableStateResolver,
+  resolveMemorySlotDecisionShared,
+  resolvePluginActivationDecisionShared,
+  toPluginActivationState,
+  type PluginActivationConfigSourceLike,
+  type PluginActivationSource,
+  type PluginActivationStateLike,
+} from "./config-activation-shared.js";
+import {
+  hasExplicitPluginConfig as hasExplicitPluginConfigShared,
+  isBundledChannelEnabledByChannelConfig as isBundledChannelEnabledByChannelConfigShared,
+  normalizePluginsConfigWithResolver,
+  type NormalizePluginId,
+  type NormalizedPluginsConfig as SharedNormalizedPluginsConfig,
+} from "./config-normalization-shared.js";
+import type { PluginOrigin } from "./plugin-origin.types.js";
+import { defaultSlotIdForKey } from "./slots.js";
 
-// Re-export: export type { PluginActivationSource };
+export type { PluginActivationSource };
+export type PluginActivationState = PluginActivationStateLike;
 
-export type PluginActivationState = unknown;
+export type PluginActivationConfigSource = {
+  plugins: NormalizedPluginsConfig;
+  rootConfig?: OpenClawConfig;
+} & PluginActivationConfigSourceLike<OpenClawConfig>;
 
-export type PluginActivationConfigSource = unknown;
+export type NormalizedPluginsConfig = SharedNormalizedPluginsConfig;
 
-export type NormalizedPluginsConfig = unknown;
+const BUILT_IN_PLUGIN_ALIAS_FALLBACKS: ReadonlyArray<readonly [alias: string, pluginId: string]> = [
+  ["google-gemini-cli", "google"],
+  ["minimax-portal", "minimax"],
+  ["minimax-portal-auth", "minimax"],
+] as const;
+const BUILT_IN_PLUGIN_ALIAS_LOOKUP = new Map<string, string>([
+  ...BUILT_IN_PLUGIN_ALIAS_FALLBACKS,
+  ...BUILT_IN_PLUGIN_ALIAS_FALLBACKS.map(([, pluginId]) => [pluginId, pluginId] as const),
+]);
 
-export function normalizePluginId(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizePluginId");
+function getBundledPluginAliasLookup(): ReadonlyMap<string, string> {
+  const lookup = new Map<string, string>();
+  for (const [alias, pluginId] of BUILT_IN_PLUGIN_ALIAS_FALLBACKS) {
+    lookup.set(alias, pluginId);
+  }
+  return lookup;
 }
 
-export const normalizePluginsConfig: unknown = undefined;
-
-export function createPluginActivationSource(...args: unknown[]): unknown {
-  throw new Error("not implemented: createPluginActivationSource");
+function normalizePluginIdWithLookup(
+  id: string,
+  getAliasLookup: () => ReadonlyMap<string, string>,
+): string {
+  const trimmed = normalizeOptionalString(id) ?? "";
+  const normalized = normalizeOptionalLowercaseString(trimmed) ?? "";
+  const builtInAlias = BUILT_IN_PLUGIN_ALIAS_LOOKUP.get(normalized);
+  if (builtInAlias) {
+    return builtInAlias;
+  }
+  return getAliasLookup().get(normalized) ?? trimmed;
 }
 
-export const hasExplicitPluginConfig: unknown = undefined;
-
-export function applyTestPluginDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyTestPluginDefaults");
+function createScopedPluginIdNormalizer(): NormalizePluginId {
+  let lookup: ReadonlyMap<string, string> | undefined;
+  return (id) =>
+    normalizePluginIdWithLookup(id, () => {
+      lookup ??= getBundledPluginAliasLookup();
+      return lookup;
+    });
 }
 
-export function isTestDefaultMemorySlotDisabled(...args: unknown[]): unknown {
-  throw new Error("not implemented: isTestDefaultMemorySlotDisabled");
+/** Normalizes user/config plugin ids into the canonical lowercase key form. */
+export function normalizePluginId(id: string): string {
+  return normalizePluginIdWithLookup(id, getBundledPluginAliasLookup);
 }
 
-export function resolvePluginActivationState(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginActivationState");
+export const normalizePluginsConfig = (
+  config?: OpenClawConfig["plugins"],
+): NormalizedPluginsConfig => {
+  return normalizePluginsConfigWithResolver(config, createScopedPluginIdNormalizer());
+};
+
+export function createPluginActivationSource(params: {
+  config?: OpenClawConfig;
+  plugins?: NormalizedPluginsConfig;
+}): PluginActivationConfigSource {
+  return {
+    plugins: params.plugins ?? normalizePluginsConfig(params.config?.plugins),
+    rootConfig: params.config,
+  };
 }
 
-export const resolveEnableState: unknown = undefined;
+const hasExplicitMemorySlot = (plugins?: OpenClawConfig["plugins"]) =>
+  Boolean(plugins?.slots && Object.hasOwn(plugins.slots, "memory"));
 
-export const isBundledChannelEnabledByChannelConfig: unknown = undefined;
+const hasExplicitMemoryEntry = (plugins?: OpenClawConfig["plugins"]) =>
+  Boolean(plugins?.entries && Object.hasOwn(plugins.entries, defaultSlotIdForKey("memory")));
 
-export const resolveEffectiveEnableState: unknown = undefined;
+export const hasExplicitPluginConfig = (plugins?: OpenClawConfig["plugins"]) =>
+  hasExplicitPluginConfigShared(plugins);
 
-export function resolveEffectivePluginActivationState(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEffectivePluginActivationState");
+export function applyTestPluginDefaults(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): OpenClawConfig {
+  if (!env.VITEST) {
+    return cfg;
+  }
+  const plugins = cfg.plugins;
+  const explicitConfig = hasExplicitPluginConfig(plugins);
+  if (explicitConfig) {
+    if (hasExplicitMemorySlot(plugins) || hasExplicitMemoryEntry(plugins)) {
+      return cfg;
+    }
+    return {
+      ...cfg,
+      plugins: {
+        ...plugins,
+        slots: {
+          ...plugins?.slots,
+          memory: "none",
+        },
+      },
+    };
+  }
+
+  return {
+    ...cfg,
+    plugins: {
+      ...plugins,
+      enabled: false,
+      slots: {
+        ...plugins?.slots,
+        memory: "none",
+      },
+    },
+  };
 }
 
-export function resolveMemorySlotDecision(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveMemorySlotDecision");
+export function isTestDefaultMemorySlotDisabled(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (!env.VITEST) {
+    return false;
+  }
+  const plugins = cfg.plugins;
+  if (hasExplicitMemorySlot(plugins) || hasExplicitMemoryEntry(plugins)) {
+    return false;
+  }
+  return true;
 }
 
+export function resolvePluginActivationState(params: {
+  id: string;
+  origin: PluginOrigin;
+  config: NormalizedPluginsConfig;
+  rootConfig?: OpenClawConfig;
+  enabledByDefault?: boolean;
+  activationSource?: PluginActivationConfigSource;
+  autoEnabledReason?: string;
+}): PluginActivationState {
+  return toPluginActivationState(
+    resolvePluginActivationDecisionShared({
+      ...params,
+      activationSource:
+        params.activationSource ??
+        createPluginActivationSource({
+          config: params.rootConfig,
+          plugins: params.config,
+        }),
+      allowBundledChannelExplicitBypassesAllowlist: true,
+      isBundledChannelEnabledByChannelConfig,
+    }),
+  );
+}
+
+export const resolveEnableState = createPluginEnableStateResolver<
+  NormalizedPluginsConfig,
+  PluginOrigin
+>(resolvePluginActivationState);
+
+export const isBundledChannelEnabledByChannelConfig = isBundledChannelEnabledByChannelConfigShared;
+
+type EffectiveActivationParams = {
+  id: string;
+  origin: PluginOrigin;
+  config: NormalizedPluginsConfig;
+  rootConfig?: OpenClawConfig;
+  enabledByDefault?: boolean;
+  activationSource?: PluginActivationConfigSource;
+};
+
+export const resolveEffectiveEnableState =
+  createEffectiveEnableStateResolver<EffectiveActivationParams>(
+    resolveEffectivePluginActivationState,
+  );
+
+export function resolveEffectivePluginActivationState(params: {
+  id: EffectiveActivationParams["id"];
+  origin: EffectiveActivationParams["origin"];
+  config: EffectiveActivationParams["config"];
+  rootConfig?: EffectiveActivationParams["rootConfig"];
+  enabledByDefault?: EffectiveActivationParams["enabledByDefault"];
+  activationSource?: EffectiveActivationParams["activationSource"];
+  autoEnabledReason?: string;
+}): PluginActivationState {
+  return resolvePluginActivationState(params);
+}
+
+export function resolveMemorySlotDecision(params: {
+  id: string;
+  kind?: string | string[];
+  slot: string | null | undefined;
+  selectedId: string | null;
+}): { enabled: boolean; reason?: string; selected?: boolean } {
+  return resolveMemorySlotDecisionShared(params);
+}

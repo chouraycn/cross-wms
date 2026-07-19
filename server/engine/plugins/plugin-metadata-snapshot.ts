@@ -548,7 +548,7 @@ function buildPluginMetadataOwnerMaps(
       appendOwner(setupProviders, setupProvider.id, plugin.id);
     }
     for (const commandAlias of plugin.commandAliases ?? []) {
-      appendOwner(commandAliases, commandAlias.alias, plugin.id);
+      appendOwner(commandAliases, commandAlias.name, plugin.id);
     }
     for (const [contract, values] of Object.entries(plugin.contracts ?? {})) {
       if (Array.isArray(values) && values.length > 0) {

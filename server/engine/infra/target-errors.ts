@@ -1,21 +1,52 @@
-// 移植自 openclaw/src/infra/target-errors.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/infra/outbound/target-errors.ts
+// 已升级为真实实现
 
-export function missingTargetMessage(...args: unknown[]): unknown {
-  throw new Error("not implemented: missingTargetMessage");
+/**
+ * Formats the user-facing error shown when no target is available.
+ */
+export function missingTargetMessage(provider: string, hint?: string): string {
+  return `Delivering to ${provider} requires target${formatTargetHint(hint)}`;
 }
-export function missingTargetError(...args: unknown[]): unknown {
-  throw new Error("not implemented: missingTargetError");
+
+/**
+ * Builds an Error for missing outbound target failures.
+ */
+export function missingTargetError(provider: string, hint?: string): Error {
+  return new Error(missingTargetMessage(provider, hint));
 }
-export function ambiguousTargetMessage(...args: unknown[]): unknown {
-  throw new Error("not implemented: ambiguousTargetMessage");
+
+/**
+ * Formats the user-facing error shown when a target name resolves ambiguously.
+ */
+export function ambiguousTargetMessage(provider: string, raw: string, hint?: string): string {
+  return `Ambiguous target "${raw}" for ${provider}. Provide a unique name or an explicit id.${formatTargetHint(hint, true)}`;
 }
-export function ambiguousTargetError(...args: unknown[]): unknown {
-  throw new Error("not implemented: ambiguousTargetError");
+
+/**
+ * Builds an Error for ambiguous outbound target failures.
+ */
+export function ambiguousTargetError(provider: string, raw: string, hint?: string): Error {
+  return new Error(ambiguousTargetMessage(provider, raw, hint));
 }
-export function unknownTargetMessage(...args: unknown[]): unknown {
-  throw new Error("not implemented: unknownTargetMessage");
+
+/**
+ * Formats the user-facing error shown when no target matches the input.
+ */
+export function unknownTargetMessage(provider: string, raw: string, hint?: string): string {
+  return `Unknown target "${raw}" for ${provider}.${formatTargetHint(hint, true)}`;
 }
-export function unknownTargetError(...args: unknown[]): unknown {
-  throw new Error("not implemented: unknownTargetError");
+
+/**
+ * Builds an Error for unknown outbound target failures.
+ */
+export function unknownTargetError(provider: string, raw: string, hint?: string): Error {
+  return new Error(unknownTargetMessage(provider, raw, hint));
+}
+
+function formatTargetHint(hint?: string, withLabel = false): string {
+  const normalized = hint?.trim();
+  if (!normalized) {
+    return "";
+  }
+  return withLabel ? ` Hint: ${normalized}` : ` ${normalized}`;
 }

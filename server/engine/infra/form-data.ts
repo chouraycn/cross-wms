@@ -1,6 +1,11 @@
-// 移植自 openclaw/src/infra/form-data.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/infra/net/form-data.ts
+// 已升级为真实实现
 
-export function isFormDataLike(...args: unknown[]): unknown {
-  throw new Error("not implemented: isFormDataLike");
+export function isFormDataLike(value: unknown): value is FormData {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).entries === "function" &&
+    (value as { [Symbol.toStringTag]?: unknown })[Symbol.toStringTag] === "FormData"
+  );
 }

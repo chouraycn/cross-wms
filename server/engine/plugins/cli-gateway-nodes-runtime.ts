@@ -1,15 +1,61 @@
-/**
- * * Provides plugin CLI node APIs by forwarding calls to the Gateway.
- * 移植自 openclaw/src/plugins/cli-gateway-nodes-runtime.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Provides plugin CLI node APIs by forwarding calls to the Gateway. */
+import { randomUUID } from "node:crypto";
+import { addTimerTimeoutGraceMs } from './_stub_openclaw__normalization_core__number_coercion.js';
+import {
+  GATEWAY_CLIENT_MODES,
+  GATEWAY_CLIENT_NAMES,
+} from "../../packages/gateway-protocol/src/client-info.js";
+import { callGateway } from "../gateway/call.js";
+import type { PluginRuntime } from './_stub_local__runtime__types.js';
 
-export function resolvePluginCliNodeInvokeGatewayTimeoutMs(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginCliNodeInvokeGatewayTimeoutMs");
+/** Adds Gateway timer grace for plugin CLI node invoke calls. */
+export function resolvePluginCliNodeInvokeGatewayTimeoutMs(
+  timeoutMs: number | undefined,
+): number | undefined {
+  return typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0
+    ? addTimerTimeoutGraceMs(timeoutMs)
+    : undefined;
 }
 
-export function createPluginCliGatewayNodesRuntime(...args: unknown[]): unknown {
-  throw new Error("not implemented: createPluginCliGatewayNodesRuntime");
+/** Creates the `runtime.nodes` implementation exposed to CLI plugin code. */
+export function createPluginCliGatewayNodesRuntime(): PluginRuntime["nodes"] {
+  return {
+    async list(params) {
+      const payload = await callGateway({
+        method: "node.list",
+        params: {},
+        clientName: GATEWAY_CLIENT_NAMES.CLI,
+        mode: GATEWAY_CLIENT_MODES.CLI,
+      });
+      const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
+      const filteredNodes =
+        params?.connected === true
+          ? nodes.filter(
+              (node) =>
+                node !== null &&
+                typeof node === "object" &&
+                (node as { connected?: unknown }).connected === true,
+            )
+          : nodes;
+      return {
+        nodes: filteredNodes as Awaited<ReturnType<PluginRuntime["nodes"]["list"]>>["nodes"],
+      };
+    },
+    async invoke(params) {
+      return await callGateway({
+        method: "node.invoke",
+        params: {
+          nodeId: params.nodeId,
+          command: params.command,
+          ...(params.params !== undefined && { params: params.params }),
+          timeoutMs: params.timeoutMs,
+          idempotencyKey: params.idempotencyKey || randomUUID(),
+        },
+        timeoutMs: resolvePluginCliNodeInvokeGatewayTimeoutMs(params.timeoutMs),
+        clientName: GATEWAY_CLIENT_NAMES.CLI,
+        mode: GATEWAY_CLIENT_MODES.CLI,
+      });
+    },
+  };
 }
-

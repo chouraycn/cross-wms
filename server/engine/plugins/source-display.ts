@@ -1,15 +1,51 @@
-/**
- * * Formats plugin source paths for user-facing status output.
- * 移植自 openclaw/src/plugins/source-display.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Formats plugin source paths for user-facing status output. */
+import path from "node:path";
+import { isPathInside } from "../infra/path-guards.js";
+import { shortenHomeInString } from './_stub_parent__utils.js';
+import type { PluginRecord } from "./registry.js";
+import type { PluginSourceRoots } from "./roots.js";
+export { resolvePluginSourceRoots } from "./roots.js";
+export type { PluginSourceRoots } from "./roots.js";
 
-export { resolvePluginRoots as resolvePluginSourceRoots } from "./roots.js";
-
-// Re-export: export type { PluginSourceRoots } from "./roots.js";
-
-export function formatPluginSourceForTable(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatPluginSourceForTable");
+function tryRelative(root: string, filePath: string): string | null {
+  if (!isPathInside(root, filePath)) {
+    return null;
+  }
+  const rel = path.relative(root, filePath);
+  if (!rel || rel === ".") {
+    return null;
+  }
+  // Normalize to forward slashes for display (path.relative uses backslashes on Windows)
+  return rel.replaceAll("\\", "/");
 }
 
+/** Formats a plugin source path for status tables using known source roots. */
+export function formatPluginSourceForTable(
+  plugin: Pick<PluginRecord, "source" | "origin">,
+  roots: PluginSourceRoots,
+): { value: string; rootKey?: keyof PluginSourceRoots } {
+  const raw = plugin.source;
+
+  if (plugin.origin === "bundled" && roots.stock) {
+    const rel = tryRelative(roots.stock, raw);
+    if (rel) {
+      return { value: `stock:${rel}`, rootKey: "stock" };
+    }
+  }
+  if (plugin.origin === "workspace" && roots.workspace) {
+    const rel = tryRelative(roots.workspace, raw);
+    if (rel) {
+      return { value: `workspace:${rel}`, rootKey: "workspace" };
+    }
+  }
+  if (plugin.origin === "global" && roots.global) {
+    const rel = tryRelative(roots.global, raw);
+    if (rel) {
+      return { value: `global:${rel}`, rootKey: "global" };
+    }
+  }
+
+  // Keep this stable/pasteable; only ~-shorten.
+  return { value: shortenHomeInString(raw) };
+}

@@ -1,15 +1,61 @@
-/**
- * Plugin module: embedding-provider-config.ts
- * 移植自 openclaw/src/plugins/embedding-provider-config.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-export function readConfiguredProviderApiId(...args: unknown[]): unknown {
-  throw new Error("not implemented: readConfiguredProviderApiId");
+type ConfiguredModelProvider = NonNullable<
+  NonNullable<OpenClawConfig["models"]>["providers"]
+>[string];
+const OPENAI_COMPATIBLE_EMBEDDING_PROVIDER_ID = "openai-compatible";
+const OPENAI_COMPATIBLE_MODEL_APIS = new Set(["openai-completions", "openai-responses"]);
+
+function resolveConfiguredProviderConfig(
+  providerId: string,
+  cfg?: OpenClawConfig,
+): ConfiguredModelProvider | undefined {
+  const providers = cfg?.models?.providers;
+  if (!providers) {
+    return undefined;
+  }
+  const normalized = normalizeProviderId(providerId);
+  return (
+    providers[providerId] ??
+    Object.entries(providers).find(
+      ([candidateId]) => normalizeProviderId(candidateId) === normalized,
+    )?.[1]
+  );
 }
 
-export function resolveConfiguredGenericEmbeddingProviderId(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredGenericEmbeddingProviderId");
+/** Reads a configured provider's backing API id when runtime lookup should follow an alias. */
+export function readConfiguredProviderApiId(params: {
+  providerId: string;
+  cfg?: OpenClawConfig;
+  resolveApiProviderId?: (normalizedApiId: string) => string | undefined;
+  resolveMissingApiProviderId?: (providerConfig: ConfiguredModelProvider) => string | undefined;
+}): string | undefined {
+  const providerConfig = resolveConfiguredProviderConfig(params.providerId, params.cfg);
+  if (!providerConfig) {
+    return undefined;
+  }
+  const normalized = normalizeProviderId(params.providerId);
+  const api = providerConfig.api?.trim();
+  const resolvedProviderId = api
+    ? (params.resolveApiProviderId?.(normalizeProviderId(api)) ?? normalizeProviderId(api))
+    : params.resolveMissingApiProviderId?.(providerConfig);
+  return resolvedProviderId && resolvedProviderId !== normalized ? resolvedProviderId : undefined;
 }
 
+export function resolveConfiguredGenericEmbeddingProviderId(
+  providerId: string,
+  cfg?: OpenClawConfig,
+): string | undefined {
+  return readConfiguredProviderApiId({
+    providerId,
+    cfg,
+    resolveApiProviderId: (normalizedApiId) =>
+      OPENAI_COMPATIBLE_MODEL_APIS.has(normalizedApiId)
+        ? OPENAI_COMPATIBLE_EMBEDDING_PROVIDER_ID
+        : normalizedApiId,
+    resolveMissingApiProviderId: (providerConfig) =>
+      providerConfig.baseUrl?.trim() ? OPENAI_COMPATIBLE_EMBEDDING_PROVIDER_ID : undefined,
+  });
+}

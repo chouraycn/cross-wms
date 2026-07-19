@@ -1,7 +1,19 @@
-// 移植自 openclaw/src/cli/suppress-deprecations.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// 移植自 openclaw/openclaw/src/cli/update-cli/suppress-deprecations.ts
+// 已升级为真实实现
 
-export function suppressDeprecations(..._args: unknown[]): unknown {
-  throw new Error("not implemented: suppressDeprecations");
+/**
+ * Suppress Node.js deprecation warnings.
+ *
+ * On Node.js v23+ `process.noDeprecation` may be a read-only property
+ * (defined via a getter on the prototype with no setter), so the
+ * assignment can throw. We fall back to the environment variable which
+ * achieves the same effect.
+ */
+export function suppressDeprecations(): void {
+  try {
+    process.noDeprecation = true;
+  } catch {
+    // read-only on Node v23+; NODE_NO_WARNINGS below covers this case
+  }
+  process.env.NODE_NO_WARNINGS = "1";
 }

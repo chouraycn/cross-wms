@@ -1,11 +1,21 @@
-/**
- * * Resolves the source config snapshot used for plugin activation policy decisions.
- * 移植自 openclaw/src/plugins/activation-source-config.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+/** Resolves the source config snapshot used for plugin activation policy decisions. */
+import {
+  getRuntimeConfigSnapshot,
+  getRuntimeConfigSourceSnapshot,
+} from "../config/runtime-snapshot.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-export function resolvePluginActivationSourceConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginActivationSourceConfig");
+/** Resolves the source config used for plugin activation policy decisions. */
+export function resolvePluginActivationSourceConfig(params: {
+  config?: OpenClawConfig;
+  activationSourceConfig?: OpenClawConfig;
+}): OpenClawConfig {
+  if (params.activationSourceConfig !== undefined) {
+    return params.activationSourceConfig;
+  }
+  const sourceSnapshot = getRuntimeConfigSourceSnapshot();
+  if (sourceSnapshot && params.config === getRuntimeConfigSnapshot()) {
+    return sourceSnapshot;
+  }
+  return params.config ?? {};
 }
-

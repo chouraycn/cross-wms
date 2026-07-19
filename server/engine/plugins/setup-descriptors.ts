@@ -1,15 +1,23 @@
-/**
- * Builds setup descriptors from plugin provider and manifest metadata.
- * 移植自 openclaw/src/plugins/setup-descriptors.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Builds setup descriptors from plugin provider and manifest metadata.
+import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import type { PluginManifestRecord } from "./manifest-registry.js";
 
-export function listSetupProviderIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: listSetupProviderIds");
+type SetupDescriptorRecord = Pick<
+  PluginManifestRecord,
+  "providers" | "cliBackends" | "providerAuthAliases" | "setup"
+>;
+
+/** Lists setup provider ids and auth aliases owned by one plugin manifest. */
+export function listSetupProviderIds(record: SetupDescriptorRecord): readonly string[] {
+  const providerIds = record.setup?.providers?.map((entry) => entry.id) ?? record.providers;
+  const normalizedProviderIds = new Set(providerIds.map(normalizeProviderId));
+  const aliases = Object.entries(record.providerAuthAliases ?? {})
+    .filter(([, target]) => normalizedProviderIds.has(normalizeProviderId(target)))
+    .map(([alias]) => alias);
+  return [...providerIds, ...aliases];
 }
 
-export function listSetupCliBackendIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: listSetupCliBackendIds");
+/** Lists setup CLI backend ids from setup metadata or manifest contribution ids. */
+export function listSetupCliBackendIds(record: SetupDescriptorRecord): readonly string[] {
+  return record.setup?.cliBackends ?? record.cliBackends;
 }
-
