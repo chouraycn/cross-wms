@@ -1,7 +1,8 @@
 export { TransportConfigSchema } from './types.js';
 export type { TransportConfig, TransportRequest, TransportResponse, TransportMessage, TransportEvent } from './types.js';
 
-export { TransportLayer, BaseTransportLayer } from './transport-layer.js';
+export type { TransportLayer } from './transport-layer.js';
+export { BaseTransportLayer } from './transport-layer.js';
 
 export { HttpTransport } from './http-transport.js';
 

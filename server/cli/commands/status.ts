@@ -148,6 +148,7 @@ function formatJsonOutput(status: SystemStatus): string {
       active_connections: status.activeConnections,
       active_sessions: status.activeSessions,
       active_runs: status.activeRuns,
+      active_agents: status.agents?.length ?? 0,
       queued_tasks: status.queuedTasks,
       active_cron_jobs: status.activeCronJobs,
       enabled_plugins: status.enabledPlugins,
@@ -174,6 +175,7 @@ function formatTextOutput(status: SystemStatus, verbose: boolean): string {
   lines.push(`    运行中任务: ${status.activeRuns} 个`);
   lines.push(`    队列任务:   ${status.queuedTasks} 个`);
   lines.push(`    定时任务:   ${status.activeCronJobs} 个 (active)`);
+  lines.push(`    子代理:     ${status.agents?.length ?? 0} 个`);
   lines.push(`    插件:       ${status.enabledPlugins} 个已启用`);
   lines.push(`    节点:       ${status.onlineNodes} 个在线`);
   lines.push(`    绑定数:     ${status.bindings} 个`);

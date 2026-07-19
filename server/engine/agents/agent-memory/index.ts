@@ -1,7 +1,8 @@
 export { MemoryEntrySchema, MemoryStoreConfigSchema } from './types.js';
 export type { MemoryEntry, MemoryStoreConfig, MemoryRetrievalOptions, MemoryRetentionPolicy } from './types.js';
 
-export { MemoryStore, BaseMemoryStore } from './memory-store.js';
+export type { MemoryStore } from './memory-store.js';
+export { BaseMemoryStore } from './memory-store.js';
 
 export { SqliteMemoryStore } from './memory-store.sqlite.js';
 

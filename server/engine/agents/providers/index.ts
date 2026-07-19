@@ -1,7 +1,8 @@
 export { ProviderConfigSchema } from './types.js';
 export type { ProviderConfig, ChatMessage, ChatCompletionOptions, ChatCompletionResult, EmbeddingOptions, EmbeddingResult } from './types.js';
 
-export { LlmProvider, BaseLlmProvider } from './base-provider.js';
+export type { LlmProvider } from './base-provider.js';
+export { BaseLlmProvider } from './base-provider.js';
 
 export { OpenAIProvider } from './openai-provider.js';
 

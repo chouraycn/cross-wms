@@ -1,5 +1,5 @@
 export * from "./types.js";
-export { WizardProgress } from "./types.js";
+export type { WizardProgress } from "./types.js";
 export * from "./prompts.js";
 export * from "./setup.js";
 export * from "./setup.gateway-config.js";
