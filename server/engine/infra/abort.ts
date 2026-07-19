@@ -1,6 +1,14 @@
-// 移植自 openclaw/src/infra/abort.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/infra/outbound/abort.ts
+// 已升级为真实实现
 
-export function throwIfAborted(...args: unknown[]): unknown {
-  throw new Error("not implemented: throwIfAborted");
+/**
+ * Throws an AbortError if the given signal has been aborted.
+ * Use at async checkpoints to support cancellation.
+ */
+export function throwIfAborted(abortSignal?: AbortSignal): void {
+  if (abortSignal?.aborted) {
+    const err = new Error("Operation aborted");
+    err.name = "AbortError";
+    throw err;
+  }
 }

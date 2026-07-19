@@ -1,10 +1,45 @@
-/**
- * Resolves preferred provider auth choices from config and plugin metadata.
- * 移植自 openclaw/src/plugins/provider-auth-choice-preference.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Resolves preferred provider auth choices from config and plugin metadata. */
+import { normalizeLegacyOnboardAuthChoice } from './_stub_parent__commands__auth_choice_legacy.js';
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveManifestProviderAuthChoice } from "./provider-auth-choices.js";
 
-export function resolvePreferredProviderAuthChoice(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePreferredProviderAuthChoice");
+function normalizeLegacyAuthChoice(choice: string, env?: NodeJS.ProcessEnv): string {
+  return normalizeLegacyOnboardAuthChoice(choice, { env }) ?? choice;
+}
+
+export async function resolvePreferredProviderForAuthChoice(params: {
+  choice: string;
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  includeUntrustedWorkspacePlugins?: boolean;
+}): Promise<string | undefined> {
+  const choice = normalizeLegacyAuthChoice(params.choice, params.env) ?? params.choice;
+  const manifestResolved = resolveManifestProviderAuthChoice(choice, params);
+  if (manifestResolved) {
+    return manifestResolved.providerId;
+  }
+
+  const { resolveProviderPluginChoice, resolvePluginProviders } =
+    await import("./provider-auth-choice.runtime.js");
+  const providers = resolvePluginProviders({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+    env: params.env,
+    mode: "setup",
+    includeUntrustedWorkspacePlugins: params.includeUntrustedWorkspacePlugins,
+  });
+  const pluginResolved = resolveProviderPluginChoice({
+    providers,
+    choice,
+  });
+  if (pluginResolved) {
+    return pluginResolved.provider.id;
+  }
+
+  if (choice === "custom-api-key") {
+    return "custom";
+  }
+  return undefined;
 }

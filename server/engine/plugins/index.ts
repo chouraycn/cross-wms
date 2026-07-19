@@ -506,14 +506,14 @@ export * from './manifest-tool-availability.js';
 export * from './host-hooks.js';
 export * from './host-hook-runtime.js';
 export * from './host-hook-state.js';
-export * from './host-hook-attachments.js';
+// export * from './host-hook-attachments.js';  // 依赖过多未移植模块：infra/outbound/message, channels/plugins 等
 export * from './host-hook-scheduled-turns.js';
 export * from './host-hook-cleanup.js';
 export * from './host-hook-cleanup-timeout.js';
 export * from './host-hook-json.js';
 export * from './host-tool-param-parsers.js';
 export * from './hook-agent-context.js';
-export * from './hook-before-agent-start.types.js';
+// export * from './hook-before-agent-start.types.js';  // TS2308: 冲突符号: PluginHookBeforeAgentStartEvent, PluginHookBeforeAgentStartResult, PluginHookBeforeModelResolveEvent, PluginHookBeforeModelResolveResult, PluginHookBeforePromptBuildEvent, PluginHookBeforePromptBuildResult
 export * from './hook-channel-context.types.js';
 export * from './hook-decision-types.js';
 export * from './hook-runner-global-state.js';
@@ -613,7 +613,7 @@ export * from './runtime-workspace-state.js';
 
 // plugin-* 聚类
 export * from './plugin-cache-primitives.js';
-export * from './plugin-control-plane-context.js';
+// export * from './plugin-control-plane-context.js';  // TS2308: 冲突符号: PluginSourceRoots
 // export * from './plugin-lookup-table.js';  // removed: TS2308 conflict
 export * from './plugin-metadata-lifecycle.js';
 export * from './plugin-metadata-snapshot.js';
@@ -694,7 +694,7 @@ export * from './codex-app-server-extension-factory.js';
 export * from './command-registration.js';
 export * from './command-registry-state.js';
 export * from './command-specs.js';
-export * from './commands.js';
+// export * from './commands.js';  // TS2308: 冲突符号: testing, __testing
 export * from './config-activation-shared.js';
 export * from './config-contract-matches.js';
 export * from './config-contracts.js';
@@ -702,7 +702,7 @@ export * from './config-contracts.js';
 // export * from './config-policy.js';  // removed: TS2308 conflict
 export * from './config-schema.js';
 export * from './config-state.js';
-export * from './conversation-binding.js';
+// export * from './conversation-binding.js';  // TS2308: 冲突符号: testing, __testing
 export * from './conversation-binding.types.js';
 export * from './current-plugin-metadata-snapshot.js';
 export * from './current-plugin-metadata-state.js';

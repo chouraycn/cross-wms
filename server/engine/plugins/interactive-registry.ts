@@ -1,37 +1,109 @@
-/**
- * Maintains interactive plugin registry entries discovered from manifests.
- * 移植自 openclaw/src/plugins/interactive-registry.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+// Maintains interactive plugin registry entries discovered from manifests.
+import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import {
+  normalizePluginInteractiveNamespace,
+  resolvePluginInteractiveMatch,
+  toPluginInteractiveRegistryKey,
+  validatePluginInteractiveNamespace,
+} from "./interactive-shared.js";
+import {
+  clearPluginInteractiveHandlerRegistrationsState,
+  clearPluginInteractiveHandlersState,
+  getPluginInteractiveHandlersState,
+  type RegisteredInteractiveHandler,
+} from "./interactive-state.js";
+import type { PluginInteractiveHandlerRegistration } from "./types.js";
 
-export type InteractiveRegistrationResult = unknown;
+/** Registration result for plugin interactive namespace handlers. */
+export type InteractiveRegistrationResult = {
+  ok: boolean;
+  error?: string;
+};
 
-export function resolvePluginInteractiveNamespaceMatch(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginInteractiveNamespaceMatch");
+/** Resolves a channel payload to a registered plugin interactive namespace handler. */
+export function resolvePluginInteractiveNamespaceMatch(
+  channel: string,
+  data: string,
+): { registration: RegisteredInteractiveHandler; namespace: string; payload: string } | null {
+  return resolvePluginInteractiveMatch({
+    interactiveHandlers: getPluginInteractiveHandlersState(),
+    channel,
+    data,
+  });
 }
 
-export function registerPluginInteractiveHandler(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerPluginInteractiveHandler");
+/** Registers one plugin interactive namespace for a channel. */
+export function registerPluginInteractiveHandler(
+  pluginId: string,
+  registration: PluginInteractiveHandlerRegistration,
+  opts?: { pluginName?: string; pluginRoot?: string },
+): InteractiveRegistrationResult {
+  const interactiveHandlers = getPluginInteractiveHandlersState();
+  const namespace = normalizePluginInteractiveNamespace(registration.namespace);
+  const validationError = validatePluginInteractiveNamespace(namespace);
+  if (validationError) {
+    return { ok: false, error: validationError };
+  }
+  const key = toPluginInteractiveRegistryKey(registration.channel, namespace);
+  const existing = interactiveHandlers.get(key);
+  if (existing) {
+    return {
+      ok: false,
+      error: `Interactive handler namespace "${namespace}" already registered by plugin "${existing.pluginId}"`,
+    };
+  }
+  interactiveHandlers.set(key, {
+    ...registration,
+    namespace,
+    channel: normalizeOptionalLowercaseString(registration.channel) ?? "",
+    pluginId,
+    pluginName: opts?.pluginName,
+    pluginRoot: opts?.pluginRoot,
+  });
+  return { ok: true };
 }
 
-export function clearPluginInteractiveHandlers(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearPluginInteractiveHandlers");
+/** Clears all active plugin interactive handlers. */
+export function clearPluginInteractiveHandlers(): void {
+  clearPluginInteractiveHandlersState();
 }
 
-export function clearPluginInteractiveHandlerRegistrations(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearPluginInteractiveHandlerRegistrations");
+/** Clears stored plugin interactive handler registrations. */
+export function clearPluginInteractiveHandlerRegistrations(): void {
+  clearPluginInteractiveHandlerRegistrationsState();
 }
 
-export function clearPluginInteractiveHandlersForPlugin(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearPluginInteractiveHandlersForPlugin");
+/** Clears active interactive handlers owned by one plugin. */
+export function clearPluginInteractiveHandlersForPlugin(pluginId: string): void {
+  const interactiveHandlers = getPluginInteractiveHandlersState();
+  for (const [key, value] of interactiveHandlers.entries()) {
+    if (value.pluginId === pluginId) {
+      interactiveHandlers.delete(key);
+    }
+  }
 }
 
-export function listPluginInteractiveHandlers(...args: unknown[]): unknown {
-  throw new Error("not implemented: listPluginInteractiveHandlers");
+/** Lists active plugin interactive handlers. */
+export function listPluginInteractiveHandlers(): RegisteredInteractiveHandler[] {
+  return Array.from(getPluginInteractiveHandlersState().values());
 }
 
-export function restorePluginInteractiveHandlers(...args: unknown[]): unknown {
-  throw new Error("not implemented: restorePluginInteractiveHandlers");
+/** Restores active plugin interactive handlers from a saved registry snapshot. */
+export function restorePluginInteractiveHandlers(
+  registrations: readonly RegisteredInteractiveHandler[],
+): void {
+  clearPluginInteractiveHandlerRegistrations();
+  const interactiveHandlers = getPluginInteractiveHandlersState();
+  for (const registration of registrations) {
+    const namespace = normalizePluginInteractiveNamespace(registration.namespace);
+    if (!namespace) {
+      continue;
+    }
+    interactiveHandlers.set(toPluginInteractiveRegistryKey(registration.channel, namespace), {
+      ...registration,
+      namespace,
+      channel: normalizeOptionalLowercaseString(registration.channel) ?? "",
+    });
+  }
 }
-

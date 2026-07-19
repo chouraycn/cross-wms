@@ -1,17 +1,41 @@
-/**
- * Resolves provider auth tokens from plugin-owned auth configuration.
- * 移植自 openclaw/src/plugins/provider-auth-token.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// Resolves provider auth tokens from plugin-owned auth configuration.
+import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeLowercaseStringOrEmpty } from './_stub_openclaw__normalization_core__string_coerce.js';
 
-export const ANTHROPIC_SETUP_TOKEN_PREFIX: unknown = undefined;
+export const ANTHROPIC_SETUP_TOKEN_PREFIX = "sk-ant-oat01-";
+const ANTHROPIC_SETUP_TOKEN_MIN_LENGTH = 80;
+const DEFAULT_TOKEN_PROFILE_NAME = "default";
 
-export function buildTokenProfileId(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildTokenProfileId");
+function normalizeTokenProfileName(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return DEFAULT_TOKEN_PROFILE_NAME;
+  }
+  const slug = normalizeLowercaseStringOrEmpty(trimmed)
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || DEFAULT_TOKEN_PROFILE_NAME;
 }
 
-export function validateAnthropicSetupToken(...args: unknown[]): unknown {
-  throw new Error("not implemented: validateAnthropicSetupToken");
+/** @deprecated Provider-owned setup helper; do not use from third-party plugins. */
+export function buildTokenProfileId(params: { provider: string; name: string }): string {
+  const provider = normalizeProviderId(params.provider);
+  const name = normalizeTokenProfileName(params.name);
+  return `${provider}:${name}`;
 }
 
+/** @deprecated Anthropic provider-owned setup helper; do not use from third-party plugins. */
+export function validateAnthropicSetupToken(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return "Required";
+  }
+  if (!trimmed.startsWith(ANTHROPIC_SETUP_TOKEN_PREFIX)) {
+    return `Expected token starting with ${ANTHROPIC_SETUP_TOKEN_PREFIX}`;
+  }
+  if (trimmed.length < ANTHROPIC_SETUP_TOKEN_MIN_LENGTH) {
+    return "Token looks too short; paste the full setup-token";
+  }
+  return undefined;
+}

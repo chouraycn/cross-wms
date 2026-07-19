@@ -1,13 +1,76 @@
-/**
- * Converts ClawHub plugin entries into install records.
- * 移植自 openclaw/src/plugins/clawhub-install-records.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+// Converts ClawHub plugin entries into install records.
+import type { PluginInstallRecord } from "../config/types.plugins.js";
+import type { ClawHubPackageChannel, ClawHubPackageFamily } from "../infra/clawhub.js";
 
-export type ClawHubPluginInstallRecordFields = unknown;
+/** Install record fields captured for ClawHub plugin installs. */
+export type ClawHubPluginInstallRecordFields = {
+  source: "clawhub";
+  clawhubUrl: string;
+  clawhubPackage: string;
+  clawhubFamily: Exclude<ClawHubPackageFamily, "skill">;
+  clawhubChannel?: ClawHubPackageChannel;
+  version?: string;
+  integrity?: string;
+  resolvedAt?: string;
+  installedAt?: string;
+  artifactKind?: "legacy-zip" | "npm-pack";
+  artifactFormat?: "zip" | "tgz";
+  npmIntegrity?: string;
+  npmShasum?: string;
+  npmTarballName?: string;
+  clawpackSha256?: string;
+  clawpackSpecVersion?: number;
+  clawpackManifestSha256?: string;
+  clawpackSize?: number;
+};
 
-export function buildClawHubPluginInstallRecordFields(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildClawHubPluginInstallRecordFields");
+/** Builds plugin install record fields from resolved ClawHub package metadata. */
+export function buildClawHubPluginInstallRecordFields(
+  fields: ClawHubPluginInstallRecordFields,
+): Pick<
+  PluginInstallRecord,
+  | "source"
+  | "clawhubUrl"
+  | "clawhubPackage"
+  | "clawhubFamily"
+  | "clawhubChannel"
+  | "version"
+  | "integrity"
+  | "resolvedAt"
+  | "installedAt"
+  | "artifactKind"
+  | "artifactFormat"
+  | "npmIntegrity"
+  | "npmShasum"
+  | "npmTarballName"
+  | "clawpackSha256"
+  | "clawpackSpecVersion"
+  | "clawpackManifestSha256"
+  | "clawpackSize"
+> {
+  return {
+    source: "clawhub",
+    clawhubUrl: fields.clawhubUrl,
+    clawhubPackage: fields.clawhubPackage,
+    clawhubFamily: fields.clawhubFamily,
+    ...(fields.clawhubChannel ? { clawhubChannel: fields.clawhubChannel } : {}),
+    ...(fields.version ? { version: fields.version } : {}),
+    ...(fields.integrity ? { integrity: fields.integrity } : {}),
+    ...(fields.resolvedAt ? { resolvedAt: fields.resolvedAt } : {}),
+    ...(fields.installedAt ? { installedAt: fields.installedAt } : {}),
+    ...(fields.artifactKind ? { artifactKind: fields.artifactKind } : {}),
+    ...(fields.artifactFormat ? { artifactFormat: fields.artifactFormat } : {}),
+    ...(fields.npmIntegrity ? { npmIntegrity: fields.npmIntegrity } : {}),
+    ...(fields.npmShasum ? { npmShasum: fields.npmShasum } : {}),
+    ...(fields.npmTarballName ? { npmTarballName: fields.npmTarballName } : {}),
+    ...(fields.clawpackSha256 ? { clawpackSha256: fields.clawpackSha256 } : {}),
+    ...(fields.clawpackSpecVersion !== undefined
+      ? { clawpackSpecVersion: fields.clawpackSpecVersion }
+      : {}),
+    ...(fields.clawpackManifestSha256
+      ? { clawpackManifestSha256: fields.clawpackManifestSha256 }
+      : {}),
+    ...(fields.clawpackSize !== undefined ? { clawpackSize: fields.clawpackSize } : {}),
+  };
 }
-

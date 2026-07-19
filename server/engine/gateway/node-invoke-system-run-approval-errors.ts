@@ -1,20 +1,36 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/node-invoke-system-run-approval-errors.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// 移植自 openclaw/openclaw/src/gateway/node-invoke-system-run-approval-errors.ts
+// 已升级为真实实现
 
-export function systemRunApprovalGuardError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] systemRunApprovalGuardError not implemented");
+// Shared system.run approval guard errors keep gateway/node responses
+// machine-readable while preserving the user-facing message string.
+type SystemRunApprovalGuardError = {
+  ok: false;
+  message: string;
+  details: Record<string, unknown>;
+};
+
+/** Builds a failed system.run approval guard result with a structured code. */
+export function systemRunApprovalGuardError(params: {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}): SystemRunApprovalGuardError {
+  const details = params.details ? { ...params.details } : {};
+  return {
+    ok: false,
+    message: params.message,
+    details: {
+      code: params.code,
+      ...details,
+    },
+  };
 }
 
-export function systemRunApprovalRequired(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] systemRunApprovalRequired not implemented");
+/** Builds the standard response for system.run calls that still need approval. */
+export function systemRunApprovalRequired(runId: string): SystemRunApprovalGuardError {
+  return systemRunApprovalGuardError({
+    code: "APPROVAL_REQUIRED",
+    message: "approval required",
+    details: { runId },
+  });
 }

@@ -1,19 +1,74 @@
-/**
- * * Shared runtime helpers for embedding provider lookup across core and plugin capabilities.
- * 移植自 openclaw/src/plugins/embedding-provider-runtime-shared.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+/** Shared runtime helpers for embedding provider lookup across core and plugin capabilities. */
+import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  resolvePluginCapabilityProvider,
+  resolvePluginCapabilityProviders,
+} from "./capability-provider-runtime.js";
 
-export function resolveRuntimeEmbeddingProviderLookupIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRuntimeEmbeddingProviderLookupIds");
+type EmbeddingProviderCapabilityKey = "embeddingProviders" | "memoryEmbeddingProviders";
+type RegisteredAdapterEntry<TAdapter> = {
+  adapter: TAdapter;
+};
+
+/** Builds lookup ids for embedding providers, including configured API aliases. */
+export function resolveRuntimeEmbeddingProviderLookupIds(params: {
+  id: string;
+  cfg?: OpenClawConfig;
+  resolveConfiguredProviderId: (id: string, cfg?: OpenClawConfig) => string | undefined;
+}): string[] {
+  const ids = [params.id];
+  const configuredProviderId = params.resolveConfiguredProviderId(params.id, params.cfg);
+  if (
+    configuredProviderId &&
+    !ids.some((candidate) => normalizeProviderId(candidate) === configuredProviderId)
+  ) {
+    ids.push(configuredProviderId);
+  }
+  return ids;
 }
 
-export function listRuntimeEmbeddingProviderAdapters(...args: unknown[]): unknown {
-  throw new Error("not implemented: listRuntimeEmbeddingProviderAdapters");
+/** Lists registered and plugin-contributed embedding provider adapters for a capability key. */
+export function listRuntimeEmbeddingProviderAdapters<TAdapter extends { id: string }>(params: {
+  key: EmbeddingProviderCapabilityKey;
+  cfg?: OpenClawConfig;
+  registered: TAdapter[];
+}): TAdapter[] {
+  const merged = new Map(params.registered.map((adapter) => [adapter.id, adapter]));
+  const capabilityAdapters = resolvePluginCapabilityProviders({
+    key: params.key,
+    cfg: params.cfg,
+  }) as unknown as TAdapter[];
+  for (const adapter of capabilityAdapters) {
+    if (!merged.has(adapter.id)) {
+      merged.set(adapter.id, adapter);
+    }
+  }
+  return [...merged.values()];
 }
 
-export function getRuntimeEmbeddingProviderAdapter(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeEmbeddingProviderAdapter");
+/** Resolves one embedding provider adapter from registered providers before plugin capabilities. */
+export function getRuntimeEmbeddingProviderAdapter<TAdapter extends { id: string }>(params: {
+  key: EmbeddingProviderCapabilityKey;
+  cfg?: OpenClawConfig;
+  lookupIds: string[];
+  getRegisteredProvider: (id: string) => RegisteredAdapterEntry<TAdapter> | undefined;
+}): TAdapter | undefined {
+  for (const candidateId of params.lookupIds) {
+    const registered = params.getRegisteredProvider(candidateId);
+    if (registered) {
+      return registered.adapter;
+    }
+  }
+  for (const candidateId of params.lookupIds) {
+    const provider = resolvePluginCapabilityProvider({
+      key: params.key,
+      providerId: candidateId,
+      cfg: params.cfg,
+    }) as TAdapter | undefined;
+    if (provider) {
+      return provider;
+    }
+  }
+  return undefined;
 }
-

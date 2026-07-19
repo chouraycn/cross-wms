@@ -1,33 +1,83 @@
-/**
- * Evaluates plugin config policy without activating plugin runtime code.
- * 移植自 openclaw/src/plugins/config-policy.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+// Evaluates plugin config policy without activating plugin runtime code.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  resolveMemorySlotDecisionShared,
+  resolvePluginActivationDecisionShared,
+  toPluginActivationState,
+  type PluginActivationSource,
+  type PluginActivationStateLike,
+} from "./config-activation-shared.js";
+import {
+  hasExplicitPluginConfig as hasExplicitPluginConfigShared,
+  identityNormalizePluginId,
+  isBundledChannelEnabledByChannelConfig as isBundledChannelEnabledByChannelConfigShared,
+  normalizePluginsConfigWithResolver as normalizePluginsConfigWithResolverShared,
+  type NormalizePluginId,
+  type NormalizedPluginsConfig as SharedNormalizedPluginsConfig,
+} from "./config-normalization-shared.js";
+import type { PluginKind } from "./plugin-kind.types.js";
+import type { PluginOrigin } from "./plugin-origin.types.js";
 
-// Re-export: export type { PluginActivationSource };
+export type { PluginActivationSource };
+export type PluginActivationState = PluginActivationStateLike;
 
-export type PluginActivationState = unknown;
+export type NormalizedPluginsConfig = SharedNormalizedPluginsConfig;
 
-export type NormalizedPluginsConfig = unknown;
-
-export function normalizePluginsConfigWithResolver(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizePluginsConfigWithResolver");
+export function normalizePluginsConfigWithResolver(
+  config?: OpenClawConfig["plugins"],
+  normalizePluginId: NormalizePluginId = identityNormalizePluginId,
+): NormalizedPluginsConfig {
+  return normalizePluginsConfigWithResolverShared(config, normalizePluginId);
 }
 
-export function resolvePluginActivationState(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginActivationState");
+export function resolvePluginActivationState(params: {
+  id: string;
+  origin: PluginOrigin;
+  config: NormalizedPluginsConfig;
+  rootConfig?: OpenClawConfig;
+  enabledByDefault?: boolean;
+  sourceConfig?: NormalizedPluginsConfig;
+  sourceRootConfig?: OpenClawConfig;
+  autoEnabledReason?: string;
+}): PluginActivationState {
+  return toPluginActivationState(
+    resolvePluginActivationDecisionShared({
+      ...params,
+      activationSource: {
+        plugins: params.sourceConfig ?? params.config,
+        rootConfig: params.sourceRootConfig ?? params.rootConfig,
+      },
+      isBundledChannelEnabledByChannelConfig,
+    }),
+  );
+}
+export const hasExplicitPluginConfig = hasExplicitPluginConfigShared;
+
+export const isBundledChannelEnabledByChannelConfig = isBundledChannelEnabledByChannelConfigShared;
+
+type PolicyEffectiveActivationParams = {
+  id: string;
+  origin: PluginOrigin;
+  config: NormalizedPluginsConfig;
+  rootConfig?: OpenClawConfig;
+  enabledByDefault?: boolean;
+  sourceConfig?: NormalizedPluginsConfig;
+  sourceRootConfig?: OpenClawConfig;
+  autoEnabledReason?: string;
+};
+
+export function resolveEffectivePluginActivationState(
+  params: PolicyEffectiveActivationParams,
+): PluginActivationState {
+  return resolvePluginActivationState(params);
 }
 
-export const hasExplicitPluginConfig: unknown = undefined;
-
-export const isBundledChannelEnabledByChannelConfig: unknown = undefined;
-
-export function resolveEffectivePluginActivationState(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEffectivePluginActivationState");
+export function resolveMemorySlotDecision(params: {
+  id: string;
+  kind?: PluginKind | PluginKind[];
+  slot: string | null | undefined;
+  selectedId: string | null;
+}): { enabled: boolean; reason?: string; selected?: boolean } {
+  return resolveMemorySlotDecisionShared(params);
 }
-
-export function resolveMemorySlotDecision(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveMemorySlotDecision");
-}
-

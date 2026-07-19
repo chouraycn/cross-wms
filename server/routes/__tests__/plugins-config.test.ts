@@ -36,6 +36,31 @@ vi.mock('../../engine/pluginRegistry.js', () => ({
   },
 }));
 
+// mock plugins index barrel 文件，避免加载大量未移植模块
+vi.mock('../../engine/plugins/index.js', () => ({
+  pluginRegistry: {
+    getHealth: vi.fn().mockReturnValue({}),
+    reload: vi.fn(),
+    install: vi.fn(),
+    installFromGit: vi.fn(),
+    installFromNpm: vi.fn(),
+    enable: vi.fn(),
+    disable: vi.fn(),
+    uninstall: vi.fn(),
+  },
+  pluginManager: {
+    getStats: vi.fn().mockReturnValue({ total: 0, enabled: 0, disabled: 0 }),
+    getHealth: vi.fn().mockReturnValue({ status: 'healthy' }),
+    getPluginInfo: vi.fn(),
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+    bulkActivate: vi.fn(),
+    bulkDeactivate: vi.fn(),
+    resetConfig: vi.fn(),
+    listPlugins: vi.fn().mockReturnValue({ items: [], total: 0 }),
+  },
+}));
+
 import pluginsRouter from '../plugins.js';
 
 describe('插件配置 API', () => {

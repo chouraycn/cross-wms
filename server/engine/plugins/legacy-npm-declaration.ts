@@ -1,15 +1,34 @@
-/**
- * * Reads legacy npm plugin declaration files left by early plugin installs.
- * 移植自 openclaw/src/plugins/legacy-npm-declaration.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Reads legacy npm plugin declaration files left by early plugin installs. */
+import path from "node:path";
+import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
+import { tryReadJsonSync } from "../infra/json-files.js";
+import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
+import { validatePluginId } from "./install-paths.js";
 
-export const LEGACY_NPM_DECLARATION_FILE: unknown = undefined;
+/** Legacy declaration filename used by early npm-backed plugin installs. */
+export const LEGACY_NPM_DECLARATION_FILE = "openclaw.extension.json";
 
-export type LegacyNpmPluginDeclaration = unknown;
+/** Parsed legacy npm declaration stored beside an installed plugin. */
+export type LegacyNpmPluginDeclaration = {
+  pluginId: string;
+  npmSpec: string;
+  source: string;
+};
 
-export function readLegacyNpmPluginDeclaration(...args: unknown[]): unknown {
-  throw new Error("not implemented: readLegacyNpmPluginDeclaration");
+/** Reads a legacy npm plugin declaration when a plugin directory still has one. */
+export function readLegacyNpmPluginDeclaration(
+  pluginDir: string,
+): LegacyNpmPluginDeclaration | null {
+  const source = path.join(pluginDir, LEGACY_NPM_DECLARATION_FILE);
+  const parsed = tryReadJsonSync(source);
+  if (!isRecord(parsed) || parsed.type !== "npm") {
+    return null;
+  }
+  const pluginId = typeof parsed.name === "string" ? parsed.name.trim() : "";
+  const npmSpec = typeof parsed.npmSpec === "string" ? parsed.npmSpec.trim() : "";
+  if (!pluginId || validatePluginId(pluginId) || !parseRegistryNpmSpec(npmSpec)) {
+    return null;
+  }
+  return { pluginId, npmSpec, source };
 }
-

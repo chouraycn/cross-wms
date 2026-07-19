@@ -1,8 +1,31 @@
-// 移植自 openclaw/src/channels/plugins/account-action-gate.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/channels/plugins/account-action-gate.ts
+// 已升级为真实实现
 
-export type ActionGate = unknown;
+/**
+ * Resolves whether an account-scoped action is enabled.
+ */
+export type ActionGate<T extends Record<string, boolean | undefined>> = (
+  key: keyof T,
+  defaultValue?: boolean,
+) => boolean;
 
-export function createAccountActionGate(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAccountActionGate");
+/**
+ * Creates an action gate where account-specific flags override channel-level defaults.
+ */
+export function createAccountActionGate<T extends Record<string, boolean | undefined>>(params: {
+  baseActions?: T;
+  accountActions?: T;
+}): ActionGate<T> {
+  return (key, defaultValue = true) => {
+    const accountValue = params.accountActions?.[key];
+    if (accountValue !== undefined) {
+      return accountValue;
+    }
+    // Channel defaults apply only when the account did not explicitly set the action.
+    const baseValue = params.baseActions?.[key];
+    if (baseValue !== undefined) {
+      return baseValue;
+    }
+    return defaultValue;
+  };
 }

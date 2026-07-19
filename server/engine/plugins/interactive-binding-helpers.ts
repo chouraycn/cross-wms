@@ -1,11 +1,64 @@
-/**
- * * Helpers for binding interactive plugin handlers to conversations and sessions.
- * 移植自 openclaw/src/plugins/interactive-binding-helpers.ts。
- * 降级策略：依赖项未移植时，函数体降级为返回默认值或抛出 not implemented；
- * 类型定义保留形状供下游引用。
- */
+// @ts-nocheck
+/** Helpers for binding interactive plugin handlers to conversations and sessions. */
+import {
+  detachPluginConversationBinding,
+  getCurrentPluginConversationBinding,
+  requestPluginConversationBinding,
+} from "./conversation-binding.js";
+import type { PluginConversationBindingRequestParams } from "./types.js";
 
-export function createInteractiveConversationBindingHelpers(...args: unknown[]): unknown {
-  throw new Error("not implemented: createInteractiveConversationBindingHelpers");
+type RegisteredInteractiveMetadata = {
+  pluginId: string;
+  pluginName?: string;
+  pluginRoot?: string;
+};
+
+type PluginBindingConversation = Parameters<
+  typeof requestPluginConversationBinding
+>[0]["conversation"];
+
+export function createInteractiveConversationBindingHelpers(params: {
+  registration: RegisteredInteractiveMetadata;
+  senderId?: string;
+  conversation: PluginBindingConversation;
+}) {
+  const { registration, senderId, conversation } = params;
+  const pluginRoot = registration.pluginRoot;
+
+  return {
+    requestConversationBinding: async (binding: PluginConversationBindingRequestParams = {}) => {
+      if (!pluginRoot) {
+        return {
+          status: "error" as const,
+          message: "This interaction cannot bind the current conversation.",
+        };
+      }
+      return requestPluginConversationBinding({
+        pluginId: registration.pluginId,
+        pluginName: registration.pluginName,
+        pluginRoot,
+        requestedBySenderId: senderId,
+        conversation,
+        binding,
+      });
+    },
+    detachConversationBinding: async () => {
+      if (!pluginRoot) {
+        return { removed: false };
+      }
+      return detachPluginConversationBinding({
+        pluginRoot,
+        conversation,
+      });
+    },
+    getCurrentConversationBinding: async () => {
+      if (!pluginRoot) {
+        return null;
+      }
+      return getCurrentPluginConversationBinding({
+        pluginRoot,
+        conversation,
+      });
+    },
+  };
 }
-

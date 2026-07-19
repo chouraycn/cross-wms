@@ -188,7 +188,7 @@ function listManifestContributionIds(
         ),
       ];
     case "commandAliases":
-      return plugin.commandAliases?.map((alias) => alias.alias) ?? [];
+      return plugin.commandAliases?.map((alias) => alias.name) ?? [];
     case "contracts":
       return collectContractKeys(plugin);
   }

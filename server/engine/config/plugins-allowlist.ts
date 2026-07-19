@@ -1,6 +1,28 @@
-// 移植自 openclaw/src/config/plugins-allowlist.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/config/plugins-allowlist.ts
+// 已升级为真实实现
 
-export function ensurePluginAllowlisted(...args: unknown[]): unknown {
-  throw new Error("not implemented: ensurePluginAllowlisted");
+// Normalizes plugin allowlist config used by loading and validation.
+type PluginAllowlistConfigCarrier = {
+  plugins?: {
+    allow?: string[];
+  };
+};
+
+/** Return a config copy with `pluginId` appended to an existing restrictive plugin allowlist. */
+export function ensurePluginAllowlisted<T extends PluginAllowlistConfigCarrier>(
+  cfg: T,
+  pluginId: string,
+): T {
+  const allow = cfg.plugins?.allow;
+  if (!Array.isArray(allow) || allow.includes(pluginId)) {
+    // Missing allowlist means unrestricted plugin loading; avoid creating a new restrictive list.
+    return cfg;
+  }
+  return {
+    ...cfg,
+    plugins: {
+      ...cfg.plugins,
+      allow: [...allow, pluginId],
+    },
+  } as T;
 }

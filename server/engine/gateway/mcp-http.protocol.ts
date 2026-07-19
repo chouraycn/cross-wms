@@ -1,28 +1,33 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+// 移植自 openclaw/openclaw/src/gateway/mcp-http.protocol.ts
+// 已升级为真实实现
+
+/** Server identity advertised by the local MCP loopback initialize response. */
+export const MCP_LOOPBACK_SERVER_NAME = "openclaw";
+/** Protocol-facing loopback server version, independent from the OpenClaw app version. */
+export const MCP_LOOPBACK_SERVER_VERSION = "0.1.0";
+/** MCP protocol versions accepted by the loopback HTTP bridge, newest first for negotiation. */
+export const MCP_LOOPBACK_SUPPORTED_PROTOCOL_VERSIONS = ["2025-03-26", "2024-11-05"] as const;
+
+type JsonRpcId = string | number | null | undefined;
+
+/** Minimal JSON-RPC request shape accepted by the MCP loopback HTTP handler. */
+export type JsonRpcRequest = {
+  jsonrpc: "2.0";
+  id?: JsonRpcId;
+  method: string;
+  params?: Record<string, unknown>;
+};
+
 /**
- * 降级 stub — 移植自 openclaw/src/gateway/mcp-http.protocol.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
+ * Builds a JSON-RPC success response, using null for notifications or malformed missing ids.
  */
-
-export type JsonRpcRequest = unknown;
-
-export function jsonRpcResult(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] jsonRpcResult not implemented");
+export function jsonRpcResult(id: JsonRpcId, result: unknown) {
+  return { jsonrpc: "2.0" as const, id: id ?? null, result };
 }
 
-export function jsonRpcError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] jsonRpcError not implemented");
+/**
+ * Builds a JSON-RPC error response with the same id normalization as success responses.
+ */
+export function jsonRpcError(id: JsonRpcId, code: number, message: string) {
+  return { jsonrpc: "2.0" as const, id: id ?? null, error: { code, message } };
 }
-
-export const MCP_LOOPBACK_SERVER_NAME: any = undefined;
-
-export const MCP_LOOPBACK_SERVER_VERSION: any = undefined;
-
-export const MCP_LOOPBACK_SUPPORTED_PROTOCOL_VERSIONS: any = undefined;

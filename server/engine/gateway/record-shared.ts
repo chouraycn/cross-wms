@@ -1,6 +1,14 @@
-// 移植自 openclaw/src/gateway/server-methods/record-shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/gateway/server-methods/record-shared.ts
+// 已升级为真实实现
 
-export function normalizeTrimmedString(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeTrimmedString");
+/**
+ * Small normalization helpers shared by gateway request handlers.
+ */
+/** Returns a non-empty trimmed string, or `undefined` for non-string input. */
+export function normalizeTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }

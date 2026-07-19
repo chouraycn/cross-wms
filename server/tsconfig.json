@@ -14,7 +14,8 @@
     "moduleResolution": "node",
     "jsx": "preserve",
     "paths": {
-      "@src/*": ["../src/*"]
+      "@src/*": ["../src/*"],
+      "@openclaw/media-core/*": ["../packages/media-core/src/*"]
     }
   },
   "include": ["**/*.ts"],

@@ -1,24 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/control-ui-http-utils.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// 移植自 openclaw/openclaw/src/gateway/control-ui-http-utils.ts
+// 已升级为真实实现
 
-export function isReadHttpMethod(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isReadHttpMethod not implemented");
+// Control UI HTTP utilities provide tiny plain-text helpers for static routes
+// before requests enter the larger Gateway JSON/auth stack.
+import type { ServerResponse } from "node:http";
+
+// Small HTTP response helpers used by Control UI routes before they enter the
+// larger gateway JSON/auth stack.
+/** Returns true for idempotent HTTP methods that can read Control UI assets. */
+export function isReadHttpMethod(method: string | undefined): boolean {
+  return method === "GET" || method === "HEAD";
 }
 
-export function respondPlainText(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] respondPlainText not implemented");
+/** Sends a plain-text response with the standard UTF-8 content type. */
+export function respondPlainText(res: ServerResponse, statusCode: number, body: string): void {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.end(body);
 }
 
-export function respondNotFound(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] respondNotFound not implemented");
+/** Sends the shared plain-text 404 response for Control UI routes. */
+export function respondNotFound(res: ServerResponse): void {
+  respondPlainText(res, 404, "Not Found");
 }

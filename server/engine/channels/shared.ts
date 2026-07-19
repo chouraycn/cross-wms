@@ -1,20 +1,33 @@
-// 移植自 openclaw/src/channels/plugins/status-issues/shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/openclaw/src/channels/plugins/actions/shared.ts
+// 已升级为真实实现
 
-export const isRecord: unknown = undefined;
+/**
+ * Shared channel action helpers.
+ *
+ * Filters token-backed accounts and composes account-level action gates.
+ */
+type OptionalDefaultGate<TKey extends string> = (key: TKey, defaultValue?: boolean) => boolean;
 
-export function asString(..._args: unknown[]): unknown {
-  throw new Error("not implemented: asString");
+type TokenSourcedAccount = {
+  tokenSource?: string | null;
+};
+
+/**
+ * Filters out accounts explicitly marked as tokenless.
+ */
+export function listTokenSourcedAccounts<TAccount extends TokenSourcedAccount>(
+  accounts: readonly TAccount[],
+): TAccount[] {
+  return accounts.filter((account) => account.tokenSource !== "none");
 }
 
-export function formatMatchMetadata(..._args: unknown[]): unknown {
-  throw new Error("not implemented: formatMatchMetadata");
-}
-
-export function appendMatchMetadata(..._args: unknown[]): unknown {
-  throw new Error("not implemented: appendMatchMetadata");
-}
-
-export function resolveEnabledConfiguredAccountId(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEnabledConfiguredAccountId");
+/**
+ * Creates an action gate that is enabled when any account-level gate enables the action.
+ */
+export function createUnionActionGate<TAccount, TKey extends string>(
+  accounts: readonly TAccount[],
+  createGate: (account: TAccount) => OptionalDefaultGate<TKey>,
+): OptionalDefaultGate<TKey> {
+  const gates = accounts.map((account) => createGate(account));
+  return (key, defaultValue = true) => gates.some((gate) => gate(key, defaultValue));
 }
