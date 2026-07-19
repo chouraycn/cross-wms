@@ -5,7 +5,7 @@ import path from "node:path";
 import {
   buildChannelConfigSchema,
   buildJsonChannelConfigSchema,
-} from "../channels/plugins/config-schema.js";
+} from "../channels/config-schema.js";
 import type { ChannelConfigRuntimeSchema } from './_stub_parent__channels__plugins__types_config.js';
 import type { JsonSchemaObject } from "../shared/json-schema.types.js";
 import {

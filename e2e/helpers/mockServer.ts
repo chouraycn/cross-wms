@@ -5,42 +5,14 @@
 
 import { http, HttpResponse, delay } from 'msw';
 import { setupServer } from 'msw/node';
-
-// Mock 数据
-const mockMessages = [
-  {
-    id: 'msg-1',
-    role: 'user',
-    content: '测试消息',
-    timestamp: Date.now(),
-  },
-  {
-    id: 'msg-2',
-    role: 'assistant',
-    content: '这是 AI 的回复',
-    timestamp: Date.now(),
-  },
-];
-
-const mockWikiEntries = [
-  {
-    id: 'wiki-1',
-    title: '测试条目 1',
-    content: '这是测试内容',
-    tags: ['test', 'demo'],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  },
-];
-
-const mockMemories = [
-  {
-    id: 'mem-1',
-    content: '测试记忆内容',
-    type: 'fact',
-    createdAt: Date.now(),
-  },
-];
+import {
+  mockMessages,
+  mockWikiEntries,
+  mockMemories,
+  mockTools,
+  streamingChunks,
+  mockApproval,
+} from '../fixtures/test-data.js';
 
 // API 处理器
 const handlers = [
@@ -61,17 +33,7 @@ const handlers = [
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const chunks = [
-          'data: {"type":"text","content":"这"}\n\n',
-          'data: {"type":"text","content":"是"}\n\n',
-          'data: {"type":"text","content":"流"}\n\n',
-          'data: {"type":"text","content":"式"}\n\n',
-          'data: {"type":"text","content":"输"}\n\n',
-          'data: {"type":"text","content":"出"}\n\n',
-          'data: {"type":"done"}\n\n',
-        ];
-
-        for (const chunk of chunks) {
+        for (const chunk of streamingChunks) {
           await delay(50);
           controller.enqueue(encoder.encode(chunk));
         }
@@ -190,12 +152,7 @@ const handlers = [
     await delay(100);
     return HttpResponse.json({
       success: true,
-      data: [
-        { name: 'pdf-reader', status: 'available' },
-        { name: 'lsp-client', status: 'available' },
-        { name: 'browser-control', status: 'available' },
-        { name: 'file-operations', status: 'available' },
-      ],
+      data: mockTools,
     });
   }),
 
@@ -215,12 +172,7 @@ const handlers = [
     await delay(100);
     return HttpResponse.json({
       success: true,
-      data: {
-        id: 'approval-1',
-        status: 'pending',
-        type: 'tool_execution',
-        createdAt: Date.now(),
-      },
+      data: mockApproval,
     });
   }),
 

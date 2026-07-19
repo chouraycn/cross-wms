@@ -312,6 +312,8 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
   const renderMessageItem = useCallback((msg: Message, index: number) => (
     <Box
       key={msg.id}
+      data-testid="message-bubble"
+      data-role={msg.role}
       onClick={() => toggleSelectMessage(msg.id)}
       sx={{
         pt: msg.role === 'user' ? (index === 0 ? 2 : 3) : (index === 0 ? 0 : 1.5),
@@ -765,6 +767,7 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
 
   return (
     <Box
+      data-testid="message-list"
       sx={{
         flex: 1,
         pt: hasMessages ? 0 : 1,

@@ -22,6 +22,7 @@ export const ExecutionPlanCard: React.FC<ExecutionPlanCardProps> = React.memo(({
 
   return (
     <Box
+      data-testid="execution-plan"
       sx={{
         mt: 1,
         p: 1.5,
@@ -47,6 +48,8 @@ export const ExecutionPlanCard: React.FC<ExecutionPlanCardProps> = React.memo(({
           return (
             <Box
               key={step.step}
+              data-testid="plan-step"
+              data-status={step.status}
               sx={{
                 display: 'flex',
                 alignItems: 'center',

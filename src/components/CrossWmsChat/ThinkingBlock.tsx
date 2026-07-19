@@ -159,6 +159,8 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
 
   return (
     <Box
+      data-testid="thinking-block"
+      data-expanded={expanded ? 'true' : 'false'}
       sx={{
         mb: 1,
         pl: 1.5,
@@ -167,6 +169,7 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
     >
       {/* 头部栏 */}
       <Box
+        data-testid="toggle-thinking"
         onClick={() => {
           setExpanded(v => {
             const newValue = !v;

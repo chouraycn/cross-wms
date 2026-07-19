@@ -14,12 +14,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "eventemitter3": "^5.0.1"
+    "eventemitter3": "^5.0.1",
+    "typebox": "^1.1.39"
   },
   "devDependencies": {
     "@types/node": "^25.9.4",
     "typescript": "^5.9.3",
     "vite": "^7",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.7"
   }
 }

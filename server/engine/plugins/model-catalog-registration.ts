@@ -8,7 +8,7 @@ import {
   synthesizeMediaGenerationCatalogEntries,
   type MediaGenerationCatalogKind,
   type MediaGenerationCatalogProvider,
-} from "../../packages/media-generation-core/src/catalog.js";
+} from "@cdf-know/media-generation-core/catalog";
 import { normalizeOptionalString } from './_stub_parent__parent__packages__normalization_core__src__string_coerce.js';
 import { uniqueValues } from './_stub_parent__parent__packages__normalization_core__src__string_normalization.js';
 import {

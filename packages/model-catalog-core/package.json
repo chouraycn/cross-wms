@@ -4,6 +4,36 @@
   "description": "CDFKnow ModelCatalogCore - 模型目录核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./provider-id": {
+      "types": "./dist/provider-id.d.ts",
+      "default": "./dist/provider-id.js"
+    },
+    "./provider-model-id-normalize": {
+      "types": "./dist/provider-model-id-normalize.d.ts",
+      "default": "./dist/provider-model-id-normalize.js"
+    },
+    "./model-catalog-types": {
+      "types": "./dist/model-catalog-types.d.ts",
+      "default": "./dist/model-catalog-types.js"
+    },
+    "./model-catalog-refs": {
+      "types": "./dist/model-catalog-refs.d.ts",
+      "default": "./dist/model-catalog-refs.js"
+    },
+    "./model-catalog-normalize": {
+      "types": "./dist/model-catalog-normalize.d.ts",
+      "default": "./dist/model-catalog-normalize.js"
+    },
+    "./configured-model-refs": {
+      "types": "./dist/configured-model-refs.d.ts",
+      "default": "./dist/configured-model-refs.js"
+    }
+  },
   "files": [
     "dist"
   ],

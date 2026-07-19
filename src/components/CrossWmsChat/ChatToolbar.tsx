@@ -435,55 +435,56 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
           {/* Send / Stop button — 带呼吸效果 */}
           <Tooltip title={isLoading ? '停止生成' : (inputValue.trim() ? '发送消息' : '请输入内容')} placement="top">
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isLoading && onStop) {
-                  onStop();
-                } else if (inputValue.trim() || isLoading) {
-                  onSend();
-                }
-              }}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: !isLoading && !inputValue.trim()
-                  ? (isDark ? '#333' : '#E0E0E0')
-                  : ACCENT,
-                color: !isLoading && !inputValue.trim()
-                  ? (isDark ? '#666' : '#AAA')
-                  : '#fff',
-                flexShrink: 0,
-                cursor: !isLoading && !inputValue.trim() ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': !isLoading && !inputValue.trim() ? {} : {
-                  bgcolor: '#EA580C',
-                  transform: 'scale(1.08)',
+          <Box
+            data-testid="send-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isLoading && onStop) {
+                onStop();
+              } else if (inputValue.trim() || isLoading) {
+                onSend();
+              }
+            }}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: !isLoading && !inputValue.trim()
+                ? (isDark ? '#333' : '#E0E0E0')
+                : ACCENT,
+              color: !isLoading && !inputValue.trim()
+                ? (isDark ? '#666' : '#AAA')
+                : '#fff',
+              flexShrink: 0,
+              cursor: !isLoading && !inputValue.trim() ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': !isLoading && !inputValue.trim() ? {} : {
+                bgcolor: '#EA580C',
+                transform: 'scale(1.08)',
+              },
+              animation: !isLoading && inputValue.trim()
+                ? 'pulse 2s ease-in-out infinite'
+                : 'none',
+              '@keyframes pulse': {
+                '0%, 100%': {
+                  boxShadow: '0 0 0 0 rgba(249, 115, 22, 0.4)',
                 },
-                animation: !isLoading && inputValue.trim()
-                  ? 'pulse 2s ease-in-out infinite'
-                  : 'none',
-                '@keyframes pulse': {
-                  '0%, 100%': {
-                    boxShadow: '0 0 0 0 rgba(249, 115, 22, 0.4)',
-                  },
-                  '50%': {
-                    boxShadow: '0 0 0 8px rgba(249, 115, 22, 0)',
-                  },
+                '50%': {
+                  boxShadow: '0 0 0 8px rgba(249, 115, 22, 0)',
                 },
-              }}
-            >
-              {isLoading ? (
-                <StopIcon sx={{ fontSize: 16 }} />
-              ) : (
-                <SendIcon sx={{ fontSize: 16 }} />
-              )}
-            </Box>
-          </Tooltip>
+              },
+            }}
+          >
+            {isLoading ? (
+              <StopIcon sx={{ fontSize: 16 }} />
+            ) : (
+              <SendIcon sx={{ fontSize: 16 }} />
+            )}
+          </Box>
+        </Tooltip>
         </Box>
       </Box>
 

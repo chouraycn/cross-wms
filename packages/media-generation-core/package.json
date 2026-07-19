@@ -4,6 +4,16 @@
   "description": "CDFKnow MediaGenerationCore - 媒体生成核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog.d.ts",
+      "default": "./dist/catalog.js"
+    }
+  },
   "files": [
     "dist"
   ],

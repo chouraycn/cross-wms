@@ -24,7 +24,7 @@ import { withPluginRuntimePluginScope } from './_stub_local__runtime__gateway_re
 import {
   buildPluginRuntimeLoadOptions,
   resolvePluginRuntimeLoadContext,
-} from "./runtime/load-context.js";
+} from './_stub_local__runtime__load_context.js';
 import { ensureStandaloneRuntimePluginRegistryLoaded } from './_stub_local__runtime__standalone_runtime_registry_loader.js';
 import { findUndeclaredPluginToolNames } from "./tool-contracts.js";
 import {

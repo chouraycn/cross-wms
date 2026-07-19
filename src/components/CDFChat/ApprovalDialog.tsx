@@ -404,6 +404,8 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
     return (
       <Paper
         ref={dialogRef}
+        data-testid="approval-dialog"
+        data-type={currentRequest?.toolName}
         elevation={12}
         sx={{
           position: 'fixed',
@@ -521,6 +523,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
               {/* 快捷操作按钮 */}
               <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
                 <Button
+                  data-testid="reject-button"
                   variant="outlined"
                   size="small"
                   color="error"
@@ -532,6 +535,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
                   拒绝
                 </Button>
                 <Button
+                  data-testid="approve-button"
                   variant="contained"
                   size="small"
                   color="success"
@@ -593,6 +597,8 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
     return (
       <Slide direction="up" in={open}>
         <Paper
+          data-testid="approval-dialog"
+          data-type={currentRequest?.toolName}
           elevation={12}
           sx={{
             position: 'fixed',
@@ -691,10 +697,10 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
 
                 {/* 快捷操作 */}
                 <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
-                  <Button variant="outlined" color="error" size="large" onClick={handleReject} startIcon={<CancelIcon />}>
+                  <Button data-testid="reject-button" variant="outlined" color="error" size="large" onClick={handleReject} startIcon={<CancelIcon />}>
                     拒绝
                   </Button>
-                  <Button variant="contained" color="success" size="large" onClick={handleApprove} startIcon={<CheckCircleIcon />}>
+                  <Button data-testid="approve-button" variant="contained" color="success" size="large" onClick={handleApprove} startIcon={<CheckCircleIcon />}>
                     批准
                   </Button>
                   {requests.length > 1 && (

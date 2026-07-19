@@ -13,7 +13,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "eventemitter3": "^5.0.1"
+    "@cdf-know/model-catalog-core": "1.0.0",
+    "eventemitter3": "^5.0.1",
+    "typebox": "^1.1.39",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^25.9.4",

@@ -4,6 +4,16 @@
   "description": "CDFKnow Memory Host SDK - 记忆系统宿主开发工具包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dreaming": {
+      "types": "./dist/dreaming.d.ts",
+      "default": "./dist/dreaming.js"
+    }
+  },
   "files": [
     "dist"
   ],

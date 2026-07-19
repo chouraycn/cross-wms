@@ -20,7 +20,7 @@ import {
   resolveMemoryDreamingConfig,
   resolveMemoryDreamingPluginConfig,
   resolveMemoryDreamingPluginId,
-} from "../memory-host-sdk/dreaming.js";
+} from "@cdf-know/memory-host-sdk/dreaming";
 import { planManifestModelCatalogRows } from "../model-catalog/manifest-planner.js";
 import { hasExplicitChannelConfig } from "./channel-presence-policy.js";
 import { collectPluginConfigContractMatches } from "./config-contracts.js";
