@@ -58,5 +58,7 @@ export {
 } from '../compaction-sanitize.js';
 export type { ToolPairInfo } from '../compaction-sanitize.js';
 
-export { CompactionConfig } from '../compaction-config.js';
-export { CompactionProvider } from '../compactionProvider.js';
+export type { CompactionConfig } from '../compaction-config.js';
+export { CompactionConfigManager } from '../compaction-config.js';
+export type { CompactionProvider } from '../compactionProvider.js';
+export { CompactionProviderRegistry } from '../compactionProvider.js';

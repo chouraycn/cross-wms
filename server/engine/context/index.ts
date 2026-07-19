@@ -12,7 +12,8 @@ export type { ModelContextWindowInfo, ContextCacheConfig } from '../contextCache
 export { ContextWindowGuard } from '../contextWindowGuard.js';
 
 // 上下文投影
-export { ContextProjection } from '../context-projection.js';
+export type { ContextProjection } from '../context-projection.js';
+export { ContextProjectionManager } from '../context-projection.js';
 export type { ProjectionContent, ProjectionBuildOptions } from '../context-projection.js';
 
 // 上下文截断

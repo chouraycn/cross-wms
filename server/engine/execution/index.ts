@@ -22,7 +22,7 @@ export type { LaneTask, LaneStatus, TaskStatus, LaneExecutor, TaskExecutionOptio
 export { getExecutionHistory } from '../executionHistory.js';
 
 // 执行契约
-export { ExecutionContract } from '../executionContract.js';
+export type { ExecutionContract } from '../executionContract.js';
 
 // 单工具执行
 export { executeSingleTool } from '../executeSingleTool.js';
