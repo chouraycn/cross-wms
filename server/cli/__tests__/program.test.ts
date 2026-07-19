@@ -8,33 +8,35 @@
  * - version
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 
 vi.mock('../../logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+// 预加载模块，避免并行测试时动态 import 超时
+let buildCLIProgram: typeof import('../program.js').buildCLIProgram;
+beforeAll(async () => {
+  ({ buildCLIProgram } = await import('../program.js'));
+}, 30000);
+
 describe('CLI program 集成', () => {
-  it('从 program 模块加载不抛错', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('从 program 模块加载不抛错', () => {
     expect(() => buildCLIProgram()).not.toThrow();
   });
 
-  it('buildCLIProgram 返回 Commander 实例', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('buildCLIProgram 返回 Commander 实例', () => {
     const program = buildCLIProgram();
     expect(program).toBeDefined();
     expect(program.commands).toBeInstanceOf(Array);
   });
 
-  it('注册的顶层命令数量 > 10', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('注册的顶层命令数量 > 10', () => {
     const program = buildCLIProgram();
     expect(program.commands.length).toBeGreaterThan(10);
   });
 
-  it('包含主要命令：plugin/agent/config/status/doctor/hooks/secrets/gateway/cron', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('包含主要命令：plugin/agent/config/status/doctor/hooks/secrets/gateway/cron', () => {
     const program = buildCLIProgram();
     const names = program.commands.map((c) => c.name());
     expect(names).toContain('config');
@@ -43,56 +45,48 @@ describe('CLI program 集成', () => {
     expect(names).toContain('hooks');
   });
 
-  it('程序名称为 cdfknow', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('程序名称为 cdfknow', () => {
     const program = buildCLIProgram();
     expect(program.name()).toBe('cdfknow');
   });
 
-  it('包含 description', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('包含 description', () => {
     const program = buildCLIProgram();
     expect(program.description()).toBeDefined();
     expect(program.description().length).toBeGreaterThan(0);
   });
 
-  it('全局选项 --no-color 已注册', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('全局选项 --no-color 已注册', () => {
     const program = buildCLIProgram();
     const opts = program.options.map((o) => o.long);
     expect(opts).toContain('--no-color');
   });
 
-  it('全局选项 --log-level 已注册', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('全局选项 --log-level 已注册', () => {
     const program = buildCLIProgram();
     const opts = program.options.map((o) => o.long);
     expect(opts).toContain('--log-level');
   });
 
-  it('全局选项 --json 已注册', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('全局选项 --json 已注册', () => {
     const program = buildCLIProgram();
     const opts = program.options.map((o) => o.long);
     expect(opts).toContain('--json');
   });
 
-  it('全局选项 --verbose 已注册', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('全局选项 --verbose 已注册', () => {
     const program = buildCLIProgram();
     const opts = program.options.map((o) => o.long);
     expect(opts).toContain('--verbose');
   });
 
-  it('全局选项 --quiet 已注册', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('全局选项 --quiet 已注册', () => {
     const program = buildCLIProgram();
     const opts = program.options.map((o) => o.long);
     expect(opts).toContain('--quiet');
   });
 
-  it('包含 version 命令及别名 v/ver', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('包含 version 命令及别名 v/ver', () => {
     const program = buildCLIProgram();
     const versionCmd = program.commands.find((c) => c.name() === 'version');
     expect(versionCmd).toBeDefined();
@@ -100,8 +94,7 @@ describe('CLI program 集成', () => {
     expect(versionCmd?.aliases()).toContain('ver');
   });
 
-  it('包含 help 命令及别名 h/?', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('包含 help 命令及别名 h/?', () => {
     const program = buildCLIProgram();
     const helpCmd = program.commands.find((c) => c.name() === 'help');
     expect(helpCmd).toBeDefined();
@@ -109,8 +102,7 @@ describe('CLI program 集成', () => {
     expect(helpCmd?.aliases()).toContain('?');
   });
 
-  it('包含所有核心 CLI 命令', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('包含所有核心 CLI 命令', () => {
     const program = buildCLIProgram();
     const names = program.commands.map((c) => c.name());
     // 验证所有主要命令都已注册
@@ -126,8 +118,7 @@ describe('CLI program 集成', () => {
     expect(names.some((n) => n === 'skill' || n === 'skills')).toBe(true);
   });
 
-  it('buildCLIProgram 每次返回独立实例', async () => {
-    const { buildCLIProgram } = await import('../program.js');
+  it('buildCLIProgram 每次返回独立实例', () => {
     const p1 = buildCLIProgram();
     const p2 = buildCLIProgram();
     expect(p1).not.toBe(p2);

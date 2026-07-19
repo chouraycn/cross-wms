@@ -265,3 +265,31 @@ export type {
   SecurityPolicy,
   SecurityContextConfig,
 } from './types';
+
+// ==================== 从 openclaw 移植的模块导出 ====================
+// 注意：部分模块因依赖未移植而内容被注释，对应导出也需注释
+
+// export * from './browser-config';  // 模块内容被注释，无导出
+export * from './config-runtime';
+// export * from './exec-approvals-runtime';  // 模块内容被注释，无导出
+export * from './gateway-method-runtime';
+export * from './outbound-media';
+// export * from './plugin-runtime';  // 模块内容被注释，无导出
+export * from './provider-auth-runtime';
+export * from './provider-auth';
+export * from './provider-entry';
+// export * from './provider-http';  // 模块内容被注释，无导出
+export * from './provider-model-shared';
+// export * from './provider-model-types';  // 模块内容被注释，无导出
+export * from './provider-onboard';
+export * from './provider-stream-shared';
+export * from './provider-tools';
+// export * from './provider-web-search-config-contract';  // 模块内容被注释，无导出
+export * from './provider-web-search';
+// export * from './runtime-doctor';  // 模块内容被注释，无导出
+// export * from './runtime-env';  // 模块内容被注释，无导出
+export * from './secret-input';
+export * from './security-runtime';
+// export * from './testing';  // 模块内容被注释，无导出
+// export * from './text-runtime';  // 模块内容被注释，无导出
+export * from './video-generation';
