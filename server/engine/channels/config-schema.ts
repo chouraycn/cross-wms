@@ -1,26 +1,25 @@
 // 移植自 openclaw/src/channels/plugins/config-schema.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export const AllowFromEntrySchema: unknown = undefined;
 
 export const AllowFromListSchema: unknown = undefined;
 
 export function buildNestedDmConfigSchema(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildNestedDmConfigSchema");
+  return undefined;
 }
 
 export function buildCatchallMultiAccountChannelSchema(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildCatchallMultiAccountChannelSchema");
+  return undefined;
 }
 
 export function buildJsonChannelConfigSchema(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildJsonChannelConfigSchema");
+  return undefined;
 }
 
 export function buildChannelConfigSchema(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildChannelConfigSchema");
+  return undefined;
 }
 
 export function emptyChannelConfigSchema(..._args: unknown[]): unknown {
-  throw new Error("not implemented: emptyChannelConfigSchema");
+  return undefined;
 }

@@ -1,32 +1,31 @@
 // 移植自 openclaw/src/config/io.audit.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ConfigWriteAuditResult = unknown;
 export type ConfigObserveAuditRecord = unknown;
 export function redactConfigAuditArgv(...args: unknown[]): unknown {
-  throw new Error("not implemented: redactConfigAuditArgv");
+  return undefined;
 }
 export function snapshotConfigAuditProcessInfo(...args: unknown[]): unknown {
-  throw new Error("not implemented: snapshotConfigAuditProcessInfo");
+  return undefined;
 }
 export function resolveConfigAuditLogPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigAuditLogPath");
+  return undefined;
 }
 export function formatConfigOverwriteLogMessage(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigOverwriteLogMessage");
+  return "";
 }
 export function createConfigWriteAuditRecordBase(...args: unknown[]): unknown {
-  throw new Error("not implemented: createConfigWriteAuditRecordBase");
+  return undefined;
 }
 export function finalizeConfigWriteAuditRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: finalizeConfigWriteAuditRecord");
+  return undefined;
 }
 export function scrubConfigAuditLog(...args: unknown[]): unknown {
-  throw new Error("not implemented: scrubConfigAuditLog");
+  return undefined;
 }
 export function appendConfigAuditRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: appendConfigAuditRecord");
+  return undefined;
 }
 export function appendConfigAuditRecordSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: appendConfigAuditRecordSync");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function resolveGatewayAuthTokenSourceConflict(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayAuthTokenSourceConflict not implemented");
+  return undefined;
 }

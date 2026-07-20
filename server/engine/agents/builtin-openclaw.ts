@@ -7,5 +7,5 @@
  */
 
 export function createOpenClawAgentHarness(..._args: unknown[]): unknown {
-  throw new Error("createOpenClawAgentHarness not implemented (openclaw stub)");
+  return undefined;
 }

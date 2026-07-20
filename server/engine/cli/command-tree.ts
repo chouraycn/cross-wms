@@ -1,11 +1,26 @@
-// 移植自 openclaw/src/cli/command-tree.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Commander tree mutation helpers used by lazy command replacement.
+// 移植自 openclaw/src/cli/program/command-tree.ts
 
-export function removeCommand(..._args: unknown[]): unknown {
-  throw new Error("not implemented: removeCommand");
+import type { Command } from "commander";
+
+/** Remove an exact Command instance from a parent program. */
+export function removeCommand(program: Command, command: Command): boolean {
+  const commands = program.commands as Command[];
+  const index = commands.indexOf(command);
+  if (index < 0) {
+    return false;
+  }
+  commands.splice(index, 1);
+  return true;
 }
 
-export function removeCommandByName(..._args: unknown[]): unknown {
-  throw new Error("not implemented: removeCommandByName");
+/** Remove a command by primary name or alias. */
+export function removeCommandByName(program: Command, name: string): boolean {
+  const existing = program.commands.find(
+    (command) => command.name() === name || command.aliases().includes(name),
+  );
+  if (!existing) {
+    return false;
+  }
+  return removeCommand(program, existing);
 }

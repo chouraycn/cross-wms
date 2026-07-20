@@ -7,8 +7,8 @@
  */
 
 export function canExecRequestNode(..._args: unknown[]): unknown {
-  throw new Error("canExecRequestNode not implemented (openclaw stub)");
+  return false;
 }
 export function resolveExecDefaults(..._args: unknown[]): unknown {
-  throw new Error("resolveExecDefaults not implemented (openclaw stub)");
+  return undefined;
 }

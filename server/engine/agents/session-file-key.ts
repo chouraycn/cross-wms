@@ -7,5 +7,5 @@
  */
 
 export function resolveEmbeddedSessionFileKey(..._args: unknown[]): unknown {
-  throw new Error("resolveEmbeddedSessionFileKey not implemented (openclaw stub)");
+  return undefined;
 }

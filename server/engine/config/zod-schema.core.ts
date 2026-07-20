@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/config/zod-schema.core.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type _ModelCompatSchemaAssignableToType = unknown;
 export type _ModelCompatTypeAssignableToSchema = unknown;
@@ -7,7 +6,7 @@ export type DmPolicyAllowFromViolation = unknown;
 export type _ToolsMediaAsyncCompletionSchemaAssignableToType = unknown;
 export type _ToolsMediaAsyncCompletionTypeAssignableToSchema = unknown;
 export function isBuiltInModelProviderOverlayId(...args: unknown[]): unknown {
-  throw new Error("not implemented: isBuiltInModelProviderOverlayId");
+  return false;
 }
 export const SecretRefSchema: unknown = undefined;
 export const SecretInputSchema: unknown = undefined;

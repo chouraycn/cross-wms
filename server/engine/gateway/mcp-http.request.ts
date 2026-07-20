@@ -12,29 +12,29 @@
  */
 
 export function validateMcpLoopbackRequest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] validateMcpLoopbackRequest not implemented");
+  return undefined;
 }
 
 export async function readMcpHttpBody(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readMcpHttpBody not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function isMcpHttpBodyTooLargeError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isMcpHttpBodyTooLargeError not implemented");
+  return false;
 }
 
 export function isMcpHttpBodyTimeoutError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isMcpHttpBodyTimeoutError not implemented");
+  return false;
 }
 
 export function resolveMcpHttpBodyTimeoutMs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveMcpHttpBodyTimeoutMs not implemented");
+  return undefined;
 }
 
 export function resolveMcpCliCaptureKey(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveMcpCliCaptureKey not implemented");
+  return undefined;
 }
 
 export function resolveMcpRequestContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveMcpRequestContext not implemented");
+  return undefined;
 }

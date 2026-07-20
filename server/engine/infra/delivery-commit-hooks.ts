@@ -1,13 +1,30 @@
 // 移植自 openclaw/src/infra/delivery-commit-hooks.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export type OutboundDeliveryCommitHook = unknown;
-export function attachOutboundDeliveryCommitHook(...args: unknown[]): unknown {
-  throw new Error("not implemented: attachOutboundDeliveryCommitHook");
+export type OutboundDeliveryCommitHook = {
+  name: string;
+  run: (params: { result: unknown }) => Promise<void>;
+};
+
+const hooks: OutboundDeliveryCommitHook[] = [];
+
+/** Attaches a commit hook to be run after outbound delivery. */
+export function attachOutboundDeliveryCommitHook(hook: OutboundDeliveryCommitHook): void {
+  hooks.push(hook);
 }
-export function runOutboundDeliveryCommitHooks(...args: unknown[]): unknown {
-  throw new Error("not implemented: runOutboundDeliveryCommitHooks");
+
+/** Runs all attached delivery commit hooks. */
+export async function runOutboundDeliveryCommitHooks(params: { result: unknown }): Promise<void> {
+  for (const hook of hooks) {
+    try {
+      await hook.run(params);
+    } catch {
+      // Commit hook failures are non-fatal
+    }
+  }
 }
-export function isOutboundDeliveryResultArray(...args: unknown[]): unknown {
-  throw new Error("not implemented: isOutboundDeliveryResultArray");
+
+/** Checks if a value looks like an OutboundDeliveryResult array. */
+export function isOutboundDeliveryResultArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
 }

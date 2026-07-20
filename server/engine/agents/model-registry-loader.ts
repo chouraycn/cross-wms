@@ -1,11 +1,27 @@
 /**
- * 移植自 openclaw/src/agents/model-registry-loader.ts
+ * Ported from openclaw/src/agents/model-registry-loader.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared model-registry loader for agent paths.
+ * Cross-wms degradation: returns empty registry without auth/model discovery.
  */
 
-export function loadAgentModelRegistry(..._args: unknown[]): unknown {
-  throw new Error("loadAgentModelRegistry not implemented (openclaw stub)");
+/** Options controlling model discovery, credential reads, and normalization. */
+type LoadAgentModelRegistryOptions = {
+  providerFilter?: string;
+  normalizeModels?: boolean;
+  readOnly?: boolean;
+  skipCredentials?: boolean;
+  workspaceDir?: string;
+};
+
+/** Load the agent model registry with optional provider filtering/normalization. */
+export function loadAgentModelRegistry(
+  config: Record<string, unknown>,
+  options: LoadAgentModelRegistryOptions = {},
+): { agentDir: string; registry: Record<string, unknown> } {
+  // Cross-wms does not have auth storage or model discovery pipeline.
+  return {
+    agentDir: "",
+    registry: {},
+  };
 }

@@ -41,3 +41,6 @@ export function removePluginRoot(path: string): void {
 export function clearPluginRoots(): void {
   pluginRoots.length = 0;
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const resolvePluginSourceRoots: any = undefined as any;

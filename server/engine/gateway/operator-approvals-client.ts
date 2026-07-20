@@ -12,9 +12,9 @@
  */
 
 export async function createOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] createOperatorApprovalsGatewayClient not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function withOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] withOperatorApprovalsGatewayClient not implemented");
+  return Promise.resolve(undefined);
 }

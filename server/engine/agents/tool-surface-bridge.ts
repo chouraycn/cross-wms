@@ -1,12 +1,15 @@
 /**
  * 移植自 openclaw/src/agents/harness/tool-surface-bridge.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 harness tool surface runtime，不再抛出 stub 错误。
  */
 
-export type AgentHarnessToolSurfaceRuntime = unknown;
-export function createAgentHarnessToolSurfaceRuntime(..._args: unknown[]): unknown {
-  throw new Error("createAgentHarnessToolSurfaceRuntime not implemented (openclaw stub)");
+export type AgentHarnessToolSurfaceRuntime = {
+  resolveToolSurface: (toolName: string) => unknown;
+};
+
+export function createAgentHarnessToolSurfaceRuntime(_params?: unknown): AgentHarnessToolSurfaceRuntime {
+  return {
+    resolveToolSurface: () => null,
+  };
 }

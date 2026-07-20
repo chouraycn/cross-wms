@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Detects stale local bundled plugin install records.
 import path from "node:path";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { resolveUserPath } from './_parent__utils.js';
 import { normalizeBundledLookupPath } from "./bundled-load-path-aliases.js";
 import { resolveBundledPluginSources, type BundledPluginSource } from "./bundled-sources.js";
 

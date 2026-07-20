@@ -15,8 +15,7 @@ export function registerProxyCli(program: Command): void {
     .option("--upstream <url>", "Upstream URL")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw proxy: not supported in stub mode (runtime, proxy-cli.runtime not ported).",
-      );
+      console.error('openclaw proxy is not available in cross-wms');
+      process.exit(1);
     });
 }

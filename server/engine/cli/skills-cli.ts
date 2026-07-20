@@ -16,9 +16,8 @@ export function registerSkillsCli(program: Command): void {
     .description("List configured skills")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw skills list: not supported in stub mode (skills/*, runtime not ported).",
-      );
+      console.error('openclaw skills list is not available in cross-wms');
+      process.exit(1);
     });
 
   skills
@@ -26,9 +25,8 @@ export function registerSkillsCli(program: Command): void {
     .description("Enable a skill")
     .argument("<name>", "Skill name")
     .action(() => {
-      throw new Error(
-        "openclaw skills enable: not supported in stub mode (skills/*, runtime not ported).",
-      );
+      console.error('openclaw skills enable is not available in cross-wms');
+      process.exit(1);
     });
 
   skills
@@ -36,14 +34,12 @@ export function registerSkillsCli(program: Command): void {
     .description("Disable a skill")
     .argument("<name>", "Skill name")
     .action(() => {
-      throw new Error(
-        "openclaw skills disable: not supported in stub mode (skills/*, runtime not ported).",
-      );
+      console.error('openclaw skills disable is not available in cross-wms');
+      process.exit(1);
     });
 
   skills.action(() => {
-    throw new Error(
-      "openclaw skills: not supported in stub mode (skills/*, runtime not ported).",
-    );
+    console.error('openclaw skills is not available in cross-wms');
+      process.exit(1);
   });
 }

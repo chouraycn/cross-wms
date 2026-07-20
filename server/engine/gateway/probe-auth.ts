@@ -16,21 +16,21 @@ export const resolveGatewayProbeTarget: any = undefined;
 export const GatewayProbeTargetResolution: any = undefined;
 
 export function resolveGatewayProbeCredentialConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeCredentialConfig not implemented");
+  return undefined;
 }
 
 export function resolveGatewayProbeAuth(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeAuth not implemented");
+  return undefined;
 }
 
 export async function resolveGatewayProbeAuthWithSecretInputs(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeAuthWithSecretInputs not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function resolveGatewayProbeAuthSafeWithSecretInputs(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeAuthSafeWithSecretInputs not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function resolveGatewayProbeAuthSafe(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeAuthSafe not implemented");
+  return undefined;
 }

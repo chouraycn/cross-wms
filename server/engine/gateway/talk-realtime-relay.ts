@@ -12,33 +12,33 @@
  */
 
 export function createTalkRealtimeRelaySession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createTalkRealtimeRelaySession not implemented");
+  return undefined;
 }
 
 export function sendTalkRealtimeRelayAudio(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] sendTalkRealtimeRelayAudio not implemented");
+  return undefined;
 }
 
 export function submitTalkRealtimeRelayToolResult(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] submitTalkRealtimeRelayToolResult not implemented");
+  return undefined;
 }
 
 export function registerTalkRealtimeRelayAgentRun(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] registerTalkRealtimeRelayAgentRun not implemented");
+  return undefined;
 }
 
 export async function steerTalkRealtimeRelayAgentRun(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] steerTalkRealtimeRelayAgentRun not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function cancelTalkRealtimeRelayTurn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] cancelTalkRealtimeRelayTurn not implemented");
+  return false;
 }
 
 export function stopTalkRealtimeRelaySession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] stopTalkRealtimeRelaySession not implemented");
+  return undefined;
 }
 
 export function clearTalkRealtimeRelaySessionsForTest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearTalkRealtimeRelaySessionsForTest not implemented");
+  return undefined;
 }

@@ -7,8 +7,8 @@
  */
 
 export function writeFakeClaudeLiveCli(..._args: unknown[]): unknown {
-  throw new Error("writeFakeClaudeLiveCli not implemented (openclaw stub)");
+  return undefined;
 }
 export function writeFakeClaudeCli(..._args: unknown[]): unknown {
-  throw new Error("writeFakeClaudeCli not implemented (openclaw stub)");
+  return undefined;
 }

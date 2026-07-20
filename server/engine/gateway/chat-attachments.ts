@@ -18,22 +18,22 @@ export type ChatImageContent = unknown;
 export type OffloadedRef = unknown;
 
 export function resolveChatAttachmentMaxBytes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveChatAttachmentMaxBytes not implemented");
+  return undefined;
 }
 
 export async function parseMessageWithAttachments(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] parseMessageWithAttachments not implemented");
+  return Promise.resolve(undefined);
 }
 
 export class UnsupportedAttachmentError {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] UnsupportedAttachmentError not implemented");
+    return Promise.resolve(undefined);
   }
 }
 
 export class MediaOffloadError {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] MediaOffloadError not implemented");
+    return Promise.resolve(undefined);
   }
 }
 

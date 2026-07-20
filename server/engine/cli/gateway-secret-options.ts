@@ -19,8 +19,13 @@ function normalizeOptionalString(value: unknown): string | undefined {
 
 // ===== 内联 readSecretFromFile stub =====
 function readSecretFromFile(filePath: string, label: string): string {
-  // 降级：openclaw 的 acp/secret-file.js 未移植；直接抛出错误。
-  throw new Error(`Reading ${label} from file is not supported in stub mode: ${filePath}`);
+  // 降级：openclaw 的 acp/secret-file.js 未移植；使用 fs 同步读取文件内容。
+  try {
+    const fs = require("node:fs");
+    return fs.readFileSync(filePath, "utf8").trim();
+  } catch (err) {
+    throw new Error(`Failed to read ${label} from file: ${filePath}`);
+  }
 }
 // ===== stub 结束 =====
 

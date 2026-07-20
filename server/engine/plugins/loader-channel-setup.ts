@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds channel setup metadata from plugin light surfaces.
 import type { ChannelPlugin } from './_stub_parent__channels__plugins__types_plugin.js';
 import { isChannelConfigured } from "../config/channel-configured.js";

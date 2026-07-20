@@ -7,38 +7,38 @@
  */
 
 export function forgetPromptBuildDrainCacheForRun(..._args: unknown[]): unknown {
-  throw new Error("forgetPromptBuildDrainCacheForRun not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolvePromptBuildHookResult(..._args: unknown[]): unknown {
-  throw new Error("resolvePromptBuildHookResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolvePromptModeForSession(..._args: unknown[]): unknown {
-  throw new Error("resolvePromptModeForSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldInjectHeartbeatPrompt(..._args: unknown[]): unknown {
-  throw new Error("shouldInjectHeartbeatPrompt not implemented (openclaw stub)");
+  return false;
 }
 export function shouldWarnOnOrphanedUserRepair(..._args: unknown[]): unknown {
-  throw new Error("shouldWarnOnOrphanedUserRepair not implemented (openclaw stub)");
+  return false;
 }
 export function resolvePromptSubmissionSkipReason(..._args: unknown[]): unknown {
-  throw new Error("resolvePromptSubmissionSkipReason not implemented (openclaw stub)");
+  return undefined;
 }
 export function mergeOrphanedTrailingUserPrompt(..._args: unknown[]): unknown {
-  throw new Error("mergeOrphanedTrailingUserPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptFsWorkspaceOnly(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptFsWorkspaceOnly not implemented (openclaw stub)");
+  return undefined;
 }
 export function prependSystemPromptAddition(..._args: unknown[]): unknown {
-  throw new Error("prependSystemPromptAddition not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptMediaTaskSystemPromptAddition(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptMediaTaskSystemPromptAddition not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildAfterTurnRuntimeContext(..._args: unknown[]): unknown {
-  throw new Error("buildAfterTurnRuntimeContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildAfterTurnRuntimeContextFromUsage(..._args: unknown[]): unknown {
-  throw new Error("buildAfterTurnRuntimeContextFromUsage not implemented (openclaw stub)");
+  return undefined;
 }

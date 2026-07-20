@@ -1,11 +1,10 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/run/attempt-trajectory-flush-cleanup.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/run/attempt-trajectory-flush-cleanup.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Cross-wms degradation: no trajectory recorder, performs no-op cleanup.
  */
 
-export function flushEmbeddedAttemptTrajectoryRecorder(..._args: unknown[]): unknown {
-  throw new Error("flushEmbeddedAttemptTrajectoryRecorder not implemented (openclaw stub)");
+/** Flushes the embedded attempt trajectory recorder for cleanup. */
+export function flushEmbeddedAttemptTrajectoryRecorder(..._args: unknown[]): void {
+  // Cross-wms does not have the trajectory recorder subsystem.
 }

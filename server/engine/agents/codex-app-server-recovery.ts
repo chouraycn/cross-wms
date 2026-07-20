@@ -7,5 +7,5 @@
  */
 
 export function resolveCodexAppServerRecoveryRetry(..._args: unknown[]): unknown {
-  throw new Error("resolveCodexAppServerRecoveryRetry not implemented (openclaw stub)");
+  return undefined;
 }

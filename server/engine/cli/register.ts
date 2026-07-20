@@ -1,7 +1,14 @@
-// 移植自 openclaw/src/cli/register.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// CLI command registration barrel: re-exports from sub-modules.
+// 移植自 openclaw/src/cli/program/register.ts
 
-export function registerCronCli(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerCronCli");
-}
+export { registerCrestodianCommand } from './register.crestodian.js';
+export { registerSetupCommand } from './register.setup.js';
+export { registerOnboardCommand } from './register.onboard.js';
+export { registerConfigureCommand } from './register.configure.js';
+export { registerMaintenanceCommands } from './register.maintenance.js';
+export { registerBackupCommand } from './register.backup.js';
+export { registerMigrateCommand } from './register.migrate.js';
+export { registerMessageCommands } from './register.message.js';
+export { registerAgentTurnCommand } from './register.agent-turn.js';
+export { registerAgentsCommands } from './register.agent.js';
+export { registerStatusHealthSessionsCommands } from './register.status-health-sessions.js';

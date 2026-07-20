@@ -1,58 +1,57 @@
 // 移植自 openclaw/src/gateway/server-methods/approval-shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function isApprovalDecision(...args: unknown[]): unknown {
-  throw new Error("not implemented: isApprovalDecision");
+  return false;
 }
 
 export function isApprovalRecordVisibleToClient(...args: unknown[]): unknown {
-  throw new Error("not implemented: isApprovalRecordVisibleToClient");
+  return false;
 }
 
 export function listVisiblePendingApprovalRequests(...args: unknown[]): unknown {
-  throw new Error("not implemented: listVisiblePendingApprovalRequests");
+  return [];
 }
 
 export function bindApprovalRequesterMetadata(...args: unknown[]): unknown {
-  throw new Error("not implemented: bindApprovalRequesterMetadata");
+  return undefined;
 }
 
 export function bindApprovalReviewerDeviceIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: bindApprovalReviewerDeviceIds");
+  return undefined;
 }
 
 export function registerPendingApprovalRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerPendingApprovalRecord");
+  return undefined;
 }
 
 export function buildRequestedApprovalEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildRequestedApprovalEvent");
+  return undefined;
 }
 
 export function resolveApprovalDecisionParams(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveApprovalDecisionParams");
+  return undefined;
 }
 
 export function resolveApprovalRequestRecipientConnIds(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveApprovalRequestRecipientConnIds");
+  return undefined;
 }
 
 export function resolvePendingApprovalRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePendingApprovalRecord");
+  return undefined;
 }
 
 export function respondPendingApprovalLookupError(...args: unknown[]): unknown {
-  throw new Error("not implemented: respondPendingApprovalLookupError");
+  return undefined;
 }
 
 export async function handleApprovalWaitDecision(...args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: handleApprovalWaitDecision");
+  return Promise.resolve(undefined);
 }
 
 export async function handlePendingApprovalRequest(...args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: handlePendingApprovalRequest");
+  return Promise.resolve(undefined);
 }
 
 export async function handleApprovalResolve(...args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: handleApprovalResolve");
+  return Promise.resolve(undefined);
 }

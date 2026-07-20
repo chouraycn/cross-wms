@@ -7,5 +7,5 @@
  */
 
 export function createSessionsSpawnTool(..._args: unknown[]): unknown {
-  throw new Error("createSessionsSpawnTool not implemented (openclaw stub)");
+  return undefined;
 }

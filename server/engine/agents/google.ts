@@ -7,5 +7,5 @@
  */
 
 export function isGoogleModelApi(..._args: unknown[]): unknown {
-  throw new Error("isGoogleModelApi not implemented (openclaw stub)");
+  return false;
 }

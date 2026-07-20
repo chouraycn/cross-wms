@@ -7,17 +7,17 @@
  */
 
 export function resolveEmbeddedAttemptSessionWriteLockOptions(..._args: unknown[]): unknown {
-  throw new Error("resolveEmbeddedAttemptSessionWriteLockOptions not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptStreamAuthProfileId(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptStreamAuthProfileId not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveUnknownToolGuardThreshold(..._args: unknown[]): unknown {
-  throw new Error("resolveUnknownToolGuardThreshold not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldRunLlmOutputHooksForAttempt(..._args: unknown[]): unknown {
-  throw new Error("shouldRunLlmOutputHooksForAttempt not implemented (openclaw stub)");
+  return false;
 }
 export function resolveAttemptToolPolicyMessageProvider(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptToolPolicyMessageProvider not implemented (openclaw stub)");
+  return undefined;
 }

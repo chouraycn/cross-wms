@@ -1,4 +1,3 @@
-// @ts-nocheck
 // LLM Core module implements event stream behavior.
 import type {
   AssistantMessage,

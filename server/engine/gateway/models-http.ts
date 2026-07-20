@@ -12,5 +12,5 @@
  */
 
 export async function handleOpenAiModelsHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleOpenAiModelsHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }

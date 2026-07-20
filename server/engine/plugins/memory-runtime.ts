@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Runtime bridge for plugin-owned memory hooks and state.
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { resolveUserPath } from './_parent__utils.js';
 import { getLoadedRuntimePluginRegistry } from "./active-runtime-registry.js";
 import { normalizePluginsConfig } from "./config-state.js";
 import { getMemoryRuntime } from "./memory-state.js";

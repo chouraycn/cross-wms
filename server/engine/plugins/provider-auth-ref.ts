@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Resolves provider auth secret refs from env, file, and exec-backed secret providers. */
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import { isValidEnvSecretRefId, type SecretRef } from "../config/types.secrets.js";
 import { formatErrorMessage } from "../infra/errors.js";

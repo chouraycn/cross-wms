@@ -1,12 +1,9 @@
-// 根命令描述符与命令组类型。
-// 移植自 openclaw/src/cli/program/command-group-descriptors.ts。
-//
-// 降级策略：原模块依赖 `commander`（仅类型）与 openclaw 内部 registrar 类型；
-// 此处仅保留 `NamedCommandDescriptor` 与基本类型，供 `core-command-descriptors.ts`
-// 与 `subcli-descriptors.ts` 的降级 stub 使用。组注册相关的 API 在 cross-wms 未移植，
-// 这里抛出错误以避免静默失败。
+// Descriptor-to-lazy-command-group adapters used by core and sub-CLI registration.
+// 移植自 openclaw/src/cli/program/command-group-descriptors.ts
 
-/** 根命令占位符描述符。 */
+import type { Command } from "commander";
+
+/** Descriptor for one root command placeholder. */
 export type NamedCommandDescriptor = {
   name: string;
   description: string;
@@ -14,27 +11,93 @@ export type NamedCommandDescriptor = {
   parentDefaultHelp?: boolean;
 };
 
-/** 命名命令组 spec，用于描述一个 registrar 拥有的占位符。 */
+/** Group spec that names the placeholders owned by one registrar. */
 export type CommandGroupDescriptorSpec<TRegister> = {
   commandNames: readonly string[];
   register: TRegister;
 };
 
-/** 解析后的组项，包含 descriptor-backed 占位符与 registrar。 */
+/** Resolved group entry after descriptor lookup. */
 export type ResolvedCommandGroupEntry<TDescriptor extends NamedCommandDescriptor, TRegister> = {
   placeholders: TDescriptor[];
   register: TRegister;
 };
 
-/**
- * 将命名命令组 spec 解析为 descriptor-backed 条目。
- *
- * 降级实现：抛出错误。cross-wms 未移植 openclaw 的命令组注册流程，
- * 调用方应使用 cross-wms 自有的命令注册路径。
- */
+type CommandGroupEntryLike = {
+  placeholders: NamedCommandDescriptor[];
+  register: (program: Command) => Promise<void> | void;
+};
+
+function buildDescriptorIndex<TDescriptor extends NamedCommandDescriptor>(
+  descriptors: readonly TDescriptor[],
+): Map<string, TDescriptor> {
+  return new Map(descriptors.map((descriptor) => [descriptor.name, descriptor]));
+}
+
+/** Resolve named command-group specs into descriptor-backed entries. */
 export function resolveCommandGroupEntries<TDescriptor extends NamedCommandDescriptor, TRegister>(
-  _descriptors: readonly TDescriptor[],
-  _specs: readonly CommandGroupDescriptorSpec<TRegister>[],
+  descriptors: readonly TDescriptor[],
+  specs: readonly CommandGroupDescriptorSpec<TRegister>[],
 ): ResolvedCommandGroupEntry<TDescriptor, TRegister>[] {
-  throw new Error("resolveCommandGroupEntries stub: openclaw command-group registration not ported");
+  const descriptorsByName = buildDescriptorIndex(descriptors);
+  return specs.map((spec) => ({
+    placeholders: spec.commandNames.map((name) => {
+      const descriptor = descriptorsByName.get(name);
+      if (!descriptor) {
+        throw new Error(`Unknown command descriptor: ${name}`);
+      }
+      return descriptor;
+    }),
+    register: spec.register,
+  }));
+}
+
+/** Build lazy command-group entries with a mapped program registrar. */
+export function buildCommandGroupEntries<TRegister>(
+  descriptors: readonly NamedCommandDescriptor[],
+  specs: readonly CommandGroupDescriptorSpec<TRegister>[],
+  mapRegister: (register: TRegister) => CommandGroupEntryLike["register"],
+): CommandGroupEntryLike[] {
+  return resolveCommandGroupEntries(descriptors, specs).map((entry) => ({
+    placeholders: entry.placeholders,
+    register: mapRegister(entry.register),
+  }));
+}
+
+/** Define a lazy group that imports its module at registration time. */
+export function defineImportedCommandGroupSpec<TRegisterArgs, TModule>(
+  commandNames: readonly string[],
+  loadModule: () => Promise<TModule>,
+  register: (module: TModule, args: TRegisterArgs) => Promise<void> | void,
+): CommandGroupDescriptorSpec<(args: TRegisterArgs) => Promise<void>> {
+  return {
+    commandNames,
+    register: async (args: TRegisterArgs) => {
+      const module = await loadModule();
+      await register(module, args);
+    },
+  };
+}
+
+type AnyImportedProgramCommandGroupDefinition = {
+  commandNames: readonly string[];
+  loadModule: () => Promise<Record<string, unknown>>;
+  exportName: string;
+};
+
+/** Map program-level imported command definitions to lazy specs with export validation. */
+export function defineImportedProgramCommandGroupSpecs(
+  definitions: readonly AnyImportedProgramCommandGroupDefinition[],
+): CommandGroupDescriptorSpec<(program: Command) => Promise<void>>[] {
+  return definitions.map((definition) => ({
+    commandNames: definition.commandNames,
+    register: async (program: Command) => {
+      const module = await definition.loadModule();
+      const register = module[definition.exportName];
+      if (typeof register !== "function") {
+        throw new Error(`Missing program command registrar: ${definition.exportName}`);
+      }
+      await register(program);
+    },
+  }));
 }

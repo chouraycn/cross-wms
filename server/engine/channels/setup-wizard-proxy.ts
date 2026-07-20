@@ -1,22 +1,21 @@
 // 移植自 openclaw/src/channels/plugins/setup-wizard-proxy.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function createDelegatedResolveConfigured(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createDelegatedResolveConfigured");
+  return undefined;
 }
 
 export function createDelegatedPrepare(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createDelegatedPrepare");
+  return undefined;
 }
 
 export function createDelegatedFinalize(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createDelegatedFinalize");
+  return undefined;
 }
 
 export function createDelegatedSetupWizardProxy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createDelegatedSetupWizardProxy");
+  return undefined;
 }
 
 export function createAllowlistSetupWizardProxy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowlistSetupWizardProxy");
+  return undefined;
 }

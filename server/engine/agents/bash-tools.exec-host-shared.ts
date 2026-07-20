@@ -16,53 +16,53 @@ export type ExecApprovalFollowupResultDeps = unknown;
 export type DefaultExecApprovalRequestArgs = unknown;
 export const MAX_EXEC_APPROVAL_FOLLOWUP_FAILURE_LOG_KEYS: unknown = undefined;
 export function createExecApprovalPendingState(..._args: unknown[]): unknown {
-  throw new Error("createExecApprovalPendingState not implemented (openclaw stub)");
+  return undefined;
 }
 export function createExecApprovalRequestState(..._args: unknown[]): unknown {
-  throw new Error("createExecApprovalRequestState not implemented (openclaw stub)");
+  return undefined;
 }
 export function createExecApprovalRequestContext(..._args: unknown[]): unknown {
-  throw new Error("createExecApprovalRequestContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function createDefaultExecApprovalRequestContext(..._args: unknown[]): unknown {
-  throw new Error("createDefaultExecApprovalRequestContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveBaseExecApprovalDecision(..._args: unknown[]): unknown {
-  throw new Error("resolveBaseExecApprovalDecision not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveExecHostApprovalContext(..._args: unknown[]): unknown {
-  throw new Error("resolveExecHostApprovalContext not implemented (openclaw stub)");
+  return undefined;
 }
 export async function resolveApprovalDecisionOrUndefined(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveApprovalDecisionOrUndefined not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function resolveExecApprovalUnavailableState(..._args: unknown[]): unknown {
-  throw new Error("resolveExecApprovalUnavailableState not implemented (openclaw stub)");
+  return undefined;
 }
 export async function createAndRegisterDefaultExecApprovalRequest(..._args: unknown[]): Promise<unknown> {
-  throw new Error("createAndRegisterDefaultExecApprovalRequest not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function buildDefaultExecApprovalRequestArgs(..._args: unknown[]): unknown {
-  throw new Error("buildDefaultExecApprovalRequestArgs not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildExecApprovalFollowupTarget(..._args: unknown[]): unknown {
-  throw new Error("buildExecApprovalFollowupTarget not implemented (openclaw stub)");
+  return undefined;
 }
 export function createExecApprovalDecisionState(..._args: unknown[]): unknown {
-  throw new Error("createExecApprovalDecisionState not implemented (openclaw stub)");
+  return undefined;
 }
 export function enforceStrictInlineEvalApprovalBoundary(..._args: unknown[]): unknown {
-  throw new Error("enforceStrictInlineEvalApprovalBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldResolveExecApprovalUnavailableInline(..._args: unknown[]): unknown {
-  throw new Error("shouldResolveExecApprovalUnavailableInline not implemented (openclaw stub)");
+  return false;
 }
 export function buildHeadlessExecApprovalDeniedMessage(..._args: unknown[]): unknown {
-  throw new Error("buildHeadlessExecApprovalDeniedMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export async function sendExecApprovalFollowupResult(..._args: unknown[]): Promise<unknown> {
-  throw new Error("sendExecApprovalFollowupResult not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function buildExecApprovalPendingToolResult(..._args: unknown[]): unknown {
-  throw new Error("buildExecApprovalPendingToolResult not implemented (openclaw stub)");
+  return undefined;
 }

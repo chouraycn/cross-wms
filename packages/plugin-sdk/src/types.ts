@@ -76,6 +76,26 @@ export interface AdapterCompatConfig {
   functionCalling?: boolean;
 }
 
+/** Provider auth method definition used in plugin registration. */
+export interface ProviderAuthMethodDefinition {
+  methodId?: string;
+  label?: string;
+  hint?: string;
+  [key: string]: unknown;
+}
+
+/** Model catalog provider registration. */
+export interface ModelCatalogProviderRegistration {
+  id?: string;
+  run?: (ctx: unknown) => Promise<unknown>;
+  order?: string;
+  provider?: string;
+  kinds?: string[];
+  liveCatalog?: (ctx: unknown) => Promise<unknown[]>;
+  staticCatalog?: (ctx: unknown) => Promise<unknown[]>;
+  [key: string]: unknown;
+}
+
 export interface PluginProviderCapability {
   kind: 'provider';
   id: string;
@@ -85,6 +105,14 @@ export interface PluginProviderCapability {
   defaultEndpoint?: string;
   apiKeyEnvVar?: string;
   requiresOAuth?: boolean;
+  auth?: ProviderAuthMethodDefinition[];
+  /** Provider registration extra fields from plugin entry helpers. */
+  label?: string;
+  docsPath?: string;
+  aliases?: string[];
+  envVars?: string[];
+  catalog?: unknown;
+  staticCatalog?: unknown;
 }
 
 export interface PluginEmbeddingProviderCapability {
@@ -371,6 +399,7 @@ export interface PluginDefinition {
   id: string;
   name: string;
   description: string;
+  kind?: string;
   configSchema: PluginConfigSchema;
   registrationMode?: RegistrationMode;
   register: (api: PluginApi) => void | Promise<void>;
@@ -472,6 +501,7 @@ export interface PluginApi {
   unregisterHook(hookType: PluginHookType, handler: HookHandler): void;
   registerContract(contract: PluginContract): void;
   registerProvider(cap: PluginProviderCapability): void;
+  registerModelCatalogProvider(provider: ModelCatalogProviderRegistration): void;
   registerMemoryHost(cap: PluginMemoryHostCapability): void;
   registerChannel(cap: PluginChannelCapability): void;
   registerCommand(cap: PluginCommandCapability): void;

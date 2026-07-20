@@ -1,16 +1,21 @@
 /**
- * 移植自 openclaw/src/agents/models-config.providers.secrets.ts
+ * Ported from openclaw/src/agents/models-config.providers.secrets.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Provider API key and auth resolver creation.
+ * Cross-wms degradation: returns no-op resolvers without secret helpers.
  */
 
 export { normalizeApiKeyConfig, resolveMissingProviderApiKey } from "./models-config.providers.secret-helpers.js";
 export type { ProviderApiKeyResolver, ProviderAuthResolver, ProviderConfig, SecretDefaults } from "./models-config.providers.secret-helpers.js";
-export function createProviderApiKeyResolver(..._args: unknown[]): unknown {
-  throw new Error("createProviderApiKeyResolver not implemented (openclaw stub)");
+
+/** Creates a provider API key resolver. */
+export function createProviderApiKeyResolver(..._args: unknown[]): Record<string, unknown> {
+  // Cross-wms does not have provider API key resolution.
+  return { resolve: () => undefined };
 }
-export function createProviderAuthResolver(..._args: unknown[]): unknown {
-  throw new Error("createProviderAuthResolver not implemented (openclaw stub)");
+
+/** Creates a provider auth resolver. */
+export function createProviderAuthResolver(..._args: unknown[]): Record<string, unknown> {
+  // Cross-wms does not have provider auth resolution.
+  return { resolve: () => undefined };
 }

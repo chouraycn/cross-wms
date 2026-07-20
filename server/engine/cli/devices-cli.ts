@@ -15,9 +15,8 @@ export function registerDevicesCli(program: Command): void {
     .description("List paired devices")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw devices list: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw devices list is not available in cross-wms');
+      process.exit(1);
     });
 
   devices
@@ -25,14 +24,12 @@ export function registerDevicesCli(program: Command): void {
     .description("Remove a paired device")
     .argument("<deviceId>", "Device id")
     .action(() => {
-      throw new Error(
-        "openclaw devices remove: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw devices remove is not available in cross-wms');
+      process.exit(1);
     });
 
   devices.action(() => {
-    throw new Error(
-      "openclaw devices: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw devices is not available in cross-wms');
+      process.exit(1);
   });
 }

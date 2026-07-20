@@ -9,21 +9,21 @@
 export type ThemeColor = unknown;
 export type ThemeBg = unknown;
 export class Theme {
-  constructor(..._args: unknown[]) { throw new Error("Theme not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function loadThemeFromPath(..._args: unknown[]): unknown {
-  throw new Error("loadThemeFromPath not implemented (openclaw stub)");
+  return undefined;
 }
 export function setTheme(..._args: unknown[]): unknown {
-  throw new Error("setTheme not implemented (openclaw stub)");
+  return undefined;
 }
 export function stopThemeWatcher(..._args: unknown[]): unknown {
-  throw new Error("stopThemeWatcher not implemented (openclaw stub)");
+  return undefined;
 }
 export function highlightCode(..._args: unknown[]): unknown {
-  throw new Error("highlightCode not implemented (openclaw stub)");
+  return undefined;
 }
 export function getLanguageFromPath(..._args: unknown[]): unknown {
-  throw new Error("getLanguageFromPath not implemented (openclaw stub)");
+  return undefined;
 }
 export const theme: unknown = undefined;

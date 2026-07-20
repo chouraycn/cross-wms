@@ -15,9 +15,8 @@ export function registerPairingCli(program: Command): void {
     .description("Start a pairing session")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw pairing start: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw pairing start is not available in cross-wms');
+      process.exit(1);
     });
 
   pairing
@@ -25,14 +24,12 @@ export function registerPairingCli(program: Command): void {
     .description("Show pairing status")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw pairing status: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw pairing status is not available in cross-wms');
+      process.exit(1);
     });
 
   pairing.action(() => {
-    throw new Error(
-      "openclaw pairing: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw pairing is not available in cross-wms');
+      process.exit(1);
   });
 }

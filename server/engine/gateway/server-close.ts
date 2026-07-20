@@ -14,9 +14,9 @@
 export type ShutdownResult = unknown;
 
 export async function runGatewayClosePrelude(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] runGatewayClosePrelude not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function createGatewayCloseHandler(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayCloseHandler not implemented");
+  return undefined;
 }

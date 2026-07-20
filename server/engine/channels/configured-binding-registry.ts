@@ -1,22 +1,98 @@
 // 移植自 openclaw/src/channels/plugins/configured-binding-registry.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 配置绑定注册表：预热、计数和解析编译的绑定记录
 
-export function primeConfiguredBindingRegistry(..._args: unknown[]): unknown {
-  throw new Error("not implemented: primeConfiguredBindingRegistry");
+import type { OpenClawConfig } from "../../infra/_runtime-stubs.js";
+import type { ConversationRef } from "../../infra/outbound/session-binding-service.js";
+import type {
+  ConfiguredBindingRecordResolution,
+  ConfiguredBindingResolution,
+} from "./binding-types.js";
+import {
+  countCompiledBindingRegistry,
+  primeCompiledBindingRegistry,
+  resolveCompiledBindingRegistry,
+} from "./configured-binding-compiler.js";
+import {
+  materializeConfiguredBindingRecord,
+  resolveMatchingConfiguredBinding,
+  toConfiguredBindingConversationRef,
+} from "./configured-binding-match.js";
+import { resolveConfiguredBindingRecordBySessionKeyFromRegistry } from "./configured-binding-session-lookup.js";
+
+function resolveMaterializedConfiguredBinding(params: {
+  cfg: OpenClawConfig;
+  conversation: ConversationRef;
+}) {
+  const conversation = toConfiguredBindingConversationRef(params.conversation);
+  if (!conversation) return null;
+  const rules = resolveCompiledBindingRegistry(params.cfg).rulesByChannel.get(conversation.channel);
+  if (!rules || rules.length === 0) return null;
+  const resolved = resolveMatchingConfiguredBinding({ rules, conversation });
+  if (!resolved) return null;
+  return {
+    conversation,
+    resolved,
+    materializedTarget: materializeConfiguredBindingRecord({
+      rule: resolved.rule,
+      accountId: conversation.accountId,
+      conversation: resolved.match,
+    }),
+  };
 }
 
-export function resolveConfiguredBindingRecord(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredBindingRecord");
+export function primeConfiguredBindingRegistry(params: { cfg: OpenClawConfig }): {
+  bindingCount: number;
+  channelCount: number;
+} {
+  return countCompiledBindingRegistry(primeCompiledBindingRegistry(params.cfg));
 }
 
-export function resolveConfiguredBindingRecordForConversation(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredBindingRecordForConversation");
+export function resolveConfiguredBindingRecord(params: {
+  cfg: OpenClawConfig;
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+}): ConfiguredBindingRecordResolution | null {
+  const conversation = toConfiguredBindingConversationRef({
+    channel: params.channel,
+    accountId: params.accountId,
+    conversationId: params.conversationId,
+    parentConversationId: params.parentConversationId,
+  });
+  if (!conversation) return null;
+  return resolveConfiguredBindingRecordForConversation({ cfg: params.cfg, conversation });
 }
 
-export function resolveConfiguredBinding(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredBinding");
+export function resolveConfiguredBindingRecordForConversation(params: {
+  cfg: OpenClawConfig;
+  conversation: ConversationRef;
+}): ConfiguredBindingRecordResolution | null {
+  const resolved = resolveMaterializedConfiguredBinding(params);
+  if (!resolved) return null;
+  return resolved.materializedTarget;
 }
 
-export function resolveConfiguredBindingRecordBySessionKey(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredBindingRecordBySessionKey");
+export function resolveConfiguredBinding(params: {
+  cfg: OpenClawConfig;
+  conversation: ConversationRef;
+}): ConfiguredBindingResolution | null {
+  const resolved = resolveMaterializedConfiguredBinding(params);
+  if (!resolved) return null;
+  return {
+    conversation: resolved.conversation,
+    compiledBinding: resolved.resolved.rule,
+    match: resolved.resolved.match,
+    ...resolved.materializedTarget,
+  };
+}
+
+export function resolveConfiguredBindingRecordBySessionKey(params: {
+  cfg: OpenClawConfig;
+  sessionKey: string;
+}): ConfiguredBindingRecordResolution | null {
+  return resolveConfiguredBindingRecordBySessionKeyFromRegistry({
+    registry: resolveCompiledBindingRegistry(params.cfg),
+    sessionKey: params.sessionKey,
+  });
 }

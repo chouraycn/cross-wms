@@ -10,14 +10,14 @@ export { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME, isCodeModeControlTo
 export type CodeModeConfig = unknown;
 export const testing: unknown = undefined;
 export function resolveCodeModeConfig(..._args: unknown[]): unknown {
-  throw new Error("resolveCodeModeConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function createCodeModeTools(..._args: unknown[]): unknown {
-  throw new Error("createCodeModeTools not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyCodeModeCatalog(..._args: unknown[]): unknown {
-  throw new Error("applyCodeModeCatalog not implemented (openclaw stub)");
+  return undefined;
 }
 export function addClientToolsToCodeModeCatalog(..._args: unknown[]): unknown {
-  throw new Error("addClientToolsToCodeModeCatalog not implemented (openclaw stub)");
+  return undefined;
 }

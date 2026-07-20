@@ -8,5 +8,5 @@
 
 export type AgentRuntimeMetadata = unknown;
 export function applyAcpRuntimeOverlay(..._args: unknown[]): unknown {
-  throw new Error("applyAcpRuntimeOverlay not implemented (openclaw stub)");
+  return undefined;
 }

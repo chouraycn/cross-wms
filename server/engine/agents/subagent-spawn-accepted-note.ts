@@ -1,13 +1,16 @@
 /**
- * 移植自 openclaw/src/agents/subagent-spawn-accepted-note.ts
+ * Ported from openclaw/src/agents/subagent-spawn-accepted-note.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Subagent spawn accepted note constants and resolver.
+ * Cross-wms degradation: returns default notes without agent config.
  */
 
-export const SUBAGENT_SPAWN_ACCEPTED_NOTE: unknown = undefined;
-export const SUBAGENT_SPAWN_SESSION_ACCEPTED_NOTE: unknown = undefined;
-export function resolveSubagentSpawnAcceptedNote(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentSpawnAcceptedNote not implemented (openclaw stub)");
+export const SUBAGENT_SPAWN_ACCEPTED_NOTE = "Subagent session accepted.";
+export const SUBAGENT_SPAWN_SESSION_ACCEPTED_NOTE = "Subagent session accepted.";
+
+/** Resolves the accepted note for a subagent spawn. */
+export function resolveSubagentSpawnAcceptedNote(params?: {
+  agentId?: string;
+}): string {
+  return SUBAGENT_SPAWN_ACCEPTED_NOTE;
 }

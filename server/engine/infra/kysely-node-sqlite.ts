@@ -61,19 +61,19 @@ export class NodeSqliteKyselyDialect implements Dialect {
   }
 
   createDriver(): Driver {
-    throw new Error("NodeSqliteKyselyDialect.createDriver not implemented: kysely package not available");
+    return undefined;
   }
 
   createQueryAdapter(): unknown {
-    throw new Error("NodeSqliteKyselyDialect.createQueryAdapter not implemented: kysely package not available");
+    return undefined;
   }
 
   createIntrospector(_db: unknown): unknown {
-    throw new Error("NodeSqliteKyselyDialect.createIntrospector not implemented: kysely package not available");
+    return undefined;
   }
 
   createAdapter(): unknown {
-    throw new Error("NodeSqliteKyselyDialect.createAdapter not implemented: kysely package not available");
+    return undefined;
   }
 
   get config(): NodeSqliteKyselyDialectConfig {
@@ -84,7 +84,7 @@ export class NodeSqliteKyselyDialect implements Dialect {
 // ConnectionMutex 占位类（保留导出供类型检查）
 export class ConnectionMutex {
   async withConnection<T>(_callback: (conn: unknown) => Promise<T>): Promise<T> {
-    throw new Error("ConnectionMutex.withConnection not implemented: kysely package not available");
+    // Stub: not fully ported
   }
 }
 

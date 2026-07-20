@@ -1,14 +1,15 @@
 /**
  * 移植自 openclaw/src/agents/sandbox/fs-bridge-stat-parse.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 完整移植：sandbox stat 输出解析辅助函数。
  */
 
-export function parseSandboxStatSize(..._args: unknown[]): unknown {
-  throw new Error("parseSandboxStatSize not implemented (openclaw stub)");
+export function parseSandboxStatSize(raw: string): number {
+  const value = parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 0 ? value : 0;
 }
-export function parseSandboxStatMtimeMs(..._args: unknown[]): unknown {
-  throw new Error("parseSandboxStatMtimeMs not implemented (openclaw stub)");
+
+export function parseSandboxStatMtimeMs(raw: string): number {
+  const value = parseFloat(raw);
+  return Number.isFinite(value) && value >= 0 ? value : 0;
 }

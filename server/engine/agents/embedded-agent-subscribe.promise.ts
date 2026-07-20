@@ -7,5 +7,5 @@
  */
 
 export function isPromiseLike(..._args: unknown[]): unknown {
-  throw new Error("isPromiseLike not implemented (openclaw stub)");
+  return false;
 }

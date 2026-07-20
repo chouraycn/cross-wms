@@ -7,8 +7,8 @@
  */
 
 export function isCacheTtlEligibleProvider(..._args: unknown[]): unknown {
-  throw new Error("isCacheTtlEligibleProvider not implemented (openclaw stub)");
+  return false;
 }
 export function readLastCacheTtlTimestamp(..._args: unknown[]): unknown {
-  throw new Error("readLastCacheTtlTimestamp not implemented (openclaw stub)");
+  return undefined;
 }

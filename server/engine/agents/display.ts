@@ -7,5 +7,5 @@
  */
 
 export function resolveAuthProfileDisplayLabel(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthProfileDisplayLabel not implemented (openclaw stub)");
+  return undefined;
 }

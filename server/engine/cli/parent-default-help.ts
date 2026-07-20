@@ -1,11 +1,36 @@
-// 移植自 openclaw/src/cli/parent-default-help.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Parent-command default action helper that prints help with success exit status.
+// 移植自 openclaw/src/cli/program/parent-default-help.ts
 
-export function applyParentDefaultHelpAction(..._args: unknown[]): unknown {
-  throw new Error("not implemented: applyParentDefaultHelpAction");
+import type { Command } from "commander";
+
+const parentDefaultHelpCommands = new WeakSet<Command>();
+
+function outputParentHelpWithoutStartupBanner(parent: Command): void {
+  const previous = process.env.OPENCLAW_SUPPRESS_HELP_BANNER;
+  process.env.OPENCLAW_SUPPRESS_HELP_BANNER = "1";
+  try {
+    parent.outputHelp();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OPENCLAW_SUPPRESS_HELP_BANNER;
+    } else {
+      process.env.OPENCLAW_SUPPRESS_HELP_BANNER = previous;
+    }
+  }
 }
 
-export function isParentDefaultHelpAction(..._args: unknown[]): unknown {
-  throw new Error("not implemented: isParentDefaultHelpAction");
+/**
+ * Wire a parent command so that invoking it without a subcommand prints the
+ * parent's own help and exits with status `0`.
+ */
+export function applyParentDefaultHelpAction(parent: Command): void {
+  parentDefaultHelpCommands.add(parent);
+  parent.action(() => {
+    outputParentHelpWithoutStartupBanner(parent);
+    process.exitCode = 0;
+  });
+}
+
+export function isParentDefaultHelpAction(parent: Command): boolean {
+  return parentDefaultHelpCommands.has(parent);
 }

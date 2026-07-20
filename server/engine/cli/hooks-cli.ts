@@ -15,9 +15,8 @@ export function registerHooksCli(program: Command): void {
     .description("List configured hooks")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw hooks list: not supported in stub mode (plugins/*, runtime not ported).",
-      );
+      console.error('openclaw hooks list is not available in cross-wms');
+      process.exit(1);
     });
 
   hooks
@@ -25,9 +24,8 @@ export function registerHooksCli(program: Command): void {
     .description("Enable a hook")
     .argument("<name>", "Hook name")
     .action(() => {
-      throw new Error(
-        "openclaw hooks enable: not supported in stub mode (plugins/*, runtime not ported).",
-      );
+      console.error('openclaw hooks enable is not available in cross-wms');
+      process.exit(1);
     });
 
   hooks
@@ -35,14 +33,12 @@ export function registerHooksCli(program: Command): void {
     .description("Disable a hook")
     .argument("<name>", "Hook name")
     .action(() => {
-      throw new Error(
-        "openclaw hooks disable: not supported in stub mode (plugins/*, runtime not ported).",
-      );
+      console.error('openclaw hooks disable is not available in cross-wms');
+      process.exit(1);
     });
 
   hooks.action(() => {
-    throw new Error(
-      "openclaw hooks: not supported in stub mode (plugins/*, runtime not ported).",
-    );
+    console.error('openclaw hooks is not available in cross-wms');
+      process.exit(1);
   });
 }

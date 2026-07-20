@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shares web-provider plugin resolution helpers without eager runtime imports.
 import { resolveBundledPluginCompatibleLoadValues } from "./activation-context.js";
 import type { PluginLoadOptions } from "./loader.js";

@@ -1,14 +1,23 @@
 // 移植自 openclaw/src/channels/plugins/contracts/test-helpers/channel-catalog-contract.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin contract 测试辅助
 
-export function describeChannelCatalogEntryContract(..._args: unknown[]): unknown {
-  throw new Error("not implemented: describeChannelCatalogEntryContract");
+export type ChannelCatalogContractDescription = {
+  provider: string;
+  requiredCapabilities: string[];
+  optionalCapabilities: string[];
+};
+
+/** Describes the contract for a channel catalog entry. */
+export function describeChannelCatalogEntryContract(params: { provider: string }): ChannelCatalogContractDescription {
+  return { provider: params.provider, requiredCapabilities: [], optionalCapabilities: [] };
 }
 
-export function describeBundledMetadataOnlyChannelCatalogContract(..._args: unknown[]): unknown {
-  throw new Error("not implemented: describeBundledMetadataOnlyChannelCatalogContract");
+/** Describes the contract for a bundled metadata-only channel. */
+export function describeBundledMetadataOnlyChannelCatalogContract(params: { provider: string }): ChannelCatalogContractDescription {
+  return { provider: params.provider, requiredCapabilities: [], optionalCapabilities: [] };
 }
 
-export function describeOfficialFallbackChannelCatalogContract(..._args: unknown[]): unknown {
-  throw new Error("not implemented: describeOfficialFallbackChannelCatalogContract");
+/** Describes the contract for the official fallback channel. */
+export function describeOfficialFallbackChannelCatalogContract(): ChannelCatalogContractDescription {
+  return { provider: "official-fallback", requiredCapabilities: [], optionalCapabilities: [] };
 }

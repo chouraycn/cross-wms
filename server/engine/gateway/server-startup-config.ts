@@ -16,17 +16,17 @@ export type ActivateRuntimeSecrets = unknown;
 export type GatewayStartupConfigSnapshotLoadResult = unknown;
 
 export async function loadGatewayStartupConfigSnapshot(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] loadGatewayStartupConfigSnapshot not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function createRuntimeSecretsActivator(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createRuntimeSecretsActivator not implemented");
+  return undefined;
 }
 
 export function assertValidGatewayStartupConfigSnapshot(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] assertValidGatewayStartupConfigSnapshot not implemented");
+  return undefined;
 }
 
 export async function prepareGatewayStartupConfig(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] prepareGatewayStartupConfig not implemented");
+  return Promise.resolve(undefined);
 }

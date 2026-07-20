@@ -1,12 +1,11 @@
-// @ts-nocheck
 /** Reads official external plugin/channel/provider catalogs into manifest-like metadata. */
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
-import officialExternalChannelCatalog from './_stub_parent__parent__scripts__lib__official_external_channel_catalog.js' with { type: "json" };
-import officialExternalPluginCatalog from './_stub_parent__parent__scripts__lib__official_external_plugin_catalog.js' with { type: "json" };
-import officialExternalProviderCatalog from './_stub_parent__parent__scripts__lib__official_external_provider_catalog.js' with { type: "json" };
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
+import officialExternalChannelCatalog from './_stub_parent__parent__scripts__lib__official_external_channel_catalog.js';
+import officialExternalPluginCatalog from './_stub_parent__parent__scripts__lib__official_external_plugin_catalog.js';
+import officialExternalProviderCatalog from './_stub_parent__parent__scripts__lib__official_external_provider_catalog.js';
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 import type {
   PluginManifestChannelConfig,
   PluginManifestContracts,

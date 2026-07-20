@@ -1,15 +1,47 @@
 /**
- * 移植自 openclaw/src/agents/acp-spawn-parent-stream.ts
+ * Ported from openclaw/src/agents/acp-spawn-parent-stream.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Relays child ACP session stream updates back into the requester parent session.
+ * Cross-wms degradation: returns safe no-op implementations without openclaw
+ * event system / session file resolution.
  */
 
-export type AcpSpawnParentRelayHandle = unknown;
-export function resolveAcpSpawnStreamLogPath(..._args: unknown[]): unknown {
-  throw new Error("resolveAcpSpawnStreamLogPath not implemented (openclaw stub)");
+export type AcpSpawnParentRelayHandle = {
+  dispose: () => void;
+  notifyStarted: () => void;
+};
+
+/** Resolves the JSONL stream log path for an ACP child session when metadata exists. */
+export function resolveAcpSpawnStreamLogPath(params: {
+  childSessionKey: string;
+}): string | undefined {
+  // Cross-wms does not have ACP session entry resolution.
+  return undefined;
 }
-export function startAcpSpawnParentStreamRelay(..._args: unknown[]): unknown {
-  throw new Error("startAcpSpawnParentStreamRelay not implemented (openclaw stub)");
+
+/** Starts a bounded parent-session relay for child ACP output and progress notices. */
+export function startAcpSpawnParentStreamRelay(params: {
+  runId: string;
+  parentSessionKey: string;
+  childSessionKey: string;
+  agentId: string;
+  mainKey?: string;
+  sessionScope?: "per-sender" | "global";
+  eventRouting?: Record<string, unknown>;
+  logPath?: string;
+  deliveryContext?: Record<string, unknown>;
+  surfaceUpdates?: boolean;
+  streamFlushMs?: number;
+  noOutputNoticeMs?: number;
+  noOutputPollMs?: number;
+  maxRelayLifetimeMs?: number;
+  emitStartNotice?: boolean;
+  cfg?: Record<string, unknown>;
+}): AcpSpawnParentRelayHandle {
+  // Cross-wms does not have the full agent event system for relay.
+  // Return a no-op handle so callers don't crash.
+  return {
+    dispose: () => {},
+    notifyStarted: () => {},
+  };
 }

@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/modes/interactive/components/diff.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Interactive terminal diff renderer.
+ * In cross-wms the theme infrastructure is not available,
+ * so renderDiff returns the raw diff text unchanged.
  */
 
-export function renderDiff(..._args: unknown[]): unknown {
-  throw new Error("renderDiff not implemented (openclaw stub)");
+/** Render a diff string with colored output (returns raw text in cross-wms). */
+export function renderDiff(diffText: string): string {
+  return diffText;
 }

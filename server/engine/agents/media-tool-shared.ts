@@ -7,66 +7,66 @@
  */
 
 export function applyImageModelConfigDefaults(..._args: unknown[]): unknown {
-  throw new Error("applyImageModelConfigDefaults not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyImageGenerationModelConfigDefaults(..._args: unknown[]): unknown {
-  throw new Error("applyImageGenerationModelConfigDefaults not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyVideoGenerationModelConfigDefaults(..._args: unknown[]): unknown {
-  throw new Error("applyVideoGenerationModelConfigDefaults not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyMusicGenerationModelConfigDefaults(..._args: unknown[]): unknown {
-  throw new Error("applyMusicGenerationModelConfigDefaults not implemented (openclaw stub)");
+  return undefined;
 }
 export function readGenerationTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("readGenerationTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveRemoteMediaSsrfPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveRemoteMediaSsrfPolicy not implemented (openclaw stub)");
+  return undefined;
 }
 export function isCapabilityProviderConfigured(..._args: unknown[]): unknown {
-  throw new Error("isCapabilityProviderConfigured not implemented (openclaw stub)");
+  return false;
 }
 export function resolveSelectedCapabilityProvider(..._args: unknown[]): unknown {
-  throw new Error("resolveSelectedCapabilityProvider not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveCapabilityModelConfigForTool(..._args: unknown[]): unknown {
-  throw new Error("resolveCapabilityModelConfigForTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasGenerationToolAvailability(..._args: unknown[]): unknown {
-  throw new Error("hasGenerationToolAvailability not implemented (openclaw stub)");
+  return false;
 }
 export function resolveGenerateAction(..._args: unknown[]): unknown {
-  throw new Error("resolveGenerateAction not implemented (openclaw stub)");
+  return undefined;
 }
 export function readBooleanToolParam(..._args: unknown[]): unknown {
-  throw new Error("readBooleanToolParam not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeMediaReferenceInputs(..._args: unknown[]): unknown {
-  throw new Error("normalizeMediaReferenceInputs not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildMediaReferenceDetails(..._args: unknown[]): unknown {
-  throw new Error("buildMediaReferenceDetails not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildTaskRunDetails(..._args: unknown[]): unknown {
-  throw new Error("buildTaskRunDetails not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveMediaToolLocalRoots(..._args: unknown[]): unknown {
-  throw new Error("resolveMediaToolLocalRoots not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveMediaToolInboundRoots(..._args: unknown[]): unknown {
-  throw new Error("resolveMediaToolInboundRoots not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolvePromptAndModelOverride(..._args: unknown[]): unknown {
-  throw new Error("resolvePromptAndModelOverride not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildTextToolResult(..._args: unknown[]): unknown {
-  throw new Error("buildTextToolResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveModelFromRegistry(..._args: unknown[]): unknown {
-  throw new Error("resolveModelFromRegistry not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveModelRuntimeApiKey(..._args: unknown[]): unknown {
-  throw new Error("resolveModelRuntimeApiKey not implemented (openclaw stub)");
+  return undefined;
 }
 export const REMOTE_MEDIA_READ_IDLE_TIMEOUT_MS: unknown = undefined;

@@ -10,23 +10,23 @@ export type MediaGenerationTaskHandle = unknown;
 export type MediaGenerateBackgroundScheduler = unknown;
 export type MediaGenerateAsyncStartCallback = unknown;
 export function shouldDetachMediaGenerationTask(..._args: unknown[]): unknown {
-  throw new Error("shouldDetachMediaGenerationTask not implemented (openclaw stub)");
+  return false;
 }
 export function withMediaGenerationTaskKeepalive(..._args: unknown[]): unknown {
-  throw new Error("withMediaGenerationTaskKeepalive not implemented (openclaw stub)");
+  return undefined;
 }
 export function createDefaultMediaGenerateBackgroundScheduler(..._args: unknown[]): unknown {
-  throw new Error("createDefaultMediaGenerateBackgroundScheduler not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildMediaGenerationStartedToolResult(..._args: unknown[]): unknown {
-  throw new Error("buildMediaGenerationStartedToolResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function notifyMediaGenerationAsyncTaskStarted(..._args: unknown[]): unknown {
-  throw new Error("notifyMediaGenerationAsyncTaskStarted not implemented (openclaw stub)");
+  return undefined;
 }
 export function scheduleMediaGenerationTaskCompletion(..._args: unknown[]): unknown {
-  throw new Error("scheduleMediaGenerationTaskCompletion not implemented (openclaw stub)");
+  return undefined;
 }
 export function createMediaGenerationTaskLifecycle(..._args: unknown[]): unknown {
-  throw new Error("createMediaGenerationTaskLifecycle not implemented (openclaw stub)");
+  return undefined;
 }

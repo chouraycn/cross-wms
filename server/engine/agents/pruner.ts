@@ -1,11 +1,20 @@
 /**
- * 移植自 openclaw/src/agents/agent-hooks/context-pruning/pruner.ts
+ * Ported from openclaw/src/agents/agent-hooks/context-pruning/pruner.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Context-pruning planner that trims old assistant/tool content under token pressure.
+ * Cross-wms degradation: returns messages unchanged without token estimation.
  */
 
-export function pruneContextMessages(..._args: unknown[]): unknown {
-  throw new Error("pruneContextMessages not implemented (openclaw stub)");
+/** Returns a pruned message array when configured thresholds are exceeded, otherwise original. */
+export function pruneContextMessages(params: {
+  messages: unknown[];
+  settings: Record<string, unknown>;
+  ctx: Record<string, unknown>;
+  isToolPrunable?: (toolName: string) => boolean;
+  contextWindowTokensOverride?: number;
+  dropThinkingBlocksForEstimate?: boolean;
+}): unknown[] {
+  // Cross-wms does not have token estimation or context window resolution.
+  // Return messages unchanged.
+  return params.messages;
 }

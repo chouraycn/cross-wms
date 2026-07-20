@@ -1,31 +1,50 @@
 /**
- * 移植自 openclaw/src/agents/model-catalog.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Loads bundled, manifest, and discovered model catalog entries.
+ * Ported from openclaw/src/agents/model-catalog.ts
+ * Simplified: model catalog loading replaced with empty defaults.
  */
 
 export { findModelCatalogEntry, findModelInCatalog, modelSupportsInput } from "./model-catalog-lookup.js";
 export type { ModelCatalogEntry, ModelInputType } from "./model-catalog.types.js";
-export function resetModelCatalogCache(..._args: unknown[]): unknown {
-  throw new Error("resetModelCatalogCache not implemented (openclaw stub)");
+
+let modelCatalogPromise: Promise<unknown[]> | null = null;
+
+export function resetModelCatalogCache(): void {
+  modelCatalogPromise = null;
 }
-export function resetModelCatalogCacheForTest(..._args: unknown[]): unknown {
-  throw new Error("resetModelCatalogCacheForTest not implemented (openclaw stub)");
+
+export function resetModelCatalogCacheForTest(): void {
+  modelCatalogPromise = null;
 }
-export function setModelCatalogImportForTest(..._args: unknown[]): unknown {
-  throw new Error("setModelCatalogImportForTest not implemented (openclaw stub)");
+
+export function setModelCatalogImportForTest(_loader?: unknown): void {
+  // No-op in simplified port.
 }
-export function loadManifestModelCatalog(..._args: unknown[]): unknown {
-  throw new Error("loadManifestModelCatalog not implemented (openclaw stub)");
+
+export function loadManifestModelCatalog(_params: {
+  config: unknown;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  fallbackToMetadataScan?: boolean;
+  metadataSnapshot?: unknown;
+}): unknown[] {
+  return [];
 }
-export async function loadModelCatalog(..._args: unknown[]): Promise<unknown> {
-  throw new Error("loadModelCatalog not implemented (openclaw stub)");
+
+export async function loadModelCatalog(_params?: {
+  config?: unknown;
+  useCache?: boolean;
+  cacheOnly?: boolean;
+  readOnly?: boolean;
+  metadataSnapshot?: unknown;
+}): Promise<unknown[]> {
+  return [];
 }
-export function modelSupportsVision(..._args: unknown[]): unknown {
-  throw new Error("modelSupportsVision not implemented (openclaw stub)");
+
+export function modelSupportsVision(_entry: unknown): boolean {
+  return false;
 }
-export function modelSupportsDocument(..._args: unknown[]): unknown {
-  throw new Error("modelSupportsDocument not implemented (openclaw stub)");
+
+export function modelSupportsDocument(_entry: unknown): boolean {
+  return false;
 }

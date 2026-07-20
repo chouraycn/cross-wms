@@ -7,5 +7,5 @@
  */
 
 export function getSubagentDepthFromSessionStore(..._args: unknown[]): unknown {
-  throw new Error("getSubagentDepthFromSessionStore not implemented (openclaw stub)");
+  return undefined;
 }

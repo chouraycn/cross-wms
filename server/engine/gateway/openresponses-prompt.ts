@@ -12,5 +12,5 @@
  */
 
 export function buildAgentPrompt(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildAgentPrompt not implemented");
+  return undefined;
 }

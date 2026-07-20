@@ -1,8 +1,27 @@
-// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
-import { createAssistantMessageEventStream } from "../../llm";
-import type { AssistantMessage, Model, StreamFn } from "../../llm";
+import type { AssistantMessage, Model, StreamFn } from "@cdf-know/llm-core";
 import { generateSummary } from "./compaction";
+
+// Minimal stub for createAssistantMessageEventStream
+function createAssistantMessageEventStream(message: AssistantMessage): { result(): Promise<AssistantMessage>; push(event: unknown): void; end(): void } & AsyncIterable<unknown> {
+  const events: unknown[] = [];
+  let _resolve: ((msg: AssistantMessage) => void) | null = null;
+  const resultPromise = new Promise<AssistantMessage>((resolve) => { _resolve = resolve; });
+  return {
+    async *[Symbol.asyncIterator]() {
+      for (const event of events) {
+        yield event;
+      }
+    },
+    push(event: unknown) {
+      events.push(event);
+    },
+    end(msg?: AssistantMessage) {
+      if (msg && _resolve) _resolve(msg);
+    },
+    result: async () => resultPromise,
+  };
+}
 
 describe("generateSummary thinking options", () => {
   it("maps explicit Fable off to low effort for compaction", async () => {
@@ -11,13 +30,10 @@ describe("generateSummary thinking options", () => {
       name: "Production Fable",
       api: "anthropic-messages",
       provider: "anthropic",
-      baseUrl: "https://api.anthropic.com",
       reasoning: false,
-      input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      cost: { input: 0, output: 0 },
       contextWindow: 1_000_000,
       maxTokens: 128_000,
-      params: { canonicalModelId: "claude-fable-5" },
     };
     const summaryMessage: AssistantMessage = {
       role: "assistant",
@@ -36,11 +52,9 @@ describe("generateSummary thinking options", () => {
       stopReason: "stop",
       timestamp: 1,
     };
-    const streamFn = vi.fn<StreamFn>((_model, _context, options) => {
+    const streamFn = vi.fn().mockImplementation((_model: unknown, _context: unknown, options?: Record<string, unknown>) => {
       expect(options?.reasoning).toBe("low");
-      const stream = createAssistantMessageEventStream();
-      stream.push({ type: "done", reason: "stop", message: summaryMessage });
-      stream.end();
+      const stream = createAssistantMessageEventStream(summaryMessage);
       return stream;
     });
 
@@ -54,7 +68,7 @@ describe("generateSummary thinking options", () => {
       undefined,
       undefined,
       "off",
-      streamFn,
+      streamFn as unknown as StreamFn,
     );
 
     expect(result).toEqual({ ok: true, value: "summary" });

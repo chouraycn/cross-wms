@@ -1,32 +1,70 @@
 // 移植自 openclaw/src/channels/plugins/config-writes.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 渠道配置写入策略门面
 
-export type ConfigWriteScope = unknown;
+import { normalizeLowercaseStringOrEmpty } from "../../infra/string-coerce.js";
+import type { OpenClawConfig } from "../../infra/_runtime-stubs.js";
+import {
+  authorizeConfigWriteShared,
+  canBypassConfigWritePolicyShared,
+  formatConfigWriteDeniedMessageShared,
+  resolveChannelConfigWritesShared,
+  resolveConfigWriteTargetFromPathShared,
+  resolveExplicitConfigWriteTargetShared,
+  type ConfigWriteAuthorizationResultLike,
+  type ConfigWriteScopeLike,
+  type ConfigWriteTargetLike,
+} from "./config-write-policy-shared.js";
+import type { ChannelId } from "./types.core.js";
 
-export type ConfigWriteTarget = unknown;
+export type ConfigWriteScope = ConfigWriteScopeLike;
+export type ConfigWriteTarget = ConfigWriteTargetLike;
+export type ConfigWriteAuthorizationResult = ConfigWriteAuthorizationResultLike;
 
-export type ConfigWriteAuthorizationResult = unknown;
-
-export function resolveChannelConfigWrites(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveChannelConfigWrites");
+function isInternalConfigWriteMessageChannel(channel?: string | null): boolean {
+  return normalizeLowercaseStringOrEmpty(channel) === "webchat";
 }
 
-export function authorizeConfigWrite(..._args: unknown[]): unknown {
-  throw new Error("not implemented: authorizeConfigWrite");
+export function resolveChannelConfigWrites(params: {
+  cfg: OpenClawConfig;
+  channelId?: ChannelId | null;
+  accountId?: string | null;
+}): boolean {
+  return resolveChannelConfigWritesShared(params);
 }
 
-export function resolveExplicitConfigWriteTarget(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExplicitConfigWriteTarget");
+export function authorizeConfigWrite(params: {
+  cfg: OpenClawConfig;
+  origin?: ConfigWriteScope;
+  target?: ConfigWriteTarget;
+  allowBypass?: boolean;
+}): ConfigWriteAuthorizationResult {
+  return authorizeConfigWriteShared(params);
 }
 
-export function resolveConfigWriteTargetFromPath(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigWriteTargetFromPath");
+export function resolveExplicitConfigWriteTarget(scope: ConfigWriteScope): ConfigWriteTarget {
+  return resolveExplicitConfigWriteTargetShared(scope);
 }
 
-export function canBypassConfigWritePolicy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: canBypassConfigWritePolicy");
+export function resolveConfigWriteTargetFromPath(path: string[]): ConfigWriteTarget {
+  return resolveConfigWriteTargetFromPathShared({
+    path,
+    normalizeChannelId: (raw) => normalizeLowercaseStringOrEmpty(raw) as ChannelId,
+  });
 }
 
-export function formatConfigWriteDeniedMessage(..._args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigWriteDeniedMessage");
+export function canBypassConfigWritePolicy(params: {
+  channel?: string | null;
+  gatewayClientScopes?: string[] | null;
+}): boolean {
+  return canBypassConfigWritePolicyShared({
+    ...params,
+    isInternalMessageChannel: isInternalConfigWriteMessageChannel,
+  });
+}
+
+export function formatConfigWriteDeniedMessage(params: {
+  result: Exclude<ConfigWriteAuthorizationResult, { allowed: true }>;
+  fallbackChannelId?: ChannelId | null;
+}): string {
+  return formatConfigWriteDeniedMessageShared(params);
 }

@@ -1,14 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/tools/web-tool-runtime-context.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Web tool runtime context resolution.
+ * In cross-wms the full web tool runtime is not available,
+ * so both functions return null context objects.
  */
 
-export function resolveWebSearchToolRuntimeContext(..._args: unknown[]): unknown {
-  throw new Error("resolveWebSearchToolRuntimeContext not implemented (openclaw stub)");
+/** Resolve runtime context for the web search tool (returns empty context in cross-wms). */
+export function resolveWebSearchToolRuntimeContext(..._args: unknown[]): null {
+  return null;
 }
-export function resolveWebFetchToolRuntimeContext(..._args: unknown[]): unknown {
-  throw new Error("resolveWebFetchToolRuntimeContext not implemented (openclaw stub)");
+
+/** Resolve runtime context for the web fetch tool (returns empty context in cross-wms). */
+export function resolveWebFetchToolRuntimeContext(..._args: unknown[]): null {
+  return null;
 }

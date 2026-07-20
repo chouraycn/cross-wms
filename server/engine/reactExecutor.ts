@@ -44,7 +44,10 @@ import { CircuitBreaker } from './circuitBreaker.js';
 import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { ActionPhaseExecutor } from './actionPhaseExecutor.js';
 import { AutoCompressor } from './autoCompressor.js';
-import { getModelFailoverManager, type ModelFailoverOptions } from './modelFailover.js';
+import { getModelFailoverManager, type ModelFailoverOptions, ensureFailoverModelsLoaded } from './modelFailover.js';
+import { getBackoffCoordinator, type CoordinateInput } from './backoffCoordinator.js';
+import { selectKey, reportKeyResult } from '../keyRotator.js';
+import { loadModelsConfig, type ModelsFile, type ModelConfig } from '../modelsStore.js';
 import type { ModelCapability } from '../modelsStore.js';
 import pluginHooks from './pluginHooks.js';
 import { logger } from '../logger.js';
@@ -974,8 +977,38 @@ ${stepsText}`;
       sessionId?: string;
     },
   ): Promise<AIResponse> {
+    // v2.x: 统一通过 BackoffCoordinator 编排故障转移，覆盖 keyRotator（同模型多 Key 轮换）
+    // 与 modelFailover（跨模型降级）两层。原实现直接调用 callAIModelStream 并手写错误分类，
+    // 绕过了 keyRotator，导致用户配置的多 API Key 在 ReAct 推理中失效。
+    const coordinator = getBackoffCoordinator();
     const failoverManager = getModelFailoverManager(this._modelFailoverOptions);
+
+    // 确保模型列表已加载（从 modelsStore 懒加载，修复 failover 不生效的 bug）
+    await ensureFailoverModelsLoaded();
+    // BackoffCoordinator.coordinate 需要 modelsConfig 来解析备选模型名称
+    let modelsConfig: ModelsFile | undefined;
+    try {
+      modelsConfig = await loadModelsConfig({ skipKeyInjection: true });
+      failoverManager.setModels(modelsConfig.models);
+    } catch {
+      // 降级：无 modelsConfig 时仍可工作，但无法做跨模型降级
+    }
+
+    // 初始 Key 选择：优先从 keyRotator 选健康 Key（支持同模型多 Key 轮询）
     let currentModelConfig = context.modelConfig;
+    let currentModelId = (currentModelConfig as unknown as { id?: string }).id as string | undefined;
+    let currentKeyIndex = -1;
+    if (currentModelId) {
+      const modelConfig = modelsConfig?.models.find((m) => m.id === currentModelId);
+      if (modelConfig) {
+        const selected = selectKey(modelConfig);
+        if (selected) {
+          currentModelConfig = { ...currentModelConfig, apiKey: selected.key };
+          currentKeyIndex = selected.index;
+        }
+      }
+    }
+
     let lastError: unknown;
     const maxAttempts = 3;
 
@@ -994,51 +1027,69 @@ ${stepsText}`;
           context.modelCapabilities,
         );
 
-        const modelId = (currentModelConfig as unknown as Record<string, unknown>).id as string | undefined;
-        if (modelId) {
-          failoverManager.recordSuccess(modelId);
+        if (currentModelId) {
+          coordinator.recordSuccess(currentModelId, currentKeyIndex);
         }
 
         return response;
       } catch (error) {
         lastError = error;
-        const modelId = (currentModelConfig as unknown as Record<string, unknown>).id as string | undefined;
-        
-        if (modelId) {
-          let errorCategory: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'model_not_supported' | 'unknown' = 'unknown';
-          const errMsg = error instanceof Error ? error.message : String(error);
-          if (errMsg.includes('401') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
-            errorCategory = 'auth';
-          } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
-            errorCategory = 'rate_limit';
-          } else if (errMsg.includes('timeout') || errMsg.includes('timed out')) {
-            errorCategory = 'timeout';
-          } else if (errMsg.includes('network') || errMsg.includes('ECONNREFUSED') || errMsg.includes('ENOTFOUND')) {
-            errorCategory = 'network';
-          } else if (errMsg.includes('500') || errMsg.includes('502') || errMsg.includes('503') || errMsg.includes('server')) {
-            errorCategory = 'server';
-          }
-          
-          failoverManager.recordFailure(modelId, error, errorCategory);
-          
-          const nextModel = failoverManager.getNextModel(
-            modelId,
-            errorCategory,
-            context.modelCapabilities as ModelCapability[] | undefined,
+
+        if (!currentModelId) break;
+
+        // 查找当前模型的完整配置（含 apiKeys，供 keyRotator 决策）
+        const fullModelConfig = modelsConfig?.models.find((m) => m.id === currentModelId);
+        if (!fullModelConfig) break;
+
+        const coordinateInput: CoordinateInput = {
+          modelId: currentModelId,
+          modelConfig: fullModelConfig,
+          keyIndex: currentKeyIndex,
+          error,
+          modelsConfig,
+          requiredCapabilities: context.modelCapabilities as ModelCapability[] | undefined,
+        };
+
+        const decision = coordinator.coordinate(coordinateInput);
+
+        if (decision.action === 'give-up') {
+          logger.info(
+            `[ReActExecutor] 故障转移放弃: ${decision.reason} (模型 ${currentModelId})`,
           );
-          
-          if (nextModel) {
-            logger.info(
-              `[ReActExecutor] 模型故障转移: 从 ${modelId} 切换到 ${nextModel.id} (第 ${attempt + 1} 次尝试)`,
-            );
-            currentModelConfig = {
-              ...currentModelConfig,
-              ...(nextModel as unknown as Partial<ModelCallConfig>),
-            };
-            continue;
-          }
+          break;
         }
-        
+
+        if (decision.action === 'rotate-key' && decision.apiKey !== undefined) {
+          logger.info(
+            `[ReActExecutor] 同模型轮换 Key: 模型 ${currentModelId} → Key#${decision.keyIndex} (第 ${attempt + 1} 次尝试)`,
+          );
+          currentModelConfig = { ...currentModelConfig, apiKey: decision.apiKey };
+          currentKeyIndex = decision.keyIndex ?? -1;
+          continue;
+        }
+
+        if (decision.action === 'switch-model' && decision.nextModelId) {
+          const nextModel = modelsConfig?.models.find((m) => m.id === decision.nextModelId);
+          if (!nextModel) {
+            logger.warn(`[ReActExecutor] 备选模型 ${decision.nextModelId} 未找到，放弃故障转移`);
+            break;
+          }
+          logger.info(
+            `[ReActExecutor] 跨模型降级: ${currentModelId} → ${decision.nextModelId} (第 ${attempt + 1} 次尝试, 原因: ${decision.reason})`,
+          );
+          // 切换到新模型，重新选 Key
+          currentModelConfig = { ...currentModelConfig, ...(nextModel as unknown as Partial<ModelCallConfig>) };
+          currentModelId = nextModel.id;
+          const selected = selectKey(nextModel);
+          if (selected) {
+            currentModelConfig = { ...currentModelConfig, apiKey: selected.key };
+            currentKeyIndex = selected.index;
+          } else {
+            currentKeyIndex = -1;
+          }
+          continue;
+        }
+
         break;
       }
     }

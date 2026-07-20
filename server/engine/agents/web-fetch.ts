@@ -1,14 +1,40 @@
 /**
  * 移植自 openclaw/src/agents/tools/web-fetch.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * web_fetch built-in tool. cross-wms provides the URL sanitization helper
+ * and a no-op tool factory since the full fetch infrastructure (SSRF guards,
+ * caching, provider fallback, content extraction) is not available.
  */
 
-export function sanitizeWebFetchUrl(..._args: unknown[]): unknown {
-  throw new Error("sanitizeWebFetchUrl not implemented (openclaw stub)");
+/**
+ * Sanitize a web_fetch URL parameter that may contain LLM-injected whitespace.
+ *
+ * Fixes the case where a model emits a space between the scheme and
+ * authority (e.g. `https:// docs.openclaw.ai`), which causes `new URL()` to
+ * throw. Path and query whitespace is intentionally preserved.
+ */
+export function sanitizeWebFetchUrl(raw: string): string {
+  let end = raw.length;
+  while (end > 0 && raw.charCodeAt(end - 1) <= 0x20) {
+    end -= 1;
+  }
+  const trimmed = raw.slice(0, end).replace(/^\s+/, "");
+  const repaired = trimmed.replace(/^(https?:\/\/)\s+/i, "$1");
+  return repaired.replace(/^(https?:\/\/[^/?#\s]+)\s+$/i, "$1");
 }
-export function createWebFetchTool(..._args: unknown[]): unknown {
-  throw new Error("createWebFetchTool not implemented (openclaw stub)");
+
+/**
+ * Creates the web_fetch tool. Returns null in cross-wms since the full
+ * fetch infrastructure (SSRF guards, caching, readability extraction, provider
+ * fallback) is not available.
+ */
+export function createWebFetchTool(_options?: {
+  config?: unknown;
+  sandboxed?: boolean;
+  runtimeWebFetch?: unknown;
+  lateBindRuntimeConfig?: boolean;
+  lookupFn?: unknown;
+}): null {
+  // cross-wms lacks SSRF guards, content extractors, caching, and provider fallback.
+  return null;
 }

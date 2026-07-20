@@ -14,5 +14,5 @@
 export type GatewayProbeTargetResolution = unknown;
 
 export function resolveGatewayProbeTarget(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeTarget not implemented");
+  return undefined;
 }

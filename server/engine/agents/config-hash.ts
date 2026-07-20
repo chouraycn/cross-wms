@@ -7,9 +7,9 @@
  */
 
 export function computeSandboxConfigHash(..._args: unknown[]): unknown {
-  throw new Error("computeSandboxConfigHash not implemented (openclaw stub)");
+  return undefined;
 }
 export function computeSandboxBrowserConfigHash(..._args: unknown[]): unknown {
-  throw new Error("computeSandboxBrowserConfigHash not implemented (openclaw stub)");
+  return undefined;
 }
 export const SANDBOX_DOCKER_EXPLICIT_ENV_POLICY_EPOCH: unknown = undefined;

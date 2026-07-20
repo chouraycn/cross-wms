@@ -1,7 +1,111 @@
-// @ts-nocheck
 // Provider stream shared helpers implement reusable stream wrappers and payload policies.
 import { randomUUID } from "node:crypto";
-// import { normalizeLowercaseStringOrEmpty } from "../../packages/normalization-core/src/string-coerce.js"; // TODO: 依赖模块未移植
+
+// ==================== Local type stubs and function stubs for unported dependencies ====================
+
+/** Normalizes a string to lowercase or returns empty. TODO: 依赖模块未移植 */
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+/** Provider model shape used by stream wrappers. */
+type ProviderModel = {
+  id?: string;
+  provider?: string;
+  api?: string;
+  compat?: unknown;
+  baseUrl?: string;
+  [key: string]: unknown;
+};
+
+/** Stream function type. */
+type StreamFn = (model: ProviderModel, context: unknown, options?: unknown) => unknown;
+
+/** Think level type. */
+type ThinkLevel = "off" | "minimal" | "low" | "medium" | "high" | "max" | "xhigh" | "adaptive";
+
+/** Plain text tool call name matcher. */
+type PlainTextToolCallNameMatcher = {
+  hasExactName: (name: string) => boolean;
+  hasNamePrefix: (prefix: string) => boolean;
+};
+
+/** Plain text tool call message normalization result. */
+type PlainTextToolCallMessageNormalization =
+  | { kind: "scrubbed"; message: unknown }
+  | { kind: "promoted"; message: Record<string, unknown> }
+  | undefined;
+
+/** Provider wrap stream function context. */
+type ProviderWrapStreamFnContext = {
+  streamFn?: StreamFn;
+  thinkingLevel?: ThinkLevel;
+  [key: string]: unknown;
+};
+
+// TODO: 依赖模块未移植，暂用本地桩
+function extractStandalonePlainTextToolCallText(_params: unknown): string | undefined {
+  return undefined;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+async function* normalizePlainTextToolCallStreamEvents(
+  _source: AsyncIterable<unknown>,
+  _options: unknown,
+): AsyncGenerator<unknown> {
+  // Stub: yields nothing
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function promoteStandalonePlainTextToolCallMessage(_params: unknown): Record<string, unknown> | undefined {
+  return undefined;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function scrubOverCapPlainTextToolCallMessage(_params: unknown): Record<string, unknown> | undefined {
+  return undefined;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function resolveOpenAIReasoningEffortMap(_params: unknown): Record<string, unknown> {
+  return {};
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function resolveOpenAIReasoningEffortForModel(_params: unknown): string | undefined {
+  return undefined;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function mapThinkingLevelToReasoningEffort(level: ThinkLevel): string {
+  return level;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function streamWithPayloadPatch(
+  _underlying: unknown,
+  _model: unknown,
+  _context: unknown,
+  _options: unknown,
+  _patchFn: (payload: Record<string, unknown>) => void,
+): unknown {
+  throw new Error("streamWithPayloadPatch: not implemented (dependency not ported)");
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function streamSimple(_model: unknown, _context: unknown, _options?: unknown): unknown {
+  throw new Error("streamSimple: not implemented (dependency not ported)");
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function createAssistantMessageEventStream(): unknown {
+  return {
+    result: async () => ({}),
+    [Symbol.asyncIterator]() {
+      return { async next() { return { done: true, value: undefined }; } };
+    },
+  };
+}
 // import {
 //   extractStandalonePlainTextToolCallText,
 //   normalizePlainTextToolCallStreamEvents,
@@ -90,7 +194,7 @@ function promotePlainTextToolCalls(
   }
   return promoteStandalonePlainTextToolCallMessage({
     allowedToolNames: toolNames,
-    createToolCallBlock: (block, name) => createPlainTextToolCallBlock({ ...block, name }),
+    createToolCallBlock: (block: Record<string, unknown>, name: string) => createPlainTextToolCallBlock({ ...block, name, arguments: (block.arguments as Record<string, unknown>) ?? {} }),
     isRetainableNonTextBlock: () => true,
     message,
   });
@@ -179,13 +283,13 @@ function wrapPlainTextToolCallStream(
       const normalizedEvents = normalizePlainTextToolCallStreamEvents(
         source as AsyncIterable<unknown>,
         {
-          createPromotedToolCallEvents: (message) => {
+          createPromotedToolCallEvents: (message: Record<string, unknown>) => {
             const events: unknown[] = [];
             emitPromotedToolCallEvents({ push: (event: unknown) => events.push(event) }, message);
             return events;
           },
           matcher,
-          normalizeDoneMessage: ({ message }) =>
+          normalizeDoneMessage: ({ message }: { message: Record<string, unknown> }) =>
             normalizeProviderDoneMessage(message, toolNames, matcher),
           stopAfterDone: true,
         },
@@ -553,7 +657,11 @@ export function createDeepSeekV4OpenAICompatibleThinkingWrapper(params: {
   };
 }
 
-type ThinkingOnlyFinalTextStream = Awaited<ReturnType<StreamFn>>;
+type ThinkingOnlyFinalTextStream = {
+  result: () => Promise<unknown>;
+  [Symbol.asyncIterator](): AsyncIterator<unknown>;
+  [key: string]: unknown;
+};
 
 function promoteThinkingOnlyFinalOutputToText(message: unknown): void {
   if (!message || typeof message !== "object") {
@@ -666,9 +774,9 @@ export function createThinkingOnlyFinalTextWrapper(params: {
       return maybeStream;
     }
     if (maybeStream && typeof maybeStream === "object" && "then" in maybeStream) {
-      return Promise.resolve(maybeStream).then((stream) => wrapThinkingOnlyFinalTextStream(stream));
+      return Promise.resolve(maybeStream).then((stream: unknown) => wrapThinkingOnlyFinalTextStream(stream as ThinkingOnlyFinalTextStream));
     }
-    return wrapThinkingOnlyFinalTextStream(maybeStream);
+    return wrapThinkingOnlyFinalTextStream(maybeStream as ThinkingOnlyFinalTextStream);
   };
 }
 

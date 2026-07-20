@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Builds manifest registry records from installed plugin index snapshots. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { normalizeOptionalTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
 import type { PluginCandidate } from "./discovery.js";

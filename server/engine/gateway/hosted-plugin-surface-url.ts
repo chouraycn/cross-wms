@@ -14,5 +14,5 @@
 export type HostedPluginSurfaceUrlParams = unknown;
 
 export function resolveHostedPluginSurfaceUrl(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHostedPluginSurfaceUrl not implemented");
+  return undefined;
 }

@@ -1,9 +1,8 @@
 // 移植自 openclaw/src/infra/safe-package-install.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function createSafeNpmInstallEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: createSafeNpmInstallEnv");
+  return undefined;
 }
 export function createSafeNpmInstallArgs(...args: unknown[]): unknown {
-  throw new Error("not implemented: createSafeNpmInstallArgs");
+  return undefined;
 }

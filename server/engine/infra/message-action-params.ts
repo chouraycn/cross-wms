@@ -1,29 +1,28 @@
 // 移植自 openclaw/src/infra/message-action-params.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type AttachmentMediaPolicy = unknown;
 export function resolveExtraActionMediaSourceParamKeys(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExtraActionMediaSourceParamKeys");
+  return undefined;
 }
 export function collectActionMediaSourceHints(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectActionMediaSourceHints");
+  return [];
 }
 export function resolveAttachmentMediaPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveAttachmentMediaPolicy");
+  return undefined;
 }
 export function normalizeSandboxMediaParams(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeSandboxMediaParams");
+  return undefined;
 }
 export function normalizeSandboxMediaList(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeSandboxMediaList");
+  return undefined;
 }
 export function hydrateAttachmentParamsForAction(...args: unknown[]): unknown {
-  throw new Error("not implemented: hydrateAttachmentParamsForAction");
+  return undefined;
 }
 export function parseJsonMessageParam(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseJsonMessageParam");
+  return undefined;
 }
 export function parseInteractiveParam(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseInteractiveParam");
+  return undefined;
 }
 export const readBooleanParam: unknown = undefined;

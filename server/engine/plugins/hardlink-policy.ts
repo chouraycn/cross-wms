@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Enforces plugin root hardlink policy with bundled and immutable Nix-store exceptions. */
 import path from "node:path";
 import { resolveIsNixMode } from "../config/paths.js";

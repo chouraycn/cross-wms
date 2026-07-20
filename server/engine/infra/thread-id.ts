@@ -1,6 +1,8 @@
-// 移植自 openclaw/src/infra/thread-id.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/src/infra/outbound/thread-id.ts
 
-export function normalizeOutboundThreadId(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeOutboundThreadId");
+import { normalizeOptionalStringifiedId } from "./string-coerce.js";
+
+/** Normalizes channel thread/topic ids before outbound payload construction. */
+export function normalizeOutboundThreadId(value?: string | number | null): string | undefined {
+  return normalizeOptionalStringifiedId(value);
 }

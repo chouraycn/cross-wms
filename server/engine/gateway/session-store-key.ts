@@ -12,25 +12,25 @@
  */
 
 export function canonicalizeSessionKeyForAgent(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] canonicalizeSessionKeyForAgent not implemented");
+  return false;
 }
 
 export function resolveSessionStoreKey(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionStoreKey not implemented");
+  return undefined;
 }
 
 export function resolveSessionStoreAgentId(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionStoreAgentId not implemented");
+  return undefined;
 }
 
 export function resolveStoredSessionKeyForAgentStore(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveStoredSessionKeyForAgentStore not implemented");
+  return undefined;
 }
 
 export function resolveStoredSessionOwnerAgentId(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveStoredSessionOwnerAgentId not implemented");
+  return undefined;
 }
 
 export function canonicalizeSpawnedByForAgent(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] canonicalizeSpawnedByForAgent not implemented");
+  return false;
 }

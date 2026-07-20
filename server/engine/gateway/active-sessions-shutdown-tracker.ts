@@ -14,17 +14,17 @@
 export type ActiveSessionForShutdown = unknown;
 
 export function noteActiveSessionForShutdown(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] noteActiveSessionForShutdown not implemented");
+  return undefined;
 }
 
 export function forgetActiveSessionForShutdown(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] forgetActiveSessionForShutdown not implemented");
+  return undefined;
 }
 
 export function listActiveSessionsForShutdown(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listActiveSessionsForShutdown not implemented");
+  return [];
 }
 
 export function clearActiveSessionsForShutdownTracker(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearActiveSessionsForShutdownTracker not implemented");
+  return undefined;
 }

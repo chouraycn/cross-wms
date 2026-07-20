@@ -1,6 +1,19 @@
 // 移植自 openclaw/src/infra/exec-allowlist-pattern.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export function matchesExecAllowlistPattern(...args: unknown[]): unknown {
-  throw new Error("not implemented: matchesExecAllowlistPattern");
+/** Checks if an executable matches an allowlist pattern (glob or exact). */
+export function matchesExecAllowlistPattern(params: {
+  executable: string;
+  pattern: string;
+  cwd?: string;
+}): boolean {
+  const { executable, pattern } = params;
+  if (!executable || !pattern) return false;
+  // Exact match
+  if (executable === pattern) return true;
+  // Simple glob: * matches any chars
+  if (pattern.includes("*")) {
+    const regex = new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+    return regex.test(executable);
+  }
+  return false;
 }

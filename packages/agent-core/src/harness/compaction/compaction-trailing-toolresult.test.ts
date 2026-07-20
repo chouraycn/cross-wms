@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import type { AgentMessage } from "../../types";
 import type { SessionTreeEntry } from "../types";

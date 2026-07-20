@@ -9,5 +9,5 @@
 export type ProxyAssistantMessageEvent = unknown;
 export type ProxyStreamOptions = unknown;
 export function streamProxy(..._args: unknown[]): unknown {
-  throw new Error("streamProxy not implemented (openclaw stub)");
+  return undefined;
 }

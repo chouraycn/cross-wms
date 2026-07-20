@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Parses, clones, verifies, and installs plugin packages from Git specs. */
 import "../infra/fs-safe-defaults.js";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { redactSensitiveUrlLikeString } from './_stub_openclaw__net_policy__redact_sensitive_url.js';
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { redactSensitiveUrlLikeString } from './_openclaw__net_policy__redact_sensitive_url.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import { sanitizeForLog } from './_stub_parent__parent__packages__terminal_core__src__ansi.js';
 import { pathExists } from "../infra/fs-safe.js";
 import { withTempDir } from "../infra/install-source-utils.js";
@@ -13,8 +12,8 @@ import {
   createSafeNpmInstallArgs,
   createSafeNpmInstallEnv,
 } from "../infra/safe-package-install.js";
-import { runCommandWithTimeout } from './_stub_parent__process__exec.js';
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { runCommandWithTimeout } from './_parent__process__exec.js';
+import { resolveUserPath } from './_parent__utils.js';
 import { resolveDefaultPluginGitDir } from "./install-paths.js";
 import {
   preflightPluginGitInstallPolicy,

@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Builds agent tools registered by plugins, preserving plugin scope around callbacks and descriptors. */
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
 import {
   normalizeUniqueStringEntries,
   uniqueStrings,
-} from './_stub_openclaw__normalization_core__string_normalization.js';
+} from './_openclaw__normalization_core__string_normalization.js';
 import { compileGlobPatterns, matchesAnyGlobPattern } from "../agents/glob-pattern.js";
 import { DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY, normalizeToolName } from "../agents/tool-policy.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";

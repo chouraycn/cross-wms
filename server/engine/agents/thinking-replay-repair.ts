@@ -7,5 +7,5 @@
  */
 
 export function repairRejectedThinkingReplayInSessionManager(..._args: unknown[]): unknown {
-  throw new Error("repairRejectedThinkingReplayInSessionManager not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,19 +1,39 @@
 /**
  * 移植自 openclaw/src/agents/tools/sessions-send-tokens.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * sessions_send sentinel tokens. Defines non-deliverable reply markers
+ * used by sessions_send and subagent completion delivery.
  */
 
-export function isAnnounceSkip(..._args: unknown[]): unknown {
-  throw new Error("isAnnounceSkip not implemented (openclaw stub)");
+/** Suppresses a subagent completion announcement. */
+export const ANNOUNCE_SKIP_TOKEN = "ANNOUNCE_SKIP";
+/** Suppresses a direct reply delivery. */
+export const REPLY_SKIP_TOKEN = "REPLY_SKIP";
+
+/** Silent reply token from auto-reply subsystem. */
+const SILENT_REPLY_TOKEN = "SILENT_REPLY";
+/** Heartbeat token from auto-reply subsystem. */
+const HEARTBEAT_TOKEN = "HEARTBEAT";
+
+const NON_DELIVERABLE_REPLY_TOKENS = [
+  ANNOUNCE_SKIP_TOKEN,
+  REPLY_SKIP_TOKEN,
+  SILENT_REPLY_TOKEN,
+  HEARTBEAT_TOKEN,
+] as const;
+
+/** Returns true when text is exactly the announce-skip sentinel. */
+export function isAnnounceSkip(text?: string): boolean {
+  return (text ?? "").trim() === ANNOUNCE_SKIP_TOKEN;
 }
-export function isReplySkip(..._args: unknown[]): unknown {
-  throw new Error("isReplySkip not implemented (openclaw stub)");
+
+/** Returns true when text is exactly the reply-skip sentinel. */
+export function isReplySkip(text?: string): boolean {
+  return (text ?? "").trim() === REPLY_SKIP_TOKEN;
 }
-export function isNonDeliverableSessionsReply(..._args: unknown[]): unknown {
-  throw new Error("isNonDeliverableSessionsReply not implemented (openclaw stub)");
+
+/** Returns true when text is any non-deliverable sessions reply sentinel. */
+export function isNonDeliverableSessionsReply(text?: string): boolean {
+  const trimmed = (text ?? "").trim();
+  return NON_DELIVERABLE_REPLY_TOKENS.includes(trimmed as typeof NON_DELIVERABLE_REPLY_TOKENS[number]);
 }
-export const ANNOUNCE_SKIP_TOKEN: unknown = undefined;
-export const REPLY_SKIP_TOKEN: unknown = undefined;

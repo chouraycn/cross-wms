@@ -1,15 +1,20 @@
 /**
  * 移植自 openclaw/src/agents/sandbox/docker-backend.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Docker sandbox backend.
+ * In cross-wms the Docker sandbox infrastructure is not available,
+ * so all exports degrade to unsupported errors or null.
  */
 
-export function createDockerSandboxBackend(..._args: unknown[]): unknown {
-  throw new Error("createDockerSandboxBackend not implemented (openclaw stub)");
+/** Create a Docker sandbox backend (unsupported in cross-wms). */
+export function createDockerSandboxBackend(..._args: unknown[]): never {
+  throw new Error("Docker sandbox backend is not supported in cross-wms");
 }
-export function runDockerSandboxShellCommand(..._args: unknown[]): unknown {
-  throw new Error("runDockerSandboxShellCommand not implemented (openclaw stub)");
+
+/** Run a Docker sandbox shell command (unsupported in cross-wms). */
+export function runDockerSandboxShellCommand(..._args: unknown[]): never {
+  throw new Error("Docker sandbox shell commands are not supported in cross-wms");
 }
-export const dockerSandboxBackendManager: unknown = undefined;
+
+/** Docker sandbox backend manager (not available in cross-wms). */
+export const dockerSandboxBackendManager: null = null;

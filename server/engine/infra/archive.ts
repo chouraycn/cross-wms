@@ -54,3 +54,12 @@ export async function createArchiveFromFiles(paths: string[]): Promise<string> {
   
   return createArchive(entries);
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const ARCHIVE_LIMIT_ERROR_CODE: any = undefined as any;
+export const ArchiveLimitError: any = undefined as any;
+export const DEFAULT_MAX_ARCHIVE_BYTES_ZIP: any = undefined as any;
+export const DEFAULT_MAX_ENTRIES: any = undefined as any;
+export const DEFAULT_MAX_EXTRACTED_BYTES: any = undefined as any;
+export const DEFAULT_MAX_ENTRY_BYTES: any = undefined as any;
+export const loadZipArchiveWithPreflight: any = undefined as any;

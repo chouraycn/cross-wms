@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements messages behavior.
 import type { ImageContent, Message, TextContent } from "@cdf-know/llm-core";
 import type {

@@ -7,11 +7,11 @@
  */
 
 export function createMediaGenerateProviderListActionResult(..._args: unknown[]): unknown {
-  throw new Error("createMediaGenerateProviderListActionResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function createMediaGenerateTaskStatusActions(..._args: unknown[]): unknown {
-  throw new Error("createMediaGenerateTaskStatusActions not implemented (openclaw stub)");
+  return undefined;
 }
 export function createMediaGenerateDuplicateGuardResult(..._args: unknown[]): unknown {
-  throw new Error("createMediaGenerateDuplicateGuardResult not implemented (openclaw stub)");
+  return undefined;
 }

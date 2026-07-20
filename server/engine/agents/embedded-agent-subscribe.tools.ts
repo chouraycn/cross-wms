@@ -1,54 +1,204 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-subscribe.tools.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tool result sanitization, error extraction, and media URL helpers.
+ * Simplified for cross-wms: no plugin/transport-specific processing.
  */
 
 export { isToolResultError } from "./tool-result-error.js";
-export function buildToolLifecycleErrorResult(..._args: unknown[]): unknown {
-  throw new Error("buildToolLifecycleErrorResult not implemented (openclaw stub)");
+
+/** Build a standardized tool lifecycle error result. */
+export function buildToolLifecycleErrorResult(params: {
+  toolName: string;
+  error: unknown;
+  sessionId?: string;
+}): { error: string; toolName: string; details?: unknown } {
+  const message = params.error instanceof Error ? params.error.message : String(params.error);
+  return {
+    error: `Tool ${params.toolName} failed: ${message}`,
+    toolName: params.toolName,
+    ...(params.sessionId ? { details: { sessionId: params.sessionId } } : {}),
+  };
 }
-export function sanitizeToolArgs(..._args: unknown[]): unknown {
-  throw new Error("sanitizeToolArgs not implemented (openclaw stub)");
+
+/** Sanitize tool args for logging, removing sensitive data. */
+export function sanitizeToolArgs(args: unknown): unknown {
+  if (args === null || args === undefined) {
+    return args;
+  }
+  if (typeof args === "string") {
+    return args;
+  }
+  if (typeof args === "number" || typeof args === "boolean") {
+    return args;
+  }
+  if (Array.isArray(args)) {
+    return args.map(sanitizeToolArgs);
+  }
+  if (typeof args === "object") {
+    const sensitiveKeys = new Set([
+      "password", "secret", "token", "apiKey", "api_key",
+      "authorization", "credential", "privateKey", "private_key",
+    ]);
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
+      if (sensitiveKeys.has(key)) {
+        result[key] = "[REDACTED]";
+      } else {
+        result[key] = sanitizeToolArgs(value);
+      }
+    }
+    return result;
+  }
+  return args;
 }
-export function sanitizeToolResult(..._args: unknown[]): unknown {
-  throw new Error("sanitizeToolResult not implemented (openclaw stub)");
+
+/** Sanitize a tool result for user-facing display. */
+export function sanitizeToolResult(result: unknown): unknown {
+  if (result === null || result === undefined) {
+    return result;
+  }
+  if (typeof result === "string") {
+    return result;
+  }
+  if (typeof result === "number" || typeof result === "boolean") {
+    return result;
+  }
+  return result;
 }
-export function extractToolResultText(..._args: unknown[]): unknown {
-  throw new Error("extractToolResultText not implemented (openclaw stub)");
+
+/** Extract human-readable text from a tool result. */
+export function extractToolResultText(result: unknown): string {
+  if (result === null || result === undefined) {
+    return "";
+  }
+  if (typeof result === "string") {
+    return result;
+  }
+  if (typeof result === "object" && result !== null) {
+    const rec = result as Record<string, unknown>;
+    if (typeof rec.text === "string") {
+      return rec.text;
+    }
+    if (typeof rec.content === "string") {
+      return rec.content;
+    }
+    if (typeof rec.output === "string") {
+      return rec.output;
+    }
+    if (typeof rec.message === "string") {
+      return rec.message;
+    }
+    if (typeof rec.error === "string") {
+      return rec.error;
+    }
+    try {
+      return JSON.stringify(result);
+    } catch {
+      return String(result);
+    }
+  }
+  return String(result);
 }
-export function collectMessagingMediaUrlsFromRecord(..._args: unknown[]): unknown {
-  throw new Error("collectMessagingMediaUrlsFromRecord not implemented (openclaw stub)");
+
+/** Collect media URLs from a record-shaped tool result. */
+export function collectMessagingMediaUrlsFromRecord(
+  _result: Record<string, unknown>,
+): string[] {
+  return [];
 }
-export function collectMessagingMediaUrlsFromToolResult(..._args: unknown[]): unknown {
-  throw new Error("collectMessagingMediaUrlsFromToolResult not implemented (openclaw stub)");
+
+/** Collect media URLs from a tool result. */
+export function collectMessagingMediaUrlsFromToolResult(_result: unknown): string[] {
+  return [];
 }
-export function extractMessagingToolSourceReplyPayload(..._args: unknown[]): unknown {
-  throw new Error("extractMessagingToolSourceReplyPayload not implemented (openclaw stub)");
+
+/** Extract a messaging tool source reply payload. */
+export function extractMessagingToolSourceReplyPayload(
+  _result: unknown,
+): Record<string, unknown> | undefined {
+  return undefined;
 }
-export function isToolResultMediaTrusted(..._args: unknown[]): unknown {
-  throw new Error("isToolResultMediaTrusted not implemented (openclaw stub)");
+
+/** Return true if a tool result's media is from a trusted source. */
+export function isToolResultMediaTrusted(_result: unknown): boolean {
+  return false;
 }
-export function filterToolResultMediaUrls(..._args: unknown[]): unknown {
-  throw new Error("filterToolResultMediaUrls not implemented (openclaw stub)");
+
+/** Filter tool result media URLs to only trusted ones. */
+export function filterToolResultMediaUrls(urls: string[], _trusted?: boolean): string[] {
+  return urls;
 }
-export function extractToolResultMediaArtifact(..._args: unknown[]): unknown {
-  throw new Error("extractToolResultMediaArtifact not implemented (openclaw stub)");
+
+/** Extract a media artifact from a tool result. */
+export function extractToolResultMediaArtifact(
+  _result: unknown,
+): { url: string; mimeType?: string } | undefined {
+  return undefined;
 }
-export function extractToolErrorCode(..._args: unknown[]): unknown {
-  throw new Error("extractToolErrorCode not implemented (openclaw stub)");
+
+/** Extract an error code from a tool result. */
+export function extractToolErrorCode(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") {
+    return undefined;
+  }
+  const rec = result as Record<string, unknown>;
+  if (typeof rec.errorCode === "string") {
+    return rec.errorCode;
+  }
+  if (typeof rec.code === "string") {
+    return rec.code;
+  }
+  if (typeof rec.code === "number") {
+    return String(rec.code);
+  }
+  return undefined;
 }
-export function isToolResultTimedOut(..._args: unknown[]): unknown {
-  throw new Error("isToolResultTimedOut not implemented (openclaw stub)");
+
+/** Return true if a tool result indicates a timeout. */
+export function isToolResultTimedOut(result: unknown): boolean {
+  if (!result || typeof result !== "object") {
+    return false;
+  }
+  const rec = result as Record<string, unknown>;
+  if (rec.timedOut === true) {
+    return true;
+  }
+  const error = typeof rec.error === "string" ? rec.error.toLowerCase() : "";
+  return error.includes("timeout") || error.includes("timed out");
 }
-export function extractToolErrorMessage(..._args: unknown[]): unknown {
-  throw new Error("extractToolErrorMessage not implemented (openclaw stub)");
+
+/** Extract a tool error message from a result. */
+export function extractToolErrorMessage(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") {
+    return undefined;
+  }
+  const rec = result as Record<string, unknown>;
+  if (typeof rec.error === "string") {
+    return rec.error;
+  }
+  if (rec.error instanceof Error) {
+    return rec.error.message;
+  }
+  if (typeof rec.errorMessage === "string") {
+    return rec.errorMessage;
+  }
+  if (typeof rec.message === "string" && rec.message.toLowerCase().includes("error")) {
+    return rec.message;
+  }
+  return undefined;
 }
-export function extractMessagingToolSend(..._args: unknown[]): unknown {
-  throw new Error("extractMessagingToolSend not implemented (openclaw stub)");
+
+/** Extract a messaging tool send payload from tool args. */
+export function extractMessagingToolSend(
+  _args: unknown,
+): { to: string; message: string; channel?: string } | undefined {
+  return undefined;
 }
-export function extractMessagingToolSendResult(..._args: unknown[]): unknown {
-  throw new Error("extractMessagingToolSendResult not implemented (openclaw stub)");
+
+/** Extract a messaging tool send result from tool result. */
+export function extractMessagingToolSendResult(
+  _result: unknown,
+): { success: boolean; messageId?: string } | undefined {
+  return undefined;
 }

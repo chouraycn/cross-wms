@@ -1,13 +1,36 @@
-// 移植自 openclaw/src/cli/command-registry.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Program command registry facade: exports core descriptors and registers core plus sub-CLIs.
+// 移植自 openclaw/src/cli/program/command-registry.ts
 
-export function registerProgramCommands(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerProgramCommands");
+import type { Command } from "commander";
+import { resolveCliArgvInvocation } from "./argv-invocation.js";
+import {
+  getCoreCliCommandDescriptors,
+  getCoreCliCommandNames,
+  getCoreCliCommandsWithSubcommands,
+  type CommandRegistration,
+  registerCoreCliByName,
+  registerCoreCliCommands,
+} from "./command-registry-core.js";
+import type { ProgramContext } from "./context.js";
+import { registerSubCliCommands } from "./register.subclis.js";
+
+export {
+  getCoreCliCommandDescriptors,
+  getCoreCliCommandNames,
+  getCoreCliCommandsWithSubcommands,
+  registerCoreCliByName,
+  registerCoreCliCommands,
+};
+
+/** Core command registration contract re-exported for program builders and tests. */
+export type { CommandRegistration };
+
+/** Register all root-program commands for the current argv shape. */
+export function registerProgramCommands(
+  program: Command,
+  ctx: ProgramContext,
+  argv: string[] = process.argv,
+) {
+  registerCoreCliCommands(program, ctx, argv);
+  registerSubCliCommands(program, argv);
 }
-
-export const getCoreCliCommandDescriptors: unknown = undefined;
-export const getCoreCliCommandNames: unknown = undefined;
-export const getCoreCliCommandsWithSubcommands: unknown = undefined;
-export const registerCoreCliByName: unknown = undefined;
-export const registerCoreCliCommands: unknown = undefined;

@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/model-selection-cli.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Detects providers whose model selections are backed by CLI runtimes.
+ * In cross-wms the CLI backend resolution infrastructure is not available,
+ * so isCliProvider returns false.
  */
 
-export function isCliProvider(..._args: unknown[]): unknown {
-  throw new Error("isCliProvider not implemented (openclaw stub)");
+/** Return true when a provider id resolves to a configured CLI backend (always false in cross-wms). */
+export function isCliProvider(..._args: unknown[]): false {
+  return false;
 }

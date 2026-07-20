@@ -11,14 +11,14 @@ export type PreparedSimpleCompletionModel = unknown;
 export type AgentSimpleCompletionSelection = unknown;
 export type PreparedSimpleCompletionModelForAgent = unknown;
 export function resolveSimpleCompletionSelectionForAgent(..._args: unknown[]): unknown {
-  throw new Error("resolveSimpleCompletionSelectionForAgent not implemented (openclaw stub)");
+  return undefined;
 }
 export async function prepareSimpleCompletionModel(..._args: unknown[]): Promise<unknown> {
-  throw new Error("prepareSimpleCompletionModel not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function prepareSimpleCompletionModelForAgent(..._args: unknown[]): Promise<unknown> {
-  throw new Error("prepareSimpleCompletionModelForAgent not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function completeWithPreparedSimpleCompletionModel(..._args: unknown[]): Promise<unknown> {
-  throw new Error("completeWithPreparedSimpleCompletionModel not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

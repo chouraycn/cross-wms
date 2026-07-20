@@ -1,34 +1,79 @@
 /**
  * 移植自 openclaw/src/agents/model-auth-runtime-shared.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * cross-wms 降级实现：提供认证错误类型和辅助函数。
  */
 
-export type ResolvedProviderAuth = unknown;
-export class ProviderAuthError {
-  constructor(..._args: unknown[]) {
-    throw new Error("ProviderAuthError not implemented (openclaw stub)");
+export type ResolvedProviderAuth = {
+  apiKey?: string;
+  profileId?: string;
+  source: string;
+  mode: "api-key" | "oauth" | "token" | "aws-sdk";
+};
+
+type ProviderAuthErrorCode = "missing-api-key" | "missing-provider-auth";
+
+export class ProviderAuthError extends Error {
+  readonly code: ProviderAuthErrorCode;
+  readonly provider: string;
+
+  constructor(code: ProviderAuthErrorCode, provider: string, message: string) {
+    super(message);
+    this.name = "ProviderAuthError";
+    this.code = code;
+    this.provider = provider;
   }
 }
-export class MissingProviderAuthError {
-  constructor(..._args: unknown[]) {
-    throw new Error("MissingProviderAuthError not implemented (openclaw stub)");
+
+export class MissingProviderAuthError extends ProviderAuthError {
+  readonly mode: ResolvedProviderAuth["mode"];
+  readonly source: string;
+
+  constructor(provider: string, auth: ResolvedProviderAuth) {
+    super("missing-api-key", provider, formatMissingAuthError(auth, provider));
+    this.name = "MissingProviderAuthError";
+    this.mode = auth.mode;
+    this.source = auth.source;
   }
 }
-export function isProviderAuthError(..._args: unknown[]): unknown {
-  throw new Error("isProviderAuthError not implemented (openclaw stub)");
+
+export function isProviderAuthError(
+  err: unknown,
+  code?: ProviderAuthErrorCode,
+): err is ProviderAuthError {
+  return err instanceof ProviderAuthError && (!code || err.code === code);
 }
-export function isMissingProviderAuthError(..._args: unknown[]): unknown {
-  throw new Error("isMissingProviderAuthError not implemented (openclaw stub)");
+
+export function isMissingProviderAuthError(err: unknown): err is MissingProviderAuthError {
+  return err instanceof MissingProviderAuthError;
 }
-export function resolveAwsSdkEnvVarName(..._args: unknown[]): unknown {
-  throw new Error("resolveAwsSdkEnvVarName not implemented (openclaw stub)");
+
+export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
+  const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";
+  const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
+  const AWS_PROFILE_ENV = "AWS_PROFILE";
+
+  if (env[AWS_BEARER_ENV]?.trim()) {
+    return AWS_BEARER_ENV;
+  }
+  if (env[AWS_ACCESS_KEY_ENV]?.trim() && env[AWS_SECRET_KEY_ENV]?.trim()) {
+    return AWS_ACCESS_KEY_ENV;
+  }
+  if (env[AWS_PROFILE_ENV]?.trim()) {
+    return AWS_PROFILE_ENV;
+  }
+  return undefined;
 }
-export function formatMissingAuthError(..._args: unknown[]): unknown {
-  throw new Error("formatMissingAuthError not implemented (openclaw stub)");
+
+export function formatMissingAuthError(auth: ResolvedProviderAuth, provider: string): string {
+  return `No API key resolved for provider "${provider}" (auth mode: ${auth.mode}, checked: ${auth.source}).`;
 }
-export function requireApiKey(..._args: unknown[]): unknown {
-  throw new Error("requireApiKey not implemented (openclaw stub)");
+
+export function requireApiKey(auth: ResolvedProviderAuth, provider: string): string {
+  const key = auth.apiKey?.trim();
+  if (key) {
+    return key;
+  }
+  throw new MissingProviderAuthError(provider, auth);
 }

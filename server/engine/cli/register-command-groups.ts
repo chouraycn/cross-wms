@@ -1,31 +1,132 @@
-// 移植自 openclaw/src/cli/register-command-groups.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Lazy command-group registration: placeholder commands are replaced by real subcommand groups.
+// 移植自 openclaw/src/cli/program/register-command-groups.ts
+//
+// 降级策略：
+//  - 原模块依赖 @openclaw/normalization-core/string-normalization 的 uniqueStrings；
+//    cross-wms 未移植该包；内联降级实现。
 
-export function getCommandGroupNames(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getCommandGroupNames");
+import type { Command } from "commander";
+import { removeCommandByName } from "./command-tree.js";
+import { registerLazyCommand } from "./register-lazy-command.js";
+
+// ===== 内联 uniqueStrings 降级 =====
+function uniqueStrings(values: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      result.push(value);
+    }
+  }
+  return result;
+}
+// ===== 降级结束 =====
+
+/** Placeholder command shown before its lazy group is loaded. */
+export type CommandGroupPlaceholder = {
+  name: string;
+  description: string;
+  options?: readonly CommandGroupPlaceholderOption[];
+};
+
+/** Commander option metadata attached to a lazy placeholder. */
+export type CommandGroupPlaceholderOption = {
+  flags: string;
+  description: string;
+};
+
+/** A lazily registered command group and the names it owns. */
+export type CommandGroupEntry = {
+  placeholders: readonly CommandGroupPlaceholder[];
+  names?: readonly string[];
+  register: (program: Command) => Promise<void> | void;
+};
+
+/** Return every command name owned by a lazy command group. */
+export function getCommandGroupNames(entry: CommandGroupEntry): readonly string[] {
+  return entry.names ?? entry.placeholders.map((placeholder) => placeholder.name);
 }
 
-export function findCommandGroupEntry(..._args: unknown[]): unknown {
-  throw new Error("not implemented: findCommandGroupEntry");
+/** Find the group that owns a command name. */
+export function findCommandGroupEntry(
+  entries: readonly CommandGroupEntry[],
+  name: string,
+): CommandGroupEntry | undefined {
+  return entries.find((entry) => getCommandGroupNames(entry).includes(name));
 }
 
-export function removeCommandGroupNames(..._args: unknown[]): unknown {
-  throw new Error("not implemented: removeCommandGroupNames");
+/** Remove all placeholder/loaded commands owned by a group before replacing it. */
+export function removeCommandGroupNames(program: Command, entry: CommandGroupEntry) {
+  for (const name of new Set(getCommandGroupNames(entry))) {
+    removeCommandByName(program, name);
+  }
 }
 
-export async function registerCommandGroupByName(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: registerCommandGroupByName");
+/** Eagerly register one lazy command group by command name. */
+export async function registerCommandGroupByName(
+  program: Command,
+  entries: readonly CommandGroupEntry[],
+  name: string,
+): Promise<boolean> {
+  const entry = findCommandGroupEntry(entries, name);
+  if (!entry) {
+    return false;
+  }
+  removeCommandGroupNames(program, entry);
+  await entry.register(program);
+  return true;
 }
 
-export function registerLazyCommandGroup(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerLazyCommandGroup");
+/** Register one placeholder that loads and replaces its whole command group on demand. */
+export function registerLazyCommandGroup(
+  program: Command,
+  entry: CommandGroupEntry,
+  placeholder: CommandGroupPlaceholder,
+) {
+  registerLazyCommand({
+    program,
+    name: placeholder.name,
+    description: placeholder.description,
+    options: placeholder.options,
+    removeNames: uniqueStrings(getCommandGroupNames(entry)),
+    register: async () => {
+      await entry.register(program);
+    },
+  });
 }
 
-export function registerCommandGroups(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerCommandGroups");
-}
+/** Register command groups either eagerly or as lazy placeholders for startup speed. */
+export function registerCommandGroups(
+  program: Command,
+  entries: readonly CommandGroupEntry[],
+  params: {
+    eager: boolean;
+    primary: string | null;
+    registerPrimaryOnly: boolean;
+  },
+) {
+  if (params.eager) {
+    for (const entry of entries) {
+      void entry.register(program);
+    }
+    return;
+  }
 
-export type CommandGroupPlaceholder = unknown;
-export type CommandGroupPlaceholderOption = unknown;
-export type CommandGroupEntry = unknown;
+  if (params.primary && params.registerPrimaryOnly) {
+    const entry = findCommandGroupEntry(entries, params.primary);
+    if (entry) {
+      const placeholder = entry.placeholders.find((candidate) => candidate.name === params.primary);
+      if (placeholder) {
+        registerLazyCommandGroup(program, entry, placeholder);
+      }
+      return;
+    }
+  }
+
+  for (const entry of entries) {
+    for (const placeholder of entry.placeholders) {
+      registerLazyCommandGroup(program, entry, placeholder);
+    }
+  }
+}

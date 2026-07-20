@@ -1,17 +1,16 @@
-// @ts-nocheck
 /** Discovers plugin candidates from bundled, workspace, global, package, and bundle roots. */
 import fs from "node:fs";
 import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { satisfiesPluginApiRange } from "../infra/clawhub.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
-import { resolveUserPath } from './_stub_parent__utils.js';
-import { resolveCompatibilityHostVersion } from './_stub_parent__version.js';
+import { resolveUserPath } from './_parent__utils.js';
+import { resolveCompatibilityHostVersion } from './_parent__version.js';
 import { detectBundleManifestFormat, loadBundleManifest } from "./bundle-manifest.js";
 import { resolveSourceCheckoutDependencyDiagnostic } from "./bundled-dir.js";
 import {

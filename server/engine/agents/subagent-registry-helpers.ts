@@ -12,26 +12,26 @@ export const MAX_ANNOUNCE_RETRY_COUNT: unknown = undefined;
 export const ANNOUNCE_EXPIRY_MS: unknown = undefined;
 export const ANNOUNCE_COMPLETION_HARD_EXPIRY_MS: unknown = undefined;
 export function capFrozenResultText(..._args: unknown[]): unknown {
-  throw new Error("capFrozenResultText not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAnnounceRetryDelayMs(..._args: unknown[]): unknown {
-  throw new Error("resolveAnnounceRetryDelayMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function logAnnounceGiveUp(..._args: unknown[]): unknown {
-  throw new Error("logAnnounceGiveUp not implemented (openclaw stub)");
+  return undefined;
 }
 export async function persistSubagentSessionTiming(..._args: unknown[]): Promise<unknown> {
-  throw new Error("persistSubagentSessionTiming not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function safeRemoveAttachmentsDir(..._args: unknown[]): Promise<unknown> {
-  throw new Error("safeRemoveAttachmentsDir not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function reconcileOrphanedRun(..._args: unknown[]): unknown {
-  throw new Error("reconcileOrphanedRun not implemented (openclaw stub)");
+  return undefined;
 }
 export function reconcileOrphanedRestoredRuns(..._args: unknown[]): unknown {
-  throw new Error("reconcileOrphanedRestoredRuns not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveArchiveAfterMs(..._args: unknown[]): unknown {
-  throw new Error("resolveArchiveAfterMs not implemented (openclaw stub)");
+  return undefined;
 }

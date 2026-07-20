@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/run/attempt.tool-call-block-type.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tool call block type checker.
+ * In cross-wms the tool call block type infrastructure is not available,
+ * so isRunnerToolCallBlockType returns false.
  */
 
-export function isRunnerToolCallBlockType(..._args: unknown[]): unknown {
-  throw new Error("isRunnerToolCallBlockType not implemented (openclaw stub)");
+/** Check if a value is a runner tool call block type (returns false in cross-wms). */
+export function isRunnerToolCallBlockType(..._args: unknown[]): false {
+  return false;
 }

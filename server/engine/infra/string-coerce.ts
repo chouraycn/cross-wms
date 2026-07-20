@@ -28,6 +28,25 @@ export function normalizeLowercaseStringOrEmpty(value: unknown): string {
   return normalizeOptionalLowercaseString(value) ?? "";
 }
 
+/** 规范化可能是数字或字符串的线程 id */
+export function normalizeOptionalThreadValue(value: unknown): string | number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.trunc(value) : undefined;
+  }
+  return normalizeOptionalString(value);
+}
+
+/** 规范化线程/id 值并将有限数字 id 字符串化 */
+export function normalizeOptionalStringifiedId(value: unknown): string | undefined {
+  const normalized = normalizeOptionalThreadValue(value);
+  return normalized == null ? undefined : String(normalized);
+}
+
+/** Type guard: 非空字符串 */
+export function hasNonEmptyString(value: unknown): value is string {
+  return normalizeOptionalString(value) !== undefined;
+}
+
 /**
  * 将原始值（string/number/boolean/bigint）规范化为可选的已去除首尾空白的字符串。
  * 与 openclaw `@openclaw/normalization-core/string-coerce` 中同名函数行为一致。

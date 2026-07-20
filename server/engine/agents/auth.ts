@@ -1,11 +1,39 @@
 /**
  * 移植自 openclaw/src/agents/runtime-plan/auth.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供默认的 auth plan 构造，不再抛出 stub 错误。
  */
 
-export function buildAgentRuntimeAuthPlan(..._args: unknown[]): unknown {
-  throw new Error("buildAgentRuntimeAuthPlan not implemented (openclaw stub)");
+export type AgentRuntimeAuthPlan = {
+  providerForAuth: string;
+  authProfileProviderForAuth: string;
+  forwardedAuthProfileId?: string;
+  forwardedAuthProfileCandidateIds?: string[];
+};
+
+export function buildAgentRuntimeAuthPlan(params: {
+  provider: string;
+  authProfileProvider?: string;
+  authProfileMode?: string;
+  sessionAuthProfileId?: string;
+  sessionAuthProfileCandidateIds?: string[];
+  config?: unknown;
+  workspaceDir?: string;
+  metadataSnapshot?: unknown;
+  providerAuthAliasesEnabled?: boolean;
+  harnessId?: string;
+  harnessRuntime?: string;
+  allowHarnessAuthProfileForwarding?: boolean;
+}): AgentRuntimeAuthPlan {
+  const providerForAuth = params.provider;
+  const authProfileProviderForAuth = params.authProfileProvider ?? params.provider;
+  const canForwardProfile = providerForAuth === authProfileProviderForAuth;
+  return {
+    providerForAuth,
+    authProfileProviderForAuth,
+    ...(canForwardProfile ? { forwardedAuthProfileId: params.sessionAuthProfileId } : {}),
+    ...(canForwardProfile && params.sessionAuthProfileCandidateIds?.length
+      ? { forwardedAuthProfileCandidateIds: params.sessionAuthProfileCandidateIds }
+      : {}),
+  };
 }

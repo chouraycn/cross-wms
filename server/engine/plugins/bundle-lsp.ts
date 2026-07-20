@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Bundles language-server metadata exposed by plugins.
 import fs from "node:fs";
 import path from "node:path";
 import { applyMergePatch } from "../config/merge-patch.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 import {
   inspectBundleServerRuntimeSupport,
   loadEnabledBundleConfig,

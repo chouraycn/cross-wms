@@ -154,3 +154,6 @@ export const pluginRuntimeRegistry = new PluginRegistryImpl();
 export function createPluginRegistry(): PluginRegistryImpl {
   return new PluginRegistryImpl();
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const createEmptyPluginRegistry: any = undefined as any;

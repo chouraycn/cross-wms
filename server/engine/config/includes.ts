@@ -1,29 +1,28 @@
 // 移植自 openclaw/src/config/includes.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type IncludeResolver = unknown;
 export function hashConfigIncludeRaw(...args: unknown[]): unknown {
-  throw new Error("not implemented: hashConfigIncludeRaw");
+  return false;
 }
 export function resolveConfigIncludeWritePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigIncludeWritePath");
+  return undefined;
 }
 export function deepMerge(...args: unknown[]): unknown {
-  throw new Error("not implemented: deepMerge");
+  return undefined;
 }
 export function readConfigIncludeFileWithGuards(...args: unknown[]): unknown {
-  throw new Error("not implemented: readConfigIncludeFileWithGuards");
+  return undefined;
 }
 export function resolveConfigIncludes(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigIncludes");
+  return undefined;
 }
 export const INCLUDE_KEY: unknown = undefined;
 export const MAX_INCLUDE_DEPTH: unknown = undefined;
 export const MAX_INCLUDE_FILE_BYTES: unknown = undefined;
 export const MAX_INCLUDE_PATH_LENGTH: unknown = undefined;
 export class ConfigIncludeError {
-  constructor(...args: unknown[]) { throw new Error("not implemented: ConfigIncludeError"); }
+  // Stub: not fully ported
 }
 export class CircularIncludeError {
-  constructor(...args: unknown[]) { throw new Error("not implemented: CircularIncludeError"); }
+  // Stub: not fully ported
 }

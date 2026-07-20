@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Applies manifest-declared model-id normalization policies to provider model refs. */
 import {
   collectManifestModelIdNormalizationPolicies,
   normalizeProviderModelIdWithPolicies,
-} from './_stub_openclaw__model_catalog_core__provider_model_id_normalization.js';
+} from '@cdf-know/model-catalog-core/provider-model-id-normalization';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";

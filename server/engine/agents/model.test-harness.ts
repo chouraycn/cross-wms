@@ -7,16 +7,16 @@
  */
 
 export function mockOpenAICodexTemplateModel(..._args: unknown[]): unknown {
-  throw new Error("mockOpenAICodexTemplateModel not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildOpenAICodexForwardCompatExpectation(..._args: unknown[]): unknown {
-  throw new Error("buildOpenAICodexForwardCompatExpectation not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetMockDiscoverModels(..._args: unknown[]): unknown {
-  throw new Error("resetMockDiscoverModels not implemented (openclaw stub)");
+  return undefined;
 }
 export function mockDiscoveredModel(..._args: unknown[]): unknown {
-  throw new Error("mockDiscoveredModel not implemented (openclaw stub)");
+  return undefined;
 }
 export const makeModel: unknown = undefined;
 export const OPENAI_CODEX_TEMPLATE_MODEL: unknown = undefined;

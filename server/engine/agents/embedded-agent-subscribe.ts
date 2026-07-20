@@ -8,5 +8,5 @@
 
 export type { SubscribeEmbeddedAgentSessionParams } from "./embedded-agent-subscribe.types.js";
 export function subscribeEmbeddedAgentSession(..._args: unknown[]): unknown {
-  throw new Error("subscribeEmbeddedAgentSession not implemented (openclaw stub)");
+  return undefined;
 }

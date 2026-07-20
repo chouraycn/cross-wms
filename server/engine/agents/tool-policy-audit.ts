@@ -1,15 +1,22 @@
 /**
  * 移植自 openclaw/src/agents/tool-policy-audit.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tool policy audit logging helpers.
+ * In cross-wms the subsystem logger and policy match helpers are not available,
+ * so both functions degrade to silent no-ops.
  */
 
-export type ToolPolicyAuditLogLevel = unknown;
-export function auditToolPolicyFilter(..._args: unknown[]): unknown {
-  throw new Error("auditToolPolicyFilter not implemented (openclaw stub)");
+/** Log level used for tool-policy audit events. */
+export type ToolPolicyAuditLogLevel = "info" | "debug";
+
+/** Log tools removed by an allow/deny policy filter step (no-op in cross-wms). */
+export function auditToolPolicyFilter(..._args: unknown[]): void {
+  // No-op: audit logging requires subsystem logger + policy match helpers
+  // that are not available in cross-wms.
 }
-export function auditSandboxToolPolicyBlock(..._args: unknown[]): unknown {
-  throw new Error("auditSandboxToolPolicyBlock not implemented (openclaw stub)");
+
+/** Log a sandbox tool blocked by policy before execution (no-op in cross-wms). */
+export function auditSandboxToolPolicyBlock(..._args: unknown[]): void {
+  // No-op: audit logging requires subsystem logger + policy match helpers
+  // that are not available in cross-wms.
 }

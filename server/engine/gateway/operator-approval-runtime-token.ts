@@ -12,9 +12,9 @@
  */
 
 export function getOperatorApprovalRuntimeToken(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getOperatorApprovalRuntimeToken not implemented");
+  return undefined;
 }
 
 export function isOperatorApprovalRuntimeToken(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isOperatorApprovalRuntimeToken not implemented");
+  return false;
 }

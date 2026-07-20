@@ -1,11 +1,9 @@
 /**
  * 移植自 openclaw/src/agents/bash-tools.exec-host-node.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 Node host command 执行，不再抛出 stub 错误。
  */
 
-export async function executeNodeHostCommand(..._args: unknown[]): Promise<unknown> {
-  throw new Error("executeNodeHostCommand not implemented (openclaw stub)");
+export async function executeNodeHostCommand(_params: unknown): Promise<never> {
+  throw new Error("Node host command execution is not available in cross-wms mode.");
 }

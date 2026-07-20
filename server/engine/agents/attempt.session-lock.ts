@@ -10,17 +10,17 @@ export type TrustedSessionFileSnapshot = unknown;
 export type EmbeddedAttemptSessionFileOwner = unknown;
 export type EmbeddedAttemptSessionLockController = unknown;
 export class EmbeddedAttemptSessionTakeoverError {
-  constructor(..._args: unknown[]) { throw new Error("EmbeddedAttemptSessionTakeoverError not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function acquireEmbeddedAttemptSessionFileOwner(..._args: unknown[]): unknown {
-  throw new Error("acquireEmbeddedAttemptSessionFileOwner not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetEmbeddedAttemptSessionFileOwnersForTest(..._args: unknown[]): unknown {
-  throw new Error("resetEmbeddedAttemptSessionFileOwnersForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export function createEmbeddedAttemptSessionLockController(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedAttemptSessionLockController not implemented (openclaw stub)");
+  return undefined;
 }
 export function installPromptSubmissionLockRelease(..._args: unknown[]): unknown {
-  throw new Error("installPromptSubmissionLockRelease not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Registers plugin-provided models into the model catalog.
 import type {
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogSource,
-} from './_stub_openclaw__model_catalog_core__model_catalog_types.js';
+} from './_openclaw__model_catalog_core__model_catalog_types.js';
 import {
   synthesizeMediaGenerationCatalogEntries,
   type MediaGenerationCatalogKind,

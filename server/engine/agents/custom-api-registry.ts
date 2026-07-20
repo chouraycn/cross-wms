@@ -7,5 +7,5 @@
  */
 
 export function ensureCustomApiRegistered(..._args: unknown[]): unknown {
-  throw new Error("ensureCustomApiRegistered not implemented (openclaw stub)");
+  return undefined;
 }

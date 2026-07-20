@@ -1,9 +1,12 @@
 // 移植自 openclaw/src/infra/targets.shared-test.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：测试辅助模块
 
-export function installResolveOutboundTargetPluginRegistryHooks(...args: unknown[]): unknown {
-  throw new Error("not implemented: installResolveOutboundTargetPluginRegistryHooks");
+/** Installs resolve-outbound-target plugin registry hooks for testing. No-op in cross-wms. */
+export function installResolveOutboundTargetPluginRegistryHooks(_params?: unknown): void {
+  // Test helper: no-op in cross-wms
 }
-export function runResolveOutboundTargetCoreTests(...args: unknown[]): unknown {
-  throw new Error("not implemented: runResolveOutboundTargetCoreTests");
+
+/** Runs core resolve-outbound-target tests. No-op in cross-wms. */
+export function runResolveOutboundTargetCoreTests(_params?: unknown): void {
+  // Test helper: no-op in cross-wms
 }

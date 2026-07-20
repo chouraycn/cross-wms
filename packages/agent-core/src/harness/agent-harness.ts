@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements agent harness behavior.
 import type {
   AssistantMessage,
@@ -6,19 +5,18 @@ import type {
   Model,
   UserMessage,
 } from "@cdf-know/llm-core";
-import { runAgentLoop } from "../agent-loop";
+import { runAgentLoop, type AgentLoopConfig } from "../agent-loop";
 import { resolveAgentReasoningOption } from "../reasoning";
 import { type AgentCoreRuntimeDeps, resolveAgentCoreStreamFn } from "../runtime-deps";
 import type {
   AgentContext,
   AgentEvent,
-  AgentLoopConfig,
   AgentMessage,
   AgentTool,
   QueueMode,
-  StreamFn,
   ThinkingLevel,
 } from "../types";
+import type { StreamFn } from "@cdf-know/llm-core";
 import {
   collectEntriesForBranchSummary,
   generateBranchSummary,
@@ -449,8 +447,8 @@ export class CoreAgentHarness<
         maxRetries: requestOptions.maxRetries,
         maxRetryDelayMs: requestOptions.maxRetryDelayMs,
         metadata: requestOptions.metadata,
-        onPayload: async (payload) => await this.emitBeforeProviderPayload(model, payload),
-        onResponse: async (response) => {
+        onPayload: async (payload: unknown) => await this.emitBeforeProviderPayload(model, payload),
+        onResponse: async (response: { status: number; headers: Record<string, string> }) => {
           const headers = { ...response.headers };
           await this.emitOwn(
             { type: "after_provider_response", status: response.status, headers },
@@ -494,11 +492,12 @@ export class CoreAgentHarness<
       thinkingLevel: turnState.thinkingLevel,
       reasoning: resolveAgentReasoningOption(turnState.model, turnState.thinkingLevel),
       convertToLlm,
-      transformContext: async (messages) => {
+      transformContext: async (messages: AgentMessage[]) => {
         const result = await this.emitHook({ type: "context", messages: [...messages] });
         return result?.messages ?? messages;
       },
-      beforeToolCall: async ({ toolCall, args }) => {
+      beforeToolCall: async (context: unknown) => {
+        const { toolCall, args } = context as { toolCall: { id: string; name: string }; args: unknown };
         const result = await this.emitHook({
           type: "tool_call",
           toolCallId: toolCall.id,
@@ -507,14 +506,15 @@ export class CoreAgentHarness<
         });
         return result ? { block: result.block, reason: result.reason } : undefined;
       },
-      afterToolCall: async ({ toolCall, args, result, isError }) => {
+      afterToolCall: async (context: unknown) => {
+        const { toolCall, args, result: toolResult, isError } = context as { toolCall: { id: string; name: string }; args: unknown; result: { content: unknown; details: unknown }; isError: boolean };
         const patch = await this.emitHook({
           type: "tool_result",
           toolCallId: toolCall.id,
           toolName: toolCall.name,
           input: args as Record<string, unknown>,
-          content: result.content,
-          details: result.details,
+          content: toolResult.content as (import("@cdf-know/llm-core").TextContent | import("@cdf-know/llm-core").ImageContent)[],
+          details: toolResult.details,
           isError,
         });
         return patch

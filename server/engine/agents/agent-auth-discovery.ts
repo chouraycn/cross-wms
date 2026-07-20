@@ -1,13 +1,30 @@
 /**
- * 移植自 openclaw/src/agents/agent-auth-discovery.ts
+ * Ported from openclaw/src/agents/agent-auth-discovery.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Discovers agent runtime credentials from auth profiles, env, and synthetic providers.
+ * Cross-wms degradation: delegates to core re-export, returns empty credential map
+ * for the full discovery function.
  */
 
 export { addEnvBackedAgentCredentials } from "./agent-auth-discovery-core.js";
-export type DiscoverAuthStorageOptions = unknown;
-export function resolveAgentCredentialsForDiscovery(..._args: unknown[]): unknown {
-  throw new Error("resolveAgentCredentialsForDiscovery not implemented (openclaw stub)");
+
+export type DiscoverAuthStorageOptions = {
+  externalCli?: Record<string, unknown>;
+  readOnly?: boolean;
+  skipExternalAuthProfiles?: boolean;
+  skipCredentials?: boolean;
+  syntheticAuthProviderRefs?: Iterable<string>;
+  config?: Record<string, unknown>;
+  workspaceDir?: string;
+  env?: Record<string, string | undefined>;
+};
+
+/** Resolves agent credentials from auth profiles, env, and synthetic auth hooks. */
+export function resolveAgentCredentialsForDiscovery(
+  agentDir: string,
+  options?: DiscoverAuthStorageOptions,
+): Record<string, unknown> {
+  // Cross-wms does not have the full auth profile store / synthetic auth pipeline.
+  // Return an empty credential map.
+  return {};
 }

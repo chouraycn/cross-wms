@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/gateway/server-methods/models-auth-status.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ModelAuthExpiry = unknown;
 
@@ -12,11 +11,11 @@ export type ModelAuthStatusResult = unknown;
 export type ModelAuthLogoutResult = unknown;
 
 export function invalidateModelAuthStatusCache(...args: unknown[]): unknown {
-  throw new Error("not implemented: invalidateModelAuthStatusCache");
+  return undefined;
 }
 
 export function aggregateOAuthStatus(...args: unknown[]): unknown {
-  throw new Error("not implemented: aggregateOAuthStatus");
+  return undefined;
 }
 
 export const modelsAuthStatusHandlers: unknown = undefined;

@@ -9,8 +9,8 @@
 export type SubagentAnnounceDeliveryFailureReason = unknown;
 export type SubagentAnnounceDeliveryResult = unknown;
 export function mapSteerOutcomeToDeliveryResult(..._args: unknown[]): unknown {
-  throw new Error("mapSteerOutcomeToDeliveryResult not implemented (openclaw stub)");
+  return undefined;
 }
 export async function runSubagentAnnounceDispatch(..._args: unknown[]): Promise<unknown> {
-  throw new Error("runSubagentAnnounceDispatch not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

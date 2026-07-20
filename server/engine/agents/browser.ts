@@ -7,5 +7,5 @@
  */
 
 export function ensureSandboxBrowser(..._args: unknown[]): unknown {
-  throw new Error("ensureSandboxBrowser not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,23 +1,257 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/state.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime-state normalization and persistence for auth profile selection.
+ * This state tracks order, last-good profile, and cooldown/failure metadata
+ * separately from secret-bearing credentials.
  */
 
-export function coerceAuthProfileState(..._args: unknown[]): unknown {
-  throw new Error("coerceAuthProfileState not implemented (openclaw stub)");
+import { isDeepStrictEqual } from "node:util";
+
+const AUTH_STORE_VERSION = 1;
+
+type AuthProfileFailureReason =
+  | "auth"
+  | "auth_permanent"
+  | "format"
+  | "overloaded"
+  | "rate_limit"
+  | "billing"
+  | "timeout"
+  | "model_not_found"
+  | "session_expired"
+  | "empty_response"
+  | "no_error_details"
+  | "unclassified"
+  | "unknown";
+
+type AuthProfileBlockedReason = "subscription_limit";
+type AuthProfileBlockedSource = "codex_rate_limits" | "wham";
+
+type ProfileUsageStats = {
+  lastUsed?: number;
+  blockedUntil?: number;
+  blockedReason?: AuthProfileBlockedReason;
+  blockedSource?: AuthProfileBlockedSource;
+  blockedModel?: string;
+  cooldownUntil?: number;
+  cooldownReason?: AuthProfileFailureReason;
+  cooldownModel?: string;
+  disabledUntil?: number;
+  disabledReason?: AuthProfileFailureReason;
+  errorCount?: number;
+  failureCounts?: Partial<Record<AuthProfileFailureReason, number>>;
+  lastFailureAt?: number;
+};
+
+export type AuthProfileState = {
+  order?: Record<string, string[]>;
+  lastGood?: Record<string, string>;
+  usageStats?: Record<string, ProfileUsageStats>;
+};
+
+export type AuthProfileStateStore = {
+  version: number;
+  order?: Record<string, string[]>;
+  lastGood?: Record<string, string>;
+  usageStats?: Record<string, ProfileUsageStats>;
+};
+
+const AUTH_FAILURE_REASONS = new Set<string>([
+  "auth", "auth_permanent", "format", "overloaded", "rate_limit",
+  "billing", "timeout", "model_not_found", "session_expired",
+  "empty_response", "no_error_details", "unclassified", "unknown",
+]);
+const AUTH_BLOCKED_REASONS = new Set<string>(["subscription_limit"]);
+const AUTH_BLOCKED_SOURCES = new Set<string>(["codex_rate_limits", "wham"]);
+
+function asFiniteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
-export function mergeAuthProfileState(..._args: unknown[]): unknown {
-  throw new Error("mergeAuthProfileState not implemented (openclaw stub)");
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return undefined;
 }
-export function loadPersistedAuthProfileState(..._args: unknown[]): unknown {
-  throw new Error("loadPersistedAuthProfileState not implemented (openclaw stub)");
+
+function normalizeTrimmedStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
 }
-export function buildPersistedAuthProfileState(..._args: unknown[]): unknown {
-  throw new Error("buildPersistedAuthProfileState not implemented (openclaw stub)");
+
+function normalizeProviderId(provider: string): string {
+  return provider.trim().toLowerCase();
 }
-export function savePersistedAuthProfileState(..._args: unknown[]): unknown {
-  throw new Error("savePersistedAuthProfileState not implemented (openclaw stub)");
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeEnumValue<T extends string>(value: unknown, allowed: Set<T>): T | undefined {
+  if (typeof value !== "string") return undefined;
+  return allowed.has(value as T) ? (value as T) : undefined;
+}
+
+function normalizeFailureCounts(raw: unknown): ProfileUsageStats["failureCounts"] {
+  if (!isRecord(raw)) return undefined;
+  const normalized: NonNullable<ProfileUsageStats["failureCounts"]> = {};
+  for (const [reason, count] of Object.entries(raw)) {
+    if (!AUTH_FAILURE_REASONS.has(reason)) continue;
+    if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) continue;
+    normalized[reason as AuthProfileFailureReason] = Math.trunc(count);
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function normalizeAuthProfileOrder(raw: unknown): AuthProfileState["order"] {
+  if (!isRecord(raw)) return undefined;
+  const normalized = Object.entries(raw).reduce<Record<string, string[]>>(
+    (acc, [provider, value]) => {
+      if (!Array.isArray(value)) return acc;
+      const providerKey = normalizeProviderId(provider);
+      if (!providerKey) return acc;
+      const list = normalizeTrimmedStringList(value);
+      if (list.length > 0) {
+        acc[providerKey] = list;
+      }
+      return acc;
+    },
+    {},
+  );
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function normalizeLastGood(raw: unknown): AuthProfileState["lastGood"] {
+  if (!isRecord(raw)) return undefined;
+  const normalized: Record<string, string> = {};
+  for (const [provider, profileId] of Object.entries(raw)) {
+    const providerKey = normalizeProviderId(provider);
+    const normalizedProfileId = normalizeOptionalString(profileId);
+    if (!providerKey || !normalizedProfileId) continue;
+    normalized[providerKey] = normalizedProfileId;
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function normalizeUsageStatsEntry(raw: unknown): ProfileUsageStats | undefined {
+  if (!isRecord(raw)) return undefined;
+  const stats: ProfileUsageStats = {
+    lastUsed: asFiniteNumber(raw.lastUsed),
+    blockedUntil: asFiniteNumber(raw.blockedUntil),
+    blockedReason: normalizeEnumValue(raw.blockedReason, AUTH_BLOCKED_REASONS as Set<AuthProfileBlockedReason>),
+    blockedSource: normalizeEnumValue(raw.blockedSource, AUTH_BLOCKED_SOURCES as Set<AuthProfileBlockedSource>),
+    blockedModel: normalizeOptionalString(raw.blockedModel),
+    cooldownUntil: asFiniteNumber(raw.cooldownUntil),
+    cooldownReason: normalizeEnumValue(raw.cooldownReason, AUTH_FAILURE_REASONS as Set<AuthProfileFailureReason>),
+    cooldownModel: normalizeOptionalString(raw.cooldownModel),
+    disabledUntil: asFiniteNumber(raw.disabledUntil),
+    disabledReason: normalizeEnumValue(raw.disabledReason, AUTH_FAILURE_REASONS as Set<AuthProfileFailureReason>),
+    errorCount: asFiniteNumber(raw.errorCount),
+    failureCounts: normalizeFailureCounts(raw.failureCounts),
+    lastFailureAt: asFiniteNumber(raw.lastFailureAt),
+  };
+  for (const key of Object.keys(stats) as Array<keyof ProfileUsageStats>) {
+    if (stats[key] === undefined) {
+      delete stats[key];
+    }
+  }
+  return Object.keys(stats).length > 0 ? stats : undefined;
+}
+
+function normalizeUsageStats(raw: unknown): AuthProfileState["usageStats"] {
+  if (!isRecord(raw)) return undefined;
+  const normalized: Record<string, ProfileUsageStats> = {};
+  for (const [profileId, value] of Object.entries(raw)) {
+    const normalizedProfileId = normalizeOptionalString(profileId);
+    const stats = normalizeUsageStatsEntry(value);
+    if (!normalizedProfileId || !stats) continue;
+    normalized[normalizedProfileId] = stats;
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+/** Coerces persisted auth profile runtime state into the current shape. */
+export function coerceAuthProfileState(raw: unknown): AuthProfileState {
+  if (!isRecord(raw)) {
+    return {};
+  }
+  return {
+    order: normalizeAuthProfileOrder(raw.order),
+    lastGood: normalizeLastGood(raw.lastGood),
+    usageStats: normalizeUsageStats(raw.usageStats),
+  };
+}
+
+/** Merges auth profile runtime state, with override records winning per key. */
+export function mergeAuthProfileState(
+  base: AuthProfileState,
+  override: AuthProfileState,
+): AuthProfileState {
+  const mergeRecord = <T>(left?: Record<string, T>, right?: Record<string, T>) => {
+    if (!left && !right) return undefined;
+    if (!left) return { ...right };
+    if (!right) return { ...left };
+    return { ...left, ...right };
+  };
+
+  return {
+    order: mergeRecord(base.order, override.order),
+    lastGood: mergeRecord(base.lastGood, override.lastGood),
+    usageStats: mergeRecord(base.usageStats, override.usageStats),
+  };
+}
+
+// In-memory state storage since cross-wms doesn't have SQLite persistence
+const inMemoryState = new Map<string, unknown>();
+
+function readPersistedAuthProfileStateRaw(_agentDir?: string): unknown {
+  return inMemoryState.get("authProfileState") ?? {};
+}
+
+function writePersistedAuthProfileStateRaw(payload: AuthProfileStateStore | null, _agentDir?: string): void {
+  if (payload === null) {
+    inMemoryState.delete("authProfileState");
+  } else {
+    inMemoryState.set("authProfileState", payload);
+  }
+}
+
+/** Loads persisted auth profile runtime state. */
+export function loadPersistedAuthProfileState(
+  agentDir?: string,
+): AuthProfileState {
+  return coerceAuthProfileState(readPersistedAuthProfileStateRaw(agentDir));
+}
+
+/** Builds the persisted auth profile runtime state payload. */
+export function buildPersistedAuthProfileState(
+  store: AuthProfileState,
+): AuthProfileStateStore | null {
+  const state = coerceAuthProfileState(store);
+  if (!state.order && !state.lastGood && !state.usageStats) {
+    return null;
+  }
+  return {
+    version: AUTH_STORE_VERSION,
+    ...(state.order ? { order: state.order } : {}),
+    ...(state.lastGood ? { lastGood: state.lastGood } : {}),
+    ...(state.usageStats ? { usageStats: state.usageStats } : {}),
+  };
+}
+
+/** Saves auth profile runtime state when it differs from the persisted payload. */
+export function savePersistedAuthProfileState(
+  store: AuthProfileState,
+  agentDir?: string,
+): AuthProfileStateStore | null {
+  const payload = buildPersistedAuthProfileState(store);
+  const existingRaw = readPersistedAuthProfileStateRaw(agentDir);
+  if (!payload || !isDeepStrictEqual(existingRaw, payload)) {
+    writePersistedAuthProfileStateRaw(payload, agentDir);
+  }
+  return payload;
 }

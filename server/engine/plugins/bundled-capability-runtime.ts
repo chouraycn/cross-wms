@@ -1,4 +1,3 @@
-// @ts-nocheck
 import path from 'path';
 /** Loads capability providers from bundled plugin public runtime artifacts. */
 import fs from "node:fs";

@@ -14,9 +14,9 @@
 export type GatewayChannelManager = unknown;
 
 export function startGatewayChannelHealthMonitor(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayChannelHealthMonitor not implemented");
+  return undefined;
 }
 
 export function startGatewayRuntimeServices(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayRuntimeServices not implemented");
+  return undefined;
 }

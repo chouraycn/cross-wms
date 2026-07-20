@@ -1,14 +1,13 @@
 // 移植自 openclaw/src/infra/exec-approvals-analysis.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ExecCommandAnalysis = unknown;
 export type ExecCommandSegment = unknown;
 export type ShellChainOperator = unknown;
 export function resolvePlannedSegmentArgv(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePlannedSegmentArgv");
+  return undefined;
 }
 export function buildEnforcedShellCommand(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildEnforcedShellCommand");
+  return undefined;
 }
 export type analyzeArgvCommand = unknown;
 export const analyzeArgvCommand: unknown = undefined;

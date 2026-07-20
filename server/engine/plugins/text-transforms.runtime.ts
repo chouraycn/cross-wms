@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Runtime bridge for plugin-provided text transforms.
 import { mergePluginTextTransforms } from "../agents/plugin-text-transforms.js";
 import { getActiveRuntimePluginRegistry } from "./active-runtime-registry.js";

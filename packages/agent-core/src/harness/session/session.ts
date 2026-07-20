@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements session behavior.
 import type { ImageContent, TextContent } from "@cdf-know/llm-core";
 import type { AgentMessage } from "../../types";

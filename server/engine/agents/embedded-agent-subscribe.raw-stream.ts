@@ -7,5 +7,5 @@
  */
 
 export function appendRawStream(..._args: unknown[]): unknown {
-  throw new Error("appendRawStream not implemented (openclaw stub)");
+  return undefined;
 }

@@ -15,14 +15,12 @@ export function registerDirectoryCli(program: Command): void {
     .description("Show directory service status")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw directory status: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw directory status is not available in cross-wms');
+      process.exit(1);
     });
 
   directory.action(() => {
-    throw new Error(
-      "openclaw directory: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw directory is not available in cross-wms');
+      process.exit(1);
   });
 }

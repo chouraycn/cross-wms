@@ -1,14 +1,33 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles/oauth-refresh-lock-errors.ts
+ * Ported from openclaw/src/agents/auth-profiles/oauth-refresh-lock-errors.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * OAuth refresh lock error helpers.
+ * Cross-wms degradation: simplified without file lock error codes.
  */
 
-export function isGlobalRefreshLockTimeoutError(..._args: unknown[]): unknown {
-  throw new Error("isGlobalRefreshLockTimeoutError not implemented (openclaw stub)");
+/** Returns true when an error came from the global OAuth refresh lock. */
+export function isGlobalRefreshLockTimeoutError(error: unknown, lockPath: string): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+  const candidate = error as { code?: unknown; lockPath?: unknown };
+  return candidate.code === "FILE_LOCK_TIMEOUT" && candidate.lockPath === `${lockPath}.lock`;
 }
-export function buildRefreshContentionError(..._args: unknown[]): unknown {
-  throw new Error("buildRefreshContentionError not implemented (openclaw stub)");
+
+/** Builds the user-facing OAuth refresh contention error. */
+export function buildRefreshContentionError(params: {
+  provider: string;
+  profileId: string;
+  cause: unknown;
+}): Error & { code: "refresh_contention"; cause: unknown } {
+  return Object.assign(
+    new Error(
+      `OAuth refresh failed (refresh_contention): another process is already refreshing ${params.provider} for ${params.profileId}. Please wait for the in-flight refresh to finish and retry.`,
+      { cause: params.cause },
+    ),
+    {
+      code: "refresh_contention" as const,
+      cause: params.cause,
+    },
+  );
 }

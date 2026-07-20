@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Bridges OpenAI ChatGPT OAuth credentials into provider plugin auth.
 import type { OAuthCredentials } from "../llm/oauth.js";
 import { loadActivatedBundledPluginPublicSurfaceModuleSync } from './_stub_parent__plugin_sdk__facade_runtime.js';

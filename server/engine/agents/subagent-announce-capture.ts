@@ -7,8 +7,8 @@
  */
 
 export async function readLatestSubagentOutputWithRetryUsing(..._args: unknown[]): Promise<unknown> {
-  throw new Error("readLatestSubagentOutputWithRetryUsing not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function captureSubagentCompletionReplyUsing(..._args: unknown[]): Promise<unknown> {
-  throw new Error("captureSubagentCompletionReplyUsing not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

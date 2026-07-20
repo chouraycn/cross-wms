@@ -12,9 +12,9 @@
  */
 
 export function resolveSessionKeyForRun(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionKeyForRun not implemented");
+  return undefined;
 }
 
 export function resetResolvedSessionKeyForRunCacheForTest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resetResolvedSessionKeyForRunCacheForTest not implemented");
+  return undefined;
 }

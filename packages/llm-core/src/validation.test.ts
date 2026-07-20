@@ -1,4 +1,3 @@
-// @ts-nocheck
 // LLM Core tests cover validation behavior.
 import { describe, expect, it } from "vitest";
 import type { Tool } from "./types";

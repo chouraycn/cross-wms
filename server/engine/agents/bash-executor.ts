@@ -1,13 +1,28 @@
 /**
  * 移植自 openclaw/src/agents/sessions/bash-executor.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Bash executor with operations.
+ * In cross-wms the full bash execution infrastructure is not available,
+ * so executeBashWithOperations throws an unsupported error.
  */
 
-export type BashExecutorOptions = unknown;
-export type BashResult = unknown;
-export function executeBashWithOperations(..._args: unknown[]): unknown {
-  throw new Error("executeBashWithOperations not implemented (openclaw stub)");
+/** Bash executor options. */
+export type BashExecutorOptions = {
+  command: string;
+  cwd?: string;
+  env?: Record<string, string>;
+  timeout?: number;
+};
+
+/** Bash execution result. */
+export type BashResult = {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  timedOut: boolean;
+};
+
+/** Execute bash with operations (unsupported in cross-wms). */
+export function executeBashWithOperations(..._args: unknown[]): never {
+  throw new Error("Bash execution with operations is not supported in cross-wms");
 }

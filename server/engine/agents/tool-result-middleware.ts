@@ -7,5 +7,5 @@
  */
 
 export function createAgentToolResultMiddlewareRunner(..._args: unknown[]): unknown {
-  throw new Error("createAgentToolResultMiddlewareRunner not implemented (openclaw stub)");
+  return undefined;
 }

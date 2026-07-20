@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves preferred provider auth choices from config and plugin metadata. */
 import { normalizeLegacyOnboardAuthChoice } from './_stub_parent__commands__auth_choice_legacy.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";

@@ -1,14 +1,20 @@
 /**
  * 移植自 openclaw/src/agents/subagent-registry-cleanup.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Subagent registry cleanup helpers.
+ * In cross-wms the full registry cleanup infrastructure is not available,
+ * so resolveCleanupCompletionReason returns "keep" and
+ * resolveDeferredCleanupDecision returns a no-cleanup decision.
  */
 
-export function resolveCleanupCompletionReason(..._args: unknown[]): unknown {
-  throw new Error("resolveCleanupCompletionReason not implemented (openclaw stub)");
+/** Resolve the cleanup completion reason (returns "keep" in cross-wms). */
+export function resolveCleanupCompletionReason(..._args: unknown[]): "keep" {
+  return "keep";
 }
-export function resolveDeferredCleanupDecision(..._args: unknown[]): unknown {
-  throw new Error("resolveDeferredCleanupDecision not implemented (openclaw stub)");
+
+/** Resolve deferred cleanup decision (returns no-cleanup in cross-wms). */
+export function resolveDeferredCleanupDecision(..._args: unknown[]): {
+  shouldCleanup: false;
+} {
+  return { shouldCleanup: false };
 }

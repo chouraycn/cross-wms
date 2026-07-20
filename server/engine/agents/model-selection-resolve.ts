@@ -9,8 +9,8 @@
 export { buildConfiguredAllowlistKeys, buildModelAliasIndex, normalizeModelSelection, resolveConfiguredModelRef, resolveHooksGmailModel, resolveModelRefFromString } from "./model-selection-shared.js";
 export type { ModelRefStatus } from "./model-selection-shared.js";
 export function getModelRefStatus(..._args: unknown[]): unknown {
-  throw new Error("getModelRefStatus not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAllowedModelRef(..._args: unknown[]): unknown {
-  throw new Error("resolveAllowedModelRef not implemented (openclaw stub)");
+  return undefined;
 }

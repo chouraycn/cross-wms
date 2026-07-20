@@ -9,5 +9,5 @@
 export type EventBus = unknown;
 export type EventBusController = unknown;
 export function createEventBus(..._args: unknown[]): unknown {
-  throw new Error("createEventBus not implemented (openclaw stub)");
+  return undefined;
 }

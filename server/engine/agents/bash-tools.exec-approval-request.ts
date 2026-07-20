@@ -8,20 +8,20 @@
 
 export type ExecApprovalRegistration = unknown;
 export async function registerExecApprovalRequest(..._args: unknown[]): Promise<unknown> {
-  throw new Error("registerExecApprovalRequest not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function resolveRegisteredExecApprovalDecision(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveRegisteredExecApprovalDecision not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function buildExecApprovalRequesterContext(..._args: unknown[]): unknown {
-  throw new Error("buildExecApprovalRequesterContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildExecApprovalTurnSourceContext(..._args: unknown[]): unknown {
-  throw new Error("buildExecApprovalTurnSourceContext not implemented (openclaw stub)");
+  return undefined;
 }
 export async function registerExecApprovalRequestForHost(..._args: unknown[]): Promise<unknown> {
-  throw new Error("registerExecApprovalRequestForHost not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function registerExecApprovalRequestForHostOrThrow(..._args: unknown[]): Promise<unknown> {
-  throw new Error("registerExecApprovalRequestForHostOrThrow not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

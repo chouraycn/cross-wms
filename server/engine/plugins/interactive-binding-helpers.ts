@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Helpers for binding interactive plugin handlers to conversations and sessions. */
 import {
   detachPluginConversationBinding,

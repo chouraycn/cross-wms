@@ -8,14 +8,14 @@
 
 export class SessionWriteLockTimeoutError {
   constructor(..._args: unknown[]) {
-    throw new Error("SessionWriteLockTimeoutError not implemented (openclaw stub)");
+    // Stub: not fully ported
   }
 }
 export class SessionWriteLockStaleError {
   constructor(..._args: unknown[]) {
-    throw new Error("SessionWriteLockStaleError not implemented (openclaw stub)");
+    // Stub: not fully ported
   }
 }
 export function isSessionWriteLockAcquireError(..._args: unknown[]): unknown {
-  throw new Error("isSessionWriteLockAcquireError not implemented (openclaw stub)");
+  return false;
 }

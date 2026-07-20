@@ -7,5 +7,5 @@
  */
 
 export function buildRuntimeCompatibleMcpToolInventory(..._args: unknown[]): unknown {
-  throw new Error("buildRuntimeCompatibleMcpToolInventory not implemented (openclaw stub)");
+  return undefined;
 }

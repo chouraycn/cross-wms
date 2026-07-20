@@ -14,13 +14,13 @@
 export type GatewayModelChoice = unknown;
 
 export function markGatewayModelCatalogStaleForReload(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] markGatewayModelCatalogStaleForReload not implemented");
+  return undefined;
 }
 
 export async function resetModelCatalogCacheForTest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resetModelCatalogCacheForTest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function loadGatewayModelCatalog(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] loadGatewayModelCatalog not implemented");
+  return Promise.resolve(undefined);
 }

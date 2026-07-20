@@ -14,5 +14,5 @@
 export type GatewayCronState = unknown;
 
 export function buildGatewayCronService(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildGatewayCronService not implemented");
+  return undefined;
 }

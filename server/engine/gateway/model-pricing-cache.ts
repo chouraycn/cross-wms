@@ -12,17 +12,17 @@
  */
 
 export function collectConfiguredModelPricingRefs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] collectConfiguredModelPricingRefs not implemented");
+  return [];
 }
 
 export async function refreshGatewayModelPricingCache(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] refreshGatewayModelPricingCache not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function startGatewayModelPricingRefresh(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayModelPricingRefresh not implemented");
+  return undefined;
 }
 
 export function resetGatewayModelPricingCacheForTest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resetGatewayModelPricingCacheForTest not implemented");
+  return undefined;
 }

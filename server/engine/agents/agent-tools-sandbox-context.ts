@@ -1,11 +1,33 @@
 /**
- * 移植自 openclaw/src/agents/test-helpers/agent-tools-sandbox-context.ts
+ * Agent tool execution sandbox context.
+ * Ported from openclaw/src/agents/test-helpers/agent-tools-sandbox-context.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Note: Full sandbox infrastructure not available in cross-wms.
  */
 
-export function createAgentToolsSandboxContext(..._args: unknown[]): unknown {
-  throw new Error("createAgentToolsSandboxContext not implemented (openclaw stub)");
+type SandboxContext = {
+  sandboxRoot?: string;
+  containerId?: string;
+  isAvailable: boolean;
+  env?: Record<string, string>;
+};
+
+/** Create a sandbox context for tool execution. */
+export function createToolSandboxContext(params?: {
+  sandboxRoot?: string;
+  containerId?: string;
+  env?: Record<string, string>;
+}): SandboxContext {
+  // Full sandbox infrastructure not available in cross-wms
+  return {
+    sandboxRoot: params?.sandboxRoot,
+    containerId: params?.containerId,
+    isAvailable: false,
+    env: params?.env,
+  };
+}
+
+/** Check if a sandbox context is active and usable. */
+export function isToolSandboxActive(context: SandboxContext): boolean {
+  return context.isAvailable && Boolean(context.sandboxRoot);
 }

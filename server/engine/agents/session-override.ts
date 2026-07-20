@@ -1,14 +1,18 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/session-override.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Session auth profile override helpers.
+ * In cross-wms the auth profile session override infrastructure is not available,
+ * so clearSessionAuthProfileOverride is a no-op and
+ * resolveSessionAuthProfileOverride returns undefined.
  */
 
-export function clearSessionAuthProfileOverride(..._args: unknown[]): unknown {
-  throw new Error("clearSessionAuthProfileOverride not implemented (openclaw stub)");
+/** Clear the auth profile override for a session (no-op in cross-wms). */
+export function clearSessionAuthProfileOverride(..._args: unknown[]): void {
+  // No-op: session auth profile override not available in cross-wms.
 }
-export function resolveSessionAuthProfileOverride(..._args: unknown[]): unknown {
-  throw new Error("resolveSessionAuthProfileOverride not implemented (openclaw stub)");
+
+/** Resolve the auth profile override for a session (returns undefined in cross-wms). */
+export function resolveSessionAuthProfileOverride(..._args: unknown[]): undefined {
+  return undefined;
 }

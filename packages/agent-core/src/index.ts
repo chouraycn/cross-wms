@@ -1,13 +1,13 @@
 export * from './types';
 export { Agent } from './agent';
 export type { AgentEvents } from './agent';
-export { AgentLoop } from './agent-loop';
-export type { AgentLoopOptions, AgentLoopResult } from './agent-loop';
-export { ReasoningEngine } from './reasoning';
+export { runAgentLoop } from './agent-loop';
+export type { AgentLoopConfig, AgentEventSink } from './agent-loop';
+export { ReasoningEngine, resolveAgentReasoningOption } from './reasoning';
 export type { ReasoningMode, ReasoningOptions } from './reasoning';
 export { Tracer, globalTracer, trace } from './tracing';
-export { createStubRuntime, validateRuntimeDeps } from './runtime-deps';
-export type { RuntimeDeps } from './runtime-deps';
+export { createStubRuntime, validateRuntimeDeps, resolveAgentCoreStreamFn, resolveAgentCoreCompleteFn } from './runtime-deps';
+export type { RuntimeDeps, AgentCoreRuntimeDeps, AgentCoreCompletionRuntimeDeps, AgentCoreStreamRuntimeDeps } from './runtime-deps';
 export type * from './llm';
 export * from './node';
 export * from './validation';
@@ -52,4 +52,3 @@ export {
   type ContextUsageEstimate,
 } from './harness/compaction/compaction';
 export * from './harness/utils/truncate';
-// export * from './embedded';

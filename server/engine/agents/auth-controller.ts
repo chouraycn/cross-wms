@@ -7,5 +7,5 @@
  */
 
 export function createEmbeddedRunAuthController(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedRunAuthController not implemented (openclaw stub)");
+  return undefined;
 }

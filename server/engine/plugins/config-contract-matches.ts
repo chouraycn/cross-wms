@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Matches plugin config contracts against config paths and values.
-import { normalizeStringEntries } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeStringEntries } from './_openclaw__normalization_core__string_normalization.js';
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 
 export type PluginConfigContractMatch = {
   /** Concrete config path matched by the contract pattern. */

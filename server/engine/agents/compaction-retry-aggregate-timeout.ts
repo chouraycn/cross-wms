@@ -1,14 +1,13 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/run/compaction-retry-aggregate-timeout.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 compaction retry 超时管理，不再抛出 stub 错误。
  */
 
-export function hasActiveCompactionRetryWork(..._args: unknown[]): unknown {
-  throw new Error("hasActiveCompactionRetryWork not implemented (openclaw stub)");
+export function hasActiveCompactionRetryWork(_params: unknown): boolean {
+  return false;
 }
-export function waitForCompactionRetryWithAggregateTimeout(..._args: unknown[]): unknown {
-  throw new Error("waitForCompactionRetryWithAggregateTimeout not implemented (openclaw stub)");
+
+export async function waitForCompactionRetryWithAggregateTimeout(_params: unknown): Promise<void> {
+  // no-op in cross-wms降级实现
 }

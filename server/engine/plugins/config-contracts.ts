@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Resolves plugin config contract metadata for scanners and secret/config policy checks. */
-import { normalizeSortedUniqueStringEntries } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeSortedUniqueStringEntries } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { findBundledPluginMetadataById } from "./bundled-plugin-metadata.js";
 import { discoverOpenClawPlugins, type PluginDiscoveryResult } from "./discovery.js";

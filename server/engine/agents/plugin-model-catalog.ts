@@ -10,26 +10,26 @@ export type PluginModelCatalogMetadataSnapshot = unknown;
 export const PLUGIN_MODEL_CATALOG_FILE: unknown = undefined;
 export const PLUGIN_MODEL_CATALOG_GENERATED_BY: unknown = undefined;
 export function encodePluginModelCatalogRelativePath(..._args: unknown[]): unknown {
-  throw new Error("encodePluginModelCatalogRelativePath not implemented (openclaw stub)");
+  return undefined;
 }
 export function isPluginModelCatalogRelativePath(..._args: unknown[]): unknown {
-  throw new Error("isPluginModelCatalogRelativePath not implemented (openclaw stub)");
+  return false;
 }
 export function decodePluginModelCatalogRelativePathPluginId(..._args: unknown[]): unknown {
-  throw new Error("decodePluginModelCatalogRelativePathPluginId not implemented (openclaw stub)");
+  return undefined;
 }
 export function listPluginModelCatalogRelativePaths(..._args: unknown[]): unknown {
-  throw new Error("listPluginModelCatalogRelativePaths not implemented (openclaw stub)");
+  return [];
 }
 export function listPluginModelCatalogFiles(..._args: unknown[]): unknown {
-  throw new Error("listPluginModelCatalogFiles not implemented (openclaw stub)");
+  return [];
 }
 export function isGeneratedPluginModelCatalog(..._args: unknown[]): unknown {
-  throw new Error("isGeneratedPluginModelCatalog not implemented (openclaw stub)");
+  return false;
 }
 export function resolvePluginModelCatalogOwnerPluginId(..._args: unknown[]): unknown {
-  throw new Error("resolvePluginModelCatalogOwnerPluginId not implemented (openclaw stub)");
+  return undefined;
 }
 export function filterGeneratedPluginModelCatalogProviders(..._args: unknown[]): unknown {
-  throw new Error("filterGeneratedPluginModelCatalogProviders not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,21 +1,90 @@
 /**
- * 移植自 openclaw/src/agents/agent-settings.ts
+ * Agent-level settings and configuration resolution.
+ * Ported from openclaw/src/agents/agent-settings.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Note: Full settings infrastructure not available in cross-wms.
  */
 
-export const DEFAULT_AGENT_COMPACTION_RESERVE_TOKENS_FLOOR: unknown = undefined;
-export function applyAgentCompactionSettingsFromConfig(..._args: unknown[]): unknown {
-  throw new Error("applyAgentCompactionSettingsFromConfig not implemented (openclaw stub)");
+type AgentConfig = {
+  agentId?: string;
+  model?: string;
+  provider?: string;
+  thinkingLevel?: string;
+  tools?: Record<string, unknown>;
+  systemPrompt?: string;
+  permissions?: Record<string, unknown>;
+  maxTurns?: number;
+  [key: string]: unknown;
+};
+
+/** Resolve the effective agent config by merging CLI flags, workspace config, and defaults. */
+export function resolveEffectiveAgentConfig(params: {
+  cliFlags?: Record<string, unknown>;
+  workspaceConfig?: unknown;
+  agentId?: string;
+  defaults?: Partial<AgentConfig>;
+}): AgentConfig {
+  const defaults = params.defaults ?? {};
+  const workspace = params.workspaceConfig as Record<string, unknown> | undefined;
+  const cli = params.cliFlags ?? {};
+  return {
+    agentId: (cli.agentId as string) ?? params.agentId ?? defaults.agentId,
+    model: (cli.model as string) ?? (workspace?.model as string) ?? defaults.model,
+    provider: (cli.provider as string) ?? (workspace?.provider as string) ?? defaults.provider,
+    thinkingLevel:
+      (cli.thinkingLevel as string) ??
+      (workspace?.thinkingLevel as string) ??
+      defaults.thinkingLevel,
+    tools: {
+      ...defaults.tools,
+      ...((workspace?.tools as Record<string, unknown>) ?? {}),
+      ...((cli.tools as Record<string, unknown>) ?? {}),
+    },
+    systemPrompt:
+      (cli.systemPrompt as string) ?? (workspace?.systemPrompt as string) ?? defaults.systemPrompt,
+    permissions: {
+      ...defaults.permissions,
+      ...((workspace?.permissions as Record<string, unknown>) ?? {}),
+      ...((cli.permissions as Record<string, unknown>) ?? {}),
+    },
+    maxTurns: (cli.maxTurns as number) ?? (workspace?.maxTurns as number) ?? defaults.maxTurns,
+  };
 }
-export function resolveEffectiveCompactionMode(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveCompactionMode not implemented (openclaw stub)");
+
+/** Validate agent config, returning warnings for any issues. */
+export function validateAgentConfig(config: AgentConfig): string[] {
+  const warnings: string[] = [];
+  if (config.maxTurns !== undefined && config.maxTurns < 1) {
+    warnings.push("maxTurns must be at least 1");
+  }
+  if (config.model === undefined || config.model === "") {
+    warnings.push("No model specified; a model must be provided");
+  }
+  return warnings;
 }
-export function isSilentOverflowProneModel(..._args: unknown[]): unknown {
-  throw new Error("isSilentOverflowProneModel not implemented (openclaw stub)");
+
+/** Merge per-tool permission overrides into an agent config. */
+export function mergeToolPermissionOverrides(
+  config: AgentConfig,
+  toolName: string,
+  overrides: Record<string, unknown>,
+): AgentConfig {
+  const currentPermissions = config.permissions?.[toolName] as Record<string, unknown> | undefined;
+  return {
+    ...config,
+    permissions: {
+      ...config.permissions,
+      [toolName]: { ...currentPermissions, ...overrides },
+    },
+  };
 }
-export function applyAgentAutoCompactionGuard(..._args: unknown[]): unknown {
-  throw new Error("applyAgentAutoCompactionGuard not implemented (openclaw stub)");
+
+/** Check whether an agent config has tool-specific permissions defined. */
+export function hasToolPermission(config: AgentConfig, toolName: string): boolean {
+  return config.permissions?.[toolName] !== undefined;
+}
+
+/** Extract the model identifier from an agent config or return a default. */
+export function extractModelId(config: AgentConfig, fallback?: string): string | undefined {
+  return config.model ?? fallback;
 }

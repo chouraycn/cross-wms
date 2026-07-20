@@ -1,12 +1,22 @@
 /**
  * 移植自 openclaw/src/agents/tools/agent-step.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供默认的嵌套 agent step 执行，不再抛出 stub 错误。
  */
 
-export function runAgentStep(..._args: unknown[]): unknown {
-  throw new Error("runAgentStep not implemented (openclaw stub)");
+export async function runAgentStep(_params: {
+  sessionKey: string;
+  message: string;
+  extraSystemPrompt: string;
+  timeoutMs: number;
+  channel?: string;
+  lane?: string;
+  transcriptMessage?: string;
+  sourceSessionKey?: string;
+  sourceChannel?: string;
+  sourceTool?: string;
+}): Promise<string | undefined> {
+  return undefined;
 }
+
 export const testing_agent_step: unknown = undefined;

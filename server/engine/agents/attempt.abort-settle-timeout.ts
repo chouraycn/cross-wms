@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/run/attempt.abort-settle-timeout.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/run/attempt.abort-settle-timeout.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Embedded abort settle timeout resolution.
+ * Cross-wms degradation: returns default timeout without config resolution.
  */
 
-export function resolveEmbeddedAbortSettleTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveEmbeddedAbortSettleTimeoutMs not implemented (openclaw stub)");
+/** Resolves the embedded abort settle timeout in milliseconds. */
+export function resolveEmbeddedAbortSettleTimeoutMs(..._args: unknown[]): number {
+  // Cross-wms does not have config-based timeout resolution.
+  return 5_000;
 }

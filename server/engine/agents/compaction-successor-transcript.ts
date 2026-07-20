@@ -1,18 +1,49 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/compaction-successor-transcript.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Compaction successor transcript rotation.
+ * Ported from openclaw/src/agents/embedded-agent-runner/compaction-successor-transcript.ts
  */
 
-export type CompactionTranscriptRotation = unknown;
-export function shouldRotateCompactionTranscript(..._args: unknown[]): unknown {
-  throw new Error("shouldRotateCompactionTranscript not implemented (openclaw stub)");
+export type CompactionTranscriptRotation = {
+  rotated: boolean;
+  reason?: string;
+  sessionId?: string;
+  sessionFile?: string;
+  compactionEntryId?: string;
+  leafId?: string;
+  entriesWritten?: number;
+};
+
+/** Check whether compaction transcript rotation is configured. */
+export function shouldRotateCompactionTranscript(config?: unknown): boolean {
+  if (!config || typeof config !== "object") {
+    return false;
+  }
+  const cfg = config as { agents?: { defaults?: { compaction?: { truncateAfterCompaction?: boolean } } } };
+  return cfg.agents?.defaults?.compaction?.truncateAfterCompaction === true;
 }
-export function rotateTranscriptAfterCompaction(..._args: unknown[]): unknown {
-  throw new Error("rotateTranscriptAfterCompaction not implemented (openclaw stub)");
+
+/** Rotate transcript after compaction using a session manager. */
+export async function rotateTranscriptAfterCompaction(params: {
+  sessionManager: unknown;
+  sessionFile: string;
+  now?: () => Date;
+}): Promise<CompactionTranscriptRotation> {
+  const sessionFile = params.sessionFile?.trim();
+  if (!sessionFile) {
+    return { rotated: false, reason: "missing session file" };
+  }
+  // Full rotation requires session infrastructure not available in cross-wms
+  return { rotated: false, reason: "rotation not available" };
 }
-export function rotateTranscriptFileAfterCompaction(..._args: unknown[]): unknown {
-  throw new Error("rotateTranscriptFileAfterCompaction not implemented (openclaw stub)");
+
+/** Rotate transcript file after compaction. */
+export async function rotateTranscriptFileAfterCompaction(params: {
+  sessionFile: string;
+  now?: () => Date;
+}): Promise<CompactionTranscriptRotation> {
+  const sessionFile = params.sessionFile?.trim();
+  if (!sessionFile) {
+    return { rotated: false, reason: "missing session file" };
+  }
+  return { rotated: false, reason: "rotation not available" };
 }

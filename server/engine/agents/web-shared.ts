@@ -1,36 +1,197 @@
 /**
  * 移植自 openclaw/src/agents/tools/web-shared.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * cross-wms 降级实现：Web 工具缓存、超时和响应处理的简化版本。
+ * 不依赖 @openclaw/normalization-core 包。
  */
 
-export type CacheEntry = unknown;
-export type ReadResponseTextResult = unknown;
-export function resolveTimeoutSeconds(..._args: unknown[]): unknown {
-  throw new Error("resolveTimeoutSeconds not implemented (openclaw stub)");
+export type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+  insertedAt: number;
+};
+
+export const DEFAULT_TIMEOUT_SECONDS = 30;
+export const DEFAULT_CACHE_TTL_MINUTES = 15;
+const DEFAULT_CACHE_MAX_ENTRIES = 100;
+const MAX_TIMER_TIMEOUT_SECONDS = 2_147_483;
+
+export function resolveTimeoutSeconds(value: unknown, fallback: number): number {
+  const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
-export function resolvePositiveTimeoutSeconds(..._args: unknown[]): unknown {
-  throw new Error("resolvePositiveTimeoutSeconds not implemented (openclaw stub)");
+
+export function resolvePositiveTimeoutSeconds(value: unknown, fallback: number): number {
+  const parsed =
+    typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+  return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
-export function resolveCacheTtlMs(..._args: unknown[]): unknown {
-  throw new Error("resolveCacheTtlMs not implemented (openclaw stub)");
+
+export function resolveCacheTtlMs(value: unknown, fallbackMinutes: number): number {
+  const minutes =
+    typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : fallbackMinutes;
+  return Math.round(minutes * 60_000);
 }
-export function normalizeCacheKey(..._args: unknown[]): unknown {
-  throw new Error("normalizeCacheKey not implemented (openclaw stub)");
+
+export function normalizeCacheKey(value: string): string {
+  return value.trim().toLowerCase();
 }
-export function readCache(..._args: unknown[]): unknown {
-  throw new Error("readCache not implemented (openclaw stub)");
+
+export function readCache<T>(
+  cache: Map<string, CacheEntry<T>>,
+  key: string,
+): { value: T; cached: boolean } | null {
+  const entry = cache.get(key);
+  if (!entry) {
+    return null;
+  }
+  const now = Date.now();
+  if (now > entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return { value: entry.value, cached: true };
 }
-export function writeCache(..._args: unknown[]): unknown {
-  throw new Error("writeCache not implemented (openclaw stub)");
+
+export function writeCache<T>(
+  cache: Map<string, CacheEntry<T>>,
+  key: string,
+  value: T,
+  ttlMs: number,
+) {
+  if (ttlMs <= 0) {
+    return;
+  }
+  const now = Date.now();
+  const expiresAt = now + ttlMs;
+  if (cache.size >= DEFAULT_CACHE_MAX_ENTRIES) {
+    const oldest = cache.keys().next();
+    if (!oldest.done) {
+      cache.delete(oldest.value);
+    }
+  }
+  cache.set(key, {
+    value,
+    expiresAt,
+    insertedAt: now,
+  });
 }
-export function withTimeout(..._args: unknown[]): unknown {
-  throw new Error("withTimeout not implemented (openclaw stub)");
+
+export function withTimeout(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+  if (timeoutMs <= 0) {
+    return signal ?? new AbortController().signal;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(controller.abort.bind(controller), Math.max(1, timeoutMs));
+  if (signal) {
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        controller.abort();
+      },
+      { once: true },
+    );
+  }
+  controller.signal.addEventListener(
+    "abort",
+    () => {
+      clearTimeout(timer);
+    },
+    { once: true },
+  );
+  return controller.signal;
 }
-export function readResponseText(..._args: unknown[]): unknown {
-  throw new Error("readResponseText not implemented (openclaw stub)");
+
+export type ReadResponseTextResult = {
+  text: string;
+  truncated: boolean;
+  bytesRead: number;
+};
+
+export async function readResponseText(
+  res: Response,
+  options?: { maxBytes?: number },
+): Promise<ReadResponseTextResult> {
+  const maxBytesRaw = options?.maxBytes;
+  const maxBytes =
+    typeof maxBytesRaw === "number" && Number.isFinite(maxBytesRaw) && maxBytesRaw > 0
+      ? Math.floor(maxBytesRaw)
+      : undefined;
+
+  const body = (res as unknown as { body?: unknown }).body;
+  if (
+    maxBytes &&
+    body &&
+    typeof body === "object" &&
+    "getReader" in body &&
+    typeof (body as { getReader: () => unknown }).getReader === "function"
+  ) {
+    const reader = (body as ReadableStream<Uint8Array>).getReader();
+    let bytesRead = 0;
+    let truncated = false;
+    const parts: Uint8Array[] = [];
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        if (!value || value.byteLength === 0) {
+          continue;
+        }
+
+        let chunk = value;
+        if (bytesRead + chunk.byteLength > maxBytes) {
+          const remaining = Math.max(0, maxBytes - bytesRead);
+          if (remaining <= 0) {
+            truncated = true;
+            break;
+          }
+          chunk = chunk.subarray(0, remaining);
+          truncated = true;
+        }
+
+        bytesRead += chunk.byteLength;
+        parts.push(chunk);
+
+        if (truncated || bytesRead >= maxBytes) {
+          truncated = true;
+          break;
+        }
+      }
+    } catch {
+      // Best-effort
+    } finally {
+      if (truncated) {
+        void reader.cancel().catch(() => undefined);
+      }
+      try {
+        reader.releaseLock();
+      } catch {}
+    }
+
+    const bytes = parts.length === 1 && parts[0]?.byteLength === bytesRead
+      ? parts[0]
+      : (() => {
+          const result = new Uint8Array(bytesRead);
+          let offset = 0;
+          for (const part of parts) {
+            result.set(part, offset);
+            offset += part.byteLength;
+          }
+          return result;
+        })();
+
+    const decoder = new TextDecoder("utf-8");
+    return { text: decoder.decode(bytes), truncated, bytesRead };
+  }
+
+  try {
+    const text = await res.text();
+    return { text, truncated: false, bytesRead: text.length };
+  } catch {
+    return { text: "", truncated: false, bytesRead: 0 };
+  }
 }
-export const DEFAULT_TIMEOUT_SECONDS: unknown = undefined;
-export const DEFAULT_CACHE_TTL_MINUTES: unknown = undefined;

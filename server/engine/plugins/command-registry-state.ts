@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Stores plugin command registry state for the current process lifecycle.
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { normalizeAgentPromptSurfaceKind } from "./agent-prompt-surface-kind.js";
 import type {

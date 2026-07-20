@@ -7,5 +7,5 @@
  */
 
 export function installSessionToolResultGuard(..._args: unknown[]): unknown {
-  throw new Error("installSessionToolResultGuard not implemented (openclaw stub)");
+  return undefined;
 }

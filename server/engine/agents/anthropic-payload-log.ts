@@ -7,5 +7,5 @@
  */
 
 export function createAnthropicPayloadLogger(..._args: unknown[]): unknown {
-  throw new Error("createAnthropicPayloadLogger not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,8 +1,7 @@
-// @ts-nocheck
 /** Computes which manifest-owned plugins need activation for commands, routes, providers, or capabilities. */
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import { normalizePluginsConfig } from "./config-state.js";
 import {

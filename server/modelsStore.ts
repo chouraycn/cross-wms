@@ -18,6 +18,101 @@ import { AppPaths } from './config/appPaths.js';
 // 重新导出共享类型，供其他 server 模块使用
 export type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig };
 
+// ============================================================
+// 环境变量 API Key 支持
+// ============================================================
+
+/** Provider 到环境变量名的映射（支持多个变量名，按优先级顺序） */
+const PROVIDER_ENV_VAR_MAP: Record<string, string[]> = {
+  openai: ['OPENAI_API_KEY', 'OPENAI_KEY'],
+  anthropic: ['ANTHROPIC_API_KEY', 'ANTHROPIC_KEY'],
+  deepseek: ['DEEPSEEK_API_KEY', 'DEEPSEEK_KEY'],
+  google: ['GOOGLE_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_AI_STUDIO_KEY'],
+  qwen: ['DASHSCOPE_API_KEY', 'QWEN_API_KEY', 'ALIYUN_API_KEY'],
+  kimi: ['MOONSHOT_API_KEY', 'KIMI_API_KEY'],
+  bigmodel: ['ZHIPU_API_KEY', 'GLM_API_KEY', 'ZHIPUAI_API_KEY'],
+  minimax: ['MINIMAX_API_KEY'],
+  xai: ['XAI_API_KEY', 'GROK_API_KEY'],
+  groq: ['GROQ_API_KEY'],
+  mistral: ['MISTRAL_API_KEY'],
+  nvidia: ['NVIDIA_API_KEY', 'NIM_API_KEY'],
+  cohere: ['COHERE_API_KEY'],
+  fireworks: ['FIREWORKS_API_KEY'],
+  deepinfra: ['DEEPINFRA_API_KEY'],
+  cerebras: ['CEREBRAS_API_KEY'],
+  perplexity: ['PERPLEXITY_API_KEY', 'PPLX_API_KEY'],
+  together: ['TOGETHER_API_KEY'],
+  openrouter: ['OPENROUTER_API_KEY'],
+  volcengine: ['VOLCENGINE_API_KEY', 'ARK_API_KEY'],
+  zai: ['ZAI_API_KEY'],
+  ppio: ['PPIO_API_KEY'],
+  novita: ['NOVITA_API_KEY'],
+  tencent: ['TENCENT_API_KEY', 'HUNYUAN_API_KEY'],
+  byteplus: ['BYTEPLUS_API_KEY', 'DOUBAO_API_KEY'],
+  modelark: ['MODELARK_API_KEY'],
+  wwqglobal: ['WWQ_GLOBAL_API_KEY'],
+  wwqcn: ['WWQ_CN_API_KEY'],
+  aws: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+  azure: ['AZURE_OPENAI_API_KEY', 'AZURE_API_KEY'],
+  vercel: ['VERCEL_API_KEY'],
+  litellm: ['LITELLM_API_KEY'],
+};
+
+/**
+ * 从环境变量读取 API Key
+ * 按优先级顺序尝试多个环境变量名，返回第一个非空值
+ */
+function getApiKeyFromEnv(provider: string): string | null {
+  const envVars = PROVIDER_ENV_VAR_MAP[provider];
+  if (!envVars) return null;
+  for (const envVar of envVars) {
+    const value = process.env[envVar];
+    if (value?.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+/**
+ * 从环境变量注入 API Key 到模型配置
+ * 只对没有配置 key 的模型注入，避免覆盖用户已有的配置
+ *
+ * v2.x: 返回 { models, injectedIds } —— injectedIds 记录哪些 modelId 的 apiKey 来自 env，
+ * 调用方据此跳过 extractAndSaveApiKey，避免 env 注入的临时 key 被持久化到 Keychain
+ * （否则 env key 轮换后 Keychain 中残留旧 key，导致用户更新环境变量不生效）。
+ */
+function injectEnvApiKeys(models: ModelConfig[]): { models: ModelConfig[]; injectedIds: Set<string> } {
+  const injectedIds = new Set<string>();
+  let injectedCount = 0;
+  const result = models.map((m) => {
+    // 本地模型不需要 key
+    if (isLocalModel(m)) return m;
+
+    // 已有 API key（明文或引用），不覆盖
+    const hasKey =
+      m.apiKey?.trim() ||
+      m.apiKeyRef ||
+      m.apiKeyRefs?.length ||
+      m.apiKeys?.some((k) => k.enabled !== false && k.key?.trim());
+    if (hasKey) return m;
+
+    const envKey = getApiKeyFromEnv(m.provider);
+    if (envKey) {
+      injectedCount++;
+      injectedIds.add(m.id);
+      logger.debug(`[modelsStore] 从环境变量注入 ${m.provider} API Key 到模型 ${m.id}`);
+      return { ...m, apiKey: envKey };
+    }
+    return m;
+  });
+
+  if (injectedCount > 0) {
+    logger.info(`[modelsStore] 已从环境变量为 ${injectedCount} 个模型注入 API Key`);
+  }
+  return { models: result, injectedIds };
+}
+
 /**
  * 判断模型是否为本地部署（不需要 API Key）
  * 统一判断逻辑，避免各处重复实现
@@ -454,7 +549,11 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
       }
 
       // 以下逻辑仅在完整加载时执行（AI 推理、模型管理等需要 API Key 的场景）
-      // RC-2: 注入 Keychain 中的 API Key — 单独 try/catch，防止 execSync 抛出非 Error 对象导致整体加载失败
+      // v2.x: 第一步 — 从环境变量注入 API Key（优先级最低，仅填充无 key 的模型）
+      const { models: envInjectedModels, injectedIds } = injectEnvApiKeys(saved.models);
+      saved.models = envInjectedModels;
+
+      // RC-2: 第二步 — 注入 Keychain 中的 API Key（优先级高于环境变量，覆盖环境变量注入）
       let keychainFailed = false;
       try {
         saved.models = injectApiKeys(saved.models);
@@ -463,32 +562,44 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
         keychainFailed = true;
         // Keychain 不可用时保留已有配置，不强制禁用模型
       }
-      // 自动禁用没有 API Key 的远程模型（仅在 Keychain 正常且首次迁移时执行）
-      // 若 Keychain 注入失败，跳过自动禁用，信任用户已有的 enabled 配置
-      let needSave = changed;
+      // RC-3 修复：不再自动禁用没有 API Key 的远程模型
+      // 原行为：Keychain 读取失败或 key 缺失时强制 enabled=false，导致用户看到"模型没了"
+      // 新行为：仅记录警告日志，保留用户已有的 enabled 配置，让用户自行决定是否禁用
+      // 若 apiKeyRef 存在则视为已配置 key（Keychain 暂时读不到可能是临时故障）
       if (!keychainFailed) {
-        saved.models = saved.models.map((m) => {
-          if (!m.enabled) return m;
+        for (const m of saved.models) {
+          if (!m.enabled) continue;
           const hasKey = m.apiKey?.trim() || m.apiKeys?.some(k => k.enabled !== false && k.key?.trim());
-          if (!hasKey && !isLocalModel(m)) {
-            needSave = true;
-            return { ...m, enabled: false };
+          const hasKeyRef = m.apiKeyRef || m.apiKeyRefs?.length;
+          if (!hasKey && !hasKeyRef && !isLocalModel(m)) {
+            logger.warn(`[modelsStore] 模型 ${m.id} (${m.provider}) 未配置 API Key，但保留 enabled=true 由用户决定`);
           }
-          return m;
-        });
+        }
       }
+      const needSave = changed;
       if (needSave) {
         // 保存前：先将明文 API Key 提取到 Keychain/AES 加密
         // Bugfix: extractAndSaveApiKey 可能因 Keychain/AES 异常而抛出，用 try/catch 包裹防止整体加载失败
+        // v2.x: 跳过 env 注入的 model — 避免 env key 被持久化到 Keychain 后，env 变量轮换不生效
         let protectedModels: typeof saved.models;
         try {
-          protectedModels = saved.models.map((m) => extractAndSaveApiKey(m));
+          protectedModels = saved.models.map((m) =>
+            injectedIds.has(m.id) ? m : extractAndSaveApiKey(m),
+          );
         } catch (protectErr) {
           logger.warn('[modelsStore] extractAndSaveApiKey 失败，使用原始模型数据:', String(protectErr));
           protectedModels = saved.models;
         }
         // 脱敏（移除注入的 Key，保留 apiKeyRef/apiKeyRefs）
+        // v2.x: env 注入的 model 保留 apiKey 字段（下次加载仍需从 env 重新注入），
+        // 非 env 的 model 移除 apiKey（已存到 Keychain，改用 apiKeyRef 引用）
         const sanitized = protectedModels.map((m) => {
+          if (injectedIds.has(m.id)) {
+            // env 注入的 model 保留 apiKey，但写盘前移除（磁盘上不应存明文 env key）
+            // 下次 loadModelsConfig 会重新从 env 注入
+            const { apiKey, apiKeys, ...rest } = m as any;
+            return rest as typeof m;
+          }
           const { apiKey, apiKeys, ...rest } = m as any;
           return rest;
         });
@@ -553,13 +664,27 @@ export async function saveModelsConfig(
     updatedAt: new Date().toISOString(),
   };
   await writeModelsFile(data);
+  // v2.x: 失效 failover 模型列表缓存，确保下次 ensureFailoverModelsLoaded 重新加载
+  // 用动态导入避免循环依赖
+  import('./engine/modelFailover.js')
+    .then(({ invalidateFailoverModelsCache }) => invalidateFailoverModelsCache())
+    .catch(() => {});
   return data;
 }
 
-/** 删除模型时同步清理 Keychain 和轮询状态 */
+/**
+ * 删除模型时同步清理 Keychain、轮询状态和故障转移健康状态
+ *
+ * v2.x: 新增 resetModelHealthById 调用，避免 healthStates Map 残留条目。
+ * 用动态 import 避免循环依赖（modelsStore → modelFailover → modelsStore）。
+ */
 export function deleteModelConfig(modelId: string): void {
   deleteAllApiKeys(modelId);
   clearRotationState(modelId);
+  // v2.x: 清理故障转移健康状态（动态导入避免循环依赖）
+  import('./engine/modelFailover.js')
+    .then(({ resetModelHealthById }) => resetModelHealthById(modelId))
+    .catch(() => {});
 }
 
 /** 获取内置模型列表（供前端参考） */

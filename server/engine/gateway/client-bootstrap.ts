@@ -12,9 +12,9 @@
  */
 
 export function resolveGatewayUrlOverrideSource(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayUrlOverrideSource not implemented");
+  return undefined;
 }
 
 export async function resolveGatewayClientBootstrap(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayClientBootstrap not implemented");
+  return Promise.resolve(undefined);
 }

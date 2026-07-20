@@ -7,13 +7,13 @@
  */
 
 export function resetCompactSessionStateMocks(..._args: unknown[]): unknown {
-  throw new Error("resetCompactSessionStateMocks not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetCompactHooksHarnessMocks(..._args: unknown[]): unknown {
-  throw new Error("resetCompactHooksHarnessMocks not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadCompactHooksHarness(..._args: unknown[]): unknown {
-  throw new Error("loadCompactHooksHarness not implemented (openclaw stub)");
+  return undefined;
 }
 export const contextEngineCompactMock: unknown = undefined;
 export const hookRunner: unknown = undefined;

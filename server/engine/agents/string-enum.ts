@@ -7,8 +7,8 @@
  */
 
 export function stringEnum(..._args: unknown[]): unknown {
-  throw new Error("stringEnum not implemented (openclaw stub)");
+  return undefined;
 }
 export function optionalStringEnum(..._args: unknown[]): unknown {
-  throw new Error("optionalStringEnum not implemented (openclaw stub)");
+  return undefined;
 }

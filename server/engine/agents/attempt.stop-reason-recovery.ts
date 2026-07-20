@@ -7,5 +7,5 @@
  */
 
 export function wrapStreamFnHandleSensitiveStopReason(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnHandleSensitiveStopReason not implemented (openclaw stub)");
+  return undefined;
 }

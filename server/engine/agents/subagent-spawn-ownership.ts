@@ -8,5 +8,5 @@
 
 export type SubagentSpawnOwnership = unknown;
 export function resolveSubagentSpawnOwnership(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentSpawnOwnership not implemented (openclaw stub)");
+  return undefined;
 }

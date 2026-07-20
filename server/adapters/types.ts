@@ -20,7 +20,11 @@ export type ModelApiType =
   | 'google-generative-ai'
   | 'qwen-chat'
   | 'moonshot-chat'
-  | 'azure-openai';
+  | 'azure-openai'
+  | 'groq-chat'
+  | 'xai-chat'
+  | 'vllm-chat'
+  | 'zai-chat';
 
 /** 适配器通用配置 */
 export interface AdapterConfig {

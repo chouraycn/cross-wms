@@ -1,11 +1,15 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/run/attempt-bootstrap-routing.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/run/attempt-bootstrap-routing.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Attempt workspace bootstrap routing resolution.
+ * Cross-wms degradation: returns default routing without agent config.
  */
 
-export function resolveAttemptWorkspaceBootstrapRouting(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptWorkspaceBootstrapRouting not implemented (openclaw stub)");
+/** Resolves attempt workspace bootstrap routing. */
+export function resolveAttemptWorkspaceBootstrapRouting(params: {
+  cfg?: Record<string, unknown>;
+  agentId?: string;
+}): Record<string, unknown> {
+  // Cross-wms does not have agent-specific bootstrap routing.
+  return {};
 }

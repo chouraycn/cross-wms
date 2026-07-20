@@ -7,11 +7,11 @@
  */
 
 export async function maybeWrapCommandWithShellSnapshot(..._args: unknown[]): Promise<unknown> {
-  throw new Error("maybeWrapCommandWithShellSnapshot not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function resetShellSnapshotCacheForTests(..._args: unknown[]): unknown {
-  throw new Error("resetShellSnapshotCacheForTests not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveShellSnapshotDir(..._args: unknown[]): unknown {
-  throw new Error("resolveShellSnapshotDir not implemented (openclaw stub)");
+  return undefined;
 }

@@ -8,11 +8,11 @@
 
 export type ExecReviewerConfig = unknown;
 export function parseExecAutoReviewResponse(..._args: unknown[]): unknown {
-  throw new Error("parseExecAutoReviewResponse not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveExecReviewerTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveExecReviewerTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function createModelExecAutoReviewer(..._args: unknown[]): unknown {
-  throw new Error("createModelExecAutoReviewer not implemented (openclaw stub)");
+  return undefined;
 }

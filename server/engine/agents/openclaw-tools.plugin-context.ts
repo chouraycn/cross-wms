@@ -8,5 +8,5 @@
 
 export type OpenClawPluginToolOptions = unknown;
 export function resolveOpenClawPluginToolInputs(..._args: unknown[]): unknown {
-  throw new Error("resolveOpenClawPluginToolInputs not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,11 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/agent-delete-safety.ts
+ * Ported from openclaw/src/agents/agent-delete-safety.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Safety checks for deleting agents whose workspaces may overlap other agents.
+ * Cross-wms degradation: simplified without openclaw-specific path helpers.
  */
 
-export function findOverlappingWorkspaceAgentIds(..._args: unknown[]): unknown {
-  throw new Error("findOverlappingWorkspaceAgentIds not implemented (openclaw stub)");
+/** Lists other agents whose workspaces overlap a candidate delete target. */
+export function findOverlappingWorkspaceAgentIds(
+  cfg: Record<string, unknown>,
+  agentId: string,
+  workspaceDir: string,
+): string[] {
+  // Cross-wms does not maintain the full agent directory registry.
+  // Return empty to indicate no overlapping agents found.
+  return [];
 }

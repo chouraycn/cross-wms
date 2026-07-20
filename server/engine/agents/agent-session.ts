@@ -16,8 +16,8 @@ export type PromptOptions = unknown;
 export type ModelCycleResult = unknown;
 export type SessionStats = unknown;
 export class AgentSession {
-  constructor(..._args: unknown[]) { throw new Error("AgentSession not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function parseSkillBlock(..._args: unknown[]): unknown {
-  throw new Error("parseSkillBlock not implemented (openclaw stub)");
+  return undefined;
 }

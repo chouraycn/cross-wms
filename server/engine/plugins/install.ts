@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Installs plugins from package specs, local paths, and catalogs.
 import { createHash, randomUUID } from "node:crypto";
 import { constants as fsConstants, type Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { satisfiesPluginApiRange } from "../infra/clawhub.js";
 import { packageNameMatchesId } from "../infra/install-safe-path.js";
@@ -47,10 +46,10 @@ import {
   createSafeNpmInstallEnv,
 } from "../infra/safe-package-install.js";
 import { compareComparableSemver, parseComparableSemver } from "../infra/semver-compare.js";
-import { runCommandWithTimeout } from './_stub_parent__process__exec.js';
+import { runCommandWithTimeout } from './_parent__process__exec.js';
 import type { InstallPolicySource } from "../security/install-policy.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { resolveUserPath } from './_parent__utils.js';
 import {
   encodePluginInstallDirName,
   matchesExpectedPluginId,

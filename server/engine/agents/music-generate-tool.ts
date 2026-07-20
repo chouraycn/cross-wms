@@ -7,5 +7,5 @@
  */
 
 export function createMusicGenerateTool(..._args: unknown[]): unknown {
-  throw new Error("createMusicGenerateTool not implemented (openclaw stub)");
+  return undefined;
 }

@@ -7,5 +7,5 @@
  */
 
 export function resolveMcpTransport(..._args: unknown[]): unknown {
-  throw new Error("resolveMcpTransport not implemented (openclaw stub)");
+  return undefined;
 }

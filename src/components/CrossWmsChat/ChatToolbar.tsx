@@ -584,6 +584,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               .filter(o => o.provider !== 'auto')
               .map((option) => {
                 const isSelected = selectedModel === option.name;
+                const isDisabled = option.enabled === false;
                 return (
                   <MenuItem
                     key={option.id}
@@ -592,6 +593,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                       py: 1, px: 2, mx: 0.5, borderRadius: '10px',
                       backgroundColor: isSelected ? SELECTED_BG : 'transparent',
                       '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+                      opacity: isDisabled ? 0.5 : 1,
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
@@ -618,6 +620,18 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                                 fontSize: '0.55rem', height: 16,
                                 backgroundColor: isDark ? '#3D3520' : '#FEF3C7',
                                 color: '#D97706', fontWeight: 600,
+                                borderRadius: '4px',
+                              }}
+                            />
+                          )}
+                          {isDisabled && (
+                            <Chip
+                              label="未启用"
+                              size="small"
+                              sx={{
+                                fontSize: '0.55rem', height: 14,
+                                backgroundColor: isDark ? '#3A2A2A' : '#FEE2E2',
+                                color: '#DC2626', fontWeight: 500,
                                 borderRadius: '4px',
                               }}
                             />

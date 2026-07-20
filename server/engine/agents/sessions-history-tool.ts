@@ -1,11 +1,16 @@
 /**
- * 移植自 openclaw/src/agents/tools/sessions-history-tool.ts
+ * Ported from openclaw/src/agents/tools/sessions-history-tool.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Sessions history tool creation.
+ * Cross-wms degradation: returns placeholder tool without session history access.
  */
 
-export function createSessionsHistoryTool(..._args: unknown[]): unknown {
-  throw new Error("createSessionsHistoryTool not implemented (openclaw stub)");
+/** Creates a sessions history tool. */
+export function createSessionsHistoryTool(..._args: unknown[]): Record<string, unknown> {
+  return {
+    name: "session_history",
+    description: "View session conversation history (cross-wms placeholder).",
+    parameters: { type: "object", properties: {} },
+    execute: async () => ({ output: "Session history tool not available in cross-wms" }),
+  };
 }

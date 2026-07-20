@@ -7,5 +7,5 @@
  */
 
 export function createSubagentRegistryLifecycleController(..._args: unknown[]): unknown {
-  throw new Error("createSubagentRegistryLifecycleController not implemented (openclaw stub)");
+  return undefined;
 }

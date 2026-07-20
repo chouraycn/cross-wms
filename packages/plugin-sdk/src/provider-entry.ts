@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider entry contracts define provider plugin hooks, model catalogs, and runtime adapters.
 import type { UnifiedModelCatalogEntry } from "@cdf-know/model-catalog-core/model-catalog-types";
 // import {
@@ -18,14 +17,125 @@ import type { UnifiedModelCatalogEntry } from "@cdf-know/model-catalog-core/mode
 // } from "../plugins/types.js"; // TODO: 依赖模块未移植
 // import { copyArrayEntries, isRecord, readRecordValue } from "../shared/safe-record.js"; // TODO: 依赖模块未移植
 import { definePluginEntry } from "./plugin-entry.js";
-import type {
-  OpenClawPluginApi,
-  OpenClawPluginConfigSchema,
-  OpenClawPluginDefinition,
-} from "./plugin-entry.js";
-// import { buildSingleProviderApiKeyCatalog } from "./provider-catalog-shared.js"; // TODO: 依赖模块未移植
+import type { PluginApi as OpenClawPluginApi } from "./types";
+import type { PluginConfigSchema as OpenClawPluginConfigSchema } from "./types";
+import type { PluginDefinition as OpenClawPluginDefinition } from "./types";
 
+// ==================== Local type stubs for unported dependencies ====================
+
+/** Normalizes string entries. TODO: 依赖模块未移植 */
+function normalizeStringEntries(entries: unknown[]): string[] {
+  return entries.filter((v): v is string => typeof v === "string");
+}
+
+/** Returns unique strings. TODO: 依赖模块未移植 */
+function uniqueStrings(entries: string[]): string[] {
+  return [...new Set(entries)];
+}
+
+/** Provider auth method contract. */
+type ProviderAuthMethod = {
+  methodId?: string;
+  label?: string;
+  hint?: string;
+  [key: string]: unknown;
+};
+
+/** Provider plugin catalog contract. */
+type ProviderPluginCatalog = {
+  order?: string;
+  run: (ctx: unknown) => Promise<ProviderCatalogResult>;
+};
+
+/** Provider catalog result. */
+type ProviderCatalogResult = {
+  provider?: unknown;
+  [key: string]: unknown;
+};
+
+/** Provider catalog context. */
+type ProviderCatalogContext = unknown;
+
+/** Provider plugin contract. */
+type ProviderPlugin = {
+  id?: string;
+  label?: string;
+  docsPath?: string;
+  aliases?: string[];
+  envVars?: string[];
+  auth?: ProviderAuthMethod[];
+  catalog?: ProviderPluginCatalog;
+  staticCatalog?: ProviderPluginCatalog;
+  buildReplayPolicy?: unknown;
+  sanitizeReplayHistory?: unknown;
+  resolveReasoningOutputMode?: unknown;
+  [key: string]: unknown;
+};
+
+/** Unified model catalog provider context. */
+type UnifiedModelCatalogProviderContext = unknown;
+
+/** Provider plugin wizard setup contract. */
+type ProviderPluginWizardSetup = {
+  choiceId?: string;
+  choiceLabel?: string;
+  choiceHint?: string;
+  groupId?: string;
+  groupLabel?: string;
+  groupHint?: string;
+  methodId?: string;
+  onboardingScopes?: string[];
+  modelAllowlist?: string[];
+};
+
+/** Creates provider API key auth method. TODO: 依赖模块未移植 */
+function createProviderApiKeyAuthMethod(
+  _options: {
+    providerId: string;
+    methodId: string;
+    label: string;
+    hint?: string;
+    envVar?: string;
+    expectedProviders?: string[];
+    wizard?: unknown;
+  },
+): ProviderAuthMethod {
+  throw new Error("createProviderApiKeyAuthMethod: not implemented (dependency not ported)");
+}
+
+/** ApiKey auth method options derived from the provider api key auth method. */
 type ApiKeyAuthMethodOptions = Parameters<typeof createProviderApiKeyAuthMethod>[0];
+
+/** Builds single provider API key catalog. TODO: 依赖模块未移植 */
+async function buildSingleProviderApiKeyCatalog(
+  _params: {
+    ctx?: unknown;
+    providerId?: string;
+    buildProvider?: (ctx: unknown) => Promise<unknown>;
+    allowExplicitBaseUrl?: boolean;
+    [key: string]: unknown;
+  },
+): Promise<ProviderCatalogResult> {
+  throw new Error("buildSingleProviderApiKeyCatalog: not implemented (dependency not ported)");
+}
+
+/** Projects provider catalog result to unified text rows. TODO: 依赖模块未移植 */
+function projectProviderCatalogResultToUnifiedTextRows(_params: unknown): UnifiedModelCatalogEntry[] {
+  return [];
+}
+
+/** Safe record helpers. TODO: 依赖模块未移植 */
+function copyArrayEntries(value: unknown): unknown[] {
+  return Array.isArray(value) ? [...value] : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+function readRecordValue(record: unknown, _key: string): unknown {
+  return isRecord(record) ? undefined : undefined;
+}
 
 /**
  * API-key auth options for single-provider plugins, with provider id filled in by the entry helper.
@@ -291,12 +401,15 @@ export function defineSingleProviderPluginEntry(options: SingleProviderPluginOpt
               ? {
                   order: "simple",
                   run: async () => ({
-                    provider: await provider.catalog.buildStaticProvider!(),
+                    provider: await provider.catalog.buildStaticProvider!({}),
                   }),
                 }
               : undefined;
         api.registerProvider({
+          kind: "provider",
           id: providerId,
+          displayName: provider.label,
+          apiType: "openai-chat",
           label: provider.label,
           docsPath: provider.docsPath,
           ...(provider.aliases ? { aliases: provider.aliases } : {}),

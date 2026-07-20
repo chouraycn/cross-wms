@@ -1,12 +1,22 @@
 /**
  * 移植自 openclaw/src/agents/agent-auth-discovery-core.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Env/config-backed credential discovery shared by agent auth discovery modes.
+ * In cross-wms the full model-auth-env infrastructure is not available,
+ * so addEnvBackedAgentCredentials returns credentials unchanged.
  */
 
-export type AgentDiscoveryAuthLookupOptions = unknown;
-export function addEnvBackedAgentCredentials(..._args: unknown[]): unknown {
-  throw new Error("addEnvBackedAgentCredentials not implemented (openclaw stub)");
+/** Options for discovering env-backed credentials during agent auth discovery. */
+export type AgentDiscoveryAuthLookupOptions = {
+  config?: unknown;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+};
+
+/** Adds provider credentials resolvable from env/config (returns unchanged in cross-wms). */
+export function addEnvBackedAgentCredentials(
+  credentials: Record<string, unknown>,
+  _options: AgentDiscoveryAuthLookupOptions = {},
+): Record<string, unknown> {
+  return { ...credentials };
 }

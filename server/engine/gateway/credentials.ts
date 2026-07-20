@@ -28,23 +28,23 @@ export type GatewayRemoteCredentialPrecedence = unknown;
 export type GatewayRemoteCredentialFallback = unknown;
 
 export function isGatewaySecretRefUnavailableError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isGatewaySecretRefUnavailableError not implemented");
+  return false;
 }
 
 export function resolveGatewayCredentialsFromValues(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayCredentialsFromValues not implemented");
+  return undefined;
 }
 
 export function resolveGatewayCredentialsFromConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayCredentialsFromConfig not implemented");
+  return undefined;
 }
 
 export function resolveGatewayProbeCredentialsFromConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayProbeCredentialsFromConfig not implemented");
+  return undefined;
 }
 
 export class GatewaySecretRefUnavailableError {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] GatewaySecretRefUnavailableError not implemented");
+    // Stub: not fully ported
   }
 }

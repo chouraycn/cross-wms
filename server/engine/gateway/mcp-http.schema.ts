@@ -16,9 +16,9 @@ export type McpLoopbackTool = unknown;
 export type McpToolSchemaEntry = unknown;
 
 export function readMcpLoopbackToolName(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readMcpLoopbackToolName not implemented");
+  return undefined;
 }
 
 export function buildMcpToolSchema(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildMcpToolSchema not implemented");
+  return undefined;
 }

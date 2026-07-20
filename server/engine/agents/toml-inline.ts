@@ -7,8 +7,8 @@
  */
 
 export function serializeTomlInlineValue(..._args: unknown[]): unknown {
-  throw new Error("serializeTomlInlineValue not implemented (openclaw stub)");
+  return "";
 }
 export function formatTomlConfigOverride(..._args: unknown[]): unknown {
-  throw new Error("formatTomlConfigOverride not implemented (openclaw stub)");
+  return "";
 }

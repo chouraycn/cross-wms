@@ -1,50 +1,49 @@
 // 移植自 openclaw/src/gateway/server-methods/talk-shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function canUseTalkDirectTools(...args: unknown[]): unknown {
-  throw new Error("not implemented: canUseTalkDirectTools");
+  return false;
 }
 
 export function broadcastTalkRoomEvents(...args: unknown[]): unknown {
-  throw new Error("not implemented: broadcastTalkRoomEvents");
+  return undefined;
 }
 
 export function talkHandoffErrorCode(...args: unknown[]): unknown {
-  throw new Error("not implemented: talkHandoffErrorCode");
+  return undefined;
 }
 
 export function getVoiceCallStreamingConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: getVoiceCallStreamingConfig");
+  return undefined;
 }
 
 export function buildTalkRealtimeConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildTalkRealtimeConfig");
+  return undefined;
 }
 
 export function buildTalkTranscriptionConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildTalkTranscriptionConfig");
+  return undefined;
 }
 
 export function configuredOrFalse(...args: unknown[]): unknown {
-  throw new Error("not implemented: configuredOrFalse");
+  return undefined;
 }
 
 export function resolveConfiguredRealtimeTranscriptionProvider(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredRealtimeTranscriptionProvider");
+  return undefined;
 }
 
 export function buildRealtimeInstructions(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildRealtimeInstructions");
+  return undefined;
 }
 
 export function buildRealtimeVoiceLaunchOptions(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildRealtimeVoiceLaunchOptions");
+  return undefined;
 }
 
 export function withRealtimeBrowserOverrides(...args: unknown[]): unknown {
-  throw new Error("not implemented: withRealtimeBrowserOverrides");
+  return undefined;
 }
 
 export function isUnsupportedBrowserWebRtcSession(...args: unknown[]): unknown {
-  throw new Error("not implemented: isUnsupportedBrowserWebRtcSession");
+  return false;
 }

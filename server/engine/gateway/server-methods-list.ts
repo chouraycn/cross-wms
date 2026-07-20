@@ -12,11 +12,11 @@
  */
 
 export function listCoreGatewayMethods(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listCoreGatewayMethods not implemented");
+  return [];
 }
 
 export function listGatewayMethods(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listGatewayMethods not implemented");
+  return [];
 }
 
 export const GATEWAY_EVENTS: any = undefined;

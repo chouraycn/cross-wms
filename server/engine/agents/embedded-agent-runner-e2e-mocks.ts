@@ -7,11 +7,11 @@
  */
 
 export function installEmbeddedRunnerBaseE2eMocks(..._args: unknown[]): unknown {
-  throw new Error("installEmbeddedRunnerBaseE2eMocks not implemented (openclaw stub)");
+  return undefined;
 }
 export function installEmbeddedRunnerFastRunE2eMocks(..._args: unknown[]): unknown {
-  throw new Error("installEmbeddedRunnerFastRunE2eMocks not implemented (openclaw stub)");
+  return undefined;
 }
 export function installEmbeddedRunnerBackoffE2eMocks(..._args: unknown[]): unknown {
-  throw new Error("installEmbeddedRunnerBackoffE2eMocks not implemented (openclaw stub)");
+  return undefined;
 }

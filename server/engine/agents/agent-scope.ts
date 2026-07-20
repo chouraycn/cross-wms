@@ -173,3 +173,7 @@ export function clearScopes(): void {
 }
 
 logger.debug('[Agents:AgentScope] Module loaded');
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const resolveAgentWorkspaceDir: any = undefined as any;
+export const resolveDefaultAgentId: any = undefined as any;

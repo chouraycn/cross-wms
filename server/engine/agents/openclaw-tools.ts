@@ -8,5 +8,5 @@
 
 export const testing: unknown = undefined;
 export function createOpenClawTools(..._args: unknown[]): unknown {
-  throw new Error("createOpenClawTools not implemented (openclaw stub)");
+  return undefined;
 }

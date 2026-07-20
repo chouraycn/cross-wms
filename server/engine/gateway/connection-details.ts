@@ -14,5 +14,5 @@
 export type GatewayConnectionDetails = unknown;
 
 export function buildGatewayConnectionDetailsWithResolvers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildGatewayConnectionDetailsWithResolvers not implemented");
+  return undefined;
 }

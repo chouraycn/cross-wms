@@ -15,14 +15,12 @@ export function registerSandboxCli(program: Command): void {
     .description("Show sandbox status")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw sandbox status: not supported in stub mode (agents/sandbox, runtime not ported).",
-      );
+      console.error('openclaw sandbox status is not available in cross-wms');
+      process.exit(1);
     });
 
   sandbox.action(() => {
-    throw new Error(
-      "openclaw sandbox: not supported in stub mode (agents/sandbox, runtime not ported).",
-    );
+    console.error('openclaw sandbox is not available in cross-wms');
+      process.exit(1);
   });
 }

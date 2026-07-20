@@ -7,11 +7,11 @@
  */
 
 export function resolveAnthropicBaseUrl(..._args: unknown[]): unknown {
-  throw new Error("resolveAnthropicBaseUrl not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAnthropicMessagesUrl(..._args: unknown[]): unknown {
-  throw new Error("resolveAnthropicMessagesUrl not implemented (openclaw stub)");
+  return undefined;
 }
 export function createAnthropicMessagesTransportStreamFn(..._args: unknown[]): unknown {
-  throw new Error("createAnthropicMessagesTransportStreamFn not implemented (openclaw stub)");
+  return undefined;
 }

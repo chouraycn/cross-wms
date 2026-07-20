@@ -1,15 +1,14 @@
-// @ts-nocheck
 /** Reads Codex/Claude/Cursor bundle manifests into OpenClaw plugin manifest metadata. */
 import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
-import { normalizeUniqueSingleOrTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+} from './_openclaw__normalization_core__string_coerce.js';
+import { normalizeUniqueSingleOrTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import JSON5 from "json5";
 import { matchRootFileOpenFailure } from "../infra/boundary-file-read.js";
 import { readRootStructuredFileSync } from "../infra/json-files.js";
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 import type { PluginBundleFormat } from "./manifest-types.js";
 import type { PluginManifestActivation } from "./manifest.js";
 import {

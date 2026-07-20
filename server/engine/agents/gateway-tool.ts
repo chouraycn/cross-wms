@@ -7,8 +7,8 @@
  */
 
 export function assertGatewayConfigMutationAllowedForTest(..._args: unknown[]): unknown {
-  throw new Error("assertGatewayConfigMutationAllowedForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export function createGatewayTool(..._args: unknown[]): unknown {
-  throw new Error("createGatewayTool not implemented (openclaw stub)");
+  return undefined;
 }

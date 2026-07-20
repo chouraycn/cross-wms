@@ -12,9 +12,9 @@
  */
 
 export function computeInlineScriptHashes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] computeInlineScriptHashes not implemented");
+  return undefined;
 }
 
 export function buildControlUiCspHeader(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildControlUiCspHeader not implemented");
+  return undefined;
 }

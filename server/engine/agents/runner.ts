@@ -14,8 +14,8 @@ export type SwitchSessionHandler = unknown;
 export type ReloadHandler = unknown;
 export type ShutdownHandler = unknown;
 export class ExtensionRunner {
-  constructor(..._args: unknown[]) { throw new Error("ExtensionRunner not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function emitSessionShutdownEvent(..._args: unknown[]): unknown {
-  throw new Error("emitSessionShutdownEvent not implemented (openclaw stub)");
+  return undefined;
 }

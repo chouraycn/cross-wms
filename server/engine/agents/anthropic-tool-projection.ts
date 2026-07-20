@@ -9,11 +9,11 @@
 export type AnthropicToolProjection = unknown;
 export type AnthropicProjectedToolChoice = unknown;
 export function projectAnthropicTools(..._args: unknown[]): unknown {
-  throw new Error("projectAnthropicTools not implemented (openclaw stub)");
+  return undefined;
 }
 export function reconcileAnthropicToolChoice(..._args: unknown[]): unknown {
-  throw new Error("reconcileAnthropicToolChoice not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveOriginalAnthropicToolName(..._args: unknown[]): unknown {
-  throw new Error("resolveOriginalAnthropicToolName not implemented (openclaw stub)");
+  return undefined;
 }

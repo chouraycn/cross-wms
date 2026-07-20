@@ -8,17 +8,17 @@
 
 export type ExternalCliAuthDiscovery = unknown;
 export function externalCliDiscoveryNone(..._args: unknown[]): unknown {
-  throw new Error("externalCliDiscoveryNone not implemented (openclaw stub)");
+  return undefined;
 }
 export function externalCliDiscoveryScoped(..._args: unknown[]): unknown {
-  throw new Error("externalCliDiscoveryScoped not implemented (openclaw stub)");
+  return undefined;
 }
 export function externalCliDiscoveryForProviderAuth(..._args: unknown[]): unknown {
-  throw new Error("externalCliDiscoveryForProviderAuth not implemented (openclaw stub)");
+  return undefined;
 }
 export function externalCliDiscoveryForConfigStatus(..._args: unknown[]): unknown {
-  throw new Error("externalCliDiscoveryForConfigStatus not implemented (openclaw stub)");
+  return undefined;
 }
 export function externalCliDiscoveryForProviders(..._args: unknown[]): unknown {
-  throw new Error("externalCliDiscoveryForProviders not implemented (openclaw stub)");
+  return undefined;
 }

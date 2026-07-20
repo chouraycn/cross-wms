@@ -9,11 +9,11 @@
 export type SubagentInlineAttachment = unknown;
 export type SubagentAttachmentReceiptFile = unknown;
 export function decodeStrictBase64(..._args: unknown[]): unknown {
-  throw new Error("decodeStrictBase64 not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAcpSessionsSpawnImageAttachments(..._args: unknown[]): unknown {
-  throw new Error("resolveAcpSessionsSpawnImageAttachments not implemented (openclaw stub)");
+  return undefined;
 }
 export async function materializeSubagentAttachments(..._args: unknown[]): Promise<unknown> {
-  throw new Error("materializeSubagentAttachments not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

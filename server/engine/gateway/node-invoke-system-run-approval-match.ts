@@ -14,5 +14,5 @@
 export const toSystemRunApprovalMismatchError: any = undefined;
 
 export function evaluateSystemRunApprovalMatch(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] evaluateSystemRunApprovalMatch not implemented");
+  return undefined;
 }

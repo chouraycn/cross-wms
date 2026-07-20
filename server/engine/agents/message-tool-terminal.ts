@@ -7,8 +7,8 @@
  */
 
 export function isDeliveredMessageToolOnlySourceReply(..._args: unknown[]): unknown {
-  throw new Error("isDeliveredMessageToolOnlySourceReply not implemented (openclaw stub)");
+  return false;
 }
 export function installMessageToolOnlyTerminalHook(..._args: unknown[]): unknown {
-  throw new Error("installMessageToolOnlyTerminalHook not implemented (openclaw stub)");
+  return undefined;
 }

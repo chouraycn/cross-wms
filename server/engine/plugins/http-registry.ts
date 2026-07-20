@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Tracks plugin HTTP registry context for current async execution.
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { IncomingMessage, ServerResponse } from "node:http";

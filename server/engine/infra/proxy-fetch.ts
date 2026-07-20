@@ -1,13 +1,31 @@
 // 移植自 openclaw/src/infra/proxy-fetch.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：undici ProxyAgent 依赖简化
 
-export function makeProxyFetch(...args: unknown[]): unknown {
-  throw new Error("not implemented: makeProxyFetch");
+export const PROXY_FETCH_PROXY_URL: string | undefined = undefined;
+
+/** Creates a proxy-aware fetch function. Simplified without undici proxy. */
+export function makeProxyFetch(params?: {
+  proxyUrl?: string;
+  fetchFn?: typeof fetch;
+}): typeof fetch {
+  return params?.fetchFn ?? globalThis.fetch;
 }
-export function getProxyUrlFromFetch(...args: unknown[]): unknown {
-  throw new Error("not implemented: getProxyUrlFromFetch");
+
+/** Gets the proxy URL from a proxy fetch instance. */
+export function getProxyUrlFromFetch(_fetchFn?: unknown): string | undefined {
+  return undefined;
 }
-export function resolveProxyFetchFromEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveProxyFetchFromEnv");
+
+/** Resolves a proxy fetch from environment variables. */
+export function resolveProxyFetchFromEnv(params?: {
+  fetchFn?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+}): typeof fetch {
+  const env = params?.env ?? process.env;
+  const proxyUrl = env.HTTPS_PROXY ?? env.https_proxy ?? env.HTTP_PROXY ?? env.http_proxy;
+  if (!proxyUrl?.trim()) {
+    return params?.fetchFn ?? globalThis.fetch;
+  }
+  // Simplified: return base fetch without proxy agent
+  return params?.fetchFn ?? globalThis.fetch;
 }
-export const PROXY_FETCH_PROXY_URL: unknown = undefined;

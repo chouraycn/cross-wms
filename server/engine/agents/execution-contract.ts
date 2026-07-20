@@ -7,11 +7,11 @@
  */
 
 export function stripProviderPrefix(..._args: unknown[]): unknown {
-  throw new Error("stripProviderPrefix not implemented (openclaw stub)");
+  return undefined;
 }
 export function isStrictAgenticSupportedProviderModel(..._args: unknown[]): unknown {
-  throw new Error("isStrictAgenticSupportedProviderModel not implemented (openclaw stub)");
+  return false;
 }
 export function isStrictAgenticExecutionContractActive(..._args: unknown[]): unknown {
-  throw new Error("isStrictAgenticExecutionContractActive not implemented (openclaw stub)");
+  return false;
 }

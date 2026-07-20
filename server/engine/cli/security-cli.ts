@@ -15,14 +15,12 @@ export function registerSecurityCli(program: Command): void {
     .description("Run a security audit")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw security audit: not supported in stub mode (security/*, runtime not ported).",
-      );
+      console.error('openclaw security audit is not available in cross-wms');
+      process.exit(1);
     });
 
   security.action(() => {
-    throw new Error(
-      "openclaw security: not supported in stub mode (security/*, runtime not ported).",
-    );
+    console.error('openclaw security is not available in cross-wms');
+      process.exit(1);
   });
 }

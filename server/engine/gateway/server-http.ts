@@ -12,13 +12,13 @@
  */
 
 export async function runGatewayHttpRequestStages(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] runGatewayHttpRequestStages not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function createGatewayHttpServer(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayHttpServer not implemented");
+  return undefined;
 }
 
 export function attachGatewayUpgradeHandler(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] attachGatewayUpgradeHandler not implemented");
+  return undefined;
 }

@@ -14,33 +14,33 @@
 export type CronListJob = unknown;
 
 export function isClaudeLikeLiveAgent(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isClaudeLikeLiveAgent not implemented");
+  return false;
 }
 
 export function assertLiveImageProbeReply(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] assertLiveImageProbeReply not implemented");
+  return undefined;
 }
 
 export function shouldRunLiveImageProbe(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRunLiveImageProbe not implemented");
+  return false;
 }
 
 export function createLiveCronProbeSpec(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createLiveCronProbeSpec not implemented");
+  return undefined;
 }
 
 export function buildLiveCronProbeMessage(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildLiveCronProbeMessage not implemented");
+  return undefined;
 }
 
 export async function runOpenClawCliJson(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] runOpenClawCliJson not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function assertCronJobVisibleViaCli(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] assertCronJobVisibleViaCli not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function assertCronJobMatches(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] assertCronJobMatches not implemented");
+  return undefined;
 }

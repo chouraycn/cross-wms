@@ -12,13 +12,13 @@
  */
 
 export function normalizeControlUiBasePath(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeControlUiBasePath not implemented");
+  return undefined;
 }
 
 export function buildControlUiAvatarUrl(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildControlUiAvatarUrl not implemented");
+  return undefined;
 }
 
 export function resolveAssistantAvatarUrl(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveAssistantAvatarUrl not implemented");
+  return undefined;
 }

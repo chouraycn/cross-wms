@@ -7,5 +7,5 @@
  */
 
 export function transformTransportMessages(..._args: unknown[]): unknown {
-  throw new Error("transformTransportMessages not implemented (openclaw stub)");
+  return undefined;
 }

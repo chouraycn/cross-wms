@@ -1,5 +1,5 @@
 // Builds setup descriptors from plugin provider and manifest metadata.
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
 type SetupDescriptorRecord = Pick<

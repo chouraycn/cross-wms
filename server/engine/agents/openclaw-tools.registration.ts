@@ -7,8 +7,8 @@
  */
 
 export function collectPresentOpenClawTools(..._args: unknown[]): unknown {
-  throw new Error("collectPresentOpenClawTools not implemented (openclaw stub)");
+  return [];
 }
 export function shouldIncludeUpdatePlanToolForOpenClawTools(..._args: unknown[]): unknown {
-  throw new Error("shouldIncludeUpdatePlanToolForOpenClawTools not implemented (openclaw stub)");
+  return false;
 }

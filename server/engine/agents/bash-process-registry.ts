@@ -8,44 +8,44 @@
 
 export type ProcessSession = unknown;
 export function createSessionSlug(..._args: unknown[]): unknown {
-  throw new Error("createSessionSlug not implemented (openclaw stub)");
+  return undefined;
 }
 export function addSession(..._args: unknown[]): unknown {
-  throw new Error("addSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function getSession(..._args: unknown[]): unknown {
-  throw new Error("getSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function getFinishedSession(..._args: unknown[]): unknown {
-  throw new Error("getFinishedSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function deleteSession(..._args: unknown[]): unknown {
-  throw new Error("deleteSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function appendOutput(..._args: unknown[]): unknown {
-  throw new Error("appendOutput not implemented (openclaw stub)");
+  return undefined;
 }
 export function drainSession(..._args: unknown[]): unknown {
-  throw new Error("drainSession not implemented (openclaw stub)");
+  return undefined;
 }
 export function markExited(..._args: unknown[]): unknown {
-  throw new Error("markExited not implemented (openclaw stub)");
+  return undefined;
 }
 export function markBackgrounded(..._args: unknown[]): unknown {
-  throw new Error("markBackgrounded not implemented (openclaw stub)");
+  return undefined;
 }
 export function tail(..._args: unknown[]): unknown {
-  throw new Error("tail not implemented (openclaw stub)");
+  return undefined;
 }
 export function listRunningSessions(..._args: unknown[]): unknown {
-  throw new Error("listRunningSessions not implemented (openclaw stub)");
+  return [];
 }
 export function listFinishedSessions(..._args: unknown[]): unknown {
-  throw new Error("listFinishedSessions not implemented (openclaw stub)");
+  return [];
 }
 export function resetProcessRegistryForTests(..._args: unknown[]): unknown {
-  throw new Error("resetProcessRegistryForTests not implemented (openclaw stub)");
+  return undefined;
 }
 export function setJobTtlMs(..._args: unknown[]): unknown {
-  throw new Error("setJobTtlMs not implemented (openclaw stub)");
+  return undefined;
 }

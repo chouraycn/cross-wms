@@ -9,8 +9,8 @@
 export type EditOperations = unknown;
 export type EditToolOptions = unknown;
 export function createEditToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createEditToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function createEditTool(..._args: unknown[]): unknown {
-  throw new Error("createEditTool not implemented (openclaw stub)");
+  return undefined;
 }

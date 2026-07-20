@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @deprecated Public SDK subpath has no bundled extension production imports.
  * Prefer narrower config subpaths such as plugin-config-runtime,

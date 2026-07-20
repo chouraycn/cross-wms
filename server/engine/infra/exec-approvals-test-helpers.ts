@@ -1,24 +1,101 @@
 // 移植自 openclaw/src/infra/exec-approvals-test-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 提供执行审批测试的共享夹具
 
-export function makePathEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: makePathEnv");
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import type { CommandResolution, ExecutableResolution } from "./exec-approvals-analysis.js";
+
+export function makePathEnv(binDir: string): NodeJS.ProcessEnv {
+  if (process.platform !== "win32") {
+    return { PATH: binDir };
+  }
+  return { PATH: binDir, PATHEXT: ".EXE;.CMD;.BAT;.COM" };
 }
-export function makeTempDir(...args: unknown[]): unknown {
-  throw new Error("not implemented: makeTempDir");
+
+export function makeTempDir(): string {
+  return fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-exec-approvals-")));
 }
-export function makeExecutable(...args: unknown[]): unknown {
-  throw new Error("not implemented: makeExecutable");
+
+export function makeExecutable(dir: string, name: string): string {
+  const fileName = process.platform === "win32" ? `${name}.exe` : name;
+  const exe = path.join(dir, fileName);
+  fs.writeFileSync(exe, "");
+  fs.chmodSync(exe, 0o755);
+  return exe;
 }
-export function makeMockExecutableResolution(...args: unknown[]): unknown {
-  throw new Error("not implemented: makeMockExecutableResolution");
+
+export function makeMockExecutableResolution(params: {
+  rawExecutable: string;
+  executableName: string;
+  resolvedPath?: string;
+  resolvedRealPath?: string;
+}): ExecutableResolution {
+  return {
+    rawExecutable: params.rawExecutable,
+    resolvedPath: params.resolvedPath,
+    resolvedRealPath: params.resolvedRealPath,
+    executableName: params.executableName,
+  };
 }
-export function makeMockCommandResolution(...args: unknown[]): unknown {
-  throw new Error("not implemented: makeMockCommandResolution");
+
+export function makeMockCommandResolution(params: {
+  execution: ExecutableResolution;
+  policy?: ExecutableResolution;
+  effectiveArgv?: string[];
+  wrapperChain?: string[];
+  policyBlocked?: boolean;
+  blockedWrapper?: string;
+}): CommandResolution {
+  const policy = params.policy ?? params.execution;
+  const resolution: CommandResolution = {
+    execution: params.execution,
+    policy,
+    effectiveArgv: params.effectiveArgv,
+    wrapperChain: params.wrapperChain,
+    policyBlocked: params.policyBlocked,
+    blockedWrapper: params.blockedWrapper,
+  };
+  return Object.defineProperties(resolution, {
+    rawExecutable: { get: () => params.execution.rawExecutable },
+    resolvedPath: { get: () => params.execution.resolvedPath },
+    resolvedRealPath: { get: () => params.execution.resolvedRealPath },
+    executableName: { get: () => params.execution.executableName },
+    policyResolution: { get: () => (policy === params.execution ? undefined : policy) },
+  });
 }
-export function loadShellParserParityFixtureCases(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadShellParserParityFixtureCases");
+
+type ShellParserParityFixtureCase = {
+  id: string;
+  command: string;
+  ok: boolean;
+  executables: string[];
+};
+
+type ShellParserParityFixture = { cases: ShellParserParityFixtureCase[] };
+
+type WrapperResolutionParityFixtureCase = {
+  id: string;
+  argv: string[];
+  expectedRawExecutable: string | null;
+};
+
+type WrapperResolutionParityFixture = { cases: WrapperResolutionParityFixtureCase[] };
+
+export function loadShellParserParityFixtureCases(): ShellParserParityFixtureCase[] {
+  const fixturePath = path.join(
+    process.cwd(), "test", "fixtures", "exec-allowlist-shell-parser-parity.json",
+  );
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8")) as ShellParserParityFixture;
+  return fixture.cases;
 }
-export function loadWrapperResolutionParityFixtureCases(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadWrapperResolutionParityFixtureCases");
+
+export function loadWrapperResolutionParityFixtureCases(): WrapperResolutionParityFixtureCase[] {
+  const fixturePath = path.join(
+    process.cwd(), "test", "fixtures", "exec-wrapper-resolution-parity.json",
+  );
+  const fixture = JSON.parse(
+    fs.readFileSync(fixturePath, "utf8"),
+  ) as WrapperResolutionParityFixture;
+  return fixture.cases;
 }

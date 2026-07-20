@@ -1,17 +1,34 @@
 /**
  * 移植自 openclaw/src/agents/models-config.providers.policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Applies provider plugin policy to configured model provider settings.
+ * cross-wms 简化实现：提供基本的策略应用接口，默认为透传。
  */
 
-export function applyNativeStreamingUsageCompat(..._args: unknown[]): unknown {
-  throw new Error("applyNativeStreamingUsageCompat not implemented (openclaw stub)");
+export type ProviderConfig = Record<string, unknown>;
+
+/** Applies native-streaming usage compatibility policy to the provider map. */
+export function applyNativeStreamingUsageCompat(
+  providers: Record<string, ProviderConfig>,
+): Record<string, ProviderConfig> {
+  // Simplified: return providers as-is (no streaming policy in cross-wms)
+  return providers;
 }
-export function normalizeProviderSpecificConfig(..._args: unknown[]): unknown {
-  throw new Error("normalizeProviderSpecificConfig not implemented (openclaw stub)");
+
+/** Normalizes a provider config according to provider-specific runtime policy. */
+export function normalizeProviderSpecificConfig(
+  _providerKey: string,
+  provider: ProviderConfig,
+): ProviderConfig {
+  // Simplified: return provider as-is (no provider-specific policy in cross-wms)
+  return provider;
 }
-export function resolveProviderConfigApiKeyResolver(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderConfigApiKeyResolver not implemented (openclaw stub)");
+
+/** Resolves a provider-specific API key env lookup policy when one exists. */
+export function resolveProviderConfigApiKeyResolver(
+  _providerKey: string,
+  _provider?: ProviderConfig,
+): ((env: NodeJS.ProcessEnv) => string | undefined) | undefined {
+  // Simplified: no provider-specific API key resolver in cross-wms
+  return undefined;
 }

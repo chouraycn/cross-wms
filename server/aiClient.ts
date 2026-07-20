@@ -157,7 +157,7 @@ export interface AIResponse {
 export class AIAPIError extends Error {
   constructor(
     message: string,
-    public readonly category: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'model_not_supported' | 'unknown',
+    public readonly category: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'model_not_supported' | 'context_overflow' | 'unknown',
     public readonly statusCode?: number,
     public readonly responseBody?: string,
   ) {
@@ -176,6 +176,10 @@ const RETRY_CONFIG = {
 /** 判断错误是否可重试 */
 function isRetryableError(error: unknown): boolean {
   if (error instanceof AIAPIError) {
+    // v2.x: 上下文溢出不重试（直接换大模型），认证错误不重试
+    if (['context_overflow', 'auth', 'model_not_supported'].includes(error.category)) {
+      return false;
+    }
     return ['network', 'timeout', 'server', 'rate_limit'].includes(error.category);
   }
   if (error instanceof TypeError) {
@@ -221,6 +225,20 @@ export function classifyError(statusCode: number, responseBody: string): AIAPIEr
     const body = responseBody.toLowerCase();
     if (body.includes('model_not_supported') || body.includes('invalid_model') || body.includes('model not found')) {
       return 'model_not_supported';
+    }
+    // v2.x: 识别上下文溢出错误
+    if (
+      body.includes('context_length_exceeded') ||
+      body.includes('context overflow') ||
+      body.includes('maximum context length') ||
+      body.includes('prompt is too long') ||
+      body.includes('context_window') ||
+      body.includes('context window') ||
+      body.includes('token limit exceeded') ||
+      body.includes('content_length_exceeded') ||
+      body.includes('request too large')
+    ) {
+      return 'context_overflow';
     }
     return 'unknown';
   }
@@ -381,7 +399,8 @@ export async function callOpenAICompatibleStream(
     // 需要对每个 tool 计算调用概率。20 个 tools 就需要 14 秒首响应（7B 模型），
     // 185 个 tools 则完全卡住。解决方案：本地模型不发送 tools，让第一轮纯文本回复。
     // 工具调用由 ReAct/Observer 策略的多轮对话机制在后续轮次中处理。
-    const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
+    // v2.x: 复用 modelsStore.isLocalModel，消除重复 regex 实现
+    const isLocal = isLocalModel({ apiEndpoint });
     if (isLocal) {
       logger.debug(`[AIClient] 本地模型跳过 tools 参数 (model=${modelId}, tools=${tools.length})`);
     } else {
@@ -1437,6 +1456,11 @@ export async function callAIModel(
  * @param models 候选模型列表
  * @param messages 消息列表
  * @param options 调用选项（信号、回调、策略等）
+ *
+ * @deprecated v2.x: 此函数为早期实验性故障转移入口，未在生产代码路径中接入。
+ * 生产链路统一走 `BackoffCoordinator`（runChatSession → tryFallback → coordinate），
+ * 该函数绕过 keyRotator 与 BackoffCoordinator，仅由 modelFailover.test.ts 调用。
+ * 后续将被 BackoffCoordinator 公共方法取代，请勿在新代码中调用。
  */
 export async function callAIModelWithFailover(
   models: ModelCallConfig[],
@@ -1483,8 +1507,11 @@ export async function callAIModelWithFailover(
       return response;
     } catch (e: any) {
       lastError = e;
-      const errorCategory = (e as AIAPIError).category || 'unknown';
-      failoverManager.recordFailure(currentModel.id || '', e.message, errorCategory);
+      // 优先从 AIAPIError 获取分类，降级为 unknown
+      const errorCategory: AIAPIError['category'] =
+        (e instanceof AIAPIError && e.category) ||
+        (e?.category && typeof e.category === 'string' ? e.category : 'unknown');
+      failoverManager.recordFailure(currentModel.id || '', e.message || String(e), errorCategory);
 
       const nextModel = failoverManager.getNextModel(
         currentModel.id || '',

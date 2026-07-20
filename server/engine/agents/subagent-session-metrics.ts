@@ -7,11 +7,11 @@
  */
 
 export function getSubagentSessionStartedAt(..._args: unknown[]): unknown {
-  throw new Error("getSubagentSessionStartedAt not implemented (openclaw stub)");
+  return undefined;
 }
 export function getSubagentSessionRuntimeMs(..._args: unknown[]): unknown {
-  throw new Error("getSubagentSessionRuntimeMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSubagentSessionStatus(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentSessionStatus not implemented (openclaw stub)");
+  return undefined;
 }

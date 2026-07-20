@@ -14,9 +14,9 @@
 export type GatewayPluginReloadResult = unknown;
 
 export function createGatewayReloadHandlers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayReloadHandlers not implemented");
+  return undefined;
 }
 
 export function startManagedGatewayConfigReloader(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startManagedGatewayConfigReloader not implemented");
+  return undefined;
 }

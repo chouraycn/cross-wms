@@ -1,10 +1,90 @@
-// @ts-nocheck
 // Keep provider onboarding helpers dependency-light so bundled provider plugins
 // do not pull heavyweight runtime graphs at activation time.
 
 import { findNormalizedProviderKey } from "@cdf-know/model-catalog-core/provider-id";
-// import { resolvePrimaryStringValue } from "../../packages/normalization-core/src/string-coerce.js"; // TODO: 依赖模块未移植
-// import { ensureStaticModelAllowlistEntry } from "../agents/model-allowlist-entry.js"; // TODO: 依赖模块未移植
+
+// ==================== Local type stubs and function stubs for unported dependencies ====================
+
+/** Config type placeholder. */
+type OpenClawConfig = Record<string, unknown> & {
+  agents?: {
+    defaults?: {
+      model?: unknown;
+      mode?: unknown;
+      models?: Record<string, AgentModelEntryConfig>;
+    };
+    providers?: Record<string, unknown>;
+  };
+  models?: {
+    mode?: string;
+    providers?: Record<string, ModelProviderConfig>;
+  };
+};
+
+/** Model API type. TODO: 依赖模块未移植 */
+type ModelApi = string;
+
+/** Model definition config. TODO: 依赖模块未移植 */
+type ModelDefinitionConfig = {
+  id: string;
+  api?: ModelApi;
+  [key: string]: unknown;
+};
+
+/** Model provider config. TODO: 依赖模块未移植 */
+type ModelProviderConfig = {
+  models?: ModelDefinitionConfig[];
+  api?: ModelApi;
+  [key: string]: unknown;
+};
+
+/** Agent model entry config. TODO: 依赖模块未移植 */
+type AgentModelEntryConfig = {
+  provider?: string;
+  model?: string;
+  api?: ModelApi;
+  [key: string]: unknown;
+};
+
+/** Resolves the primary string value from nested config. TODO: 依赖模块未移植 */
+function resolvePrimaryStringValue(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+  return undefined;
+}
+
+/** Ensures a static model allowlist entry. TODO: 依赖模块未移植 */
+function ensureStaticModelAllowlistEntry(params: { cfg?: OpenClawConfig; modelRef?: string; defaultProvider?: string; provider?: string; model?: string; agentDir?: string }): OpenClawConfig {
+  return params.cfg ?? {};
+}
+
+/** Normalizes a provider catalog model id. TODO: 依赖模块未移植 */
+function normalizeConfiguredProviderCatalogModelId(providerId: string, modelId: string): string {
+  return `${providerId}/${modelId}`;
+}
+
+/** Normalizes agent model map for config. TODO: 依赖模块未移植 */
+function normalizeAgentModelMapForConfig(map: unknown): Record<string, AgentModelEntryConfig> {
+  if (map && typeof map === "object" && !Array.isArray(map)) {
+    return { ...(map as Record<string, AgentModelEntryConfig>) };
+  }
+  return {};
+}
+
+/** Normalizes agent model ref for config. TODO: 依赖模块未移植 */
+function normalizeAgentModelRefForConfig(ref: unknown): string | undefined {
+  if (typeof ref === "string" && ref.trim().length > 0) {
+    return ref.trim();
+  }
+  if (ref && typeof ref === "object" && !Array.isArray(ref)) {
+    const r = ref as Record<string, unknown>;
+    if (typeof r.provider === "string" && typeof r.model === "string") {
+      return `${r.provider}/${r.model}`;
+    }
+  }
+  return undefined;
+}
 // import { normalizeConfiguredProviderCatalogModelId } from "../agents/model-ref-shared.js"; // TODO: 依赖模块未移植
 // import {
 //   normalizeAgentModelMapForConfig,
@@ -251,6 +331,7 @@ export function withAgentModelAliases(
   for (const entry of aliases) {
     const normalized = normalizeAgentModelAliasEntry(entry);
     const modelRef = normalizeAgentModelRefForConfig(normalized.modelRef);
+    if (!modelRef) continue;
     next[modelRef] = {
       ...next[modelRef],
       ...(normalized.alias ? { alias: next[modelRef]?.alias ?? normalized.alias } : {}),

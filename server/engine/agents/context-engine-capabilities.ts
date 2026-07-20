@@ -1,11 +1,18 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/context-engine-capabilities.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Context engine capabilities resolution.
+ * In cross-wms the context engine infrastructure is not available,
+ * so resolveContextEngineCapabilities returns an empty capability set.
  */
 
-export function resolveContextEngineCapabilities(..._args: unknown[]): unknown {
-  throw new Error("resolveContextEngineCapabilities not implemented (openclaw stub)");
+/** Resolve context engine capabilities (returns empty in cross-wms). */
+export function resolveContextEngineCapabilities(..._args: unknown[]): {
+  supported: false;
+  reason: string;
+} {
+  return {
+    supported: false,
+    reason: "Context engine not available in cross-wms",
+  };
 }

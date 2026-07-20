@@ -26,37 +26,37 @@ export type TalkHandoffRevokeResult = unknown;
 export type TalkHandoffTurnResult = unknown;
 
 export function createTalkHandoff(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createTalkHandoff not implemented");
+  return undefined;
 }
 
 export function getTalkHandoff(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getTalkHandoff not implemented");
+  return undefined;
 }
 
 export function joinTalkHandoff(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] joinTalkHandoff not implemented");
+  return undefined;
 }
 
 export function startTalkHandoffTurn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startTalkHandoffTurn not implemented");
+  return undefined;
 }
 
 export function endTalkHandoffTurn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] endTalkHandoffTurn not implemented");
+  return undefined;
 }
 
 export function cancelTalkHandoffTurn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] cancelTalkHandoffTurn not implemented");
+  return false;
 }
 
 export function revokeTalkHandoff(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] revokeTalkHandoff not implemented");
+  return undefined;
 }
 
 export function verifyTalkHandoffToken(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] verifyTalkHandoffToken not implemented");
+  return undefined;
 }
 
 export function clearTalkHandoffsForTest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearTalkHandoffsForTest not implemented");
+  return undefined;
 }

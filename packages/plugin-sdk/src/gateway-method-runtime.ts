@@ -1,7 +1,4 @@
-// @ts-nocheck
 // Gateway method runtime helpers dispatch plugin calls through the in-process gateway.
-// import { dispatchGatewayMethodInProcessRaw } from "../gateway/server-plugins.js"; // TODO: 依赖模块未移植
-// import { getPluginRuntimeGatewayRequestScope } from "../plugins/runtime/gateway-request-scope.js"; // TODO: 依赖模块未移植
 
 /** Error envelope returned by in-process Gateway method dispatch. */
 export type GatewayMethodDispatchError = {
@@ -36,6 +33,33 @@ export type GatewayMethodDispatchOptions = {
   /** Maximum time to wait for Gateway dispatch before the runtime reports a timeout. */
   timeoutMs?: number;
 };
+
+/** Gateway request scope recorded by the plugin loader contract. */
+type GatewayRequestScope = {
+  gatewayMethodDispatchAllowed?: boolean;
+  pluginId?: string;
+};
+
+// TODO: 依赖模块未移植，暂用本地桩
+function getPluginRuntimeGatewayRequestScope(): GatewayRequestScope | undefined {
+  return undefined;
+}
+
+type DispatchRawOptions = {
+  disableSyntheticClient: boolean;
+  requireScopedClient: boolean;
+  expectFinal?: boolean;
+  timeoutMs?: number;
+};
+
+// TODO: 依赖模块未移植，暂用本地桩
+async function dispatchGatewayMethodInProcessRaw(
+  _method: string,
+  _params: unknown,
+  _options: DispatchRawOptions,
+): Promise<GatewayMethodDispatchResponse> {
+  throw new Error("dispatchGatewayMethodInProcessRaw: not implemented (dependency not ported)");
+}
 
 /**
  * Dispatch a Gateway control-plane method from an authenticated plugin request scope.

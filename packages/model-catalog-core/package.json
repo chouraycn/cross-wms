@@ -17,6 +17,10 @@
       "types": "./dist/provider-model-id-normalize.d.ts",
       "default": "./dist/provider-model-id-normalize.js"
     },
+    "./provider-model-id-normalization": {
+      "types": "./dist/provider-model-id-normalization.d.ts",
+      "default": "./dist/provider-model-id-normalization.js"
+    },
     "./model-catalog-types": {
       "types": "./dist/model-catalog-types.d.ts",
       "default": "./dist/model-catalog-types.js"

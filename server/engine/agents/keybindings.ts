@@ -9,9 +9,9 @@
 export type AppKeybinding = unknown;
 export type AppKeybindings = unknown;
 export class KeybindingsManager {
-  constructor(..._args: unknown[]) { throw new Error("KeybindingsManager not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function migrateKeybindingsConfig(..._args: unknown[]): unknown {
-  throw new Error("migrateKeybindingsConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export const KEYBINDINGS: unknown = undefined;

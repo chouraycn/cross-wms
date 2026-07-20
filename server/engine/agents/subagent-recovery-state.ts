@@ -7,20 +7,20 @@
  */
 
 export function isSubagentRecoveryWedgedEntry(..._args: unknown[]): unknown {
-  throw new Error("isSubagentRecoveryWedgedEntry not implemented (openclaw stub)");
+  return false;
 }
 export function formatSubagentRecoveryWedgedReason(..._args: unknown[]): unknown {
-  throw new Error("formatSubagentRecoveryWedgedReason not implemented (openclaw stub)");
+  return "";
 }
 export function evaluateSubagentRecoveryGate(..._args: unknown[]): unknown {
-  throw new Error("evaluateSubagentRecoveryGate not implemented (openclaw stub)");
+  return undefined;
 }
 export function markSubagentRecoveryAttempt(..._args: unknown[]): unknown {
-  throw new Error("markSubagentRecoveryAttempt not implemented (openclaw stub)");
+  return undefined;
 }
 export function markSubagentRecoveryWedged(..._args: unknown[]): unknown {
-  throw new Error("markSubagentRecoveryWedged not implemented (openclaw stub)");
+  return undefined;
 }
 export function clearWedgedSubagentRecoveryAbort(..._args: unknown[]): unknown {
-  throw new Error("clearWedgedSubagentRecoveryAbort not implemented (openclaw stub)");
+  return undefined;
 }

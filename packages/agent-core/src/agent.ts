@@ -5,15 +5,13 @@ import type {
   AgentRunParams,
   AgentRunResult,
   AgentStatus,
-  AgentEventType,
   AgentEvent,
   AgentMessage,
   ToolCall,
   TokenUsage,
   AgentRuntimeDeps,
-  ReasoningStep,
 } from './types';
-import { AgentLoop } from './agent-loop';
+import { runAgentLoop, type AgentEventSink } from './agent-loop';
 import { Tracer } from './tracing';
 
 const DEFAULT_TEMPERATURE = parseFloat(process.env.CROSS_WMS_DEFAULT_TEMPERATURE || '0.7');
@@ -23,13 +21,17 @@ const DEFAULT_MODEL = process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4';
 
 export interface AgentEvents {
   start: [event: AgentEvent];
-  token: [event: AgentEvent];
-  thinking: [event: AgentEvent];
-  tool_call: [event: AgentEvent];
-  tool_result: [event: AgentEvent];
-  iteration: [event: AgentEvent];
-  finish: [event: AgentEvent];
-  error: [event: AgentEvent];
+  agent_start: [event: AgentEvent];
+  agent_end: [event: AgentEvent];
+  turn_start: [event: AgentEvent];
+  turn_end: [event: AgentEvent];
+  message_start: [event: AgentEvent];
+  message_end: [event: AgentEvent];
+  message_update: [event: AgentEvent];
+  tool_execution_start: [event: AgentEvent];
+  tool_execution_end: [event: AgentEvent];
+  finish: [result: AgentRunResult];
+  error: [error: Error];
   status_change: [status: AgentStatus];
 }
 
@@ -81,90 +83,80 @@ export class Agent extends EventEmitter<AgentEvents> {
       model: params.model || this.options.model,
     });
 
-    this.emit('start', {
-      type: 'start',
-      runId,
-      timestamp: startTime,
-      data: { model: params.model || this.options.model },
-    });
+    const emit: AgentEventSink = (event: AgentEvent) => {
+      this.emit(event.type as keyof AgentEvents, event as never);
+    };
+
+    this.emit('start', { type: "agent_start" });
 
     try {
-      const loop = new AgentLoop({
-        runtime: this.runtime,
-        model: params.model || this.options.model || DEFAULT_MODEL,
-        maxIterations: this.options.maxIterations ?? 10,
-        temperature: this.options.temperature ?? DEFAULT_TEMPERATURE,
-        maxTokens: this.options.maxTokens ?? DEFAULT_MAX_TOKENS,
-        topP: this.options.topP ?? DEFAULT_TOP_P,
-        reasoningEnabled: this.options.reasoningEnabled ?? false,
-        onToken: (content: string) => {
-          this.emit('token', {
-            type: 'token',
-            runId,
-            timestamp: Date.now(),
-            data: { content },
-          });
-        },
-        onThinking: (content: string) => {
-          this.emit('thinking', {
-            type: 'thinking',
-            runId,
-            timestamp: Date.now(),
-            data: { content },
-          });
-        },
-        onToolCall: (toolCalls: ToolCall[]) => {
-          this.emit('tool_call', {
-            type: 'tool_call',
-            runId,
-            timestamp: Date.now(),
-            data: { toolCalls },
-          });
-        },
-        onIteration: (iteration: number) => {
-          this.emit('iteration', {
-            type: 'iteration',
-            runId,
-            timestamp: Date.now(),
-            data: { iteration },
-          });
-        },
-        signal: params.signal,
-      });
+      // If runtime provides streamSimple, use it via a streamFn wrapper
+      const streamFn = this.runtime?.streamSimple
+        ? async (model: unknown, context: unknown, options: unknown) => {
+            const gen = this.runtime.streamSimple!(model, context, options);
+            const chunks: string[] = [];
+            let result = '';
+            for await (const chunk of gen) {
+              if (chunk.type === 'token' && chunk.content) {
+                chunks.push(chunk.content);
+              } else if (chunk.type === 'finish' && chunk.content) {
+                result = chunk.content;
+              }
+            }
+            return { result: () => ({ content: result || chunks.join('') }) };
+          }
+        : undefined;
 
-      const result = await loop.execute({
-        messages: params.messages,
-        tools: params.tools || this.options.tools || [],
-        systemPrompt: params.systemPrompt || this.options.systemPrompt,
-      });
+      const messages = await runAgentLoop(
+        params.messages,
+        {
+          systemPrompt: params.systemPrompt || this.options.systemPrompt || '',
+          messages: params.messages,
+          tools: params.tools as unknown[] as undefined extends (typeof params.tools)[] ? undefined : never,
+        },
+        {
+          model: { id: params.model || this.options.model || DEFAULT_MODEL, name: params.model || this.options.model || DEFAULT_MODEL, api: "openai", provider: "default" },
+          temperature: this.options.temperature ?? DEFAULT_TEMPERATURE,
+          maxTokens: this.options.maxTokens ?? DEFAULT_MAX_TOKENS,
+          convertToLlm: async (msgs) => msgs as never[],
+        },
+        emit,
+        params.signal,
+        streamFn as any,
+        this.runtime as any,
+      );
 
       const duration = Date.now() - startTime;
-      this.tracer.endSpan(span.id, { iterations: result.iterations });
+      this.tracer.endSpan(span.id, {});
+
+      const lastMessage = messages[messages.length - 1];
+      const content = lastMessage && "content" in lastMessage
+        ? (typeof lastMessage.content === "string" ? lastMessage.content : "")
+        : "";
 
       this.emit('finish', {
-        type: 'finish',
-        runId,
-        timestamp: Date.now(),
-        data: { content: result.content, duration, iterations: result.iterations },
+        content,
+        messages,
+        usage: undefined,
+        duration,
+        iterations: 1,
       });
 
       this.setStatus('idle');
       this.currentRunId = null;
 
       return {
-        ...result,
+        content,
+        messages,
+        usage: undefined,
         duration,
+        iterations: 1,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
       this.tracer.failSpan(span.id, (error as Error).message);
 
-      this.emit('error', {
-        type: 'error',
-        runId,
-        timestamp: Date.now(),
-        data: { error: (error as Error).message },
-      });
+      this.emit('error', error as Error);
 
       this.setStatus('error');
       this.currentRunId = null;

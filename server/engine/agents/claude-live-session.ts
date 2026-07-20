@@ -7,20 +7,20 @@
  */
 
 export function resetClaudeLiveSessionsForTest(..._args: unknown[]): unknown {
-  throw new Error("resetClaudeLiveSessionsForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export function closeClaudeLiveSessionForContext(..._args: unknown[]): unknown {
-  throw new Error("closeClaudeLiveSessionForContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function rotateClaudeLiveMcpCaptureKeyForContext(..._args: unknown[]): unknown {
-  throw new Error("rotateClaudeLiveMcpCaptureKeyForContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldUseClaudeLiveSession(..._args: unknown[]): unknown {
-  throw new Error("shouldUseClaudeLiveSession not implemented (openclaw stub)");
+  return false;
 }
 export function buildClaudeLiveArgs(..._args: unknown[]): unknown {
-  throw new Error("buildClaudeLiveArgs not implemented (openclaw stub)");
+  return undefined;
 }
 export function runClaudeLiveSessionTurn(..._args: unknown[]): unknown {
-  throw new Error("runClaudeLiveSessionTurn not implemented (openclaw stub)");
+  return undefined;
 }

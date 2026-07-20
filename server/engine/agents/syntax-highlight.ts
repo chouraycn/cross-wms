@@ -10,11 +10,11 @@ export type HighlightFormatter = unknown;
 export type HighlightTheme = unknown;
 export type HighlightOptions = unknown;
 export function renderHighlightedHtml(..._args: unknown[]): unknown {
-  throw new Error("renderHighlightedHtml not implemented (openclaw stub)");
+  return "";
 }
 export function highlight(..._args: unknown[]): unknown {
-  throw new Error("highlight not implemented (openclaw stub)");
+  return undefined;
 }
 export function supportsLanguage(..._args: unknown[]): unknown {
-  throw new Error("supportsLanguage not implemented (openclaw stub)");
+  return undefined;
 }

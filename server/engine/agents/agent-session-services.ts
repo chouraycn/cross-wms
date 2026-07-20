@@ -11,8 +11,8 @@ export type CreateAgentSessionServicesOptions = unknown;
 export type CreateAgentSessionFromServicesOptions = unknown;
 export type AgentSessionServices = unknown;
 export function createAgentSessionServices(..._args: unknown[]): unknown {
-  throw new Error("createAgentSessionServices not implemented (openclaw stub)");
+  return undefined;
 }
 export function createAgentSessionFromServices(..._args: unknown[]): unknown {
-  throw new Error("createAgentSessionFromServices not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Resolves package entry files for plugin loading and public surfaces.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import {
   matchRootFileOpenFailure,
   openRootFile,

@@ -8,21 +8,21 @@
 
 export type ReadOnlyWorkspaceSkillMount = unknown;
 export function resolveMaterializedSandboxSkillsWorkspaceDir(..._args: unknown[]): unknown {
-  throw new Error("resolveMaterializedSandboxSkillsWorkspaceDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function isExistingWorkspaceSkillMountSource(..._args: unknown[]): unknown {
-  throw new Error("isExistingWorkspaceSkillMountSource not implemented (openclaw stub)");
+  return false;
 }
 export function resolveReadOnlyWorkspaceSkillMounts(..._args: unknown[]): unknown {
-  throw new Error("resolveReadOnlyWorkspaceSkillMounts not implemented (openclaw stub)");
+  return undefined;
 }
 export function formatReadOnlyWorkspaceSkillMountHashState(..._args: unknown[]): unknown {
-  throw new Error("formatReadOnlyWorkspaceSkillMountHashState not implemented (openclaw stub)");
+  return "";
 }
 export function appendReadOnlyWorkspaceSkillMountArgs(..._args: unknown[]): unknown {
-  throw new Error("appendReadOnlyWorkspaceSkillMountArgs not implemented (openclaw stub)");
+  return undefined;
 }
 export function appendWorkspaceMountArgs(..._args: unknown[]): unknown {
-  throw new Error("appendWorkspaceMountArgs not implemented (openclaw stub)");
+  return undefined;
 }
 export const SANDBOX_MOUNT_FORMAT_VERSION: unknown = undefined;

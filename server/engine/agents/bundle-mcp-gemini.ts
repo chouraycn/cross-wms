@@ -1,14 +1,23 @@
 /**
  * 移植自 openclaw/src/agents/cli-runner/bundle-mcp-gemini.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Gemini CLI bundle MCP adapter that writes temporary system settings files.
+ * In cross-wms the Gemini CLI integration is not available,
+ * so both functions throw descriptive errors when invoked at runtime.
  */
 
-export function writeGeminiSystemSettings(..._args: unknown[]): unknown {
-  throw new Error("writeGeminiSystemSettings not implemented (openclaw stub)");
+/** Writes merged Gemini system settings and returns env plus cleanup hook. */
+export async function writeGeminiSystemSettings(
+  _mergedConfig: unknown,
+  _inheritedEnv?: Record<string, string>,
+): Promise<{ env: Record<string, string>; cleanup: () => Promise<void> }> {
+  throw new Error("Gemini system settings are not supported in cross-wms");
 }
-export function writeGeminiMcpCaptureSettings(..._args: unknown[]): unknown {
-  throw new Error("writeGeminiMcpCaptureSettings not implemented (openclaw stub)");
+
+/** Writes per-attempt Gemini settings with the active loopback capture token. */
+export async function writeGeminiMcpCaptureSettings(_params: {
+  inheritedEnv: Record<string, string> | undefined;
+  captureKey: string;
+}): Promise<{ env: Record<string, string>; cleanup: () => Promise<void> }> {
+  throw new Error("Gemini MCP capture settings are not supported in cross-wms");
 }

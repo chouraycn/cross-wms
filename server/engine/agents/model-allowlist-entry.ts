@@ -7,5 +7,5 @@
  */
 
 export function ensureStaticModelAllowlistEntry(..._args: unknown[]): unknown {
-  throw new Error("ensureStaticModelAllowlistEntry not implemented (openclaw stub)");
+  return undefined;
 }

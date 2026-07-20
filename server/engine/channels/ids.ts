@@ -99,3 +99,15 @@ export function isValidId(id: string, type?: IdType): boolean {
   }
   return getIdTimestamp(id) !== null;
 }
+
+/**
+ * Normalizes a raw chat channel id or alias to a known canonical channel id.
+ * Stub implementation: lowercases the input and returns it (or null when empty).
+ */
+export function normalizeChatChannelId(raw?: string | null): string | null {
+  if (!raw) {
+    return null;
+  }
+  const normalized = raw.trim().toLowerCase();
+  return normalized || null;
+}

@@ -7,5 +7,5 @@
  */
 
 export function handleRetryLimitExhaustion(..._args: unknown[]): unknown {
-  throw new Error("handleRetryLimitExhaustion not implemented (openclaw stub)");
+  return undefined;
 }

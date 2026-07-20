@@ -12,13 +12,13 @@
  */
 
 export function formatBonjourInstanceName(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] formatBonjourInstanceName not implemented");
+  return "";
 }
 
 export function resolveBonjourCliPath(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveBonjourCliPath not implemented");
+  return undefined;
 }
 
 export async function resolveTailnetDnsHint(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveTailnetDnsHint not implemented");
+  return Promise.resolve(undefined);
 }

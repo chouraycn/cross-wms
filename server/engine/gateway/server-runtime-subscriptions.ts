@@ -12,5 +12,5 @@
  */
 
 export function startGatewayEventSubscriptions(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayEventSubscriptions not implemented");
+  return undefined;
 }

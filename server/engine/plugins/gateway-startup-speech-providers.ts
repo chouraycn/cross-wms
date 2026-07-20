@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Collects startup speech provider metadata from plugin manifests.
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { resolveEffectiveTtsConfig } from './_stub_parent__tts__tts_config.js';
+import { resolveEffectiveTtsConfig } from './_parent__tts__tts_config.js';
 
 const TTS_PROVIDER_CONFIG_RESERVED_KEYS = new Set([
   "auto",

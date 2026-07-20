@@ -7,16 +7,16 @@
  */
 
 export function buildPinnedWritePlan(..._args: unknown[]): unknown {
-  throw new Error("buildPinnedWritePlan not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildPinnedMkdirpPlan(..._args: unknown[]): unknown {
-  throw new Error("buildPinnedMkdirpPlan not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildPinnedRemovePlan(..._args: unknown[]): unknown {
-  throw new Error("buildPinnedRemovePlan not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildPinnedRenamePlan(..._args: unknown[]): unknown {
-  throw new Error("buildPinnedRenamePlan not implemented (openclaw stub)");
+  return undefined;
 }
 export const SANDBOX_PINNED_MUTATION_PYTHON_CANDIDATES: unknown = undefined;
 export const SANDBOX_PINNED_MUTATION_PYTHON: unknown = undefined;

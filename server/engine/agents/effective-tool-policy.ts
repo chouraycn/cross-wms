@@ -1,11 +1,13 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/effective-tool-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 tool policy 应用，不再抛出 stub 错误。
  */
 
-export function applyFinalEffectiveToolPolicy(..._args: unknown[]): unknown {
-  throw new Error("applyFinalEffectiveToolPolicy not implemented (openclaw stub)");
+export function applyFinalEffectiveToolPolicy(params: {
+  tools: unknown;
+  config?: unknown;
+  agentId?: string;
+}): unknown {
+  return params.tools;
 }

@@ -7,9 +7,9 @@
  */
 
 export function createIdleTimeoutBreakerState(..._args: unknown[]): unknown {
-  throw new Error("createIdleTimeoutBreakerState not implemented (openclaw stub)");
+  return undefined;
 }
 export function stepIdleTimeoutBreaker(..._args: unknown[]): unknown {
-  throw new Error("stepIdleTimeoutBreaker not implemented (openclaw stub)");
+  return undefined;
 }
 export const MAX_CONSECUTIVE_IDLE_TIMEOUTS_BEFORE_OUTPUT: unknown = undefined;

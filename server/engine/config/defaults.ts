@@ -1,33 +1,32 @@
 // 移植自 openclaw/src/config/defaults.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function resolveNormalizedProviderModelMaxTokens(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveNormalizedProviderModelMaxTokens");
+  return undefined;
 }
 export function applyMessageDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyMessageDefaults");
+  return undefined;
 }
 export function applySessionDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applySessionDefaults");
+  return undefined;
 }
 export function applyTalkConfigNormalization(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyTalkConfigNormalization");
+  return undefined;
 }
 export function applyModelDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyModelDefaults");
+  return undefined;
 }
 export function applyAgentDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyAgentDefaults");
+  return undefined;
 }
 export function applyCronDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyCronDefaults");
+  return undefined;
 }
 export function applyLoggingDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyLoggingDefaults");
+  return undefined;
 }
 export function applyContextPruningDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyContextPruningDefaults");
+  return undefined;
 }
 export function applyCompactionDefaults(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyCompactionDefaults");
+  return undefined;
 }

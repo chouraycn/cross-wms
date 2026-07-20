@@ -7,11 +7,11 @@
  */
 
 export function getTextContent(..._args: unknown[]): unknown {
-  throw new Error("getTextContent not implemented (openclaw stub)");
+  return undefined;
 }
 export function expectReadWriteEditTools(..._args: unknown[]): unknown {
-  throw new Error("expectReadWriteEditTools not implemented (openclaw stub)");
+  return undefined;
 }
 export function expectReadWriteTools(..._args: unknown[]): unknown {
-  throw new Error("expectReadWriteTools not implemented (openclaw stub)");
+  return undefined;
 }

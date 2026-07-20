@@ -1,14 +1,42 @@
 /**
  * 移植自 openclaw/src/agents/models-config-state.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Process-wide models.json coordination state.
+ * Uses Symbol.for to keep write locks and ready-cache shared across dynamic imports.
  */
 
-export type ModelsJsonReadyResult = unknown;
-export type ModelsJsonReadyState = unknown;
-export const MODELS_JSON_STATE: unknown = undefined;
-export function resetModelsJsonReadyCacheForTest(..._args: unknown[]): unknown {
-  throw new Error("resetModelsJsonReadyCacheForTest not implemented (openclaw stub)");
+export type ModelsJsonReadyResult = {
+  agentDir: string;
+  wrote: boolean;
+};
+
+export type ModelsJsonReadyState = {
+  fingerprint: string;
+  result: ModelsJsonReadyResult;
+};
+
+type ModelsJsonState = {
+  writeLocks: Map<string, Promise<void>>;
+  readyCache: Map<string, Promise<ModelsJsonReadyState>>;
+};
+
+const MODELS_JSON_STATE_KEY = Symbol.for("openclaw.modelsJsonState");
+
+export const MODELS_JSON_STATE = (() => {
+  const globalState = globalThis as typeof globalThis & {
+    [MODELS_JSON_STATE_KEY]?: ModelsJsonState;
+  };
+  if (!globalState[MODELS_JSON_STATE_KEY]) {
+    globalState[MODELS_JSON_STATE_KEY] = {
+      writeLocks: new Map<string, Promise<void>>(),
+      readyCache: new Map<string, Promise<ModelsJsonReadyState>>(),
+    };
+  }
+  return globalState[MODELS_JSON_STATE_KEY];
+})();
+
+/** Clear models.json write/ready caches for tests. */
+export function resetModelsJsonReadyCacheForTest(): void {
+  MODELS_JSON_STATE.writeLocks.clear();
+  MODELS_JSON_STATE.readyCache.clear();
 }

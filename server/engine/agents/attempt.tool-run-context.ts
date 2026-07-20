@@ -7,5 +7,5 @@
  */
 
 export function buildEmbeddedAttemptToolRunContext(..._args: unknown[]): unknown {
-  throw new Error("buildEmbeddedAttemptToolRunContext not implemented (openclaw stub)");
+  return undefined;
 }

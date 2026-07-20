@@ -7,8 +7,8 @@
  */
 
 export function resolveLlmIdleTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveLlmIdleTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function streamWithIdleTimeout(..._args: unknown[]): unknown {
-  throw new Error("streamWithIdleTimeout not implemented (openclaw stub)");
+  return undefined;
 }

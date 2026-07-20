@@ -18,9 +18,8 @@ export function registerChannelsCli(program: Command): void {
     .description("List configured channels")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw channels list: not supported in stub mode (channels/* not ported).",
-      );
+      console.error('openclaw channels list is not available in cross-wms');
+      process.exit(1);
     });
 
   channels
@@ -29,9 +28,8 @@ export function registerChannelsCli(program: Command): void {
     .option("--channel <id>", "Channel id")
     .option("--account <id>", "Account id")
     .action(() => {
-      throw new Error(
-        "openclaw channels login: not supported in stub mode (channels/* not ported).",
-      );
+      console.error('openclaw channels login is not available in cross-wms');
+      process.exit(1);
     });
 
   channels
@@ -40,14 +38,12 @@ export function registerChannelsCli(program: Command): void {
     .option("--channel <id>", "Channel id")
     .option("--account <id>", "Account id")
     .action(() => {
-      throw new Error(
-        "openclaw channels logout: not supported in stub mode (channels/* not ported).",
-      );
+      console.error('openclaw channels logout is not available in cross-wms');
+      process.exit(1);
     });
 
   channels.action(() => {
-    throw new Error(
-      "openclaw channels: not supported in stub mode (channels/* not ported).",
-    );
+    console.error('openclaw channels is not available in cross-wms');
+      process.exit(1);
   });
 }

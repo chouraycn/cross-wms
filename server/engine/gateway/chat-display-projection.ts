@@ -12,35 +12,35 @@
  */
 
 export function resolveEffectiveChatHistoryMaxChars(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveEffectiveChatHistoryMaxChars not implemented");
+  return undefined;
 }
 
 export function isToolHistoryBlockType(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isToolHistoryBlockType not implemented");
+  return false;
 }
 
 export function augmentChatHistoryWithCanvasBlocks(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] augmentChatHistoryWithCanvasBlocks not implemented");
+  return undefined;
 }
 
 export function sanitizeChatHistoryMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] sanitizeChatHistoryMessages not implemented");
+  return undefined;
 }
 
 export function dropPreSessionStartAnnouncePairs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] dropPreSessionStartAnnouncePairs not implemented");
+  return undefined;
 }
 
 export function projectChatDisplayMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] projectChatDisplayMessages not implemented");
+  return undefined;
 }
 
 export function projectRecentChatDisplayMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] projectRecentChatDisplayMessages not implemented");
+  return undefined;
 }
 
 export function projectChatDisplayMessage(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] projectChatDisplayMessage not implemented");
+  return undefined;
 }
 
 export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS: any = undefined;

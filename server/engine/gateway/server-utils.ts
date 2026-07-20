@@ -12,9 +12,9 @@
  */
 
 export function normalizeVoiceWakeTriggers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeVoiceWakeTriggers not implemented");
+  return undefined;
 }
 
 export function formatError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] formatError not implemented");
+  return "";
 }

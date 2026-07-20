@@ -1,13 +1,12 @@
-// @ts-nocheck
 /** Normalizes provider auth input metadata collected from plugin setup flows. */
 import {
   normalizeOptionalLowercaseString,
   normalizeStringifiedOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import { resolveEnvApiKey } from "../agents/model-auth-env.js";
 import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import type { SecretInput } from "../config/types.secrets.js";
-import { normalizeSecretInput } from './_stub_parent__utils__normalize_secret_input.js';
+import { normalizeSecretInput } from './_parent__utils__normalize_secret_input.js';
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { resolveSecretInputModeForEnvSelection } from "./provider-auth-mode.js";
 import {

@@ -1,29 +1,39 @@
-// @ts-nocheck
 // Provider auth runtime helpers implement OAuth loopback, token exchange, and auth persistence.
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-// import { ensureAuthProfileStore } from "../agents/auth-profiles/store.js"; // TODO: 依赖模块未移植
-// import { resolveApiKeyForProvider as resolveModelApiKeyForProvider } from "../agents/model-auth.js"; // TODO: 依赖模块未移植
-// import { normalizeProviderId } from "../agents/model-selection.js"; // TODO: 依赖模块未移植
-// import type { OpenClawConfig } from "../config/config.js"; // TODO: 依赖模块未移植
-// import { resolveTimerTimeoutMs } from "../shared/number-coercion.js"; // TODO: 依赖模块未移植
 
-// export { resolveEnvApiKey } from "../agents/model-auth-env.js"; // TODO: 依赖模块未移植
-// export {
-//   collectProviderApiKeysForExecution,
-//   executeWithApiKeyRotation,
-// } from "../agents/api-key-rotation.js"; // TODO: 依赖模块未移植
-// export { NON_ENV_SECRETREF_MARKER } from "../agents/model-auth-markers.js"; // TODO: 依赖模块未移植
-// export {
-//   requireApiKey,
-//   resolveAwsSdkEnvVarName,
-//   type ResolvedProviderAuth,
-// } from "../agents/model-auth-runtime-shared.js"; // TODO: 依赖模块未移植
-// export type { ProviderPreparedRuntimeAuth } from "../plugins/types.js"; // TODO: 依赖模块未移植
-// export type { ResolvedProviderRuntimeAuth } from "../plugins/runtime/model-auth-types.js"; // TODO: 依赖模块未移植
+/** Config type placeholder. */
+type OpenClawConfig = Record<string, unknown>;
+
+// TODO: 依赖模块未移植，暂用本地桩
+function ensureAuthProfileStore(_agentDir: string, _options: { config?: OpenClawConfig; readOnly?: boolean }): { profiles: Record<string, { provider?: string; type?: string; accountId?: string }> } {
+  return { profiles: {} };
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function normalizeProviderId(provider: string): string {
+  return provider;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function resolveTimerTimeoutMs(value: number, _min: number): number {
+  return value;
+}
+
+/** Auth profile store for runtime model auth. */
+type RuntimeModelAuthModule = {
+  resolveApiKeyForProvider?: (params: unknown) => Promise<unknown>;
+  getRuntimeAuthForModel?: (params: unknown) => Promise<unknown>;
+};
+
+/** Resolve API key for provider function type. */
+type ResolveApiKeyForProvider = (params: unknown) => Promise<unknown>;
+
+/** Get runtime auth for model function type. */
+type GetRuntimeAuthForModel = (params: unknown) => Promise<unknown>;
 
 /**
  * OAuth authorization code and state captured by the local callback listener.
@@ -49,7 +59,7 @@ export function resolveProviderAuthProfileMetadata(params: {
   profileId?: string;
   agentDir?: string;
 }): ProviderAuthProfileMetadata {
-  const store = ensureAuthProfileStore(params.agentDir, {
+  const store = ensureAuthProfileStore(params.agentDir ?? "", {
     config: params.cfg,
     readOnly: true,
   });
@@ -57,7 +67,7 @@ export function resolveProviderAuthProfileMetadata(params: {
   const entry = params.profileId
     ? ([params.profileId, store.profiles[params.profileId]] as const)
     : Object.entries(store.profiles).find(
-        ([, profile]) => normalizeProviderId(profile.provider) === normalizedProvider,
+        ([, profile]) => normalizeProviderId(profile.provider ?? "") === normalizedProvider,
       );
   const [profileId, profile] = entry ?? [];
   if (!profile) {
@@ -69,14 +79,8 @@ export function resolveProviderAuthProfileMetadata(params: {
   };
 }
 
-// IdP-host allowlist for CORS echo on the loopback OAuth callback. Plugins
-// pass the hosts that may legitimately issue preflights against the redirect
-// URI; everything else gets a 204 with no `Access-Control-Allow-*` headers,
-// which is safe for normal browser navigation but blocks cross-origin script
-// reads. The empty allowlist (default) leaves the legacy permissive SDK
-// behavior in place for existing callers.
+// IdP-host allowlist for CORS echo on the loopback OAuth callback.
 export function buildOAuthCallbackOriginResolver(
-  /** HTTPS IdP hosts allowed to receive a CORS echo from the loopback callback. */
   allowedHosts: readonly string[] | undefined,
 ): (originHeader: string | string[] | undefined) => string | undefined {
   if (!allowedHosts || allowedHosts.length === 0) {
@@ -116,12 +120,9 @@ export function generateOAuthState(): string {
  * Parses a pasted OAuth redirect URL into callback code/state fields.
  */
 export function parseOAuthCallbackInput(
-  /** Full redirect URL pasted by the operator after manual OAuth completion. */
   input: string,
   messages: {
-    /** Override for URLs that omit the state query parameter. */
     missingState?: string;
-    /** Override for values that are not parseable redirect URLs. */
     invalidInput?: string;
   } = {},
 ): OAuthCallbackResult | { error: string } {
@@ -150,27 +151,15 @@ export function parseOAuthCallbackInput(
  * Starts a temporary loopback HTTP listener and waits for a validated OAuth callback.
  */
 export async function waitForLocalOAuthCallback(params: {
-  /** State token that the callback must echo before the listener resolves. */
   expectedState: string;
-  /** Maximum wait time before the listener rejects. */
   timeoutMs: number;
-  /** Loopback port to bind for the temporary callback server. */
   port: number;
-  /** URL path accepted as the OAuth callback endpoint. */
   callbackPath: string;
-  /** Redirect URI shown in progress messages and provider setup flows. */
   redirectUri: string;
-  /** HTML success heading rendered after a valid callback. */
   successTitle: string;
-  /** Optional progress message emitted once the listener starts. */
   progressMessage?: string;
-  /** Loopback hostname to bind; defaults to localhost. */
   hostname?: string;
-  /** Progress callback invoked after the server begins listening. */
   onProgress?: (message: string) => void;
-  /**
-   * IdP hosts allowed to receive CORS echo on loopback callback preflights.
-   */
   corsOriginAllowlist?: readonly string[];
 }): Promise<OAuthCallbackResult> {
   const hostname = params.hostname ?? "localhost";
@@ -304,8 +293,6 @@ function applyOAuthCallbackCorsHeaders(
     res.setHeader("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
   }
   if (resolveOrigin !== undefined && !origin) {
-    // With an allowlist present, untrusted origins receive a bare 204 preflight
-    // response so browser navigation still works but scripts cannot read it.
     return;
   }
 
@@ -339,10 +326,6 @@ function escapeHtmlText(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// type ResolveApiKeyForProvider = typeof import("../agents/model-auth.js").resolveApiKeyForProvider; // TODO: 依赖模块未移植
-// type GetRuntimeAuthForModel =
-//   typeof import("../plugins/runtime/runtime-model-auth.runtime.js").getRuntimeAuthForModel; // TODO: 依赖模块未移植
-// type RuntimeModelAuthModule = typeof import("../plugins/runtime/runtime-model-auth.runtime.js"); // TODO: 依赖模块未移植
 const RUNTIME_MODEL_AUTH_CANDIDATES = [
   "./runtime-model-auth.runtime",
   "../plugins/runtime/runtime-model-auth.runtime",
@@ -370,14 +353,13 @@ async function loadRuntimeModelAuthModule(): Promise<RuntimeModelAuthModule> {
  * Resolves provider API-key auth through the runtime auth module when available.
  */
 export async function resolveApiKeyForProvider(
-  /** Provider auth lookup params forwarded to the runtime auth module. */
   params: Parameters<ResolveApiKeyForProvider>[0],
 ): Promise<Awaited<ReturnType<ResolveApiKeyForProvider>>> {
   const runtimeAuth = await loadRuntimeModelAuthModule();
   const resolveApiKeyForProviderLocal =
     typeof runtimeAuth.resolveApiKeyForProvider === "function"
       ? runtimeAuth.resolveApiKeyForProvider
-      : resolveModelApiKeyForProvider;
+      : (_params: unknown) => Promise.resolve(undefined);
   return resolveApiKeyForProviderLocal(params);
 }
 
@@ -385,10 +367,9 @@ export async function resolveApiKeyForProvider(
  * Resolves the prepared runtime auth payload for a concrete model request.
  */
 export async function getRuntimeAuthForModel(
-  /** Concrete model auth request forwarded to the runtime auth module. */
   params: Parameters<GetRuntimeAuthForModel>[0],
 ): Promise<Awaited<ReturnType<GetRuntimeAuthForModel>>> {
   const { getRuntimeAuthForModel: getRuntimeAuthForModelLocal } =
     await loadRuntimeModelAuthModule();
-  return getRuntimeAuthForModelLocal(params);
+  return getRuntimeAuthForModelLocal!(params);
 }

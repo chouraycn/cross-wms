@@ -7,8 +7,8 @@
  */
 
 export function redactRunIdentifier(..._args: unknown[]): unknown {
-  throw new Error("redactRunIdentifier not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveRunWorkspaceDir(..._args: unknown[]): unknown {
-  throw new Error("resolveRunWorkspaceDir not implemented (openclaw stub)");
+  return undefined;
 }

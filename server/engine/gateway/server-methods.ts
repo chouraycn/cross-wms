@@ -12,7 +12,7 @@
  */
 
 export async function handleGatewayRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleGatewayRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const coreGatewayHandlers: any = undefined;

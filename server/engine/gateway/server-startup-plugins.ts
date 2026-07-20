@@ -12,17 +12,17 @@
  */
 
 export function resolveGatewayStartupMaintenanceConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayStartupMaintenanceConfig not implemented");
+  return undefined;
 }
 
 export async function prepareGatewayPluginBootstrap(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] prepareGatewayPluginBootstrap not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function warnUnregisteredConfiguredMemoryEmbeddingProviders(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] warnUnregisteredConfiguredMemoryEmbeddingProviders not implemented");
+  return undefined;
 }
 
 export async function loadGatewayStartupPluginRuntime(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] loadGatewayStartupPluginRuntime not implemented");
+  return Promise.resolve(undefined);
 }

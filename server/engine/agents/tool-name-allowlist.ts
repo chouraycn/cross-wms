@@ -1,21 +1,62 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/tool-name-allowlist.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Builds session tool allowlists from registered and core tool names.
  */
 
-export function collectAllowedToolNames(..._args: unknown[]): unknown {
-  throw new Error("collectAllowedToolNames not implemented (openclaw stub)");
+/**
+ * Built-in tools that remain present in the embedded runtime even when
+ * execution routes through custom tool definitions.
+ */
+export const AGENT_RESERVED_TOOL_NAMES = ["bash", "edit", "find", "grep", "ls", "read", "write"];
+
+function addName(names: Set<string>, value: unknown): void {
+  if (typeof value !== "string") {
+    return;
+  }
+  const trimmed = value.trim();
+  if (trimmed) {
+    names.add(trimmed);
+  }
 }
-export function collectRegisteredToolNames(..._args: unknown[]): unknown {
-  throw new Error("collectRegisteredToolNames not implemented (openclaw stub)");
+
+export function collectAllowedToolNames(params: {
+  tools: Array<{ name?: string }>;
+  clientTools?: Array<{ function?: { name?: string } }>;
+}): Set<string> {
+  const names = new Set<string>();
+  for (const tool of params.tools) {
+    addName(names, tool.name);
+  }
+  for (const tool of params.clientTools ?? []) {
+    addName(names, tool.function?.name);
+  }
+  return names;
 }
-export function collectCoreBuiltinToolNames(..._args: unknown[]): unknown {
-  throw new Error("collectCoreBuiltinToolNames not implemented (openclaw stub)");
+
+/** Collect the exact tool names registered with the embedded agent for this session. */
+export function collectRegisteredToolNames(tools: Array<{ name?: string }>): Set<string> {
+  const names = new Set<string>();
+  for (const tool of tools) {
+    addName(names, tool.name);
+  }
+  return names;
 }
-export function toSessionToolAllowlist(..._args: unknown[]): unknown {
-  throw new Error("toSessionToolAllowlist not implemented (openclaw stub)");
+
+export function collectCoreBuiltinToolNames(
+  tools: Array<{ name?: string }>,
+  options?: { isPluginTool?: (tool: { name?: string }) => boolean },
+): Set<string> {
+  const names = new Set<string>();
+  for (const tool of tools) {
+    if (options?.isPluginTool?.(tool)) {
+      continue;
+    }
+    addName(names, tool.name);
+  }
+  return names;
 }
-export const AGENT_RESERVED_TOOL_NAMES: unknown = undefined;
+
+export function toSessionToolAllowlist(allowedToolNames: Iterable<string>): string[] {
+  return [...new Set(allowedToolNames)].toSorted((a, b) => a.localeCompare(b));
+}

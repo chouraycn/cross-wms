@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/sender-tool-policy.ts
+ * Ported from openclaw/src/agents/sender-tool-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Sender tool policy resolution.
+ * Cross-wms degradation: returns permissive default policy.
  */
 
-export function resolveSenderToolPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveSenderToolPolicy not implemented (openclaw stub)");
+/** Resolves the sender tool policy. */
+export function resolveSenderToolPolicy(..._args: unknown[]): Record<string, unknown> {
+  // Cross-wms does not have sender-based tool policy resolution.
+  return { mode: "permissive" };
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements jsonl storage behavior.
 import type {
   FileError,

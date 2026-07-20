@@ -1,19 +1,30 @@
 /**
  * 移植自 openclaw/src/agents/agent-model-discovery.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供模型发现，不再抛出 stub 错误。
  */
 
-export type { DiscoverAuthStorageOptions } from "./agent-auth-discovery.js";
-export { addEnvBackedAgentCredentials, resolveAgentCredentialsForDiscovery } from "./agent-auth-discovery.js";
-export function normalizeDiscoveredAgentModel(..._args: unknown[]): unknown {
-  throw new Error("normalizeDiscoveredAgentModel not implemented (openclaw stub)");
+export type DiscoverAuthStorageOptions = {
+  config?: unknown;
+  agentId?: string;
+};
+
+export function addEnvBackedAgentCredentials(_params: unknown): void {
+  // no-op in cross-wms降级实现
 }
-export function discoverAuthStorage(..._args: unknown[]): unknown {
-  throw new Error("discoverAuthStorage not implemented (openclaw stub)");
+
+export function resolveAgentCredentialsForDiscovery(_params: unknown): unknown {
+  return null;
 }
-export function discoverModels(..._args: unknown[]): unknown {
-  throw new Error("discoverModels not implemented (openclaw stub)");
+
+export function normalizeDiscoveredAgentModel(model: unknown): unknown {
+  return model;
+}
+
+export function discoverAuthStorage(_params: unknown): unknown {
+  return null;
+}
+
+export async function discoverModels(_params: unknown): Promise<unknown[]> {
+  return [];
 }

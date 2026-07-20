@@ -11,19 +11,19 @@ describe('Agent', () => {
   };
 
   it('should initialize with runtime', () => {
-    const agent = new Agent({ runtime: mockRuntime });
+    const agent = new Agent({ runtime: mockRuntime as any });
     expect(agent).toBeDefined();
   });
 
   it('should emit events during run', async () => {
-    const agent = new Agent({ runtime: mockRuntime });
+    const agent = new Agent({ runtime: mockRuntime as any });
 
     const events: string[] = [];
     agent.on('start', () => events.push('start'));
     agent.on('finish', () => events.push('finish'));
 
     await agent.run({
-      messages: [{ id: '1', role: 'user', content: 'Hello', timestamp: Date.now() }],
+      messages: [{ role: 'user' as const, content: 'Hello', timestamp: Date.now() }],
     });
 
     expect(events).toContain('start');
@@ -39,11 +39,11 @@ describe('Agent', () => {
         streamSimple: async function* () {
           throw new Error('Test error');
         },
-      },
+      } as any,
     });
 
     const result = await agent.run({
-      messages: [{ id: '1', role: 'user', content: 'Hello', timestamp: Date.now() }],
+      messages: [{ role: 'user' as const, content: 'Hello', timestamp: Date.now() }],
     });
 
     expect(result.error).toBeDefined();

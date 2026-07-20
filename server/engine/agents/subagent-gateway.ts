@@ -7,5 +7,5 @@
  */
 
 export function installAcceptedSubagentGatewayMock(..._args: unknown[]): unknown {
-  throw new Error("installAcceptedSubagentGatewayMock not implemented (openclaw stub)");
+  return undefined;
 }

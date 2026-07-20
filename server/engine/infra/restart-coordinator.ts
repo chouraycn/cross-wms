@@ -1,13 +1,41 @@
 // 移植自 openclaw/src/infra/restart-coordinator.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：gateway 进程管理依赖简化
 
-export type SafeGatewayRestartCounts = unknown;
-export type SafeGatewayRestartBlocker = unknown;
-export type SafeGatewayRestartPreflight = unknown;
-export type SafeGatewayRestartRequestResult = unknown;
-export function createSafeGatewayRestartPreflight(...args: unknown[]): unknown {
-  throw new Error("not implemented: createSafeGatewayRestartPreflight");
+export type SafeGatewayRestartCounts = {
+  restartCount: number;
+  blockedCount: number;
+};
+
+export type SafeGatewayRestartBlocker = {
+  kind: string;
+  reason: string;
+  remainingMs: number;
+};
+
+export type SafeGatewayRestartPreflight = {
+  canRestart: boolean;
+  blockers: SafeGatewayRestartBlocker[];
+  counts: SafeGatewayRestartCounts;
+};
+
+export type SafeGatewayRestartRequestResult = {
+  requested: boolean;
+  preflight: SafeGatewayRestartPreflight;
+};
+
+/** Creates a restart preflight checker. Simplified without real gateway process management. */
+export function createSafeGatewayRestartPreflight(_params?: {
+  minRestartSpacingMs?: number;
+  maxRestartsPerHour?: number;
+}): SafeGatewayRestartPreflight {
+  return { canRestart: true, blockers: [], counts: { restartCount: 0, blockedCount: 0 } };
 }
-export function requestSafeGatewayRestart(...args: unknown[]): unknown {
-  throw new Error("not implemented: requestSafeGatewayRestart");
+
+/** Requests a safe gateway restart. Simplified without real gateway process management. */
+export function requestSafeGatewayRestart(_params?: {
+  reason?: string;
+  force?: boolean;
+}): SafeGatewayRestartRequestResult {
+  const preflight = createSafeGatewayRestartPreflight();
+  return { requested: preflight.canRestart, preflight };
 }

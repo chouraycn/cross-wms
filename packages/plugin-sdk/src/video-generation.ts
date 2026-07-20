@@ -1,27 +1,7 @@
-// @ts-nocheck
 // Public video-generation helpers and types for provider plugins.
 //
 // Keep these public type declarations local to the plugin-sdk entrypoint so the
 // emitted declaration surface stays stable for package-boundary consumers.
-
-// import type { AuthProfileStore } from "../agents/auth-profiles/types.js"; // TODO: 依赖模块未移植
-// import type { OpenClawConfig } from "../config/types.openclaw.js"; // TODO: 依赖模块未移植
-// import type {
-//   GeneratedVideoAsset as CoreGeneratedVideoAsset,
-//   VideoGenerationAssetRole as CoreVideoGenerationAssetRole,
-//   VideoGenerationMode as CoreVideoGenerationMode,
-//   VideoGenerationModeCapabilities as CoreVideoGenerationModeCapabilities,
-//   VideoGenerationModelCapabilitiesContext as CoreVideoGenerationModelCapabilitiesContext,
-//   VideoGenerationProvider as CoreVideoGenerationProvider,
-//   VideoGenerationProviderCapabilities as CoreVideoGenerationProviderCapabilities,
-//   VideoGenerationProviderConfiguredContext as CoreVideoGenerationProviderConfiguredContext,
-//   VideoGenerationProviderOptionType as CoreVideoGenerationProviderOptionType,
-//   VideoGenerationRequest as CoreVideoGenerationRequest,
-//   VideoGenerationResolution as CoreVideoGenerationResolution,
-//   VideoGenerationResult as CoreVideoGenerationResult,
-//   VideoGenerationSourceAsset as CoreVideoGenerationSourceAsset,
-//   VideoGenerationTransformCapabilities as CoreVideoGenerationTransformCapabilities,
-// } from "../video-generation/types.js"; // TODO: 依赖模块未移植
 
 /** Video asset returned by a provider after generation or transformation. */
 export type GeneratedVideoAsset = {
@@ -72,6 +52,12 @@ export type VideoGenerationSourceAsset = {
   role?: VideoGenerationAssetRole | (string & {});
   metadata?: Record<string, unknown>;
 };
+
+/** Config type placeholder for video generation contexts. */
+type OpenClawConfig = Record<string, unknown>;
+
+/** Auth profile store placeholder for video generation contexts. */
+type AuthProfileStore = unknown;
 
 /** Context passed when checking whether a video provider is configured. */
 export type VideoGenerationProviderConfiguredContext = {
@@ -191,66 +177,3 @@ export type VideoGenerationProvider = {
     | Promise<VideoGenerationProviderCapabilities | undefined>;
   generateVideo: (req: VideoGenerationRequest) => Promise<VideoGenerationResult>;
 };
-
-type AssertAssignable<_Left extends _Right, _Right> = true;
-const videoGenerationSdkCompat: [
-  AssertAssignable<GeneratedVideoAsset, CoreGeneratedVideoAsset>,
-  AssertAssignable<CoreGeneratedVideoAsset, GeneratedVideoAsset>,
-  AssertAssignable<VideoGenerationAssetRole, CoreVideoGenerationAssetRole>,
-  AssertAssignable<CoreVideoGenerationAssetRole, VideoGenerationAssetRole>,
-  AssertAssignable<VideoGenerationProviderOptionType, CoreVideoGenerationProviderOptionType>,
-  AssertAssignable<CoreVideoGenerationProviderOptionType, VideoGenerationProviderOptionType>,
-  AssertAssignable<VideoGenerationMode, CoreVideoGenerationMode>,
-  AssertAssignable<CoreVideoGenerationMode, VideoGenerationMode>,
-  AssertAssignable<VideoGenerationModeCapabilities, CoreVideoGenerationModeCapabilities>,
-  AssertAssignable<CoreVideoGenerationModeCapabilities, VideoGenerationModeCapabilities>,
-  AssertAssignable<VideoGenerationProvider, CoreVideoGenerationProvider>,
-  AssertAssignable<CoreVideoGenerationProvider, VideoGenerationProvider>,
-  AssertAssignable<VideoGenerationProviderCapabilities, CoreVideoGenerationProviderCapabilities>,
-  AssertAssignable<CoreVideoGenerationProviderCapabilities, VideoGenerationProviderCapabilities>,
-  AssertAssignable<
-    VideoGenerationProviderConfiguredContext,
-    CoreVideoGenerationProviderConfiguredContext
-  >,
-  AssertAssignable<
-    CoreVideoGenerationProviderConfiguredContext,
-    VideoGenerationProviderConfiguredContext
-  >,
-  AssertAssignable<
-    VideoGenerationModelCapabilitiesContext,
-    CoreVideoGenerationModelCapabilitiesContext
-  >,
-  AssertAssignable<
-    CoreVideoGenerationModelCapabilitiesContext,
-    VideoGenerationModelCapabilitiesContext
-  >,
-  AssertAssignable<VideoGenerationRequest, CoreVideoGenerationRequest>,
-  AssertAssignable<CoreVideoGenerationRequest, VideoGenerationRequest>,
-  AssertAssignable<VideoGenerationResolution, CoreVideoGenerationResolution>,
-  AssertAssignable<CoreVideoGenerationResolution, VideoGenerationResolution>,
-  AssertAssignable<VideoGenerationResult, CoreVideoGenerationResult>,
-  AssertAssignable<CoreVideoGenerationResult, VideoGenerationResult>,
-  AssertAssignable<VideoGenerationSourceAsset, CoreVideoGenerationSourceAsset>,
-  AssertAssignable<CoreVideoGenerationSourceAsset, VideoGenerationSourceAsset>,
-  AssertAssignable<VideoGenerationTransformCapabilities, CoreVideoGenerationTransformCapabilities>,
-  AssertAssignable<CoreVideoGenerationTransformCapabilities, VideoGenerationTransformCapabilities>,
-] = [] as never;
-void videoGenerationSdkCompat;
-
-// export {
-//   DASHSCOPE_WAN_VIDEO_CAPABILITIES,
-//   DASHSCOPE_WAN_VIDEO_MODELS,
-//   DEFAULT_DASHSCOPE_WAN_VIDEO_MODEL,
-//   DEFAULT_VIDEO_GENERATION_DURATION_SECONDS,
-//   DEFAULT_VIDEO_GENERATION_TIMEOUT_MS,
-//   DEFAULT_VIDEO_RESOLUTION_TO_SIZE,
-//   buildDashscopeVideoGenerationInput,
-//   buildDashscopeVideoGenerationParameters,
-//   downloadDashscopeGeneratedVideos,
-//   extractDashscopeVideoUrls,
-//   pollDashscopeVideoTaskUntilComplete,
-//   resolveVideoGenerationReferenceUrls,
-//   runDashscopeVideoGenerationTask,
-// } from "../video-generation/dashscope-compatible.js"; // TODO: 依赖模块未移植
-
-// export type { DashscopeVideoGenerationResponse } from "../video-generation/dashscope-compatible.js"; // TODO: 依赖模块未移植

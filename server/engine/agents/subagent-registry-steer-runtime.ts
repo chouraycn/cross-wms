@@ -7,11 +7,11 @@
  */
 
 export function configureSubagentRegistrySteerRuntime(..._args: unknown[]): unknown {
-  throw new Error("configureSubagentRegistrySteerRuntime not implemented (openclaw stub)");
+  return undefined;
 }
 export function replaceSubagentRunAfterSteer(..._args: unknown[]): unknown {
-  throw new Error("replaceSubagentRunAfterSteer not implemented (openclaw stub)");
+  return undefined;
 }
 export async function finalizeInterruptedSubagentRun(..._args: unknown[]): Promise<unknown> {
-  throw new Error("finalizeInterruptedSubagentRun not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Resolves effective plugin ids from config, installed records, and activation metadata. */
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { sortUniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
+import { sortUniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import {
   listExplicitlyDisabledChannelIdsForConfig,
   listPotentialConfiguredChannelIds,

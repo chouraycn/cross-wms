@@ -12,5 +12,5 @@
  */
 
 export async function handleOpenAiEmbeddingsHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleOpenAiEmbeddingsHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }

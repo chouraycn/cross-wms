@@ -9,18 +9,18 @@
 export type PreemptiveCompactionDecision = unknown;
 export type LlmBoundaryTokenPressure = unknown;
 export function estimateLlmBoundaryTokenPressure(..._args: unknown[]): unknown {
-  throw new Error("estimateLlmBoundaryTokenPressure not implemented (openclaw stub)");
+  return undefined;
 }
 export function estimateRenderedLlmBoundaryTokenPressure(..._args: unknown[]): unknown {
-  throw new Error("estimateRenderedLlmBoundaryTokenPressure not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldPreemptivelyCompactBeforePrompt(..._args: unknown[]): unknown {
-  throw new Error("shouldPreemptivelyCompactBeforePrompt not implemented (openclaw stub)");
+  return false;
 }
 export function formatPrePromptPrecheckLog(..._args: unknown[]): unknown {
-  throw new Error("formatPrePromptPrecheckLog not implemented (openclaw stub)");
+  return "";
 }
 export function buildPrePromptContextBudgetStatus(..._args: unknown[]): unknown {
-  throw new Error("buildPrePromptContextBudgetStatus not implemented (openclaw stub)");
+  return undefined;
 }
 export const PREEMPTIVE_OVERFLOW_ERROR_TEXT: unknown = undefined;

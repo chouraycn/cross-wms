@@ -1,14 +1,20 @@
 /**
  * 移植自 openclaw/src/agents/agent-dir-registry.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 agent 目录注册，不再抛出 stub 错误。
  */
 
-export function registerResolvedAgentDir(..._args: unknown[]): unknown {
-  throw new Error("registerResolvedAgentDir not implemented (openclaw stub)");
+const registry = new Map<string, string>();
+
+export function registerResolvedAgentDir(agentId: string, dir: string): void {
+  registry.set(agentId, dir);
 }
-export function resolveRegisteredAgentIdForDir(..._args: unknown[]): unknown {
-  throw new Error("resolveRegisteredAgentIdForDir not implemented (openclaw stub)");
+
+export function resolveRegisteredAgentIdForDir(dir: string): string | undefined {
+  for (const [agentId, registeredDir] of registry) {
+    if (registeredDir === dir) {
+      return agentId;
+    }
+  }
+  return undefined;
 }

@@ -15,5 +15,5 @@ export type SpawnSubagentContext = unknown;
 export type SpawnSubagentResult = unknown;
 export const testing: unknown = undefined;
 export async function spawnSubagentDirect(..._args: unknown[]): Promise<unknown> {
-  throw new Error("spawnSubagentDirect not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

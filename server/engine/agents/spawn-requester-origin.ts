@@ -7,5 +7,5 @@
  */
 
 export function resolveRequesterOriginForChild(..._args: unknown[]): unknown {
-  throw new Error("resolveRequesterOriginForChild not implemented (openclaw stub)");
+  return undefined;
 }

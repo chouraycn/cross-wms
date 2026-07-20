@@ -1,19 +1,109 @@
 /**
  * 移植自 openclaw/src/agents/tools/sessions-helpers.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared session-tool data shapes and classification helpers.
+ * cross-wms 简化实现：提供基本的 session 分类和 channel 解析。
  */
 
-export type SessionRunStatus = unknown;
-export type SessionListRow = unknown;
-export function resolveSessionToolContext(..._args: unknown[]): unknown {
-  throw new Error("resolveSessionToolContext not implemented (openclaw stub)");
+type SessionKind = "main" | "group" | "cron" | "hook" | "node" | "other";
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
 }
-export function classifySessionKind(..._args: unknown[]): unknown {
-  throw new Error("classifySessionKind not implemented (openclaw stub)");
+
+/** Coarse session category used by session list/status tools. */
+export type { SessionKind };
+
+/** Compact run status shown by session tools. */
+export type SessionRunStatus = "running" | "done" | "failed" | "killed" | "timeout";
+
+/** Normalized session row returned by session list-style tools. */
+export type SessionListRow = {
+  key: string;
+  agentId?: string;
+  kind: SessionKind;
+  channel: string;
+  spawnedBy?: string;
+  label?: string;
+  displayName?: string;
+  parentSessionKey?: string;
+  updatedAt?: number | null;
+  sessionId?: string;
+  model?: string;
+  status?: SessionRunStatus;
+  startedAt?: number;
+  endedAt?: number;
+  runtimeMs?: number;
+  childSessions?: string[];
+};
+
+/** Resolves config and sandbox visibility context for a session tool call. */
+export function resolveSessionToolContext(opts?: {
+  agentSessionKey?: string;
+  sandboxed?: boolean;
+  config?: unknown;
+}) {
+  return {
+    cfg: opts?.config ?? {},
+    sandboxed: opts?.sandboxed ?? false,
+    agentSessionKey: opts?.agentSessionKey,
+  };
 }
-export function deriveChannel(..._args: unknown[]): unknown {
-  throw new Error("deriveChannel not implemented (openclaw stub)");
+
+/** Classifies a session key/gateway kind into the row category used by tools. */
+export function classifySessionKind(params: {
+  key: string;
+  gatewayKind?: string | null;
+  alias: string;
+  mainKey: string;
+}): SessionKind {
+  const key = params.key;
+  if (key === params.alias || key === params.mainKey) {
+    return "main";
+  }
+  if (key.startsWith("cron:")) {
+    return "cron";
+  }
+  if (key.startsWith("hook:")) {
+    return "hook";
+  }
+  if (key.startsWith("node-") || key.startsWith("node:")) {
+    return "node";
+  }
+  if (params.gatewayKind === "group") {
+    return "group";
+  }
+  if (key.includes(":group:") || key.includes(":channel:")) {
+    return "group";
+  }
+  return "other";
+}
+
+/** Derives the best channel label for a session row. */
+export function deriveChannel(params: {
+  key: string;
+  kind: SessionKind;
+  channel?: string | null;
+  lastChannel?: string | null;
+}): string {
+  if (params.kind === "cron" || params.kind === "hook" || params.kind === "node") {
+    return "internal";
+  }
+  const channel = normalizeOptionalString(params.channel ?? undefined);
+  if (channel) {
+    return channel;
+  }
+  const lastChannel = normalizeOptionalString(params.lastChannel ?? undefined);
+  if (lastChannel) {
+    return lastChannel;
+  }
+  const parts = params.key.split(":").filter(Boolean);
+  if (parts.length >= 3 && (parts[1] === "group" || parts[1] === "channel")) {
+    return parts[0];
+  }
+  return "unknown";
 }

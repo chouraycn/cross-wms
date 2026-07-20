@@ -1,61 +1,58 @@
-// 移植自 openclaw/src/cli/shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export function parseCronCommandArgv(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseCronCommandArgv");
+  console.warn('parseCronCommandArgv is not available in cross-wms'); return undefined;
 }
 
 export function parseCronCommandEnv(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseCronCommandEnv");
+  console.warn('parseCronCommandEnv is not available in cross-wms'); return undefined;
 }
 
 export function printCronJson(..._args: unknown[]): unknown {
-  throw new Error("not implemented: printCronJson");
+  console.warn('printCronJson is not available in cross-wms'); return undefined;
 }
 
 export function enrichCronJsonWithStatus(..._args: unknown[]): unknown {
-  throw new Error("not implemented: enrichCronJsonWithStatus");
+  console.warn('enrichCronJsonWithStatus is not available in cross-wms'); return undefined;
 }
 
 export function handleCronCliError(..._args: unknown[]): unknown {
-  throw new Error("not implemented: handleCronCliError");
+  console.warn('handleCronCliError is not available in cross-wms'); return undefined;
 }
 
 export async function warnIfCronSchedulerDisabled(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: warnIfCronSchedulerDisabled");
+  console.warn('warnIfCronSchedulerDisabled is not available in cross-wms');
 }
 
 export function parseDurationMs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseDurationMs");
+  console.warn('parseDurationMs is not available in cross-wms'); return undefined;
 }
 
 export function parseCronStaggerMs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseCronStaggerMs");
+  console.warn('parseCronStaggerMs is not available in cross-wms'); return undefined;
 }
 
 export function parseCronToolsAllow(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseCronToolsAllow");
+  console.warn('parseCronToolsAllow is not available in cross-wms'); return undefined;
 }
 
 export function parseCronFallbacks(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseCronFallbacks");
+  console.warn('parseCronFallbacks is not available in cross-wms'); return undefined;
 }
 
 export function parseAt(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseAt");
+  console.warn('parseAt is not available in cross-wms'); return undefined;
 }
 
 export function coerceCronDeliveryPreviews(..._args: unknown[]): unknown {
-  throw new Error("not implemented: coerceCronDeliveryPreviews");
+  console.warn('coerceCronDeliveryPreviews is not available in cross-wms'); return undefined;
 }
 
 export function printCronList(..._args: unknown[]): unknown {
-  throw new Error("not implemented: printCronList");
+  console.warn('printCronList is not available in cross-wms'); return undefined;
 }
 
 export function printCronShow(..._args: unknown[]): unknown {
-  throw new Error("not implemented: printCronShow");
+  console.warn('printCronShow is not available in cross-wms'); return undefined;
 }
 
 export const getCronChannelOptions: unknown = undefined;

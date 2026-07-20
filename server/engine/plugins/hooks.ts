@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Plugin Hook Runner
  *
@@ -6,7 +5,7 @@
  * error handling and priority ordering.
  */
 
-import { clampPositiveTimerTimeoutMs } from './_stub_openclaw__normalization_core__number_coercion.js';
+import { clampPositiveTimerTimeoutMs } from './_openclaw__normalization_core__number_coercion.js';
 import { copyReplyPayloadMetadata, type ReplyPayload } from './_stub_parent__auto_reply__reply_payload.js';
 import { formatHookErrorForLog } from "../hooks/fire-and-forget.js";
 import { formatErrorMessage } from "../infra/errors.js";

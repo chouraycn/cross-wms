@@ -7,5 +7,5 @@
  */
 
 export function resolveModelAgentRuntimeMetadata(..._args: unknown[]): unknown {
-  throw new Error("resolveModelAgentRuntimeMetadata not implemented (openclaw stub)");
+  return undefined;
 }

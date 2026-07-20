@@ -7,14 +7,14 @@
  */
 
 export function isToolExplicitlyAllowedByFactoryPolicy(..._args: unknown[]): unknown {
-  throw new Error("isToolExplicitlyAllowedByFactoryPolicy not implemented (openclaw stub)");
+  return false;
 }
 export function mergeFactoryPolicyList(..._args: unknown[]): unknown {
-  throw new Error("mergeFactoryPolicyList not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveImageToolFactoryAvailable(..._args: unknown[]): unknown {
-  throw new Error("resolveImageToolFactoryAvailable not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveOptionalMediaToolFactoryPlan(..._args: unknown[]): unknown {
-  throw new Error("resolveOptionalMediaToolFactoryPlan not implemented (openclaw stub)");
+  return undefined;
 }

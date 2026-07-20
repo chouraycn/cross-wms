@@ -12,5 +12,5 @@
  */
 
 export function createWizardSessionTracker(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createWizardSessionTracker not implemented");
+  return undefined;
 }

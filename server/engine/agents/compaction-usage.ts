@@ -7,5 +7,5 @@
  */
 
 export function stripStaleAssistantUsageBeforeLatestCompaction(..._args: unknown[]): unknown {
-  throw new Error("stripStaleAssistantUsageBeforeLatestCompaction not implemented (openclaw stub)");
+  return undefined;
 }

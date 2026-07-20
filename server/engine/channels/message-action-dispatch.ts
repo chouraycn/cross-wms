@@ -1,6 +1,18 @@
 // 移植自 openclaw/src/channels/plugins/message-action-dispatch.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin / message action 依赖简化
 
-export async function dispatchChannelMessageAction(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: dispatchChannelMessageAction");
+export type MessageActionDispatchResult = {
+  ok: boolean;
+  error?: string;
+  result?: unknown;
+};
+
+/** Dispatches a channel message action. Simplified without real channel plugin. */
+export async function dispatchChannelMessageAction(params: {
+  action: string;
+  channel?: string;
+  args?: Record<string, unknown>;
+  cfg?: unknown;
+}): Promise<MessageActionDispatchResult> {
+  return { ok: false, error: `channel dispatch not available: ${params.action}` };
 }

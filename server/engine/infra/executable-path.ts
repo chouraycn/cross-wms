@@ -1,18 +1,69 @@
 // 移植自 openclaw/src/infra/executable-path.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export function resolveExecutablePathCandidate(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutablePathCandidate");
+import fs from "node:fs/promises";
+import path from "node:path";
+
+const IS_WIN = process.platform === "win32";
+const EXECUTABLE_EXTENSIONS = IS_WIN ? [".exe", ".cmd", ".bat", ".ps1"] : [];
+
+/** Resolves a single candidate path for an executable. */
+export async function resolveExecutablePathCandidate(candidate: string): Promise<string | null> {
+  const resolved = candidate?.trim();
+  if (!resolved) return null;
+  try {
+    const stat = await fs.stat(resolved);
+    if (!stat.isFile()) return null;
+    if (!IS_WIN && (stat.mode & 0o111) === 0) return null;
+    return resolved;
+  } catch {
+    return null;
+  }
 }
-export function isExecutableFile(...args: unknown[]): unknown {
-  throw new Error("not implemented: isExecutableFile");
+
+/** Checks if a path points to an executable file. */
+export async function isExecutableFile(filePath: string): Promise<boolean> {
+  const resolved = filePath?.trim();
+  if (!resolved) return false;
+  try {
+    const stat = await fs.stat(resolved);
+    if (!stat.isFile()) return false;
+    if (IS_WIN) {
+      const ext = path.extname(resolved).toLowerCase();
+      return EXECUTABLE_EXTENSIONS.includes(ext) || !ext;
+    }
+    return (stat.mode & 0o111) !== 0;
+  } catch {
+    return false;
+  }
 }
-export function resolveExecutableFromPathEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutableFromPathEnv");
+
+/** Resolves an executable from PATH environment variable entries. */
+export async function resolveExecutableFromPathEnv(name: string, pathEnv?: string): Promise<string | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+  const paths = (pathEnv ?? process.env.PATH ?? "").split(path.delimiter).filter(Boolean);
+  for (const dir of paths) {
+    const candidate = path.join(dir, trimmed);
+    const result = await resolveExecutablePathCandidate(candidate);
+    if (result) return result;
+  }
+  return null;
 }
-export function resolveExecutablePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutablePath");
+
+/** Resolves an executable path, checking both absolute and PATH-relative. */
+export async function resolveExecutablePath(name: string, options?: { pathEnv?: string; cwd?: string }): Promise<string | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+  // Check if it's already an absolute or relative path
+  if (trimmed.includes(path.sep) || (IS_WIN && trimmed.includes("/"))) {
+    const resolved = path.resolve(options?.cwd ?? process.cwd(), trimmed);
+    return resolveExecutablePathCandidate(resolved);
+  }
+  return resolveExecutableFromPathEnv(trimmed, options?.pathEnv);
 }
-export function resolveExecutable(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutable");
+
+/** Resolves an executable, falling back to the name if not found. */
+export async function resolveExecutable(name: string, options?: { pathEnv?: string; cwd?: string }): Promise<string> {
+  const resolved = await resolveExecutablePath(name, options);
+  return resolved ?? name;
 }

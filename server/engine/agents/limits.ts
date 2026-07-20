@@ -7,9 +7,9 @@
  */
 
 export function normalizePositiveLimit(..._args: unknown[]): unknown {
-  throw new Error("normalizePositiveLimit not implemented (openclaw stub)");
+  return undefined;
 }
 export function appendBoundedTextTail(..._args: unknown[]): unknown {
-  throw new Error("appendBoundedTextTail not implemented (openclaw stub)");
+  return undefined;
 }
 export const SESSION_TOOL_STDERR_TAIL_BYTES: unknown = undefined;

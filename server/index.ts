@@ -861,6 +861,8 @@ server.listen(PORT, async () => {
     import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => toolSendReceipts.stopAutoCleanup()).catch(() => {});
     // v11.1: 停止 CircuitBreaker 定时快照并保存最终状态
     import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => defaultCircuitBreaker.stopAutoSnapshot()).catch(() => {});
+    // v2.x: 保存 modelFailover 最终健康状态到 model-failover-state.json
+    import('./engine/modelFailover.js').then(({ destroyDefaultManager }) => destroyDefaultManager()).catch(() => {});
     // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
     // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。
     // pywebview 端在 stop_server() 中通过 os.killpg(SIGTERM) 触发本流程。

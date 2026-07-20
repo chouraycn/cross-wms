@@ -15,9 +15,8 @@ export function registerMcpCli(program: Command): void {
     .description("List configured MCP servers")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw mcp list: not supported in stub mode (mcp/*, runtime not ported).",
-      );
+      console.error('openclaw mcp list is not available in cross-wms');
+      process.exit(1);
     });
 
   mcp
@@ -25,9 +24,8 @@ export function registerMcpCli(program: Command): void {
     .description("Add an MCP server")
     .argument("<name>", "Server name")
     .action(() => {
-      throw new Error(
-        "openclaw mcp add: not supported in stub mode (mcp/*, runtime not ported).",
-      );
+      console.error('openclaw mcp add is not available in cross-wms');
+      process.exit(1);
     });
 
   mcp
@@ -35,14 +33,12 @@ export function registerMcpCli(program: Command): void {
     .description("Remove an MCP server")
     .argument("<name>", "Server name")
     .action(() => {
-      throw new Error(
-        "openclaw mcp remove: not supported in stub mode (mcp/*, runtime not ported).",
-      );
+      console.error('openclaw mcp remove is not available in cross-wms');
+      process.exit(1);
     });
 
   mcp.action(() => {
-    throw new Error(
-      "openclaw mcp: not supported in stub mode (mcp/*, runtime not ported).",
-    );
+    console.error('openclaw mcp is not available in cross-wms');
+      process.exit(1);
   });
 }

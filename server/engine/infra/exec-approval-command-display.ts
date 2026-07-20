@@ -1,16 +1,15 @@
 // 移植自 openclaw/src/infra/exec-approval-command-display.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type SanitizedExecApprovalDisplayText = unknown;
 export function sanitizeExecApprovalDisplayText(...args: unknown[]): unknown {
-  throw new Error("not implemented: sanitizeExecApprovalDisplayText");
+  return undefined;
 }
 export function sanitizeExecApprovalDisplayTextWithStatus(...args: unknown[]): unknown {
-  throw new Error("not implemented: sanitizeExecApprovalDisplayTextWithStatus");
+  return undefined;
 }
 export function sanitizeExecApprovalWarningText(...args: unknown[]): unknown {
-  throw new Error("not implemented: sanitizeExecApprovalWarningText");
+  return undefined;
 }
 export function resolveExecApprovalCommandDisplay(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecApprovalCommandDisplay");
+  return undefined;
 }

@@ -49,6 +49,8 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import SyncIcon from '@mui/icons-material/Sync';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
 import {
   getModels,
@@ -59,12 +61,15 @@ import {
   testConnection,
   addRecommendedModel,
   addAllRecommendedModels,
+  getFailoverHealth,
+  resetAllFailoverHealth,
 } from '../services/modelsApi';
 import type {
   ModelConfig,
   ProviderConfig,
   HealthCheckResult,
   DiscoveredModel,
+  FailoverHealth,
 } from '../services/modelsApi';
 import { getGrayScale } from '../constants/theme';
 import { useTheme } from '@mui/material';
@@ -81,6 +86,9 @@ export default function ModelsPage() {
   const [error, setError] = useState('');
   const [healthResults, setHealthResults] = useState<HealthCheckResult[]>([]);
   const [healthChecking, setHealthChecking] = useState(false);
+  // v2.x: 故障转移运行时状态（冷却中/连续失败计数，区别于一次性 healthCheck）
+  const [failoverHealths, setFailoverHealths] = useState<FailoverHealth[]>([]);
+  const [failoverLoading, setFailoverLoading] = useState(false);
   const [discoveringLocal, setDiscoveringLocal] = useState(false);
   const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
   const [recommendedModels, setRecommendedModels] = useState<ModelConfig[]>([]);
@@ -149,7 +157,32 @@ export default function ModelsPage() {
 
   useEffect(() => {
     fetchModels();
+    // v2.x: 初始加载故障转移运行时状态（不阻塞页面渲染，失败静默处理）
+    fetchFailoverHealth();
   }, []);
+
+  /** 加载所有模型的故障转移运行时健康状态 */
+  const fetchFailoverHealth = async () => {
+    try {
+      setFailoverLoading(true);
+      const results = await getFailoverHealth();
+      setFailoverHealths(results);
+    } catch {
+      // failover 状态加载失败不影响主流程，静默处理
+    } finally {
+      setFailoverLoading(false);
+    }
+  };
+
+  /** 重置所有模型的故障转移健康状态（手动清除冷却） */
+  const handleResetFailover = async () => {
+    try {
+      await resetAllFailoverHealth();
+      await fetchFailoverHealth();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '重置故障转移状态失败');
+    }
+  };
 
   const _handleSaveModel = async () => {
     try {
@@ -281,6 +314,11 @@ export default function ModelsPage() {
     return healthResults.find(r => r.modelId === modelId);
   };
 
+  /** v2.x: 获取模型的故障转移运行时状态 */
+  const getFailoverStatus = (modelId: string): FailoverHealth | undefined => {
+    return failoverHealths.find(r => r.modelId === modelId);
+  };
+
   const getProviderIcon = (provider: string) => {
     const icons: Record<string, React.ReactElement> = {
       openai: <CloudIcon fontSize="small" />,
@@ -316,6 +354,17 @@ export default function ModelsPage() {
           <Button onClick={handleHealthCheck} startIcon={<PlayArrowIcon />} disabled={healthChecking}>
             {healthChecking ? '检查中...' : '健康检查'}
           </Button>
+          {/* v2.x: 刷新故障转移运行时状态（冷却/连续失败，区别于一次性 healthCheck） */}
+          <Tooltip title="刷新模型冷却/连续失败等运行时故障转移状态">
+            <Button onClick={fetchFailoverHealth} startIcon={<SyncIcon />} disabled={failoverLoading}>
+              {failoverLoading ? '刷新中...' : '运行时状态'}
+            </Button>
+          </Tooltip>
+          <Tooltip title="重置所有模型的冷却状态（手动清除故障转移计数）">
+            <Button onClick={handleResetFailover} startIcon={<RestartAltIcon />} size="small">
+              重置冷却
+            </Button>
+          </Tooltip>
           <Button onClick={handleDiscoverLocal} startIcon={<SearchIcon />} disabled={discoveringLocal}>
             {discoveringLocal ? '发现中...' : '发现本地模型'}
           </Button>
@@ -397,6 +446,8 @@ export default function ModelsPage() {
                       <TableCell>提供商</TableCell>
                       <TableCell>使用</TableCell>
                       <TableCell>健康</TableCell>
+                      {/* v2.x: 运行时故障转移状态（冷却中/连续失败，区别于一次性健康检查） */}
+                      <TableCell>运行时</TableCell>
                       <TableCell>状态</TableCell>
                       <TableCell>操作</TableCell>
                     </TableRow>
@@ -405,6 +456,7 @@ export default function ModelsPage() {
                     {visibleModels.map(model => {
                       const health = getHealthStatus(model.id);
                       const usage = model.usageStats;
+                      const failover = getFailoverStatus(model.id);
                       return (
                         <TableRow key={model.id}>
                           <TableCell>
@@ -485,6 +537,24 @@ export default function ModelsPage() {
                               <Chip icon={<WifiIcon />} label="未检查" size="small" />
                             )}
                           </TableCell>
+                          {/* v2.x: 运行时故障转移状态 — 冷却中/连续失败计数（运行时累积，区别于一次性健康检查） */}
+                          <TableCell>
+                            {failover ? (
+                              failover.isInCooldown ? (
+                                <Tooltip title={failover.consecutiveFailures > 0 ? `连续失败 ${failover.consecutiveFailures} 次，已进入冷却` : '模型冷却中'}>
+                                  <Chip icon={<ErrorIcon />} label="冷却中" color="error" size="small" />
+                                </Tooltip>
+                              ) : failover.consecutiveFailures > 0 ? (
+                                <Tooltip title={`连续失败 ${failover.consecutiveFailures} 次（未达冷却阈值）`}>
+                                  <Chip icon={<ScheduleIcon />} label={`失败 ${failover.consecutiveFailures}`} color="warning" size="small" />
+                                </Tooltip>
+                              ) : (
+                                <Chip icon={<CheckCircleIcon />} label="健康" color="success" size="small" />
+                              )
+                            ) : (
+                              <Chip label="—" size="small" variant="outlined" />
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Switch
                               checked={model.enabled}
@@ -508,7 +578,7 @@ export default function ModelsPage() {
                     })}
                     {visibleModels.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                           暂无符合条件的模型
                         </TableCell>
                       </TableRow>

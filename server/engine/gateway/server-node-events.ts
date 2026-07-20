@@ -14,11 +14,11 @@
 export type NodeEventHandleResult = unknown;
 
 export function resetNodeEventDeduplicationForTests(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resetNodeEventDeduplicationForTests not implemented");
+  return undefined;
 }
 
 export function getRecentNodePresencePersistCountForTests(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getRecentNodePresencePersistCountForTests not implemented");
+  return undefined;
 }
 
 export const handleNodeEvent: any = undefined;

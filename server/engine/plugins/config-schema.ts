@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds plugin config schemas from manifest metadata.
 import { z, type ZodTypeAny } from "zod";
 import type { JsonSchemaObject } from "../shared/json-schema.types.js";

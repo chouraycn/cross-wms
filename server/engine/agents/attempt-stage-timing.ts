@@ -7,12 +7,12 @@
  */
 
 export function createEmbeddedRunStageTracker(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedRunStageTracker not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldWarnEmbeddedRunStageSummary(..._args: unknown[]): unknown {
-  throw new Error("shouldWarnEmbeddedRunStageSummary not implemented (openclaw stub)");
+  return false;
 }
 export function formatEmbeddedRunStageSummary(..._args: unknown[]): unknown {
-  throw new Error("formatEmbeddedRunStageSummary not implemented (openclaw stub)");
+  return "";
 }
 export const EMBEDDED_RUN_ATTEMPT_DISPATCH_STAGE: unknown = undefined;

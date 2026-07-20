@@ -7,8 +7,8 @@
  */
 
 export function recordEmbeddedToolSendReceipt(..._args: unknown[]): unknown {
-  throw new Error("recordEmbeddedToolSendReceipt not implemented (openclaw stub)");
+  return undefined;
 }
 export function consumeEmbeddedToolSendReceipt(..._args: unknown[]): unknown {
-  throw new Error("consumeEmbeddedToolSendReceipt not implemented (openclaw stub)");
+  return undefined;
 }

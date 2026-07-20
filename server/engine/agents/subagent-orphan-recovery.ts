@@ -7,8 +7,8 @@
  */
 
 export async function recoverOrphanedSubagentSessions(..._args: unknown[]): Promise<unknown> {
-  throw new Error("recoverOrphanedSubagentSessions not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function scheduleOrphanRecovery(..._args: unknown[]): unknown {
-  throw new Error("scheduleOrphanRecovery not implemented (openclaw stub)");
+  return undefined;
 }

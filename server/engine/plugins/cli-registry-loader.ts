@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Loads plugin CLI registrations lazily for the command tree and plugin-owned subcommands. */
-import { normalizeLowercaseStringOrEmpty } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeLowercaseStringOrEmpty } from './_openclaw__normalization_core__string_coerce.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import { collectUniqueCommandDescriptors } from "../cli/program/command-descriptor-utils.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveManifestActivationPluginIds } from "./activation-planner.js";

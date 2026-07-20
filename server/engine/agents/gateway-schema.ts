@@ -7,5 +7,5 @@
  */
 
 export function gatewayCallOptionSchemaProperties(..._args: unknown[]): unknown {
-  throw new Error("gatewayCallOptionSchemaProperties not implemented (openclaw stub)");
+  return undefined;
 }

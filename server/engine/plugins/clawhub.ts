@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Resolves ClawHub plugin catalog entries and install metadata.
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import JSZip from "jszip";
 import {
   ARCHIVE_LIMIT_ERROR_CODE,
@@ -36,8 +35,8 @@ import {
   type ClawHubPackageVersion,
 } from "../infra/clawhub.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { resolveCompatibilityHostVersion } from './_stub_parent__version.js';
-import type { RuntimeVersionEnv } from './_stub_parent__version.js';
+import { resolveCompatibilityHostVersion } from './_parent__version.js';
+import type { RuntimeVersionEnv } from './_parent__version.js';
 import { CLAWHUB_INSTALL_ERROR_CODE, type ClawHubInstallErrorCode } from "./clawhub-error-codes.js";
 import type { ClawHubPluginInstallRecordFields } from "./clawhub-install-records.js";
 import type { InstallSafetyOverrides } from "./install-security-scan.js";

@@ -11,35 +11,35 @@ export type SecretDefaults = unknown;
 export type ProviderApiKeyResolver = unknown;
 export type ProviderAuthResolver = unknown;
 export function normalizeApiKeyConfig(..._args: unknown[]): unknown {
-  throw new Error("normalizeApiKeyConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function toDiscoveryApiKey(..._args: unknown[]): unknown {
-  throw new Error("toDiscoveryApiKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveEnvApiKeyVarName(..._args: unknown[]): unknown {
-  throw new Error("resolveEnvApiKeyVarName not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAwsSdkApiKeyVarName(..._args: unknown[]): unknown {
-  throw new Error("resolveAwsSdkApiKeyVarName not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeHeaderValues(..._args: unknown[]): unknown {
-  throw new Error("normalizeHeaderValues not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveApiKeyFromCredential(..._args: unknown[]): unknown {
-  throw new Error("resolveApiKeyFromCredential not implemented (openclaw stub)");
+  return undefined;
 }
 export function listAuthProfilesForProvider(..._args: unknown[]): unknown {
-  throw new Error("listAuthProfilesForProvider not implemented (openclaw stub)");
+  return [];
 }
 export function resolveApiKeyFromProfiles(..._args: unknown[]): unknown {
-  throw new Error("resolveApiKeyFromProfiles not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeConfiguredProviderApiKey(..._args: unknown[]): unknown {
-  throw new Error("normalizeConfiguredProviderApiKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeResolvedEnvApiKey(..._args: unknown[]): unknown {
-  throw new Error("normalizeResolvedEnvApiKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveMissingProviderApiKey(..._args: unknown[]): unknown {
-  throw new Error("resolveMissingProviderApiKey not implemented (openclaw stub)");
+  return undefined;
 }

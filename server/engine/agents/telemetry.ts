@@ -7,5 +7,5 @@
  */
 
 export function isInstallTelemetryEnabled(..._args: unknown[]): unknown {
-  throw new Error("isInstallTelemetryEnabled not implemented (openclaw stub)");
+  return false;
 }

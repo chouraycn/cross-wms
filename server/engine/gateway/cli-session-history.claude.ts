@@ -14,19 +14,19 @@
 export type ClaudeCliFallbackSeed = unknown;
 
 export function resolveClaudeCliBindingSessionId(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveClaudeCliBindingSessionId not implemented");
+  return undefined;
 }
 
 export function resolveClaudeCliSessionFilePath(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveClaudeCliSessionFilePath not implemented");
+  return undefined;
 }
 
 export function readClaudeCliSessionMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readClaudeCliSessionMessages not implemented");
+  return undefined;
 }
 
 export function readClaudeCliFallbackSeed(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readClaudeCliFallbackSeed not implemented");
+  return undefined;
 }
 
 export const CLAUDE_CLI_PROVIDER: any = undefined;

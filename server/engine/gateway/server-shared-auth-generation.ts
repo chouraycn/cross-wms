@@ -16,21 +16,21 @@ export type SharedGatewayAuthClient = unknown;
 export type SharedGatewaySessionGenerationState = unknown;
 
 export function disconnectStaleSharedGatewayAuthClients(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] disconnectStaleSharedGatewayAuthClients not implemented");
+  return undefined;
 }
 
 export function disconnectAllSharedGatewayAuthClients(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] disconnectAllSharedGatewayAuthClients not implemented");
+  return undefined;
 }
 
 export function getRequiredSharedGatewaySessionGeneration(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getRequiredSharedGatewaySessionGeneration not implemented");
+  return undefined;
 }
 
 export function setCurrentSharedGatewaySessionGeneration(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] setCurrentSharedGatewaySessionGeneration not implemented");
+  return undefined;
 }
 
 export function enforceSharedGatewaySessionGenerationForConfigWrite(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] enforceSharedGatewaySessionGenerationForConfigWrite not implemented");
+  return undefined;
 }

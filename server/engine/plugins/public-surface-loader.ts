@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Loads documented plugin public surfaces while preserving lazy boundaries.
 import fs from "node:fs";
 import { createRequire } from "node:module";

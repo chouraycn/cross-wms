@@ -8,14 +8,14 @@
 
 export type AuthProfileEligibilityReasonCode = unknown;
 export function isStoredCredentialCompatibleWithAuthProvider(..._args: unknown[]): unknown {
-  throw new Error("isStoredCredentialCompatibleWithAuthProvider not implemented (openclaw stub)");
+  return false;
 }
 export function isConfiguredAwsSdkAuthProfileForProvider(..._args: unknown[]): unknown {
-  throw new Error("isConfiguredAwsSdkAuthProfileForProvider not implemented (openclaw stub)");
+  return false;
 }
 export function resolveAuthProfileEligibility(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthProfileEligibility not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAuthProfileOrder(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthProfileOrder not implemented (openclaw stub)");
+  return undefined;
 }

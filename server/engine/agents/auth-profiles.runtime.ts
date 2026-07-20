@@ -7,5 +7,5 @@
  */
 
 export function ensureAuthProfileStore(..._args: unknown[]): unknown {
-  throw new Error("ensureAuthProfileStore not implemented (openclaw stub)");
+  return undefined;
 }

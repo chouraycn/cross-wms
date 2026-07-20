@@ -12,9 +12,9 @@
  */
 
 export function createAssistantOutputItem(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createAssistantOutputItem not implemented");
+  return undefined;
 }
 
 export function createFunctionCallOutputItem(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createFunctionCallOutputItem not implemented");
+  return undefined;
 }

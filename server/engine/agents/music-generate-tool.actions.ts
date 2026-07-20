@@ -1,17 +1,42 @@
 /**
  * 移植自 openclaw/src/agents/tools/music-generate-tool.actions.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * music_generate action helpers. cross-wms provides no-op defaults
+ * since the music generation infrastructure is not available.
  */
 
-export function createMusicGenerateListActionResult(..._args: unknown[]): unknown {
-  throw new Error("createMusicGenerateListActionResult not implemented (openclaw stub)");
+type MusicGenerateActionResult = {
+  kind: string;
+  text: string;
+  actions?: unknown[];
+};
+
+/** Builds the music-generation provider listing result shown to the agent. */
+export function createMusicGenerateListActionResult(
+  _config?: unknown,
+  _options?: Record<string, unknown>,
+): MusicGenerateActionResult {
+  return {
+    kind: "music_generation",
+    text: "No music-generation providers are registered.",
+  };
 }
-export function createMusicGenerateStatusActionResult(..._args: unknown[]): unknown {
-  throw new Error("createMusicGenerateStatusActionResult not implemented (openclaw stub)");
+
+/** Builds status output for the active music-generation task in the current session. */
+export function createMusicGenerateStatusActionResult(
+  _sessionKey?: string,
+): MusicGenerateActionResult {
+  return {
+    kind: "music_generation",
+    text: "No active music generation task is currently running for this session.",
+  };
 }
-export function createMusicGenerateDuplicateGuardResult(..._args: unknown[]): unknown {
-  throw new Error("createMusicGenerateDuplicateGuardResult not implemented (openclaw stub)");
+
+/** Returns duplicate-guard status output when a matching music task is already active. */
+export function createMusicGenerateDuplicateGuardResult(
+  _sessionKey?: string,
+  _params?: Record<string, unknown>,
+): MusicGenerateActionResult | undefined {
+  // No duplicate guard in cross-wms — no music generation infrastructure.
+  return undefined;
 }

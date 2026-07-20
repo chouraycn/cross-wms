@@ -9,32 +9,32 @@
 export type SubagentRunOutcome = unknown;
 export const testing: unknown = undefined;
 export function withSubagentOutcomeTiming(..._args: unknown[]): unknown {
-  throw new Error("withSubagentOutcomeTiming not implemented (openclaw stub)");
+  return undefined;
 }
 export async function readSubagentOutput(..._args: unknown[]): Promise<unknown> {
-  throw new Error("readSubagentOutput not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function readLatestSubagentOutputWithRetry(..._args: unknown[]): Promise<unknown> {
-  throw new Error("readLatestSubagentOutputWithRetry not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function waitForSubagentRunOutcome(..._args: unknown[]): Promise<unknown> {
-  throw new Error("waitForSubagentRunOutcome not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function applySubagentWaitOutcome(..._args: unknown[]): unknown {
-  throw new Error("applySubagentWaitOutcome not implemented (openclaw stub)");
+  return undefined;
 }
 export async function captureSubagentCompletionReply(..._args: unknown[]): Promise<unknown> {
-  throw new Error("captureSubagentCompletionReply not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function buildChildCompletionFindings(..._args: unknown[]): unknown {
-  throw new Error("buildChildCompletionFindings not implemented (openclaw stub)");
+  return undefined;
 }
 export function dedupeLatestChildCompletionRows(..._args: unknown[]): unknown {
-  throw new Error("dedupeLatestChildCompletionRows not implemented (openclaw stub)");
+  return undefined;
 }
 export function filterCurrentDirectChildCompletionRows(..._args: unknown[]): unknown {
-  throw new Error("filterCurrentDirectChildCompletionRows not implemented (openclaw stub)");
+  return undefined;
 }
 export async function buildCompactAnnounceStatsLine(..._args: unknown[]): Promise<unknown> {
-  throw new Error("buildCompactAnnounceStatsLine not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

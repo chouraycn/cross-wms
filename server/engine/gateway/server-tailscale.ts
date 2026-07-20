@@ -12,5 +12,5 @@
  */
 
 export async function startGatewayTailscaleExposure(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startGatewayTailscaleExposure not implemented");
+  return Promise.resolve(undefined);
 }

@@ -15,8 +15,7 @@ export function registerUpdateCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .option("--version <ver>", "Update to a specific version")
     .action(() => {
-      throw new Error(
-        "openclaw update: not supported in stub mode (updater/*, runtime not ported).",
-      );
+      console.error('openclaw update is not available in cross-wms');
+      process.exit(1);
     });
 }

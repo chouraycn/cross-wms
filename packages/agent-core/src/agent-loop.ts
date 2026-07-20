@@ -1,173 +1,73 @@
 import type {
   AgentMessage,
-  ToolCall,
-  ToolDefinition,
-  TokenUsage,
-  AgentRuntimeDeps,
-  ReasoningStep,
+  AgentContext,
+  AgentEvent,
+  AgentTool,
+  QueueMode,
+  ThinkingLevel,
+  StreamFn,
+  Model,
 } from './types';
-import { ReasoningEngine } from './reasoning';
+import type {
+  Message,
+  SimpleStreamOptions,
+  AssistantMessage,
+  AssistantMessageEventStreamLike,
+} from "@cdf-know/llm-core";
+import type { AgentCoreStreamRuntimeDeps } from './runtime-deps';
 
-export interface AgentLoopOptions {
-  runtime: AgentRuntimeDeps;
-  model: string;
-  maxIterations: number;
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  reasoningEnabled?: boolean;
-  onToken?: (content: string) => void;
-  onThinking?: (content: string) => void;
-  onToolCall?: (toolCalls: ToolCall[]) => void;
-  onIteration?: (iteration: number) => void;
-  signal?: AbortSignal;
+export type AgentEventSink = (event: AgentEvent) => Promise<void> | void;
+
+export interface AgentLoopConfig extends SimpleStreamOptions {
+  model: Model;
+  thinkingLevel?: ThinkingLevel;
+  convertToLlm: (messages: AgentMessage[]) => Message[] | Promise<Message[]>;
+  transformContext?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
+  beforeToolCall?: (context: unknown, signal?: AbortSignal) => Promise<unknown>;
+  afterToolCall?: (context: unknown, signal?: AbortSignal) => Promise<unknown>;
+  prepareNextTurn?: (context: unknown) => unknown | Promise<unknown>;
+  getSteeringMessages?: () => Promise<AgentMessage[]>;
+  getFollowUpMessages?: () => Promise<AgentMessage[]>;
+  shouldStopAfterTurn?: (context: unknown) => boolean | Promise<boolean>;
 }
 
-export interface AgentLoopResult {
-  content: string;
-  thinkingContent?: string;
-  toolCalls?: ToolCall[];
-  messages: AgentMessage[];
-  usage?: TokenUsage;
-  iterations: number;
-}
+/** Run a prompt-started agent loop. */
+export async function runAgentLoop(
+  prompts: AgentMessage[],
+  context: AgentContext,
+  config: AgentLoopConfig,
+  emit: AgentEventSink,
+  signal?: AbortSignal,
+  streamFn?: StreamFn,
+  runtime?: AgentCoreStreamRuntimeDeps,
+): Promise<AgentMessage[]> {
+  const newMessages: AgentMessage[] = [...prompts];
+  const currentContext: AgentContext = {
+    ...context,
+    messages: [...context.messages, ...prompts],
+  };
 
-export class AgentLoop {
-  private options: AgentLoopOptions;
-  private reasoningEngine: ReasoningEngine;
-  private messages: AgentMessage[] = [];
-  private usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-  private iterations = 0;
-  private thinkingContent = '';
-
-  constructor(options: AgentLoopOptions) {
-    this.options = options;
-    this.reasoningEngine = new ReasoningEngine();
+  await emit({ type: "agent_start" });
+  await emit({ type: "turn_start" });
+  for (const prompt of prompts) {
+    await emit({ type: "message_start", message: prompt });
+    await emit({ type: "message_end", message: prompt });
   }
 
-  async execute(params: {
-    messages: AgentMessage[];
-    tools: ToolDefinition[];
-    systemPrompt?: string;
-  }): Promise<AgentLoopResult> {
-    this.messages = [...params.messages];
-
-    if (params.systemPrompt) {
-      const hasSystem = this.messages.some((m) => m.role === 'system');
-      if (!hasSystem) {
-        this.messages.unshift({
-          id: 'system-0',
-          role: 'system',
-          content: params.systemPrompt,
-          timestamp: Date.now(),
-        });
-      }
-    }
-
-    let finalContent = '';
-    let finalToolCalls: ToolCall[] | undefined;
-
-    for (let i = 0; i < this.options.maxIterations; i++) {
-      this.iterations = i + 1;
-      this.options.onIteration?.(i + 1);
-
-      this.checkAbort();
-
-      if (this.options.reasoningEnabled) {
-        const step = await this.reasoningEngine.plan(this.messages);
-        this.thinkingContent += step.content;
-        this.options.onThinking?.(step.content);
-      }
-
-      const response = await this.callModel(params.tools);
-
-      if (response.toolCalls && response.toolCalls.length > 0) {
-        finalToolCalls = response.toolCalls;
-        this.options.onToolCall?.(response.toolCalls);
-
-        this.messages.push({
-          id: `msg-${Date.now()}-${i}`,
-          role: 'assistant',
-          content: response.content,
-          tool_calls: response.toolCalls,
-          timestamp: Date.now(),
-        });
-
-        for (const toolCall of response.toolCalls) {
-          const toolResult = await this.executeTool(toolCall, params.tools);
-          this.messages.push({
-            id: `tool-${Date.now()}-${toolCall.id}`,
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: toolResult,
-            timestamp: Date.now(),
-          });
-        }
-      } else {
-        finalContent = response.content;
-        break;
-      }
-    }
-
-    return {
-      content: finalContent,
-      thinkingContent: this.thinkingContent || undefined,
-      toolCalls: finalToolCalls,
-      messages: this.messages,
-      usage: this.usage,
-      iterations: this.iterations,
-    };
-  }
-
-  private async callModel(tools: ToolDefinition[]): Promise<{
-    content: string;
-    toolCalls?: ToolCall[];
-    usage?: TokenUsage;
-  }> {
-    const response = await this.options.runtime.completeSimple(
-      this.options.model,
-      this.messages,
-      {
-        temperature: this.options.temperature,
-        maxTokens: this.options.maxTokens,
-        topP: this.options.topP,
-        tools: tools.length > 0 ? tools : undefined,
-      },
-    );
-
-    if (response.usage) {
-      this.usage.promptTokens += response.usage.promptTokens;
-      this.usage.completionTokens += response.usage.completionTokens;
-      this.usage.totalTokens += response.usage.totalTokens;
-    }
-
-    return response as {
-      content: string;
-      toolCalls?: ToolCall[];
-      usage?: TokenUsage;
-    };
-  }
-
-  private async executeTool(
-    toolCall: ToolCall,
-    tools: ToolDefinition[],
-  ): Promise<string> {
-    const tool = tools.find((t) => t.name === toolCall.function.name);
-    if (!tool) {
-      return JSON.stringify({ error: `Tool ${toolCall.function.name} not found` });
-    }
-
+  // Simplified loop: delegate to streamFn if available
+  if (streamFn) {
     try {
-      const args = JSON.parse(toolCall.function.arguments);
-      return JSON.stringify({ result: `Executed ${toolCall.function.name}`, args });
-    } catch (e) {
-      return JSON.stringify({ error: `Invalid arguments: ${(e as Error).message}` });
+      const streamResult = await (await streamFn(config.model, currentContext as unknown as import("@cdf-know/llm-core").Context, config)).result();
+      newMessages.push(streamResult as unknown as AgentMessage);
+      await emit({ type: "message_start", message: streamResult as unknown as AgentMessage });
+      await emit({ type: "message_end", message: streamResult as unknown as AgentMessage });
+    } catch (error) {
+      // Re-throw so the caller (Agent.run) can handle it
+      throw error;
     }
   }
 
-  private checkAbort(): void {
-    if (this.options.signal?.aborted) {
-      throw new Error('Agent execution aborted');
-    }
-  }
+  await emit({ type: "turn_end", message: newMessages[newMessages.length - 1] ?? prompts[0], toolResults: [] });
+  await emit({ type: "agent_end", messages: newMessages });
+  return newMessages;
 }

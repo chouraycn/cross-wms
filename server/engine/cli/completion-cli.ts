@@ -454,9 +454,8 @@ export function registerCompletionCli(program: Command) {
       }
 
       if (options.writeState) {
-        throw new Error(
-          "openclaw completion --write-state: not supported in stub mode (program/registry not ported).",
-        );
+        console.error('openclaw completion --write-state is not available in cross-wms');
+      process.exit(1);
       }
 
       if (!isCompletionShell(shell)) {

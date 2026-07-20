@@ -1,11 +1,21 @@
 /**
- * 移植自 openclaw/src/agents/harness/codex-app-server-extensions.ts
+ * Ported from openclaw/src/agents/harness/codex-app-server-extensions.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Codex app-server extension runner.
+ * Cross-wms degradation: returns a no-op runner without extension factories.
  */
 
-export function createCodexAppServerToolResultExtensionRunner(..._args: unknown[]): unknown {
-  throw new Error("createCodexAppServerToolResultExtensionRunner not implemented (openclaw stub)");
+/** Creates a runner that applies registered Codex app-server tool-result extensions. */
+export function createCodexAppServerToolResultExtensionRunner(
+  _ctx?: Record<string, unknown>,
+  _factories?: unknown[],
+) {
+  return {
+    async applyToolResultExtensions(
+      event: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      // Cross-wms does not have registered extension factories.
+      return event.result as Record<string, unknown>;
+    },
+  };
 }

@@ -1,14 +1,18 @@
 /**
  * 移植自 openclaw/src/agents/cli-runner/claude-skills-plugin.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Claude CLI skills plugin helpers.
+ * In cross-wms the Claude CLI skills infrastructure is not available,
+ * so isClaudeCliSkillFileAccessible returns false and
+ * prepareClaudeCliSkillsPlugin returns null.
  */
 
-export function isClaudeCliSkillFileAccessible(..._args: unknown[]): unknown {
-  throw new Error("isClaudeCliSkillFileAccessible not implemented (openclaw stub)");
+/** Check if a Claude CLI skill file is accessible (always false in cross-wms). */
+export function isClaudeCliSkillFileAccessible(..._args: unknown[]): false {
+  return false;
 }
-export function prepareClaudeCliSkillsPlugin(..._args: unknown[]): unknown {
-  throw new Error("prepareClaudeCliSkillsPlugin not implemented (openclaw stub)");
+
+/** Prepare the Claude CLI skills plugin (returns null in cross-wms). */
+export function prepareClaudeCliSkillsPlugin(..._args: unknown[]): null {
+  return null;
 }

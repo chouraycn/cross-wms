@@ -7,5 +7,5 @@
  */
 
 export function wrapStreamFnWithMessageTransform(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnWithMessageTransform not implemented (openclaw stub)");
+  return undefined;
 }

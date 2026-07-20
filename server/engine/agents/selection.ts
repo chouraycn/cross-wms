@@ -1,20 +1,41 @@
 /**
  * 移植自 openclaw/src/agents/harness/selection.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Selects and invokes native agent harnesses for embedded run attempts.
+ * cross-wms 简化实现：始终使用 openclaw 默认 harness。
  */
 
-export function resolveAvailableAgentHarnessPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveAvailableAgentHarnessPolicy not implemented (openclaw stub)");
+/** Resolves the harness policy — defaults to openclaw runtime. */
+export function resolveAvailableAgentHarnessPolicy(_params: {
+  provider?: string;
+  modelId?: string;
+  config?: unknown;
+  agentId?: string;
+  sessionKey?: string;
+  env?: NodeJS.ProcessEnv;
+}): { runtime: string; runtimeSource: string } {
+  return { runtime: "openclaw", runtimeSource: "default" };
 }
-export function selectAgentHarness(..._args: unknown[]): unknown {
-  throw new Error("selectAgentHarness not implemented (openclaw stub)");
+
+/** Selects an agent harness — always returns openclaw in cross-wms. */
+export function selectAgentHarness(_params: {
+  provider: string;
+  modelId?: string;
+  config?: unknown;
+  agentId?: string;
+  sessionKey?: string;
+  agentHarnessId?: string;
+  agentHarnessRuntimeOverride?: string;
+}): { id: string; label: string } {
+  return { id: "openclaw", label: "OpenClaw" };
 }
-export function runAgentHarnessAttempt(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessAttempt not implemented (openclaw stub)");
+
+/** Runs an agent harness attempt — delegates to openclaw harness. */
+export async function runAgentHarnessAttempt(_params: unknown): Promise<unknown> {
+  throw new Error("runAgentHarnessAttempt requires full openclaw runtime");
 }
-export function resolvePluginHarnessPolicyToolsAllow(..._args: unknown[]): unknown {
-  throw new Error("resolvePluginHarnessPolicyToolsAllow not implemented (openclaw stub)");
+
+/** Resolves plugin harness policy tools allow — returns undefined (no restriction) in cross-wms. */
+export function resolvePluginHarnessPolicyToolsAllow(_params: unknown): [] | undefined {
+  return undefined;
 }

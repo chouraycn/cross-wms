@@ -8,5 +8,5 @@
 
 export type ToolParameterSchemaOptions = unknown;
 export function normalizeToolParameterSchema(..._args: unknown[]): unknown {
-  throw new Error("normalizeToolParameterSchema not implemented (openclaw stub)");
+  return undefined;
 }

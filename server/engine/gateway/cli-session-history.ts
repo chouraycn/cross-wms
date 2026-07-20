@@ -12,5 +12,5 @@
  */
 
 export function augmentChatHistoryWithCliSessionImports(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] augmentChatHistoryWithCliSessionImports not implemented");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function startGatewayMaintenanceTimers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayMaintenanceTimers not implemented");
+  return undefined;
 }

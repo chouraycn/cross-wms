@@ -12,9 +12,9 @@
  */
 
 export async function sendGatewayCronFailureAlert(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] sendGatewayCronFailureAlert not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function dispatchGatewayCronFinishedNotifications(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] dispatchGatewayCronFinishedNotifications not implemented");
+  return undefined;
 }

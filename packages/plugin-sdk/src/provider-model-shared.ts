@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider model helpers normalize model catalog entries shared by provider plugins.
 import { normalizeProviderId as normalizeProviderIdCore } from "@cdf-know/model-catalog-core/provider-id";
 import {
@@ -88,6 +87,53 @@ export {
   sanitizeGoogleGeminiReplayHistory,
   buildStrictAnthropicReplayPolicy,
 };
+
+// ==================== Local type stubs and function stubs for unported dependencies ====================
+
+/** Provider plugin type. */
+type ProviderPlugin = {
+  buildReplayPolicy?: unknown;
+  sanitizeReplayHistory?: unknown;
+  resolveReasoningOutputMode?: unknown;
+  [key: string]: unknown;
+};
+
+/** Normalizes optional lowercase string. TODO: 依赖模块未移植 */
+function normalizeOptionalLowercaseString(value: unknown): string {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function buildAnthropicReplayPolicyForModel(_modelId: string): unknown {
+  return { type: "anthropic-by-model" };
+}
+function buildGoogleGeminiReplayPolicy(): unknown {
+  return { type: "google-gemini" };
+}
+function buildHybridAnthropicOrOpenAIReplayPolicy(_ctx: unknown, _options?: unknown): unknown {
+  return { type: "hybrid-anthropic-openai" };
+}
+function buildNativeAnthropicReplayPolicyForModel(_modelId: string): unknown {
+  return { type: "native-anthropic-by-model" };
+}
+function buildOpenAICompatibleReplayPolicy(_modelApi: unknown, _options?: unknown): unknown {
+  return { type: "openai-compatible" };
+}
+function buildPassthroughGeminiSanitizingReplayPolicy(_modelId?: unknown): unknown {
+  return { type: "passthrough-gemini" };
+}
+function resolveTaggedReasoningOutputMode(): unknown {
+  return { mode: "tagged" };
+}
+function sanitizeGoogleGeminiReplayHistory(_ctx: unknown): void {}
+function buildStrictAnthropicReplayPolicy(): unknown {
+  return { type: "strict-anthropic" };
+}
+
+/** Resolves provider endpoint. TODO: 依赖模块未移植 */
+export function resolveProviderEndpoint(baseUrl: string): { endpointClass: string } {
+  return { endpointClass: baseUrl ? "valid" : "invalid" };
+}
 
 /**
  * Normalizes provider ids for config, catalog, and plugin-registry matching.

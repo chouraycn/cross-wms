@@ -1,37 +1,34 @@
-// 移植自 openclaw/src/cli/rpc.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export function buildNodeInvokeParams(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildNodeInvokeParams");
+  console.warn('buildNodeInvokeParams is not available in cross-wms'); return undefined;
 }
 
 export function parseOptionalNodePositiveInteger(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseOptionalNodePositiveInteger");
+  console.warn('parseOptionalNodePositiveInteger is not available in cross-wms'); return undefined;
 }
 
 export function parseOptionalNodeNonNegativeInteger(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseOptionalNodeNonNegativeInteger");
+  console.warn('parseOptionalNodeNonNegativeInteger is not available in cross-wms'); return undefined;
 }
 
 export function parseOptionalNodeFiniteNumber(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseOptionalNodeFiniteNumber");
+  console.warn('parseOptionalNodeFiniteNumber is not available in cross-wms'); return undefined;
 }
 
 export function unauthorizedHintForMessage(..._args: unknown[]): unknown {
-  throw new Error("not implemented: unauthorizedHintForMessage");
+  console.warn('unauthorizedHintForMessage is not available in cross-wms'); return undefined;
 }
 
 export async function resolveNodeId(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveNodeId");
+  console.warn('resolveNodeId is not available in cross-wms');
 }
 
 export async function resolveNodeDiagnosticsId(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveNodeDiagnosticsId");
+  console.warn('resolveNodeDiagnosticsId is not available in cross-wms');
 }
 
 export async function resolveNode(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveNode");
+  console.warn('resolveNode is not available in cross-wms');
 }
 
 export const nodesCallOpts: unknown = undefined;

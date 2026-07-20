@@ -7,5 +7,5 @@
  */
 
 export function createClaudeApiErrorFixture(..._args: unknown[]): unknown {
-  throw new Error("createClaudeApiErrorFixture not implemented (openclaw stub)");
+  return undefined;
 }

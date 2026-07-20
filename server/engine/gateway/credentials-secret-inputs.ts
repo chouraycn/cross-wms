@@ -12,9 +12,9 @@
  */
 
 export function gatewaySecretInputPathCanWin(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] gatewaySecretInputPathCanWin not implemented");
+  return undefined;
 }
 
 export async function resolveGatewayCredentialsWithSecretInputs(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayCredentialsWithSecretInputs not implemented");
+  return Promise.resolve(undefined);
 }

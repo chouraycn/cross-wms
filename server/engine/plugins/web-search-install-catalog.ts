@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Builds web-search install catalog entries from plugin metadata.
-import { normalizeOptionalString as normalizeString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { normalizeTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeOptionalString as normalizeString } from './_openclaw__normalization_core__string_coerce.js';
+import { normalizeTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 import { enablePluginInConfig } from "./enable.js";
 import type { PluginPackageInstall } from "./manifest.js";
 import {

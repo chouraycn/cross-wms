@@ -1,26 +1,58 @@
 // 移植自 openclaw/src/channels/plugins/catalog.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export type ChannelUiMetaEntry = unknown;
+export type ChannelUiMetaEntry = {
+  provider: string;
+  label?: string;
+  description?: string;
+  iconUrl?: string;
+  [key: string]: unknown;
+};
 
-export type ChannelUiCatalog = unknown;
+export type ChannelUiCatalog = {
+  entries: ChannelUiMetaEntry[];
+};
 
-export type ChannelPluginCatalogInstall = unknown;
+export type ChannelPluginCatalogInstall = {
+  spec: string;
+  version?: string;
+  integrity?: string;
+};
 
-export type ChannelPluginCatalogEntry = unknown;
+export type ChannelPluginCatalogEntry = {
+  provider: string;
+  label?: string;
+  description?: string;
+  install?: ChannelPluginCatalogInstall;
+  bundled?: boolean;
+  official?: boolean;
+  [key: string]: unknown;
+};
 
-export function buildChannelUiCatalog(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildChannelUiCatalog");
+/** Builds a channel UI catalog from available entries. */
+export function buildChannelUiCatalog(entries?: ChannelPluginCatalogEntry[]): ChannelUiCatalog {
+  return {
+    entries: (entries ?? []).map((entry) => ({
+      provider: entry.provider,
+      label: entry.label,
+      description: entry.description,
+      iconUrl: entry.iconUrl,
+    })),
+  };
 }
 
-export function listRawChannelPluginCatalogEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: listRawChannelPluginCatalogEntries");
+/** Lists raw channel plugin catalog entries. Simplified without plugin discovery. */
+export function listRawChannelPluginCatalogEntries(_params?: unknown): ChannelPluginCatalogEntry[] {
+  return [];
 }
 
-export function listChannelPluginCatalogEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: listChannelPluginCatalogEntries");
+/** Lists channel plugin catalog entries. Simplified without plugin discovery. */
+export function listChannelPluginCatalogEntries(_params?: unknown): ChannelPluginCatalogEntry[] {
+  return [];
 }
 
-export function getChannelPluginCatalogEntry(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getChannelPluginCatalogEntry");
+/** Gets a single channel plugin catalog entry. */
+export function getChannelPluginCatalogEntry(params: { provider: string }): ChannelPluginCatalogEntry | null {
+  if (!params.provider?.trim()) return null;
+  return null;
 }

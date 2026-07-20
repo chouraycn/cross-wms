@@ -7,26 +7,26 @@
  */
 
 export function canonicalizeManifestModelCatalogProviderAlias(..._args: unknown[]): unknown {
-  throw new Error("canonicalizeManifestModelCatalogProviderAlias not implemented (openclaw stub)");
+  return false;
 }
 export function bundledStaticCatalogProviderUsesRuntimeAugment(..._args: unknown[]): unknown {
-  throw new Error("bundledStaticCatalogProviderUsesRuntimeAugment not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBundledStaticCatalogModelResolver(..._args: unknown[]): unknown {
-  throw new Error("createBundledStaticCatalogModelResolver not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveBundledStaticCatalogModel(..._args: unknown[]): unknown {
-  throw new Error("resolveBundledStaticCatalogModel not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadBundledProviderStaticCatalogContextModels(..._args: unknown[]): unknown {
-  throw new Error("loadBundledProviderStaticCatalogContextModels not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBundledProviderStaticCatalogModelResolver(..._args: unknown[]): unknown {
-  throw new Error("createBundledProviderStaticCatalogModelResolver not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBundledProviderStaticCatalogContextResolver(..._args: unknown[]): unknown {
-  throw new Error("createBundledProviderStaticCatalogContextResolver not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveBundledProviderStaticCatalogModel(..._args: unknown[]): unknown {
-  throw new Error("resolveBundledProviderStaticCatalogModel not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,11 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles/clone.ts
+ * Ported from openclaw/src/agents/auth-profiles/clone.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Auth profile store cloning helpers.
  */
 
-export function cloneAuthProfileStore(..._args: unknown[]): unknown {
-  throw new Error("cloneAuthProfileStore not implemented (openclaw stub)");
+/** Deep-clones an auth profile store and rejects non-JSON values. */
+export function cloneAuthProfileStore(store: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(
+    JSON.stringify(store, (_key, value: unknown) => {
+      if (typeof value === "bigint" || typeof value === "function" || typeof value === "symbol") {
+        throw new TypeError(`AuthProfileStore contains non-JSON value: ${typeof value}`);
+      }
+      return value;
+    }),
+  ) as Record<string, unknown>;
 }

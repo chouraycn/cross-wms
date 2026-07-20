@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Builds plugin hook agent context snapshots from active session and model state. */
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import { parseRawSessionConversationRef } from "../sessions/session-key-utils.js";
 import type { PluginHookChannelContext } from "./hook-channel-context.types.js";
 import type { PluginHookAgentContext } from "./hook-types.js";

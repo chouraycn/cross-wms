@@ -442,7 +442,7 @@ describe('ModelFailoverManager', () => {
 
     it('冷却未到期时模型仍处于冷却状态', () => {
       for (let i = 0; i < 3; i++) {
-        manager.recordFailure('a', 'err', 'server');
+        manager.recordFailure('a', 'err', 'unknown');
       }
 
       vi.advanceTimersByTime(500);

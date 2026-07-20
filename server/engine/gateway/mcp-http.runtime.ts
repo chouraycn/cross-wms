@@ -12,11 +12,11 @@
  */
 
 export function resolveMcpLoopbackScopedTools(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveMcpLoopbackScopedTools not implemented");
+  return undefined;
 }
 
 export class McpLoopbackToolCache {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] McpLoopbackToolCache not implemented");
+    // Stub: not fully ported
   }
 }

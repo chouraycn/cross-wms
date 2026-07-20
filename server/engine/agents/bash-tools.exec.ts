@@ -1,15 +1,28 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.exec.ts
+ * Ported from openclaw/src/agents/bash-tools.exec.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Bash exec tool creation.
+ * Cross-wms degradation: returns placeholder tool without execution capability.
  */
 
 export type { BashSandboxConfig } from "./bash-tools.shared.js";
 export type { ExecElevatedDefaults, ExecToolDefaults, ExecToolDetails } from "./bash-tools.exec-types.js";
-export const execTool: unknown = undefined;
-export const testing: unknown = undefined;
-export function createExecTool(..._args: unknown[]): unknown {
-  throw new Error("createExecTool not implemented (openclaw stub)");
+
+/** Placeholder exec tool. */
+export const execTool: Record<string, unknown> = {
+  name: "exec",
+  description: "Execute bash commands (cross-wms placeholder).",
+};
+
+/** Testing exports. */
+export const testing: Record<string, unknown> = {};
+
+/** Creates an exec tool instance. */
+export function createExecTool(..._args: unknown[]): Record<string, unknown> {
+  return {
+    name: "exec",
+    description: "Execute bash commands (cross-wms placeholder).",
+    parameters: { type: "object", properties: { command: { type: "string" } } },
+    execute: async () => ({ output: "Exec tool not available in cross-wms" }),
+  };
 }

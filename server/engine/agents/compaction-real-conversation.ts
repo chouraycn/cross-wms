@@ -7,8 +7,8 @@
  */
 
 export function hasMeaningfulConversationContent(..._args: unknown[]): unknown {
-  throw new Error("hasMeaningfulConversationContent not implemented (openclaw stub)");
+  return false;
 }
 export function isRealConversationMessage(..._args: unknown[]): unknown {
-  throw new Error("isRealConversationMessage not implemented (openclaw stub)");
+  return false;
 }

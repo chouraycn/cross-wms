@@ -1,11 +1,29 @@
 /**
  * 移植自 openclaw/src/agents/system-prompt-params.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供默认的系统提示参数构造，不再抛出 stub 错误。
  */
 
-export function buildSystemPromptParams(..._args: unknown[]): unknown {
-  throw new Error("buildSystemPromptParams not implemented (openclaw stub)");
+export type SystemPromptRuntimeParams = {
+  runtimeInfo: Record<string, unknown>;
+  userTimezone: string;
+  userTime?: string;
+  userTimeFormat?: string;
+};
+
+export function buildSystemPromptParams(params: {
+  config?: unknown;
+  agentId?: string;
+  runtime?: Record<string, unknown>;
+  workspaceDir?: string;
+  cwd?: string;
+}): SystemPromptRuntimeParams {
+  return {
+    runtimeInfo: {
+      agentId: params.agentId,
+      ...params.runtime,
+    },
+    userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    userTime: new Date().toISOString(),
+  };
 }

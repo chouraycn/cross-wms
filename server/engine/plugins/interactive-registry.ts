@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Maintains interactive plugin registry entries discovered from manifests.
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
 import {
   normalizePluginInteractiveNamespace,
   resolvePluginInteractiveMatch,

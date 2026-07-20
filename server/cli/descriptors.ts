@@ -203,6 +203,16 @@ const CORE_COMMAND_DESCRIPTORS = defineCommandDescriptorCatalog([
     hasSubcommands: true,
     aliases: ["sbx"],
   },
+  {
+    name: "docs",
+    description: "Search the live OpenClaw docs",
+    hasSubcommands: false,
+  },
+  {
+    name: "tasks",
+    description: "Background task management (list/show/cancel/notify/audit/maintenance)",
+    hasSubcommands: true,
+  },
 ] as const satisfies ReadonlyArray<CoreCommandDescriptor>);
 
 /** 核心 CLI 命令描述符 */

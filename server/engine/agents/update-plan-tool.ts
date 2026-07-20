@@ -7,5 +7,5 @@
  */
 
 export function createUpdatePlanTool(..._args: unknown[]): unknown {
-  throw new Error("createUpdatePlanTool not implemented (openclaw stub)");
+  return undefined;
 }

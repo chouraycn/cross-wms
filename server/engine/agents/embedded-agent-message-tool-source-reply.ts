@@ -7,11 +7,11 @@
  */
 
 export function hasMessagingDeliveryReceipt(..._args: unknown[]): unknown {
-  throw new Error("hasMessagingDeliveryReceipt not implemented (openclaw stub)");
+  return false;
 }
 export function isDeliveredMessagingToolResult(..._args: unknown[]): unknown {
-  throw new Error("isDeliveredMessagingToolResult not implemented (openclaw stub)");
+  return false;
 }
 export function isDeliveredMessageToolOnlySourceReplyResult(..._args: unknown[]): unknown {
-  throw new Error("isDeliveredMessageToolOnlySourceReplyResult not implemented (openclaw stub)");
+  return false;
 }

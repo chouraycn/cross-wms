@@ -14,5 +14,5 @@
 export type NodeReapprovalCoordinator = unknown;
 
 export function createNodeReapprovalCoordinator(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createNodeReapprovalCoordinator not implemented");
+  return undefined;
 }

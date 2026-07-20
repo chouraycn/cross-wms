@@ -1,15 +1,24 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/openrouter-model-capabilities.ts
+ * Ported from openclaw/src/agents/openrouter-model-capabilities.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * OpenRouter model capabilities cache.
+ * Cross-wms degradation: returns empty capabilities without API fetching.
  */
 
-export type OpenRouterModelCapabilities = unknown;
-export function loadOpenRouterModelCapabilities(..._args: unknown[]): unknown {
-  throw new Error("loadOpenRouterModelCapabilities not implemented (openclaw stub)");
+export type OpenRouterModelCapabilities = Record<string, unknown>;
+
+let cachedCapabilities: OpenRouterModelCapabilities | undefined;
+
+/** Loads OpenRouter model capabilities from the API. */
+export async function loadOpenRouterModelCapabilities(
+  _params?: Record<string, unknown>,
+): Promise<OpenRouterModelCapabilities> {
+  // Cross-wms does not have OpenRouter API access; return empty.
+  cachedCapabilities = {};
+  return cachedCapabilities;
 }
-export function getOpenRouterModelCapabilities(..._args: unknown[]): unknown {
-  throw new Error("getOpenRouterModelCapabilities not implemented (openclaw stub)");
+
+/** Returns cached OpenRouter model capabilities. */
+export function getOpenRouterModelCapabilities(): OpenRouterModelCapabilities | undefined {
+  return cachedCapabilities;
 }

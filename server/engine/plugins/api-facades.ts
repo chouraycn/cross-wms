@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds plugin API facades exposed to bundled and external plugins.
 import type { OpenClawPluginApi } from "./types.js";
 
@@ -32,33 +31,33 @@ export function attachPluginApiFacades<T extends object>(
 ): T & PluginApiFacadeFields {
   api.session = {
     state: {
-      registerSessionExtension: (...args) => api.registerSessionExtension(...args),
+      registerSessionExtension: (...args: unknown[]) => api.registerSessionExtension(...args as never[]),
     },
     workflow: {
-      enqueueNextTurnInjection: (...args) => api.enqueueNextTurnInjection(...args),
-      registerSessionSchedulerJob: (...args) => api.registerSessionSchedulerJob(...args),
-      sendSessionAttachment: (...args) => api.sendSessionAttachment(...args),
-      scheduleSessionTurn: (...args) => api.scheduleSessionTurn(...args),
-      unscheduleSessionTurnsByTag: (...args) => api.unscheduleSessionTurnsByTag(...args),
+      enqueueNextTurnInjection: (...args: unknown[]) => api.enqueueNextTurnInjection(...args as never[]),
+      registerSessionSchedulerJob: (...args: unknown[]) => api.registerSessionSchedulerJob(...args as never[]),
+      sendSessionAttachment: (...args: unknown[]) => api.sendSessionAttachment(...args as never[]),
+      scheduleSessionTurn: (...args: unknown[]) => api.scheduleSessionTurn(...args as never[]),
+      unscheduleSessionTurnsByTag: (...args: unknown[]) => api.unscheduleSessionTurnsByTag(...args as never[]),
     },
     controls: {
-      registerSessionAction: (...args) => api.registerSessionAction(...args),
-      registerControlUiDescriptor: (...args) => api.registerControlUiDescriptor(...args),
+      registerSessionAction: (...args: unknown[]) => api.registerSessionAction(...args as never[]),
+      registerControlUiDescriptor: (...args: unknown[]) => api.registerControlUiDescriptor(...args as never[]),
     },
   };
   api.agent = {
     events: {
-      registerAgentEventSubscription: (...args) => api.registerAgentEventSubscription(...args),
-      emitAgentEvent: (...args) => api.emitAgentEvent(...args),
+      registerAgentEventSubscription: (...args: unknown[]) => api.registerAgentEventSubscription(...args as never[]),
+      emitAgentEvent: (...args: unknown[]) => api.emitAgentEvent(...args as never[]),
     },
   };
   api.runContext = {
-    setRunContext: (...args) => api.setRunContext(...args),
-    getRunContext: (...args) => api.getRunContext(...args),
-    clearRunContext: (...args) => api.clearRunContext(...args),
+    setRunContext: (...args: unknown[]) => api.setRunContext(...args as never[]),
+    getRunContext: (...args: unknown[]) => api.getRunContext(...args as never[]),
+    clearRunContext: (...args: unknown[]) => api.clearRunContext(...args as never[]),
   };
   api.lifecycle = {
-    registerRuntimeLifecycle: (...args) => api.registerRuntimeLifecycle(...args),
+    registerRuntimeLifecycle: (...args: unknown[]) => api.registerRuntimeLifecycle(...args as never[]),
   };
   return api as T & PluginApiFacadeFields;
 }

@@ -3,7 +3,7 @@ import { ReasoningEngine } from '../reasoning';
 import type { AgentMessage } from '../types';
 
 function userMsg(content: string): AgentMessage {
-  return { id: '1', role: 'user', content, timestamp: Date.now() };
+  return { role: 'user', content, timestamp: Date.now() };
 }
 
 describe('ReasoningEngine', () => {
@@ -44,7 +44,8 @@ describe('ReasoningEngine', () => {
     expect(reflection.content).toBe('');
 
     const engine2 = new ReasoningEngine({ enableReflection: true });
-    const reflection2 = await engine2.reflect('current state', [engine2.think('t').then((t) => t)]);
+    const thoughtStep = await engine2.think('t');
+    const reflection2 = await engine2.reflect('current state', [thoughtStep]);
     expect(reflection2.type).toBe('reflection');
     expect(reflection2.content).toContain('当前状态');
   });

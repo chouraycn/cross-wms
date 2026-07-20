@@ -7,14 +7,14 @@
  */
 
 export function castAgentMessage(..._args: unknown[]): unknown {
-  throw new Error("castAgentMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function castAgentMessages(..._args: unknown[]): unknown {
-  throw new Error("castAgentMessages not implemented (openclaw stub)");
+  return undefined;
 }
 export function makeAgentUserMessage(..._args: unknown[]): unknown {
-  throw new Error("makeAgentUserMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function makeAgentAssistantMessage(..._args: unknown[]): unknown {
-  throw new Error("makeAgentAssistantMessage not implemented (openclaw stub)");
+  return undefined;
 }

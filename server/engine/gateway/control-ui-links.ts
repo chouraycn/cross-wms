@@ -12,5 +12,5 @@
  */
 
 export function resolveControlUiLinks(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveControlUiLinks not implemented");
+  return undefined;
 }

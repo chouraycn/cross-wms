@@ -7,5 +7,5 @@
  */
 
 export function normalizeToolParameters(..._args: unknown[]): unknown {
-  throw new Error("normalizeToolParameters not implemented (openclaw stub)");
+  return undefined;
 }

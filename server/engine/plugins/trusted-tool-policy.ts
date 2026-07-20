@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Resolves trusted tool policy for plugins from runtime config.
 import { getRuntimeConfig } from "../config/config.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { isPlainObject } from './_stub_parent__utils.js';
+import { isPlainObject } from './_parent__utils.js';
 import type {
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,

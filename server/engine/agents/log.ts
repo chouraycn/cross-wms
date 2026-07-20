@@ -7,7 +7,7 @@
  */
 
 export function formatCliBackendOutputDigest(..._args: unknown[]): unknown {
-  throw new Error("formatCliBackendOutputDigest not implemented (openclaw stub)");
+  return "";
 }
 export const cliBackendLog: unknown = undefined;
 export const CLI_BACKEND_LOG_OUTPUT_ENV: unknown = undefined;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider auth helpers define auth methods, credential resolution, and setup status contracts.
 import path from "node:path";
 // import {
@@ -28,6 +27,102 @@ import path from "node:path";
 // import { resolveStateDir } from "../config/paths.js"; // TODO: 依赖模块未移植
 // import { loadJsonFile, saveJsonFile } from "../infra/json-file.js"; // TODO: 依赖模块未移植
 import { resolveProviderEndpoint } from "./provider-model-shared.js";
+
+// ==================== Local type stubs and function stubs for unported dependencies ====================
+
+type OpenClawConfig = Record<string, unknown>;
+
+type AuthProfileCredential = {
+  type: string;
+  [key: string]: unknown;
+};
+
+type AuthProfileStore = {
+  profiles: Record<string, { provider?: string; type?: string; accountId?: string; [key: string]: unknown }>;
+};
+
+// TODO: 依赖模块未移植，暂用本地桩
+function asDateTimestampMs(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value < 100_000_000_000 ? value * 1000 : value;
+  }
+  return undefined;
+}
+
+function resolveExpiresAtMsFromEpochSeconds(seconds: number): number {
+  return seconds * 1000;
+}
+
+function parseStrictNonNegativeInteger(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0 && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0 && Number.isInteger(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+function resolveDefaultAgentDir(_cfg?: OpenClawConfig): string {
+  return "";
+}
+
+function externalCliDiscoveryForProviderAuth(_params: unknown): unknown {
+  return undefined;
+}
+
+function resolveApiKeyForProfile(_params: unknown): Promise<{ apiKey?: string }> {
+  return Promise.resolve({});
+}
+
+function resolveAuthProfileOrder(_params: unknown): string[] {
+  return [];
+}
+
+function listProfilesForProvider(_store: AuthProfileStore, _provider: string): string[] {
+  return [];
+}
+
+function ensureAuthProfileStore(_agentDir: string, _options?: unknown): AuthProfileStore {
+  return { profiles: {} };
+}
+
+function loadAuthProfileStoreForSecretsRuntime(_agentDir: string, _options?: unknown): AuthProfileStore {
+  return { profiles: {} };
+}
+
+function loadAuthProfileStoreWithoutExternalProfiles(_agentDir: string, _options?: unknown): AuthProfileStore {
+  return { profiles: {} };
+}
+
+const COPILOT_INTEGRATION_ID = "vscode-chat";
+
+function buildCopilotIdeHeaders(_options?: unknown): Record<string, string> {
+  return {};
+}
+
+function resolveEnvApiKey(_provider: string): { apiKey?: string } | undefined {
+  return undefined;
+}
+
+function resolveStateDir(_env?: NodeJS.ProcessEnv): string {
+  return path.join(process.env.HOME ?? "/tmp", ".openclaw");
+}
+
+function loadJsonFile(_filePath: string): unknown {
+  return undefined;
+}
+
+function saveJsonFile(_filePath: string, _value: unknown): void {
+  // no-op stub
+}
 
 // export type { OpenClawConfig } from "../config/config.js"; // TODO: 依赖模块未移植
 // export type { SecretInput } from "../config/types.secrets.js"; // TODO: 依赖模块未移植

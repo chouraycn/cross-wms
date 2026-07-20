@@ -12,21 +12,21 @@
  */
 
 export function createTalkTranscriptionRelaySession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createTalkTranscriptionRelaySession not implemented");
+  return undefined;
 }
 
 export function sendTalkTranscriptionRelayAudio(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] sendTalkTranscriptionRelayAudio not implemented");
+  return undefined;
 }
 
 export function stopTalkTranscriptionRelaySession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] stopTalkTranscriptionRelaySession not implemented");
+  return undefined;
 }
 
 export function cancelTalkTranscriptionRelayTurn(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] cancelTalkTranscriptionRelayTurn not implemented");
+  return false;
 }
 
 export function clearTalkTranscriptionRelaySessionsForTest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearTalkTranscriptionRelaySessionsForTest not implemented");
+  return undefined;
 }

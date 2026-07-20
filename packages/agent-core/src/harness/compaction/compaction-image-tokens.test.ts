@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
-import type { ImageContent } from "../../llm";
+import type { ImageContent } from "@cdf-know/llm-core";
 import type { AgentMessage } from "../../types";
 import type { SessionTreeEntry } from "../types";
 import { estimateTokens, findCutPoint } from "./compaction";

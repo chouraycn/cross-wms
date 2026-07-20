@@ -1,10 +1,9 @@
 // 移植自 openclaw/src/config/store-maintenance-preserve.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type SessionMaintenancePreserveKeysProvider = unknown;
 export function registerSessionMaintenancePreserveKeysProvider(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerSessionMaintenancePreserveKeysProvider");
+  return undefined;
 }
 export function collectSessionMaintenancePreserveKeys(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectSessionMaintenancePreserveKeys");
+  return [];
 }

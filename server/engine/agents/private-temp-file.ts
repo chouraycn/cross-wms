@@ -7,5 +7,5 @@
  */
 
 export function createPrivateTempWriteStream(..._args: unknown[]): unknown {
-  throw new Error("createPrivateTempWriteStream not implemented (openclaw stub)");
+  return undefined;
 }

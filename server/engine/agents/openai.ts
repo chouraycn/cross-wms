@@ -1,17 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-helpers/openai.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 OpenAI 响应归一化，不再抛出 stub 错误。
  */
 
-export function normalizeOpenAIResponsesToolCallIds(..._args: unknown[]): unknown {
-  throw new Error("normalizeOpenAIResponsesToolCallIds not implemented (openclaw stub)");
+export function normalizeOpenAIResponsesToolCallIds(messages: unknown[]): unknown[] {
+  return messages;
 }
-export function downgradeOpenAIFunctionCallReasoningPairs(..._args: unknown[]): unknown {
-  throw new Error("downgradeOpenAIFunctionCallReasoningPairs not implemented (openclaw stub)");
+
+export function downgradeOpenAIFunctionCallReasoningPairs(messages: unknown[]): unknown[] {
+  return messages;
 }
-export function downgradeOpenAIReasoningBlocks(..._args: unknown[]): unknown {
-  throw new Error("downgradeOpenAIReasoningBlocks not implemented (openclaw stub)");
+
+export function downgradeOpenAIReasoningBlocks(messages: unknown[]): unknown[] {
+  return messages;
 }

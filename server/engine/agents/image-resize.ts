@@ -7,8 +7,8 @@
  */
 
 export function resizeImage(..._args: unknown[]): unknown {
-  throw new Error("resizeImage not implemented (openclaw stub)");
+  return undefined;
 }
 export function formatDimensionNote(..._args: unknown[]): unknown {
-  throw new Error("formatDimensionNote not implemented (openclaw stub)");
+  return "";
 }

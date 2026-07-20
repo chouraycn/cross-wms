@@ -14,5 +14,5 @@
 export type GatewayServerMutableState = unknown;
 
 export function createGatewayServerMutableState(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayServerMutableState not implemented");
+  return undefined;
 }

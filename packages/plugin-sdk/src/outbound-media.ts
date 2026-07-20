@@ -1,9 +1,17 @@
-// @ts-nocheck
 // Outbound media helpers normalize plugin media attachments before channel delivery.
 import { randomBytes } from "node:crypto";
-// import { buildOutboundMediaLoadOptions, type OutboundMediaAccess } from "../media/load-options.js"; // TODO: 依赖模块未移植
-// import type { PluginStateKeyedStore } from "./plugin-state-runtime.js"; // TODO: 依赖模块未移植
-// import { loadWebMedia } from "./web-media.js"; // TODO: 依赖模块未移植
+
+/** Media access policy for outbound loads. */
+type OutboundMediaAccess = unknown;
+
+/** Plugin state keyed store interface for hosted media. */
+type PluginStateKeyedStore<T> = {
+  register(key: string, value: T, options?: { ttlMs?: number }): Promise<void>;
+  lookup(key: string): Promise<T | undefined>;
+  delete(key: string): Promise<void>;
+  entries(): Promise<ReadonlyArray<{ key: string; value: T; createdAt: number }>>;
+  clear(): Promise<void>;
+};
 
 /** Media loading policy used before plugin media is handed to channel delivery. */
 export type OutboundMediaLoadOptions = {
@@ -26,6 +34,27 @@ export type OutboundMediaLoadOptions = {
   /** Allows explicit proxy DNS behavior to be trusted by the media fetch guard. */
   trustExplicitProxyDns?: boolean;
 };
+
+/** Result of loading a web media resource. */
+type WebMediaResult = {
+  buffer: Buffer;
+  contentType?: string;
+};
+
+// TODO: 依赖模块未移植，暂用本地桩
+function buildOutboundMediaLoadOptions(
+  _params: OutboundMediaLoadOptions,
+): unknown {
+  return _params;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+async function loadWebMedia(
+  _url: string,
+  _options: unknown,
+): Promise<WebMediaResult> {
+  throw new Error("loadWebMedia: not implemented (dependency not ported)");
+}
 
 /** Load outbound media from a remote URL or approved local path using the shared web-media policy. */
 export async function loadOutboundMediaFromUrl(

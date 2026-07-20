@@ -7,8 +7,8 @@
  */
 
 export function normalizeProviderCatalogModelsForConfig(..._args: unknown[]): unknown {
-  throw new Error("normalizeProviderCatalogModelsForConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeProviders(..._args: unknown[]): unknown {
-  throw new Error("normalizeProviders not implemented (openclaw stub)");
+  return undefined;
 }

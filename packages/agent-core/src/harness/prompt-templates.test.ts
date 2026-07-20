@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core tests cover prompt templates behavior.
 import { describe, expect, it } from "vitest";
 import { parseCommandArgs, substituteArgs } from "./prompt-template-arguments";

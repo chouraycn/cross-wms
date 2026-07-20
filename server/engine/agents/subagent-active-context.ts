@@ -7,5 +7,5 @@
  */
 
 export function buildActiveSubagentSystemPromptAddition(..._args: unknown[]): unknown {
-  throw new Error("buildActiveSubagentSystemPromptAddition not implemented (openclaw stub)");
+  return undefined;
 }

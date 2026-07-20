@@ -1,14 +1,22 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/model-discovery-cache.ts
+ * Discovers cached model/provider state from configured agent stores.
+ * Ported from openclaw/src/agents/embedded-agent-runner/model-discovery-cache.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Note: Full discovery infrastructure not available in cross-wms.
  */
 
-export function discoverCachedAgentStores(..._args: unknown[]): unknown {
-  throw new Error("discoverCachedAgentStores not implemented (openclaw stub)");
+/** Discovers auth/model stores, reusing file-backed snapshots until their inputs change. */
+export function discoverCachedAgentStores(options: {
+  agentDir: string;
+  config?: unknown;
+  inheritedAuthDir?: string;
+  workspaceDir?: string;
+}): { authStorage: unknown; modelRegistry: unknown } {
+  // Full discovery not available in cross-wms; return empty defaults
+  return { authStorage: null, modelRegistry: null };
 }
-export function resetModelDiscoveryCacheForTest(..._args: unknown[]): unknown {
-  throw new Error("resetModelDiscoveryCacheForTest not implemented (openclaw stub)");
+
+/** Clears the process-local discovery cache between tests that mutate model/auth fixtures. */
+export function resetModelDiscoveryCacheForTest(): void {
+  // No-op; cache not used in cross-wms
 }

@@ -7,5 +7,5 @@
  */
 
 export function resolveSubagentThinkingOverride(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentThinkingOverride not implemented (openclaw stub)");
+  return undefined;
 }

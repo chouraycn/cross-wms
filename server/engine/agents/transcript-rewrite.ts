@@ -7,14 +7,14 @@
  */
 
 export function rewriteTranscriptEntriesInSessionManager(..._args: unknown[]): unknown {
-  throw new Error("rewriteTranscriptEntriesInSessionManager not implemented (openclaw stub)");
+  return undefined;
 }
 export function rewriteTranscriptEntriesInState(..._args: unknown[]): unknown {
-  throw new Error("rewriteTranscriptEntriesInState not implemented (openclaw stub)");
+  return undefined;
 }
 export function rewriteTranscriptEntriesInRuntimeTranscript(..._args: unknown[]): unknown {
-  throw new Error("rewriteTranscriptEntriesInRuntimeTranscript not implemented (openclaw stub)");
+  return undefined;
 }
 export function rewriteTranscriptEntriesInSessionFile(..._args: unknown[]): unknown {
-  throw new Error("rewriteTranscriptEntriesInSessionFile not implemented (openclaw stub)");
+  return undefined;
 }

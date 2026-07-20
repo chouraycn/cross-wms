@@ -1,12 +1,25 @@
 /**
  * 移植自 openclaw/src/agents/agent-auth-credentials.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Converts auth-profile credentials into agent runtime credential maps.
+ * In cross-wms the full auth profile store infrastructure is not available,
+ * so resolveAgentCredentialMapFromStore returns an empty map.
  */
 
-export type AgentCredentialMap = unknown;
-export function resolveAgentCredentialMapFromStore(..._args: unknown[]): unknown {
-  throw new Error("resolveAgentCredentialMapFromStore not implemented (openclaw stub)");
+/** Credential value shape consumed by agent runtimes after auth-profile normalization. */
+type AgentApiKeyCredential = { type: "api_key"; key: string };
+type AgentOAuthCredential = {
+  type: "oauth";
+  access: string;
+  refresh: string;
+  expires: number;
+};
+
+/** Credential map consumed by agent runtimes. */
+type AgentCredential = AgentApiKeyCredential | AgentOAuthCredential;
+export type AgentCredentialMap = Record<string, AgentCredential>;
+
+/** Build one credential per normalized provider from an auth profile store (returns empty in cross-wms). */
+export function resolveAgentCredentialMapFromStore(..._args: unknown[]): AgentCredentialMap {
+  return {};
 }

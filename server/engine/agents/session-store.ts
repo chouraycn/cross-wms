@@ -7,11 +7,11 @@
  */
 
 export function updateSessionStoreAfterAgentRun(..._args: unknown[]): unknown {
-  throw new Error("updateSessionStoreAfterAgentRun not implemented (openclaw stub)");
+  return undefined;
 }
 export function clearCliSessionInStore(..._args: unknown[]): unknown {
-  throw new Error("clearCliSessionInStore not implemented (openclaw stub)");
+  return undefined;
 }
 export function recordCliCompactionInStore(..._args: unknown[]): unknown {
-  throw new Error("recordCliCompactionInStore not implemented (openclaw stub)");
+  return undefined;
 }

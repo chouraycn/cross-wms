@@ -12,15 +12,15 @@
  */
 
 export function resolveSessionHistoryTailReadOptions(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionHistoryTailReadOptions not implemented");
+  return undefined;
 }
 
 export function buildSessionHistorySnapshot(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildSessionHistorySnapshot not implemented");
+  return undefined;
 }
 
 export class SessionHistorySseState {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] SessionHistorySseState not implemented");
+    // Stub: not fully ported
   }
 }

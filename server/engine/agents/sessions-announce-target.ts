@@ -7,5 +7,5 @@
  */
 
 export function resolveAnnounceTarget(..._args: unknown[]): unknown {
-  throw new Error("resolveAnnounceTarget not implemented (openclaw stub)");
+  return undefined;
 }

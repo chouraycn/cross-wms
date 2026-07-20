@@ -1,12 +1,27 @@
 /**
  * 移植自 openclaw/src/agents/command/attempt-callbacks.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Agent attempt lifecycle callbacks.
+ * In cross-wms the full attempt lifecycle infrastructure is not available,
+ * so createAgentAttemptLifecycleCallbacks returns a no-op callback set.
  */
 
-export type AgentAttemptLifecycleState = unknown;
-export function createAgentAttemptLifecycleCallbacks(..._args: unknown[]): unknown {
-  throw new Error("createAgentAttemptLifecycleCallbacks not implemented (openclaw stub)");
+/** Agent attempt lifecycle state. */
+export type AgentAttemptLifecycleState = {
+  startedAt?: number;
+  endedAt?: number;
+  status?: string;
+};
+
+/** Create agent attempt lifecycle callbacks (returns no-op callbacks in cross-wms). */
+export function createAgentAttemptLifecycleCallbacks(..._args: unknown[]): {
+  onStart: () => void;
+  onComplete: () => void;
+  onError: (_error: unknown) => void;
+} {
+  return {
+    onStart: () => {},
+    onComplete: () => {},
+    onError: () => {},
+  };
 }

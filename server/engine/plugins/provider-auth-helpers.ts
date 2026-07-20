@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Builds provider auth credentials from config and plugin metadata.
 import fs from "node:fs";
 import path from "node:path";
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js";
 import { buildAuthProfileId } from './_stub_parent__agents__auth_profiles__identity.js';
 import { upsertAuthProfile, upsertAuthProfileWithLock } from './_stub_parent__agents__auth_profiles__profiles.js';
@@ -19,7 +18,7 @@ import {
 import type { OAuthCredentials } from "../llm/oauth.js";
 import { getProviderEnvVars } from './_stub_parent__secrets__provider_env_vars.js';
 import { isValidSecretRef } from "../secrets/ref-contract.js";
-import { normalizeSecretInput } from './_stub_parent__utils__normalize_secret_input.js';
+import { normalizeSecretInput } from './_parent__utils__normalize_secret_input.js';
 import type { SecretInputMode } from "./provider-auth-types.js";
 
 type UpsertAuthProfileParams = Parameters<typeof upsertAuthProfileWithLock>[0];

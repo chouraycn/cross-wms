@@ -1,6 +1,6 @@
 // Resolves provider auth tokens from plugin-owned auth configuration.
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
-import { normalizeLowercaseStringOrEmpty } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
+import { normalizeLowercaseStringOrEmpty } from './_openclaw__normalization_core__string_coerce.js';
 
 export const ANTHROPIC_SETUP_TOKEN_PREFIX = "sk-ant-oat01-";
 const ANTHROPIC_SETUP_TOKEN_MIN_LENGTH = 80;

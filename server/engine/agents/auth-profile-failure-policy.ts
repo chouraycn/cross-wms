@@ -1,11 +1,31 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/run/auth-profile-failure-policy.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/run/auth-profile-failure-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Resolves why an auth profile failed during provider auth selection.
+ * Ported from the OpenClaw source with simplified types.
  */
 
-export function resolveAuthProfileFailureReason(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthProfileFailureReason not implemented (openclaw stub)");
+/** Resolves the auth profile failure reason for a given failover outcome. */
+export function resolveAuthProfileFailureReason(params: {
+  failoverReason: string | null;
+  providerStarted?: boolean;
+  transientRateLimit?: boolean;
+  policy?: string;
+}): string | null {
+  if (
+    params.policy === "local" ||
+    !params.failoverReason ||
+    (params.policy === "local_transient" &&
+      (params.failoverReason === "overloaded" ||
+        (params.failoverReason === "rate_limit" && params.transientRateLimit === true))) ||
+    params.failoverReason === "server_error" ||
+    params.failoverReason === "empty_response" ||
+    params.failoverReason === "format"
+  ) {
+    return null;
+  }
+  if (params.failoverReason === "timeout" && params.providerStarted !== true) {
+    return null;
+  }
+  return params.failoverReason;
 }

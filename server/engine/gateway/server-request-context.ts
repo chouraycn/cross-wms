@@ -14,5 +14,5 @@
 export type GatewayRequestContextParams = unknown;
 
 export function createGatewayRequestContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayRequestContext not implemented");
+  return undefined;
 }

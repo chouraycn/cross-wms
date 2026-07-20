@@ -1,15 +1,25 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/transcript-runtime-state.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/transcript-runtime-state.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime transcript state helpers.
+ * Cross-wms degradation: returns default/empty without session accessor dependencies.
  */
 
-export type RuntimeTranscriptScope = unknown;
-export function resolveRuntimeTranscriptReadTarget(..._args: unknown[]): unknown {
-  throw new Error("resolveRuntimeTranscriptReadTarget not implemented (openclaw stub)");
+export type RuntimeTranscriptScope = Record<string, unknown>;
+
+/** Resolves the runtime transcript target for read/probe operations. */
+export async function resolveRuntimeTranscriptReadTarget(
+  _scope: RuntimeTranscriptScope,
+): Promise<Record<string, unknown>> {
+  // Cross-wms does not have session transcript runtime accessor.
+  return {};
 }
-export function persistRuntimeTranscriptStateMutation(..._args: unknown[]): unknown {
-  throw new Error("persistRuntimeTranscriptStateMutation not implemented (openclaw stub)");
+
+/** Persists an append or migration rewrite for a resolved runtime transcript. */
+export async function persistRuntimeTranscriptStateMutation(_params: {
+  appendedEntries: unknown[];
+  state: Record<string, unknown>;
+  target: Record<string, unknown>;
+}): Promise<void> {
+  // Cross-wms does not have transcript file state persistence.
 }

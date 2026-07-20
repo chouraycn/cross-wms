@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Loads plugin doctor contracts from manifest-owned metadata.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { asNullableRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
-import { normalizeTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { asNullableRecord } from './_openclaw__normalization_core__record_coerce.js';
+import { normalizeTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import type { LegacyConfigRule } from "../config/legacy.shared.js";
 import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import type {

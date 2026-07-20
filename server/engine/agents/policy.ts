@@ -8,5 +8,5 @@
 
 export type AgentHarnessPolicy = unknown;
 export function resolveAgentHarnessPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveAgentHarnessPolicy not implemented (openclaw stub)");
+  return undefined;
 }

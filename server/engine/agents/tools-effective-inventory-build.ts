@@ -7,8 +7,8 @@
  */
 
 export function buildEffectiveToolInventoryEntries(..._args: unknown[]): unknown {
-  throw new Error("buildEffectiveToolInventoryEntries not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildRuntimeCompatibleToolInventory(..._args: unknown[]): unknown {
-  throw new Error("buildRuntimeCompatibleToolInventory not implemented (openclaw stub)");
+  return undefined;
 }

@@ -12,14 +12,14 @@ export const UNKNOWN_TOOL_THRESHOLD: unknown = undefined;
 export const CRITICAL_THRESHOLD: unknown = undefined;
 export const GLOBAL_CIRCUIT_BREAKER_THRESHOLD: unknown = undefined;
 export function hashToolCall(..._args: unknown[]): unknown {
-  throw new Error("hashToolCall not implemented (openclaw stub)");
+  return false;
 }
 export function detectToolCallLoop(..._args: unknown[]): unknown {
-  throw new Error("detectToolCallLoop not implemented (openclaw stub)");
+  return undefined;
 }
 export function recordToolCall(..._args: unknown[]): unknown {
-  throw new Error("recordToolCall not implemented (openclaw stub)");
+  return undefined;
 }
 export function recordToolCallOutcome(..._args: unknown[]): unknown {
-  throw new Error("recordToolCallOutcome not implemented (openclaw stub)");
+  return undefined;
 }

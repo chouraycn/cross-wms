@@ -12,21 +12,21 @@
  */
 
 export async function recoverPendingRestartContinuationDeliveries(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] recoverPendingRestartContinuationDeliveries not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function scheduleRestartSentinelWake(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] scheduleRestartSentinelWake not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function refreshLatestUpdateRestartSentinel(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] refreshLatestUpdateRestartSentinel not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function getLatestUpdateRestartSentinel(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getLatestUpdateRestartSentinel not implemented");
+  return undefined;
 }
 
 export function recordLatestUpdateRestartSentinel(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] recordLatestUpdateRestartSentinel not implemented");
+  return undefined;
 }

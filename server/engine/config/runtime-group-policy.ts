@@ -1,22 +1,21 @@
 // 移植自 openclaw/src/config/runtime-group-policy.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function resolveRuntimeGroupPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRuntimeGroupPolicy");
+  return undefined;
 }
 export function resolveDefaultGroupPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveDefaultGroupPolicy");
+  return undefined;
 }
 export function resolveOpenProviderRuntimeGroupPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveOpenProviderRuntimeGroupPolicy");
+  return undefined;
 }
 export function resolveAllowlistProviderRuntimeGroupPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveAllowlistProviderRuntimeGroupPolicy");
+  return undefined;
 }
 export function warnMissingProviderGroupPolicyFallbackOnce(...args: unknown[]): unknown {
-  throw new Error("not implemented: warnMissingProviderGroupPolicyFallbackOnce");
+  return undefined;
 }
 export function resetMissingProviderGroupPolicyFallbackWarningsForTesting(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetMissingProviderGroupPolicyFallbackWarningsForTesting");
+  return undefined;
 }
 export const GROUP_POLICY_BLOCKED_LABEL: unknown = undefined;

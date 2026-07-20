@@ -7,14 +7,14 @@
  */
 
 export async function hasAuthForModelProvider(..._args: unknown[]): Promise<unknown> {
-  throw new Error("hasAuthForModelProvider not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function createProviderAuthChecker(..._args: unknown[]): unknown {
-  throw new Error("createProviderAuthChecker not implemented (openclaw stub)");
+  return undefined;
 }
 export async function buildCurrentProviderAuthStateSnapshot(..._args: unknown[]): Promise<unknown> {
-  throw new Error("buildCurrentProviderAuthStateSnapshot not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function warmCurrentProviderAuthStateOffMainThread(..._args: unknown[]): Promise<unknown> {
-  throw new Error("warmCurrentProviderAuthStateOffMainThread not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

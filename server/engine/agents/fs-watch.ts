@@ -7,9 +7,9 @@
  */
 
 export function closeWatcher(..._args: unknown[]): unknown {
-  throw new Error("closeWatcher not implemented (openclaw stub)");
+  return undefined;
 }
 export function watchWithErrorHandler(..._args: unknown[]): unknown {
-  throw new Error("watchWithErrorHandler not implemented (openclaw stub)");
+  return undefined;
 }
 export const FS_WATCH_RETRY_DELAY_MS: unknown = undefined;

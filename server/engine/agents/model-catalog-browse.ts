@@ -8,8 +8,8 @@
 
 export type ModelCatalogBrowseView = unknown;
 export function modelCatalogBrowseRequiresFullDiscovery(..._args: unknown[]): unknown {
-  throw new Error("modelCatalogBrowseRequiresFullDiscovery not implemented (openclaw stub)");
+  return undefined;
 }
 export async function loadModelCatalogForBrowse(..._args: unknown[]): Promise<unknown> {
-  throw new Error("loadModelCatalogForBrowse not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

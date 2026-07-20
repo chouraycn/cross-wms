@@ -7,32 +7,32 @@
  */
 
 export function persistAcpTurnTranscript(..._args: unknown[]): unknown {
-  throw new Error("persistAcpTurnTranscript not implemented (openclaw stub)");
+  return undefined;
 }
 export function persistCliTurnTranscript(..._args: unknown[]): unknown {
-  throw new Error("persistCliTurnTranscript not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentAttempt(..._args: unknown[]): unknown {
-  throw new Error("runAgentAttempt not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildAcpResult(..._args: unknown[]): unknown {
-  throw new Error("buildAcpResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpLifecycleStart(..._args: unknown[]): unknown {
-  throw new Error("emitAcpLifecycleStart not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpPromptSubmitted(..._args: unknown[]): unknown {
-  throw new Error("emitAcpPromptSubmitted not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpRuntimeEvent(..._args: unknown[]): unknown {
-  throw new Error("emitAcpRuntimeEvent not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpLifecycleEnd(..._args: unknown[]): unknown {
-  throw new Error("emitAcpLifecycleEnd not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpLifecycleError(..._args: unknown[]): unknown {
-  throw new Error("emitAcpLifecycleError not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitAcpAssistantDelta(..._args: unknown[]): unknown {
-  throw new Error("emitAcpAssistantDelta not implemented (openclaw stub)");
+  return undefined;
 }

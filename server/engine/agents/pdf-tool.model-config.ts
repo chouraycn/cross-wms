@@ -7,5 +7,5 @@
  */
 
 export function resolvePdfModelConfigForTool(..._args: unknown[]): unknown {
-  throw new Error("resolvePdfModelConfigForTool not implemented (openclaw stub)");
+  return undefined;
 }

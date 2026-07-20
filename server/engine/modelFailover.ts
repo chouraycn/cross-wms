@@ -93,6 +93,14 @@
 
 import type { ModelConfig, ModelCapability } from '../modelsStore.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
+import * as path from 'path';
+
+/** 持久化状态文件路径（与 CircuitBreaker snapshot 范式一致） */
+const FAILOVER_STATE_FILE = path.join(AppPaths.dataDir, 'model-failover-state.json');
+
+/** 恢复的连续失败计数超过此时长后视为 stale，自动重置（避免旧失败计数长期影响） */
+const STALE_FAILURE_TTL_MS = 60 * 60 * 1000;
 
 /** 故障转移策略类型 */
 export type FailoverPolicy = 'priority' | 'capability-match';
@@ -105,7 +113,34 @@ export type ErrorCategory =
   | 'timeout'
   | 'server'
   | 'model_not_supported'
+  | 'context_overflow'
   | 'unknown';
+
+/**
+ * 不同错误类型的冷却时间倍率（以 cooldownMs 为基准）
+ * - auth: 认证错误，×3 长冷却（需要用户修复）
+ * - rate_limit: 限流，×1 标准冷却
+ * - server/network/timeout: 服务问题，×0.5 短冷却
+ * - model_not_supported: 模型不支持，×6 长冷却
+ * - context_overflow: 上下文溢出，×0 不冷却（立即换大模型）
+ * - unknown: ×1 标准冷却
+ */
+const COOLDOWN_MULTIPLIER: Record<ErrorCategory, number> = {
+  auth: 3,
+  rate_limit: 1,
+  server: 0.5,
+  network: 0.25,
+  timeout: 0.5,
+  model_not_supported: 6,
+  context_overflow: 0,
+  unknown: 1,
+};
+
+/** 根据错误类型计算冷却时间 */
+function calculateCooldownMs(baseCooldownMs: number, category: ErrorCategory): number {
+  const multiplier = COOLDOWN_MULTIPLIER[category] ?? 1;
+  return Math.max(0, Math.floor(baseCooldownMs * multiplier));
+}
 
 /** 模型健康状态 */
 interface ModelHealthState {
@@ -241,12 +276,20 @@ export class ModelFailoverManager {
   ): ModelConfig | null {
     this.refreshCooldownStates();
 
-    const candidateModels = this.getCandidateModels(currentModelId, requiredCapabilities);
+    const candidateModels = this.getCandidateModels(currentModelId, requiredCapabilities, errorCategory);
     if (candidateModels.length === 0) return null;
 
     const healthyModels = candidateModels.filter(m => this.isModelHealthy(m.id));
     if (healthyModels.length > 0) {
-      return healthyModels[0];
+      const selected = healthyModels[0];
+      logFailoverDecision({
+        type: 'switch',
+        fromModel: currentModelId,
+        toModel: selected.id,
+        errorCategory,
+        reason: 'healthy_candidate',
+      });
+      return selected;
     }
 
     const coolingModels = candidateModels.filter(m => {
@@ -258,10 +301,33 @@ export class ModelFailoverManager {
       const model = coolingModels[0];
       this.resetModelHealth(model.id);
       logger.debug(`[ModelFailover] 强制恢复冷却中的模型: ${model.id}`);
+      logFailoverDecision({
+        type: 'switch',
+        fromModel: currentModelId,
+        toModel: model.id,
+        errorCategory,
+        reason: 'forced_recovery',
+      });
       return model;
     }
 
-    return candidateModels[0] || null;
+    const fallback = candidateModels[0] || null;
+    if (fallback) {
+      logFailoverDecision({
+        type: 'switch',
+        fromModel: currentModelId,
+        toModel: fallback.id,
+        errorCategory,
+        reason: 'last_resort',
+      });
+    } else {
+      logFailoverDecision({
+        type: 'no_candidate',
+        modelId: currentModelId,
+        errorCategory,
+      });
+    }
+    return fallback;
   }
 
   /**
@@ -277,6 +343,11 @@ export class ModelFailoverManager {
     state.cooldownUntil = undefined;
     state.lastError = undefined;
     state.lastErrorCategory = undefined;
+
+    logFailoverDecision({
+      type: 'success',
+      modelId,
+    });
   }
 
   /**
@@ -293,14 +364,28 @@ export class ModelFailoverManager {
     state.lastError = error instanceof Error ? error.message : String(error);
     state.lastErrorCategory = errorCategory || 'unknown';
 
+    // v2.x: 按错误分类使用不同的冷却时间
+    const category = errorCategory || 'unknown';
+    const categoryCooldownMs = calculateCooldownMs(this.cooldownMs, category);
+
     if (state.consecutiveFailures >= this.maxFailuresBeforeCooldown) {
       state.isInCooldown = true;
-      state.cooldownUntil = Date.now() + this.cooldownMs;
+      state.cooldownUntil = Date.now() + categoryCooldownMs;
       logger.warn(
         `[ModelFailover] 模型 ${modelId} 连续失败 ${state.consecutiveFailures} 次，` +
-        `进入冷却 ${this.cooldownMs / 1000} 秒`,
+          `进入冷却 ${categoryCooldownMs / 1000} 秒 (错误类型: ${category})`,
       );
     }
+
+    // 记录决策日志
+    logFailoverDecision({
+      type: 'failure',
+      modelId,
+      errorCategory: category,
+      errorMessage: state.lastError,
+      consecutiveFailures: state.consecutiveFailures,
+      inCooldown: state.isInCooldown,
+    });
   }
 
   /**
@@ -470,11 +555,37 @@ export class ModelFailoverManager {
   private getCandidateModels(
     currentModelId: string,
     requiredCapabilities?: ModelCapability[],
+    errorCategory?: ErrorCategory,
   ): ModelConfig[] {
+    let candidates: ModelConfig[];
+
     if (this.policy === 'capability-match' && requiredCapabilities && requiredCapabilities.length > 0) {
-      return this.getCapabilityMatchedModels(currentModelId, requiredCapabilities);
+      candidates = this.getCapabilityMatchedModels(currentModelId, requiredCapabilities);
+    } else {
+      candidates = this.getPriorityModels(currentModelId);
     }
-    return this.getPriorityModels(currentModelId);
+
+    // v2.x: 上下文溢出错误时，优先选择更大上下文窗口的模型
+    if (errorCategory === 'context_overflow') {
+      candidates = this.sortByContextWindowDesc(candidates, currentModelId);
+    }
+
+    return candidates;
+  }
+
+  /**
+   * 按上下文窗口从大到小排序（上下文溢出时优先尝试大模型）
+   */
+  private sortByContextWindowDesc(models: ModelConfig[], currentModelId: string): ModelConfig[] {
+    const currentModel = this.models.find(m => m.id === currentModelId);
+    const currentWindow = currentModel?.contextWindow ?? 0;
+
+    const withWindow = models.filter(m => (m.contextWindow ?? 0) > currentWindow);
+    const withoutWindow = models.filter(m => (m.contextWindow ?? 0) <= currentWindow);
+
+    withWindow.sort((a, b) => (b.contextWindow ?? 0) - (a.contextWindow ?? 0));
+
+    return [...withWindow, ...withoutWindow];
   }
 
   /**
@@ -553,12 +664,14 @@ export class ModelFailoverManager {
 
   /**
    * 从文件加载持久化状态
+   *
+   * v2.x: 恢复时对 lastFailureAt 做新鲜度检查 — 超过 STALE_FAILURE_TTL_MS 的
+   * consecutiveFailures 重置为 0，避免旧失败计数长期影响后续决策。
    */
   private loadState(): void {
     if (!this.stateFilePath) return;
     try {
       const fs = require('fs');
-      const path = require('path');
       if (!fs.existsSync(this.stateFilePath)) return;
 
       const raw = fs.readFileSync(this.stateFilePath, 'utf-8').trim();
@@ -568,15 +681,20 @@ export class ModelFailoverManager {
       if (persisted.version !== 1) return;
 
       const now = Date.now();
+      let restoredCount = 0;
       for (const [modelId, pState] of Object.entries(persisted.healthStates)) {
+        // v2.x: stale 清理 — 超过 TTL 未再失败的模型重置 consecutiveFailures
+        const isStale = !pState.lastFailureAt || (now - pState.lastFailureAt) > STALE_FAILURE_TTL_MS;
         const state: ModelHealthState = {
           ...pState,
+          consecutiveFailures: isStale ? 0 : pState.consecutiveFailures,
           isInCooldown: !!(pState.cooldownUntil && pState.cooldownUntil > now),
         };
         this.healthStates.set(modelId, state);
+        restoredCount++;
       }
 
-      logger.debug(`[ModelFailover] 已恢复 ${Object.keys(persisted.healthStates).length} 个模型的健康状态`);
+      logger.debug(`[ModelFailover] 已恢复 ${restoredCount} 个模型的健康状态`);
     } catch (e) {
       logger.error('[ModelFailover] 加载持久化状态失败:', e);
     }
@@ -628,19 +746,151 @@ export class ModelFailoverManager {
   private startAutoSave(): void {
     if (this.saveIntervalId) return;
     this.saveIntervalId = setInterval(() => this.saveState(), 30_000);
+    // v2.x: unref 避免 modelFailover 定时器阻止 Node 进程优雅退出（与 CircuitBreaker 范式一致）
+    if (this.saveIntervalId && typeof this.saveIntervalId.unref === 'function') {
+      this.saveIntervalId.unref();
+    }
   }
 }
 
+// ============================================================
+// 决策日志（环形缓冲，用于调试和可观测性）
+// ============================================================
+
+type FailoverDecision =
+  | {
+      type: 'failure';
+      modelId: string;
+      errorCategory: ErrorCategory;
+      errorMessage: string;
+      consecutiveFailures: number;
+      inCooldown: boolean;
+      timestamp: number;
+    }
+  | {
+      type: 'switch';
+      fromModel: string;
+      toModel: string;
+      errorCategory?: ErrorCategory;
+      reason: string;
+      timestamp: number;
+    }
+  | {
+      type: 'no_candidate';
+      modelId: string;
+      errorCategory?: ErrorCategory;
+      timestamp: number;
+    }
+  | {
+      type: 'success';
+      modelId: string;
+      timestamp: number;
+    };
+
+const MAX_DECISION_LOG = 100;
+const decisionLog: FailoverDecision[] = [];
+
+function logFailoverDecision(decision: Record<string, unknown>): void {
+  const entry = { ...decision, timestamp: Date.now() } as FailoverDecision;
+  decisionLog.push(entry);
+  if (decisionLog.length > MAX_DECISION_LOG) {
+    decisionLog.shift();
+  }
+}
+
+/**
+ * 获取最近的故障转移决策日志（用于调试）
+ */
+export function getFailoverDecisionLog(limit = 20): FailoverDecision[] {
+  return decisionLog.slice(-limit).reverse();
+}
+
 let defaultManager: ModelFailoverManager | null = null;
+let modelsLoaded = false;
 
 /**
  * 获取默认的模型故障转移管理器单例
+ *
+ * v2.x: 默认注入 stateFilePath（持久化到 AppPaths.dataDir/model-failover-state.json），
+ * 与 CircuitBreaker snapshot 范式一致，避免进程重启后健康状态丢失。
+ * 调用方显式传入的 stateFilePath / 不持久化选项优先级更高。
+ *
  * @param options 首次调用时的配置选项
  * @returns 全局单例 ModelFailoverManager
  */
 export function getModelFailoverManager(options?: ModelFailoverOptions): ModelFailoverManager {
   if (!defaultManager) {
-    defaultManager = new ModelFailoverManager(options);
+    defaultManager = new ModelFailoverManager({
+      stateFilePath: FAILOVER_STATE_FILE,
+      ...options,
+    });
   }
   return defaultManager;
+}
+
+/**
+ * 销毁默认单例并保存最终状态
+ *
+ * 在进程退出（gracefulShutdown）时调用，确保最新健康状态刷盘。
+ */
+export function destroyDefaultManager(): void {
+  if (defaultManager) {
+    defaultManager.destroy();
+    defaultManager = null;
+    modelsLoaded = false;
+  }
+}
+
+/**
+ * 懒加载模型列表到默认管理器
+ * 只加载一次，后续调用直接返回
+ *
+ * 在首次需要 failover 时调用，避免模块加载时的循环依赖
+ */
+export async function ensureFailoverModelsLoaded(): Promise<void> {
+  if (modelsLoaded) return;
+
+  const manager = getModelFailoverManager();
+  if (manager['models'].length > 0) {
+    modelsLoaded = true;
+    return;
+  }
+
+  try {
+    // 动态导入避免循环依赖
+    const { loadModelsConfig } = await import('../modelsStore.js');
+    const config = await loadModelsConfig({ skipKeyInjection: true });
+    manager.setModels(config.models);
+    modelsLoaded = true;
+    logger.debug(`[ModelFailover] 已从 modelsStore 加载 ${config.models.length} 个模型到故障转移管理器`);
+  } catch (e) {
+    logger.warn('[ModelFailover] 加载模型列表失败，故障转移功能将受限:', String(e));
+  }
+}
+
+/**
+ * 失效已加载的模型列表缓存
+ *
+ * v2.x: 当用户通过 PUT /api/models 修改模型配置后调用，确保下次 ensureFailoverModelsLoaded
+ * 重新从 modelsStore 加载最新模型列表，避免新加模型不进入故障转移候选池。
+ */
+export function invalidateFailoverModelsCache(): void {
+  modelsLoaded = false;
+  logger.debug('[ModelFailover] 已失效模型列表缓存，下次 ensureFailoverModelsLoaded 将重新加载');
+}
+
+/**
+ * 清理指定模型的健康状态
+ *
+ * v2.x: 当用户删除模型时调用，避免 healthStates Map 残留条目造成内存泄漏与状态残留。
+ * 用动态导入避免循环依赖（modelFailover → modelsStore → modelFailover）。
+ */
+export function resetModelHealthById(modelId: string): void {
+  try {
+    const manager = getModelFailoverManager();
+    manager.resetModelHealth(modelId);
+    logger.debug(`[ModelFailover] 已清理模型 ${modelId} 的健康状态`);
+  } catch (e) {
+    logger.warn(`[ModelFailover] 清理模型 ${modelId} 健康状态失败:`, String(e));
+  }
 }

@@ -1,11 +1,9 @@
 /**
  * 移植自 openclaw/src/agents/bootstrap-hooks.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 bootstrap hook 覆盖，不再抛出 stub 错误。
  */
 
-export async function applyBootstrapHookOverrides(..._args: unknown[]): Promise<unknown> {
-  throw new Error("applyBootstrapHookOverrides not implemented (openclaw stub)");
+export async function applyBootstrapHookOverrides(_params: unknown): Promise<void> {
+  // no-op in cross-wms降级实现
 }

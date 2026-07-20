@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves plugin enablement state from config and channel context.
 import { normalizeChatChannelId } from "../channels/ids.js";
 import { ensurePluginAllowlisted } from "../config/plugins-allowlist.js";

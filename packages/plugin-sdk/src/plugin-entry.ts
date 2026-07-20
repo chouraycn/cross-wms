@@ -64,3 +64,51 @@ export function definePluginEntry({
     ...(setup ? { setup } : {}),
   };
 }
+
+// ==================== Provider Tool Schema Types ====================
+
+/** Agent tool definition with typed parameters. */
+export type AnyAgentTool = {
+  name: string;
+  parameters?: unknown;
+  [key: string]: unknown;
+};
+
+/** Context for provider tool-schema normalization. */
+export type ProviderNormalizeToolSchemasContext = {
+  tools: AnyAgentTool[];
+  provider?: string;
+  modelApi?: string;
+  model?: {
+    provider?: string;
+    api?: string;
+    baseUrl?: string;
+  };
+};
+
+/** Diagnostic for a single tool's schema violations. */
+export type ProviderToolSchemaDiagnostic = {
+  toolName: string;
+  toolIndex: number;
+  violations: string[];
+};
+
+// ==================== Provider Replay Types ====================
+
+/** Context for building a provider replay policy. */
+export type ProviderReplayPolicyContext = {
+  modelId: string;
+  modelApi?: unknown;
+};
+
+/** Context for sanitizing provider replay history. */
+export type ProviderSanitizeReplayHistoryContext = {
+  messages?: unknown;
+  [key: string]: unknown;
+};
+
+/** Context for resolving reasoning output mode. */
+export type ProviderReasoningOutputModeContext = {
+  modelId?: string;
+  [key: string]: unknown;
+};

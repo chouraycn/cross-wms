@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Resolves package entrypoints for installed and bundled plugins.
 import path from "node:path";
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 
 /** True when a package entrypoint needs built JavaScript candidates. */
 export function isTypeScriptPackageEntry(entryPath: string): boolean {

@@ -7,5 +7,5 @@
  */
 
 export function createSessionStatusTool(..._args: unknown[]): unknown {
-  throw new Error("createSessionStatusTool not implemented (openclaw stub)");
+  return undefined;
 }

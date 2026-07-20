@@ -12,13 +12,13 @@
  */
 
 export async function verifyCliCronMcpLoopbackPreflight(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] verifyCliCronMcpLoopbackPreflight not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function verifyCliBackendImageProbe(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] verifyCliBackendImageProbe not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function verifyCliCronMcpProbe(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] verifyCliCronMcpProbe not implemented");
+  return Promise.resolve(undefined);
 }

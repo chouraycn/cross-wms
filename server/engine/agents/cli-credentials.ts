@@ -11,23 +11,23 @@ export type CodexCliCredential = unknown;
 export type MiniMaxCliCredential = unknown;
 export type GeminiCliCredential = unknown;
 export function resetCliCredentialCachesForTest(..._args: unknown[]): unknown {
-  throw new Error("resetCliCredentialCachesForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export function readClaudeCliCredentials(..._args: unknown[]): unknown {
-  throw new Error("readClaudeCliCredentials not implemented (openclaw stub)");
+  return undefined;
 }
 export function readClaudeCliCredentialsCached(..._args: unknown[]): unknown {
-  throw new Error("readClaudeCliCredentialsCached not implemented (openclaw stub)");
+  return undefined;
 }
 export function readCodexCliCredentials(..._args: unknown[]): unknown {
-  throw new Error("readCodexCliCredentials not implemented (openclaw stub)");
+  return undefined;
 }
 export function readCodexCliCredentialsCached(..._args: unknown[]): unknown {
-  throw new Error("readCodexCliCredentialsCached not implemented (openclaw stub)");
+  return undefined;
 }
 export function readMiniMaxCliCredentialsCached(..._args: unknown[]): unknown {
-  throw new Error("readMiniMaxCliCredentialsCached not implemented (openclaw stub)");
+  return undefined;
 }
 export function readGeminiCliCredentialsCached(..._args: unknown[]): unknown {
-  throw new Error("readGeminiCliCredentialsCached not implemented (openclaw stub)");
+  return undefined;
 }

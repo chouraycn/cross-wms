@@ -7,15 +7,15 @@
  */
 
 export function composeSystemPromptWithHookContext(..._args: unknown[]): unknown {
-  throw new Error("composeSystemPromptWithHookContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptSpawnWorkspaceDir(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptSpawnWorkspaceDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function appendAttemptCacheTtlIfNeeded(..._args: unknown[]): unknown {
-  throw new Error("appendAttemptCacheTtlIfNeeded not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldPersistCompletedBootstrapTurn(..._args: unknown[]): unknown {
-  throw new Error("shouldPersistCompletedBootstrapTurn not implemented (openclaw stub)");
+  return false;
 }
 export const ATTEMPT_CACHE_TTL_CUSTOM_TYPE: unknown = undefined;

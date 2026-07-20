@@ -18,13 +18,13 @@ export const getActiveMcpLoopbackRuntime: any = undefined;
 export const resolveMcpLoopbackBearerToken: any = undefined;
 
 export async function startMcpLoopbackServer(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startMcpLoopbackServer not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function ensureMcpLoopbackServer(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] ensureMcpLoopbackServer not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function closeMcpLoopbackServer(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] closeMcpLoopbackServer not implemented");
+  return Promise.resolve(undefined);
 }

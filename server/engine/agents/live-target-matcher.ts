@@ -7,5 +7,5 @@
  */
 
 export function createLiveTargetMatcher(..._args: unknown[]): unknown {
-  throw new Error("createLiveTargetMatcher not implemented (openclaw stub)");
+  return undefined;
 }

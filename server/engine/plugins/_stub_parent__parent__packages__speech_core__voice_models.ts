@@ -3,3 +3,6 @@
 // Replace with real implementation when available.
 
 export const resolveVoiceModelRefs: any = undefined as any;
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const synthesizeVoiceModelCatalogEntries: any = undefined as any;

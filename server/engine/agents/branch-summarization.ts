@@ -10,8 +10,8 @@ export type CollectEntriesResult = unknown;
 export type BranchSummaryResult = unknown;
 export type GenerateBranchSummaryOptions = unknown;
 export function collectEntriesForBranchSummary(..._args: unknown[]): unknown {
-  throw new Error("collectEntriesForBranchSummary not implemented (openclaw stub)");
+  return [];
 }
 export function generateBranchSummary(..._args: unknown[]): unknown {
-  throw new Error("generateBranchSummary not implemented (openclaw stub)");
+  return undefined;
 }

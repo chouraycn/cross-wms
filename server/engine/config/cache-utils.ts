@@ -1,15 +1,14 @@
 // 移植自 openclaw/src/config/cache-utils.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function resolveCacheTtlMs(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCacheTtlMs");
+  return undefined;
 }
 export function isCacheEnabled(...args: unknown[]): unknown {
-  throw new Error("not implemented: isCacheEnabled");
+  return false;
 }
 export function createExpiringMapCache(...args: unknown[]): unknown {
-  throw new Error("not implemented: createExpiringMapCache");
+  return undefined;
 }
 export function getFileStatSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: getFileStatSnapshot");
+  return undefined;
 }

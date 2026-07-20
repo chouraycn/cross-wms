@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Binds plugin conversations to stable channel and agent identifiers.
 import crypto from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import type { ReplyPayload } from './_stub_parent__auto_reply__reply_payload.js';
 import {
   createConversationBindingRecord,

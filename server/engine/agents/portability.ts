@@ -9,11 +9,11 @@
 export type AuthProfilePortabilityReason = unknown;
 export type AuthProfilePortability = unknown;
 export function resolveAuthProfilePortability(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthProfilePortability not implemented (openclaw stub)");
+  return undefined;
 }
 export function isAuthProfileCredentialPortableForAgentCopy(..._args: unknown[]): unknown {
-  throw new Error("isAuthProfileCredentialPortableForAgentCopy not implemented (openclaw stub)");
+  return false;
 }
 export function buildPortableAuthProfileSecretsStoreForAgentCopy(..._args: unknown[]): unknown {
-  throw new Error("buildPortableAuthProfileSecretsStoreForAgentCopy not implemented (openclaw stub)");
+  return undefined;
 }

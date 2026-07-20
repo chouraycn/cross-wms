@@ -8,5 +8,5 @@
 
 export type BootstrapMode = unknown;
 export function resolveBootstrapMode(..._args: unknown[]): unknown {
-  throw new Error("resolveBootstrapMode not implemented (openclaw stub)");
+  return undefined;
 }

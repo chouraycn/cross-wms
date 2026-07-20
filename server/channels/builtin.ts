@@ -127,3 +127,5 @@ export { createFeishuChannelPlugin, FEISHU_CHANNEL_ID } from "./builtin-feishu.j
 export { createWeComChannelPlugin, WECOM_CHANNEL_ID } from "./builtin-wecom.js";
 export { createDingTalkChannelPlugin, DINGTALK_CHANNEL_ID } from "./builtin-dingtalk.js";
 export { createWeChatWorkChannelPlugin, WECHATWORK_CHANNEL_ID } from "./builtin-wechatwork.js";
+export { createWeChatChannelPlugin, WECHAT_CHANNEL_ID } from "./builtin-wechat.js";
+export { createQQChannelPlugin, QQ_CHANNEL_ID } from "./builtin-qq.js";

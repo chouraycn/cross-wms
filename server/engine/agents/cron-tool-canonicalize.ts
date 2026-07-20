@@ -7,14 +7,14 @@
  */
 
 export function canonicalizeCronToolObject(..._args: unknown[]): unknown {
-  throw new Error("canonicalizeCronToolObject not implemented (openclaw stub)");
+  return false;
 }
 export function isEmptyRecoveredCronPatch(..._args: unknown[]): unknown {
-  throw new Error("isEmptyRecoveredCronPatch not implemented (openclaw stub)");
+  return false;
 }
 export function recoverCronObjectFromFlatParams(..._args: unknown[]): unknown {
-  throw new Error("recoverCronObjectFromFlatParams not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasCronCreateSignal(..._args: unknown[]): unknown {
-  throw new Error("hasCronCreateSignal not implemented (openclaw stub)");
+  return false;
 }

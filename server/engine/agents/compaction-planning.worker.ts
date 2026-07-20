@@ -10,5 +10,5 @@ export type CompactionPlanningWorkerInput = unknown;
 export type CompactionPlanningWorkerValue = unknown;
 export type CompactionPlanningWorkerResult = unknown;
 export function runCompactionPlanningWorkerInput(..._args: unknown[]): unknown {
-  throw new Error("runCompactionPlanningWorkerInput not implemented (openclaw stub)");
+  return undefined;
 }

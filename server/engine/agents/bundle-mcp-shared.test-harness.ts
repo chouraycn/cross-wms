@@ -7,11 +7,11 @@
  */
 
 export function writeExecutable(..._args: unknown[]): unknown {
-  throw new Error("writeExecutable not implemented (openclaw stub)");
+  return undefined;
 }
 export function writeBundleProbeMcpServer(..._args: unknown[]): unknown {
-  throw new Error("writeBundleProbeMcpServer not implemented (openclaw stub)");
+  return undefined;
 }
 export function writeClaudeBundle(..._args: unknown[]): unknown {
-  throw new Error("writeClaudeBundle not implemented (openclaw stub)");
+  return undefined;
 }

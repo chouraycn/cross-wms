@@ -14,8 +14,7 @@ export function registerQrCli(program: Command): void {
     .argument("<text>", "Text to encode")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw qr: not supported in stub mode (terminal-core/*, runtime not ported).",
-      );
+      console.error('openclaw qr is not available in cross-wms');
+      process.exit(1);
     });
 }

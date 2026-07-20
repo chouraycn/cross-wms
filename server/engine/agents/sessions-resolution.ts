@@ -1,33 +1,101 @@
 /**
  * 移植自 openclaw/src/agents/tools/sessions-resolution.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Session key resolution helpers for sub-agent sessions.
+ * Simplified for cross-wms: no gateway session store lookup.
  */
 
-export function resolveMainSessionAlias(..._args: unknown[]): unknown {
-  throw new Error("resolveMainSessionAlias not implemented (openclaw stub)");
+/** Resolve a session key from a session reference. */
+export function resolveSessionKey(params: {
+  sessionRef?: string;
+  sessionKey?: string;
+  sessionId?: string;
+  agentId?: string;
+}): string | undefined {
+  const sessionKey = params.sessionKey?.trim();
+  if (sessionKey) {
+    return sessionKey;
+  }
+  const sessionRef = params.sessionRef?.trim();
+  if (sessionRef) {
+    if (sessionRef.includes("/")) {
+      return sessionRef;
+    }
+    const agentId = params.agentId?.trim();
+    if (agentId) {
+      return `${agentId}/${sessionRef}`;
+    }
+    return sessionRef;
+  }
+  const sessionId = params.sessionId?.trim();
+  if (sessionId) {
+    const agentId = params.agentId?.trim();
+    if (agentId) {
+      return `${agentId}/${sessionId}`;
+    }
+    return sessionId;
+  }
+  return undefined;
 }
-export function resolveDisplaySessionKey(..._args: unknown[]): unknown {
-  throw new Error("resolveDisplaySessionKey not implemented (openclaw stub)");
+
+/** Parse a session key into agent ID and session ID components. */
+export function parseSessionKey(sessionKey: string): {
+  agentId: string;
+  sessionId: string;
+} | undefined {
+  const trimmed = sessionKey.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const separator = trimmed.indexOf("/");
+  if (separator < 0) {
+    return { agentId: "", sessionId: trimmed };
+  }
+  return {
+    agentId: trimmed.slice(0, separator),
+    sessionId: trimmed.slice(separator + 1),
+  };
 }
-export function resolveInternalSessionKey(..._args: unknown[]): unknown {
-  throw new Error("resolveInternalSessionKey not implemented (openclaw stub)");
+
+/** Resolve the agent ID from a session key. */
+export function resolveAgentIdFromSessionKey(sessionKey: string): string {
+  const parsed = parseSessionKey(sessionKey);
+  return parsed?.agentId ?? "";
 }
-export function resolveCurrentSessionClientAlias(..._args: unknown[]): unknown {
-  throw new Error("resolveCurrentSessionClientAlias not implemented (openclaw stub)");
+
+/** Check if a session key refers to a sub-agent session. */
+export function isSubagentSessionKey(sessionKey: string): boolean {
+  const parsed = parseSessionKey(sessionKey);
+  if (!parsed) {
+    return false;
+  }
+  return parsed.agentId !== "" && parsed.agentId !== "main";
 }
-export function looksLikeSessionKey(..._args: unknown[]): unknown {
-  throw new Error("looksLikeSessionKey not implemented (openclaw stub)");
+
+/** Check if a session key refers to a cron session. */
+export function isCronSessionKey(sessionKey: string): boolean {
+  const trimmed = sessionKey.trim().toLowerCase();
+  return trimmed.startsWith("cron/") || trimmed.includes(":cron:");
 }
-export function shouldResolveSessionIdInput(..._args: unknown[]): unknown {
-  throw new Error("shouldResolveSessionIdInput not implemented (openclaw stub)");
+
+/** Check if a session key refers to an ACP session. */
+export function isAcpSessionKey(sessionKey: string): boolean {
+  const trimmed = sessionKey.trim().toLowerCase();
+  return trimmed.startsWith("acp/") || trimmed.includes(":acp:");
 }
-export function resolveSessionReference(..._args: unknown[]): unknown {
-  throw new Error("resolveSessionReference not implemented (openclaw stub)");
+
+/** Build a session key for a sub-agent session. */
+export function buildSubagentSessionKey(params: {
+  agentId: string;
+  sessionId: string;
+}): string {
+  return `${params.agentId.trim()}/${params.sessionId.trim()}`;
 }
-export function resolveVisibleSessionReference(..._args: unknown[]): unknown {
-  throw new Error("resolveVisibleSessionReference not implemented (openclaw stub)");
+
+/** Build a session key for a cron session. */
+export function buildCronSessionKey(params: {
+  agentId: string;
+  cronId: string;
+}): string {
+  return `cron/${params.agentId.trim()}/${params.cronId.trim()}`;
 }
-export const testing_sessions_resolution: unknown = undefined;

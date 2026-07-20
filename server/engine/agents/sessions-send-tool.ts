@@ -1,11 +1,32 @@
 /**
  * 移植自 openclaw/src/agents/tools/sessions-send-tool.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * sessions_send built-in tool.
+ * In cross-wms the full gateway/session infrastructure is not available,
+ * so createSessionsSendTool returns a minimal tool stub.
  */
 
-export function createSessionsSendTool(..._args: unknown[]): unknown {
-  throw new Error("createSessionsSendTool not implemented (openclaw stub)");
+export function createSessionsSendTool(_opts?: {
+  agentSessionKey?: string;
+  agentChannel?: unknown;
+  sandboxed?: boolean;
+  config?: unknown;
+  callGateway?: unknown;
+}): unknown {
+  return {
+    label: "Session Send",
+    name: "sessions_send",
+    description: "Send messages to visible sessions (stub - not fully implemented in cross-wms).",
+    parameters: {
+      type: "object",
+      properties: {
+        sessionKey: { type: "string" },
+        message: { type: "string" },
+      },
+    },
+    execute: async () => ({
+      type: "text" as const,
+      text: JSON.stringify({ status: "error", error: "sessions_send not available in cross-wms" }),
+    }),
+  };
 }

@@ -1,13 +1,12 @@
-// @ts-nocheck
 /** Resolves plugin ids that should load during Gateway startup. */
-import { collectConfiguredModelRefs } from './_stub_openclaw__model_catalog_core__configured_model_refs.js';
-import { buildModelCatalogMergeKey } from './_stub_openclaw__model_catalog_core__model_catalog_refs.js';
+import { collectConfiguredModelRefs } from './_openclaw__model_catalog_core__configured_model_refs.js';
+import { buildModelCatalogMergeKey } from './_openclaw__model_catalog_core__model_catalog_refs.js';
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from './_stub_openclaw__model_catalog_core__provider_id.js';
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__model_catalog_core__provider_id.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
 import { collectConfiguredAgentHarnessRuntimes } from "../agents/harness-runtimes.js";
 import { splitTrailingAuthProfile } from "../agents/model-ref-profile.js";
 import {

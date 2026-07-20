@@ -1,13 +1,12 @@
-// @ts-nocheck
 // Maintains plugin setup entries discovered from manifests and light exports.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import {
   normalizeStringEntries,
   normalizeUniqueStringEntries,
-} from './_stub_openclaw__normalization_core__string_normalization.js';
+} from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { buildPluginApi } from "./api-builder.js";
 import { collectPluginConfigContractMatches } from "./config-contracts.js";

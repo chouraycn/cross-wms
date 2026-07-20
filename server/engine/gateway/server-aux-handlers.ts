@@ -14,5 +14,5 @@
 export const GATEWAY_AUX_METHODS: any = undefined;
 
 export function createGatewayAuxHandlers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayAuxHandlers not implemented");
+  return undefined;
 }

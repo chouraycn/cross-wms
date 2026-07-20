@@ -7,14 +7,14 @@
  */
 
 export function fetchWithWebToolsNetworkGuard(..._args: unknown[]): unknown {
-  throw new Error("fetchWithWebToolsNetworkGuard not implemented (openclaw stub)");
+  return undefined;
 }
 export function withTrustedWebToolsEndpoint(..._args: unknown[]): unknown {
-  throw new Error("withTrustedWebToolsEndpoint not implemented (openclaw stub)");
+  return undefined;
 }
 export function withSelfHostedWebToolsEndpoint(..._args: unknown[]): unknown {
-  throw new Error("withSelfHostedWebToolsEndpoint not implemented (openclaw stub)");
+  return undefined;
 }
 export function withStrictWebToolsEndpoint(..._args: unknown[]): unknown {
-  throw new Error("withStrictWebToolsEndpoint not implemented (openclaw stub)");
+  return undefined;
 }

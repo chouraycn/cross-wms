@@ -7,8 +7,8 @@
  */
 
 export function resolveVideoGenerationModelConfigForTool(..._args: unknown[]): unknown {
-  throw new Error("resolveVideoGenerationModelConfigForTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function createVideoGenerateTool(..._args: unknown[]): unknown {
-  throw new Error("createVideoGenerateTool not implemented (openclaw stub)");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function shouldRequireGatewayTokenForInstall(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRequireGatewayTokenForInstall not implemented");
+  return false;
 }

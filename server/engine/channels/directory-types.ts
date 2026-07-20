@@ -1,4 +1,11 @@
 // 移植自 openclaw/src/channels/plugins/directory-types.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type DirectoryConfigParams = unknown;
+/**
+ * Shared input for channel directory lookups.
+ */
+export type DirectoryConfigParams = {
+  cfg: unknown;
+  accountId?: string | null;
+  query?: string | null;
+  limit?: number | null;
+};

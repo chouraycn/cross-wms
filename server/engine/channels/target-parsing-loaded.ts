@@ -1,36 +1,108 @@
 // 移植自 openclaw/src/channels/plugins/target-parsing-loaded.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type ChannelRouteParsedTarget = unknown;
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+  normalizeOptionalThreadValue,
+} from "../infra/string-coerce.js";
 
-export type ParsedChannelExplicitTarget = unknown;
+export type ChannelRouteParsedTarget = {
+  channel: string;
+  rawTo: string;
+  to: string;
+  threadId?: string | number;
+  chatType?: "direct" | "group" | "channel";
+};
 
-export function resolveCompatParsedRouteTarget(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCompatParsedRouteTarget");
+/** @deprecated Use `ChannelRouteParsedTarget` */
+export type ParsedChannelExplicitTarget = {
+  to: string;
+  threadId?: string | number;
+  chatType?: "direct" | "group" | "channel";
+};
+
+export function resolveCompatParsedRouteTarget(params: {
+  channel: string;
+  rawTarget?: string | null;
+  fallbackThreadId?: string | number | null;
+  parseTarget: (channel: string, rawTarget: string) => ParsedChannelExplicitTarget | null;
+}): ChannelRouteParsedTarget | null {
+  const channel = normalizeLowercaseStringOrEmpty(params.channel);
+  const rawTo = normalizeOptionalString(params.rawTarget);
+  if (!channel || !rawTo) {
+    return null;
+  }
+  const parsed = params.parseTarget(channel, rawTo);
+  const fallbackThreadId = normalizeOptionalThreadValue(params.fallbackThreadId);
+  return {
+    channel,
+    rawTo,
+    to: parsed?.to ?? rawTo,
+    threadId: normalizeOptionalThreadValue(parsed?.threadId ?? fallbackThreadId),
+    chatType: parsed?.chatType,
+  };
 }
 
-export type ComparableChannelTarget = unknown;
+/** @deprecated Use `ChannelRouteParsedTarget`. */
+export type ComparableChannelTarget = ChannelRouteParsedTarget;
 
-export function parseExplicitTargetForLoadedChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseExplicitTargetForLoadedChannel");
+/** @deprecated Use `messaging.targetResolver` and `messaging.resolveOutboundSessionRoute`. */
+export function parseExplicitTargetForLoadedChannel(
+  _channel: string,
+  _rawTarget: string,
+): ParsedChannelExplicitTarget | null {
+  // Without loaded channel plugin registry, we cannot parse targets.
+  // Callers should migrate to messaging.targetResolver.
+  return null;
 }
 
-export function resolveRouteTargetForLoadedChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRouteTargetForLoadedChannel");
+/** @deprecated Use `messaging.resolveOutboundSessionRoute`. */
+export function resolveRouteTargetForLoadedChannel(params: {
+  channel: string;
+  rawTarget?: string | null;
+  fallbackThreadId?: string | number | null;
+}): ChannelRouteParsedTarget | null {
+  return resolveCompatParsedRouteTarget({
+    ...params,
+    parseTarget: parseExplicitTargetForLoadedChannel,
+  });
 }
 
-export function resolveExplicitDeliveryTargetCompat(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExplicitDeliveryTargetCompat");
+export function resolveExplicitDeliveryTargetCompat(params: {
+  channel: string;
+  rawTarget?: string | null;
+  fallbackThreadId?: string | number | null;
+}): ChannelRouteParsedTarget | null {
+  return resolveRouteTargetForLoadedChannel(params);
 }
 
-export function resolveComparableTargetForLoadedChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveComparableTargetForLoadedChannel");
+/** @deprecated Use `messaging.resolveOutboundSessionRoute`. */
+export function resolveComparableTargetForLoadedChannel(params: {
+  channel: string;
+  rawTarget?: string | null;
+  fallbackThreadId?: string | number | null;
+}): ChannelRouteParsedTarget | null {
+  return resolveRouteTargetForLoadedChannel(params);
 }
 
-export function comparableChannelTargetsMatch(..._args: unknown[]): unknown {
-  throw new Error("not implemented: comparableChannelTargetsMatch");
+/** @deprecated Use `channelRouteTargetsMatchExact`. */
+export function comparableChannelTargetsMatch(params: {
+  left?: ChannelRouteParsedTarget | null;
+  right?: ChannelRouteParsedTarget | null;
+}): boolean {
+  if (!params.left || !params.right) return false;
+  return (
+    params.left.channel === params.right.channel &&
+    params.left.to === params.right.to &&
+    params.left.threadId === params.right.threadId
+  );
 }
 
-export function comparableChannelTargetsShareRoute(..._args: unknown[]): unknown {
-  throw new Error("not implemented: comparableChannelTargetsShareRoute");
+/** @deprecated Use `channelRouteTargetsShareConversation`. */
+export function comparableChannelTargetsShareRoute(params: {
+  left?: ChannelRouteParsedTarget | null;
+  right?: ChannelRouteParsedTarget | null;
+}): boolean {
+  if (!params.left || !params.right) return false;
+  return params.left.channel === params.right.channel && params.left.to === params.right.to;
 }

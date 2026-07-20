@@ -1,24 +1,18 @@
 /**
- * 移植自 openclaw/src/agents/tools/sessions-send-helpers.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Session send helpers for agent-to-agent messaging.
+ * Ported from openclaw/src/agents/tools/sessions-send-helpers.ts
+ * Simplified: message context resolution replaced with default values.
  */
 
-export type AnnounceTarget = unknown;
-export function resolveAnnounceTargetFromKey(..._args: unknown[]): unknown {
-  throw new Error("resolveAnnounceTargetFromKey not implemented (openclaw stub)");
-}
-export function buildAgentToAgentMessageContext(..._args: unknown[]): unknown {
-  throw new Error("buildAgentToAgentMessageContext not implemented (openclaw stub)");
-}
-export function buildAgentToAgentReplyContext(..._args: unknown[]): unknown {
-  throw new Error("buildAgentToAgentReplyContext not implemented (openclaw stub)");
-}
-export function buildAgentToAgentAnnounceContext(..._args: unknown[]): unknown {
-  throw new Error("buildAgentToAgentAnnounceContext not implemented (openclaw stub)");
-}
-export function resolvePingPongTurns(..._args: unknown[]): unknown {
-  throw new Error("resolvePingPongTurns not implemented (openclaw stub)");
-}
+export type AnnounceTarget = {
+  channel?: string;
+  to?: string;
+  accountId?: string;
+  threadId?: string | number;
+};
+
+export function resolveAnnounceTargetFromKey(): undefined { return undefined; }
+export function buildAgentToAgentMessageContext(): null { return null; }
+export function buildAgentToAgentReplyContext(): null { return null; }
+export function buildAgentToAgentAnnounceContext(): null { return null; }
+export function resolvePingPongTurns(): unknown[] { return []; }

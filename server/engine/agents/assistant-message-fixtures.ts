@@ -1,11 +1,24 @@
 /**
- * 移植自 openclaw/src/agents/test-helpers/assistant-message-fixtures.ts
+ * Ported from openclaw/src/agents/test-helpers/assistant-message-fixtures.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Assistant message fixtures for agent tests.
  */
 
-export function makeAssistantMessageFixture(..._args: unknown[]): unknown {
-  throw new Error("makeAssistantMessageFixture not implemented (openclaw stub)");
+/** Builds an assistant message fixture with deterministic error-style defaults. */
+export function makeAssistantMessageFixture(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const errorText = typeof overrides.errorMessage === "string" ? overrides.errorMessage : "error";
+  return {
+    role: "assistant",
+    api: "openai-responses",
+    provider: "openai",
+    model: "test-model",
+    usage: { inputTokens: 0, outputTokens: 0 },
+    timestamp: 0,
+    stopReason: "error",
+    errorMessage: errorText,
+    content: [{ type: "text", text: errorText }],
+    ...overrides,
+  };
 }

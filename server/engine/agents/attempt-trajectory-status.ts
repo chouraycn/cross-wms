@@ -8,9 +8,9 @@
 
 export type ResolveAttemptTrajectoryTerminalParams = unknown;
 export function resolveTerminalAssistantTexts(..._args: unknown[]): unknown {
-  throw new Error("resolveTerminalAssistantTexts not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptTrajectoryTerminal(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptTrajectoryTerminal not implemented (openclaw stub)");
+  return undefined;
 }
 export const NON_DELIVERABLE_TERMINAL_TURN_REASON: unknown = undefined;

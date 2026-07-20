@@ -7,8 +7,8 @@
  */
 
 export function prepareCliBundleMcpConfig(..._args: unknown[]): unknown {
-  throw new Error("prepareCliBundleMcpConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function prepareCliBundleMcpCaptureAttempt(..._args: unknown[]): unknown {
-  throw new Error("prepareCliBundleMcpCaptureAttempt not implemented (openclaw stub)");
+  return undefined;
 }

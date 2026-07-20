@@ -68,13 +68,13 @@ export interface LlmStreamEvent {
   finishReason?: string;
 }
 
-export type CompleteSimpleFn = (
+export type LlmCompleteSimpleFn = (
   model: string,
   messages: LlmMessage[],
   options?: LlmConfig & { tools?: LlmToolDefinition[] },
 ) => Promise<LlmResponse>;
 
-export type StreamSimpleFn = (
+export type LlmStreamSimpleFn = (
   model: string,
   messages: LlmMessage[],
   options?: LlmConfig & { tools?: LlmToolDefinition[] },

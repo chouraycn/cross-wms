@@ -107,3 +107,75 @@ export async function addAllRecommendedModels(): Promise<{ data: ModelsConfig; a
 export async function getHostIp(): Promise<{ hostIp: string }> {
   return request<{ hostIp: string }>('GET', '/api/models/host-ip');
 }
+
+// ============================================================
+// v2.x: 模型故障转移运行时状态 API
+// 与 healthCheck（主动探测）不同，failover 状态是运行时累积的
+// 健康/冷却/连续失败计数，反映模型在故障转移链路中的实时表现。
+// ============================================================
+
+/** 单个模型的故障转移运行时状态 */
+export interface FailoverHealth {
+  modelId: string;
+  modelName: string;
+  isHealthy: boolean;
+  isInCooldown: boolean;
+  consecutiveFailures: number;
+}
+
+/** 详细的模型健康状态（含历史计数） */
+export interface FailoverHealthDetail {
+  modelId: string;
+  successCount: number;
+  failureCount: number;
+  consecutiveFailures: number;
+  isInCooldown: boolean;
+  cooldownRemainingMs: number;
+  lastError?: string;
+  lastErrorCategory?: string;
+  lastSuccessAt?: number;
+  lastFailureAt?: number;
+}
+
+/** 故障转移决策日志条目 */
+export interface FailoverDecision {
+  type: 'success' | 'failure' | 'cooldown_start' | 'cooldown_end' | 'model_switch' | 'no_candidate';
+  modelId?: string;
+  fromModel?: string;
+  toModel?: string;
+  reason?: string;
+  errorCategory?: string;
+  timestamp: number;
+  [key: string]: unknown;
+}
+
+/** 获取所有模型的故障转移运行时健康状态 */
+export async function getFailoverHealth(): Promise<FailoverHealth[]> {
+  const { data } = await request<{ data: { models: FailoverHealth[] } }>('GET', '/api/models/failover/health');
+  return data.models;
+}
+
+/** 获取指定模型的详细故障转移健康状态 */
+export async function getFailoverHealthDetail(modelId: string): Promise<FailoverHealthDetail> {
+  const { data } = await request<{ data: FailoverHealthDetail }>('GET', `/api/models/failover/health/${modelId}`);
+  return data;
+}
+
+/** 获取故障转移决策日志（最新在前） */
+export async function getFailoverDecisions(limit = 50): Promise<FailoverDecision[]> {
+  const { data } = await request<{ data: { decisions: FailoverDecision[]; count: number } }>(
+    'GET',
+    `/api/models/failover/decisions?limit=${limit}`,
+  );
+  return data.decisions;
+}
+
+/** 重置所有模型的故障转移健康状态（手动清除冷却） */
+export async function resetAllFailoverHealth(): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('POST', '/api/models/failover/reset');
+}
+
+/** 重置指定模型的故障转移健康状态 */
+export async function resetModelFailoverHealth(modelId: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('POST', `/api/models/failover/reset/${modelId}`);
+}

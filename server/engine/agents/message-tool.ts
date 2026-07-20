@@ -1,11 +1,25 @@
 /**
  * 移植自 openclaw/src/agents/tools/message-tool.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 message tool 工厂，不再抛出 stub 错误。
  */
 
-export function createMessageTool(..._args: unknown[]): unknown {
-  throw new Error("createMessageTool not implemented (openclaw stub)");
+export type AnyAgentTool = {
+  label?: string;
+  name: string;
+  description: string;
+  parameters?: unknown;
+  execute?: (toolCallId: string, args: unknown, signal?: AbortSignal) => Promise<unknown>;
+};
+
+export function createMessageTool(_options?: unknown): AnyAgentTool {
+  return {
+    label: "Message",
+    name: "message",
+    description: "Send and manage messages across configured channels.",
+    execute: async () => ({
+      status: "unavailable",
+      message: "Message tool not available in cross-wms mode.",
+    }),
+  };
 }

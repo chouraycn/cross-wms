@@ -9,14 +9,14 @@
 export { modelKey } from "../shared/model-key.js";
 export type ProviderModelIdNormalizationOptions = unknown;
 export function normalizeStaticProviderModelId(..._args: unknown[]): unknown {
-  throw new Error("normalizeStaticProviderModelId not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeConfiguredProviderCatalogModelId(..._args: unknown[]): unknown {
-  throw new Error("normalizeConfiguredProviderCatalogModelId not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveStaticAllowlistModelKey(..._args: unknown[]): unknown {
-  throw new Error("resolveStaticAllowlistModelKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function formatLiteralProviderPrefixedModelRef(..._args: unknown[]): unknown {
-  throw new Error("formatLiteralProviderPrefixedModelRef not implemented (openclaw stub)");
+  return "";
 }

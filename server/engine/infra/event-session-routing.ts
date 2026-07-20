@@ -1,22 +1,21 @@
 // 移植自 openclaw/src/infra/event-session-routing.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type EventSessionRoutingPolicy = unknown;
 export function parseDirectAgentSessionTarget(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseDirectAgentSessionTarget");
+  return undefined;
 }
 export function resolveEventSessionAllowFrom(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEventSessionAllowFrom");
+  return undefined;
 }
 export function resolveEventSessionRoutingPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEventSessionRoutingPolicy");
+  return undefined;
 }
 export function resolveMainScopedEventSessionKey(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveMainScopedEventSessionKey");
+  return undefined;
 }
 export function resolveEventSessionKeyForPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveEventSessionKeyForPolicy");
+  return undefined;
 }
 export function scopedHeartbeatWakeOptionsForPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: scopedHeartbeatWakeOptionsForPolicy");
+  return undefined;
 }

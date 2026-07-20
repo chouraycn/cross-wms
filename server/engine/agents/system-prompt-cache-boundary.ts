@@ -8,14 +8,14 @@
 
 export const SYSTEM_PROMPT_CACHE_BOUNDARY: unknown = undefined;
 export function stripSystemPromptCacheBoundary(..._args: unknown[]): unknown {
-  throw new Error("stripSystemPromptCacheBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function ensureSystemPromptCacheBoundary(..._args: unknown[]): unknown {
-  throw new Error("ensureSystemPromptCacheBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function splitSystemPromptCacheBoundary(..._args: unknown[]): unknown {
-  throw new Error("splitSystemPromptCacheBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function prependSystemPromptAdditionAfterCacheBoundary(..._args: unknown[]): unknown {
-  throw new Error("prependSystemPromptAdditionAfterCacheBoundary not implemented (openclaw stub)");
+  return undefined;
 }

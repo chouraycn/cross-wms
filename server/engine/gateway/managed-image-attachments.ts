@@ -14,23 +14,23 @@
 export type ManagedImageAttachmentLimits = unknown;
 
 export function resolveManagedImageAttachmentLimits(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveManagedImageAttachmentLimits not implemented");
+  return undefined;
 }
 
 export async function cleanupManagedOutgoingImageRecords(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] cleanupManagedOutgoingImageRecords not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function attachManagedOutgoingImagesToMessage(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] attachManagedOutgoingImagesToMessage not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function createManagedOutgoingImageBlocks(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] createManagedOutgoingImageBlocks not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function handleManagedOutgoingImageHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleManagedOutgoingImageHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const DEFAULT_MANAGED_IMAGE_ATTACHMENT_LIMITS: any = undefined;

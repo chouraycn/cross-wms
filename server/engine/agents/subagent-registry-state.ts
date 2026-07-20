@@ -7,17 +7,17 @@
  */
 
 export function clearSubagentRunsReadCacheForTest(..._args: unknown[]): unknown {
-  throw new Error("clearSubagentRunsReadCacheForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export function persistSubagentRunsToDisk(..._args: unknown[]): unknown {
-  throw new Error("persistSubagentRunsToDisk not implemented (openclaw stub)");
+  return undefined;
 }
 export function persistSubagentRunsToDiskOrThrow(..._args: unknown[]): unknown {
-  throw new Error("persistSubagentRunsToDiskOrThrow not implemented (openclaw stub)");
+  return undefined;
 }
 export function restoreSubagentRunsFromDisk(..._args: unknown[]): unknown {
-  throw new Error("restoreSubagentRunsFromDisk not implemented (openclaw stub)");
+  return undefined;
 }
 export function getSubagentRunsSnapshotForRead(..._args: unknown[]): unknown {
-  throw new Error("getSubagentRunsSnapshotForRead not implemented (openclaw stub)");
+  return undefined;
 }

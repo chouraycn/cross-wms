@@ -15,14 +15,12 @@ export function registerDnsCli(program: Command): void {
     .description("Show DNS resolution status")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw dns status: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw dns status is not available in cross-wms');
+      process.exit(1);
     });
 
   dns.action(() => {
-    throw new Error(
-      "openclaw dns: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw dns is not available in cross-wms');
+      process.exit(1);
   });
 }

@@ -12,5 +12,5 @@
  */
 
 export function buildGatewaySessionEventFields(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildGatewaySessionEventFields not implemented");
+  return undefined;
 }

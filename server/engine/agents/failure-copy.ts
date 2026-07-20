@@ -1,11 +1,14 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/failure-copy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 auth profile 失败消息格式化，不再抛出 stub 错误。
  */
 
-export function formatAuthProfileFailureMessage(..._args: unknown[]): unknown {
-  throw new Error("formatAuthProfileFailureMessage not implemented (openclaw stub)");
+export function formatAuthProfileFailureMessage(params: {
+  error?: Error | unknown;
+  provider?: string;
+}): string {
+  const error = params.error;
+  const msg = error instanceof Error ? error.message : String(error ?? "unknown error");
+  return `Auth profile failure for ${params.provider ?? "unknown"}: ${msg}`;
 }

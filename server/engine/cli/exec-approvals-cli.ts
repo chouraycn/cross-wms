@@ -31,9 +31,8 @@ export function registerExecApprovalsCli(program: Command): void {
     .description("Show current exec approvals")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw approvals get: not supported in stub mode (exec-approvals/* not ported).",
-      );
+      console.error('openclaw approvals get is not available in cross-wms');
+      process.exit(1);
     });
 
   approvals
@@ -41,9 +40,8 @@ export function registerExecApprovalsCli(program: Command): void {
     .description("Add an entry to the exec approval allowlist")
     .argument("<command>", "Command to allowlist")
     .action(() => {
-      throw new Error(
-        "openclaw approvals add: not supported in stub mode (exec-approvals/* not ported).",
-      );
+      console.error('openclaw approvals add is not available in cross-wms');
+      process.exit(1);
     });
 
   approvals
@@ -51,8 +49,7 @@ export function registerExecApprovalsCli(program: Command): void {
     .description("Remove an entry from the exec approval allowlist")
     .argument("<command>", "Command to remove")
     .action(() => {
-      throw new Error(
-        "openclaw approvals remove: not supported in stub mode (exec-approvals/* not ported).",
-      );
+      console.error('openclaw approvals remove is not available in cross-wms');
+      process.exit(1);
     });
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core type module defines shared TypeScript contracts.
 import type {
   ImageContent,
@@ -8,7 +7,7 @@ import type {
   TextContent,
   Transport,
 } from "@cdf-know/llm-core";
-import type { AgentEvent, AgentMessage, AgentTool, QueueMode, ThinkingLevel } from "../index";
+import type { AgentEvent, AgentMessage, AgentTool, QueueMode, ThinkingLevel } from "../types";
 import type { AgentCoreCompletionRuntimeDeps, AgentCoreRuntimeDeps } from "../runtime-deps";
 import type { Session } from "./session/session";
 

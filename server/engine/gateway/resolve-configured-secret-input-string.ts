@@ -14,13 +14,13 @@
 export type SecretInputUnresolvedReasonStyle = unknown;
 
 export async function resolveConfiguredSecretInputString(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveConfiguredSecretInputString not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function resolveConfiguredSecretInputWithFallback(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveConfiguredSecretInputWithFallback not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function resolveRequiredConfiguredSecretRefInputString(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveRequiredConfiguredSecretRefInputString not implemented");
+  return Promise.resolve(undefined);
 }

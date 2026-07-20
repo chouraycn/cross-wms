@@ -7,5 +7,5 @@
  */
 
 export function buildSubagentSystemPrompt(..._args: unknown[]): unknown {
-  throw new Error("buildSubagentSystemPrompt not implemented (openclaw stub)");
+  return undefined;
 }

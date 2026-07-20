@@ -12,5 +12,5 @@
  */
 
 export function createGatewayNodeSessionRuntime(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayNodeSessionRuntime not implemented");
+  return undefined;
 }

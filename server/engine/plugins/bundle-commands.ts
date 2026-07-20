@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Bundles plugin command metadata for package output.
 import fs from "node:fs";
 import path from "node:path";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import { parseFrontmatterBlock } from './_stub_parent__parent__packages__markdown_core__src__frontmatter.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";

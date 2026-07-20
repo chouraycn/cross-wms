@@ -7,5 +7,5 @@
  */
 
 export function prepareGoogleSimpleCompletionModel(..._args: unknown[]): unknown {
-  throw new Error("prepareGoogleSimpleCompletionModel not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Converts loaded plugin registries into stable plugin records for status and diagnostics. */
-import { normalizeLowercaseStringOrEmpty } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeLowercaseStringOrEmpty } from './_openclaw__normalization_core__string_coerce.js';
 import type { PluginCompatCode } from './_stub_local__compat__registry.js';
 import type { PluginActivationState } from "./config-state.js";
 import type { PluginBundleFormat, PluginDiagnosticCode, PluginFormat } from "./manifest-types.js";

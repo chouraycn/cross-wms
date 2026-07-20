@@ -9,11 +9,11 @@
 export type AsyncStartedToolMeta = unknown;
 export type CompletionRequiredAsyncTaskWaitResult = unknown;
 export function requiresCompletionRequiredAsyncTaskWait(..._args: unknown[]): unknown {
-  throw new Error("requiresCompletionRequiredAsyncTaskWait not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldWaitForCompletionRequiredAsyncTasks(..._args: unknown[]): unknown {
-  throw new Error("shouldWaitForCompletionRequiredAsyncTasks not implemented (openclaw stub)");
+  return false;
 }
 export function waitForCompletionRequiredAsyncTasks(..._args: unknown[]): unknown {
-  throw new Error("waitForCompletionRequiredAsyncTasks not implemented (openclaw stub)");
+  return undefined;
 }
