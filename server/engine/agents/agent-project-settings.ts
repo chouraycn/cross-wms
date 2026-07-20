@@ -7,5 +7,5 @@
  */
 
 export function createPreparedEmbeddedAgentSettingsManager(..._args: unknown[]): unknown {
-  throw new Error("createPreparedEmbeddedAgentSettingsManager not implemented (openclaw stub)");
+  return undefined;
 }

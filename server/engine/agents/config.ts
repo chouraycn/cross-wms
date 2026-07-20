@@ -11,26 +11,26 @@ export const APP_NAME: unknown = undefined;
 export const CONFIG_DIR_NAME: unknown = undefined;
 export const VERSION: unknown = undefined;
 export function getThemesDir(..._args: unknown[]): unknown {
-  throw new Error("getThemesDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function getReadmePath(..._args: unknown[]): unknown {
-  throw new Error("getReadmePath not implemented (openclaw stub)");
+  return undefined;
 }
 export function getDocsPath(..._args: unknown[]): unknown {
-  throw new Error("getDocsPath not implemented (openclaw stub)");
+  return undefined;
 }
 export function getExamplesPath(..._args: unknown[]): unknown {
-  throw new Error("getExamplesPath not implemented (openclaw stub)");
+  return undefined;
 }
 export function getAgentDir(..._args: unknown[]): unknown {
-  throw new Error("getAgentDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function getCustomThemesDir(..._args: unknown[]): unknown {
-  throw new Error("getCustomThemesDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function getBinDir(..._args: unknown[]): unknown {
-  throw new Error("getBinDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function getSessionsDir(..._args: unknown[]): unknown {
-  throw new Error("getSessionsDir not implemented (openclaw stub)");
+  return undefined;
 }

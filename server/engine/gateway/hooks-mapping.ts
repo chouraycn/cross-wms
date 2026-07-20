@@ -14,13 +14,13 @@
 export type HookMappingResolved = unknown;
 
 export function resolveHookMappings(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookMappings not implemented");
+  return undefined;
 }
 
 export async function applyHookMappings(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] applyHookMappings not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function hasHookTemplateExpressions(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] hasHookTemplateExpressions not implemented");
+  return false;
 }

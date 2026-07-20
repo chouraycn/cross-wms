@@ -7,5 +7,5 @@
  */
 
 export function wrapToolWithAbortSignal(..._args: unknown[]): unknown {
-  throw new Error("wrapToolWithAbortSignal not implemented (openclaw stub)");
+  return undefined;
 }

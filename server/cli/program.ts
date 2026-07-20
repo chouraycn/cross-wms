@@ -33,6 +33,8 @@ import { registerChannelsCommand } from "./commands/channels.js";
 import { registerBackupCommand } from "./commands/backup.js";
 import { registerResetCommand } from "./commands/reset.js";
 import { registerHealthCommand } from "./commands/health.js";
+import { registerDocsCommand } from "./commands/docs.js";
+import { registerTasksCommand } from "./commands/tasks.js";
 import { logger } from "../logger.js";
 
 /**
@@ -83,6 +85,8 @@ export function buildCLIProgram(): Command {
     "backup",
     "reset",
     "health",
+    "docs",
+    "tasks",
   ]);
   for (const descriptor of descriptors) {
     if (DIRECTLY_REGISTERED.has(descriptor.name)) {
@@ -173,6 +177,12 @@ export function buildCLIProgram(): Command {
 
   // 注册 health 命令
   registerHealthCommand(program);
+
+  // 注册 docs 命令
+  registerDocsCommand(program);
+
+  // 注册 tasks 命令
+  registerTasksCommand(program);
 
   return program;
 }

@@ -23,9 +23,8 @@ export function registerCapabilityCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .argument("<prompt>", "Prompt text")
     .action(() => {
-      throw new Error(
-        "openclaw capability model: not supported in stub mode (agents/* not ported).",
-      );
+      console.error('openclaw capability model is not available in cross-wms');
+      process.exit(1);
     });
 
   capability
@@ -35,9 +34,8 @@ export function registerCapabilityCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .argument("<prompt>", "Prompt text")
     .action(() => {
-      throw new Error(
-        "openclaw capability image: not supported in stub mode (agents/* not ported).",
-      );
+      console.error('openclaw capability image is not available in cross-wms');
+      process.exit(1);
     });
 
   capability
@@ -47,9 +45,8 @@ export function registerCapabilityCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .argument("<query>", "Search query")
     .action(() => {
-      throw new Error(
-        "openclaw capability memory: not supported in stub mode (agents/* not ported).",
-      );
+      console.error('openclaw capability memory is not available in cross-wms');
+      process.exit(1);
     });
 
   capability
@@ -59,14 +56,12 @@ export function registerCapabilityCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .argument("<query>", "Search query")
     .action(() => {
-      throw new Error(
-        "openclaw capability search: not supported in stub mode (agents/* not ported).",
-      );
+      console.error('openclaw capability search is not available in cross-wms');
+      process.exit(1);
     });
 
   capability.action(() => {
-    throw new Error(
-      "openclaw capability: not supported in stub mode (agents/* not ported).",
-    );
+    console.error('openclaw capability is not available in cross-wms');
+      process.exit(1);
   });
 }

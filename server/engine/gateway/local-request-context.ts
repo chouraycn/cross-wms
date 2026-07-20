@@ -12,9 +12,9 @@
  */
 
 export function createLocalGatewayRequestContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createLocalGatewayRequestContext not implemented");
+  return undefined;
 }
 
 export function withLocalGatewayRequestScope(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] withLocalGatewayRequestScope not implemented");
+  return undefined;
 }

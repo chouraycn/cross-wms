@@ -20,44 +20,44 @@ export const DEFAULT_NOTIFY_TAIL_CHARS: unknown = undefined;
 export const DEFAULT_APPROVAL_TIMEOUT_MS: unknown = undefined;
 export const DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS: unknown = undefined;
 export function detectCursorKeyMode(..._args: unknown[]): unknown {
-  throw new Error("detectCursorKeyMode not implemented (openclaw stub)");
+  return undefined;
 }
 export function renderExecHostLabel(..._args: unknown[]): unknown {
-  throw new Error("renderExecHostLabel not implemented (openclaw stub)");
+  return "";
 }
 export function renderExecTargetLabel(..._args: unknown[]): unknown {
-  throw new Error("renderExecTargetLabel not implemented (openclaw stub)");
+  return "";
 }
 export function isRequestedExecTargetAllowed(..._args: unknown[]): unknown {
-  throw new Error("isRequestedExecTargetAllowed not implemented (openclaw stub)");
+  return false;
 }
 export function resolveExecTarget(..._args: unknown[]): unknown {
-  throw new Error("resolveExecTarget not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeNotifyOutput(..._args: unknown[]): unknown {
-  throw new Error("normalizeNotifyOutput not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyShellPath(..._args: unknown[]): unknown {
-  throw new Error("applyShellPath not implemented (openclaw stub)");
+  return undefined;
 }
 export function createApprovalSlug(..._args: unknown[]): unknown {
-  throw new Error("createApprovalSlug not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildApprovalPendingMessage(..._args: unknown[]): unknown {
-  throw new Error("buildApprovalPendingMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveApprovalRunningNoticeMs(..._args: unknown[]): unknown {
-  throw new Error("resolveApprovalRunningNoticeMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function formatExecFailureReason(..._args: unknown[]): unknown {
-  throw new Error("formatExecFailureReason not implemented (openclaw stub)");
+  return "";
 }
 export function buildExecExitOutcome(..._args: unknown[]): unknown {
-  throw new Error("buildExecExitOutcome not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildExecRuntimeErrorOutcome(..._args: unknown[]): unknown {
-  throw new Error("buildExecRuntimeErrorOutcome not implemented (openclaw stub)");
+  return undefined;
 }
 export async function runExecProcess(..._args: unknown[]): Promise<unknown> {
-  throw new Error("runExecProcess not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

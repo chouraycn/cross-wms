@@ -12,8 +12,8 @@ export type AuthProviderHealth = unknown;
 export type AuthHealthSummary = unknown;
 export const DEFAULT_OAUTH_WARN_MS: unknown = undefined;
 export function formatRemainingShort(..._args: unknown[]): unknown {
-  throw new Error("formatRemainingShort not implemented (openclaw stub)");
+  return "";
 }
 export function buildAuthHealthSummary(..._args: unknown[]): unknown {
-  throw new Error("buildAuthHealthSummary not implemented (openclaw stub)");
+  return undefined;
 }

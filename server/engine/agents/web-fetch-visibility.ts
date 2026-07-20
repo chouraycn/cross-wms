@@ -1,14 +1,29 @@
 /**
- * 移植自 openclaw/src/agents/tools/web-fetch-visibility.ts
+ * Ported from openclaw/src/agents/tools/web-fetch-visibility.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * HTML sanitization and invisible unicode stripping for web fetch results.
+ * Cross-wms degradation: simplified implementations without full HTML parsing.
  */
 
-export function sanitizeHtml(..._args: unknown[]): unknown {
-  throw new Error("sanitizeHtml not implemented (openclaw stub)");
+/** Sanitizes HTML content for safe display. */
+export function sanitizeHtml(html: string): string {
+  if (typeof html !== "string") {
+    return "";
+  }
+  // Minimal sanitization: strip script tags and event handlers.
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "")
+    .replace(/\bon\w+\s*=\s*[^\s>]*/gi, "");
 }
-export function stripInvisibleUnicode(..._args: unknown[]): unknown {
-  throw new Error("stripInvisibleUnicode not implemented (openclaw stub)");
+
+/** Strips invisible unicode characters from text. */
+export function stripInvisibleUnicode(text: string): string {
+  if (typeof text !== "string") {
+    return "";
+  }
+  // Remove common invisible unicode categories: control chars, zero-width chars,
+  // BOM, and soft hyphens.
+  return text
+    .replace(/[\u0000-\u0008\u000B\u000E-\u001F\u007F\u00AD\u200B-\u200F\u2028-\u202F\u2060\uFEFF]/g, "");
 }

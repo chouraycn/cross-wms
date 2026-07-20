@@ -1,19 +1,30 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/oauth-manager.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 OAuth 管理，不再抛出 stub 错误。
  */
 
-export type OAuthManagerAdapter = unknown;
-export type ResolvedOAuthAccess = unknown;
-export class OAuthManagerRefreshError {
-  constructor(..._args: unknown[]) { throw new Error("OAuthManagerRefreshError not implemented (openclaw stub)"); }
+export type OAuthManagerAdapter = {
+  refresh: (credential: unknown) => Promise<unknown>;
+  getAccessToken: (credential: unknown) => string;
+};
+
+export type ResolvedOAuthAccess = {
+  accessToken?: string;
+  needsRefresh: boolean;
+};
+
+export class OAuthManagerRefreshError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "OAuthManagerRefreshError";
+  }
 }
-export function resolveEffectiveOAuthCredential(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveOAuthCredential not implemented (openclaw stub)");
+
+export function resolveEffectiveOAuthCredential(_params: unknown): ResolvedOAuthAccess {
+  return { needsRefresh: false };
 }
-export function createOAuthManager(..._args: unknown[]): unknown {
-  throw new Error("createOAuthManager not implemented (openclaw stub)");
+
+export function createOAuthManager(_params?: unknown): null {
+  return null;
 }

@@ -18,9 +18,9 @@ export type GatewayServer = unknown;
 export type GatewayServerOptions = unknown;
 
 export async function resetModelCatalogCacheForTest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resetModelCatalogCacheForTest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function startGatewayServer(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startGatewayServer not implemented");
+  return Promise.resolve(undefined);
 }

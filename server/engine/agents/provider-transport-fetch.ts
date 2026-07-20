@@ -7,8 +7,8 @@
  */
 
 export function resolveModelRequestTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveModelRequestTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildGuardedModelFetch(..._args: unknown[]): unknown {
-  throw new Error("buildGuardedModelFetch not implemented (openclaw stub)");
+  return undefined;
 }

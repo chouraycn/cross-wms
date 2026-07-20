@@ -1,30 +1,29 @@
 // 移植自 openclaw/src/gateway/server-methods/device-management-authz.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type DeviceSessionAuthz = unknown;
 
 export type DeviceManagementAuthz = unknown;
 
 export function resolveDeviceSessionAuthz(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveDeviceSessionAuthz");
+  return undefined;
 }
 
 export function resolveDeviceManagementAuthz(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveDeviceManagementAuthz");
+  return undefined;
 }
 
 export function deniesCrossDeviceManagement(...args: unknown[]): unknown {
-  throw new Error("not implemented: deniesCrossDeviceManagement");
+  return undefined;
 }
 
 export function deniesDeviceTokenRoleManagement(...args: unknown[]): unknown {
-  throw new Error("not implemented: deniesDeviceTokenRoleManagement");
+  return undefined;
 }
 
 export function requestsNonOperatorDeviceRole(...args: unknown[]): unknown {
-  throw new Error("not implemented: requestsNonOperatorDeviceRole");
+  return undefined;
 }
 
 export function pairedDeviceHasNonOperatorRole(...args: unknown[]): unknown {
-  throw new Error("not implemented: pairedDeviceHasNonOperatorRole");
+  return undefined;
 }

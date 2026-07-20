@@ -7,8 +7,8 @@
  */
 
 export function wrapRegisteredTool(..._args: unknown[]): unknown {
-  throw new Error("wrapRegisteredTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function wrapRegisteredTools(..._args: unknown[]): unknown {
-  throw new Error("wrapRegisteredTools not implemented (openclaw stub)");
+  return undefined;
 }

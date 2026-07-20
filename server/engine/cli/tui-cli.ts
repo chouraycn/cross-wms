@@ -14,8 +14,7 @@ export function registerTuiCli(program: Command): void {
     .option("--url <url>", "Gateway WebSocket URL")
     .option("--token <token>", "Gateway token")
     .action(() => {
-      throw new Error(
-        "openclaw tui: not supported in stub mode (terminal-core/*, runtime not ported).",
-      );
+      console.error('openclaw tui is not available in cross-wms');
+      process.exit(1);
     });
 }

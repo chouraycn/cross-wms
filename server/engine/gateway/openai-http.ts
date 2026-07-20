@@ -12,7 +12,7 @@
  */
 
 export async function handleOpenAiHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleOpenAiHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const testOnlyOpenAiHttp: any = undefined;

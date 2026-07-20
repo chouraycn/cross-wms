@@ -7,8 +7,8 @@
  */
 
 export function resolveModelCatalogScope(..._args: unknown[]): unknown {
-  throw new Error("resolveModelCatalogScope not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveProviderDiscoveryProviderIdsForCatalogScope(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderDiscoveryProviderIdsForCatalogScope not implemented (openclaw stub)");
+  return undefined;
 }

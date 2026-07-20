@@ -12,5 +12,5 @@
  */
 
 export function bootstrapGatewayNetworkRuntime(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] bootstrapGatewayNetworkRuntime not implemented");
+  return undefined;
 }

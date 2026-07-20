@@ -1,11 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles/doctor.ts
+ * Ported from openclaw/src/agents/auth-profiles/doctor.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Provider-specific auth doctor hints.
+ * Cross-wms degradation: returns empty string without plugin runtime.
  */
 
-export function formatAuthDoctorHint(..._args: unknown[]): unknown {
-  throw new Error("formatAuthDoctorHint not implemented (openclaw stub)");
+/** Formats provider-specific auth doctor guidance for a profile/store. */
+export async function formatAuthDoctorHint(params: {
+  cfg?: Record<string, unknown>;
+  store: Record<string, unknown>;
+  provider: string;
+  profileId?: string;
+}): Promise<string> {
+  // Cross-wms does not have provider plugin doctor hints.
+  return "";
 }

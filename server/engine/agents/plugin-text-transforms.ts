@@ -1,17 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/plugin-text-transforms.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供插件文本变换，不再抛出 stub 错误。
  */
 
-export function mergePluginTextTransforms(..._args: unknown[]): unknown {
-  throw new Error("mergePluginTextTransforms not implemented (openclaw stub)");
+export function mergePluginTextTransforms(_params: unknown): unknown {
+  return null;
 }
-export function applyPluginTextReplacements(..._args: unknown[]): unknown {
-  throw new Error("applyPluginTextReplacements not implemented (openclaw stub)");
+
+export function applyPluginTextReplacements(text: string): string {
+  return text;
 }
-export function wrapStreamFnTextTransforms(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnTextTransforms not implemented (openclaw stub)");
+
+export function wrapStreamFnTextTransforms(streamFn: unknown): unknown {
+  return streamFn;
 }

@@ -7,5 +7,5 @@
  */
 
 export function isRunnerAbortError(..._args: unknown[]): unknown {
-  throw new Error("isRunnerAbortError not implemented (openclaw stub)");
+  return false;
 }

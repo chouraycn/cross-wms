@@ -7,26 +7,26 @@
  */
 
 export function shortenPath(..._args: unknown[]): unknown {
-  throw new Error("shortenPath not implemented (openclaw stub)");
+  return undefined;
 }
 export function str(..._args: unknown[]): unknown {
-  throw new Error("str not implemented (openclaw stub)");
+  return undefined;
 }
 export function replaceTabs(..._args: unknown[]): unknown {
-  throw new Error("replaceTabs not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeDisplayText(..._args: unknown[]): unknown {
-  throw new Error("normalizeDisplayText not implemented (openclaw stub)");
+  return undefined;
 }
 export function getTextOutput(..._args: unknown[]): unknown {
-  throw new Error("getTextOutput not implemented (openclaw stub)");
+  return undefined;
 }
 export function formatSessionToolOutput(..._args: unknown[]): unknown {
-  throw new Error("formatSessionToolOutput not implemented (openclaw stub)");
+  return "";
 }
 export function appendSessionToolTruncationWarning(..._args: unknown[]): unknown {
-  throw new Error("appendSessionToolTruncationWarning not implemented (openclaw stub)");
+  return undefined;
 }
 export function invalidArgText(..._args: unknown[]): unknown {
-  throw new Error("invalidArgText not implemented (openclaw stub)");
+  return undefined;
 }

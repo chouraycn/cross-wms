@@ -8,5 +8,5 @@
 
 export type ApplyPatchPathExtractionOptions = unknown;
 export function extractApplyPatchTargetPaths(..._args: unknown[]): unknown {
-  throw new Error("extractApplyPatchTargetPaths not implemented (openclaw stub)");
+  return undefined;
 }

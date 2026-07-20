@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Plugin Command Registry
  *
@@ -6,7 +5,7 @@
  * These commands are processed before built-in commands and before agent invocation.
  */
 
-import { normalizeLowercaseStringOrEmpty } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeLowercaseStringOrEmpty } from './_openclaw__normalization_core__string_coerce.js';
 import { resolveBoundAgentIdForSession } from "../agents/session-agent-binding.js";
 import { resolveConversationBindingContext } from "../channels/conversation-binding-context.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";

@@ -7,10 +7,10 @@
  */
 
 export function pruneProcessedHistoryImages(..._args: unknown[]): unknown {
-  throw new Error("pruneProcessedHistoryImages not implemented (openclaw stub)");
+  return undefined;
 }
 export function installHistoryImagePruneContextTransform(..._args: unknown[]): unknown {
-  throw new Error("installHistoryImagePruneContextTransform not implemented (openclaw stub)");
+  return undefined;
 }
 export const PRUNED_HISTORY_IMAGE_MARKER: unknown = undefined;
 export const PRUNED_HISTORY_MEDIA_REFERENCE_MARKER: unknown = undefined;

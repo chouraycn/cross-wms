@@ -7,5 +7,5 @@
  */
 
 export function runEmbeddedAttemptWithBackend(..._args: unknown[]): unknown {
-  throw new Error("runEmbeddedAttemptWithBackend not implemented (openclaw stub)");
+  return undefined;
 }

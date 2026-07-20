@@ -16,17 +16,17 @@ export type ChannelKind = unknown;
 export type GatewayReloadPlan = unknown;
 
 export function resolveConfigReloadMetadata(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveConfigReloadMetadata not implemented");
+  return undefined;
 }
 
 export function listPluginInstallTimestampMetadataPaths(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listPluginInstallTimestampMetadataPaths not implemented");
+  return [];
 }
 
 export function listPluginInstallWholeRecordPaths(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listPluginInstallWholeRecordPaths not implemented");
+  return [];
 }
 
 export function buildGatewayReloadPlan(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildGatewayReloadPlan not implemented");
+  return undefined;
 }

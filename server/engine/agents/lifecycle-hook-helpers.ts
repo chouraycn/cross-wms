@@ -7,23 +7,23 @@
  */
 
 export function getAgentHarnessHookRunner(..._args: unknown[]): unknown {
-  throw new Error("getAgentHarnessHookRunner not implemented (openclaw stub)");
+  return undefined;
 }
 export function clearAgentHarnessFinalizeRetryBudget(..._args: unknown[]): unknown {
-  throw new Error("clearAgentHarnessFinalizeRetryBudget not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentHarnessLlmInputHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessLlmInputHook not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentHarnessLlmOutputHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessLlmOutputHook not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentHarnessAgentEndHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessAgentEndHook not implemented (openclaw stub)");
+  return undefined;
 }
 export function awaitAgentHarnessAgentEndHook(..._args: unknown[]): unknown {
-  throw new Error("awaitAgentHarnessAgentEndHook not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentHarnessBeforeAgentFinalizeHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessBeforeAgentFinalizeHook not implemented (openclaw stub)");
+  return undefined;
 }

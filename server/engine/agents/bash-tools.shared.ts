@@ -8,38 +8,38 @@
 
 export type BashSandboxConfig = unknown;
 export function buildSandboxEnv(..._args: unknown[]): unknown {
-  throw new Error("buildSandboxEnv not implemented (openclaw stub)");
+  return undefined;
 }
 export function coerceEnv(..._args: unknown[]): unknown {
-  throw new Error("coerceEnv not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildDockerExecArgs(..._args: unknown[]): unknown {
-  throw new Error("buildDockerExecArgs not implemented (openclaw stub)");
+  return undefined;
 }
 export async function resolveSandboxWorkdir(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveSandboxWorkdir not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function resolveWorkdir(..._args: unknown[]): unknown {
-  throw new Error("resolveWorkdir not implemented (openclaw stub)");
+  return undefined;
 }
 export function clampWithDefault(..._args: unknown[]): unknown {
-  throw new Error("clampWithDefault not implemented (openclaw stub)");
+  return undefined;
 }
 export function readEnvInt(..._args: unknown[]): unknown {
-  throw new Error("readEnvInt not implemented (openclaw stub)");
+  return undefined;
 }
 export function chunkString(..._args: unknown[]): unknown {
-  throw new Error("chunkString not implemented (openclaw stub)");
+  return undefined;
 }
 export function truncateMiddle(..._args: unknown[]): unknown {
-  throw new Error("truncateMiddle not implemented (openclaw stub)");
+  return undefined;
 }
 export function sliceLogLines(..._args: unknown[]): unknown {
-  throw new Error("sliceLogLines not implemented (openclaw stub)");
+  return undefined;
 }
 export function deriveSessionName(..._args: unknown[]): unknown {
-  throw new Error("deriveSessionName not implemented (openclaw stub)");
+  return undefined;
 }
 export function pad(..._args: unknown[]): unknown {
-  throw new Error("pad not implemented (openclaw stub)");
+  return undefined;
 }

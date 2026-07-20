@@ -12,5 +12,5 @@
  */
 
 export async function handleSessionHistoryHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleSessionHistoryHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }

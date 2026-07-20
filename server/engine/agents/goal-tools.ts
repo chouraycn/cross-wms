@@ -7,11 +7,11 @@
  */
 
 export function createGetGoalTool(..._args: unknown[]): unknown {
-  throw new Error("createGetGoalTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function createCreateGoalTool(..._args: unknown[]): unknown {
-  throw new Error("createCreateGoalTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function createUpdateGoalTool(..._args: unknown[]): unknown {
-  throw new Error("createUpdateGoalTool not implemented (openclaw stub)");
+  return undefined;
 }

@@ -7,5 +7,5 @@
  */
 
 export function liveProvidersShareOwningPlugin(..._args: unknown[]): unknown {
-  throw new Error("liveProvidersShareOwningPlugin not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,11 +1,20 @@
 /**
  * 移植自 openclaw/src/agents/runtime-auth-refresh.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime auth refresh timer helper.
+ * Clamps refresh deadlines before they are passed to setTimeout.
  */
 
-export function clampRuntimeAuthRefreshDelayMs(..._args: unknown[]): unknown {
-  throw new Error("clampRuntimeAuthRefreshDelayMs not implemented (openclaw stub)");
+/** Clamp an auth refresh deadline to a safe setTimeout delay. */
+export function clampRuntimeAuthRefreshDelayMs(params: {
+  refreshAt: number;
+  now: number;
+  minDelayMs: number;
+}): number {
+  const delay = params.refreshAt - params.now;
+  const minMs = params.minDelayMs;
+  if (!Number.isFinite(delay) || delay <= 0) {
+    return minMs;
+  }
+  return Math.max(delay, minMs);
 }

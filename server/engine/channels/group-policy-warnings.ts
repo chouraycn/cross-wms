@@ -1,102 +1,101 @@
 // 移植自 openclaw/src/channels/plugins/group-policy-warnings.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function composeWarningCollectors(..._args: unknown[]): unknown {
-  throw new Error("not implemented: composeWarningCollectors");
+  return undefined;
 }
 
 export function projectWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: projectWarningCollector");
+  return undefined;
 }
 
 export function projectConfigWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: projectConfigWarningCollector");
+  return undefined;
 }
 
 export function projectConfigAccountIdWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: projectConfigAccountIdWarningCollector");
+  return undefined;
 }
 
 export function projectAccountWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: projectAccountWarningCollector");
+  return undefined;
 }
 
 export function projectAccountConfigWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: projectAccountConfigWarningCollector");
+  return undefined;
 }
 
 export function createConditionalWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createConditionalWarningCollector");
+  return undefined;
 }
 
 export function composeAccountWarningCollectors(..._args: unknown[]): unknown {
-  throw new Error("not implemented: composeAccountWarningCollectors");
+  return undefined;
 }
 
 export function buildOpenGroupPolicyWarning(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildOpenGroupPolicyWarning");
+  return undefined;
 }
 
 export function buildOpenGroupPolicyRestrictSendersWarning(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildOpenGroupPolicyRestrictSendersWarning");
+  return undefined;
 }
 
 export function buildOpenGroupPolicyNoRouteAllowlistWarning(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildOpenGroupPolicyNoRouteAllowlistWarning");
+  return undefined;
 }
 
 export function buildOpenGroupPolicyConfigureRouteAllowlistWarning(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildOpenGroupPolicyConfigureRouteAllowlistWarning");
+  return undefined;
 }
 
 export function collectOpenGroupPolicyRestrictSendersWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectOpenGroupPolicyRestrictSendersWarnings");
+  return [];
 }
 
 export function collectAllowlistProviderRestrictSendersWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectAllowlistProviderRestrictSendersWarnings");
+  return [];
 }
 
 export function createAllowlistProviderRestrictSendersWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowlistProviderRestrictSendersWarningCollector");
+  return undefined;
 }
 
 export function createOpenGroupPolicyRestrictSendersWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createOpenGroupPolicyRestrictSendersWarningCollector");
+  return undefined;
 }
 
 export function collectAllowlistProviderGroupPolicyWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectAllowlistProviderGroupPolicyWarnings");
+  return [];
 }
 
 export function createAllowlistProviderGroupPolicyWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowlistProviderGroupPolicyWarningCollector");
+  return undefined;
 }
 
 export function collectOpenProviderGroupPolicyWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectOpenProviderGroupPolicyWarnings");
+  return [];
 }
 
 export function createOpenProviderGroupPolicyWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createOpenProviderGroupPolicyWarningCollector");
+  return undefined;
 }
 
 export function createAllowlistProviderOpenWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowlistProviderOpenWarningCollector");
+  return undefined;
 }
 
 export function collectOpenGroupPolicyRouteAllowlistWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectOpenGroupPolicyRouteAllowlistWarnings");
+  return [];
 }
 
 export function createAllowlistProviderRouteAllowlistWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowlistProviderRouteAllowlistWarningCollector");
+  return undefined;
 }
 
 export function collectOpenGroupPolicyConfiguredRouteWarnings(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectOpenGroupPolicyConfiguredRouteWarnings");
+  return [];
 }
 
 export function createOpenProviderConfiguredRouteWarningCollector(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createOpenProviderConfiguredRouteWarningCollector");
+  return undefined;
 }

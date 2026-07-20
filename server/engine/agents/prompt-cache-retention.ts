@@ -7,8 +7,8 @@
  */
 
 export function isGooglePromptCacheEligible(..._args: unknown[]): unknown {
-  throw new Error("isGooglePromptCacheEligible not implemented (openclaw stub)");
+  return false;
 }
 export function resolveCacheRetention(..._args: unknown[]): unknown {
-  throw new Error("resolveCacheRetention not implemented (openclaw stub)");
+  return undefined;
 }

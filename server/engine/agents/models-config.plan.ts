@@ -8,11 +8,11 @@
 
 export type ResolveImplicitProvidersForModelsJson = unknown;
 export async function resolveProvidersForModelsJsonWithDeps(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveProvidersForModelsJsonWithDeps not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function planOpenClawModelsJsonWithDeps(..._args: unknown[]): Promise<unknown> {
-  throw new Error("planOpenClawModelsJsonWithDeps not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function planOpenClawModelsJson(..._args: unknown[]): Promise<unknown> {
-  throw new Error("planOpenClawModelsJson not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

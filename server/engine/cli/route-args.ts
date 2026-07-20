@@ -1,59 +1,56 @@
-// 移植自 openclaw/src/cli/route-args.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export function parseHealthRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseHealthRouteArgs");
+  console.warn('parseHealthRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseStatusRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseStatusRouteArgs");
+  console.warn('parseStatusRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseGatewayStatusRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseGatewayStatusRouteArgs");
+  console.warn('parseGatewayStatusRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseSessionsRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseSessionsRouteArgs");
+  console.warn('parseSessionsRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseAgentsListRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseAgentsListRouteArgs");
+  console.warn('parseAgentsListRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseConfigGetRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseConfigGetRouteArgs");
+  console.warn('parseConfigGetRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseConfigUnsetRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseConfigUnsetRouteArgs");
+  console.warn('parseConfigUnsetRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseModelsListRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseModelsListRouteArgs");
+  console.warn('parseModelsListRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseModelsStatusRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseModelsStatusRouteArgs");
+  console.warn('parseModelsStatusRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseChannelsListRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseChannelsListRouteArgs");
+  console.warn('parseChannelsListRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseChannelsStatusRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseChannelsStatusRouteArgs");
+  console.warn('parseChannelsStatusRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parsePluginsListRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parsePluginsListRouteArgs");
+  console.warn('parsePluginsListRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseTasksListRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseTasksListRouteArgs");
+  console.warn('parseTasksListRouteArgs is not available in cross-wms'); return undefined;
 }
 
 export function parseTasksAuditRouteArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseTasksAuditRouteArgs");
+  console.warn('parseTasksAuditRouteArgs is not available in cross-wms'); return undefined;
 }

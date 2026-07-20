@@ -12,17 +12,17 @@
  */
 
 export function createKnownNodeCatalog(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createKnownNodeCatalog not implemented");
+  return undefined;
 }
 
 export function listKnownNodes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listKnownNodes not implemented");
+  return [];
 }
 
 export function getKnownNodeEntry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getKnownNodeEntry not implemented");
+  return undefined;
 }
 
 export function getKnownNode(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getKnownNode not implemented");
+  return undefined;
 }

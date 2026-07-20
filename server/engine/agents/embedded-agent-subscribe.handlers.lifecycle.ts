@@ -8,8 +8,8 @@
 
 export { handleCompactionEnd, handleCompactionStart } from "./embedded-agent-subscribe.handlers.compaction.js";
 export function handleAgentStart(..._args: unknown[]): unknown {
-  throw new Error("handleAgentStart not implemented (openclaw stub)");
+  return undefined;
 }
 export function handleAgentEnd(..._args: unknown[]): unknown {
-  throw new Error("handleAgentEnd not implemented (openclaw stub)");
+  return undefined;
 }

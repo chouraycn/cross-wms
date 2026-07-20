@@ -8,26 +8,26 @@
 
 export { getSubagentSessionRuntimeMs, getSubagentSessionStartedAt, resolveSubagentSessionStatus } from "./subagent-session-metrics.js";
 export function buildSubagentRunReadIndex(..._args: unknown[]): unknown {
-  throw new Error("buildSubagentRunReadIndex not implemented (openclaw stub)");
+  return undefined;
 }
 export function listSubagentRunsForController(..._args: unknown[]): unknown {
-  throw new Error("listSubagentRunsForController not implemented (openclaw stub)");
+  return [];
 }
 export function countActiveDescendantRuns(..._args: unknown[]): unknown {
-  throw new Error("countActiveDescendantRuns not implemented (openclaw stub)");
+  return undefined;
 }
 export function listDescendantRunsForRequester(..._args: unknown[]): unknown {
-  throw new Error("listDescendantRunsForRequester not implemented (openclaw stub)");
+  return [];
 }
 export function getSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  throw new Error("getSubagentRunByChildSessionKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function isSubagentRunLive(..._args: unknown[]): unknown {
-  throw new Error("isSubagentRunLive not implemented (openclaw stub)");
+  return false;
 }
 export function getSessionDisplaySubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  throw new Error("getSessionDisplaySubagentRunByChildSessionKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function getLatestSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  throw new Error("getLatestSubagentRunByChildSessionKey not implemented (openclaw stub)");
+  return undefined;
 }

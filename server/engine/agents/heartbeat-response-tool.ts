@@ -1,11 +1,44 @@
 /**
- * 移植自 openclaw/src/agents/tools/heartbeat-response-tool.ts
+ * Ported from openclaw/src/agents/tools/heartbeat-response-tool.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Heartbeat response tool for auto-reply turns.
+ * Cross-wms degradation: simplified tool without typebox schema / heartbeat constants.
  */
 
-export function createHeartbeatResponseTool(..._args: unknown[]): unknown {
-  throw new Error("createHeartbeatResponseTool not implemented (openclaw stub)");
+/** Creates the one-shot heartbeat response recording tool for an auto-reply turn. */
+export function createHeartbeatResponseTool(): Record<string, unknown> {
+  let recorded = false;
+  return {
+    label: "Heartbeat",
+    name: "heartbeat_respond",
+    displaySummary: "Record heartbeat outcome/notify choice.",
+    description:
+      "Record heartbeat result. `notify=false` no visible send. `notify=true` needs concise notificationText.",
+    parameters: {
+      type: "object",
+      properties: {
+        outcome: { type: "string" },
+        notify: { type: "boolean" },
+        summary: { type: "string" },
+        notificationText: { type: "string" },
+        reason: { type: "string" },
+        priority: { type: "string" },
+        nextCheck: { type: "string" },
+      },
+      required: ["outcome", "notify", "summary"],
+      additionalProperties: false,
+    },
+    execute: async (_toolCallId: string, args: Record<string, unknown>) => {
+      if (!args || typeof args !== "object") {
+        return { isError: true, text: "Heartbeat response arguments required" };
+      }
+      if (recorded) {
+        return { isError: true, text: "heartbeat_respond already recorded for this turn" };
+      }
+      recorded = true;
+      return {
+        output: JSON.stringify({ status: "recorded", ...args }),
+      };
+    },
+  };
 }

@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/config/types.tools.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type MediaUnderstandingScopeMatch = unknown;
 export type MediaUnderstandingScopeRule = unknown;
@@ -30,6 +29,6 @@ export type MemorySearchConfig = unknown;
 export type ToolsConfig = unknown;
 export type MessageToolsConfig = unknown;
 export function parseToolsBySenderTypedKey(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseToolsBySenderTypedKey");
+  return undefined;
 }
 export const TOOLS_BY_SENDER_KEY_TYPES: unknown = undefined;

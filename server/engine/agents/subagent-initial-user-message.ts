@@ -7,5 +7,5 @@
  */
 
 export function buildSubagentInitialUserMessage(..._args: unknown[]): unknown {
-  throw new Error("buildSubagentInitialUserMessage not implemented (openclaw stub)");
+  return undefined;
 }

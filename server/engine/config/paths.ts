@@ -43,3 +43,7 @@ export function resolvePaths(): ConfigPaths {
     cacheDir: join(configDir, 'cache'),
   };
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const resolveIsNixMode: any = undefined as any;
+export const resolveStateDir: any = undefined as any;

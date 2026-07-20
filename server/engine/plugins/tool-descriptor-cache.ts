@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Caches plugin tool descriptors by plugin source, contract names, and runtime context. */
 import fs from "node:fs";
 import type { AnyAgentTool } from "../agents/tools/common.js";

@@ -605,13 +605,6 @@ export type { ImageSanitizationLimits } from "./image-sanitization.js";
 export { buildModelAliasLines } from "./model-alias-lines.js";
 
 export {
-  shouldAllowCooldownProbeForReason,
-  shouldUseTransientCooldownProbeSlot,
-  shouldPreserveTransientCooldownProbeSlot,
-} from "./failover-policy.js";
-export type { FailoverReason } from "./failover-policy.js";
-
-export {
   mediaUrlsFromGeneratedAttachments,
   formatGeneratedAttachmentLines,
 } from "./generated-attachments.js";
@@ -1108,7 +1101,6 @@ export type { ExecReviewerConfig } from "./exec-auto-reviewer.js";
 export { parseExecAutoReviewResponse, resolveExecReviewerTimeoutMs, createModelExecAutoReviewer } from "./exec-auto-reviewer.js";
 export { canExecRequestNode, resolveExecDefaults } from "./exec-defaults.js";
 export { stripProviderPrefix, isStrictAgenticSupportedProviderModel, isStrictAgenticExecutionContractActive } from "./execution-contract.js";
-export { FailoverError, isFailoverError, resolveFailoverStatus, isNonProviderRuntimeCoordinationError, isTimeoutError, isSignalTimeoutReason, resolveFailoverReasonFromError, buildFailoverRemediationHint, buildProviderReauthCommand, describeFailoverError, coerceToFailoverError } from "./failover-error.js";
 export { resolveFastModeState } from "./fast-mode.js";
 export { prepareGoogleSimpleCompletionModel } from "./google-simple-completion-stream.js";
 export type { ConfiguredAgentHarnessRuntimeOptions } from "./harness-runtimes.js";
@@ -1395,7 +1387,6 @@ export * from "./agent-tool-stubs.js";
 export * from "./agent-tools-fs-helpers.js";
 export * from "./agent-tools-sandbox-context.js";
 export * from "./agents-list-tool.js";
-export * from "./assistant-failover.js";
 export * from "./assistant-message-fixtures.js";
 export * from "./attempt-abort.js";
 export * from "./attempt-bootstrap-routing.js";
@@ -1533,8 +1524,6 @@ export * from "./external-cli-discovery.js";
 export * from "./external-cli-scope.js";
 export * from "./external-cli-sync.js";
 export * from "./extra-params.js";
-export * from "./failover-matches.js";
-export * from "./failover-observation.js";
 export * from "./failure-copy.js";
 export * from "./failure-hook.js";
 export * from "./failure-signal.js";

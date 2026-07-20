@@ -276,8 +276,21 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
 
     let newModels: ModelConfig[];
     if (modelDialogMode === 'edit' && editingModel) {
+      // RC-3 修复：编辑模式下禁止修改 id，避免 Keychain 引用断裂
+      // 原 bug：用 modelForm.id 覆盖 id 会导致后端把旧 id 当作"被删除"清理 Keychain
+      // 新行为：保留原 id，仅更新其他字段；同时保留 apiKeyRef/apiKeyRefs/keyStrategy 等敏感字段
       newModels = models.map((m) =>
-        m.id === editingModel.id ? { ...m, ...modelData, id: modelForm.id.trim() } : m
+        m.id === editingModel.id
+          ? {
+              ...m,
+              ...modelData,
+              id: editingModel.id, // 强制保留原 id
+              apiKeyRef: m.apiKeyRef, // 保留 Keychain 引用
+              apiKeyRefs: m.apiKeyRefs,
+              keyStrategy: m.keyStrategy,
+              authMode: m.authMode,
+            }
+          : m
       );
     } else {
       newModels = [...models, modelData];

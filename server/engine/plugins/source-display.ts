@@ -1,8 +1,7 @@
-// @ts-nocheck
 /** Formats plugin source paths for user-facing status output. */
 import path from "node:path";
 import { isPathInside } from "../infra/path-guards.js";
-import { shortenHomeInString } from './_stub_parent__utils.js';
+import { shortenHomeInString } from './_parent__utils.js';
 import type { PluginRecord } from "./registry.js";
 import type { PluginSourceRoots } from "./roots.js";
 export { resolvePluginSourceRoots } from "./roots.js";

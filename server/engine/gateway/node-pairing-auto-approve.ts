@@ -14,9 +14,9 @@
 export type NodePairingAutoApproveReason = unknown;
 
 export function resolveNodePairingClientIpSource(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveNodePairingClientIpSource not implemented");
+  return undefined;
 }
 
 export function shouldAutoApproveNodePairingFromTrustedCidrs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldAutoApproveNodePairingFromTrustedCidrs not implemented");
+  return false;
 }

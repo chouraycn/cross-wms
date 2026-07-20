@@ -1,27 +1,113 @@
-// 移植自 openclaw/src/cli/helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Shared Commander registration helpers for repeated options, positive ints, and lazy reparse args.
+// 移植自 openclaw/src/cli/program/helpers.ts
+//
+// 降级策略：
+//  - 原模块依赖 ../../infra/parse-finite-number.js 的 parseStrictPositiveInteger
+//    （cross-wms 已移植）。
+//  - 其他依赖仅 commander。
 
-export function collectOption(..._args: unknown[]): unknown {
-  throw new Error("not implemented: collectOption");
+import { InvalidArgumentError, type Command } from "commander";
+import { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
+
+/** Commander option collector for repeatable string flags. */
+export function collectOption(value: string, previous: string[] = []): string[] {
+  return [...previous, value];
 }
 
-export function parsePositiveIntOrUndefined(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parsePositiveIntOrUndefined");
+/** Parse an optional positive integer, treating empty values as unset. */
+export function parsePositiveIntOrUndefined(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  return parseStrictPositiveInteger(value);
 }
 
-export function parseStrictPositiveIntOrUndefined(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseStrictPositiveIntOrUndefined");
+/** Parse a positive integer without treating empty values specially. */
+export function parseStrictPositiveIntOrUndefined(value: unknown): number | undefined {
+  return parseStrictPositiveInteger(value);
 }
 
-export function parseStrictPositiveIntOption(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseStrictPositiveIntOption");
+/** Commander argument parser for required positive integer options. */
+export function parseStrictPositiveIntOption(value: string, flag: string): number {
+  const parsed = parseStrictPositiveInteger(value);
+  if (parsed === undefined) {
+    throw new InvalidArgumentError(`${flag} must be a positive integer.`);
+  }
+  return parsed;
 }
 
-export function resolveActionArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveActionArgs");
+/** Return positional args captured by a Commander action command. */
+export function resolveActionArgs(actionCommand?: Command): string[] {
+  if (!actionCommand) {
+    return [];
+  }
+  const args = (actionCommand as Command & { args?: string[] }).args;
+  return Array.isArray(args) ? args : [];
 }
 
-export function resolveCommandOptionArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCommandOptionArgs");
+function isDefaultOptionValue(command: Command, name: string): boolean {
+  if (typeof command.getOptionValueSource !== "function") {
+    return false;
+  }
+  return command.getOptionValueSource(name) === "default";
+}
+
+function appendOptionValue(out: string[], flag: string, value: unknown): void {
+  if (value === undefined) {
+    return;
+  }
+  if (value === false) {
+    if (flag.startsWith("--no-")) {
+      out.push(flag);
+    }
+    return;
+  }
+  if (value === true) {
+    out.push(flag);
+    return;
+  }
+  const arg = stringifyOptionValue(value);
+  if (arg !== undefined) {
+    out.push(flag, arg);
+  }
+}
+
+function stringifyOptionValue(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  return undefined;
+}
+
+/** Reconstruct explicit option tokens from a Commander command for lazy reparsing. */
+export function resolveCommandOptionArgs(command?: Command): string[] {
+  if (!command) {
+    return [];
+  }
+  const out: string[] = [];
+  for (const option of command.options) {
+    const name = option.attributeName();
+    if (isDefaultOptionValue(command, name)) {
+      continue;
+    }
+    const flag = option.long ?? option.short;
+    if (!flag) {
+      continue;
+    }
+    const value = command.getOptionValue(name);
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        appendOptionValue(out, flag, item);
+      }
+      continue;
+    }
+    appendOptionValue(out, flag, value);
+  }
+  return out;
 }

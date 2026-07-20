@@ -7,8 +7,8 @@
  */
 
 export function resolveBtwSessionTranscriptPath(..._args: unknown[]): unknown {
-  throw new Error("resolveBtwSessionTranscriptPath not implemented (openclaw stub)");
+  return undefined;
 }
 export async function readBtwTranscriptMessages(..._args: unknown[]): Promise<unknown> {
-  throw new Error("readBtwTranscriptMessages not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

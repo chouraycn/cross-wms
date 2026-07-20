@@ -7,6 +7,6 @@
  */
 
 export function compactEmbeddedAgentSessionDirect(..._args: unknown[]): unknown {
-  throw new Error("compactEmbeddedAgentSessionDirect not implemented (openclaw stub)");
+  return undefined;
 }
 export const testing_compact: unknown = undefined;

@@ -7,5 +7,5 @@
  */
 
 export function flushPendingToolResultsAfterIdle(..._args: unknown[]): unknown {
-  throw new Error("flushPendingToolResultsAfterIdle not implemented (openclaw stub)");
+  return undefined;
 }

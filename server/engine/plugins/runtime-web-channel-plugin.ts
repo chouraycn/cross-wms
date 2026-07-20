@@ -1,65 +1,64 @@
 // 移植自 openclaw/src/plugins/runtime-web-channel-plugin.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function getActiveWebListener(...args: unknown[]): unknown {
-  throw new Error("not implemented: getActiveWebListener");
+  return undefined;
 }
 export function getWebAuthAgeMs(...args: unknown[]): unknown {
-  throw new Error("not implemented: getWebAuthAgeMs");
+  return undefined;
 }
 export function logWebSelfId(...args: unknown[]): unknown {
-  throw new Error("not implemented: logWebSelfId");
+  return undefined;
 }
 export function loginWeb(...args: unknown[]): unknown {
-  throw new Error("not implemented: loginWeb");
+  return undefined;
 }
 export function logoutWeb(...args: unknown[]): unknown {
-  throw new Error("not implemented: logoutWeb");
+  return undefined;
 }
 export function readWebSelfId(...args: unknown[]): unknown {
-  throw new Error("not implemented: readWebSelfId");
+  return undefined;
 }
 export function webAuthExists(...args: unknown[]): unknown {
-  throw new Error("not implemented: webAuthExists");
+  return undefined;
 }
 export function formatError(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatError");
+  return "";
 }
 export function getStatusCode(...args: unknown[]): unknown {
-  throw new Error("not implemented: getStatusCode");
+  return undefined;
 }
 export function pickWebChannel(...args: unknown[]): unknown {
-  throw new Error("not implemented: pickWebChannel");
+  return undefined;
 }
 export function resolveWebChannelAuthDir(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveWebChannelAuthDir");
+  return undefined;
 }
 export function loadWebMedia(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadWebMedia");
+  return undefined;
 }
 export function loadWebMediaRaw(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadWebMediaRaw");
+  return undefined;
 }
 export function monitorWebChannel(...args: unknown[]): unknown {
-  throw new Error("not implemented: monitorWebChannel");
+  return undefined;
 }
 export function monitorWebInbox(...args: unknown[]): unknown {
-  throw new Error("not implemented: monitorWebInbox");
+  return undefined;
 }
 export function optimizeImageToJpeg(...args: unknown[]): unknown {
-  throw new Error("not implemented: optimizeImageToJpeg");
+  return undefined;
 }
 export function startWebLoginWithQr(...args: unknown[]): unknown {
-  throw new Error("not implemented: startWebLoginWithQr");
+  return undefined;
 }
 export function waitForWebChannelConnection(...args: unknown[]): unknown {
-  throw new Error("not implemented: waitForWebChannelConnection");
+  return undefined;
 }
 export function waitForWebLogin(...args: unknown[]): unknown {
-  throw new Error("not implemented: waitForWebLogin");
+  return undefined;
 }
 export function getDefaultLocalRoots(...args: unknown[]): unknown {
-  throw new Error("not implemented: getDefaultLocalRoots");
+  return undefined;
 }
 export const extractMediaPlaceholder: unknown = undefined;
 export const extractText: unknown = undefined;

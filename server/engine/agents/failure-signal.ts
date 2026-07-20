@@ -7,5 +7,5 @@
  */
 
 export function resolveEmbeddedRunFailureSignal(..._args: unknown[]): unknown {
-  throw new Error("resolveEmbeddedRunFailureSignal not implemented (openclaw stub)");
+  return undefined;
 }

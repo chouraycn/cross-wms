@@ -7,5 +7,5 @@
  */
 
 export function guardSessionManager(..._args: unknown[]): unknown {
-  throw new Error("guardSessionManager not implemented (openclaw stub)");
+  return undefined;
 }

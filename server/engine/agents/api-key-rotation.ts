@@ -1,14 +1,32 @@
 /**
  * 移植自 openclaw/src/agents/api-key-rotation.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Provider API-key rotation wrapper.
+ * In cross-wms the full key collection and retry infrastructure is not available,
+ * so collectProviderApiKeysForExecution returns only the primary key and
+ * executeWithApiKeyRotation delegates to the execute callback directly.
  */
 
-export function collectProviderApiKeysForExecution(..._args: unknown[]): unknown {
-  throw new Error("collectProviderApiKeysForExecution not implemented (openclaw stub)");
+/** Collect primary and discovered provider keys (returns primary only in cross-wms). */
+export function collectProviderApiKeysForExecution(params: {
+  provider: string;
+  primaryApiKey?: string;
+}): string[] {
+  const key = params.primaryApiKey?.trim();
+  return key ? [key] : [];
 }
-export async function executeWithApiKeyRotation(..._args: unknown[]): Promise<unknown> {
-  throw new Error("executeWithApiKeyRotation not implemented (openclaw stub)");
+
+/** Execute a provider operation with key rotation (no rotation in cross-wms). */
+export async function executeWithApiKeyRotation<T>(
+  params: {
+    provider: string;
+    apiKeys: string[];
+    execute: (apiKey: string) => Promise<T>;
+  },
+): Promise<T> {
+  const keys = params.apiKeys.filter((k) => k.trim());
+  if (keys.length === 0) {
+    throw new Error(`No API keys configured for provider "${params.provider}".`);
+  }
+  return params.execute(keys[0]);
 }

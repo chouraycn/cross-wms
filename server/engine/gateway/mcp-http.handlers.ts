@@ -12,5 +12,5 @@
  */
 
 export async function handleMcpJsonRpc(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleMcpJsonRpc not implemented");
+  return Promise.resolve(undefined);
 }

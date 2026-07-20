@@ -36,7 +36,8 @@ async function callGateway(_params: {
   mode?: string;
 }): Promise<unknown> {
   // 降级：openclaw 的 gateway/call.js 未移植。
-  throw new Error("Gateway RPC not supported in stub mode.");
+  console.error("Gateway RPC is not available in cross-wms");
+  process.exit(1);
 }
 // ===== stub 结束 =====
 

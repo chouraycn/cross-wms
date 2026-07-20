@@ -1,17 +1,98 @@
 /**
  * 移植自 openclaw/src/agents/cli-runner/bundle-mcp-claude.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Claude CLI argument helpers for managed bundle MCP config.
  */
 
-export function findClaudeMcpConfigPath(..._args: unknown[]): unknown {
-  throw new Error("findClaudeMcpConfigPath not implemented (openclaw stub)");
+import fs from "node:fs/promises";
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
 }
-export function injectClaudeMcpConfigArgs(..._args: unknown[]): unknown {
-  throw new Error("injectClaudeMcpConfigArgs not implemented (openclaw stub)");
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-export function writeClaudeMcpCaptureConfig(..._args: unknown[]): unknown {
-  throw new Error("writeClaudeMcpCaptureConfig not implemented (openclaw stub)");
+
+/** Find an existing Claude `--mcp-config` argument value. */
+export function findClaudeMcpConfigPath(args?: string[]): string | undefined {
+  if (!args?.length) {
+    return undefined;
+  }
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i] ?? "";
+    if (arg === "--mcp-config") {
+      return normalizeOptionalString(args[i + 1]);
+    }
+    if (arg.startsWith("--mcp-config=")) {
+      return normalizeOptionalString(arg.slice("--mcp-config=".length));
+    }
+  }
+  return undefined;
+}
+
+/** Return Claude args with strict MCP config path injected. */
+export function injectClaudeMcpConfigArgs(
+  args: string[] | undefined,
+  mcpConfigPath: string,
+): string[] {
+  const next: string[] = [];
+  for (let i = 0; i < (args?.length ?? 0); i += 1) {
+    const arg = args?.[i] ?? "";
+    if (arg === "--strict-mcp-config") {
+      continue;
+    }
+    if (arg === "--mcp-config") {
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--mcp-config=")) {
+      continue;
+    }
+    next.push(arg);
+  }
+  next.push("--strict-mcp-config", "--mcp-config", mcpConfigPath);
+  return next;
+}
+
+/** Writes the active per-attempt capture token into the generated Claude MCP config. */
+export async function writeClaudeMcpCaptureConfig(params: {
+  mcpConfigPath: string;
+  captureKey: string;
+}): Promise<void> {
+  const raw = JSON.parse(await fs.readFile(params.mcpConfigPath, "utf-8")) as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Claude MCP capture requires an object config");
+  }
+  const mcpServers = isRecord(raw.mcpServers) ? raw.mcpServers : {};
+  const openclaw = isRecord(mcpServers.openclaw) ? mcpServers.openclaw : undefined;
+  if (!openclaw) {
+    throw new Error("Claude MCP capture requires an openclaw server config");
+  }
+  const headers = isRecord(openclaw.headers) ? openclaw.headers : {};
+  await fs.writeFile(
+    params.mcpConfigPath,
+    `${JSON.stringify(
+      {
+        ...raw,
+        mcpServers: {
+          ...mcpServers,
+          openclaw: {
+            ...openclaw,
+            headers: {
+              ...headers,
+              "x-openclaw-cli-capture-key": params.captureKey,
+            },
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf-8",
+  );
 }

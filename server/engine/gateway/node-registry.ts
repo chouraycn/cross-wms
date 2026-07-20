@@ -16,11 +16,11 @@ export type NodeSession = unknown;
 export type SerializedEventPayload = unknown;
 
 export function serializeEventPayload(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] serializeEventPayload not implemented");
+  return "";
 }
 
 export class NodeRegistry {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] NodeRegistry not implemented");
+    // Stub: not fully ported
   }
 }

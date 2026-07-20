@@ -8,5 +8,5 @@
 
 export type ToolDetailMode = unknown;
 export function resolveExecDetail(..._args: unknown[]): unknown {
-  throw new Error("resolveExecDetail not implemented (openclaw stub)");
+  return undefined;
 }

@@ -8,14 +8,14 @@
 
 export type { ToolFsPolicy } from "./tool-fs-policy.types.js";
 export function createToolFsPolicy(..._args: unknown[]): unknown {
-  throw new Error("createToolFsPolicy not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveToolFsConfig(..._args: unknown[]): unknown {
-  throw new Error("resolveToolFsConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveEffectiveToolFsWorkspaceOnly(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveToolFsWorkspaceOnly not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveEffectiveToolFsRootExpansionAllowed(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveToolFsRootExpansionAllowed not implemented (openclaw stub)");
+  return undefined;
 }

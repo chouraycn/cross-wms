@@ -1,21 +1,20 @@
 // 移植自 openclaw/src/config/issue-format.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function normalizeConfigIssuePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeConfigIssuePath");
+  return undefined;
 }
 export function normalizeConfigIssue(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeConfigIssue");
+  return undefined;
 }
 export function normalizeConfigIssues(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeConfigIssues");
+  return undefined;
 }
 export function formatConfigIssueLine(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigIssueLine");
+  return "";
 }
 export function formatConfigIssueLines(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigIssueLines");
+  return "";
 }
 export function formatConfigIssueSummary(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigIssueSummary");
+  return "";
 }

@@ -15,9 +15,8 @@ export function registerWebhooksCli(program: Command): void {
     .description("List configured webhooks")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw webhooks list: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw webhooks list is not available in cross-wms');
+      process.exit(1);
     });
 
   webhooks
@@ -25,9 +24,8 @@ export function registerWebhooksCli(program: Command): void {
     .description("Add a webhook endpoint")
     .argument("<url>", "Webhook URL")
     .action(() => {
-      throw new Error(
-        "openclaw webhooks add: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw webhooks add is not available in cross-wms');
+      process.exit(1);
     });
 
   webhooks
@@ -35,14 +33,12 @@ export function registerWebhooksCli(program: Command): void {
     .description("Remove a webhook endpoint")
     .argument("<url>", "Webhook URL")
     .action(() => {
-      throw new Error(
-        "openclaw webhooks remove: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw webhooks remove is not available in cross-wms');
+      process.exit(1);
     });
 
   webhooks.action(() => {
-    throw new Error(
-      "openclaw webhooks: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw webhooks is not available in cross-wms');
+      process.exit(1);
   });
 }

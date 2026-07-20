@@ -8,8 +8,8 @@
 
 export type SandboxedBridgeMediaPathConfig = unknown;
 export function createSandboxBridgeReadFile(..._args: unknown[]): unknown {
-  throw new Error("createSandboxBridgeReadFile not implemented (openclaw stub)");
+  return undefined;
 }
 export async function resolveSandboxedBridgeMediaPath(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveSandboxedBridgeMediaPath not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

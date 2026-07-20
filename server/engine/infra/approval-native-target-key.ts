@@ -1,6 +1,11 @@
 // 移植自 openclaw/src/infra/approval-native-target-key.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export function buildChannelApprovalNativeTargetKey(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildChannelApprovalNativeTargetKey");
+/** Builds the stable dedupe key used to compare channel-native approval targets. */
+export function buildChannelApprovalNativeTargetKey(target: {
+  to: string;
+  threadId?: string;
+}): string {
+  const parts = [target.to];
+  if (target.threadId) parts.push(target.threadId);
+  return parts.join("::");
 }

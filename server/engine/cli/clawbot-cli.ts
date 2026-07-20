@@ -17,8 +17,7 @@ export function registerClawbotCli(program: Command): void {
     .option("--token <token>", "Gateway token")
     .option("--session <key>", "Session key")
     .action(() => {
-      throw new Error(
-        "openclaw clawbot: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw clawbot is not available in cross-wms');
+      process.exit(1);
     });
 }

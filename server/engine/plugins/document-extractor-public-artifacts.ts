@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Extracts document extractor public artifacts from plugin manifests.
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
 import type {
   DocumentExtractorPlugin,
   PluginDocumentExtractorEntry,

@@ -7,11 +7,11 @@
  */
 
 export function normalizeAssistantReplayContent(..._args: unknown[]): unknown {
-  throw new Error("normalizeAssistantReplayContent not implemented (openclaw stub)");
+  return undefined;
 }
 export function sanitizeSessionHistory(..._args: unknown[]): unknown {
-  throw new Error("sanitizeSessionHistory not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateReplayTurns(..._args: unknown[]): unknown {
-  throw new Error("validateReplayTurns not implemented (openclaw stub)");
+  return undefined;
 }

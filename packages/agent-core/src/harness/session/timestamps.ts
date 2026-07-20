@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Parse an ISO-like session timestamp to milliseconds. */
 export function parseSessionTimestampMs(value: unknown): number | undefined {
   if (typeof value !== "string" || !value.trim()) {

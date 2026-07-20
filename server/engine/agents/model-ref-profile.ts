@@ -7,5 +7,5 @@
  */
 
 export function splitTrailingAuthProfile(..._args: unknown[]): unknown {
-  throw new Error("splitTrailingAuthProfile not implemented (openclaw stub)");
+  return undefined;
 }

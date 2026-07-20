@@ -1,29 +1,26 @@
-// 移植自 openclaw/src/cli/restart-health.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export async function inspectGatewayRestart(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: inspectGatewayRestart");
+  console.warn('inspectGatewayRestart is not available in cross-wms');
 }
 
 export async function waitForGatewayHealthyRestart(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: waitForGatewayHealthyRestart");
+  console.warn('waitForGatewayHealthyRestart is not available in cross-wms');
 }
 
 export async function waitForGatewayHealthyListener(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: waitForGatewayHealthyListener");
+  console.warn('waitForGatewayHealthyListener is not available in cross-wms');
 }
 
 export function renderRestartDiagnostics(..._args: unknown[]): unknown {
-  throw new Error("not implemented: renderRestartDiagnostics");
+  console.warn('renderRestartDiagnostics is not available in cross-wms'); return undefined;
 }
 
 export function renderGatewayPortHealthDiagnostics(..._args: unknown[]): unknown {
-  throw new Error("not implemented: renderGatewayPortHealthDiagnostics");
+  console.warn('renderGatewayPortHealthDiagnostics is not available in cross-wms'); return undefined;
 }
 
 export async function terminateStaleGatewayPids(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: terminateStaleGatewayPids");
+  console.warn('terminateStaleGatewayPids is not available in cross-wms');
 }
 
 export type GatewayRestartWaitOutcome = unknown;

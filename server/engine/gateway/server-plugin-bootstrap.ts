@@ -12,13 +12,13 @@
  */
 
 export function prepareGatewayPluginLoad(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] prepareGatewayPluginLoad not implemented");
+  return undefined;
 }
 
 export function loadGatewayStartupPlugins(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] loadGatewayStartupPlugins not implemented");
+  return undefined;
 }
 
 export function reloadDeferredGatewayPlugins(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] reloadDeferredGatewayPlugins not implemented");
+  return undefined;
 }

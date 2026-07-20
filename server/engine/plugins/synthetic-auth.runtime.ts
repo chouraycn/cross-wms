@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Resolves synthetic and external auth provider refs from active runtime state or persisted manifests. */
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import { loadPluginManifestRegistryForInstalledIndex } from "./manifest-registry-installed.js";
 import { loadPluginRegistrySnapshotWithMetadata } from "./plugin-registry.js";
 import type { LoadPluginRegistryParams, PluginRegistrySnapshot } from "./plugin-registry.js";

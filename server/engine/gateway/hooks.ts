@@ -18,63 +18,63 @@ export type HooksConfigResolved = unknown;
 export type HookAgentDispatchPayload = unknown;
 
 export function resolveHooksConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHooksConfig not implemented");
+  return undefined;
 }
 
 export function isSessionKeyAllowedByPrefix(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isSessionKeyAllowedByPrefix not implemented");
+  return false;
 }
 
 export function extractHookToken(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] extractHookToken not implemented");
+  return undefined;
 }
 
 export async function readJsonBody(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readJsonBody not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function normalizeHookHeaders(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeHookHeaders not implemented");
+  return undefined;
 }
 
 export function normalizeWakePayload(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeWakePayload not implemented");
+  return undefined;
 }
 
 export function resolveHookChannel(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookChannel not implemented");
+  return undefined;
 }
 
 export function resolveHookDeliver(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookDeliver not implemented");
+  return undefined;
 }
 
 export function resolveHookIdempotencyKey(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookIdempotencyKey not implemented");
+  return undefined;
 }
 
 export function resolveHookTargetAgentId(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookTargetAgentId not implemented");
+  return undefined;
 }
 
 export function resolveEffectiveHookTargetAgentId(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveEffectiveHookTargetAgentId not implemented");
+  return undefined;
 }
 
 export function isHookAgentAllowed(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isHookAgentAllowed not implemented");
+  return false;
 }
 
 export function resolveHookSessionKey(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHookSessionKey not implemented");
+  return undefined;
 }
 
 export function normalizeHookDispatchSessionKey(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeHookDispatchSessionKey not implemented");
+  return undefined;
 }
 
 export function normalizeAgentPayload(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeAgentPayload not implemented");
+  return undefined;
 }
 
 export const getHookChannelError: any = undefined;

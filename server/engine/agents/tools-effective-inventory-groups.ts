@@ -7,5 +7,5 @@
  */
 
 export function buildEffectiveToolInventoryGroups(..._args: unknown[]): unknown {
-  throw new Error("buildEffectiveToolInventoryGroups not implemented (openclaw stub)");
+  return undefined;
 }

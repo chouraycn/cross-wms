@@ -46,5 +46,5 @@ export type NodeSendToSession = unknown;
 export type AgentEventHandlerOptions = unknown;
 
 export function createAgentEventHandler(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createAgentEventHandler not implemented");
+  return undefined;
 }

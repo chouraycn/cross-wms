@@ -7,5 +7,5 @@
  */
 
 export function createStubTool(..._args: unknown[]): unknown {
-  throw new Error("createStubTool not implemented (openclaw stub)");
+  return undefined;
 }

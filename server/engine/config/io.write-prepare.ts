@@ -1,39 +1,38 @@
 // 移植自 openclaw/src/config/io.write-prepare.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function createMergePatch(...args: unknown[]): unknown {
-  throw new Error("not implemented: createMergePatch");
+  return undefined;
 }
 export function projectSourceOntoRuntimeShape(...args: unknown[]): unknown {
-  throw new Error("not implemented: projectSourceOntoRuntimeShape");
+  return undefined;
 }
 export function preserveIncludeOwnedConfigForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: preserveIncludeOwnedConfigForWrite");
+  return undefined;
 }
 export function injectExplicitlySetPaths(...args: unknown[]): unknown {
-  throw new Error("not implemented: injectExplicitlySetPaths");
+  return undefined;
 }
 export function resolvePersistCandidateForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePersistCandidateForWrite");
+  return undefined;
 }
 export function formatConfigValidationFailure(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatConfigValidationFailure");
+  return "";
 }
 export function unsetPathForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: unsetPathForWrite");
+  return undefined;
 }
 export function applyUnsetPathsForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyUnsetPathsForWrite");
+  return undefined;
 }
 export function resolveManagedUnsetPathsForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveManagedUnsetPathsForWrite");
+  return undefined;
 }
 export function collectChangedPaths(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectChangedPaths");
+  return [];
 }
 export function restoreEnvRefsFromMap(...args: unknown[]): unknown {
-  throw new Error("not implemented: restoreEnvRefsFromMap");
+  return undefined;
 }
 export function resolveWriteEnvSnapshotForPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveWriteEnvSnapshotForPath");
+  return undefined;
 }

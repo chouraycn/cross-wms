@@ -1,20 +1,100 @@
 /**
  * 移植自 openclaw/src/agents/provider-tool-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Provider tool policy resolution. Ported from OpenClaw with simplified
+ * normalization helpers (no external package dependencies).
  */
 
-export function normalizeToolProviderPolicyKey(..._args: unknown[]): unknown {
-  throw new Error("normalizeToolProviderPolicyKey not implemented (openclaw stub)");
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.toLowerCase();
 }
-export function isCanonicalToolProviderPolicyKey(..._args: unknown[]): unknown {
-  throw new Error("isCanonicalToolProviderPolicyKey not implemented (openclaw stub)");
+
+function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim().toLowerCase();
+  return trimmed || undefined;
 }
-export function resolveProviderToolPolicyEntry(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderToolPolicyEntry not implemented (openclaw stub)");
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-export function resolveProviderToolPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderToolPolicy not implemented (openclaw stub)");
+
+function normalizeProviderId(value: string): string {
+  return normalizeLowercaseStringOrEmpty(value).trim();
+}
+
+export function normalizeToolProviderPolicyKey(value: string): string {
+  const normalized = normalizeLowercaseStringOrEmpty(value);
+  const slashIndex = normalized.indexOf("/");
+  if (slashIndex <= 0) {
+    return normalizeProviderId(normalized);
+  }
+  const provider = normalizeProviderId(normalized.slice(0, slashIndex));
+  const modelId = normalized.slice(slashIndex + 1);
+  return modelId ? `${provider}/${modelId}` : provider;
+}
+
+export function isCanonicalToolProviderPolicyKey(value: string): boolean {
+  return normalizeLowercaseStringOrEmpty(value) === normalizeToolProviderPolicyKey(value);
+}
+
+type ProviderToolPolicyEntry = {
+  key: string;
+  policy: unknown;
+};
+
+export function resolveProviderToolPolicyEntry(params: {
+  byProvider?: Record<string, unknown>;
+  modelProvider?: string;
+  modelId?: string;
+}): ProviderToolPolicyEntry | undefined {
+  const provider = params.modelProvider?.trim();
+  if (!provider || !params.byProvider) {
+    return undefined;
+  }
+
+  const lookup = new Map<
+    string,
+    ProviderToolPolicyEntry & { canonical: boolean }
+  >();
+  for (const [key, value] of Object.entries(params.byProvider)) {
+    if (!isRecord(value)) {
+      continue;
+    }
+    const normalized = normalizeToolProviderPolicyKey(key);
+    if (!normalized) {
+      continue;
+    }
+    const canonical = isCanonicalToolProviderPolicyKey(key);
+    const existing = lookup.get(normalized);
+    if (!existing || (canonical && !existing.canonical)) {
+      lookup.set(normalized, { key, policy: value, canonical });
+    }
+  }
+
+  const normalizedProvider = normalizeToolProviderPolicyKey(provider);
+  const rawModelId = normalizeOptionalLowercaseString(params.modelId);
+  const fullModelId = rawModelId ? `${normalizedProvider}/${rawModelId}` : undefined;
+  const candidates = [...(fullModelId ? [fullModelId] : []), normalizedProvider];
+
+  for (const key of candidates) {
+    const match = lookup.get(key);
+    if (match) {
+      return { key: match.key, policy: match.policy };
+    }
+  }
+  return undefined;
+}
+
+export function resolveProviderToolPolicy(params: {
+  byProvider?: Record<string, unknown>;
+  modelProvider?: string;
+  modelId?: string;
+}): unknown | undefined {
+  return resolveProviderToolPolicyEntry(params)?.policy;
 }

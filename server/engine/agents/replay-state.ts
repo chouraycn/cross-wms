@@ -9,14 +9,14 @@
 export type EmbeddedRunReplayState = unknown;
 export type EmbeddedRunReplayMetadata = unknown;
 export function createEmbeddedRunReplayState(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedRunReplayState not implemented (openclaw stub)");
+  return undefined;
 }
 export function mergeEmbeddedRunReplayState(..._args: unknown[]): unknown {
-  throw new Error("mergeEmbeddedRunReplayState not implemented (openclaw stub)");
+  return undefined;
 }
 export function observeReplayMetadata(..._args: unknown[]): unknown {
-  throw new Error("observeReplayMetadata not implemented (openclaw stub)");
+  return undefined;
 }
 export function replayMetadataFromState(..._args: unknown[]): unknown {
-  throw new Error("replayMetadataFromState not implemented (openclaw stub)");
+  return undefined;
 }

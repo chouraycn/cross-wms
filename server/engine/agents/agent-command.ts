@@ -8,8 +8,8 @@
 
 export const testing: unknown = undefined;
 export async function agentCommand(..._args: unknown[]): Promise<unknown> {
-  throw new Error("agentCommand not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function agentCommandFromIngress(..._args: unknown[]): Promise<unknown> {
-  throw new Error("agentCommandFromIngress not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

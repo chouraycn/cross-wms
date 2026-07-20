@@ -11,14 +11,14 @@ export const CHUTES_AUTHORIZE_ENDPOINT: unknown = undefined;
 export const CHUTES_TOKEN_ENDPOINT: unknown = undefined;
 export const CHUTES_USERINFO_ENDPOINT: unknown = undefined;
 export function generateChutesPkce(..._args: unknown[]): unknown {
-  throw new Error("generateChutesPkce not implemented (openclaw stub)");
+  return undefined;
 }
 export function parseOAuthCallbackInput(..._args: unknown[]): unknown {
-  throw new Error("parseOAuthCallbackInput not implemented (openclaw stub)");
+  return undefined;
 }
 export async function exchangeChutesCodeForTokens(..._args: unknown[]): Promise<unknown> {
-  throw new Error("exchangeChutesCodeForTokens not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function refreshChutesTokens(..._args: unknown[]): Promise<unknown> {
-  throw new Error("refreshChutesTokens not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

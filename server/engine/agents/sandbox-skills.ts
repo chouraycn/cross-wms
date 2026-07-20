@@ -7,8 +7,8 @@
  */
 
 export function mapSandboxSkillEntriesForPrompt(..._args: unknown[]): unknown {
-  throw new Error("mapSandboxSkillEntriesForPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSandboxSkillRuntimeInputs(..._args: unknown[]): unknown {
-  throw new Error("resolveSandboxSkillRuntimeInputs not implemented (openclaw stub)");
+  return undefined;
 }

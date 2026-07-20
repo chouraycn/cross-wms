@@ -14,41 +14,41 @@
 export type GatewayMethodDispatchResponse = unknown;
 
 export function setFallbackGatewayContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] setFallbackGatewayContext not implemented");
+  return undefined;
 }
 
 export function setFallbackGatewayContextResolver(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] setFallbackGatewayContextResolver not implemented");
+  return undefined;
 }
 
 export function clearFallbackGatewayContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearFallbackGatewayContext not implemented");
+  return undefined;
 }
 
 export function hasInProcessGatewayContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] hasInProcessGatewayContext not implemented");
+  return false;
 }
 
 export function setPluginSubagentOverridePolicies(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] setPluginSubagentOverridePolicies not implemented");
+  return undefined;
 }
 
 export async function dispatchGatewayMethodInProcessRaw(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] dispatchGatewayMethodInProcessRaw not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function dispatchGatewayMethodInProcess(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] dispatchGatewayMethodInProcess not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function createGatewaySubagentRuntime(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewaySubagentRuntime not implemented");
+  return undefined;
 }
 
 export function createGatewayNodesRuntime(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayNodesRuntime not implemented");
+  return undefined;
 }
 
 export function loadGatewayPlugins(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] loadGatewayPlugins not implemented");
+  return undefined;
 }

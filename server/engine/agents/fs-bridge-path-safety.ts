@@ -1,15 +1,39 @@
 /**
- * 移植自 openclaw/src/agents/sandbox/fs-bridge-path-safety.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Filesystem bridge path safety validation.
+ * Ported from openclaw/src/agents/sandbox/fs-bridge-path-safety.ts
  */
 
-export type PathSafetyCheck = unknown;
-export type PinnedSandboxEntry = unknown;
-export type AnchoredSandboxEntry = unknown;
-export type PinnedSandboxDirectoryEntry = unknown;
-export class SandboxFsPathGuard {
-  constructor(..._args: unknown[]) { throw new Error("SandboxFsPathGuard not implemented (openclaw stub)"); }
+import path from "node:path";
+
+/** Check whether a resolved path stays within an allowed root. */
+export function isPathWithinRoot(resolvedPath: string, rootDir: string): boolean {
+  const normalizedResolved = path.normalize(resolvedPath);
+  const normalizedRoot = path.normalize(rootDir);
+  if (normalizedRoot === normalizedResolved) {
+    return true;
+  }
+  return normalizedResolved.startsWith(normalizedRoot + path.sep);
+}
+
+/** Resolve and validate a target path against a sandbox root. */
+export function validateSandboxPath(params: {
+  targetPath: string;
+  sandboxRoot: string;
+  allowMissing?: boolean;
+}): { valid: boolean; resolvedPath: string; error?: string } {
+  if (!params.targetPath || typeof params.targetPath !== "string") {
+    return { valid: false, resolvedPath: "", error: "Target path is empty or invalid" };
+  }
+  if (!params.sandboxRoot || typeof params.sandboxRoot !== "string") {
+    return { valid: false, resolvedPath: "", error: "Sandbox root is empty or invalid" };
+  }
+  const resolved = path.resolve(params.sandboxRoot, params.targetPath);
+  if (!isPathWithinRoot(resolved, params.sandboxRoot)) {
+    return {
+      valid: false,
+      resolvedPath: resolved,
+      error: `Path "${params.targetPath}" resolves outside sandbox root "${params.sandboxRoot}"`,
+    };
+  }
+  return { valid: true, resolvedPath: resolved };
 }

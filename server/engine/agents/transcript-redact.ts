@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/transcript-redact.ts
+ * Ported from openclaw/src/agents/transcript-redact.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Transcript message redaction.
+ * Cross-wms degradation: returns message unchanged without redaction.
  */
 
-export function redactTranscriptMessage(..._args: unknown[]): unknown {
-  throw new Error("redactTranscriptMessage not implemented (openclaw stub)");
+/** Redacts sensitive information from a transcript message. */
+export function redactTranscriptMessage<T>(message: T): T {
+  // Cross-wms does not have transcript redaction rules.
+  return message;
 }

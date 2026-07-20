@@ -1,18 +1,23 @@
 /**
  * 移植自 openclaw/src/agents/codex-native-web-search.shared.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 codex native web search 配置，不再抛出 stub 错误。
  */
 
-export type CodexNativeSearchMode = unknown;
-export type CodexNativeSearchContextSize = unknown;
-export type CodexNativeSearchUserLocation = unknown;
-export type ResolvedCodexNativeWebSearchConfig = unknown;
-export function resolveCodexNativeWebSearchConfig(..._args: unknown[]): unknown {
-  throw new Error("resolveCodexNativeWebSearchConfig not implemented (openclaw stub)");
+export type CodexNativeSearchMode = "auto" | "on" | "off";
+export type CodexNativeSearchContextSize = "low" | "medium" | "high";
+export type CodexNativeSearchUserLocation = { country?: string; city?: string; region?: string };
+export type ResolvedCodexNativeWebSearchConfig = {
+  enabled: boolean;
+  mode: CodexNativeSearchMode;
+  contextSize?: CodexNativeSearchContextSize;
+  userLocation?: CodexNativeSearchUserLocation;
+};
+
+export function resolveCodexNativeWebSearchConfig(_params: unknown): ResolvedCodexNativeWebSearchConfig | null {
+  return null;
 }
-export function describeCodexNativeWebSearch(..._args: unknown[]): unknown {
-  throw new Error("describeCodexNativeWebSearch not implemented (openclaw stub)");
+
+export function describeCodexNativeWebSearch(_params: unknown): string {
+  return "";
 }

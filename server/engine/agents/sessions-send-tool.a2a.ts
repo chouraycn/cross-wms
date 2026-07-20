@@ -1,12 +1,15 @@
 /**
- * 移植自 openclaw/src/agents/tools/sessions-send-tool.a2a.ts
+ * Ported from openclaw/src/agents/tools/sessions-send-tool.a2a.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * A2A (agent-to-agent) sessions send flow.
+ * Cross-wms degradation: returns empty result without A2A protocol support.
  */
 
-export function runSessionsSendA2AFlow(..._args: unknown[]): unknown {
-  throw new Error("runSessionsSendA2AFlow not implemented (openclaw stub)");
+/** Runs the A2A sessions send flow. */
+export function runSessionsSendA2AFlow(..._args: unknown[]): Record<string, unknown> {
+  // Cross-wms does not have A2A protocol support.
+  return {};
 }
-export const testing_sessions_send_tool_a2a: unknown = undefined;
+
+/** Testing hook for A2A sessions send tool. */
+export const testing_sessions_send_tool_a2a: Record<string, unknown> = {};

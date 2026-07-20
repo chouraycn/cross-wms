@@ -1,17 +1,32 @@
 /**
  * 移植自 openclaw/src/agents/command/cli-compaction.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * CLI turn compaction lifecycle. cross-wms provides a no-op implementation
+ * that returns the session entry unchanged, since the full compaction
+ * infrastructure (session managers, context engines, harness plugins) is
+ * not available.
  */
 
-export function setCliCompactionTestDeps(..._args: unknown[]): unknown {
-  throw new Error("setCliCompactionTestDeps not implemented (openclaw stub)");
+/** Overrides CLI compaction dependencies for focused tests — no-op in cross-wms. */
+export function setCliCompactionTestDeps(_overrides?: Record<string, unknown>): void {
+  // No-op: cross-wms does not have the full compaction dependency graph.
 }
-export function resetCliCompactionTestDeps(..._args: unknown[]): unknown {
-  throw new Error("resetCliCompactionTestDeps not implemented (openclaw stub)");
+
+/** Restores production CLI compaction dependencies after tests — no-op in cross-wms. */
+export function resetCliCompactionTestDeps(): void {
+  // No-op: cross-wms does not have the full compaction dependency graph.
 }
-export function runCliTurnCompactionLifecycle(..._args: unknown[]): unknown {
-  throw new Error("runCliTurnCompactionLifecycle not implemented (openclaw stub)");
+
+/**
+ * Runs pre-turn compaction for a CLI session and returns the updated session entry.
+ * In cross-wms this returns the session entry unchanged since the compaction
+ * infrastructure is not available.
+ */
+export async function runCliTurnCompactionLifecycle(params: {
+  sessionEntry?: unknown;
+  [key: string]: unknown;
+}): Promise<unknown> {
+  // cross-wms lacks context engines, harness plugins, session managers, etc.
+  // Return the session entry unchanged.
+  return (params as { sessionEntry?: unknown }).sessionEntry;
 }

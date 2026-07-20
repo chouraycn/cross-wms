@@ -7,8 +7,8 @@
  */
 
 export function runAgentEndSideEffects(..._args: unknown[]): unknown {
-  throw new Error("runAgentEndSideEffects not implemented (openclaw stub)");
+  return undefined;
 }
 export function awaitAgentEndSideEffects(..._args: unknown[]): unknown {
-  throw new Error("awaitAgentEndSideEffects not implemented (openclaw stub)");
+  return undefined;
 }

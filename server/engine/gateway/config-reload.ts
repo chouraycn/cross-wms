@@ -18,5 +18,5 @@ export const GatewayReloadPlan: any = undefined;
 export type GatewayHotReloadStatus = unknown;
 
 export function startGatewayConfigReloader(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] startGatewayConfigReloader not implemented");
+  return undefined;
 }

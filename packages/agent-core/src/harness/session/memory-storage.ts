@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements memory storage behavior.
 import type { SessionMetadata, SessionTreeEntry } from "../types";
 import { BaseSessionStorage } from "./storage-base";

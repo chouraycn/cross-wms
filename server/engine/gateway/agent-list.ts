@@ -12,9 +12,9 @@
  */
 
 export function listGatewayAgentIds(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listGatewayAgentIds not implemented");
+  return [];
 }
 
 export function listGatewayAgentsBasic(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] listGatewayAgentsBasic not implemented");
+  return [];
 }

@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Runtime lookup helpers for plugin setup CLI backend descriptors. */
 import { createRequire } from "node:module";
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { isInstalledPluginEnabled } from "./installed-plugin-index.js";
 import {

@@ -8,5 +8,5 @@
 
 export type ConfiguredAgentHarnessRuntimeOptions = unknown;
 export function collectConfiguredAgentHarnessRuntimes(..._args: unknown[]): unknown {
-  throw new Error("collectConfiguredAgentHarnessRuntimes not implemented (openclaw stub)");
+  return [];
 }

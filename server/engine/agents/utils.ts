@@ -1,14 +1,21 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/utils.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 完整移植：小型共享归一化辅助函数。
  */
 
-export function normalizeContextTokenBudget(..._args: unknown[]): unknown {
-  throw new Error("normalizeContextTokenBudget not implemented (openclaw stub)");
+export function normalizeContextTokenBudget(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : undefined;
 }
-export function mapThinkingLevel(..._args: unknown[]): unknown {
-  throw new Error("mapThinkingLevel not implemented (openclaw stub)");
+
+export function mapThinkingLevel(level?: string): string {
+  if (!level) {
+    return "off";
+  }
+  if (level === "adaptive") {
+    return "high";
+  }
+  return level;
 }

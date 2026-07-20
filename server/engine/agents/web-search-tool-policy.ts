@@ -8,5 +8,5 @@
 
 export type WebSearchToolPolicyParams = unknown;
 export function resolveWebSearchToolPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveWebSearchToolPolicy not implemented (openclaw stub)");
+  return undefined;
 }

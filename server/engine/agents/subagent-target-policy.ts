@@ -1,14 +1,126 @@
 /**
  * 移植自 openclaw/src/agents/subagent-target-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Subagent spawn target policy. Requesters can self-spawn by default,
+ * or opt into a configured allowlist that is still intersected with known agents.
  */
 
-export function resolveSubagentAllowedTargetIds(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentAllowedTargetIds not implemented (openclaw stub)");
+function normalizeAgentId(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const trimmed = value.trim().toLowerCase();
+  return trimmed || "";
 }
-export function resolveSubagentTargetPolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentTargetPolicy not implemented (openclaw stub)");
+
+function sortUniqueStrings(values: string[]): string[] {
+  return [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
+}
+
+function normalizeUniqueStringEntries(values: string[]): string[] {
+  return [...new Set(values.map((v) => v.trim()).filter(Boolean))];
+}
+
+type SubagentTargetPolicyResult = { ok: true } | { ok: false; allowedText: string; error: string };
+
+function normalizeAllowAgents(allowAgents: readonly string[] | undefined): {
+  configured: boolean;
+  allowAny: boolean;
+  allowedIds: string[];
+} {
+  if (!Array.isArray(allowAgents)) {
+    return { configured: false, allowAny: false, allowedIds: [] };
+  }
+  const allowedIds = allowAgents
+    .map((value) => value.trim())
+    .filter((value) => value && value !== "*")
+    .map((value) => normalizeAgentId(value))
+    .filter(Boolean);
+  return {
+    configured: true,
+    allowAny: allowAgents.some((value) => value.trim() === "*"),
+    allowedIds: sortUniqueStrings(allowedIds),
+  };
+}
+
+function normalizeConfiguredAgentIds(
+  configuredAgentIds: readonly string[] | undefined,
+): Set<string> {
+  return new Set(normalizeUniqueStringEntries((configuredAgentIds ?? []).map(normalizeAgentId)));
+}
+
+function filterConfiguredAllowedIds(params: {
+  allowedIds: readonly string[];
+  configuredAgentIds?: readonly string[];
+}): string[] {
+  const configuredIds = normalizeConfiguredAgentIds(params.configuredAgentIds);
+  return params.allowedIds.filter((id) => configuredIds.has(id));
+}
+
+/** Resolve the normalized agent IDs a requester may target with sessions_spawn. */
+export function resolveSubagentAllowedTargetIds(params: {
+  requesterAgentId: string;
+  allowAgents?: readonly string[];
+  configuredAgentIds?: readonly string[];
+}): { allowAny: boolean; allowedIds: string[] } {
+  const requesterAgentId = normalizeAgentId(params.requesterAgentId);
+  const policy = normalizeAllowAgents(params.allowAgents);
+  if (!policy.configured) {
+    return {
+      allowAny: false,
+      allowedIds: requesterAgentId ? [requesterAgentId] : [],
+    };
+  }
+  if (policy.allowAny) {
+    const configuredIds = Array.from(normalizeConfiguredAgentIds(params.configuredAgentIds));
+    if (requesterAgentId) {
+      configuredIds.push(requesterAgentId);
+    }
+    return { allowAny: true, allowedIds: sortUniqueStrings(configuredIds) };
+  }
+  return {
+    allowAny: false,
+    allowedIds: filterConfiguredAllowedIds({
+      allowedIds: policy.allowedIds,
+      configuredAgentIds: params.configuredAgentIds,
+    }).toSorted((a, b) => a.localeCompare(b)),
+  };
+}
+
+/** Validate one requested target against subagent spawn policy. */
+export function resolveSubagentTargetPolicy(params: {
+  requesterAgentId: string;
+  targetAgentId: string;
+  requestedAgentId?: string;
+  allowAgents?: readonly string[];
+  configuredAgentIds?: readonly string[];
+}): SubagentTargetPolicyResult {
+  const requesterAgentId = normalizeAgentId(params.requesterAgentId);
+  const targetAgentId = normalizeAgentId(params.targetAgentId);
+  if (!params.requestedAgentId?.trim() && targetAgentId === requesterAgentId) {
+    return { ok: true };
+  }
+
+  const allowed = resolveSubagentAllowedTargetIds({
+    requesterAgentId,
+    allowAgents: params.allowAgents,
+    configuredAgentIds: params.configuredAgentIds,
+  });
+  if (allowed.allowedIds.includes(targetAgentId)) {
+    return { ok: true };
+  }
+  const allowedText = allowed.allowedIds.length > 0 ? allowed.allowedIds.join(", ") : "none";
+  const policy = normalizeAllowAgents(params.allowAgents);
+  if (allowed.allowAny || policy.allowedIds.includes(targetAgentId)) {
+    return {
+      ok: false,
+      allowedText,
+      error: `agentId "${targetAgentId}" is not in the configured agent registry (allowed: ${allowedText})`,
+    };
+  }
+  return {
+    ok: false,
+    allowedText,
+    error: `agentId is not allowed for sessions_spawn (allowed: ${allowedText})`,
+  };
 }

@@ -14,5 +14,5 @@
 export type ToolsInvokeInput = unknown;
 
 export async function invokeGatewayTool(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] invokeGatewayTool not implemented");
+  return Promise.resolve(undefined);
 }

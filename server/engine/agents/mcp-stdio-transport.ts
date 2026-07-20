@@ -8,6 +8,6 @@
 
 export class OpenClawStdioClientTransport {
   constructor(..._args: unknown[]) {
-    throw new Error("OpenClawStdioClientTransport not implemented (openclaw stub)");
+    // Stub: not fully ported
   }
 }

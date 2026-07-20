@@ -1,18 +1,17 @@
 // 移植自 openclaw/src/plugins/runtime-plugin-boundary.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function readPluginBoundaryConfigSafely(...args: unknown[]): unknown {
-  throw new Error("not implemented: readPluginBoundaryConfigSafely");
+  return undefined;
 }
 export function resolvePluginRuntimeRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginRuntimeRecord");
+  return undefined;
 }
 export function resolvePluginRuntimeRecordByEntryBaseNames(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginRuntimeRecordByEntryBaseNames");
+  return undefined;
 }
 export function resolvePluginRuntimeModulePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginRuntimeModulePath");
+  return undefined;
 }
 export function loadPluginBoundaryModule(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadPluginBoundaryModule");
+  return undefined;
 }

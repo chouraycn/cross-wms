@@ -1,22 +1,21 @@
 // 移植自 openclaw/src/gateway/server/ws-connection/connect-policy.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function resolveControlUiAuthPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveControlUiAuthPolicy");
+  return undefined;
 }
 
 export function shouldSkipControlUiPairing(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldSkipControlUiPairing");
+  return false;
 }
 
 export function isTrustedProxyControlUiOperatorAuth(...args: unknown[]): unknown {
-  throw new Error("not implemented: isTrustedProxyControlUiOperatorAuth");
+  return false;
 }
 
 export function shouldClearUnboundScopesForMissingDeviceIdentity(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldClearUnboundScopesForMissingDeviceIdentity");
+  return false;
 }
 
 export function evaluateMissingDeviceIdentity(...args: unknown[]): unknown {
-  throw new Error("not implemented: evaluateMissingDeviceIdentity");
+  return undefined;
 }

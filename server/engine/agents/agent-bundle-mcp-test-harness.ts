@@ -1,11 +1,11 @@
 /**
- * 移植自 openclaw/src/agents/agent-bundle-mcp-test-harness.ts
+ * Ported from openclaw/src/agents/agent-bundle-mcp-test-harness.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * MCP test harness cleanup.
+ * Cross-wms degradation: no-op without MCP harness state.
  */
 
-export function cleanupBundleMcpHarness(..._args: unknown[]): unknown {
-  throw new Error("cleanupBundleMcpHarness not implemented (openclaw stub)");
+/** Cleans up bundle MCP test harness resources. */
+export function cleanupBundleMcpHarness(..._args: unknown[]): void {
+  // Cross-wms does not have MCP test harness state.
 }

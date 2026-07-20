@@ -14,9 +14,9 @@
 export type IndexedTranscriptEntry = unknown;
 
 export function clearSessionTranscriptIndexCache(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] clearSessionTranscriptIndexCache not implemented");
+  return undefined;
 }
 
 export async function readSessionTranscriptIndex(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionTranscriptIndex not implemented");
+  return Promise.resolve(undefined);
 }

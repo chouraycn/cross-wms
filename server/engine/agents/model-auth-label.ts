@@ -1,11 +1,18 @@
 /**
  * 移植自 openclaw/src/agents/model-auth-label.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Formats user-facing auth labels for resolved provider/model credentials.
+ * In cross-wms the full auth profile resolution chain is not available,
+ * so resolveModelAuthLabel returns "unknown".
  */
 
-export function resolveModelAuthLabel(..._args: unknown[]): unknown {
-  throw new Error("resolveModelAuthLabel not implemented (openclaw stub)");
+/** Resolve the display label that describes how a provider is authenticated. */
+export function resolveModelAuthLabel(params: {
+  provider?: string;
+}): string | undefined {
+  const resolvedProvider = params.provider?.trim();
+  if (!resolvedProvider) {
+    return undefined;
+  }
+  return "unknown";
 }

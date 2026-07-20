@@ -7,5 +7,5 @@
  */
 
 export function applyNodesToolWorkspaceGuard(..._args: unknown[]): unknown {
-  throw new Error("applyNodesToolWorkspaceGuard not implemented (openclaw stub)");
+  return undefined;
 }

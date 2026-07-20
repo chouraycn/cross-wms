@@ -8,17 +8,17 @@
 
 export const TOOL_GROUPS: unknown = undefined;
 export function normalizeToolName(..._args: unknown[]): unknown {
-  throw new Error("normalizeToolName not implemented (openclaw stub)");
+  return undefined;
 }
 export function couldNormalizeToolNamePrefixToAllowedTool(..._args: unknown[]): unknown {
-  throw new Error("couldNormalizeToolNamePrefixToAllowedTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeToolList(..._args: unknown[]): unknown {
-  throw new Error("normalizeToolList not implemented (openclaw stub)");
+  return undefined;
 }
 export function expandToolGroups(..._args: unknown[]): unknown {
-  throw new Error("expandToolGroups not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveToolProfilePolicy(..._args: unknown[]): unknown {
-  throw new Error("resolveToolProfilePolicy not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,13 +1,24 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.process.ts
+ * Ported from openclaw/src/agents/bash-tools.process.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Bash process tool creation.
+ * Cross-wms degradation: returns placeholder tool without process management.
  */
 
-export type ProcessToolDefaults = unknown;
-export const processTool: unknown = undefined;
-export function createProcessTool(..._args: unknown[]): unknown {
-  throw new Error("createProcessTool not implemented (openclaw stub)");
+export type ProcessToolDefaults = Record<string, unknown>;
+
+/** Placeholder process tool. */
+export const processTool: Record<string, unknown> = {
+  name: "process",
+  description: "Manage background bash processes (cross-wms placeholder).",
+};
+
+/** Creates a process tool instance. */
+export function createProcessTool(..._args: unknown[]): Record<string, unknown> {
+  return {
+    name: "process",
+    description: "Manage background bash processes (cross-wms placeholder).",
+    parameters: { type: "object", properties: { action: { type: "string" } } },
+    execute: async () => ({ output: "Process tool not available in cross-wms" }),
+  };
 }

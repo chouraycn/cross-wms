@@ -7,23 +7,23 @@
  */
 
 export function registerAgentHarness(..._args: unknown[]): unknown {
-  throw new Error("registerAgentHarness not implemented (openclaw stub)");
+  return undefined;
 }
 export function getRegisteredAgentHarness(..._args: unknown[]): unknown {
-  throw new Error("getRegisteredAgentHarness not implemented (openclaw stub)");
+  return undefined;
 }
 export function listRegisteredAgentHarnesses(..._args: unknown[]): unknown {
-  throw new Error("listRegisteredAgentHarnesses not implemented (openclaw stub)");
+  return [];
 }
 export function clearAgentHarnesses(..._args: unknown[]): unknown {
-  throw new Error("clearAgentHarnesses not implemented (openclaw stub)");
+  return undefined;
 }
 export function restoreRegisteredAgentHarnesses(..._args: unknown[]): unknown {
-  throw new Error("restoreRegisteredAgentHarnesses not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetRegisteredAgentHarnessSessions(..._args: unknown[]): unknown {
-  throw new Error("resetRegisteredAgentHarnessSessions not implemented (openclaw stub)");
+  return undefined;
 }
 export function disposeRegisteredAgentHarnesses(..._args: unknown[]): unknown {
-  throw new Error("disposeRegisteredAgentHarnesses not implemented (openclaw stub)");
+  return undefined;
 }

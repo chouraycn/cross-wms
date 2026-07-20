@@ -7,29 +7,29 @@
  */
 
 export function collectDeliveredMediaUrls(..._args: unknown[]): unknown {
-  throw new Error("collectDeliveredMediaUrls not implemented (openclaw stub)");
+  return [];
 }
 export function collectMessagingToolDeliveredMediaUrls(..._args: unknown[]): unknown {
-  throw new Error("collectMessagingToolDeliveredMediaUrls not implemented (openclaw stub)");
+  return [];
 }
 export function getGatewayAgentResult(..._args: unknown[]): unknown {
-  throw new Error("getGatewayAgentResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasVisibleAgentPayload(..._args: unknown[]): unknown {
-  throw new Error("hasVisibleAgentPayload not implemented (openclaw stub)");
+  return false;
 }
 export function hasMessagingToolDeliveryEvidence(..._args: unknown[]): unknown {
-  throw new Error("hasMessagingToolDeliveryEvidence not implemented (openclaw stub)");
+  return false;
 }
 export function hasCommittedMessagingToolDeliveryEvidence(..._args: unknown[]): unknown {
-  throw new Error("hasCommittedMessagingToolDeliveryEvidence not implemented (openclaw stub)");
+  return false;
 }
 export function hasCommittedOutboundDeliveryEvidence(..._args: unknown[]): unknown {
-  throw new Error("hasCommittedOutboundDeliveryEvidence not implemented (openclaw stub)");
+  return false;
 }
 export function hasOutboundDeliveryEvidence(..._args: unknown[]): unknown {
-  throw new Error("hasOutboundDeliveryEvidence not implemented (openclaw stub)");
+  return false;
 }
 export function getAgentCommandDeliveryFailure(..._args: unknown[]): unknown {
-  throw new Error("getAgentCommandDeliveryFailure not implemented (openclaw stub)");
+  return undefined;
 }

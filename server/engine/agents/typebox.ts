@@ -7,17 +7,17 @@
  */
 
 export function channelTargetSchema(..._args: unknown[]): unknown {
-  throw new Error("channelTargetSchema not implemented (openclaw stub)");
+  return undefined;
 }
 export function channelTargetsSchema(..._args: unknown[]): unknown {
-  throw new Error("channelTargetsSchema not implemented (openclaw stub)");
+  return undefined;
 }
 export function optionalFiniteNumberSchema(..._args: unknown[]): unknown {
-  throw new Error("optionalFiniteNumberSchema not implemented (openclaw stub)");
+  return undefined;
 }
 export function optionalPositiveIntegerSchema(..._args: unknown[]): unknown {
-  throw new Error("optionalPositiveIntegerSchema not implemented (openclaw stub)");
+  return undefined;
 }
 export function optionalNonNegativeIntegerSchema(..._args: unknown[]): unknown {
-  throw new Error("optionalNonNegativeIntegerSchema not implemented (openclaw stub)");
+  return undefined;
 }

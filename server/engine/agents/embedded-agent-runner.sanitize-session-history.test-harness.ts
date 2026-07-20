@@ -1,47 +1,140 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner.sanitize-session-history.test-harness.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared fixtures for session-history sanitization tests.
+ * Cross-wms simplified: uses minimal mock implementations instead of vitest deep mocking.
  */
 
-export type SanitizeSessionHistoryFn = unknown;
-export type SanitizeSessionHistoryHarness = unknown;
-export function makeModelSnapshotEntry(..._args: unknown[]): unknown {
-  throw new Error("makeModelSnapshotEntry not implemented (openclaw stub)");
+type SessionEntry = { type: string; customType: string; data: unknown };
+
+export type AgentMessage = {
+  role: string;
+  content: unknown;
+};
+
+export type SessionManager = {
+  getEntries: () => SessionEntry[];
+  appendCustomEntry: (customType: string, data: unknown) => void;
+};
+
+export type SanitizeSessionHistoryFn = (params: {
+  messages: AgentMessage[];
+  modelApi: string;
+  provider: string;
+  sessionManager: SessionManager;
+  modelId?: string;
+  sessionId: string;
+}) => Promise<AgentMessage[]>;
+
+export type SanitizeSessionHistoryHarness = {
+  sanitizeSessionHistory: SanitizeSessionHistoryFn;
+};
+
+export const TEST_SESSION_ID = "test-session";
+
+export function makeModelSnapshotEntry(data: {
+  timestamp?: number;
+  provider: string;
+  modelApi: string;
+  modelId: string;
+}): SessionEntry {
+  return {
+    type: "custom",
+    customType: "model-snapshot",
+    data: {
+      timestamp: data.timestamp ?? Date.now(),
+      provider: data.provider,
+      modelApi: data.modelApi,
+      modelId: data.modelId,
+    },
+  };
 }
-export function makeInMemorySessionManager(..._args: unknown[]): unknown {
-  throw new Error("makeInMemorySessionManager not implemented (openclaw stub)");
+
+export function makeInMemorySessionManager(entries: SessionEntry[]): SessionManager {
+  return {
+    getEntries: () => entries,
+    appendCustomEntry: (customType: string, data: unknown) => {
+      entries.push({ type: "custom", customType, data });
+    },
+  };
 }
-export function makeMockSessionManager(..._args: unknown[]): unknown {
-  throw new Error("makeMockSessionManager not implemented (openclaw stub)");
+
+export function makeMockSessionManager(): SessionManager {
+  return {
+    getEntries: () => [],
+    appendCustomEntry: () => {},
+  };
 }
-export function makeSimpleUserMessages(..._args: unknown[]): unknown {
-  throw new Error("makeSimpleUserMessages not implemented (openclaw stub)");
+
+export function makeSimpleUserMessages(): AgentMessage[] {
+  return [{ role: "user", content: "hello" }];
 }
-export function createSanitizeSessionHistoryHelpersMock(..._args: unknown[]): unknown {
-  throw new Error("createSanitizeSessionHistoryHelpersMock not implemented (openclaw stub)");
+
+export function makeReasoningAssistantMessages(opts?: {
+  thinkingSignature?: "object" | "json";
+  includeText?: boolean;
+}): AgentMessage[] {
+  const thinkingSignature: unknown =
+    opts?.thinkingSignature === "json"
+      ? JSON.stringify({ id: "rs_test", type: "reasoning" })
+      : { id: "rs_test", type: "reasoning" };
+  const content: Array<Record<string, unknown>> = [
+    {
+      type: "thinking",
+      thinking: "reasoning",
+      thinkingSignature,
+    },
+  ];
+  if (opts?.includeText) {
+    content.push({ type: "text", text: "answer" });
+  }
+  return [
+    {
+      role: "assistant",
+      content,
+    },
+  ];
 }
-export function createSanitizeSessionHistoryProviderRuntimeMock(..._args: unknown[]): unknown {
-  throw new Error("createSanitizeSessionHistoryProviderRuntimeMock not implemented (openclaw stub)");
+
+export async function sanitizeWithOpenAIResponses(params: {
+  sanitizeSessionHistory: SanitizeSessionHistoryFn;
+  messages: AgentMessage[];
+  sessionManager: SessionManager;
+  modelId?: string;
+}) {
+  return await params.sanitizeSessionHistory({
+    messages: params.messages,
+    modelApi: "openai-responses",
+    provider: "openai",
+    sessionManager: params.sessionManager,
+    modelId: params.modelId,
+    sessionId: TEST_SESSION_ID,
+  });
 }
-export function createSanitizeSessionHistoryProviderHookRuntimeMock(..._args: unknown[]): unknown {
-  throw new Error("createSanitizeSessionHistoryProviderHookRuntimeMock not implemented (openclaw stub)");
+
+export function makeSnapshotChangedOpenAIReasoningScenario() {
+  const sessionEntries = [
+    makeModelSnapshotEntry({
+      provider: "anthropic",
+      modelApi: "anthropic-messages",
+      modelId: "claude-3-7",
+    }),
+  ];
+  return {
+    sessionManager: makeInMemorySessionManager(sessionEntries),
+    messages: makeReasoningAssistantMessages({ thinkingSignature: "object", includeText: true }),
+    modelId: "gpt-5.4",
+  };
 }
-export function loadSanitizeSessionHistoryWithCleanMocks(..._args: unknown[]): unknown {
-  throw new Error("loadSanitizeSessionHistoryWithCleanMocks not implemented (openclaw stub)");
+
+export async function sanitizeSnapshotChangedOpenAIReasoning(params: {
+  sanitizeSessionHistory: SanitizeSessionHistoryFn;
+}) {
+  const { sessionManager, messages, modelId } = makeSnapshotChangedOpenAIReasoningScenario();
+  return await sanitizeWithOpenAIResponses({
+    sanitizeSessionHistory: params.sanitizeSessionHistory,
+    messages,
+    modelId,
+    sessionManager,
+  });
 }
-export function makeReasoningAssistantMessages(..._args: unknown[]): unknown {
-  throw new Error("makeReasoningAssistantMessages not implemented (openclaw stub)");
-}
-export function sanitizeWithOpenAIResponses(..._args: unknown[]): unknown {
-  throw new Error("sanitizeWithOpenAIResponses not implemented (openclaw stub)");
-}
-export function expectOpenAIResponsesStrictSanitizeCall(..._args: unknown[]): unknown {
-  throw new Error("expectOpenAIResponsesStrictSanitizeCall not implemented (openclaw stub)");
-}
-export function sanitizeSnapshotChangedOpenAIReasoning(..._args: unknown[]): unknown {
-  throw new Error("sanitizeSnapshotChangedOpenAIReasoning not implemented (openclaw stub)");
-}
-export const TEST_SESSION_ID: unknown = undefined;

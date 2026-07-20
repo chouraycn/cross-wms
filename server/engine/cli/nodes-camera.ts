@@ -103,9 +103,16 @@ export async function writeUrlToFile(
   _url: string,
   _opts: { expectedHost: string },
 ): Promise<{ path: string; bytes: number }> {
-  throw new Error(
-    "writeUrlToFile: gateway-guarded download not supported in stub mode (fetch-guard/hostname/parse-finite-number not ported).",
-  );
+  // 降级：openclaw 的 fetch-guard/hostname 未移植；使用 Node.js 原生 fetch。
+  const response = await fetch(_url);
+  if (!response.ok) {
+    throw new Error(`writeUrlToFile: download failed with status ${response.status}`);
+  }
+  const arrayBuf = await response.arrayBuffer();
+  const buf = Buffer.from(arrayBuf);
+  const fs = await import("node:fs/promises");
+  await fs.writeFile(_filePath, buf);
+  return { path: _filePath, bytes: buf.length };
 }
 
 function estimateDecodedBase64Bytes(base64: string): number {

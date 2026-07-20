@@ -7,5 +7,5 @@
  */
 
 export function createPerSenderSessionConfig(..._args: unknown[]): unknown {
-  throw new Error("createPerSenderSessionConfig not implemented (openclaw stub)");
+  return undefined;
 }

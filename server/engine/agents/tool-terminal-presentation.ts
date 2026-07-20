@@ -1,17 +1,38 @@
 /**
  * 移植自 openclaw/src/agents/tool-terminal-presentation.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Internal opt-in for deterministic terminal summaries from trusted built-in tools.
+ * cross-wms 完整移植：使用 WeakMap 存储格式化器。
  */
 
-export function setToolTerminalPresentation(..._args: unknown[]): unknown {
-  throw new Error("setToolTerminalPresentation not implemented (openclaw stub)");
+type TerminalToolPresentation = { text: string };
+type TerminalToolPresentationFormatter = (
+  params: unknown,
+  result: unknown,
+) => TerminalToolPresentation | undefined;
+
+const terminalPresentationByTool = new WeakMap<object, TerminalToolPresentationFormatter>();
+
+/** Attach a terminal presentation formatter to a tool object. */
+export function setToolTerminalPresentation<T extends object>(
+  tool: T,
+  formatter: TerminalToolPresentationFormatter,
+): T {
+  terminalPresentationByTool.set(tool, formatter);
+  return tool;
 }
-export function getToolTerminalPresentation(..._args: unknown[]): unknown {
-  throw new Error("getToolTerminalPresentation not implemented (openclaw stub)");
+
+/** Retrieve the terminal presentation formatter for a tool, if any. */
+export function getToolTerminalPresentation(
+  tool: object,
+): TerminalToolPresentationFormatter | undefined {
+  return terminalPresentationByTool.get(tool);
 }
-export function copyToolTerminalPresentation(..._args: unknown[]): unknown {
-  throw new Error("copyToolTerminalPresentation not implemented (openclaw stub)");
+
+/** Copy terminal presentation formatter from one tool to another. */
+export function copyToolTerminalPresentation(source: object, target: object): void {
+  const formatter = terminalPresentationByTool.get(source);
+  if (formatter) {
+    terminalPresentationByTool.set(target, formatter);
+  }
 }

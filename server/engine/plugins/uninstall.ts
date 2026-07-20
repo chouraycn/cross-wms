@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Removes installed plugins and updates plugin index records.
 import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
@@ -11,7 +10,7 @@ import {
   syncManagedNpmRootPeerDependencies,
 } from "../infra/npm-managed-root.js";
 import { createSafeNpmInstallEnv } from "../infra/safe-package-install.js";
-import { runCommandWithTimeout } from './_stub_parent__process__exec.js';
+import { runCommandWithTimeout } from './_parent__process__exec.js';
 import {
   resolveDefaultPluginGitDir,
   resolveDefaultPluginNpmDir,

@@ -27,6 +27,8 @@ import {
   type ErrorCategory,
   type ModelFailoverManager,
 } from './modelFailover.js';
+// v2.x: 复用统一的错误分类，消除 backoffCoordinator 与 aiClient 的规则不一致
+import { classifyErrorFromObject } from './model-utils.js';
 
 /** 连续限流多少次后，从「轮换 Key」升级为「跨模型降级」 */
 const RATE_LIMIT_MODEL_SWITCH_THRESHOLD = 2;
@@ -86,30 +88,13 @@ export interface CoordinateInput {
 }
 
 /**
- * 从错误中推断错误分类（与 modelFailover 的 ErrorCategory 对齐）。
- * 不依赖 AIAPIError 的强类型导入，避免与 aiClient 形成循环依赖——通过鸭子类型读取 .category。
+ * 从错误中推断错误分类。
+ *
+ * v2.x: 委托到共享的 model-utils.classifyErrorFromObject，消除三套重复实现。
+ * 保留此包装函数以兼容已有调用方（如有）。
  */
 function classifyErrorCategory(error: unknown): ErrorCategory {
-  const e = error as { category?: string; status?: number; statusCode?: number; response?: { status?: number }; message?: string };
-  const explicit = e?.category;
-  if (explicit && typeof explicit === 'string') {
-    return explicit as ErrorCategory;
-  }
-
-  const status = e?.status ?? e?.statusCode ?? e?.response?.status;
-  if (status === 429) return 'rate_limit';
-  if (status === 401 || status === 403) return 'auth';
-  if (status && status >= 500) return 'server';
-
-  const msg = (e?.message || '').toLowerCase();
-  if (/\b(rate[_\s-]?limit|too many requests|429|quota|请求过于频繁|限流|触发风控)\b/.test(msg)) return 'rate_limit';
-  if (/\b(auth|unauthorized|forbidden|api key|invalid key|鉴权|密钥)\b/.test(msg)) return 'auth';
-  if (/\b(model|模型).{0,6}(not|不支持|unsupported|not found)\b/.test(msg) || /not.{0,4}support/.test(msg)) return 'model_not_supported';
-  if (/\b(timeout|timed out|超时|etimedout)\b/.test(msg)) return 'timeout';
-  if (/\b(network|econn|enotfound|dns|连接|网络)\b/.test(msg)) return 'network';
-  if (/\b(server|500|502|503|504|internal|服务|网关)\b/.test(msg)) return 'server';
-
-  return 'unknown';
+  return classifyErrorFromObject(error);
 }
 
 /**

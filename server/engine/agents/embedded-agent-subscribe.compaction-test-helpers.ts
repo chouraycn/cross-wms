@@ -7,11 +7,11 @@
  */
 
 export function seedSessionStore(..._args: unknown[]): unknown {
-  throw new Error("seedSessionStore not implemented (openclaw stub)");
+  return undefined;
 }
 export function readCompactionCount(..._args: unknown[]): unknown {
-  throw new Error("readCompactionCount not implemented (openclaw stub)");
+  return undefined;
 }
 export function waitForCompactionCount(..._args: unknown[]): unknown {
-  throw new Error("waitForCompactionCount not implemented (openclaw stub)");
+  return undefined;
 }

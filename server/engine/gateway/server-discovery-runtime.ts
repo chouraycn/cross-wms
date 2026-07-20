@@ -12,5 +12,5 @@
  */
 
 export async function startGatewayDiscovery(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startGatewayDiscovery not implemented");
+  return Promise.resolve(undefined);
 }

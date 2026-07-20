@@ -1,9 +1,20 @@
 // 移植自 openclaw/src/infra/provider-usage-plugin-runtime.test-mocks.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：测试 mock 模块
 
-export function resetProviderUsageSnapshotWithPluginMock(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetProviderUsageSnapshotWithPluginMock");
+export type ProviderUsageSnapshotMock = {
+  provider: string;
+  windows: unknown[];
+  error?: string;
+};
+
+const mockSnapshots = new Map<string, ProviderUsageSnapshotMock>();
+
+/** Resets the provider usage snapshot with plugin mock. */
+export function resetProviderUsageSnapshotWithPluginMock(provider: string): void {
+  mockSnapshots.delete(provider);
 }
-export function getProviderUsageSnapshotWithPluginMock(...args: unknown[]): unknown {
-  throw new Error("not implemented: getProviderUsageSnapshotWithPluginMock");
+
+/** Gets a provider usage snapshot with plugin mock. */
+export function getProviderUsageSnapshotWithPluginMock(provider: string, _params?: unknown): ProviderUsageSnapshotMock | undefined {
+  return mockSnapshots.get(provider);
 }

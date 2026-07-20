@@ -1,26 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/subagent-registry-announce-read.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Subagent registry announce and read helpers.
+ * Ported from openclaw/src/agents/subagent-registry-announce-read.ts
+ * Simplified: session lookup replaced with empty defaults.
  */
 
-export function resolveRequesterForChildSession(..._args: unknown[]): unknown {
-  throw new Error("resolveRequesterForChildSession not implemented (openclaw stub)");
-}
-export function isSubagentSessionRunActive(..._args: unknown[]): unknown {
-  throw new Error("isSubagentSessionRunActive not implemented (openclaw stub)");
-}
-export function shouldIgnorePostCompletionAnnounceForSession(..._args: unknown[]): unknown {
-  throw new Error("shouldIgnorePostCompletionAnnounceForSession not implemented (openclaw stub)");
-}
-export function listSubagentRunsForRequester(..._args: unknown[]): unknown {
-  throw new Error("listSubagentRunsForRequester not implemented (openclaw stub)");
-}
-export function countPendingDescendantRuns(..._args: unknown[]): unknown {
-  throw new Error("countPendingDescendantRuns not implemented (openclaw stub)");
-}
-export function countPendingDescendantRunsExcludingRun(..._args: unknown[]): unknown {
-  throw new Error("countPendingDescendantRunsExcludingRun not implemented (openclaw stub)");
-}
+export function resolveRequesterForChildSession(): undefined { return undefined; }
+export function isSubagentSessionRunActive(): boolean { return false; }
+export function shouldIgnorePostCompletionAnnounceForSession(): boolean { return false; }
+export function listSubagentRunsForRequester(): unknown[] { return []; }
+export function countPendingDescendantRuns(): number { return 0; }
+export function countPendingDescendantRunsExcludingRun(): number { return 0; }

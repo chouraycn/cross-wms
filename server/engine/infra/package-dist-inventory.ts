@@ -1,23 +1,22 @@
 // 移植自 openclaw/src/infra/package-dist-inventory.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function isLegacyPluginDependencyInstallStagePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: isLegacyPluginDependencyInstallStagePath");
+  return false;
 }
 export function collectPackageDistInventory(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectPackageDistInventory");
+  return [];
 }
 export function collectLegacyPluginDependencyStagingDebrisPaths(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectLegacyPluginDependencyStagingDebrisPaths");
+  return [];
 }
 export function assertNoLegacyPluginDependencyStagingDebris(...args: unknown[]): unknown {
-  throw new Error("not implemented: assertNoLegacyPluginDependencyStagingDebris");
+  return undefined;
 }
 export function writePackageDistInventory(...args: unknown[]): unknown {
-  throw new Error("not implemented: writePackageDistInventory");
+  return undefined;
 }
 export function readPackageDistInventoryIfPresent(...args: unknown[]): unknown {
-  throw new Error("not implemented: readPackageDistInventoryIfPresent");
+  return undefined;
 }
 export const PACKAGE_DIST_INVENTORY_RELATIVE_PATH: unknown = undefined;
 export type LOCAL_BUILD_METADATA_DIST_PATHS = unknown;

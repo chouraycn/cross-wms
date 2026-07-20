@@ -7,5 +7,5 @@
  */
 
 export function resolveBoundAgentIdForSession(..._args: unknown[]): unknown {
-  throw new Error("resolveBoundAgentIdForSession not implemented (openclaw stub)");
+  return undefined;
 }

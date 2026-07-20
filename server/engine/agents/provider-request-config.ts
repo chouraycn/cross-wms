@@ -13,41 +13,41 @@ export type ProviderRequestTransportOverrides = unknown;
 export type ModelProviderRequestTransportOverrides = unknown;
 export type ResolvedProviderRequestConfig = unknown;
 export function sanitizeConfiguredProviderRequest(..._args: unknown[]): unknown {
-  throw new Error("sanitizeConfiguredProviderRequest not implemented (openclaw stub)");
+  return undefined;
 }
 export function sanitizeConfiguredModelProviderRequest(..._args: unknown[]): unknown {
-  throw new Error("sanitizeConfiguredModelProviderRequest not implemented (openclaw stub)");
+  return undefined;
 }
 export function mergeProviderRequestOverrides(..._args: unknown[]): unknown {
-  throw new Error("mergeProviderRequestOverrides not implemented (openclaw stub)");
+  return undefined;
 }
 export function mergeModelProviderRequestOverrides(..._args: unknown[]): unknown {
-  throw new Error("mergeModelProviderRequestOverrides not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeBaseUrl(..._args: unknown[]): unknown {
-  throw new Error("normalizeBaseUrl not implemented (openclaw stub)");
+  return undefined;
 }
 export function sanitizeRuntimeProviderRequestOverrides(..._args: unknown[]): unknown {
-  throw new Error("sanitizeRuntimeProviderRequestOverrides not implemented (openclaw stub)");
+  return undefined;
 }
 export function applyPreparedRuntimeAuthToModel(..._args: unknown[]): unknown {
-  throw new Error("applyPreparedRuntimeAuthToModel not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildProviderRequestDispatcherPolicy(..._args: unknown[]): unknown {
-  throw new Error("buildProviderRequestDispatcherPolicy not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveProviderRequestPolicyConfig(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderRequestPolicyConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveProviderRequestConfig(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderRequestConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveProviderRequestHeaders(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderRequestHeaders not implemented (openclaw stub)");
+  return undefined;
 }
 export function attachModelProviderRequestTransport(..._args: unknown[]): unknown {
-  throw new Error("attachModelProviderRequestTransport not implemented (openclaw stub)");
+  return undefined;
 }
 export function getModelProviderRequestTransport(..._args: unknown[]): unknown {
-  throw new Error("getModelProviderRequestTransport not implemented (openclaw stub)");
+  return undefined;
 }

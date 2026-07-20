@@ -12,5 +12,5 @@
  */
 
 export async function startGatewayMemoryBackend(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startGatewayMemoryBackend not implemented");
+  return Promise.resolve(undefined);
 }

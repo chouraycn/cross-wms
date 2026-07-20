@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves attachment payloads for plugin host hooks.
 import * as fsPromises from "node:fs/promises";
 import { lstat } from "node:fs/promises";
@@ -7,7 +6,7 @@ import {
   FILE_TYPE_SNIFF_MAX_BYTES,
   normalizeMimeType,
 } from "@openclaw/media-core/mime";
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolvePathFromInput } from "../agents/path-policy.js";
 import { resolveWorkspaceRoot } from "../agents/workspace-dir.js";
@@ -15,7 +14,7 @@ import { extractDeliveryInfo } from './_stub_parent__config__sessions__delivery_
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
-import { isDeliverableMessageChannel, normalizeMessageChannel } from './_stub_parent__utils__message_channel.js';
+import { isDeliverableMessageChannel, normalizeMessageChannel } from './_parent__utils__message_channel.js';
 import type {
   PluginAttachmentChannelHints,
   PluginSessionAttachmentCaptionFormat,

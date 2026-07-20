@@ -1,14 +1,17 @@
 // 移植自 openclaw/src/channels/plugins/contracts/test-helpers/bundled-channel-plugin-loader.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export function listBundledChannelPluginIds(..._args: unknown[]): unknown {
-  throw new Error("not implemented: listBundledChannelPluginIds");
+/** Lists bundled channel plugin ids. Simplified without real plugin registry. */
+export function listBundledChannelPluginIds(): string[] {
+  return [];
 }
 
-export async function getBundledChannelPluginAsync(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: getBundledChannelPluginAsync");
+/** Gets a bundled channel plugin asynchronously. Returns null without real plugins. */
+export async function getBundledChannelPluginAsync(_pluginId: string): Promise<null> {
+  return null;
 }
 
-export async function getBundledChannelDirectoryPluginAsync(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: getBundledChannelDirectoryPluginAsync");
+/** Gets a bundled channel directory plugin asynchronously. Returns null without real plugins. */
+export async function getBundledChannelDirectoryPluginAsync(_pluginId: string): Promise<null> {
+  return null;
 }

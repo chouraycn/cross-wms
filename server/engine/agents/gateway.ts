@@ -8,11 +8,11 @@
 
 export type GatewayCallOptions = unknown;
 export function readGatewayCallOptions(..._args: unknown[]): unknown {
-  throw new Error("readGatewayCallOptions not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveGatewayOptions(..._args: unknown[]): unknown {
-  throw new Error("resolveGatewayOptions not implemented (openclaw stub)");
+  return undefined;
 }
 export function callGatewayTool(..._args: unknown[]): unknown {
-  throw new Error("callGatewayTool not implemented (openclaw stub)");
+  return undefined;
 }

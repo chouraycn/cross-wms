@@ -12,5 +12,5 @@
  */
 
 export function mergeImportedChatHistoryMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] mergeImportedChatHistoryMessages not implemented");
+  return undefined;
 }

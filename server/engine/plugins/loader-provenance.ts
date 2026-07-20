@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Tracks plugin loader provenance for diagnostics and policy checks.
-import { normalizeTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import { quoteCliArg } from "../cli/quote-cli-arg.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { resolveUserPath } from './_parent__utils.js';
 import { isBundledPluginInsideDevSourceRoot } from "./dev-source-root.js";
 import type { PluginCandidate } from "./discovery.js";
 import { loadInstalledPluginIndexInstallRecordsSync } from "./installed-plugin-index-records.js";

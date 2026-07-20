@@ -7,8 +7,8 @@
  */
 
 export function keyText(..._args: unknown[]): unknown {
-  throw new Error("keyText not implemented (openclaw stub)");
+  return undefined;
 }
 export function keyHint(..._args: unknown[]): unknown {
-  throw new Error("keyHint not implemented (openclaw stub)");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function resolveGatewayPluginConfig(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayPluginConfig not implemented");
+  return undefined;
 }

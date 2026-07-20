@@ -7,8 +7,8 @@
  */
 
 export function hasAnyAuthProfileStoreSource(..._args: unknown[]): unknown {
-  throw new Error("hasAnyAuthProfileStoreSource not implemented (openclaw stub)");
+  return false;
 }
 export function hasLocalAuthProfileStoreSource(..._args: unknown[]): unknown {
-  throw new Error("hasLocalAuthProfileStoreSource not implemented (openclaw stub)");
+  return false;
 }

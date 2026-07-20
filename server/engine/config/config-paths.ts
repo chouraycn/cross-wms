@@ -1,15 +1,14 @@
 // 移植自 openclaw/src/config/config-paths.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function parseConfigPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseConfigPath");
+  return undefined;
 }
 export function setConfigValueAtPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: setConfigValueAtPath");
+  return undefined;
 }
 export function unsetConfigValueAtPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: unsetConfigValueAtPath");
+  return undefined;
 }
 export function getConfigValueAtPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: getConfigValueAtPath");
+  return undefined;
 }

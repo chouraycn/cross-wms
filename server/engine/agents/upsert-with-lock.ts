@@ -7,5 +7,5 @@
  */
 
 export function upsertAuthProfileWithLock(..._args: unknown[]): unknown {
-  throw new Error("upsertAuthProfileWithLock not implemented (openclaw stub)");
+  return undefined;
 }

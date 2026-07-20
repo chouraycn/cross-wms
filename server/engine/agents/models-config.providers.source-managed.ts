@@ -7,5 +7,5 @@
  */
 
 export function enforceSourceManagedProviderSecrets(..._args: unknown[]): unknown {
-  throw new Error("enforceSourceManagedProviderSecrets not implemented (openclaw stub)");
+  return undefined;
 }

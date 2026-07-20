@@ -1,7 +1,7 @@
 // Resolves development source roots for local plugin installs.
 import fs from "node:fs";
 import path from "node:path";
-import { resolveUserPath } from './_stub_parent__utils.js';
+import { resolveUserPath } from './_parent__utils.js';
 import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
 /** Env var that points bundled-plugin lookup at an OpenClaw source checkout. */

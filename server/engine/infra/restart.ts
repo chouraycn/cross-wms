@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/infra/restart.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type RestartAuditInfo = unknown;
 export type GatewayRestartIntent = unknown;
@@ -8,58 +7,58 @@ export type RestartEmitHooks = unknown;
 export type ScheduledRestart = unknown;
 export type RestartAttempt = unknown;
 export function resetGatewayRestartStateForInProcessRestart(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetGatewayRestartStateForInProcessRestart");
+  return undefined;
 }
 export function writeGatewayRestartIntentSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeGatewayRestartIntentSync");
+  return undefined;
 }
 export function clearGatewayRestartIntentSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearGatewayRestartIntentSync");
+  return undefined;
 }
 export function consumeGatewayRestartIntentPayloadSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeGatewayRestartIntentPayloadSync");
+  return undefined;
 }
 export function consumeGatewayRestartIntentSync(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeGatewayRestartIntentSync");
+  return undefined;
 }
 export function setPreRestartDeferralCheck(...args: unknown[]): unknown {
-  throw new Error("not implemented: setPreRestartDeferralCheck");
+  return undefined;
 }
 export function emitGatewayRestart(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitGatewayRestart");
+  return undefined;
 }
 export function setGatewaySigusr1RestartPolicy(...args: unknown[]): unknown {
-  throw new Error("not implemented: setGatewaySigusr1RestartPolicy");
+  return undefined;
 }
 export function isGatewaySigusr1RestartExternallyAllowed(...args: unknown[]): unknown {
-  throw new Error("not implemented: isGatewaySigusr1RestartExternallyAllowed");
+  return false;
 }
 export function consumeGatewaySigusr1RestartAuthorization(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeGatewaySigusr1RestartAuthorization");
+  return undefined;
 }
 export function peekGatewaySigusr1RestartReason(...args: unknown[]): unknown {
-  throw new Error("not implemented: peekGatewaySigusr1RestartReason");
+  return undefined;
 }
 export function consumeGatewaySigusr1RestartIntent(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeGatewaySigusr1RestartIntent");
+  return undefined;
 }
 export function markGatewaySigusr1RestartHandled(...args: unknown[]): unknown {
-  throw new Error("not implemented: markGatewaySigusr1RestartHandled");
+  return undefined;
 }
 export function resolveGatewayRestartDeferralTimeoutMs(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveGatewayRestartDeferralTimeoutMs");
+  return undefined;
 }
 export function deferGatewayRestartUntilIdle(...args: unknown[]): unknown {
-  throw new Error("not implemented: deferGatewayRestartUntilIdle");
+  return undefined;
 }
 export function triggerOpenClawRestart(...args: unknown[]): unknown {
-  throw new Error("not implemented: triggerOpenClawRestart");
+  return undefined;
 }
 export function scheduleGatewaySigusr1Restart(...args: unknown[]): unknown {
-  throw new Error("not implemented: scheduleGatewaySigusr1Restart");
+  return undefined;
 }
 export function scheduleGatewayRestart(...args: unknown[]): unknown {
-  throw new Error("not implemented: scheduleGatewayRestart");
+  return undefined;
 }
 export const DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS: unknown = undefined;
 export const testing_restart: unknown = undefined;

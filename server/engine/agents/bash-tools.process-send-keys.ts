@@ -1,12 +1,56 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.process-send-keys.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Process send-keys helpers for bash process tool.
+ * Ported from openclaw/src/agents/bash-tools.process-send-keys.ts
  */
 
-export type WritableStdin = unknown;
-export async function handleProcessSendKeys(..._args: unknown[]): Promise<unknown> {
-  throw new Error("handleProcessSendKeys not implemented (openclaw stub)");
+/** Parse a send-keys string into individual key sequences. */
+export function parseSendKeysSequence(input: string): string[] {
+  if (!input) return [];
+  const sequences: string[] = [];
+  let current = "";
+  let i = 0;
+  while (i < input.length) {
+    if (input[i] === "\\") {
+      if (i + 1 < input.length) {
+        const next = input[i + 1];
+        switch (next) {
+          case "n":
+            current += "\n";
+            i += 2;
+            continue;
+          case "t":
+            current += "\t";
+            i += 2;
+            continue;
+          case "r":
+            current += "\r";
+            i += 2;
+            continue;
+          case "\\":
+            current += "\\";
+            i += 2;
+            continue;
+          default:
+            current += input[i];
+            i += 1;
+            continue;
+        }
+      } else {
+        current += input[i];
+        i += 1;
+      }
+    } else {
+      current += input[i];
+      i += 1;
+    }
+  }
+  if (current) {
+    sequences.push(current);
+  }
+  return sequences.length > 0 ? sequences : [input];
+}
+
+/** Encode key sequences for PTY stdin write. */
+export function encodeSendKeysForPty(sequences: string[]): string {
+  return sequences.join("");
 }

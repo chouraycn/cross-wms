@@ -36,9 +36,8 @@ export function registerLogsCli(program: Command): void {
     .option("--utc", "Display timestamps in UTC", false);
 
   logs.action(() => {
-    throw new Error(
-      "openclaw logs: not supported in stub mode (gateway/call, logging/*, terminal-core/* not ported).",
-    );
+    console.error('openclaw logs is not available in cross-wms');
+      process.exit(1);
   });
 }
 

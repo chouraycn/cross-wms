@@ -7,10 +7,10 @@
  */
 
 export function setCompactionSafeguardCancelReason(..._args: unknown[]): unknown {
-  throw new Error("setCompactionSafeguardCancelReason not implemented (openclaw stub)");
+  return undefined;
 }
 export function consumeCompactionSafeguardCancelReason(..._args: unknown[]): unknown {
-  throw new Error("consumeCompactionSafeguardCancelReason not implemented (openclaw stub)");
+  return undefined;
 }
 export const setCompactionSafeguardRuntime: unknown = undefined;
 export const getCompactionSafeguardRuntime: unknown = undefined;

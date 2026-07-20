@@ -1,11 +1,14 @@
 /**
- * 移植自 openclaw/src/agents/live-model-dynamic-candidates.ts
+ * Ported from openclaw/src/agents/live-model-dynamic-candidates.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Dynamic live model candidate resolution.
+ * Cross-wms degradation: returns input unchanged without dynamic model discovery.
  */
 
-export async function appendPrioritizedDynamicLiveModels(..._args: unknown[]): Promise<unknown> {
-  throw new Error("appendPrioritizedDynamicLiveModels not implemented (openclaw stub)");
+/** Appends prioritized dynamic live models to a candidate list. */
+export async function appendPrioritizedDynamicLiveModels(
+  candidates: unknown[],
+): Promise<unknown[]> {
+  // Cross-wms does not have dynamic live model discovery.
+  return candidates;
 }

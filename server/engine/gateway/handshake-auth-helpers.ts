@@ -1,30 +1,29 @@
 // 移植自 openclaw/src/gateway/server/ws-connection/handshake-auth-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export const BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP: unknown = undefined;
 
 export const BROWSER_ORIGIN_RATE_LIMIT_KEY_PREFIX: unknown = undefined;
 
 export function resolveHandshakeBrowserSecurityContext(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveHandshakeBrowserSecurityContext");
+  return undefined;
 }
 
 export function shouldAllowSilentLocalPairing(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldAllowSilentLocalPairing");
+  return false;
 }
 
 export function resolvePairingLocality(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePairingLocality");
+  return undefined;
 }
 
 export function shouldSkipLocalBackendSelfPairing(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldSkipLocalBackendSelfPairing");
+  return false;
 }
 
 export function resolveDeviceSignaturePayloadVersion(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveDeviceSignaturePayloadVersion");
+  return undefined;
 }
 
 export function resolveUnauthorizedHandshakeContext(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveUnauthorizedHandshakeContext");
+  return undefined;
 }

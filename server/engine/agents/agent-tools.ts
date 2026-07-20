@@ -10,8 +10,8 @@ export { resolveToolLoopDetectionConfig } from "./tool-loop-detection-config.js"
 export type OpenClawCodingToolConstructionPlan = unknown;
 export const testing: unknown = undefined;
 export function resolveProcessToolScopeKey(..._args: unknown[]): unknown {
-  throw new Error("resolveProcessToolScopeKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function createOpenClawCodingTools(..._args: unknown[]): unknown {
-  throw new Error("createOpenClawCodingTools not implemented (openclaw stub)");
+  return undefined;
 }

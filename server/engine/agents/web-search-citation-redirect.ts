@@ -7,5 +7,5 @@
  */
 
 export function resolveCitationRedirectUrl(..._args: unknown[]): unknown {
-  throw new Error("resolveCitationRedirectUrl not implemented (openclaw stub)");
+  return undefined;
 }

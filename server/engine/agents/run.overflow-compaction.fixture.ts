@@ -7,17 +7,17 @@
  */
 
 export function makeOverflowError(..._args: unknown[]): unknown {
-  throw new Error("makeOverflowError not implemented (openclaw stub)");
+  return undefined;
 }
 export function makeCompactionSuccess(..._args: unknown[]): unknown {
-  throw new Error("makeCompactionSuccess not implemented (openclaw stub)");
+  return undefined;
 }
 export function makeAttemptResult(..._args: unknown[]): unknown {
-  throw new Error("makeAttemptResult not implemented (openclaw stub)");
+  return undefined;
 }
 export function mockOverflowRetrySuccess(..._args: unknown[]): unknown {
-  throw new Error("mockOverflowRetrySuccess not implemented (openclaw stub)");
+  return undefined;
 }
 export function queueOverflowAttemptWithOversizedToolOutput(..._args: unknown[]): unknown {
-  throw new Error("queueOverflowAttemptWithOversizedToolOutput not implemented (openclaw stub)");
+  return undefined;
 }

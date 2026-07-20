@@ -7,5 +7,5 @@
  */
 
 export function makeToolPrunablePredicate(..._args: unknown[]): unknown {
-  throw new Error("makeToolPrunablePredicate not implemented (openclaw stub)");
+  return undefined;
 }

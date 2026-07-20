@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Normalizes provider auth choice metadata from plugin setup surfaces.
-import { isRecord as isPlainRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
+import { isRecord as isPlainRecord } from './_openclaw__normalization_core__record_coerce.js';
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import { normalizeConfiguredProviderCatalogModelId } from "../agents/model-ref-shared.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import {

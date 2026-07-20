@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Loads and normalizes OpenClaw plugin manifests, including contracts and config schemas. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeModelCatalog } from './_stub_openclaw__model_catalog_core__model_catalog_normalize.js';
-import { normalizeModelCatalogProviderId } from './_stub_openclaw__model_catalog_core__model_catalog_refs.js';
-import type { ModelCatalog } from './_stub_openclaw__model_catalog_core__model_catalog_types.js';
+import { normalizeModelCatalog } from './_openclaw__model_catalog_core__model_catalog_normalize.js';
+import { normalizeModelCatalogProviderId } from './_openclaw__model_catalog_core__model_catalog_refs.js';
+import type { ModelCatalog } from './_openclaw__model_catalog_core__model_catalog_types.js';
 import { normalizeOptionalString } from './_stub_parent__parent__packages__normalization_core__src__string_coerce.js';
 import { normalizeTrimmedStringList } from './_stub_parent__parent__packages__normalization_core__src__string_normalization.js';
 import type { ChannelConfigRuntimeSchema } from './_stub_parent__channels__plugins__types_config.js';
@@ -13,8 +12,8 @@ import { ENV_SECRET_REF_ID_RE } from "../config/types.secrets.js";
 import { matchRootFileOpenFailure, openRootFileSync } from "../infra/boundary-file-read.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import type { JsonSchemaObject } from "../shared/json-schema.types.js";
-import { isRecord } from './_stub_parent__utils.js';
-import { parseJsonWithJson5Fallback } from './_stub_parent__utils__parse_json_compat.js';
+import { isRecord } from './_parent__utils.js';
+import { parseJsonWithJson5Fallback } from './_parent__utils__parse_json_compat.js';
 import {
   normalizeManifestCommandAliases,
   type PluginManifestCommandAlias,

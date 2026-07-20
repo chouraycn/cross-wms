@@ -121,8 +121,13 @@ router.put('/', async (req: Request, res: Response) => {
     const currentMap = new Map(currentConfig.models.map(m => [m.id, m]));
 
     // 合并：前端传来的字段覆盖，但保留已有的 apiKeyRef/apiKeyRefs/keyStrategy
+    // RC-3 修复：支持 originalId 做二次匹配，防止前端误改 id 导致 Keychain 引用断裂
     const mergedModels = models.map((m: any) => {
-      const existing = currentMap.get(m.id);
+      // 优先用 m.id 匹配；若前端传了 originalId，则用 originalId 做二次匹配
+      let existing = currentMap.get(m.id);
+      if (!existing && m.originalId) {
+        existing = currentMap.get(m.originalId);
+      }
       if (!existing) return m; // 新模型，直接使用
       return {
         ...existing,              // 保留已有字段（含 apiKeyRef/apiKeyRefs）
@@ -135,9 +140,12 @@ router.put('/', async (req: Request, res: Response) => {
     });
 
     // 检测被删除的模型（物理删除或 hidden），清理 Keychain 中的 API Key
+    // RC-3 修复：基于 originalId 集合判断是否被删除，避免 id 变化误触发 Keychain 清理
     const newIds = new Set(mergedModels.map((m: any) => m.id));
+    const newOriginalIds = new Set(models.map((m: any) => m.originalId).filter(Boolean));
     for (const oldModel of currentConfig.models) {
-      if (!newIds.has(oldModel.id)) {
+      // 仅当旧 id 既不在新 ids 中，也不在 originalIds 中时才视为被删除
+      if (!newIds.has(oldModel.id) && !newOriginalIds.has(oldModel.id)) {
         // 模型被物理删除，清理 Keychain
         deleteModelConfig(oldModel.id);
       }
@@ -734,6 +742,85 @@ router.post('/add-recommended', async (_req: Request, res: Response) => {
     };
     res.json({ data: sanitized, added: modelsToAdd.length, message: `成功添加 ${modelsToAdd.length} 个推荐模型` });
   } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// ============================================================
+// v2.x: 模型故障转移运行时状态路由
+// 暴露 ModelFailoverManager 的运行时健康状态与决策日志，
+// 让前端/运维可观测模型冷却、连续失败、故障转移历史。
+// 与 POST /api/models/health-check（主动 HTTP 探测）明确区分：
+//   - health-check：一次性主动探测，不反映运行时冷却状态
+//   - failover/health：运行时累积状态（成功/失败计数、冷却状态）
+// ============================================================
+
+import { getModelFailoverManager, getFailoverDecisionLog } from '../engine/modelFailover.js';
+
+/** GET /api/models/failover/health — 获取所有模型的运行时健康状态 */
+router.get('/failover/health', (_req: Request, res: Response) => {
+  try {
+    const manager = getModelFailoverManager();
+    const health = manager.getAllHealthStatus();
+    res.json({ models: health });
+  } catch (e) {
+    logger.error('[Models] 获取 failover 健康状态失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/** GET /api/models/failover/health/:modelId — 获取指定模型的运行时健康状态 */
+router.get('/failover/health/:modelId', (req: Request, res: Response) => {
+  try {
+    const { modelId } = req.params;
+    const manager = getModelFailoverManager();
+    const health = manager.getModelHealth(modelId);
+    if (!health) {
+      res.status(404).json({ error: `模型 ${modelId} 无健康状态记录` });
+      return;
+    }
+    res.json({ modelId, ...health });
+  } catch (e) {
+    logger.error('[Models] 获取模型 failover 健康状态失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/** GET /api/models/failover/decisions?limit=50 — 获取故障转移决策日志（环形缓冲，最新在前） */
+router.get('/failover/decisions', (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(String(req.query.limit), 10) || 50, 200);
+    const decisions = getFailoverDecisionLog(limit);
+    res.json({ decisions, count: decisions.length });
+  } catch (e) {
+    logger.error('[Models] 获取 failover 决策日志失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/** POST /api/models/failover/reset — 重置所有模型的健康状态（手动清除冷却） */
+router.post('/failover/reset', (_req: Request, res: Response) => {
+  try {
+    const manager = getModelFailoverManager();
+    manager.resetAllHealth();
+    logger.info('[Models] 已通过 API 重置所有模型 failover 健康状态');
+    res.json({ success: true, message: '已重置所有模型健康状态' });
+  } catch (e) {
+    logger.error('[Models] 重置 failover 健康状态失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+/** POST /api/models/failover/reset/:modelId — 重置指定模型的健康状态 */
+router.post('/failover/reset/:modelId', (req: Request, res: Response) => {
+  try {
+    const { modelId } = req.params;
+    const manager = getModelFailoverManager();
+    manager.resetModelHealth(modelId);
+    logger.info(`[Models] 已通过 API 重置模型 ${modelId} 的 failover 健康状态`);
+    res.json({ success: true, modelId, message: `已重置模型 ${modelId} 健康状态` });
+  } catch (e) {
+    logger.error('[Models] 重置模型 failover 健康状态失败:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

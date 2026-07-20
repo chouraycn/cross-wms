@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Shares plugin config normalization helpers across control-plane paths.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
-import { normalizeArrayBackedTrimmedStringList } from './_stub_openclaw__normalization_core__string_normalization.js';
+} from './_openclaw__normalization_core__string_coerce.js';
+import { normalizeArrayBackedTrimmedStringList } from './_openclaw__normalization_core__string_normalization.js';
 import { normalizeChatChannelId } from "../channels/ids.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { defaultSlotIdForKey } from "./slots.js";

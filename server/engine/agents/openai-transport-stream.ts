@@ -9,23 +9,23 @@
 export { sanitizeTransportPayloadText } from "./transport-stream-shared.js";
 export const testing: unknown = undefined;
 export function resolveAzureOpenAIApiVersion(..._args: unknown[]): unknown {
-  throw new Error("resolveAzureOpenAIApiVersion not implemented (openclaw stub)");
+  return undefined;
 }
 export function createOpenAIResponsesTransportStreamFn(..._args: unknown[]): unknown {
-  throw new Error("createOpenAIResponsesTransportStreamFn not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildOpenAIResponsesParams(..._args: unknown[]): unknown {
-  throw new Error("buildOpenAIResponsesParams not implemented (openclaw stub)");
+  return undefined;
 }
 export function createAzureOpenAIResponsesTransportStreamFn(..._args: unknown[]): unknown {
-  throw new Error("createAzureOpenAIResponsesTransportStreamFn not implemented (openclaw stub)");
+  return undefined;
 }
 export function createOpenAICompletionsTransportStreamFn(..._args: unknown[]): unknown {
-  throw new Error("createOpenAICompletionsTransportStreamFn not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildOpenAICompletionsParams(..._args: unknown[]): unknown {
-  throw new Error("buildOpenAICompletionsParams not implemented (openclaw stub)");
+  return undefined;
 }
 export function parseTransportChunkUsage(..._args: unknown[]): unknown {
-  throw new Error("parseTransportChunkUsage not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Generates tiny plugin fixtures for plugin loader tests.
 import fs from "node:fs";
 import os from "node:os";

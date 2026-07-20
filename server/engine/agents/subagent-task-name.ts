@@ -7,5 +7,5 @@
  */
 
 export function normalizeSubagentTaskName(..._args: unknown[]): unknown {
-  throw new Error("normalizeSubagentTaskName not implemented (openclaw stub)");
+  return undefined;
 }

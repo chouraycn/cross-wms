@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Resolves manifest contracts into runtime-facing plugin capabilities.
-import { sortUniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { sortUniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import {
   hasManifestContractValue,

@@ -14,17 +14,17 @@
 export type ControlUiRootState = unknown;
 
 export function rewriteControlUiIndexHtmlPublicAssetHrefs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] rewriteControlUiIndexHtmlPublicAssetHrefs not implemented");
+  return undefined;
 }
 
 export async function handleControlUiAssistantMediaRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleControlUiAssistantMediaRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function handleControlUiAvatarRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleControlUiAvatarRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function handleControlUiHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleControlUiHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }

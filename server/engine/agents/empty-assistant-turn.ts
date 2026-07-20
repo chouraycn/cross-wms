@@ -7,5 +7,5 @@
  */
 
 export function isZeroUsageEmptyStopAssistantTurn(..._args: unknown[]): unknown {
-  throw new Error("isZeroUsageEmptyStopAssistantTurn not implemented (openclaw stub)");
+  return false;
 }

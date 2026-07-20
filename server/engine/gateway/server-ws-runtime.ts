@@ -12,5 +12,5 @@
  */
 
 export function attachGatewayWsHandlers(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] attachGatewayWsHandlers not implemented");
+  return undefined;
 }

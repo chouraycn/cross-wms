@@ -1,6 +1,7 @@
 // 移植自 openclaw/src/channels/plugins/configured-binding-builtins.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export function ensureConfiguredBindingBuiltinsRegistered(..._args: unknown[]): unknown {
-  throw new Error("not implemented: ensureConfiguredBindingBuiltinsRegistered");
+/** Ensures configured binding builtins are registered. No-op in cross-wms. */
+export function ensureConfiguredBindingBuiltinsRegistered(_params?: unknown): void {
+  // No builtins to register without real channel plugins
 }

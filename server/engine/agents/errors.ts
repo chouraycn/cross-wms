@@ -1,14 +1,23 @@
 /**
  * 移植自 openclaw/src/agents/harness/errors.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Agent harness error helpers.
+ * Registry and runtime callers use this stable error type to distinguish missing
+ * harness selection from ordinary harness execution failures.
  */
 
-export class MissingAgentHarnessError {
-  constructor(..._args: unknown[]) { throw new Error("MissingAgentHarnessError not implemented (openclaw stub)"); }
+/** Error thrown when a requested harness id is not registered. */
+export class MissingAgentHarnessError extends Error {
+  readonly harnessId: string;
+
+  constructor(harnessId: string) {
+    super(`Requested agent harness "${harnessId}" is not registered.`);
+    this.name = "MissingAgentHarnessError";
+    this.harnessId = harnessId;
+  }
 }
-export function isMissingAgentHarnessError(..._args: unknown[]): unknown {
-  throw new Error("isMissingAgentHarnessError not implemented (openclaw stub)");
+
+/** Returns whether an error is a missing harness error. */
+export function isMissingAgentHarnessError(err: unknown): err is MissingAgentHarnessError {
+  return err instanceof MissingAgentHarnessError;
 }

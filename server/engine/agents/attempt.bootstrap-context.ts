@@ -1,14 +1,56 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/run/attempt.bootstrap-context.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Maps bootstrap context files into the attempt workspace.
+ * Ported from openclaw/src/agents/embedded-agent-runner/run/attempt.bootstrap-context.ts
  */
+import path from "node:path";
+import { isAcpSessionKey, isSubagentSessionKey } from "../../sessions/session-key-utils.js";
+import type { EmbeddedContextFile } from "./embedded-agent-helpers/types.js";
 
-export function isPrimaryBootstrapRun(..._args: unknown[]): unknown {
-  throw new Error("isPrimaryBootstrapRun not implemented (openclaw stub)");
+/**
+ * Returns whether a session should receive primary bootstrap context. Subagents
+ * and ACP worker sessions inherit/run their own context path instead of getting
+ * the top-level bootstrap payload again.
+ */
+export function isPrimaryBootstrapRun(sessionKey?: string): boolean {
+  return !isSubagentSessionKey(sessionKey) && !isAcpSessionKey(sessionKey);
 }
-export function remapInjectedContextFilesToWorkspace(..._args: unknown[]): unknown {
-  throw new Error("remapInjectedContextFilesToWorkspace not implemented (openclaw stub)");
+
+function isRelativePathInsideOrEqual(relativePath: string): boolean {
+  // `path.relative` returns "" for the workspace root; reject parent escapes and absolute paths.
+  return (
+    relativePath === "" ||
+    (relativePath !== ".." &&
+      !relativePath.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relativePath))
+  );
+}
+
+/**
+ * Rewrites injected context file paths when a bootstrap assembled in one
+ * workspace is replayed in another. Files outside the source workspace keep
+ * their original absolute path to avoid manufacturing unsafe relative paths.
+ */
+export function remapInjectedContextFilesToWorkspace(params: {
+  files: EmbeddedContextFile[];
+  sourceWorkspaceDir: string;
+  targetWorkspaceDir: string;
+}): EmbeddedContextFile[] {
+  if (params.sourceWorkspaceDir === params.targetWorkspaceDir) {
+    return params.files;
+  }
+  return params.files.map((file) => {
+    const relative = path.relative(params.sourceWorkspaceDir, file.path);
+    // Only files that were inside the source workspace can be safely projected
+    // into the target workspace.
+    const canRemap = isRelativePathInsideOrEqual(relative);
+    return canRemap
+      ? {
+          ...file,
+          path:
+            relative === ""
+              ? params.targetWorkspaceDir
+              : path.join(params.targetWorkspaceDir, relative),
+        }
+      : file;
+  });
 }

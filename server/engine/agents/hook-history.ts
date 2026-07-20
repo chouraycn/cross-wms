@@ -7,9 +7,9 @@
  */
 
 export function limitAgentHookHistoryMessages(..._args: unknown[]): unknown {
-  throw new Error("limitAgentHookHistoryMessages not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildAgentHookConversationMessages(..._args: unknown[]): unknown {
-  throw new Error("buildAgentHookConversationMessages not implemented (openclaw stub)");
+  return undefined;
 }
 export const MAX_AGENT_HOOK_HISTORY_MESSAGES: unknown = undefined;

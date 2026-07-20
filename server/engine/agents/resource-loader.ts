@@ -1,12 +1,20 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/resource-loader.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Embedded agent resource loader.
+ * In cross-wms the full resource loading infrastructure is not available,
+ * so createEmbeddedAgentResourceLoader returns a no-op loader and
+ * the discovery options constant is empty.
  */
 
-export function createEmbeddedAgentResourceLoader(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedAgentResourceLoader not implemented (openclaw stub)");
+/** Discovery options for embedded agent resource loading (empty in cross-wms). */
+export const EMBEDDED_AGENT_RESOURCE_LOADER_DISCOVERY_OPTIONS: Record<string, unknown> = {};
+
+/** Create an embedded agent resource loader (returns no-op in cross-wms). */
+export function createEmbeddedAgentResourceLoader(..._args: unknown[]): {
+  load: () => Promise<unknown[]>;
+} {
+  return {
+    load: async () => [],
+  };
 }
-export const EMBEDDED_AGENT_RESOURCE_LOADER_DISCOVERY_OPTIONS: unknown = undefined;

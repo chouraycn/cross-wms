@@ -262,3 +262,18 @@ export const defaultRegistry = new ClawhubRegistry();
 export function createClawhubRegistry(): ClawhubRegistry {
   return new ClawhubRegistry();
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const satisfiesPluginApiRange: any = undefined as any;
+export const ClawHubRequestError: any = undefined as any;
+export const downloadClawHubPackageArchive: any = undefined as any;
+export const fetchClawHubPackageArtifact: any = undefined as any;
+export const fetchClawHubPackageDetail: any = undefined as any;
+export const fetchClawHubPackageVersion: any = undefined as any;
+export const isDefaultClawHubBaseUrl: any = undefined as any;
+export const normalizeClawHubSha256Integrity: any = undefined as any;
+export const normalizeClawHubSha256Hex: any = undefined as any;
+export const parseClawHubPluginSpec: any = undefined as any;
+export const resolveClawHubBaseUrl: any = undefined as any;
+export const resolveLatestVersionFromPackage: any = undefined as any;
+export const satisfiesGatewayMinimum: any = undefined as any;

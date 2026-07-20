@@ -14,19 +14,19 @@
 export type GatewayCredentialPlan = unknown;
 
 export function trimCredentialToUndefined(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] trimCredentialToUndefined not implemented");
+  return undefined;
 }
 
 export function hasGatewayTokenEnvCandidate(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] hasGatewayTokenEnvCandidate not implemented");
+  return false;
 }
 
 export function hasGatewayPasswordEnvCandidate(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] hasGatewayPasswordEnvCandidate not implemented");
+  return false;
 }
 
 export function createGatewayCredentialPlan(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayCredentialPlan not implemented");
+  return undefined;
 }
 
 export const trimToUndefined: any = undefined;

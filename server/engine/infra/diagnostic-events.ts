@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/infra/diagnostic-events.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type DiagnosticSessionState = unknown;
 export type DiagnosticUsageEvent = unknown;
@@ -79,59 +78,59 @@ export type DiagnosticModelCallContent = unknown;
 export type DiagnosticToolCallContent = unknown;
 export type DiagnosticEventPrivateData = unknown;
 export function isDiagnosticsEnabled(...args: unknown[]): unknown {
-  throw new Error("not implemented: isDiagnosticsEnabled");
+  return false;
 }
 export function setDiagnosticsEnabledForProcess(...args: unknown[]): unknown {
-  throw new Error("not implemented: setDiagnosticsEnabledForProcess");
+  return undefined;
 }
 export function areDiagnosticsEnabledForProcess(...args: unknown[]): unknown {
-  throw new Error("not implemented: areDiagnosticsEnabledForProcess");
+  return undefined;
 }
 export function waitForDiagnosticEventsDrained(...args: unknown[]): unknown {
-  throw new Error("not implemented: waitForDiagnosticEventsDrained");
+  return undefined;
 }
 export function emitDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitDiagnosticEvent");
+  return undefined;
 }
 export function emitDiagnosticEventWithTrustedTraceContext(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitDiagnosticEventWithTrustedTraceContext");
+  return undefined;
 }
 export function emitInternalDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitInternalDiagnosticEvent");
+  return undefined;
 }
 export function getInternalDiagnosticEventSequence(...args: unknown[]): unknown {
-  throw new Error("not implemented: getInternalDiagnosticEventSequence");
+  return undefined;
 }
 export function emitTrustedDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitTrustedDiagnosticEvent");
+  return undefined;
 }
 export function emitTrustedDiagnosticEventWithPrivateData(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitTrustedDiagnosticEventWithPrivateData");
+  return undefined;
 }
 export function emitTrustedSecurityEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitTrustedSecurityEvent");
+  return undefined;
 }
 export function emitFailoverEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: emitFailoverEvent");
+  return undefined;
 }
 export function onInternalDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: onInternalDiagnosticEvent");
+  return undefined;
 }
 export function onTrustedInternalDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: onTrustedInternalDiagnosticEvent");
+  return undefined;
 }
 export function hasPendingInternalDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: hasPendingInternalDiagnosticEvent");
+  return false;
 }
 export function onDiagnosticEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: onDiagnosticEvent");
+  return undefined;
 }
 export function formatDiagnosticTraceparentForPropagation(...args: unknown[]): unknown {
-  throw new Error("not implemented: formatDiagnosticTraceparentForPropagation");
+  return "";
 }
 export function isInternalDiagnosticEventMetadata(...args: unknown[]): unknown {
-  throw new Error("not implemented: isInternalDiagnosticEventMetadata");
+  return false;
 }
 export function resetDiagnosticEventsForTest(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetDiagnosticEventsForTest");
+  return undefined;
 }

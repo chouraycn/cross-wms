@@ -1,44 +1,43 @@
 // 移植自 openclaw/src/infra/push-apns.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ApnsRegistration = unknown;
 export type ApnsAuthConfig = unknown;
 export type ApnsPushResult = unknown;
 export function normalizeApnsEnvironment(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeApnsEnvironment");
+  return undefined;
 }
 export function registerApnsRegistration(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerApnsRegistration");
+  return undefined;
 }
 export function loadApnsRegistration(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadApnsRegistration");
+  return undefined;
 }
 export function loadApnsRegistrations(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadApnsRegistrations");
+  return undefined;
 }
 export function clearApnsRegistrationIfCurrent(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearApnsRegistrationIfCurrent");
+  return undefined;
 }
 export function shouldInvalidateApnsRegistration(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldInvalidateApnsRegistration");
+  return false;
 }
 export function shouldClearStoredApnsRegistration(...args: unknown[]): unknown {
-  throw new Error("not implemented: shouldClearStoredApnsRegistration");
+  return false;
 }
 export function resolveApnsAuthConfigFromEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveApnsAuthConfigFromEnv");
+  return undefined;
 }
 export function sendApnsAlert(...args: unknown[]): unknown {
-  throw new Error("not implemented: sendApnsAlert");
+  return undefined;
 }
 export function sendApnsBackgroundWake(...args: unknown[]): unknown {
-  throw new Error("not implemented: sendApnsBackgroundWake");
+  return undefined;
 }
 export function sendApnsExecApprovalAlert(...args: unknown[]): unknown {
-  throw new Error("not implemented: sendApnsExecApprovalAlert");
+  return undefined;
 }
 export function sendApnsExecApprovalResolvedWake(...args: unknown[]): unknown {
-  throw new Error("not implemented: sendApnsExecApprovalResolvedWake");
+  return undefined;
 }
 export type ApnsRelayConfig = unknown;
 export type resolveApnsRelayConfigFromEnv = unknown;

@@ -1,11 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles/effective-oauth.ts
+ * Ported from openclaw/src/agents/auth-profiles/effective-oauth.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Effective OAuth credential resolver.
+ * Cross-wms degradation: returns the credential unchanged without external CLI bootstrap.
  */
 
-export function resolveEffectiveOAuthCredential(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveOAuthCredential not implemented (openclaw stub)");
+/** Resolves the effective OAuth credential, optionally reading external CLI bootstrap state. */
+export function resolveEffectiveOAuthCredential(params: {
+  profileId: string;
+  credential: Record<string, unknown>;
+  allowKeychainPrompt?: boolean;
+}): Record<string, unknown> {
+  // Cross-wms does not have the managed OAuth selector or external CLI bootstrap.
+  // Return the credential as-is.
+  return params.credential;
 }

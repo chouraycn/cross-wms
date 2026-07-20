@@ -14,7 +14,7 @@
 export const buildAgentPrompt: any = undefined;
 
 export async function handleOpenResponsesHttpRequest(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] handleOpenResponsesHttpRequest not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const testing: any = undefined;

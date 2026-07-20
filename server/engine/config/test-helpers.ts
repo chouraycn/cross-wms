@@ -1,33 +1,32 @@
 // 移植自 openclaw/src/config/test-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function useTempSessionsFixture(...args: unknown[]): unknown {
-  throw new Error("not implemented: useTempSessionsFixture");
+  return undefined;
 }
 export function writeSessionStoreForTest(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeSessionStoreForTest");
+  return undefined;
 }
 export function writeSessionStoreForTestAsync(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeSessionStoreForTestAsync");
+  return undefined;
 }
 export function readSessionStoreForTest(...args: unknown[]): unknown {
-  throw new Error("not implemented: readSessionStoreForTest");
+  return undefined;
 }
 export function withTempHome(...args: unknown[]): unknown {
-  throw new Error("not implemented: withTempHome");
+  return undefined;
 }
 export function writeOpenClawConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeOpenClawConfig");
+  return undefined;
 }
 export function writeStateDirDotEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeStateDirDotEnv");
+  return undefined;
 }
 export function withTempHomeConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: withTempHomeConfig");
+  return undefined;
 }
 export function withEnvOverride(...args: unknown[]): unknown {
-  throw new Error("not implemented: withEnvOverride");
+  return undefined;
 }
 export function buildWebSearchProviderConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildWebSearchProviderConfig");
+  return undefined;
 }

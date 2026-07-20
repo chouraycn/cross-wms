@@ -9,5 +9,5 @@
 export type ExecOptions = unknown;
 export type ExecResult = unknown;
 export function execCommand(..._args: unknown[]): unknown {
-  throw new Error("execCommand not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,51 +1,50 @@
 // 移植自 openclaw/src/infra/exec-command-resolution.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ExecutableResolution = unknown;
 export type CommandResolution = unknown;
 export type ExecArgvToken = unknown;
 export function resolveCommandResolution(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCommandResolution");
+  return undefined;
 }
 export function resolveCommandResolutionFromArgv(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCommandResolutionFromArgv");
+  return undefined;
 }
 export function resolveExecutableTrustPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutableTrustPath");
+  return undefined;
 }
 export function resolveExecutionTargetResolution(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutionTargetResolution");
+  return undefined;
 }
 export function resolvePolicyTargetResolution(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePolicyTargetResolution");
+  return undefined;
 }
 export function resolveExecutionTargetCandidatePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutionTargetCandidatePath");
+  return undefined;
 }
 export function resolveExecutionTargetTrustPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveExecutionTargetTrustPath");
+  return undefined;
 }
 export function resolvePolicyTargetCandidatePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePolicyTargetCandidatePath");
+  return undefined;
 }
 export function resolvePolicyTargetTrustPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePolicyTargetTrustPath");
+  return undefined;
 }
 export function resolveApprovalAuditCandidatePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveApprovalAuditCandidatePath");
+  return undefined;
 }
 export function resolveApprovalAuditTrustPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveApprovalAuditTrustPath");
+  return undefined;
 }
 export function resolveAllowlistCandidatePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveAllowlistCandidatePath");
+  return undefined;
 }
 export function resolvePolicyAllowlistCandidatePath(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePolicyAllowlistCandidatePath");
+  return undefined;
 }
 export function matchAllowlist(...args: unknown[]): unknown {
-  throw new Error("not implemented: matchAllowlist");
+  return undefined;
 }
 export function parseExecArgvToken(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseExecArgvToken");
+  return undefined;
 }

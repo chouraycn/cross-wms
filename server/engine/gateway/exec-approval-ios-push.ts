@@ -12,5 +12,5 @@
  */
 
 export function createExecApprovalIosPushDelivery(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createExecApprovalIosPushDelivery not implemented");
+  return undefined;
 }

@@ -7,5 +7,5 @@
  */
 
 export function mergeAttemptToolMediaPayloads(..._args: unknown[]): unknown {
-  throw new Error("mergeAttemptToolMediaPayloads not implemented (openclaw stub)");
+  return undefined;
 }

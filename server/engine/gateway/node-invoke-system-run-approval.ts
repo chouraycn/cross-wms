@@ -12,5 +12,5 @@
  */
 
 export function sanitizeSystemRunParamsForForwarding(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] sanitizeSystemRunParamsForForwarding not implemented");
+  return undefined;
 }

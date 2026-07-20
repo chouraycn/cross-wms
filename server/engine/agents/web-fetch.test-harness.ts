@@ -7,8 +7,8 @@
  */
 
 export function makeFetchHeaders(..._args: unknown[]): unknown {
-  throw new Error("makeFetchHeaders not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBaseWebFetchToolConfig(..._args: unknown[]): unknown {
-  throw new Error("createBaseWebFetchToolConfig not implemented (openclaw stub)");
+  return undefined;
 }

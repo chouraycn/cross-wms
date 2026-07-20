@@ -1,24 +1,127 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles/oauth-refresh-failure.ts
+ * OAuth refresh failure classification and operator hints.
+ * Ported from openclaw/src/agents/auth-profiles/oauth-refresh-failure.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Parses provider/reason codes from refresh failures and formats safe login
+ * commands without trusting raw provider text.
  */
 
-export type OAuthRefreshFailureReason = unknown;
-export class OAuthRefreshFailureError {
-  constructor(..._args: unknown[]) { throw new Error("OAuthRefreshFailureError not implemented (openclaw stub)"); }
+export type OAuthRefreshFailureReason =
+  | "refresh_token_reused"
+  | "invalid_grant"
+  | "sign_in_again"
+  | "invalid_refresh_token"
+  | "revoked";
+
+type OAuthRefreshFailure = {
+  provider: string | null;
+  reason: OAuthRefreshFailureReason | null;
+};
+
+/** Error type that carries provider and classified OAuth refresh failure reason. */
+export class OAuthRefreshFailureError extends Error {
+  readonly provider: string;
+  readonly reason: OAuthRefreshFailureReason | null;
+
+  constructor(params: { provider: string; message: string; cause?: unknown }) {
+    super(params.message, { cause: params.cause });
+    this.name = "OAuthRefreshFailureError";
+    this.provider = params.provider;
+    this.reason = classifyOAuthRefreshFailureReason(params.message);
+  }
 }
-export function classifyOAuthRefreshFailureReason(..._args: unknown[]): unknown {
-  throw new Error("classifyOAuthRefreshFailureReason not implemented (openclaw stub)");
+
+const OAUTH_REFRESH_FAILURE_PROVIDER_RE = /OAuth token refresh failed for ([^:]+):/i;
+const SAFE_PROVIDER_ID_RE = /^[a-z0-9][a-z0-9._-]*$/;
+
+function isOAuthRefreshFailureMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("oauth token refresh failed") ||
+    lower.includes("access token could not be refreshed") ||
+    lower.includes("authentication session could not be refreshed automatically")
+  );
 }
-export function classifyOAuthRefreshFailure(..._args: unknown[]): unknown {
-  throw new Error("classifyOAuthRefreshFailure not implemented (openclaw stub)");
+
+function extractOAuthRefreshFailureProvider(message: string): string | null {
+  const provider = message.match(OAUTH_REFRESH_FAILURE_PROVIDER_RE)?.[1]?.trim();
+  return provider && provider.length > 0 ? provider : null;
 }
-export function classifyOAuthRefreshFailureError(..._args: unknown[]): unknown {
-  throw new Error("classifyOAuthRefreshFailureError not implemented (openclaw stub)");
+
+function sanitizeForLog(input: string): string {
+  // Strip ANSI escape sequences and control characters.
+  return input
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "")
+    .trim();
 }
-export function buildOAuthRefreshFailureLoginCommand(..._args: unknown[]): unknown {
-  throw new Error("buildOAuthRefreshFailureLoginCommand not implemented (openclaw stub)");
+
+function normalizeProviderId(provider: string): string | null {
+  const trimmed = provider.trim().toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function sanitizeOAuthRefreshFailureProvider(provider: string | null | undefined): string | null {
+  // Only return normalized provider ids that are safe to embed in shell guidance.
+  const sanitized = provider ? sanitizeForLog(provider).replaceAll("`", "").trim() : "";
+  const normalized = normalizeProviderId(sanitized);
+  return normalized && SAFE_PROVIDER_ID_RE.test(normalized) ? normalized : null;
+}
+
+/** Classify a raw OAuth refresh failure message into a stable reason code. */
+export function classifyOAuthRefreshFailureReason(
+  message: string,
+): OAuthRefreshFailureReason | null {
+  const lower = message.toLowerCase();
+  if (lower.includes("refresh_token_reused")) {
+    return "refresh_token_reused";
+  }
+  if (lower.includes("invalid_grant")) {
+    return "invalid_grant";
+  }
+  if (lower.includes("signing in again") || lower.includes("sign in again")) {
+    return "sign_in_again";
+  }
+  if (lower.includes("invalid refresh token")) {
+    return "invalid_refresh_token";
+  }
+  if (lower.includes("expired or revoked") || lower.includes("revoked")) {
+    return "revoked";
+  }
+  return null;
+}
+
+/** Classify provider/reason from a user-facing OAuth refresh failure message. */
+export function classifyOAuthRefreshFailure(message: string): OAuthRefreshFailure | null {
+  if (!isOAuthRefreshFailureMessage(message)) {
+    return null;
+  }
+  return {
+    provider: sanitizeOAuthRefreshFailureProvider(extractOAuthRefreshFailureProvider(message)),
+    reason: classifyOAuthRefreshFailureReason(message),
+  };
+}
+
+/** Classify provider/reason from the structured OAuth refresh failure error. */
+export function classifyOAuthRefreshFailureError(err: unknown): OAuthRefreshFailure | null {
+  if (!(err instanceof OAuthRefreshFailureError)) {
+    return null;
+  }
+  return {
+    provider: sanitizeOAuthRefreshFailureProvider(err.provider),
+    reason: err.reason,
+  };
+}
+
+function formatCliCommand(command: string): string {
+  // In cross-wms, format as a plain command string without shell-specific quoting.
+  return command;
+}
+
+/** Build the login command operators should run after OAuth refresh failure. */
+export function buildOAuthRefreshFailureLoginCommand(provider: string | null | undefined): string {
+  const sanitizedProvider = sanitizeOAuthRefreshFailureProvider(provider);
+  return sanitizedProvider
+    ? formatCliCommand(`openclaw models auth login --provider ${sanitizedProvider}`)
+    : formatCliCommand("openclaw models auth login");
 }

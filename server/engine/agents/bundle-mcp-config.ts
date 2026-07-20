@@ -7,8 +7,8 @@
  */
 
 export function toCliBundleMcpServerConfig(..._args: unknown[]): unknown {
-  throw new Error("toCliBundleMcpServerConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadMergedBundleMcpConfig(..._args: unknown[]): unknown {
-  throw new Error("loadMergedBundleMcpConfig not implemented (openclaw stub)");
+  return undefined;
 }

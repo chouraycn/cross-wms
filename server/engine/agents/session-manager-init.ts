@@ -1,11 +1,18 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/session-manager-init.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/session-manager-init.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Prepares session managers and transcript state before embedded runs.
+ * Cross-wms degradation: simplified without JSONL/file session management.
  */
 
-export function prepareSessionManagerForRun(..._args: unknown[]): unknown {
-  throw new Error("prepareSessionManagerForRun not implemented (openclaw stub)");
+/** Prepares a session manager for an embedded run. */
+export async function prepareSessionManagerForRun(params: {
+  sessionManager: unknown;
+  sessionFile: string;
+  hadSessionFile: boolean;
+  sessionId: string;
+  cwd: string;
+}): Promise<void> {
+  // Cross-wms does not have the full SessionManager with fileEntries/flushed state.
+  // No-op: callers should handle session persistence externally.
 }

@@ -7,5 +7,5 @@
  */
 
 export function buildDeclaredToolAllowlistContext(..._args: unknown[]): unknown {
-  throw new Error("buildDeclaredToolAllowlistContext not implemented (openclaw stub)");
+  return undefined;
 }

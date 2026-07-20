@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { normalizeProviderId } from './_stub_openclaw__model_catalog_core__provider_id.js';
+import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 
 type ConfiguredModelProvider = NonNullable<

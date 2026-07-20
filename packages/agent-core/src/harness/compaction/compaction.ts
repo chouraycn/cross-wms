@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements compaction behavior.
 import {
   resolveClaudeFable5ModelIdentity,
@@ -562,7 +561,7 @@ export async function generateSummary(
 ): Promise<Result<string, CompactionError>> {
   const maxTokens = Math.min(
     Math.floor(0.8 * reserveTokens),
-    model.maxTokens > 0 ? model.maxTokens : Number.POSITIVE_INFINITY,
+    (model.maxTokens ?? 0) > 0 ? (model.maxTokens ?? 0) : Number.POSITIVE_INFINITY,
   );
   let basePrompt = previousSummary ? UPDATE_SUMMARIZATION_PROMPT : SUMMARIZATION_PROMPT;
   if (customInstructions) {
@@ -840,7 +839,7 @@ async function generateTurnPrefixSummary(
 ): Promise<Result<string, CompactionError>> {
   const maxTokens = Math.min(
     Math.floor(0.5 * reserveTokens),
-    model.maxTokens > 0 ? model.maxTokens : Number.POSITIVE_INFINITY,
+    (model.maxTokens ?? 0) > 0 ? (model.maxTokens ?? 0) : Number.POSITIVE_INFINITY,
   );
   const llmMessages = convertToLlm(messages);
   const conversationText = serializeConversation(llmMessages);

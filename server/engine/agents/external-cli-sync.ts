@@ -9,14 +9,14 @@
 export type ExternalCliResolvedProfile = unknown;
 export type ExternalCliAuthProfileOptions = unknown;
 export function isSafeToUseExternalCliCredential(..._args: unknown[]): unknown {
-  throw new Error("isSafeToUseExternalCliCredential not implemented (openclaw stub)");
+  return false;
 }
 export function readExternalCliBootstrapCredential(..._args: unknown[]): unknown {
-  throw new Error("readExternalCliBootstrapCredential not implemented (openclaw stub)");
+  return undefined;
 }
 export function readExternalCliFallbackCredential(..._args: unknown[]): unknown {
-  throw new Error("readExternalCliFallbackCredential not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveExternalCliAuthProfiles(..._args: unknown[]): unknown {
-  throw new Error("resolveExternalCliAuthProfiles not implemented (openclaw stub)");
+  return undefined;
 }

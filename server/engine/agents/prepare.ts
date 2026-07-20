@@ -1,17 +1,43 @@
 /**
  * 移植自 openclaw/src/agents/cli-runner/prepare.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Prepares CLI backend run context. cross-wms provides sensible defaults
+ * since the full preparation infrastructure is not available.
  */
 
-export function setCliRunnerPrepareTestDeps(..._args: unknown[]): unknown {
-  throw new Error("setCliRunnerPrepareTestDeps not implemented (openclaw stub)");
+/** Overrides preparation dependencies for CLI runner tests — no-op in cross-wms. */
+export function setCliRunnerPrepareTestDeps(_overrides?: Record<string, unknown>): void {
+  // No-op: cross-wms does not have the full prepare dependency graph.
 }
-export function shouldSkipLocalCliCredentialEpoch(..._args: unknown[]): unknown {
-  throw new Error("shouldSkipLocalCliCredentialEpoch not implemented (openclaw stub)");
+
+/** Returns whether profile-owned prepared execution should skip local CLI epoch hashing. */
+export function shouldSkipLocalCliCredentialEpoch(params: {
+  authEpochMode?: string;
+  authProfileId?: string;
+  authCredential?: unknown;
+  preparedExecution?: unknown;
+}): boolean {
+  return Boolean(
+    params.authEpochMode === "profile-only" &&
+    params.authProfileId &&
+    params.authCredential &&
+    params.preparedExecution,
+  );
 }
-export function prepareCliRunContext(..._args: unknown[]): unknown {
-  throw new Error("prepareCliRunContext not implemented (openclaw stub)");
+
+/**
+ * Builds the complete context required to execute a CLI-backed agent run.
+ * In cross-wms this returns a minimal context with the provided params,
+ * since the full preparation pipeline is not available.
+ */
+export async function prepareCliRunContext(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+  // cross-wms lacks bootstrap files, auth profiles, MCP loopback, context engines, etc.
+  // Return a minimal context that carries through the caller's params.
+  return {
+    params,
+    started: Date.now(),
+    effectiveAuthProfileId: undefined,
+    workspaceDir: params.workspaceDir ?? params.cwd ?? process.cwd(),
+    cwd: params.cwd ?? process.cwd(),
+  };
 }

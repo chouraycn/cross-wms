@@ -7,17 +7,17 @@
  */
 
 export function selectDefaultNodeFromList(..._args: unknown[]): unknown {
-  throw new Error("selectDefaultNodeFromList not implemented (openclaw stub)");
+  return undefined;
 }
 export function listNodes(..._args: unknown[]): unknown {
-  throw new Error("listNodes not implemented (openclaw stub)");
+  return [];
 }
 export function resolveNodeIdFromList(..._args: unknown[]): unknown {
-  throw new Error("resolveNodeIdFromList not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveNodeId(..._args: unknown[]): unknown {
-  throw new Error("resolveNodeId not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveNode(..._args: unknown[]): unknown {
-  throw new Error("resolveNode not implemented (openclaw stub)");
+  return undefined;
 }

@@ -8,8 +8,8 @@
 
 export type RegisterSubagentRunParams = unknown;
 export function markSubagentRunPausedAfterYield(..._args: unknown[]): unknown {
-  throw new Error("markSubagentRunPausedAfterYield not implemented (openclaw stub)");
+  return undefined;
 }
 export function createSubagentRunManager(..._args: unknown[]): unknown {
-  throw new Error("createSubagentRunManager not implemented (openclaw stub)");
+  return undefined;
 }

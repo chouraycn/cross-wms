@@ -26,26 +26,26 @@ export type SessionTreeNode = unknown;
 export type SessionContext = unknown;
 export type SessionInfo = unknown;
 export class SessionManager {
-  constructor(..._args: unknown[]) { throw new Error("SessionManager not implemented (openclaw stub)"); }
+  // Stub: session management not fully ported
 }
 export function migrateSessionEntries(..._args: unknown[]): unknown {
-  throw new Error("migrateSessionEntries not implemented (openclaw stub)");
+  return undefined;
 }
 export function parseSessionEntries(..._args: unknown[]): unknown {
-  throw new Error("parseSessionEntries not implemented (openclaw stub)");
+  return undefined;
 }
 export function getLatestCompactionEntry(..._args: unknown[]): unknown {
-  throw new Error("getLatestCompactionEntry not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildSessionContext(..._args: unknown[]): unknown {
-  throw new Error("buildSessionContext not implemented (openclaw stub)");
+  return undefined;
 }
 export function getDefaultSessionDir(..._args: unknown[]): unknown {
-  throw new Error("getDefaultSessionDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadEntriesFromFile(..._args: unknown[]): unknown {
-  throw new Error("loadEntriesFromFile not implemented (openclaw stub)");
+  return undefined;
 }
 export function findMostRecentSession(..._args: unknown[]): unknown {
-  throw new Error("findMostRecentSession not implemented (openclaw stub)");
+  return [];
 }

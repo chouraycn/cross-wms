@@ -1,23 +1,196 @@
 /**
- * 移植自 openclaw/src/agents/live-test-provider-drift.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Live-provider drift classifiers for tests and probes.
+ * Ported from openclaw/src/agents/live-test-provider-drift.ts
+ * Simplified: error classifier imports replaced with inline pattern matching.
  */
 
-export function isLiveAuthDrift(..._args: unknown[]): unknown {
-  throw new Error("isLiveAuthDrift not implemented (openclaw stub)");
+type LiveProviderDriftReason =
+  | "auth"
+  | "billing"
+  | "model-not-found"
+  | "provider-unavailable"
+  | "rate-limit"
+  | "timeout";
+
+type LiveProviderDriftDecision = {
+  label: string;
+  reason: LiveProviderDriftReason;
+};
+
+type LiveProviderDriftOptions = {
+  allowAuth?: boolean;
+  allowBilling?: boolean;
+  allowModelNotFound?: boolean;
+  allowProviderUnavailable?: boolean;
+  allowRateLimit?: boolean;
+  allowTimeout?: boolean;
+  error: unknown;
+};
+
+function liveProviderErrorText(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }
-export function isLiveBillingDrift(..._args: unknown[]): unknown {
-  throw new Error("isLiveBillingDrift not implemented (openclaw stub)");
+
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  if (typeof value === "string") {
+    return value.toLowerCase();
+  }
+  return "";
 }
-export function isLiveRateLimitDrift(..._args: unknown[]): unknown {
-  throw new Error("isLiveRateLimitDrift not implemented (openclaw stub)");
+
+function isAuthErrorMessage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    msg.includes("invalid api key") ||
+    msg.includes("authentication") ||
+    msg.includes("unauthorized") ||
+    msg.includes("401") ||
+    msg.includes("access denied")
+  );
 }
-export function isLiveProviderUnavailableDrift(..._args: unknown[]): unknown {
-  throw new Error("isLiveProviderUnavailableDrift not implemented (openclaw stub)");
+
+function isBillingErrorMessage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    msg.includes("billing") ||
+    msg.includes("quota") ||
+    msg.includes("insufficient") ||
+    msg.includes("credit") ||
+    msg.includes("overuse") ||
+    msg.includes("exceeded") ||
+    msg.includes("capacity")
+  );
 }
-export function shouldSkipLiveProviderDrift(..._args: unknown[]): unknown {
-  throw new Error("shouldSkipLiveProviderDrift not implemented (openclaw stub)");
+
+function isRateLimitErrorMessage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    msg.includes("rate limit") ||
+    msg.includes("rate_limit") ||
+    msg.includes("ratelimit") ||
+    msg.includes("too many requests") ||
+    msg.includes("429")
+  );
+}
+
+function isTimeoutErrorMessage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    msg.includes("timeout") ||
+    msg.includes("timed out") ||
+    msg.includes("deadline exceeded")
+  );
+}
+
+function isModelNotFoundErrorMessage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    msg.includes("model not found") ||
+    msg.includes("does not exist") ||
+    msg.includes("not available") ||
+    msg.includes("invalid model")
+  );
+}
+
+function isApiKeyRateLimitError(error: unknown): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(
+    error instanceof Error ? error.message : String(error),
+  );
+  return msg.includes("api key") && msg.includes("rate");
+}
+
+function isAnthropicBillingError(error: unknown): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(
+    error instanceof Error ? error.message : String(error),
+  );
+  return msg.includes("anthropic") && (msg.includes("billing") || msg.includes("credit"));
+}
+
+/** Returns whether an error is expected live auth/account drift. */
+export function isLiveAuthDrift(error: unknown): boolean {
+  const raw = liveProviderErrorText(error);
+  const message = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    isAuthErrorMessage(raw) ||
+    message.includes("invalid x-api-key") ||
+    message.includes("incorrect x-api-key")
+  );
+}
+
+/** Returns whether an error is expected live billing/quota drift. */
+export function isLiveBillingDrift(error: unknown): boolean {
+  const raw = liveProviderErrorText(error);
+  return isBillingErrorMessage(raw) || isAnthropicBillingError(error);
+}
+
+/** Returns whether an error is expected live rate-limit drift. */
+export function isLiveRateLimitDrift(error: unknown): boolean {
+  const raw = liveProviderErrorText(error);
+  return isRateLimitErrorMessage(raw) || isApiKeyRateLimitError(error);
+}
+
+/** Returns whether an error is expected live timeout drift. */
+function isLiveTimeoutDrift(error: unknown): boolean {
+  return isTimeoutErrorMessage(liveProviderErrorText(error));
+}
+
+/** Returns whether an error is expected live missing-model drift. */
+function isLiveModelNotFoundDrift(error: unknown): boolean {
+  return isModelNotFoundErrorMessage(liveProviderErrorText(error));
+}
+
+function isCloudflareOrHtmlErrorPage(raw: string): boolean {
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return msg.includes("cloudflare") || (msg.includes("<html") && msg.includes("</html>"));
+}
+
+function isRawHtmlProviderErrorPage(raw: string): boolean {
+  return /^(?:<!doctype\s+html\b|<html\b)/i.test(raw) && /<\/html>/i.test(raw);
+}
+
+/** Returns whether an error is expected upstream/provider availability drift. */
+export function isLiveProviderUnavailableDrift(error: unknown): boolean {
+  const raw = liveProviderErrorText(error);
+  const htmlCandidate = raw.trim().replace(/^error:\s*/i, "");
+  const msg = normalizeLowercaseStringOrEmpty(raw);
+  return (
+    isRawHtmlProviderErrorPage(htmlCandidate) ||
+    isCloudflareOrHtmlErrorPage(raw) ||
+    isCloudflareOrHtmlErrorPage(htmlCandidate) ||
+    msg.includes("no allowed providers are available") ||
+    msg.includes("provider unavailable") ||
+    msg.includes("upstream provider unavailable") ||
+    msg.includes("upstream error from google") ||
+    msg.includes("temporarily rate-limited upstream") ||
+    (msg.includes("service temporarily unavailable") && msg.includes("capacity")) ||
+    msg.includes("unable to access non-serverless model") ||
+    msg.includes("create and start a new dedicated endpoint") ||
+    msg.includes("no available capacity was found for the model") ||
+    (msg.includes("502") && msg.includes("internal server error"))
+  );
+}
+
+/** Returns the allowed live drift decision for an error, or `undefined` for regressions. */
+export function shouldSkipLiveProviderDrift(
+  options: LiveProviderDriftOptions,
+): LiveProviderDriftDecision | undefined {
+  if (options.allowBilling && isLiveBillingDrift(options.error)) {
+    return { reason: "billing", label: "billing drift" };
+  }
+  if (options.allowAuth && isLiveAuthDrift(options.error)) {
+    return { reason: "auth", label: "auth drift" };
+  }
+  if (options.allowRateLimit && isLiveRateLimitDrift(options.error)) {
+    return { reason: "rate-limit", label: "rate limit" };
+  }
+  if (options.allowProviderUnavailable && isLiveProviderUnavailableDrift(options.error)) {
+    return { reason: "provider-unavailable", label: "provider unavailable" };
+  }
+  if (options.allowTimeout && isLiveTimeoutDrift(options.error)) {
+    return { reason: "timeout", label: "timeout" };
+  }
+  if (options.allowModelNotFound && isLiveModelNotFoundDrift(options.error)) {
+    return { reason: "model-not-found", label: "model not found" };
+  }
+  return undefined;
 }

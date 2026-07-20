@@ -9,8 +9,8 @@
 export type WriteOperations = unknown;
 export type WriteToolOptions = unknown;
 export function createWriteToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createWriteToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function createWriteTool(..._args: unknown[]): unknown {
-  throw new Error("createWriteTool not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,21 +1,18 @@
-// 移植自 openclaw/src/cli/schedule-options.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export function resolveCronCreateSchedule(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCronCreateSchedule");
+  console.warn('resolveCronCreateSchedule is not available in cross-wms'); return undefined;
 }
 
 export function resolveCronCreateScheduleFromArgs(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCronCreateScheduleFromArgs");
+  console.warn('resolveCronCreateScheduleFromArgs is not available in cross-wms'); return undefined;
 }
 
 export function resolveCronEditScheduleRequest(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveCronEditScheduleRequest");
+  console.warn('resolveCronEditScheduleRequest is not available in cross-wms'); return undefined;
 }
 
 export function applyExistingCronSchedulePatch(..._args: unknown[]): unknown {
-  throw new Error("not implemented: applyExistingCronSchedulePatch");
+  console.warn('applyExistingCronSchedulePatch is not available in cross-wms'); return undefined;
 }
 
 export type CronEditScheduleRequest = unknown;

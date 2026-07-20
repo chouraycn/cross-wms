@@ -7,5 +7,5 @@
  */
 
 export function prepareModelForSimpleCompletion(..._args: unknown[]): unknown {
-  throw new Error("prepareModelForSimpleCompletion not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,16 +1,15 @@
 // 移植自 openclaw/src/infra/exec-safe-bin-trust.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type WritableTrustedSafeBinDir = unknown;
 export function normalizeTrustedSafeBinDirs(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeTrustedSafeBinDirs");
+  return undefined;
 }
 export function getTrustedSafeBinDirs(...args: unknown[]): unknown {
-  throw new Error("not implemented: getTrustedSafeBinDirs");
+  return undefined;
 }
 export function isTrustedSafeBinPath(...args: unknown[]): unknown {
-  throw new Error("not implemented: isTrustedSafeBinPath");
+  return false;
 }
 export function listWritableExplicitTrustedSafeBinDirs(...args: unknown[]): unknown {
-  throw new Error("not implemented: listWritableExplicitTrustedSafeBinDirs");
+  return [];
 }

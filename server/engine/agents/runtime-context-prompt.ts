@@ -8,11 +8,11 @@
 
 export type RuntimeContextCustomMessage = unknown;
 export function buildCurrentInboundPrompt(..._args: unknown[]): unknown {
-  throw new Error("buildCurrentInboundPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveRuntimeContextPromptParts(..._args: unknown[]): unknown {
-  throw new Error("resolveRuntimeContextPromptParts not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildRuntimeContextCustomMessage(..._args: unknown[]): unknown {
-  throw new Error("buildRuntimeContextCustomMessage not implemented (openclaw stub)");
+  return undefined;
 }

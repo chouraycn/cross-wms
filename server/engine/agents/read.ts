@@ -1,16 +1,31 @@
 /**
- * 移植自 openclaw/src/agents/sessions/tools/read.ts
+ * Ported from openclaw/src/agents/sessions/tools/read.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Read tool definition and factory.
+ * Cross-wms degradation: returns placeholder tool without file reading.
  */
 
-export type ReadOperations = unknown;
-export type ReadToolOptions = unknown;
-export function createReadToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createReadToolDefinition not implemented (openclaw stub)");
+export type ReadOperations = Record<string, unknown>;
+export type ReadToolOptions = Record<string, unknown>;
+
+/** Creates a read tool definition. */
+export function createReadToolDefinition(..._args: unknown[]): Record<string, unknown> {
+  return {
+    name: "read",
+    description: "Read file contents.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File path to read" },
+      },
+    },
+  };
 }
-export function createReadTool(..._args: unknown[]): unknown {
-  throw new Error("createReadTool not implemented (openclaw stub)");
+
+/** Creates a read tool instance. */
+export function createReadTool(..._args: unknown[]): Record<string, unknown> {
+  return {
+    ...createReadToolDefinition(),
+    execute: async () => ({ output: "Read tool not available in cross-wms" }),
+  };
 }

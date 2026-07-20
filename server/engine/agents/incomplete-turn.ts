@@ -7,43 +7,43 @@
  */
 
 export function isIncompleteTerminalAssistantTurn(..._args: unknown[]): unknown {
-  throw new Error("isIncompleteTerminalAssistantTurn not implemented (openclaw stub)");
+  return false;
 }
 export function buildAttemptReplayMetadata(..._args: unknown[]): unknown {
-  throw new Error("buildAttemptReplayMetadata not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveAttemptReplayMetadata(..._args: unknown[]): unknown {
-  throw new Error("resolveAttemptReplayMetadata not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasAttemptTerminalState(..._args: unknown[]): unknown {
-  throw new Error("hasAttemptTerminalState not implemented (openclaw stub)");
+  return false;
 }
 export function resolveIncompleteTurnPayloadText(..._args: unknown[]): unknown {
-  throw new Error("resolveIncompleteTurnPayloadText not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldRetryMissingAssistantTurn(..._args: unknown[]): unknown {
-  throw new Error("shouldRetryMissingAssistantTurn not implemented (openclaw stub)");
+  return false;
 }
 export function resolveSilentToolResultReplyPayload(..._args: unknown[]): unknown {
-  throw new Error("resolveSilentToolResultReplyPayload not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveReplayInvalidFlag(..._args: unknown[]): unknown {
-  throw new Error("resolveReplayInvalidFlag not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveRunLivenessState(..._args: unknown[]): unknown {
-  throw new Error("resolveRunLivenessState not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldRetrySilentErrorAssistantTurn(..._args: unknown[]): unknown {
-  throw new Error("shouldRetrySilentErrorAssistantTurn not implemented (openclaw stub)");
+  return false;
 }
 export function shouldTreatEmptyAssistantReplyAsSilent(..._args: unknown[]): unknown {
-  throw new Error("shouldTreatEmptyAssistantReplyAsSilent not implemented (openclaw stub)");
+  return false;
 }
 export function resolveReasoningOnlyRetryInstruction(..._args: unknown[]): unknown {
-  throw new Error("resolveReasoningOnlyRetryInstruction not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveEmptyResponseRetryInstruction(..._args: unknown[]): unknown {
-  throw new Error("resolveEmptyResponseRetryInstruction not implemented (openclaw stub)");
+  return undefined;
 }
 export const DEFAULT_REASONING_ONLY_RETRY_LIMIT: unknown = undefined;
 export const DEFAULT_EMPTY_RESPONSE_RETRY_LIMIT: unknown = undefined;

@@ -10,14 +10,14 @@ export type BashSpawnHook = unknown;
 export type BashSpawnContext = unknown;
 export type BashToolOptions = unknown;
 export function resolveBashTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveBashTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function createLocalBashOperations(..._args: unknown[]): unknown {
-  throw new Error("createLocalBashOperations not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBashToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createBashToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function createBashTool(..._args: unknown[]): unknown {
-  throw new Error("createBashTool not implemented (openclaw stub)");
+  return undefined;
 }

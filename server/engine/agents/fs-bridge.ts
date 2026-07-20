@@ -7,5 +7,5 @@
  */
 
 export function createSandboxFsBridge(..._args: unknown[]): unknown {
-  throw new Error("createSandboxFsBridge not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,24 +1,90 @@
 /**
  * 移植自 openclaw/src/agents/video-generation-task-status.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Video generation task status helpers.
+ * Cross-wms simplified: delegates to media-generation-task-status-shared.
  */
 
-export const VIDEO_GENERATION_TASK_KIND: unknown = undefined;
-export function findActiveVideoGenerationTaskForSession(..._args: unknown[]): unknown {
-  throw new Error("findActiveVideoGenerationTaskForSession not implemented (openclaw stub)");
+import {
+  findActiveMediaGenerationTaskForSession,
+  findDuplicateGuardMediaGenerationTaskForSession,
+  buildMediaGenerationTaskStatusDetails,
+  buildMediaGenerationTaskStatusText,
+  buildActiveMediaGenerationTaskPromptContextForSession,
+} from "./media-generation-task-status-shared.js";
+
+export const VIDEO_GENERATION_TASK_KIND = "video-generation";
+
+/** Finds the active video generation task for a session. */
+export function findActiveVideoGenerationTaskForSession(params: {
+  sessionKey?: string;
+  sourcePrefix?: string;
+  taskLabel?: string;
+}) {
+  return findActiveMediaGenerationTaskForSession({
+    sessionKey: params.sessionKey,
+    taskKind: VIDEO_GENERATION_TASK_KIND,
+    sourcePrefix: params.sourcePrefix ?? "video",
+    taskLabel: params.taskLabel,
+  });
 }
-export function findDuplicateGuardVideoGenerationTaskForSession(..._args: unknown[]): unknown {
-  throw new Error("findDuplicateGuardVideoGenerationTaskForSession not implemented (openclaw stub)");
+
+/** Finds a duplicate guard video generation task for a session. */
+export function findDuplicateGuardVideoGenerationTaskForSession(params: {
+  sessionKey?: string;
+  sourcePrefix?: string;
+  taskLabel?: string;
+  requestKey?: string;
+  maxAgeMs?: number;
+}) {
+  return findDuplicateGuardMediaGenerationTaskForSession({
+    sessionKey: params.sessionKey,
+    taskKind: VIDEO_GENERATION_TASK_KIND,
+    sourcePrefix: params.sourcePrefix ?? "video",
+    taskLabel: params.taskLabel,
+    requestKey: params.requestKey,
+    maxAgeMs: params.maxAgeMs ?? 2 * 60_000,
+  });
 }
-export function buildVideoGenerationTaskStatusDetails(..._args: unknown[]): unknown {
-  throw new Error("buildVideoGenerationTaskStatusDetails not implemented (openclaw stub)");
+
+/** Builds status details for a video generation task. */
+export function buildVideoGenerationTaskStatusDetails(params: {
+  task: Record<string, unknown>;
+  sourcePrefix?: string;
+}) {
+  return buildMediaGenerationTaskStatusDetails({
+    task: params.task as any,
+    sourcePrefix: params.sourcePrefix ?? "video",
+  });
 }
-export function buildVideoGenerationTaskStatusText(..._args: unknown[]): unknown {
-  throw new Error("buildVideoGenerationTaskStatusText not implemented (openclaw stub)");
+
+/** Builds status text for a video generation task. */
+export function buildVideoGenerationTaskStatusText(params: {
+  task: Record<string, unknown>;
+  sourcePrefix?: string;
+  duplicateGuard?: boolean;
+}) {
+  return buildMediaGenerationTaskStatusText({
+    task: params.task as any,
+    sourcePrefix: params.sourcePrefix ?? "video",
+    nounLabel: "Video",
+    toolName: "video-generate",
+    completionLabel: "video",
+    duplicateGuard: params.duplicateGuard,
+  });
 }
-export function buildActiveVideoGenerationTaskPromptContextForSession(..._args: unknown[]): unknown {
-  throw new Error("buildActiveVideoGenerationTaskPromptContextForSession not implemented (openclaw stub)");
+
+/** Builds prompt context for an active video generation task. */
+export function buildActiveVideoGenerationTaskPromptContextForSession(params: {
+  sessionKey?: string;
+  sourcePrefix?: string;
+}) {
+  return buildActiveMediaGenerationTaskPromptContextForSession({
+    sessionKey: params.sessionKey,
+    taskKind: VIDEO_GENERATION_TASK_KIND,
+    sourcePrefix: params.sourcePrefix ?? "video",
+    nounLabel: "Video",
+    toolName: "video-generate",
+    completionLabel: "video",
+  });
 }

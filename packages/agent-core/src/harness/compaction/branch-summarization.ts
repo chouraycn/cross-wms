@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements branch summarization behavior.
 import type { Model, StreamFn } from "@cdf-know/llm-core";
 import {

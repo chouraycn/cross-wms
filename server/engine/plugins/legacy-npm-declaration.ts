@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Reads legacy npm plugin declaration files left by early plugin installs. */
 import path from "node:path";
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
 import { tryReadJsonSync } from "../infra/json-files.js";
 import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { validatePluginId } from "./install-paths.js";

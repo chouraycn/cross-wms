@@ -1,14 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/test-helpers/unsafe-mounted-sandbox.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Unsafe mounted sandbox helpers for testing.
+ * In cross-wms the full sandbox infrastructure is not available,
+ * so both functions throw descriptive unsupported errors.
  */
 
-export function createUnsafeMountedSandbox(..._args: unknown[]): unknown {
-  throw new Error("createUnsafeMountedSandbox not implemented (openclaw stub)");
+/** Create an unsafe mounted sandbox (unsupported in cross-wms). */
+export function createUnsafeMountedSandbox(..._args: unknown[]): never {
+  throw new Error("Unsafe mounted sandbox is not supported in cross-wms");
 }
-export function withUnsafeMountedSandboxHarness(..._args: unknown[]): unknown {
-  throw new Error("withUnsafeMountedSandboxHarness not implemented (openclaw stub)");
+
+/** Run a harness with an unsafe mounted sandbox (unsupported in cross-wms). */
+export function withUnsafeMountedSandboxHarness(..._args: unknown[]): never {
+  throw new Error("Unsafe mounted sandbox harness is not supported in cross-wms");
 }

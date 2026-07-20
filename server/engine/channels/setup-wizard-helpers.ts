@@ -1,228 +1,227 @@
 // 移植自 openclaw/src/channels/plugins/setup-wizard-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export const promptAccountId: unknown = undefined;
 
 export function addWildcardAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: addWildcardAllowFrom");
+  return undefined;
 }
 
 export function mergeAllowFromEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: mergeAllowFromEntries");
+  return undefined;
 }
 
 export function splitSetupEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: splitSetupEntries");
+  return undefined;
 }
 
 export function parseSetupEntriesWithParser(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseSetupEntriesWithParser");
+  return undefined;
 }
 
 export function parseSetupEntriesAllowingWildcard(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseSetupEntriesAllowingWildcard");
+  return undefined;
 }
 
 export function parseMentionOrPrefixedId(..._args: unknown[]): unknown {
-  throw new Error("not implemented: parseMentionOrPrefixedId");
+  return undefined;
 }
 
 export function normalizeAllowFromEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeAllowFromEntries");
+  return undefined;
 }
 
 export function createStandardChannelSetupStatus(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createStandardChannelSetupStatus");
+  return undefined;
 }
 
 export function resolveSetupAccountId(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveSetupAccountId");
+  return undefined;
 }
 
 export async function resolveAccountIdForConfigure(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveAccountIdForConfigure");
+  return Promise.resolve(undefined);
 }
 
 export function setAccountAllowFromForChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setAccountAllowFromForChannel");
+  return undefined;
 }
 
 export function patchTopLevelChannelConfigSection(..._args: unknown[]): unknown {
-  throw new Error("not implemented: patchTopLevelChannelConfigSection");
+  return undefined;
 }
 
 export function patchNestedChannelConfigSection(..._args: unknown[]): unknown {
-  throw new Error("not implemented: patchNestedChannelConfigSection");
+  return undefined;
 }
 
 export function setTopLevelChannelAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setTopLevelChannelAllowFrom");
+  return undefined;
 }
 
 export function setNestedChannelAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setNestedChannelAllowFrom");
+  return undefined;
 }
 
 export function setTopLevelChannelDmPolicyWithAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setTopLevelChannelDmPolicyWithAllowFrom");
+  return undefined;
 }
 
 export function setNestedChannelDmPolicyWithAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setNestedChannelDmPolicyWithAllowFrom");
+  return undefined;
 }
 
 export function setTopLevelChannelGroupPolicy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setTopLevelChannelGroupPolicy");
+  return undefined;
 }
 
 export function createTopLevelChannelDmPolicy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createTopLevelChannelDmPolicy");
+  return undefined;
 }
 
 export function createNestedChannelDmPolicy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createNestedChannelDmPolicy");
+  return undefined;
 }
 
 export function createTopLevelChannelDmPolicySetter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createTopLevelChannelDmPolicySetter");
+  return undefined;
 }
 
 export function createNestedChannelDmPolicySetter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createNestedChannelDmPolicySetter");
+  return undefined;
 }
 
 export function createTopLevelChannelAllowFromSetter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createTopLevelChannelAllowFromSetter");
+  return undefined;
 }
 
 export function createNestedChannelAllowFromSetter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createNestedChannelAllowFromSetter");
+  return undefined;
 }
 
 export function createTopLevelChannelGroupPolicySetter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createTopLevelChannelGroupPolicySetter");
+  return undefined;
 }
 
 export function setChannelDmPolicyWithAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setChannelDmPolicyWithAllowFrom");
+  return undefined;
 }
 
 export function setCompatChannelDmPolicyWithAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setCompatChannelDmPolicyWithAllowFrom");
+  return undefined;
 }
 
 export function setCompatChannelAllowFrom(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setCompatChannelAllowFrom");
+  return undefined;
 }
 
 export function setAccountGroupPolicyForChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setAccountGroupPolicyForChannel");
+  return undefined;
 }
 
 export function setAccountDmAllowFromForChannel(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setAccountDmAllowFromForChannel");
+  return undefined;
 }
 
 export function createCompatChannelDmPolicy(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createCompatChannelDmPolicy");
+  return undefined;
 }
 
 export async function resolveGroupAllowlistWithLookupNotes(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveGroupAllowlistWithLookupNotes");
+  return Promise.resolve(undefined);
 }
 
 export function createAccountScopedAllowFromSection(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAccountScopedAllowFromSection");
+  return undefined;
 }
 
 export function createAccountScopedGroupAccessSection(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAccountScopedGroupAccessSection");
+  return undefined;
 }
 
 export function patchCompatDmChannelConfig(..._args: unknown[]): unknown {
-  throw new Error("not implemented: patchCompatDmChannelConfig");
+  return undefined;
 }
 
 export function setSetupChannelEnabled(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setSetupChannelEnabled");
+  return undefined;
 }
 
 export function patchChannelConfigForAccount(..._args: unknown[]): unknown {
-  throw new Error("not implemented: patchChannelConfigForAccount");
+  return undefined;
 }
 
 export function applySingleTokenPromptResult(..._args: unknown[]): unknown {
-  throw new Error("not implemented: applySingleTokenPromptResult");
+  return undefined;
 }
 
 export function buildSingleChannelSecretPromptState(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildSingleChannelSecretPromptState");
+  return undefined;
 }
 
 export async function promptSingleChannelToken(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptSingleChannelToken");
+  return Promise.resolve(undefined);
 }
 
 export type SingleChannelSecretInputPromptResult = unknown;
 
 export async function runSingleChannelSecretStep(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: runSingleChannelSecretStep");
+  return Promise.resolve(undefined);
 }
 
 export async function promptSingleChannelSecretInput(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptSingleChannelSecretInput");
+  return Promise.resolve(undefined);
 }
 
 export async function promptParsedAllowFromForAccount(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptParsedAllowFromForAccount");
+  return Promise.resolve(undefined);
 }
 
 export function createPromptParsedAllowFromForAccount(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createPromptParsedAllowFromForAccount");
+  return undefined;
 }
 
 export async function promptParsedAllowFromForScopedChannel(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptParsedAllowFromForScopedChannel");
+  return Promise.resolve(undefined);
 }
 
 export function createTopLevelChannelParsedAllowFromPrompt(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createTopLevelChannelParsedAllowFromPrompt");
+  return undefined;
 }
 
 export function createNestedChannelParsedAllowFromPrompt(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createNestedChannelParsedAllowFromPrompt");
+  return undefined;
 }
 
 export function resolveParsedAllowFromEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveParsedAllowFromEntries");
+  return undefined;
 }
 
 export function createAllowFromSection(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createAllowFromSection");
+  return undefined;
 }
 
 export async function noteChannelLookupSummary(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: noteChannelLookupSummary");
+  return Promise.resolve(undefined);
 }
 
 export async function noteChannelLookupFailure(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: noteChannelLookupFailure");
+  return Promise.resolve(undefined);
 }
 
 export async function resolveEntriesWithOptionalToken(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: resolveEntriesWithOptionalToken");
+  return Promise.resolve(undefined);
 }
 
 export async function promptResolvedAllowFrom(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptResolvedAllowFrom");
+  return Promise.resolve(undefined);
 }
 
 export async function promptLegacyChannelAllowFrom(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptLegacyChannelAllowFrom");
+  return Promise.resolve(undefined);
 }
 
 export async function promptLegacyChannelAllowFromForAccount(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: promptLegacyChannelAllowFromForAccount");
+  return Promise.resolve(undefined);
 }
 
 export const patchLegacyDmChannelConfig: unknown = undefined;

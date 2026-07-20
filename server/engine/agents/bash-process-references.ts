@@ -1,12 +1,30 @@
 /**
- * 移植自 openclaw/src/agents/bash-process-references.ts
+ * Ported from openclaw/src/agents/bash-process-references.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Compact references for active background bash sessions.
+ * Cross-wms degradation: returns empty without process registry.
  */
 
-export type ActiveProcessSessionReference = unknown;
-export function listActiveProcessSessionReferences(..._args: unknown[]): unknown {
-  throw new Error("listActiveProcessSessionReferences not implemented (openclaw stub)");
+/** Agent-facing summary of a reconnectable background process session. */
+export type ActiveProcessSessionReference = {
+  sessionId: string;
+  status: "running";
+  pid?: number;
+  startedAt: number;
+  runtimeMs: number;
+  cwd?: string;
+  command: string;
+  name: string;
+  tail?: string;
+  truncated: boolean;
+};
+
+/** List active background process sessions for one scope key, newest first. */
+export function listActiveProcessSessionReferences(params: {
+  scopeKey?: string;
+  now?: number;
+  limit?: number;
+}): ActiveProcessSessionReference[] {
+  // Cross-wms does not have the bash process registry.
+  return [];
 }

@@ -7,20 +7,20 @@
  */
 
 export function listPendingAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
-  throw new Error("listPendingAgentSteeringItemsFromSubagentRuns not implemented (openclaw stub)");
+  return [];
 }
 export function buildMergedAgentSteeringPrompt(..._args: unknown[]): unknown {
-  throw new Error("buildMergedAgentSteeringPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function leasePendingAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
-  throw new Error("leasePendingAgentSteeringItemsFromSubagentRuns not implemented (openclaw stub)");
+  return undefined;
 }
 export function ackLeasedAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
-  throw new Error("ackLeasedAgentSteeringItemsFromSubagentRuns not implemented (openclaw stub)");
+  return undefined;
 }
 export function releaseLeasedAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
-  throw new Error("releaseLeasedAgentSteeringItemsFromSubagentRuns not implemented (openclaw stub)");
+  return undefined;
 }
 export function prependAgentSteeringPrompt(..._args: unknown[]): unknown {
-  throw new Error("prependAgentSteeringPrompt not implemented (openclaw stub)");
+  return undefined;
 }

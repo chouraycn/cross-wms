@@ -3,3 +3,4 @@
 // Replace with real implementation when available.
 
 export type resolveEffectiveTtsConfig = any;
+export const resolveEffectiveTtsConfig: any = undefined as any;

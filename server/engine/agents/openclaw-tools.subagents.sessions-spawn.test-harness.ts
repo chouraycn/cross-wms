@@ -1,38 +1,91 @@
 /**
  * 移植自 openclaw/src/agents/openclaw-tools.subagents.sessions-spawn.test-harness.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Test harness for sessions-spawn sub-agent tool.
+ * Simplified for cross-wms: provides mock/stub helpers for testing without
+ * gateway dependency.
  */
 
-export function getCallGatewayMock(..._args: unknown[]): unknown {
-  throw new Error("getCallGatewayMock not implemented (openclaw stub)");
+let sessionsSpawnConfigOverride: unknown = undefined;
+let sessionsSpawnAnnounceFlowOverride: unknown = undefined;
+let sessionsSpawnHookRunnerOverride: unknown = undefined;
+
+/** Get a call-gateway mock suitable for sessions-spawn tests. */
+export function getCallGatewayMock(): {
+  calls: Array<{ method: string; params: Record<string, unknown> }>;
+  mockFn: (params: { method: string; params: Record<string, unknown> }) => Promise<unknown>;
+} {
+  const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
+  const mockFn = async (params: { method: string; params: Record<string, unknown> }>) => {
+    calls.push(params);
+    return { ok: true };
+  };
+  return { calls, mockFn };
 }
-export function waitForSessionsSpawnEvent(..._args: unknown[]): unknown {
-  throw new Error("waitForSessionsSpawnEvent not implemented (openclaw stub)");
+
+/** Wait for a sessions-spawn event to appear. */
+export async function waitForSessionsSpawnEvent(_params?: {
+  timeoutMs?: number;
+  predicate?: (event: unknown) => boolean;
+}): Promise<unknown | undefined> {
+  // Simplified: no event stream in cross-wms
+  return undefined;
 }
-export function resetSessionsSpawnConfigOverride(..._args: unknown[]): unknown {
-  throw new Error("resetSessionsSpawnConfigOverride not implemented (openclaw stub)");
+
+/** Reset any sessions-spawn config override. */
+export function resetSessionsSpawnConfigOverride(): void {
+  sessionsSpawnConfigOverride = undefined;
 }
-export function setSessionsSpawnConfigOverride(..._args: unknown[]): unknown {
-  throw new Error("setSessionsSpawnConfigOverride not implemented (openclaw stub)");
+
+/** Set a sessions-spawn config override for testing. */
+export function setSessionsSpawnConfigOverride(config: unknown): void {
+  sessionsSpawnConfigOverride = config;
 }
-export function resetSessionsSpawnAnnounceFlowOverride(..._args: unknown[]): unknown {
-  throw new Error("resetSessionsSpawnAnnounceFlowOverride not implemented (openclaw stub)");
+
+/** Get the current sessions-spawn config override. */
+export function getSessionsSpawnConfigOverride(): unknown {
+  return sessionsSpawnConfigOverride;
 }
-export function resetSessionsSpawnHookRunnerOverride(..._args: unknown[]): unknown {
-  throw new Error("resetSessionsSpawnHookRunnerOverride not implemented (openclaw stub)");
+
+/** Reset any sessions-spawn announce flow override. */
+export function resetSessionsSpawnAnnounceFlowOverride(): void {
+  sessionsSpawnAnnounceFlowOverride = undefined;
 }
-export function setSessionsSpawnHookRunnerOverride(..._args: unknown[]): unknown {
-  throw new Error("setSessionsSpawnHookRunnerOverride not implemented (openclaw stub)");
+
+/** Set a sessions-spawn announce flow override for testing. */
+export function setSessionsSpawnAnnounceFlowOverride(flow: unknown): void {
+  sessionsSpawnAnnounceFlowOverride = flow;
 }
-export function setSessionsSpawnAnnounceFlowOverride(..._args: unknown[]): unknown {
-  throw new Error("setSessionsSpawnAnnounceFlowOverride not implemented (openclaw stub)");
+
+/** Get the current sessions-spawn announce flow override. */
+export function getSessionsSpawnAnnounceFlowOverride(): unknown {
+  return sessionsSpawnAnnounceFlowOverride;
 }
-export function getSessionsSpawnTool(..._args: unknown[]): unknown {
-  throw new Error("getSessionsSpawnTool not implemented (openclaw stub)");
+
+/** Reset any sessions-spawn hook runner override. */
+export function resetSessionsSpawnHookRunnerOverride(): void {
+  sessionsSpawnHookRunnerOverride = undefined;
 }
-export function setupSessionsSpawnGatewayMock(..._args: unknown[]): unknown {
-  throw new Error("setupSessionsSpawnGatewayMock not implemented (openclaw stub)");
+
+/** Set a sessions-spawn hook runner override for testing. */
+export function setSessionsSpawnHookRunnerOverride(runner: unknown): void {
+  sessionsSpawnHookRunnerOverride = runner;
+}
+
+/** Get the current sessions-spawn hook runner override. */
+export function getSessionsSpawnHookRunnerOverride(): unknown {
+  return sessionsSpawnHookRunnerOverride;
+}
+
+/** Get the sessions-spawn tool for testing. */
+export function getSessionsSpawnTool(): unknown {
+  return null;
+}
+
+/** Set up a sessions-spawn gateway mock for integration tests. */
+export function setupSessionsSpawnGatewayMock(_params?: {
+  sessionId?: string;
+  agentId?: string;
+}): ReturnType<typeof getCallGatewayMock> {
+  return getCallGatewayMock();
 }

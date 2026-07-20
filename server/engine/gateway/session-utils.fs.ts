@@ -26,101 +26,101 @@ export type ReadRecentSessionMessagesOptions = unknown;
 export type ReadSessionMessagesAsyncOptions = unknown;
 
 export function attachOpenClawTranscriptMeta(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] attachOpenClawTranscriptMeta not implemented");
+  return undefined;
 }
 
 export function readSessionMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessages not implemented");
+  return undefined;
 }
 
 export function readRecentSessionMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionMessages not implemented");
+  return undefined;
 }
 
 export function visitSessionMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] visitSessionMessages not implemented");
+  return undefined;
 }
 
 export function readSessionMessageCount(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessageCount not implemented");
+  return undefined;
 }
 
 export async function readSessionMessagesAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessagesAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readSessionMessagesWithSourceAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessagesWithSourceAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readSessionMessageByIdAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessageByIdAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function visitSessionMessagesAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] visitSessionMessagesAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readSessionMessageCountAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionMessageCountAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function readRecentSessionMessagesWithStats(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionMessagesWithStats not implemented");
+  return undefined;
 }
 
 export async function readRecentSessionMessagesAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionMessagesAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readRecentSessionMessagesWithStatsAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionMessagesWithStatsAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function readRecentSessionTranscriptLines(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionTranscriptLines not implemented");
+  return undefined;
 }
 
 export function capArrayByJsonBytes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] capArrayByJsonBytes not implemented");
+  return undefined;
 }
 
 export function readSessionTitleFieldsFromTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readSessionTitleFieldsFromTranscript not implemented");
+  return undefined;
 }
 
 export async function readSessionTitleFieldsFromTranscriptAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readSessionTitleFieldsFromTranscriptAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function resolveSessionHistoryTranscriptPathAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionHistoryTranscriptPathAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function readFirstUserMessageFromTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readFirstUserMessageFromTranscript not implemented");
+  return undefined;
 }
 
 export function readLatestSessionUsageFromTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readLatestSessionUsageFromTranscript not implemented");
+  return undefined;
 }
 
 export async function readLatestSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readLatestSessionUsageFromTranscriptAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readRecentSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionUsageFromTranscriptAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function readLatestRecentSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] readLatestRecentSessionUsageFromTranscriptAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function readRecentSessionUsageFromTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readRecentSessionUsageFromTranscript not implemented");
+  return undefined;
 }
 
 export function readSessionPreviewItemsFromTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] readSessionPreviewItemsFromTranscript not implemented");
+  return undefined;
 }

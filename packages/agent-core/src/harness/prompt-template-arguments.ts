@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { PromptTemplate } from "./types";
 
 /** Parse an argument string using simple shell-style single and double quotes. */

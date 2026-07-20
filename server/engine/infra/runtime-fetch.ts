@@ -1,13 +1,27 @@
-// 移植自 openclaw/src/infra/runtime-fetch.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/src/infra/net/runtime-fetch.ts
+// 降级：undici dispatcher 依赖简化
 
-export type DispatcherAwareRequestInit = unknown;
-export function isMockedFetch(...args: unknown[]): unknown {
-  throw new Error("not implemented: isMockedFetch");
+export type DispatcherAwareRequestInit = RequestInit & {
+  dispatcher?: unknown;
+};
+
+/** Checks if the global fetch has been mocked. */
+export function isMockedFetch(): boolean {
+  return typeof globalThis.fetch !== "undefined" && !(globalThis.fetch as Record<string, unknown>)?.__original;
 }
-export function fetchWithRuntimeDispatcher(...args: unknown[]): unknown {
-  throw new Error("not implemented: fetchWithRuntimeDispatcher");
+
+/** Performs a fetch with the runtime dispatcher (if configured). */
+export async function fetchWithRuntimeDispatcher(
+  url: string | URL,
+  init?: DispatcherAwareRequestInit,
+): Promise<Response> {
+  return globalThis.fetch(url, init);
 }
-export function fetchWithRuntimeDispatcherOrMockedGlobal(...args: unknown[]): unknown {
-  throw new Error("not implemented: fetchWithRuntimeDispatcherOrMockedGlobal");
+
+/** Performs a fetch, preferring the runtime dispatcher or falling back to mocked global. */
+export async function fetchWithRuntimeDispatcherOrMockedGlobal(
+  url: string | URL,
+  init?: DispatcherAwareRequestInit,
+): Promise<Response> {
+  return globalThis.fetch(url, init);
 }

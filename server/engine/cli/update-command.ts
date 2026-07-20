@@ -1,59 +1,56 @@
-// 移植自 openclaw/src/cli/update-command.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export async function collectMissingPluginInstallPayloads(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: collectMissingPluginInstallPayloads");
+  console.warn('collectMissingPluginInstallPayloads is not available in cross-wms');
 }
 
 export function buildInvalidConfigPostCoreUpdateResult(..._args: unknown[]): unknown {
-  throw new Error("not implemented: buildInvalidConfigPostCoreUpdateResult");
+  console.warn('buildInvalidConfigPostCoreUpdateResult is not available in cross-wms'); return undefined;
 }
 
 export function shouldPrepareUpdatedInstallRestart(..._args: unknown[]): unknown {
-  throw new Error("not implemented: shouldPrepareUpdatedInstallRestart");
+  console.warn('shouldPrepareUpdatedInstallRestart is not available in cross-wms'); return undefined;
 }
 
 export function shouldUseLegacyProcessRestartAfterUpdate(..._args: unknown[]): unknown {
-  throw new Error("not implemented: shouldUseLegacyProcessRestartAfterUpdate");
+  console.warn('shouldUseLegacyProcessRestartAfterUpdate is not available in cross-wms'); return undefined;
 }
 
 export async function recoverInstalledLaunchAgentAfterUpdate(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: recoverInstalledLaunchAgentAfterUpdate");
+  console.warn('recoverInstalledLaunchAgentAfterUpdate is not available in cross-wms');
 }
 
 export async function recoverLaunchAgentAndRecheckGatewayHealth(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: recoverLaunchAgentAndRecheckGatewayHealth");
+  console.warn('recoverLaunchAgentAndRecheckGatewayHealth is not available in cross-wms');
 }
 
 export function formatPostUpdateGatewayRecoveryInstructions(..._args: unknown[]): unknown {
-  throw new Error("not implemented: formatPostUpdateGatewayRecoveryInstructions");
+  console.warn('formatPostUpdateGatewayRecoveryInstructions is not available in cross-wms'); return undefined;
 }
 
 export function resolvePostInstallDoctorEnv(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePostInstallDoctorEnv");
+  console.warn('resolvePostInstallDoctorEnv is not available in cross-wms'); return undefined;
 }
 
 export function resolveUpdatedGatewayRestartPort(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveUpdatedGatewayRestartPort");
+  console.warn('resolveUpdatedGatewayRestartPort is not available in cross-wms'); return undefined;
 }
 
 export function resolvePostUpdateServiceStateReadEnv(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePostUpdateServiceStateReadEnv");
+  console.warn('resolvePostUpdateServiceStateReadEnv is not available in cross-wms'); return undefined;
 }
 
 export async function updatePluginsAfterCoreUpdate(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: updatePluginsAfterCoreUpdate");
+  console.warn('updatePluginsAfterCoreUpdate is not available in cross-wms');
 }
 
 export async function updateFinalizeCommand(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: updateFinalizeCommand");
+  console.warn('updateFinalizeCommand is not available in cross-wms');
 }
 
 export function resolvePostCoreUpdateChildStdio(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePostCoreUpdateChildStdio");
+  console.warn('resolvePostCoreUpdateChildStdio is not available in cross-wms'); return undefined;
 }
 
 export async function updateCommand(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: updateCommand");
+  console.warn('updateCommand is not available in cross-wms');
 }

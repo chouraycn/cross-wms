@@ -1,32 +1,63 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-subscribe.handlers.messages.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Stream message handlers for embedded agent subscriptions.
+ * Cross-wms simplified: provides no-op default implementations.
  */
 
-export function consumePendingToolMediaIntoReply(..._args: unknown[]): unknown {
-  throw new Error("consumePendingToolMediaIntoReply not implemented (openclaw stub)");
+export function consumePendingToolMediaIntoReply(params: {
+  reply: Record<string, unknown>;
+  pendingMedia?: Array<Record<string, unknown>>;
+}): Record<string, unknown> {
+  return params.reply;
 }
-export function consumePendingToolMediaReply(..._args: unknown[]): unknown {
-  throw new Error("consumePendingToolMediaReply not implemented (openclaw stub)");
+
+export function consumePendingToolMediaReply(params: {
+  pendingMedia?: Array<Record<string, unknown>>;
+}): Record<string, unknown> | undefined {
+  return undefined;
 }
-export function readPendingToolMediaReply(..._args: unknown[]): unknown {
-  throw new Error("readPendingToolMediaReply not implemented (openclaw stub)");
+
+export function readPendingToolMediaReply(params: {
+  pendingMedia?: Array<Record<string, unknown>>;
+}): Record<string, unknown> | undefined {
+  return undefined;
 }
-export function consumePendingAssistantReplyDirectivesIntoReply(..._args: unknown[]): unknown {
-  throw new Error("consumePendingAssistantReplyDirectivesIntoReply not implemented (openclaw stub)");
+
+export function consumePendingAssistantReplyDirectivesIntoReply(params: {
+  reply: Record<string, unknown>;
+  directives?: Array<Record<string, unknown>>;
+}): Record<string, unknown> {
+  return params.reply;
 }
-export function hasAssistantVisibleReply(..._args: unknown[]): unknown {
-  throw new Error("hasAssistantVisibleReply not implemented (openclaw stub)");
+
+export function hasAssistantVisibleReply(params: {
+  reply: Record<string, unknown>;
+}): boolean {
+  const content = params.reply["content"];
+  if (!content) return false;
+  if (typeof content === "string") return content.trim().length > 0;
+  if (Array.isArray(content)) return content.length > 0;
+  return false;
 }
-export function handleMessageStart(..._args: unknown[]): unknown {
-  throw new Error("handleMessageStart not implemented (openclaw stub)");
+
+export function handleMessageStart(params: {
+  context: Record<string, unknown>;
+  message: Record<string, unknown>;
+}): void {
+  // No-op in simplified cross-wms
 }
-export function handleMessageUpdate(..._args: unknown[]): unknown {
-  throw new Error("handleMessageUpdate not implemented (openclaw stub)");
+
+export function handleMessageUpdate(params: {
+  context: Record<string, unknown>;
+  message: Record<string, unknown>;
+}): void {
+  // No-op in simplified cross-wms
 }
-export function handleMessageEnd(..._args: unknown[]): unknown {
-  throw new Error("handleMessageEnd not implemented (openclaw stub)");
+
+export function handleMessageEnd(params: {
+  context: Record<string, unknown>;
+  message: Record<string, unknown>;
+}): void {
+  // No-op in simplified cross-wms
 }

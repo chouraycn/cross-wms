@@ -7,5 +7,5 @@
  */
 
 export function createSessionsYieldTool(..._args: unknown[]): unknown {
-  throw new Error("createSessionsYieldTool not implemented (openclaw stub)");
+  return undefined;
 }

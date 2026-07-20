@@ -25,9 +25,8 @@ export function registerExecPolicyCli(program: Command): void {
     .description("Show current effective exec policy")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw exec-policy show: not supported in stub mode (exec-approvals/* not ported).",
-      );
+      console.error('openclaw exec-policy show is not available in cross-wms');
+      process.exit(1);
     });
 
   policy
@@ -35,8 +34,7 @@ export function registerExecPolicyCli(program: Command): void {
     .description("Apply an exec policy preset")
     .argument("<preset>", "Preset name (yolo | cautious | deny-all)")
     .action(() => {
-      throw new Error(
-        "openclaw exec-policy apply: not supported in stub mode (exec-approvals/* not ported).",
-      );
+      console.error('openclaw exec-policy apply is not available in cross-wms');
+      process.exit(1);
     });
 }

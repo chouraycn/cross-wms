@@ -9,8 +9,8 @@
 export type LsOperations = unknown;
 export type LsToolOptions = unknown;
 export function createLsToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createLsToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function createLsTool(..._args: unknown[]): unknown {
-  throw new Error("createLsTool not implemented (openclaw stub)");
+  return undefined;
 }

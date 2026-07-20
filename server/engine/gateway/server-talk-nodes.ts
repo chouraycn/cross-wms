@@ -12,5 +12,5 @@
  */
 
 export function hasConnectedTalkNode(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] hasConnectedTalkNode not implemented");
+  return false;
 }

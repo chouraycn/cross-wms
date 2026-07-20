@@ -12,8 +12,7 @@ export function registerDocsCli(program: Command): void {
   docs
     .option("--url", "Print the docs URL instead of opening", false)
     .action(() => {
-      throw new Error(
-        "openclaw docs: not supported in stub mode (terminal-core/* not ported).",
-      );
+      console.error('openclaw docs is not available in cross-wms');
+      process.exit(1);
     });
 }

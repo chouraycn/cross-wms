@@ -7,8 +7,8 @@
  */
 
 export function hasOnlyAssistantReasoningContent(..._args: unknown[]): unknown {
-  throw new Error("hasOnlyAssistantReasoningContent not implemented (openclaw stub)");
+  return false;
 }
 export function isReasoningOnlyLengthAssistantTurn(..._args: unknown[]): unknown {
-  throw new Error("isReasoningOnlyLengthAssistantTurn not implemented (openclaw stub)");
+  return false;
 }

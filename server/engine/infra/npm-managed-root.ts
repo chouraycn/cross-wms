@@ -1,36 +1,35 @@
 // 移植自 openclaw/src/infra/npm-managed-root.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ManagedNpmRootPeerDependencySnapshot = unknown;
 export type ManagedNpmRootInstalledDependency = unknown;
 export type MissingRequiredPlatformPackage = unknown;
 export function readOpenClawManagedNpmRootOverrides(...args: unknown[]): unknown {
-  throw new Error("not implemented: readOpenClawManagedNpmRootOverrides");
+  return undefined;
 }
 export function resolveManagedNpmRootDependencySpec(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveManagedNpmRootDependencySpec");
+  return undefined;
 }
 export function upsertManagedNpmRootDependency(...args: unknown[]): unknown {
-  throw new Error("not implemented: upsertManagedNpmRootDependency");
+  return undefined;
 }
 export function listMissingRequiredPlatformPackages(...args: unknown[]): unknown {
-  throw new Error("not implemented: listMissingRequiredPlatformPackages");
+  return [];
 }
 export function readManagedNpmRootPeerDependencySnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: readManagedNpmRootPeerDependencySnapshot");
+  return undefined;
 }
 export function restoreManagedNpmRootPeerDependencySnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: restoreManagedNpmRootPeerDependencySnapshot");
+  return undefined;
 }
 export function syncManagedNpmRootPeerDependencies(...args: unknown[]): unknown {
-  throw new Error("not implemented: syncManagedNpmRootPeerDependencies");
+  return undefined;
 }
 export function repairManagedNpmRootOpenClawPeer(...args: unknown[]): unknown {
-  throw new Error("not implemented: repairManagedNpmRootOpenClawPeer");
+  return undefined;
 }
 export function readManagedNpmRootInstalledDependency(...args: unknown[]): unknown {
-  throw new Error("not implemented: readManagedNpmRootInstalledDependency");
+  return undefined;
 }
 export function removeManagedNpmRootDependency(...args: unknown[]): unknown {
-  throw new Error("not implemented: removeManagedNpmRootDependency");
+  return undefined;
 }

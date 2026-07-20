@@ -7,17 +7,17 @@
  */
 
 export function waitForSessionsYieldAbortSettle(..._args: unknown[]): unknown {
-  throw new Error("waitForSessionsYieldAbortSettle not implemented (openclaw stub)");
+  return undefined;
 }
 export function createYieldAbortedResponse(..._args: unknown[]): unknown {
-  throw new Error("createYieldAbortedResponse not implemented (openclaw stub)");
+  return undefined;
 }
 export function queueSessionsYieldInterruptMessage(..._args: unknown[]): unknown {
-  throw new Error("queueSessionsYieldInterruptMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function persistSessionsYieldContextMessage(..._args: unknown[]): unknown {
-  throw new Error("persistSessionsYieldContextMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function stripSessionsYieldArtifacts(..._args: unknown[]): unknown {
-  throw new Error("stripSessionsYieldArtifacts not implemented (openclaw stub)");
+  return undefined;
 }

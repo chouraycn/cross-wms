@@ -8,5 +8,5 @@
 
 export type AgentHarnessHookContext = unknown;
 export function buildAgentHookContext(..._args: unknown[]): unknown {
-  throw new Error("buildAgentHookContext not implemented (openclaw stub)");
+  return undefined;
 }

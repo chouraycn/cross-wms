@@ -1,12 +1,32 @@
 /**
  * 移植自 openclaw/src/agents/model-visibility-policy.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Builds model visibility policies with configured fallbacks included.
+ * In cross-wms the full model catalog/fallback infrastructure is not available,
+ * so createModelVisibilityPolicy returns a permissive default policy.
  */
 
-export const RUNTIME_MODEL_VISIBILITY_NORMALIZATION: unknown = undefined;
-export function createModelVisibilityPolicy(..._args: unknown[]): unknown {
-  throw new Error("createModelVisibilityPolicy not implemented (openclaw stub)");
+export const RUNTIME_MODEL_VISIBILITY_NORMALIZATION = {
+  allowManifestNormalization: true,
+  allowPluginNormalization: true,
+} as const;
+
+/** A permissive model visibility policy that allows all models. */
+export interface ModelVisibilityPolicy {
+  isAllowed(provider: string, model: string): boolean;
+  getVisibleProviders(): string[];
+  getVisibleModels(provider: string): string[];
+}
+
+const ALLOW_ALL_POLICY: ModelVisibilityPolicy = {
+  isAllowed: () => true,
+  getVisibleProviders: () => [],
+  getVisibleModels: () => [],
+};
+
+/** Create a model visibility policy (returns permissive allow-all in cross-wms). */
+export function createModelVisibilityPolicy(
+  ..._args: unknown[]
+): ModelVisibilityPolicy {
+  return ALLOW_ALL_POLICY;
 }

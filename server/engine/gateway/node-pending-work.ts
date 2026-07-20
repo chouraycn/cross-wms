@@ -16,17 +16,17 @@ export type NodePendingWorkType = unknown;
 export type NodePendingWorkPriority = unknown;
 
 export function enqueueNodePendingWork(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] enqueueNodePendingWork not implemented");
+  return undefined;
 }
 
 export function drainNodePendingWork(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] drainNodePendingWork not implemented");
+  return undefined;
 }
 
 export function resetNodePendingWorkForTests(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resetNodePendingWorkForTests not implemented");
+  return undefined;
 }
 
 export function getNodePendingWorkStateCountForTests(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getNodePendingWorkStateCountForTests not implemented");
+  return undefined;
 }

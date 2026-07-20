@@ -7,8 +7,8 @@
  */
 
 export function shouldIncludeHeartbeatGuidanceForSystemPrompt(..._args: unknown[]): unknown {
-  throw new Error("shouldIncludeHeartbeatGuidanceForSystemPrompt not implemented (openclaw stub)");
+  return false;
 }
 export function resolveHeartbeatPromptForSystemPrompt(..._args: unknown[]): unknown {
-  throw new Error("resolveHeartbeatPromptForSystemPrompt not implemented (openclaw stub)");
+  return undefined;
 }

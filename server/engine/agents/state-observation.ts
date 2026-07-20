@@ -7,5 +7,5 @@
  */
 
 export function logAuthProfileFailureStateChange(..._args: unknown[]): unknown {
-  throw new Error("logAuthProfileFailureStateChange not implemented (openclaw stub)");
+  return undefined;
 }

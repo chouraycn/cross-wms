@@ -7,11 +7,11 @@
  */
 
 export function resolveCliNoOutputTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveCliNoOutputTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveCliRunTimeoutOverrideMs(..._args: unknown[]): unknown {
-  throw new Error("resolveCliRunTimeoutOverrideMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildCliSupervisorScopeKey(..._args: unknown[]): unknown {
-  throw new Error("buildCliSupervisorScopeKey not implemented (openclaw stub)");
+  return undefined;
 }

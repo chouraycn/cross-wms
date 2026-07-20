@@ -14,5 +14,5 @@
 export type GatewayRuntimeServiceLogger = unknown;
 
 export function createNoopHeartbeatRunner(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createNoopHeartbeatRunner not implemented");
+  return undefined;
 }

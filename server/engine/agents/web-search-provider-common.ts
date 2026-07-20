@@ -8,61 +8,61 @@
 
 export type SearchConfigRecord = unknown;
 export function resolveSearchTimeoutSeconds(..._args: unknown[]): unknown {
-  throw new Error("resolveSearchTimeoutSeconds not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSearchCacheTtlMs(..._args: unknown[]): unknown {
-  throw new Error("resolveSearchCacheTtlMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSearchCount(..._args: unknown[]): unknown {
-  throw new Error("resolveSearchCount not implemented (openclaw stub)");
+  return undefined;
 }
 export function readConfiguredSecretString(..._args: unknown[]): unknown {
-  throw new Error("readConfiguredSecretString not implemented (openclaw stub)");
+  return undefined;
 }
 export function readProviderEnvValue(..._args: unknown[]): unknown {
-  throw new Error("readProviderEnvValue not implemented (openclaw stub)");
+  return undefined;
 }
 export function withTrustedWebSearchEndpoint(..._args: unknown[]): unknown {
-  throw new Error("withTrustedWebSearchEndpoint not implemented (openclaw stub)");
+  return undefined;
 }
 export function withSelfHostedWebSearchEndpoint(..._args: unknown[]): unknown {
-  throw new Error("withSelfHostedWebSearchEndpoint not implemented (openclaw stub)");
+  return undefined;
 }
 export function postTrustedWebToolsJson(..._args: unknown[]): unknown {
-  throw new Error("postTrustedWebToolsJson not implemented (openclaw stub)");
+  return undefined;
 }
 export function throwWebSearchApiError(..._args: unknown[]): unknown {
-  throw new Error("throwWebSearchApiError not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSiteName(..._args: unknown[]): unknown {
-  throw new Error("resolveSiteName not implemented (openclaw stub)");
+  return undefined;
 }
 export function isoToPerplexityDate(..._args: unknown[]): unknown {
-  throw new Error("isoToPerplexityDate not implemented (openclaw stub)");
+  return false;
 }
 export function normalizeToIsoDate(..._args: unknown[]): unknown {
-  throw new Error("normalizeToIsoDate not implemented (openclaw stub)");
+  return undefined;
 }
 export function parseIsoDateRange(..._args: unknown[]): unknown {
-  throw new Error("parseIsoDateRange not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeFreshness(..._args: unknown[]): unknown {
-  throw new Error("normalizeFreshness not implemented (openclaw stub)");
+  return undefined;
 }
 export function parseWebSearchTimeFilters(..._args: unknown[]): unknown {
-  throw new Error("parseWebSearchTimeFilters not implemented (openclaw stub)");
+  return undefined;
 }
 export function readCachedSearchPayload(..._args: unknown[]): unknown {
-  throw new Error("readCachedSearchPayload not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildSearchCacheKey(..._args: unknown[]): unknown {
-  throw new Error("buildSearchCacheKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function writeCachedSearchPayload(..._args: unknown[]): unknown {
-  throw new Error("writeCachedSearchPayload not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildUnsupportedSearchFilterResponse(..._args: unknown[]): unknown {
-  throw new Error("buildUnsupportedSearchFilterResponse not implemented (openclaw stub)");
+  return undefined;
 }
 export const DEFAULT_SEARCH_COUNT: unknown = undefined;
 export const MAX_SEARCH_COUNT: unknown = undefined;

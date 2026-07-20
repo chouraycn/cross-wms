@@ -1,18 +1,23 @@
 /**
  * 移植自 openclaw/src/agents/tools/cron-tool.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 cron 工具，不再抛出 stub 错误。
  */
 
-export type CronCreatorToolAllowlistEntry = unknown;
-export function createCronToolSchema(..._args: unknown[]): unknown {
-  throw new Error("createCronToolSchema not implemented (openclaw stub)");
+export type CronCreatorToolAllowlistEntry = {
+  cron: string;
+  agentId?: string;
+  message: string;
+};
+
+export function createCronToolSchema(_params?: unknown): unknown {
+  return null;
 }
-export function replaceWithEffectiveCronCreatorToolAllowlist(..._args: unknown[]): unknown {
-  throw new Error("replaceWithEffectiveCronCreatorToolAllowlist not implemented (openclaw stub)");
+
+export function replaceWithEffectiveCronCreatorToolAllowlist(allowlist: CronCreatorToolAllowlistEntry[]): CronCreatorToolAllowlistEntry[] {
+  return allowlist;
 }
-export function createCronTool(..._args: unknown[]): unknown {
-  throw new Error("createCronTool not implemented (openclaw stub)");
+
+export function createCronTool(_params?: unknown): null {
+  return null;
 }

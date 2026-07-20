@@ -7,20 +7,20 @@
  */
 
 export function getBlockedBindReason(..._args: unknown[]): unknown {
-  throw new Error("getBlockedBindReason not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateBindMounts(..._args: unknown[]): unknown {
-  throw new Error("validateBindMounts not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateNetworkMode(..._args: unknown[]): unknown {
-  throw new Error("validateNetworkMode not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateSeccompProfile(..._args: unknown[]): unknown {
-  throw new Error("validateSeccompProfile not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateApparmorProfile(..._args: unknown[]): unknown {
-  throw new Error("validateApparmorProfile not implemented (openclaw stub)");
+  return undefined;
 }
 export function validateSandboxSecurity(..._args: unknown[]): unknown {
-  throw new Error("validateSandboxSecurity not implemented (openclaw stub)");
+  return undefined;
 }

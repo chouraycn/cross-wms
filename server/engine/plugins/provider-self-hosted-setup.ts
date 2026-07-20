@@ -1,14 +1,13 @@
-// @ts-nocheck
 // Builds setup metadata for self-hosted provider plugins.
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from './_stub_openclaw__model_catalog_core__provider_id.js';
+} from './_openclaw__model_catalog_core__provider_id.js';
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
-import { uniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+} from './_openclaw__normalization_core__string_coerce.js';
+import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import type { ApiKeyCredential, AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import { upsertAuthProfileWithLock } from './_stub_parent__agents__auth_profiles__upsert_with_lock.js';
 import { parseConfiguredModelVisibilityEntries } from "../agents/model-selection-shared.js";
@@ -22,7 +21,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import type { SsrFPolicy } from './_stub_parent__infra__net__ssrf.js';
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { normalizeOptionalSecretInput } from './_stub_parent__utils__normalize_secret_input.js';
+import { normalizeOptionalSecretInput } from './_parent__utils__normalize_secret_input.js';
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyAuthProfileConfig } from "./provider-auth-helpers.js";
 import type {

@@ -91,3 +91,7 @@ export function getRelativePathWithinBoundary(
   const relative = path.relative(resolvedBoundary, resolvedTarget);
   return relative || '.';
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const resolveRootPath: any = undefined as any;
+export const resolveRootPathSync: any = undefined as any;

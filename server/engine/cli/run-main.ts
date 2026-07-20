@@ -78,7 +78,6 @@ export async function shouldStartOnboardingForFreshInstall(_argv: string[]): Pro
  * 这里抛出 "not supported" 错误，保留函数签名以便未来替换为正式实现。
  */
 export async function runCli(_argv: string[] = process.argv): Promise<void> {
-  throw new Error(
-    "runCli: not supported in stub mode (run-main orchestration not ported).",
-  );
+  console.error('runCli is not available in cross-wms');
+      process.exit(1);
 }

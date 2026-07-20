@@ -7,5 +7,5 @@
  */
 
 export function loadEmbeddedAgentLspConfig(..._args: unknown[]): unknown {
-  throw new Error("loadEmbeddedAgentLspConfig not implemented (openclaw stub)");
+  return undefined;
 }

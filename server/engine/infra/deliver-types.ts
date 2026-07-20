@@ -1,13 +1,34 @@
 // 移植自 openclaw/src/infra/deliver-types.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type OutboundDeliveryResult = unknown;
-export type OutboundPayloadDeliverySuppressionReason = unknown;
-export type OutboundDeliveryFailureStage = unknown;
-export type OutboundPayloadDeliveryOutcome = unknown;
-export function isOutboundDeliveryError(...args: unknown[]): unknown {
-  throw new Error("not implemented: isOutboundDeliveryError");
+export type OutboundDeliveryFailureStage = "prepare" | "transport" | "confirm";
+
+export type OutboundPayloadDeliverySuppressionReason =
+  | "duplicate"
+  | "rate-limited"
+  | "policy-blocked"
+  | "silent-mode";
+
+export type OutboundPayloadDeliveryOutcome =
+  | { kind: "delivered"; target: string }
+  | { kind: "suppressed"; reason: OutboundPayloadDeliverySuppressionReason }
+  | { kind: "failed"; stage: OutboundDeliveryFailureStage; error: Error };
+
+export type OutboundDeliveryResult = {
+  status: "ok" | "failed" | "partial_failed";
+  outcomes: OutboundPayloadDeliveryOutcome[];
+  error?: Error;
+};
+
+export class OutboundDeliveryError extends Error {
+  readonly stage: OutboundDeliveryFailureStage;
+  constructor(message: string, stage: OutboundDeliveryFailureStage = "transport") {
+    super(message);
+    this.name = "OutboundDeliveryError";
+    this.stage = stage;
+  }
 }
-export class OutboundDeliveryError {
-  constructor(...args: unknown[]) { throw new Error("not implemented: OutboundDeliveryError"); }
+
+/** Checks if an error is an OutboundDeliveryError. */
+export function isOutboundDeliveryError(error: unknown): error is OutboundDeliveryError {
+  return error instanceof OutboundDeliveryError;
 }

@@ -1,6 +1,14 @@
 // 移植自 openclaw/src/infra/approval-handler-bootstrap.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin / runtime context 依赖简化
 
-export function startChannelApprovalHandlerBootstrap(...args: unknown[]): unknown {
-  throw new Error("not implemented: startChannelApprovalHandlerBootstrap");
+/** Starts the native approval handler for a channel runtime context and returns its cleanup hook. */
+export async function startChannelApprovalHandlerBootstrap(_params: {
+  plugin?: unknown;
+  cfg?: unknown;
+  accountId?: string;
+  channelRuntime?: unknown;
+  logger?: unknown;
+}): Promise<() => Promise<void>> {
+  // Simplified: no real approval handler bootstrap in cross-wms
+  return async () => {};
 }

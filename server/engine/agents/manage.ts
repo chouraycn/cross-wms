@@ -1,22 +1,42 @@
 /**
  * 移植自 openclaw/src/agents/sandbox/manage.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * CLI-facing sandbox management helpers.
+ * cross-wms 简化实现：返回空列表，容器管理为空操作。
  */
 
-export type SandboxContainerInfo = unknown;
-export type SandboxBrowserInfo = unknown;
-export function listSandboxContainers(..._args: unknown[]): unknown {
-  throw new Error("listSandboxContainers not implemented (openclaw stub)");
+export type SandboxContainerInfo = {
+  containerName: string;
+  sessionKey: string;
+  image: string;
+  running: boolean;
+  imageMatch: boolean;
+};
+
+export type SandboxBrowserInfo = {
+  containerName: string;
+  sessionKey: string;
+  image: string;
+  running: boolean;
+  imageMatch: boolean;
+};
+
+/** Lists registered sandbox containers — returns empty in cross-wms. */
+export async function listSandboxContainers(): Promise<SandboxContainerInfo[]> {
+  return [];
 }
-export function listSandboxBrowsers(..._args: unknown[]): unknown {
-  throw new Error("listSandboxBrowsers not implemented (openclaw stub)");
+
+/** Lists registered browser sandbox containers — returns empty in cross-wms. */
+export async function listSandboxBrowsers(): Promise<SandboxBrowserInfo[]> {
+  return [];
 }
-export function removeSandboxContainer(..._args: unknown[]): unknown {
-  throw new Error("removeSandboxContainer not implemented (openclaw stub)");
+
+/** Removes one sandbox container — no-op in cross-wms. */
+export async function removeSandboxContainer(_containerName: string): Promise<void> {
+  // No-op: sandbox management not available in cross-wms
 }
-export function removeSandboxBrowserContainer(..._args: unknown[]): unknown {
-  throw new Error("removeSandboxBrowserContainer not implemented (openclaw stub)");
+
+/** Removes one browser sandbox container — no-op in cross-wms. */
+export async function removeSandboxBrowserContainer(_containerName: string): Promise<void> {
+  // No-op: sandbox management not available in cross-wms
 }

@@ -12,5 +12,5 @@
  */
 
 export async function reactivateCompletedSubagentSession(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] reactivateCompletedSubagentSession not implemented");
+  return Promise.resolve(undefined);
 }

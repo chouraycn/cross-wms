@@ -7,20 +7,20 @@
  */
 
 export function normalizeMessagesForLlmBoundary(..._args: unknown[]): unknown {
-  throw new Error("normalizeMessagesForLlmBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeMessagesForCurrentPromptBoundary(..._args: unknown[]): unknown {
-  throw new Error("normalizeMessagesForCurrentPromptBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function normalizeCurrentPromptTextForLlmBoundary(..._args: unknown[]): unknown {
-  throw new Error("normalizeCurrentPromptTextForLlmBoundary not implemented (openclaw stub)");
+  return undefined;
 }
 export function installRuntimeContextMessageForPrompt(..._args: unknown[]): unknown {
-  throw new Error("installRuntimeContextMessageForPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function insertRuntimeContextMessageForPrompt(..._args: unknown[]): unknown {
-  throw new Error("insertRuntimeContextMessageForPrompt not implemented (openclaw stub)");
+  return undefined;
 }
 export function installModelPromptTransform(..._args: unknown[]): unknown {
-  throw new Error("installModelPromptTransform not implemented (openclaw stub)");
+  return undefined;
 }

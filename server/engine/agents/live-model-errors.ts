@@ -7,5 +7,5 @@
  */
 
 export function isModelNotFoundErrorMessage(..._args: unknown[]): unknown {
-  throw new Error("isModelNotFoundErrorMessage not implemented (openclaw stub)");
+  return false;
 }

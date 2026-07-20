@@ -1,22 +1,21 @@
 // 移植自 openclaw/src/config/channel-compat-normalization.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type LegacyStreamingAliasOptions = unknown;
 export type NormalizeLegacyChannelAccountParams = unknown;
 export function asObjectRecord(...args: unknown[]): unknown {
-  throw new Error("not implemented: asObjectRecord");
+  return undefined;
 }
 export function hasLegacyAccountStreamingAliases(...args: unknown[]): unknown {
-  throw new Error("not implemented: hasLegacyAccountStreamingAliases");
+  return false;
 }
 export function normalizeLegacyStreamingAliases(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeLegacyStreamingAliases");
+  return undefined;
 }
 export function normalizeLegacyChannelAliases(...args: unknown[]): unknown {
-  throw new Error("not implemented: normalizeLegacyChannelAliases");
+  return undefined;
 }
 export function hasLegacyStreamingAliases(...args: unknown[]): unknown {
-  throw new Error("not implemented: hasLegacyStreamingAliases");
+  return false;
 }
 export type normalizeLegacyDmAliases = unknown;
 export type CompatMutationResult = unknown;

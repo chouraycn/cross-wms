@@ -12,9 +12,9 @@
  */
 
 export function stripEnvelopeFromMessage(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] stripEnvelopeFromMessage not implemented");
+  return undefined;
 }
 
 export function stripEnvelopeFromMessages(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] stripEnvelopeFromMessages not implemented");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function createLazyGatewayCronState(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createLazyGatewayCronState not implemented");
+  return undefined;
 }

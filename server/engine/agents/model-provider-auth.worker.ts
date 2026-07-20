@@ -7,5 +7,5 @@
  */
 
 export async function runProviderAuthWarmWorkerInput(..._args: unknown[]): Promise<unknown> {
-  throw new Error("runProviderAuthWarmWorkerInput not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

@@ -405,21 +405,21 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     ).slice(0, 10);
   }, [showSlashCommands, slashQuery]);
 
-  // 从 ModelsContext 中读取模型列表（仅启用的模型），Auto 作为首选项
+  // 从 ModelsContext 中读取模型列表，Auto 作为首选项
+  // RC-3 修复：不再过滤 enabled=false 的模型，改为保留并标记 enabled 字段供 UI 灰显
+  // 原行为：filter(m => m.enabled) 会导致用户看到"模型没了"
   const MODEL_OPTIONS: ModelOption[] = [
     { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
-    ...modelList
-      .filter((m) => m.enabled)
-      .map((m) => ({
-        id: m.id,
-        name: m.name,
-        provider: m.provider,
-        description: m.description,
-        capabilities: m.capabilities,
-        contextWindow: m.contextWindow,
-        isDefault: m.isDefault,
-        enabled: m.enabled,
-      })),
+    ...modelList.map((m) => ({
+      id: m.id,
+      name: m.name,
+      provider: m.provider,
+      description: m.description,
+      capabilities: m.capabilities,
+      contextWindow: m.contextWindow,
+      isDefault: m.isDefault,
+      enabled: m.enabled,
+    })),
   ];
 
   // 获取已启用的模型列表（含 id 和 name，用于 id↔name 映射）

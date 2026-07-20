@@ -1,41 +1,169 @@
 /**
- * 移植自 openclaw/src/agents/live-model-turn-probes.ts
+ * Prompt/context builders for live model turn probes.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Live profile tests use these fixtures to verify text, file-label, and image
+ * turn behavior without coupling probe construction to the large live suite.
+ * Ported from openclaw/src/agents/live-model-turn-probes.ts
  */
 
-export const LIVE_MODEL_FILE_PROBE_TOKEN: unknown = undefined;
-export const LIVE_MODEL_FILE_PROBE_ENV: unknown = undefined;
-export const LIVE_MODEL_IMAGE_PROBE_ENV: unknown = undefined;
-export function isLiveModelProbeEnabled(..._args: unknown[]): unknown {
-  throw new Error("isLiveModelProbeEnabled not implemented (openclaw stub)");
+/** Stable token embedded in file-style live probe prompts. */
+export const LIVE_MODEL_FILE_PROBE_TOKEN = "opal";
+
+/** Environment toggle for live file-label probes. */
+export const LIVE_MODEL_FILE_PROBE_ENV = "OPENCLAW_LIVE_MODEL_FILE_PROBE";
+/** Environment toggle for live image probes. */
+export const LIVE_MODEL_IMAGE_PROBE_ENV = "OPENCLAW_LIVE_MODEL_IMAGE_PROBE";
+
+const PROBE_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAALUlEQVR4nO3OIQEAAAwCMPrnod8fAzMxv7S9pQgICAgICAgICAgICAgICKwDD+yWbLXSniMNAAAAAElFTkSuQmCC";
+
+const KNOWN_EMPTY_EXTRA_PROBE_MODELS = new Set(["openrouter/amazon/nova-2-lite-v1"]);
+const KNOWN_EMPTY_FILE_PROBE_MODELS = new Set([
+  "google/gemini-3.1-pro-preview",
+  "google/gemini-3.1-pro-preview-customtools",
+  "opencode-go/glm-5",
+  "opencode-go/glm-5.1",
+  "opencode-go/mimo-v2-omni",
+  "opencode-go/mimo-v2-pro",
+  "opencode-go/minimax-m2.5",
+  "openrouter/arcee-ai/trinity-mini",
+  "openrouter/deepseek/deepseek-chat-v3.1",
+  "openrouter/minimax/minimax-m2.5",
+  "openrouter/nvidia/llama-3.3-nemotron-super-49b-v1.5",
+  "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+  "openrouter/qwen/qwen3.5-9b",
+  "openrouter/tngtech/deepseek-r1t2-chimera",
+  "openrouter/z-ai/glm-4.5",
+  "openrouter/z-ai/glm-4.6",
+  "openrouter/z-ai/glm-4.7",
+  "openrouter/z-ai/glm-4.7-flash",
+  "openrouter/z-ai/glm-5",
+  "openrouter/z-ai/glm-5.1",
+]);
+const KNOWN_EMPTY_IMAGE_PROBE_MODELS = new Set([
+  "fireworks/accounts/fireworks/models/kimi-k2p5",
+  "fireworks/accounts/fireworks/models/kimi-k2p6",
+  "fireworks/accounts/fireworks/routers/kimi-k2p5-turbo",
+  "google/gemini-3.1-pro-preview-customtools",
+  "opencode/kimi-k2.6",
+  "opencode-go/mimo-v2-omni",
+  "opencode-go/kimi-k2.5",
+  "opencode-go/kimi-k2.6",
+  "openrouter/amazon/nova-pro-v1",
+  "openrouter/bytedance-seed/seed-1.6",
+]);
+
+function modelKey(model: { id: string; provider: string }): string {
+  return `${model.provider}/${model.id}`;
 }
-export function modelSupportsImageInput(..._args: unknown[]): unknown {
-  throw new Error("modelSupportsImageInput not implemented (openclaw stub)");
+
+/** Resolves live probe env toggles, defaulting to enabled when unset. */
+export function isLiveModelProbeEnabled(
+  env: Record<string, string | undefined>,
+  key: string,
+): boolean {
+  const raw = env[key]?.trim().toLowerCase();
+  if (!raw) {
+    return true;
+  }
+  return !["0", "false", "no", "off"].includes(raw);
 }
-export function shouldSkipLiveModelExtraProbes(..._args: unknown[]): unknown {
-  throw new Error("shouldSkipLiveModelExtraProbes not implemented (openclaw stub)");
+
+/** Returns whether model metadata advertises image input support. */
+export function modelSupportsImageInput(model: { input: string[] }): boolean {
+  return model.input.includes("image");
 }
-export function shouldSkipLiveModelFileProbe(..._args: unknown[]): unknown {
-  throw new Error("shouldSkipLiveModelFileProbe not implemented (openclaw stub)");
+
+/** Returns whether extra probes should skip known empty-response models. */
+export function shouldSkipLiveModelExtraProbes(model: { id: string; provider: string }): boolean {
+  return KNOWN_EMPTY_EXTRA_PROBE_MODELS.has(modelKey(model));
 }
-export function shouldSkipLiveModelImageProbe(..._args: unknown[]): unknown {
-  throw new Error("shouldSkipLiveModelImageProbe not implemented (openclaw stub)");
+
+/** Returns whether file-label probes should skip known empty-response models. */
+export function shouldSkipLiveModelFileProbe(model: { id: string; provider: string }): boolean {
+  if (model.provider === "opencode-go") {
+    return true;
+  }
+  return KNOWN_EMPTY_FILE_PROBE_MODELS.has(modelKey(model));
 }
-export function buildLiveModelFileProbeContext(..._args: unknown[]): unknown {
-  throw new Error("buildLiveModelFileProbeContext not implemented (openclaw stub)");
+
+/** Returns whether image probes should skip known empty-response models. */
+export function shouldSkipLiveModelImageProbe(model: { id: string; provider: string }): boolean {
+  return KNOWN_EMPTY_IMAGE_PROBE_MODELS.has(modelKey(model));
 }
-export function buildLiveModelFileProbeRetryContext(..._args: unknown[]): unknown {
-  throw new Error("buildLiveModelFileProbeRetryContext not implemented (openclaw stub)");
+
+type ProbeContext = {
+  systemPrompt?: string;
+  messages: Array<{
+    role: string;
+    content: string | Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
+    timestamp: number;
+  }>;
+};
+
+/** Builds the primary file-label probe context. */
+export function buildLiveModelFileProbeContext(params: { systemPrompt?: string }): ProbeContext {
+  return {
+    systemPrompt: params.systemPrompt,
+    messages: [
+      {
+        role: "user",
+        content:
+          "Read this visible label and reply with only the value after LIVE_LABEL.\n\n" +
+          `LIVE_LABEL=${LIVE_MODEL_FILE_PROBE_TOKEN}`,
+        timestamp: Date.now(),
+      },
+    ],
+  };
 }
-export function buildLiveModelImageProbeContext(..._args: unknown[]): unknown {
-  throw new Error("buildLiveModelImageProbeContext not implemented (openclaw stub)");
+
+/** Builds the fallback file-label prompt when the primary file probe is ambiguous. */
+export function buildLiveModelFileProbeRetryContext(params: { systemPrompt?: string }): ProbeContext {
+  return {
+    systemPrompt: params.systemPrompt,
+    messages: [
+      {
+        role: "user",
+        content:
+          "The visible label value is:\n\n" +
+          `${LIVE_MODEL_FILE_PROBE_TOKEN}\n\n` +
+          `Reply with exactly ${LIVE_MODEL_FILE_PROBE_TOKEN}.`,
+        timestamp: Date.now(),
+      },
+    ],
+  };
 }
-export function fileProbeTextMatches(..._args: unknown[]): unknown {
-  throw new Error("fileProbeTextMatches not implemented (openclaw stub)");
+
+/** Builds the image probe context with a tiny stable PNG fixture. */
+export function buildLiveModelImageProbeContext(params: { systemPrompt?: string }): ProbeContext {
+  return {
+    systemPrompt: params.systemPrompt,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Reply with exactly OK.",
+          },
+          {
+            type: "image",
+            data: PROBE_PNG_BASE64,
+            mimeType: "image/png",
+          },
+        ],
+        timestamp: Date.now(),
+      },
+    ],
+  };
 }
-export function imageProbeTextMatches(..._args: unknown[]): unknown {
-  throw new Error("imageProbeTextMatches not implemented (openclaw stub)");
+
+/** Returns whether file probe output contains the expected token. */
+export function fileProbeTextMatches(text: string): boolean {
+  return text.toLowerCase().includes(LIVE_MODEL_FILE_PROBE_TOKEN.toLowerCase());
+}
+
+/** Returns whether image probe output contains an OK acknowledgement. */
+export function imageProbeTextMatches(text: string): boolean {
+  return /\bok\b/i.test(text);
 }

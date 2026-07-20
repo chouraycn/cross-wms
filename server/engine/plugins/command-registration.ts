@@ -1,12 +1,11 @@
-// @ts-nocheck
 /** Validates and registers plugin command definitions into the global command registry. */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import { isOperatorScope } from "../gateway/operator-scopes.js";
 import { logVerbose } from './_stub_parent__globals.js';
-import { isRecord } from './_stub_parent__utils.js';
+import { isRecord } from './_parent__utils.js';
 import { normalizeAgentPromptSurfaceKind } from "./agent-prompt-surface-kind.js";
 import {
   clearPluginCommands,

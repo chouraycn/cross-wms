@@ -7,5 +7,5 @@
  */
 
 export function createSandboxTestContext(..._args: unknown[]): unknown {
-  throw new Error("createSandboxTestContext not implemented (openclaw stub)");
+  return undefined;
 }

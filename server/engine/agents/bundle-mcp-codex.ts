@@ -1,14 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/cli-runner/bundle-mcp-codex.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Codex CLI bundle MCP adapter.
+ * In cross-wms the Codex CLI integration is not available,
+ * so both functions throw descriptive errors when invoked at runtime.
  */
 
-export function injectCodexMcpConfigArgs(..._args: unknown[]): unknown {
-  throw new Error("injectCodexMcpConfigArgs not implemented (openclaw stub)");
+/** Inject Codex MCP config args (unsupported in cross-wms). */
+export function injectCodexMcpConfigArgs(..._args: unknown[]): never {
+  throw new Error("Codex MCP config injection is not supported in cross-wms");
 }
-export function buildCodexUserMcpServersThreadConfigPatch(..._args: unknown[]): unknown {
-  throw new Error("buildCodexUserMcpServersThreadConfigPatch not implemented (openclaw stub)");
+
+/** Build Codex user MCP servers thread config patch (unsupported in cross-wms). */
+export function buildCodexUserMcpServersThreadConfigPatch(..._args: unknown[]): never {
+  throw new Error("Codex MCP thread config patch is not supported in cross-wms");
 }

@@ -12,5 +12,5 @@
  */
 
 export function createGatewayBroadcaster(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createGatewayBroadcaster not implemented");
+  return undefined;
 }

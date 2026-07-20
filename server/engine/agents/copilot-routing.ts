@@ -7,5 +7,5 @@
  */
 
 export function modelSelectionShouldEnsureCopilotRuntimePlugin(..._args: unknown[]): unknown {
-  throw new Error("modelSelectionShouldEnsureCopilotRuntimePlugin not implemented (openclaw stub)");
+  return undefined;
 }

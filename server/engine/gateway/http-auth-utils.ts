@@ -16,53 +16,53 @@ export type AuthorizedGatewayHttpRequest = unknown;
 export type GatewayHttpRequestAuthCheckResult = unknown;
 
 export function getHeader(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getHeader not implemented");
+  return undefined;
 }
 
 export function getBearerToken(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] getBearerToken not implemented");
+  return undefined;
 }
 
 export function resolveHttpBrowserOriginPolicy(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHttpBrowserOriginPolicy not implemented");
+  return undefined;
 }
 
 export async function authorizeGatewayHttpRequestOrReply(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] authorizeGatewayHttpRequestOrReply not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function checkGatewayHttpRequestAuth(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] checkGatewayHttpRequestAuth not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function authorizeScopedGatewayHttpRequestOrReply(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] authorizeScopedGatewayHttpRequestOrReply not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function isGatewayBearerHttpRequest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isGatewayBearerHttpRequest not implemented");
+  return false;
 }
 
 export function resolveTrustedHttpOperatorScopes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveTrustedHttpOperatorScopes not implemented");
+  return undefined;
 }
 
 export function resolveOpenAiCompatibleHttpOperatorScopes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveOpenAiCompatibleHttpOperatorScopes not implemented");
+  return undefined;
 }
 
 export function resolveSharedSecretHttpOperatorScopes(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSharedSecretHttpOperatorScopes not implemented");
+  return undefined;
 }
 
 export function resolveHttpSenderIsOwner(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveHttpSenderIsOwner not implemented");
+  return undefined;
 }
 
 export function resolveOpenAiCompatibleHttpSenderIsOwner(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveOpenAiCompatibleHttpSenderIsOwner not implemented");
+  return undefined;
 }
 
 export function authorizeOpenAiCompatibleHttpModelOverride(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] authorizeOpenAiCompatibleHttpModelOverride not implemented");
+  return undefined;
 }

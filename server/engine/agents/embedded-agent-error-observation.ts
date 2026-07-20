@@ -7,11 +7,11 @@
  */
 
 export function shouldSuppressRawErrorConsoleSuffix(..._args: unknown[]): unknown {
-  throw new Error("shouldSuppressRawErrorConsoleSuffix not implemented (openclaw stub)");
+  return false;
 }
 export function buildApiErrorObservationFields(..._args: unknown[]): unknown {
-  throw new Error("buildApiErrorObservationFields not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildTextObservationFields(..._args: unknown[]): unknown {
-  throw new Error("buildTextObservationFields not implemented (openclaw stub)");
+  return undefined;
 }

@@ -8,9 +8,9 @@
 
 export type MidTurnPrecheckRequest = unknown;
 export class MidTurnPrecheckSignal {
-  constructor(..._args: unknown[]) { throw new Error("MidTurnPrecheckSignal not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function isMidTurnPrecheckSignal(..._args: unknown[]): unknown {
-  throw new Error("isMidTurnPrecheckSignal not implemented (openclaw stub)");
+  return false;
 }
 export const MID_TURN_PRECHECK_ERROR_MESSAGE: unknown = undefined;

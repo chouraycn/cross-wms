@@ -7,8 +7,8 @@
  */
 
 export function runAgentHarnessAfterToolCallHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessAfterToolCallHook not implemented (openclaw stub)");
+  return undefined;
 }
 export function runAgentHarnessBeforeMessageWriteHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessBeforeMessageWriteHook not implemented (openclaw stub)");
+  return undefined;
 }

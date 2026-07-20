@@ -7,5 +7,5 @@
  */
 
 export function resolveClaudeCliProjectDirForWorkspace(..._args: unknown[]): unknown {
-  throw new Error("resolveClaudeCliProjectDirForWorkspace not implemented (openclaw stub)");
+  return undefined;
 }

@@ -12,5 +12,5 @@
  */
 
 export function createNodeSubscriptionManager(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createNodeSubscriptionManager not implemented");
+  return undefined;
 }

@@ -9,14 +9,14 @@
 export type PromptCacheChange = unknown;
 export type PromptCacheBreak = unknown;
 export function collectPromptCacheToolNames(..._args: unknown[]): unknown {
-  throw new Error("collectPromptCacheToolNames not implemented (openclaw stub)");
+  return [];
 }
 export function beginPromptCacheObservation(..._args: unknown[]): unknown {
-  throw new Error("beginPromptCacheObservation not implemented (openclaw stub)");
+  return undefined;
 }
 export function completePromptCacheObservation(..._args: unknown[]): unknown {
-  throw new Error("completePromptCacheObservation not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetPromptCacheObservabilityForTest(..._args: unknown[]): unknown {
-  throw new Error("resetPromptCacheObservabilityForTest not implemented (openclaw stub)");
+  return undefined;
 }

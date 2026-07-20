@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/config/io.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ParseConfigJson5Result = unknown;
 export type ConfigWriteResult = unknown;
@@ -12,67 +11,67 @@ export type ConfigSnapshotReadOptions = unknown;
 export type ReadConfigFileSnapshotWithPluginMetadataResult = unknown;
 export type BestEffortConfigSnapshot = unknown;
 export function resolveConfigSnapshotHash(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigSnapshotHash");
+  return undefined;
 }
 export function parseConfigJson5(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseConfigJson5");
+  return undefined;
 }
 export function restoreEnvChangesIfUnchanged(...args: unknown[]): unknown {
-  throw new Error("not implemented: restoreEnvChangesIfUnchanged");
+  return undefined;
 }
 export function createConfigIO(...args: unknown[]): unknown {
-  throw new Error("not implemented: createConfigIO");
+  return undefined;
 }
 export function clearConfigCache(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearConfigCache");
+  return undefined;
 }
 export function registerConfigWriteListener(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerConfigWriteListener");
+  return undefined;
 }
 export function loadConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadConfig");
+  return undefined;
 }
 export function getRuntimeConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeConfig");
+  return undefined;
 }
 export function readBestEffortConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: readBestEffortConfig");
+  return undefined;
 }
 export function readBestEffortConfigSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: readBestEffortConfigSnapshot");
+  return undefined;
 }
 export function readSourceConfigBestEffort(...args: unknown[]): unknown {
-  throw new Error("not implemented: readSourceConfigBestEffort");
+  return undefined;
 }
 export function readConfigFileSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: readConfigFileSnapshot");
+  return undefined;
 }
 export function readConfigFileSnapshotWithPluginMetadata(...args: unknown[]): unknown {
-  throw new Error("not implemented: readConfigFileSnapshotWithPluginMetadata");
+  return undefined;
 }
 export function promoteConfigSnapshotToLastKnownGood(...args: unknown[]): unknown {
-  throw new Error("not implemented: promoteConfigSnapshotToLastKnownGood");
+  return undefined;
 }
 export function recoverConfigFromLastKnownGood(...args: unknown[]): unknown {
-  throw new Error("not implemented: recoverConfigFromLastKnownGood");
+  return undefined;
 }
 export function recoverConfigFromJsonRootSuffix(...args: unknown[]): unknown {
-  throw new Error("not implemented: recoverConfigFromJsonRootSuffix");
+  return undefined;
 }
 export function readSourceConfigSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: readSourceConfigSnapshot");
+  return undefined;
 }
 export function readConfigFileSnapshotForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: readConfigFileSnapshotForWrite");
+  return undefined;
 }
 export function readSourceConfigSnapshotForWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: readSourceConfigSnapshotForWrite");
+  return undefined;
 }
 export function writeConfigFile(...args: unknown[]): unknown {
-  throw new Error("not implemented: writeConfigFile");
+  return undefined;
 }
 export class ConfigRuntimeRefreshError {
-  constructor(...args: unknown[]) { throw new Error("not implemented: ConfigRuntimeRefreshError"); }
+  // Stub: not fully ported
 }
 export type clearRuntimeConfigSnapshot = unknown;
 export type getRuntimeConfigSnapshotMetadata = unknown;

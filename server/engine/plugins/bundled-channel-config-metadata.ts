@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Loads bundled channel config schema metadata from source or public surface modules. */
 import fs from "node:fs";
 import path from "node:path";

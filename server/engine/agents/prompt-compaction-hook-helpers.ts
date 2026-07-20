@@ -1,17 +1,48 @@
 /**
  * 移植自 openclaw/src/agents/harness/prompt-compaction-hook-helpers.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Agent harness prompt and compaction hook helpers.
+ * cross-wms 简化实现：钩子运行器为空操作（无插件系统）。
  */
 
-export function resolveAgentHarnessBeforePromptBuildResult(..._args: unknown[]): unknown {
-  throw new Error("resolveAgentHarnessBeforePromptBuildResult not implemented (openclaw stub)");
+/** Prompt/developer-instruction pair after harness prompt-build hooks run. */
+type AgentHarnessPromptBuildResult = {
+  prompt: string;
+  developerInstructions: string;
+  promptInputRange?: { start: number; end: number };
+};
+
+/** Runs before-prompt hooks and returns the adjusted prompt fields. */
+export async function resolveAgentHarnessBeforePromptBuildResult(params: {
+  prompt: string;
+  developerInstructions: string;
+  messages: unknown[];
+  ctx?: unknown;
+  beforeAgentStartResult?: unknown;
+}): Promise<AgentHarnessPromptBuildResult> {
+  // Simplified: no plugin hooks in cross-wms, return inputs as-is
+  return {
+    prompt: params.prompt,
+    developerInstructions: params.developerInstructions,
+    promptInputRange: { start: 0, end: params.prompt.length },
+  };
 }
-export function runAgentHarnessBeforeCompactionHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessBeforeCompactionHook not implemented (openclaw stub)");
+
+/** Runs best-effort before-compaction hooks for a harness session. */
+export async function runAgentHarnessBeforeCompactionHook(_params: {
+  sessionFile: string;
+  messages?: unknown[];
+  ctx?: unknown;
+}): Promise<void> {
+  // No-op: no plugin hooks in cross-wms
 }
-export function runAgentHarnessAfterCompactionHook(..._args: unknown[]): unknown {
-  throw new Error("runAgentHarnessAfterCompactionHook not implemented (openclaw stub)");
+
+/** Runs best-effort after-compaction hooks for a harness session. */
+export async function runAgentHarnessAfterCompactionHook(_params: {
+  sessionFile: string;
+  messages?: unknown[];
+  ctx?: unknown;
+  compactedCount: number;
+}): Promise<void> {
+  // No-op: no plugin hooks in cross-wms
 }

@@ -26,6 +26,7 @@ export function registerAcpCli(program: Command): void {
     .option("--provenance <mode>", "ACP provenance mode: off, meta, or meta+receipt")
     .option("-v, --verbose", "Verbose logging to stderr", false)
     .action(() => {
-      throw new Error("openclaw acp: not supported in stub mode (acp/*, terminal-core/* not ported).");
+      console.error('openclaw acp is not available in cross-wms');
+      process.exit(1);
     });
 }

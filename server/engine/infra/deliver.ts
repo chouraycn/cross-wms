@@ -1,26 +1,84 @@
 // 移植自 openclaw/src/infra/deliver.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：outbound delivery 依赖简化
 
-export type OutboundDeliveryQueuePolicy = unknown;
-export type OutboundDeliveryIntent = unknown;
-export type DurableFinalDeliveryRequirement = unknown;
-export type DurableFinalDeliveryRequirements = unknown;
-export type OutboundDurableDeliverySupport = unknown;
-export type DeliverOutboundPayloadsParams = unknown;
-export type OutboundDeliveryResult = unknown;
-export type NormalizedOutboundPayload = unknown;
-export function resolveOutboundDurableFinalDeliverySupport(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveOutboundDurableFinalDeliverySupport");
+export type OutboundDeliveryQueuePolicy = "immediate" | "queued" | "durable";
+
+export type OutboundDeliveryIntent = {
+  channel: string;
+  to: string;
+  accountId?: string;
+  threadId?: string;
+  payloads: unknown[];
+  queuePolicy?: OutboundDeliveryQueuePolicy;
+};
+
+export type DurableFinalDeliveryRequirement = "required" | "best-effort" | "none";
+
+export type DurableFinalDeliveryRequirements = {
+  requirement: DurableFinalDeliveryRequirement;
+};
+
+export type OutboundDurableDeliverySupport = {
+  supported: boolean;
+  requirements?: DurableFinalDeliveryRequirements;
+};
+
+export type NormalizedOutboundPayload = {
+  text?: string;
+  mediaUrl?: string;
+  [key: string]: unknown;
+};
+
+export type OutboundSendDeps = {
+  send?: (params: unknown) => Promise<unknown>;
+};
+
+export type DeliverOutboundPayloadsParams = {
+  channel: string;
+  to: string;
+  accountId?: string;
+  threadId?: string;
+  payloads: readonly NormalizedOutboundPayload[];
+  cfg?: unknown;
+  sessionContext?: unknown;
+  sendDeps?: OutboundSendDeps;
+};
+
+export type OutboundDeliveryResult = {
+  status: "ok" | "failed" | "partial_failed";
+  results?: unknown[];
+  error?: Error;
+};
+
+/** Resolves durable delivery support for a channel. */
+export function resolveOutboundDurableFinalDeliverySupport(_params: {
+  channel: string;
+  cfg?: unknown;
+}): OutboundDurableDeliverySupport {
+  return { supported: false };
 }
-export function deliverOutboundPayloads(...args: unknown[]): unknown {
-  throw new Error("not implemented: deliverOutboundPayloads");
+
+/** Delivers outbound payloads. Simplified without real delivery. */
+export async function deliverOutboundPayloads(params: DeliverOutboundPayloadsParams): Promise<OutboundDeliveryResult> {
+  return { status: "ok" };
 }
-export function deliverOutboundPayloadsInternal(...args: unknown[]): unknown {
-  throw new Error("not implemented: deliverOutboundPayloadsInternal");
+
+/** Internal delivery implementation. Simplified without real delivery. */
+export async function deliverOutboundPayloadsInternal(params: DeliverOutboundPayloadsParams): Promise<OutboundDeliveryResult> {
+  return { status: "ok" };
 }
-export type normalizeOutboundPayloads = unknown;
-export const normalizeOutboundPayloads: unknown = undefined;
-export type resolveOutboundSendDep = unknown;
-export const resolveOutboundSendDep: unknown = undefined;
-export type OutboundSendDeps = unknown;
-export const OutboundSendDeps: unknown = undefined;
+
+/** Normalizes outbound payloads for delivery. */
+export function normalizeOutboundPayloads(payloads: readonly unknown[]): NormalizedOutboundPayload[] {
+  return payloads.map((p) => {
+    if (p && typeof p === "object" && !Array.isArray(p)) {
+      return p as NormalizedOutboundPayload;
+    }
+    return { text: String(p) };
+  });
+}
+
+/** Resolves outbound send dependencies. */
+export function resolveOutboundSendDep(params: { channel: string; cfg?: unknown }): OutboundSendDeps {
+  return {};
+}

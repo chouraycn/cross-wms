@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Extracts explicit public artifacts from web provider plugin manifests.
-import { isRecord } from './_stub_openclaw__normalization_core__record_coerce.js';
-import { sortUniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
+import { sortUniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import { loadBundledPluginPublicArtifactModuleFromCandidatesSync } from "./public-surface-loader.js";
 import type {
   PluginWebFetchProviderEntry,

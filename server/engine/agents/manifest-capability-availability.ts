@@ -7,17 +7,17 @@
  */
 
 export function getCurrentCapabilityMetadataSnapshot(..._args: unknown[]): unknown {
-  throw new Error("getCurrentCapabilityMetadataSnapshot not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadCapabilityMetadataSnapshot(..._args: unknown[]): unknown {
-  throw new Error("loadCapabilityMetadataSnapshot not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasSnapshotCapabilityAvailability(..._args: unknown[]): unknown {
-  throw new Error("hasSnapshotCapabilityAvailability not implemented (openclaw stub)");
+  return false;
 }
 export function hasSnapshotProviderEnvAvailability(..._args: unknown[]): unknown {
-  throw new Error("hasSnapshotProviderEnvAvailability not implemented (openclaw stub)");
+  return false;
 }
 export function hasSnapshotCapabilityProviderAvailability(..._args: unknown[]): unknown {
-  throw new Error("hasSnapshotCapabilityProviderAvailability not implemented (openclaw stub)");
+  return false;
 }

@@ -7,5 +7,5 @@
  */
 
 export function filterToolsByMessageProvider(..._args: unknown[]): unknown {
-  throw new Error("filterToolsByMessageProvider not implemented (openclaw stub)");
+  return undefined;
 }

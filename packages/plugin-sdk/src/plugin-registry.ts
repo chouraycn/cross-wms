@@ -27,6 +27,7 @@ import type {
   PluginRegistryStats,
   PluginContract,
   CompactionProviderRegistration,
+  ModelCatalogProviderRegistration,
   PluginHookType,
   HookHandler,
 } from './types';
@@ -534,6 +535,10 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
         runtime.capabilities.push(cap);
         self.addToCapabilityIndex(pluginId, cap);
         self.emit('capability_registered', pluginId, cap);
+      },
+
+      registerModelCatalogProvider(_provider: ModelCatalogProviderRegistration): void {
+        // Model catalog providers are registered but not stored as capabilities.
       },
 
       registerMemoryHost(cap: PluginMemoryHostCapability): void {

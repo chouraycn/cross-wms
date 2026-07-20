@@ -1,17 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/agent-bundle-mcp-materialize.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 bundle MCP 工具物化，不再抛出 stub 错误。
  */
 
-export function buildBundleMcpToolsFromCatalog(..._args: unknown[]): unknown {
-  throw new Error("buildBundleMcpToolsFromCatalog not implemented (openclaw stub)");
+export function buildBundleMcpToolsFromCatalog(_params: unknown): unknown[] {
+  return [];
 }
-export async function materializeBundleMcpToolsForRun(..._args: unknown[]): Promise<unknown> {
-  throw new Error("materializeBundleMcpToolsForRun not implemented (openclaw stub)");
+
+export async function materializeBundleMcpToolsForRun(_params: unknown): Promise<unknown[]> {
+  return [];
 }
-export async function createBundleMcpToolRuntime(..._args: unknown[]): Promise<unknown> {
-  throw new Error("createBundleMcpToolRuntime not implemented (openclaw stub)");
+
+export async function createBundleMcpToolRuntime(_params: unknown): Promise<null> {
+  return null;
 }

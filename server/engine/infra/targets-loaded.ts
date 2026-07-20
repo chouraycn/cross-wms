@@ -1,6 +1,12 @@
 // 移植自 openclaw/src/infra/targets-loaded.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export function tryResolveLoadedOutboundTarget(...args: unknown[]): unknown {
-  throw new Error("not implemented: tryResolveLoadedOutboundTarget");
+/** Attempts to resolve a loaded outbound target. Simplified without channel plugin access. */
+export function tryResolveLoadedOutboundTarget(params: {
+  channel: string;
+  target?: string;
+  cfg?: unknown;
+}): { channel: string; target: string } | null {
+  if (!params.channel?.trim() || !params.target?.trim()) return null;
+  return { channel: params.channel.trim(), target: params.target.trim() };
 }

@@ -191,3 +191,9 @@ export class MemoryDreaming extends EventEmitter<DreamingEvents> {
 }
 
 export const memoryDreaming = new MemoryDreaming();
+
+// Stub exports required by server/engine plugins
+export const DEFAULT_MEMORY_DREAMING_PLUGIN_ID = 'memory-dreaming';
+export const resolveMemoryDreamingConfig = (_config?: unknown) => ({ enabled: true });
+export const resolveMemoryDreamingPluginConfig = resolveMemoryDreamingConfig;
+export const resolveMemoryDreamingPluginId = () => DEFAULT_MEMORY_DREAMING_PLUGIN_ID;

@@ -33,9 +33,8 @@ export function registerModelsCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .option("--plain", "Plain line output", false)
     .action(() => {
-      throw new Error(
-        "openclaw models list: not supported in stub mode (commands/models/* not ported).",
-      );
+      console.error('openclaw models list is not available in cross-wms');
+      process.exit(1);
     });
 
   models
@@ -44,9 +43,8 @@ export function registerModelsCli(program: Command): void {
     .option("--json", "Output JSON", false)
     .option("--plain", "Plain output", false)
     .action(() => {
-      throw new Error(
-        "openclaw models status: not supported in stub mode (commands/models/* not ported).",
-      );
+      console.error('openclaw models status is not available in cross-wms');
+      process.exit(1);
     });
 
   models
@@ -54,9 +52,8 @@ export function registerModelsCli(program: Command): void {
     .description("Set the default model")
     .argument("<model>", "Model id or alias")
     .action(() => {
-      throw new Error(
-        "openclaw models set: not supported in stub mode (commands/models/* not ported).",
-      );
+      console.error('openclaw models set is not available in cross-wms');
+      process.exit(1);
     });
 
   models
@@ -64,9 +61,8 @@ export function registerModelsCli(program: Command): void {
     .description("Set the image model")
     .argument("<model>", "Model id or alias")
     .action(() => {
-      throw new Error(
-        "openclaw models set-image: not supported in stub mode (commands/models/* not ported).",
-      );
+      console.error('openclaw models set-image is not available in cross-wms');
+      process.exit(1);
     });
 
   models.command("aliases").description("Manage model aliases");
@@ -77,15 +73,13 @@ export function registerModelsCli(program: Command): void {
     .command("scan")
     .description("Scan OpenRouter free models for tools + images")
     .action(() => {
-      throw new Error(
-        "openclaw models scan: not supported in stub mode (commands/models/* not ported).",
-      );
+      console.error('openclaw models scan is not available in cross-wms');
+      process.exit(1);
     });
 
   models.action(() => {
-    throw new Error(
-      "openclaw models: not supported in stub mode (commands/models/* not ported).",
-    );
+    console.error('openclaw models is not available in cross-wms');
+      process.exit(1);
   });
 
   const auth = models.command("auth").description("Manage model auth profiles");

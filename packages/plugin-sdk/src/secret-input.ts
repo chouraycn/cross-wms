@@ -1,32 +1,10 @@
-// @ts-nocheck
 // Secret input helpers normalize credential prompt definitions for plugin setup flows.
 import { z } from "zod";
-// import {
-//   hasConfiguredSecretInput,
-//   isSecretRef,
-//   coerceSecretRef,
-//   resolveSecretInputString,
-//   normalizeResolvedSecretInputString,
-//   normalizeSecretInputString,
-// } from "../config/types.secrets.js"; // TODO: 依赖模块未移植
-// import { normalizeSecretInput } from "../utils/normalize-secret-input.js"; // TODO: 依赖模块未移植
-// import { buildSecretInputSchema } from "./secret-input-schema.js"; // TODO: 依赖模块未移植
 
-// export type {
-//   SecretInput,
-//   SecretInputStringResolution,
-//   SecretInputStringResolutionMode,
-// } from "../config/types.secrets.js"; // TODO: 依赖模块未移植
-// export {
-//   buildSecretInputSchema,
-//   coerceSecretRef,
-//   hasConfiguredSecretInput,
-//   isSecretRef,
-//   resolveSecretInputString,
-//   normalizeResolvedSecretInputString,
-//   normalizeSecretInput,
-//   normalizeSecretInputString,
-// }; // TODO: 依赖模块未移植
+// TODO: 依赖模块未移植，暂用本地桩
+function buildSecretInputSchema(): z.ZodType<unknown> {
+  return z.unknown();
+}
 
 /**
  * Builds an optional secret-input schema for config fields that may be omitted.

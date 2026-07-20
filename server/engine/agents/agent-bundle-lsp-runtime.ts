@@ -1,18 +1,41 @@
 /**
  * 移植自 openclaw/src/agents/agent-bundle-lsp-runtime.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Session-scoped embedded LSP runtime and tool materialization for agent bundles.
+ * cross-wms provides a no-op implementation since the full LSP infrastructure
+ * (process spawning, JSON-RPC framing, tool registration) is not available.
  */
 
-export type BundleLspToolRuntime = unknown;
-export function spawnLspServerProcess(..._args: unknown[]): unknown {
-  throw new Error("spawnLspServerProcess not implemented (openclaw stub)");
+/** Materialized LSP tools plus session capabilities and cleanup handle. */
+export type BundleLspToolRuntime = {
+  tools: unknown[];
+  sessions: Array<{ serverName: string; capabilities: Record<string, unknown> }>;
+  dispose: () => Promise<void>;
+};
+
+/**
+ * Spawns one LSP server process. In cross-wms this returns undefined
+ * since process spawning infrastructure is not available.
+ */
+export function spawnLspServerProcess(_config: Record<string, unknown>): undefined {
+  // cross-wms does not have the LSP process spawning infrastructure.
+  return undefined;
 }
-export async function createBundleLspToolRuntime(..._args: unknown[]): Promise<unknown> {
-  throw new Error("createBundleLspToolRuntime not implemented (openclaw stub)");
+
+/**
+ * Creates bundle LSP tool runtime by loading LSP server config and spawning processes.
+ * In cross-wms this returns an empty runtime since the full infrastructure is not available.
+ */
+export async function createBundleLspToolRuntime(_params: {
+  workspaceDir: string;
+  cfg?: unknown;
+  reservedToolNames?: Iterable<string>;
+}): Promise<BundleLspToolRuntime> {
+  // cross-wms lacks LSP config loading, process spawning, and tool registration.
+  return { tools: [], sessions: [], dispose: async () => {} };
 }
-export async function disposeAllBundleLspRuntimes(..._args: unknown[]): Promise<unknown> {
-  throw new Error("disposeAllBundleLspRuntimes not implemented (openclaw stub)");
+
+/** Disposes all active bundle LSP runtimes — no-op in cross-wms. */
+export async function disposeAllBundleLspRuntimes(): Promise<void> {
+  // No active sessions to dispose in cross-wms.
 }

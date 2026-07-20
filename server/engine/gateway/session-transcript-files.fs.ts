@@ -16,29 +16,29 @@ export type ArchivedSessionTranscript = unknown;
 export type SessionArchiveCleanupRule = unknown;
 
 export function resolveSessionTranscriptCandidates(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionTranscriptCandidates not implemented");
+  return undefined;
 }
 
 export async function resolveSessionTranscriptResetArchiveCandidatesAsync(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveSessionTranscriptResetArchiveCandidatesAsync not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function archiveFileOnDisk(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] archiveFileOnDisk not implemented");
+  return undefined;
 }
 
 export function archiveSessionTranscripts(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] archiveSessionTranscripts not implemented");
+  return undefined;
 }
 
 export function archiveSessionTranscriptsDetailed(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] archiveSessionTranscriptsDetailed not implemented");
+  return undefined;
 }
 
 export function resolveStableSessionEndTranscript(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveStableSessionEndTranscript not implemented");
+  return undefined;
 }
 
 export async function cleanupArchivedSessionTranscripts(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] cleanupArchivedSessionTranscripts not implemented");
+  return Promise.resolve(undefined);
 }

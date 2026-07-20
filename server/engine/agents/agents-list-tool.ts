@@ -7,5 +7,5 @@
  */
 
 export function createAgentsListTool(..._args: unknown[]): unknown {
-  throw new Error("createAgentsListTool not implemented (openclaw stub)");
+  return undefined;
 }

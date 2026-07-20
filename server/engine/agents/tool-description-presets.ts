@@ -17,20 +17,20 @@ export const SESSIONS_SPAWN_SUBAGENT_TOOL_DISPLAY_SUMMARY: unknown = undefined;
 export const SESSION_STATUS_TOOL_DISPLAY_SUMMARY: unknown = undefined;
 export const UPDATE_PLAN_TOOL_DISPLAY_SUMMARY: unknown = undefined;
 export function describeSessionsListTool(..._args: unknown[]): unknown {
-  throw new Error("describeSessionsListTool not implemented (openclaw stub)");
+  return "";
 }
 export function describeSessionsHistoryTool(..._args: unknown[]): unknown {
-  throw new Error("describeSessionsHistoryTool not implemented (openclaw stub)");
+  return "";
 }
 export function describeSessionsSendTool(..._args: unknown[]): unknown {
-  throw new Error("describeSessionsSendTool not implemented (openclaw stub)");
+  return "";
 }
 export function describeSessionsSpawnTool(..._args: unknown[]): unknown {
-  throw new Error("describeSessionsSpawnTool not implemented (openclaw stub)");
+  return "";
 }
 export function describeSessionStatusTool(..._args: unknown[]): unknown {
-  throw new Error("describeSessionStatusTool not implemented (openclaw stub)");
+  return "";
 }
 export function describeUpdatePlanTool(..._args: unknown[]): unknown {
-  throw new Error("describeUpdatePlanTool not implemented (openclaw stub)");
+  return "";
 }

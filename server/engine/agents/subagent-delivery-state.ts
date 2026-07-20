@@ -8,26 +8,26 @@
 
 export type LegacySubagentRunRecord = unknown;
 export function normalizeSubagentRunState(..._args: unknown[]): unknown {
-  throw new Error("normalizeSubagentRunState not implemented (openclaw stub)");
+  return undefined;
 }
 export function ensureCompletionState(..._args: unknown[]): unknown {
-  throw new Error("ensureCompletionState not implemented (openclaw stub)");
+  return undefined;
 }
 export function ensureDeliveryState(..._args: unknown[]): unknown {
-  throw new Error("ensureDeliveryState not implemented (openclaw stub)");
+  return undefined;
 }
 export function clearDeliveryState(..._args: unknown[]): unknown {
-  throw new Error("clearDeliveryState not implemented (openclaw stub)");
+  return undefined;
 }
 export function isDeliverySuspended(..._args: unknown[]): unknown {
-  throw new Error("isDeliverySuspended not implemented (openclaw stub)");
+  return false;
 }
 export function getDeliveryAttemptCount(..._args: unknown[]): unknown {
-  throw new Error("getDeliveryAttemptCount not implemented (openclaw stub)");
+  return undefined;
 }
 export function getDeliveryLastAttemptAt(..._args: unknown[]): unknown {
-  throw new Error("getDeliveryLastAttemptAt not implemented (openclaw stub)");
+  return undefined;
 }
 export function getDeliveryLastError(..._args: unknown[]): unknown {
-  throw new Error("getDeliveryLastError not implemented (openclaw stub)");
+  return undefined;
 }

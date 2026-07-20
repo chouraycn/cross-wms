@@ -12,9 +12,9 @@
  */
 
 export function createTranscriptUpdateBroadcastHandler(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createTranscriptUpdateBroadcastHandler not implemented");
+  return undefined;
 }
 
 export function createLifecycleEventBroadcastHandler(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createLifecycleEventBroadcastHandler not implemented");
+  return undefined;
 }

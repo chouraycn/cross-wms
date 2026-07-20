@@ -1,11 +1,20 @@
-// 移植自 openclaw/src/cli/program-context.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Attaches ProgramContext metadata to Commander instances for lazy command helpers.
+// 移植自 openclaw/src/cli/program/program-context.ts
 
-export function setProgramContext(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setProgramContext");
+import type { Command } from "commander";
+import type { ProgramContext } from "./context.js";
+
+const PROGRAM_CONTEXT_SYMBOL: unique symbol = Symbol.for("openclaw.cli.programContext");
+
+/** Attach the current root ProgramContext to a Commander program. */
+export function setProgramContext(program: Command, ctx: ProgramContext): void {
+  (program as Command & { [PROGRAM_CONTEXT_SYMBOL]?: ProgramContext })[PROGRAM_CONTEXT_SYMBOL] =
+    ctx;
 }
 
-export function getProgramContext(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getProgramContext");
+/** Read ProgramContext metadata from a Commander program when available. */
+export function getProgramContext(program: Command): ProgramContext | undefined {
+  return (program as Command & { [PROGRAM_CONTEXT_SYMBOL]?: ProgramContext })[
+    PROGRAM_CONTEXT_SYMBOL
+  ];
 }

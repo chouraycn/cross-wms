@@ -1,26 +1,57 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/path-resolve.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Auth profile path resolution helpers.
+ * Cross-wms simplified: uses config-dir based path resolution.
  */
 
-export function resolveAuthStorePath(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthStorePath not implemented (openclaw stub)");
+import os from "node:os";
+import path from "node:path";
+
+function resolveDefaultAgentDir(): string {
+  return path.join(os.homedir(), ".openclaw", "agent");
 }
-export function resolveLegacyAuthStorePath(..._args: unknown[]): unknown {
-  throw new Error("resolveLegacyAuthStorePath not implemented (openclaw stub)");
+
+function resolveAgentDir(agentDir?: string): string {
+  return agentDir?.trim() ? path.resolve(agentDir) : resolveDefaultAgentDir();
 }
-export function resolveAuthStatePath(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthStatePath not implemented (openclaw stub)");
+
+/** Resolves the path to the auth secrets store file. */
+export function resolveAuthStorePath(agentDir?: string): string {
+  return path.join(resolveAgentDir(agentDir), "auth-profile.json");
 }
-export function resolveAuthStorePathForDisplay(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthStorePathForDisplay not implemented (openclaw stub)");
+
+/** Resolves the path to the legacy auth store file. */
+export function resolveLegacyAuthStorePath(agentDir?: string): string {
+  return path.join(resolveAgentDir(agentDir), "auth.json");
 }
-export function resolveAuthStatePathForDisplay(..._args: unknown[]): unknown {
-  throw new Error("resolveAuthStatePathForDisplay not implemented (openclaw stub)");
+
+/** Resolves the path to the auth runtime state file. */
+export function resolveAuthStatePath(agentDir?: string): string {
+  return path.join(resolveAgentDir(agentDir), "auth-state.json");
 }
-export function resolveOAuthRefreshLockPath(..._args: unknown[]): unknown {
-  throw new Error("resolveOAuthRefreshLockPath not implemented (openclaw stub)");
+
+/** Resolves the auth store path for display (tilde-shortened). */
+export function resolveAuthStorePathForDisplay(agentDir?: string): string {
+  const fullPath = resolveAuthStorePath(agentDir);
+  return shortenPath(fullPath);
+}
+
+/** Resolves the auth state path for display (tilde-shortened). */
+export function resolveAuthStatePathForDisplay(agentDir?: string): string {
+  const fullPath = resolveAuthStatePath(agentDir);
+  return shortenPath(fullPath);
+}
+
+/** Resolves the OAuth refresh lock file path. */
+export function resolveOAuthRefreshLockPath(agentDir?: string): string {
+  return path.join(resolveAgentDir(agentDir), "oauth-refresh.lock");
+}
+
+function shortenPath(value: string): string {
+  const home = os.homedir();
+  if (value.startsWith(home)) {
+    return `~${value.slice(home.length)}`;
+  }
+  return value;
 }

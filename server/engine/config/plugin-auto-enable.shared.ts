@@ -1,23 +1,22 @@
 // 移植自 openclaw/src/config/plugin-auto-enable.shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type PluginAutoEnableCandidate = unknown;
 export type PluginAutoEnableResult = unknown;
 export function configMayNeedPluginAutoEnable(...args: unknown[]): unknown {
-  throw new Error("not implemented: configMayNeedPluginAutoEnable");
+  return undefined;
 }
 export function resolvePluginAutoEnableReadiness(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginAutoEnableReadiness");
+  return undefined;
 }
 export function resolvePluginAutoEnableCandidateReason(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginAutoEnableCandidateReason");
+  return undefined;
 }
 export function resolveConfiguredPluginAutoEnableCandidates(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfiguredPluginAutoEnableCandidates");
+  return undefined;
 }
 export function resolvePluginAutoEnableManifestRegistry(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePluginAutoEnableManifestRegistry");
+  return undefined;
 }
 export function materializePluginAutoEnableCandidatesInternal(...args: unknown[]): unknown {
-  throw new Error("not implemented: materializePluginAutoEnableCandidatesInternal");
+  return undefined;
 }

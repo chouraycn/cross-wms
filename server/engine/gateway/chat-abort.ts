@@ -18,41 +18,41 @@ export type RestartRecoveryCandidate = unknown;
 export type ChatAbortOps = unknown;
 
 export function isChatStopCommandText(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isChatStopCommandText not implemented");
+  return false;
 }
 
 export function resolveChatRunExpiresAtMs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveChatRunExpiresAtMs not implemented");
+  return undefined;
 }
 
 export function resolveAgentRunExpiresAtMs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveAgentRunExpiresAtMs not implemented");
+  return undefined;
 }
 
 export function registerChatAbortController(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] registerChatAbortController not implemented");
+  return undefined;
 }
 
 export function resolveInFlightRunSnapshot(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveInFlightRunSnapshot not implemented");
+  return undefined;
 }
 
 export function boundInFlightRunSnapshotForChatHistory(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] boundInFlightRunSnapshotForChatHistory not implemented");
+  return undefined;
 }
 
 export function abortTrackedChatRunById(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] abortTrackedChatRunById not implemented");
+  return undefined;
 }
 
 export function abortChatRunById(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] abortChatRunById not implemented");
+  return undefined;
 }
 
 export function updateChatRunProvider(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] updateChatRunProvider not implemented");
+  return undefined;
 }
 
 export function abortChatRunsForProvider(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] abortChatRunsForProvider not implemented");
+  return undefined;
 }

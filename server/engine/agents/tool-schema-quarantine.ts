@@ -7,5 +7,5 @@
  */
 
 export function logRuntimeToolSchemaQuarantine(..._args: unknown[]): unknown {
-  throw new Error("logRuntimeToolSchemaQuarantine not implemented (openclaw stub)");
+  return undefined;
 }

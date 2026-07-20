@@ -7,5 +7,5 @@
  */
 
 export function readAgentModelContextTokens(..._args: unknown[]): unknown {
-  throw new Error("readAgentModelContextTokens not implemented (openclaw stub)");
+  return undefined;
 }

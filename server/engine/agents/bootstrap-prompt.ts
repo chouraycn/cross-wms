@@ -1,14 +1,18 @@
 /**
- * 移植自 openclaw/src/agents/bootstrap-prompt.ts
+ * Ported from openclaw/src/agents/bootstrap-prompt.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Bootstrap prompt construction for agent sessions.
+ * Cross-wms degradation: returns empty lines without prompt assembly.
  */
 
-export function buildFullBootstrapPromptLines(..._args: unknown[]): unknown {
-  throw new Error("buildFullBootstrapPromptLines not implemented (openclaw stub)");
+/** Builds full bootstrap prompt lines. */
+export function buildFullBootstrapPromptLines(..._args: unknown[]): string[] {
+  // Cross-wms does not have the full bootstrap prompt assembler.
+  return [];
 }
-export function buildLimitedBootstrapPromptLines(..._args: unknown[]): unknown {
-  throw new Error("buildLimitedBootstrapPromptLines not implemented (openclaw stub)");
+
+/** Builds limited bootstrap prompt lines. */
+export function buildLimitedBootstrapPromptLines(..._args: unknown[]): string[] {
+  // Cross-wms does not have the limited bootstrap prompt assembler.
+  return [];
 }

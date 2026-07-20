@@ -12,16 +12,16 @@ export type ActiveEmbeddedRunSnapshot = unknown;
 export type EmbeddedRunWaiter = unknown;
 export type AbandonedEmbeddedRun = unknown;
 export function getActiveEmbeddedRunCount(..._args: unknown[]): unknown {
-  throw new Error("getActiveEmbeddedRunCount not implemented (openclaw stub)");
+  return undefined;
 }
 export function listActiveEmbeddedRunSessionKeys(..._args: unknown[]): unknown {
-  throw new Error("listActiveEmbeddedRunSessionKeys not implemented (openclaw stub)");
+  return [];
 }
 export function listActiveEmbeddedRunSessionIds(..._args: unknown[]): unknown {
-  throw new Error("listActiveEmbeddedRunSessionIds not implemented (openclaw stub)");
+  return [];
 }
 export function resolveActiveEmbeddedRunSessionId(..._args: unknown[]): unknown {
-  throw new Error("resolveActiveEmbeddedRunSessionId not implemented (openclaw stub)");
+  return undefined;
 }
 export const ACTIVE_EMBEDDED_RUNS: unknown = undefined;
 export const ACTIVE_EMBEDDED_RUN_SNAPSHOTS: unknown = undefined;

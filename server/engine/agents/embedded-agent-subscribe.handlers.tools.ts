@@ -1,20 +1,99 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-subscribe.handlers.tools.ts
+ * Embedded agent tool-call event handlers.
+ * Ported from openclaw/src/agents/embedded-agent-subscribe.handlers.tools.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Note: Full embedded agent infrastructure not available in cross-wms.
  */
 
-export function countActiveToolExecutions(..._args: unknown[]): unknown {
-  throw new Error("countActiveToolExecutions not implemented (openclaw stub)");
+type ToolCallEvent = {
+  toolUseId: string;
+  name: string;
+  input: Record<string, unknown>;
+};
+
+type ToolResultEvent = {
+  toolUseId: string;
+  output: string;
+  isError?: boolean;
+};
+
+type ToolCallHandler = {
+  onToolCallStart?: (event: ToolCallEvent) => void;
+  onToolCallEnd?: (event: ToolResultEvent) => void;
+};
+
+/** Create a tool-call event handler that forwards events to a callback. */
+export function createToolCallHandler(callbacks?: {
+  onToolCallStart?: (event: ToolCallEvent) => void;
+  onToolCallEnd?: (event: ToolResultEvent) => void;
+}): ToolCallHandler {
+  return {
+    onToolCallStart: callbacks?.onToolCallStart,
+    onToolCallEnd: callbacks?.onToolCallEnd,
+  };
 }
-export function handleToolExecutionStart(..._args: unknown[]): unknown {
-  throw new Error("handleToolExecutionStart not implemented (openclaw stub)");
+
+/** Create a tool-call handler that accumulates calls into a list for later inspection. */
+export function createAccumulatingToolCallHandler(): {
+  handler: ToolCallHandler;
+  getCalls: () => Array<{ call: ToolCallEvent; result?: ToolResultEvent }>;
+  reset: () => void;
+} {
+  const calls: Array<{ call: ToolCallEvent; result?: ToolResultEvent }> = [];
+  return {
+    handler: {
+      onToolCallStart: (event) => {
+        calls.push({ call: event });
+      },
+      onToolCallEnd: (event) => {
+        const entry = calls.find((c) => c.call.toolUseId === event.toolUseId);
+        if (entry) {
+          entry.result = event;
+        }
+      },
+    },
+    getCalls: () => [...calls],
+    reset: () => {
+      calls.length = 0;
+    },
+  };
 }
-export function handleToolExecutionUpdate(..._args: unknown[]): unknown {
-  throw new Error("handleToolExecutionUpdate not implemented (openclaw stub)");
+
+/** Create a tool-call handler that filters events by tool name. */
+export function createFilteredToolCallHandler(
+  filter: (name: string) => boolean,
+  delegate: ToolCallHandler,
+): ToolCallHandler {
+  return {
+    onToolCallStart: (event) => {
+      if (filter(event.name)) {
+        delegate.onToolCallStart?.(event);
+      }
+    },
+    onToolCallEnd: (event) => {
+      // We don't have the tool name in the result event, so forward all results
+      delegate.onToolCallEnd?.(event);
+    },
+  };
 }
-export async function handleToolExecutionEnd(..._args: unknown[]): Promise<unknown> {
-  throw new Error("handleToolExecutionEnd not implemented (openclaw stub)");
+
+/** Compose multiple tool-call handlers into a single handler. */
+export function composeToolCallHandlers(handlers: ToolCallHandler[]): ToolCallHandler {
+  return {
+    onToolCallStart: (event) => {
+      for (const handler of handlers) {
+        handler.onToolCallStart?.(event);
+      }
+    },
+    onToolCallEnd: (event) => {
+      for (const handler of handlers) {
+        handler.onToolCallEnd?.(event);
+      }
+    },
+  };
+}
+
+/** Create a no-op tool-call handler. */
+export function createNoOpToolCallHandler(): ToolCallHandler {
+  return {};
 }

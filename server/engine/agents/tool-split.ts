@@ -1,11 +1,19 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-runner/tool-split.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Splits SDK tools from OpenClaw tool definitions for provider calls.
+ * In cross-wms the full tool definition adapter is not available,
+ * so splitSdkTools returns an empty custom tools list.
  */
 
-export function splitSdkTools(..._args: unknown[]): unknown {
-  throw new Error("splitSdkTools not implemented (openclaw stub)");
+export function splitSdkTools(_options: {
+  tools?: unknown[];
+  sandboxEnabled?: boolean;
+  toolHookContext?: unknown;
+}): {
+  customTools: unknown[];
+} {
+  return {
+    customTools: [],
+  };
 }

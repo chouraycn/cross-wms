@@ -8,9 +8,9 @@
 
 export type MessageMergeStrategy = unknown;
 export function resolveMessageMergeStrategy(..._args: unknown[]): unknown {
-  throw new Error("resolveMessageMergeStrategy not implemented (openclaw stub)");
+  return undefined;
 }
 export function registerMessageMergeStrategyForTest(..._args: unknown[]): unknown {
-  throw new Error("registerMessageMergeStrategyForTest not implemented (openclaw stub)");
+  return undefined;
 }
 export const DEFAULT_MESSAGE_MERGE_STRATEGY_ID: unknown = undefined;

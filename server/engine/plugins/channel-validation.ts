@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Validates channel plugin metadata from manifests and config.
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from './_stub_openclaw__normalization_core__string_coerce.js';
+} from './_openclaw__normalization_core__string_coerce.js';
 import { listChatChannels } from "../channels/chat-meta.js";
 import { normalizeChannelMeta } from './_stub_parent__channels__plugins__meta_normalization.js';
 import type { ChannelPlugin } from './_stub_parent__channels__plugins__types_plugin.js';

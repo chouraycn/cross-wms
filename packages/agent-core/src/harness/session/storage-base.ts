@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements storage base behavior.
 import {
   type LeafEntry,

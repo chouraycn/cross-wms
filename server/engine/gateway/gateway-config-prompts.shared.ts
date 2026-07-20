@@ -12,7 +12,7 @@
  */
 
 export async function maybeAddTailnetOriginToControlUiAllowedOrigins(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] maybeAddTailnetOriginToControlUiAllowedOrigins not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const TAILSCALE_EXPOSURE_OPTIONS: any = undefined;

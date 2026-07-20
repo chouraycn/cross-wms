@@ -18,9 +18,8 @@ export function registerConfigCli(program: Command): void {
     .argument("<key>", "Config key path")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw config get: not supported in stub mode (config/* not ported).",
-      );
+      console.error('openclaw config get is not available in cross-wms');
+      process.exit(1);
     });
 
   config
@@ -30,9 +29,8 @@ export function registerConfigCli(program: Command): void {
     .argument("<value>", "Config value")
     .option("--dry-run", "Show what would change without writing", false)
     .action(() => {
-      throw new Error(
-        "openclaw config set: not supported in stub mode (config/* not ported).",
-      );
+      console.error('openclaw config set is not available in cross-wms');
+      process.exit(1);
     });
 
   config
@@ -40,9 +38,8 @@ export function registerConfigCli(program: Command): void {
     .description("List all config keys")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw config list: not supported in stub mode (config/* not ported).",
-      );
+      console.error('openclaw config list is not available in cross-wms');
+      process.exit(1);
     });
 
   config
@@ -50,14 +47,12 @@ export function registerConfigCli(program: Command): void {
     .description("Delete a config value")
     .argument("<key>", "Config key path")
     .action(() => {
-      throw new Error(
-        "openclaw config delete: not supported in stub mode (config/* not ported).",
-      );
+      console.error('openclaw config delete is not available in cross-wms');
+      process.exit(1);
     });
 
   config.action(() => {
-    throw new Error(
-      "openclaw config: not supported in stub mode (config/* not ported).",
-    );
+    console.error('openclaw config is not available in cross-wms');
+      process.exit(1);
   });
 }

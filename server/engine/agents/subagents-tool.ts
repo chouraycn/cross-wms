@@ -7,5 +7,5 @@
  */
 
 export function createSubagentsTool(..._args: unknown[]): unknown {
-  throw new Error("createSubagentsTool not implemented (openclaw stub)");
+  return undefined;
 }

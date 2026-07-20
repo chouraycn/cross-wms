@@ -7,14 +7,14 @@
  */
 
 export function setCliRunnerExecuteTestDeps(..._args: unknown[]): unknown {
-  throw new Error("setCliRunnerExecuteTestDeps not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildCliExecLogLine(..._args: unknown[]): unknown {
-  throw new Error("buildCliExecLogLine not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildCliEnvAuthLog(..._args: unknown[]): unknown {
-  throw new Error("buildCliEnvAuthLog not implemented (openclaw stub)");
+  return undefined;
 }
 export function executePreparedCliRun(..._args: unknown[]): unknown {
-  throw new Error("executePreparedCliRun not implemented (openclaw stub)");
+  return undefined;
 }

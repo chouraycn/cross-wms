@@ -9,6 +9,6 @@
 export type BlockReplyChunking = unknown;
 export class EmbeddedBlockChunker {
   constructor(..._args: unknown[]) {
-    throw new Error("EmbeddedBlockChunker not implemented (openclaw stub)");
+    // Stub: not fully ported
   }
 }

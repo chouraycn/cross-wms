@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core module implements skill invocation formatting.
 import type { Skill } from "./types";
 

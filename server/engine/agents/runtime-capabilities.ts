@@ -7,5 +7,5 @@
  */
 
 export function collectRuntimeChannelCapabilities(..._args: unknown[]): unknown {
-  throw new Error("collectRuntimeChannelCapabilities not implemented (openclaw stub)");
+  return [];
 }

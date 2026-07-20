@@ -1,18 +1,35 @@
-// @ts-nocheck
 // Provider tool helpers expose shared tool-call payload contracts for provider plugins.
 import type { TSchema } from "typebox";
-// import {
-//   cleanSchemaForGemini,
-//   GEMINI_UNSUPPORTED_SCHEMA_KEYWORDS,
-// } from "../agents/schema/clean-for-gemini.js"; // TODO: 依赖模块未移植
-// import { stripUnsupportedSchemaKeywords } from "../shared/schema-keyword-strip.js"; // TODO: 依赖模块未移植
 import type {
   AnyAgentTool,
   ProviderNormalizeToolSchemasContext,
   ProviderToolSchemaDiagnostic,
 } from "./plugin-entry.js";
 
-// export { cleanSchemaForGemini, GEMINI_UNSUPPORTED_SCHEMA_KEYWORDS, stripUnsupportedSchemaKeywords }; // TODO: 依赖模块未移植
+/** Gemini unsupported schema keywords set. */
+const GEMINI_UNSUPPORTED_SCHEMA_KEYWORDS: ReadonlySet<string> = new Set([
+  "additionalProperties",
+  "anyOf",
+  "oneOf",
+  "patternProperties",
+  "unevaluatedProperties",
+  "propertyNames",
+  "minProperties",
+  "maxProperties",
+  "required",
+  "$defs",
+  "definitions",
+]);
+
+// TODO: 依赖模块未移植，暂用本地桩
+function cleanSchemaForGemini(schema: TSchema): TSchema {
+  return schema;
+}
+
+// TODO: 依赖模块未移植，暂用本地桩
+function stripUnsupportedSchemaKeywords(_schema: unknown, _keywords: ReadonlySet<string>): unknown {
+  return _schema;
+}
 
 /**
  * Finds unsupported JSON-schema keywords and reports their nested schema paths.
@@ -75,7 +92,7 @@ export function normalizeGeminiToolSchemas(
     }
     return {
       ...tool,
-      parameters: cleanSchemaForGemini(tool.parameters),
+      parameters: cleanSchemaForGemini(tool.parameters as TSchema),
     };
   });
 }
@@ -134,24 +151,14 @@ function normalizeOpenAIStrictCompatSchema(schema: unknown): TSchema {
 }
 
 function shouldApplyOpenAIToolCompat(ctx: ProviderNormalizeToolSchemasContext): boolean {
-  const provider = (ctx.model?.provider ?? ctx.provider ?? "").trim().toLowerCase();
-  const api = (ctx.model?.api ?? ctx.modelApi ?? "").trim().toLowerCase();
-  const baseUrl = (ctx.model?.baseUrl ?? "").trim().toLowerCase();
+  const provider = (ctx.model?.provider ?? ctx.provider ?? "").toString().trim().toLowerCase();
+  const api = (ctx.model?.api ?? ctx.modelApi ?? "").toString().trim().toLowerCase();
+  const baseUrl = (ctx.model?.baseUrl ?? "").toString().trim().toLowerCase();
 
   if (provider === "openai") {
     if (api === "openai-responses") {
-      // Strict-schema normalization is only safe for the native OpenAI endpoint;
-      // OpenAI-compatible proxies may accept broader schemas or define their own rules.
       return !baseUrl || isOpenAIResponsesBaseUrl(baseUrl);
     }
-    return (
-      api === "openai-chatgpt-responses" &&
-      // Codex/ChatGPT Responses uses the same strict object-schema contract as native
-      // OpenAI Responses, but only on the known first-party backend URLs.
-      (!baseUrl || isOpenAIResponsesBaseUrl(baseUrl) || isOpenAICodexBaseUrl(baseUrl))
-    );
-  }
-  if (provider === "openai") {
     return (
       api === "openai-chatgpt-responses" &&
       (!baseUrl || isOpenAIResponsesBaseUrl(baseUrl) || isOpenAICodexBaseUrl(baseUrl))
@@ -387,8 +394,6 @@ export function inspectOpenAIToolSchemas(
   if (!shouldApplyOpenAIToolCompat(ctx)) {
     return [];
   }
-  // Native OpenAI transports fall back to `strict: false` when any tool schema is not
-  // strict-compatible, so these findings are expected for optional-heavy tool schemas.
   return [];
 }
 
@@ -458,10 +463,6 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
   const nonNullVariants = normalizedVariants.filter((entry) => !isNullSchemaVariant(entry));
   const hasNullVariant = nonNullVariants.length < normalizedVariants.length;
 
-  // Preserve string-const unions as a flat string enum so DeepSeek tool
-  // callers still see every allowed literal. Without this, a Typebox
-  // `Type.Union([Type.Literal("a"), Type.Literal("b"), ...])` collapses to
-  // only the first const and the model can never pick any other value.
   if (nonNullVariants.length > 1 && nonNullVariants.every((entry) => isStringConstVariant(entry))) {
     const enumValues = nonNullVariants.map((entry) => (entry as { const: string }).const);
     const merged: Record<string, unknown> = {
@@ -485,7 +486,7 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
     ...normalized,
   };
   if (hasNullVariant) {
-    merged.nullable = true;
+    (merged as Record<string, unknown>).nullable = true;
   }
   return merged;
 }

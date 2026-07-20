@@ -1,11 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/test-helpers/model-fallback-config-fixture.ts
+ * Ported from openclaw/src/agents/test-helpers/model-fallback-config-fixture.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Model fallback config fixture for tests.
+ * Cross-wms degradation: returns minimal config without model registry.
  */
 
-export function makeModelFallbackCfg(..._args: unknown[]): unknown {
-  throw new Error("makeModelFallbackCfg not implemented (openclaw stub)");
+/** Creates a model fallback config fixture for testing. */
+export function makeModelFallbackCfg(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    provider: "test",
+    model: "test-model",
+    ...overrides,
+  };
 }

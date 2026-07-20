@@ -1,14 +1,28 @@
 /**
- * 移植自 openclaw/src/agents/session-raw-append-message.ts
+ * Ported from openclaw/src/agents/session-raw-append-message.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Stores and retrieves an unguarded SessionManager appendMessage function.
  */
 
-export function getRawSessionAppendMessage(..._args: unknown[]): unknown {
-  throw new Error("getRawSessionAppendMessage not implemented (openclaw stub)");
+const RAW_APPEND_MESSAGE = Symbol("openclaw.session.rawAppendMessage");
+
+type SessionManagerLike = {
+  appendMessage: (...args: unknown[]) => unknown;
+  [RAW_APPEND_MESSAGE]?: (...args: unknown[]) => unknown;
+};
+
+/** Return the unguarded appendMessage implementation for a session manager. */
+export function getRawSessionAppendMessage(
+  sessionManager: SessionManagerLike,
+): (...args: unknown[]) => unknown {
+  const rawAppend = sessionManager[RAW_APPEND_MESSAGE];
+  return rawAppend ?? sessionManager.appendMessage.bind(sessionManager);
 }
-export function setRawSessionAppendMessage(..._args: unknown[]): unknown {
-  throw new Error("setRawSessionAppendMessage not implemented (openclaw stub)");
+
+/** Stores the unguarded appendMessage implementation on a session manager. */
+export function setRawSessionAppendMessage(
+  sessionManager: SessionManagerLike,
+  appendMessage: (...args: unknown[]) => unknown,
+): void {
+  (sessionManager as SessionManagerLike)[RAW_APPEND_MESSAGE] = appendMessage;
 }

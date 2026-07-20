@@ -1,40 +1,269 @@
 // 移植自 openclaw/src/infra/system-events.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 轻量级内存队列，用于应添加到下一个提示的人类可读系统事件
 
-export type SystemEvent = unknown;
-export function isSystemEventContextChanged(...args: unknown[]): unknown {
-  throw new Error("not implemented: isSystemEventContextChanged");
+import {
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "./string-coerce.js";
+import { resolveGlobalMap } from "../shared/global-singleton.js";
+import type { DeliveryContext } from "../channels/delivery-context.js";
+
+export type SystemEvent = {
+  text: string;
+  ts: number;
+  contextKey?: string | null;
+  deliveryContext?: DeliveryContext;
+};
+
+const MAX_EVENTS = 20;
+
+type SessionQueue = {
+  queue: SystemEvent[];
+  lastContextKey: string | null;
+};
+
+const SYSTEM_EVENT_QUEUES_KEY = Symbol.for("openclaw.systemEvents.queues");
+
+const queues = resolveGlobalMap<string, SessionQueue>(SYSTEM_EVENT_QUEUES_KEY);
+
+type SystemEventOptions = {
+  sessionKey: string;
+  contextKey?: string | null;
+  deliveryContext?: DeliveryContext;
+};
+
+function requireSessionKey(key?: string | null): string {
+  const trimmed = normalizeOptionalString(key) ?? "";
+  if (!trimmed) {
+    throw new Error("system events require a sessionKey");
+  }
+  return trimmed;
 }
-export function enqueueSystemEventEntry(...args: unknown[]): unknown {
-  throw new Error("not implemented: enqueueSystemEventEntry");
+
+function normalizeContextKey(key?: string | null): string | null {
+  return normalizeOptionalLowercaseString(key) ?? null;
 }
-export function enqueueSystemEvent(...args: unknown[]): unknown {
-  throw new Error("not implemented: enqueueSystemEvent");
+
+function getSessionQueue(sessionKey: string): SessionQueue | undefined {
+  return queues.get(requireSessionKey(sessionKey));
 }
-export function drainSystemEventEntries(...args: unknown[]): unknown {
-  throw new Error("not implemented: drainSystemEventEntries");
+
+function getOrCreateSessionQueue(sessionKey: string): SessionQueue {
+  const key = requireSessionKey(sessionKey);
+  const existing = queues.get(key);
+  if (existing) {
+    return existing;
+  }
+  const created: SessionQueue = {
+    queue: [],
+    lastContextKey: null,
+  };
+  queues.set(key, created);
+  return created;
 }
-export function consumeSystemEventEntries(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeSystemEventEntries");
+
+function cloneSystemEvent(event: SystemEvent): SystemEvent {
+  return {
+    ...event,
+    ...(event.deliveryContext ? { deliveryContext: { ...event.deliveryContext } } : {}),
+  };
 }
-export function consumeSelectedSystemEventEntries(...args: unknown[]): unknown {
-  throw new Error("not implemented: consumeSelectedSystemEventEntries");
+
+export function isSystemEventContextChanged(
+  sessionKey: string,
+  contextKey?: string | null,
+): boolean {
+  const existing = getSessionQueue(sessionKey);
+  const normalized = normalizeContextKey(contextKey);
+  return normalized !== (existing?.lastContextKey ?? null);
 }
-export function drainSystemEvents(...args: unknown[]): unknown {
-  throw new Error("not implemented: drainSystemEvents");
+
+function findDuplicateInQueue(
+  queue: readonly SystemEvent[],
+  text: string,
+  contextKey: string | null,
+  deliveryContext: DeliveryContext | undefined,
+): boolean {
+  const incoming = { text, contextKey, deliveryContext };
+  if (contextKey === null) {
+    const last = queue[queue.length - 1];
+    return last ? isDuplicateSystemEvent(last, incoming) : false;
+  }
+  return queue.some((event) => isDuplicateSystemEvent(event, incoming));
 }
-export function peekSystemEventEntries(...args: unknown[]): unknown {
-  throw new Error("not implemented: peekSystemEventEntries");
+
+export function enqueueSystemEventEntry(
+  text: string,
+  options: SystemEventOptions,
+): SystemEvent | null {
+  const key = requireSessionKey(options.sessionKey);
+  const entry = getOrCreateSessionQueue(key);
+  const cleaned = text.replace(/^System:\s*/gim, "").trim();
+  if (!cleaned) {
+    return null;
+  }
+  const normalizedContextKey = normalizeContextKey(options.contextKey);
+  const normalizedDeliveryContext = options.deliveryContext
+    ? { ...options.deliveryContext }
+    : undefined;
+  if (findDuplicateInQueue(entry.queue, cleaned, normalizedContextKey, normalizedDeliveryContext)) {
+    return null;
+  }
+  if (normalizedContextKey !== null) {
+    entry.lastContextKey = normalizedContextKey;
+  }
+  const event: SystemEvent = {
+    text: cleaned,
+    ts: Date.now(),
+    contextKey: normalizedContextKey,
+    deliveryContext: normalizedDeliveryContext,
+  };
+  entry.queue.push(event);
+  if (entry.queue.length > MAX_EVENTS) {
+    entry.queue.shift();
+  }
+  return cloneSystemEvent(event);
 }
-export function peekSystemEvents(...args: unknown[]): unknown {
-  throw new Error("not implemented: peekSystemEvents");
+
+export function enqueueSystemEvent(text: string, options: SystemEventOptions) {
+  return enqueueSystemEventEntry(text, options) !== null;
 }
-export function hasSystemEvents(...args: unknown[]): unknown {
-  throw new Error("not implemented: hasSystemEvents");
+
+export function drainSystemEventEntries(sessionKey: string): SystemEvent[] {
+  const key = requireSessionKey(sessionKey);
+  const entry = getSessionQueue(key);
+  if (!entry || entry.queue.length === 0) {
+    return [];
+  }
+  const out = entry.queue.map(cloneSystemEvent);
+  entry.queue.length = 0;
+  entry.lastContextKey = null;
+  queues.delete(key);
+  return out;
 }
-export function resolveSystemEventDeliveryContext(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveSystemEventDeliveryContext");
+
+function areDeliveryContextsEqual(left?: DeliveryContext, right?: DeliveryContext): boolean {
+  if (!left && !right) {
+    return true;
+  }
+  if (!left || !right) {
+    return false;
+  }
+  return (
+    (left.channel ?? "") === (right.channel ?? "") &&
+    (left.to ?? "") === (right.to ?? "") &&
+    (left.accountId ?? "") === (right.accountId ?? "")
+  );
 }
-export function resetSystemEventsForTest(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetSystemEventsForTest");
+
+function isDuplicateSystemEvent(
+  existing: SystemEvent,
+  incoming: Pick<SystemEvent, "text" | "contextKey" | "deliveryContext">,
+): boolean {
+  return (
+    existing.text === incoming.text &&
+    (existing.contextKey ?? null) === (incoming.contextKey ?? null) &&
+    areDeliveryContextsEqual(existing.deliveryContext, incoming.deliveryContext)
+  );
+}
+
+function areSystemEventsEqual(left: SystemEvent, right: SystemEvent): boolean {
+  return (
+    left.text === right.text &&
+    left.ts === right.ts &&
+    (left.contextKey ?? null) === (right.contextKey ?? null) &&
+    areDeliveryContextsEqual(left.deliveryContext, right.deliveryContext)
+  );
+}
+
+function resetQueueState(key: string, entry: SessionQueue) {
+  if (entry.queue.length === 0) {
+    entry.lastContextKey = null;
+    queues.delete(key);
+    return;
+  }
+  for (let index = entry.queue.length - 1; index >= 0; index -= 1) {
+    const contextKey = entry.queue[index].contextKey ?? null;
+    if (contextKey !== null) {
+      entry.lastContextKey = contextKey;
+      return;
+    }
+  }
+  entry.lastContextKey = null;
+}
+
+export function consumeSystemEventEntries(
+  sessionKey: string,
+  consumedEntries: readonly SystemEvent[],
+): SystemEvent[] {
+  const key = requireSessionKey(sessionKey);
+  const entry = getSessionQueue(key);
+  if (!entry || entry.queue.length === 0 || consumedEntries.length === 0) {
+    return [];
+  }
+  if (
+    consumedEntries.length > entry.queue.length ||
+    !consumedEntries.every((event, index) => areSystemEventsEqual(entry.queue[index], event))
+  ) {
+    return [];
+  }
+  const removed = entry.queue.splice(0, consumedEntries.length).map(cloneSystemEvent);
+  resetQueueState(key, entry);
+  return removed;
+}
+
+export function consumeSelectedSystemEventEntries(
+  sessionKey: string,
+  consumedEntries: readonly SystemEvent[],
+): SystemEvent[] {
+  const key = requireSessionKey(sessionKey);
+  const entry = getSessionQueue(key);
+  if (!entry || entry.queue.length === 0 || consumedEntries.length === 0) {
+    return [];
+  }
+  const removed: SystemEvent[] = [];
+  for (const consumed of consumedEntries) {
+    const index = entry.queue.findIndex((event) => areSystemEventsEqual(event, consumed));
+    if (index === -1) {
+      continue;
+    }
+    const [event] = entry.queue.splice(index, 1);
+    if (event) {
+      removed.push(cloneSystemEvent(event));
+    }
+  }
+  resetQueueState(key, entry);
+  return removed;
+}
+
+export function drainSystemEvents(sessionKey: string): string[] {
+  return drainSystemEventEntries(sessionKey).map((event) => event.text);
+}
+
+export function peekSystemEventEntries(sessionKey: string): SystemEvent[] {
+  return getSessionQueue(sessionKey)?.queue.map(cloneSystemEvent) ?? [];
+}
+
+export function peekSystemEvents(sessionKey: string): string[] {
+  return peekSystemEventEntries(sessionKey).map((event) => event.text);
+}
+
+export function hasSystemEvents(sessionKey: string) {
+  return (getSessionQueue(sessionKey)?.queue.length ?? 0) > 0;
+}
+
+export function resolveSystemEventDeliveryContext(
+  events: readonly SystemEvent[],
+): DeliveryContext | undefined {
+  let resolved: DeliveryContext | undefined;
+  for (const event of events) {
+    if (event.deliveryContext) {
+      resolved = { ...resolved, ...event.deliveryContext };
+    }
+  }
+  return resolved;
+}
+
+export function resetSystemEventsForTest() {
+  queues.clear();
 }

@@ -12,5 +12,5 @@ export type { SubagentRunOutcome } from "./subagent-announce-output.js";
 export type SubagentAnnounceType = unknown;
 export const testing: unknown = undefined;
 export async function runSubagentAnnounceFlow(..._args: unknown[]): Promise<unknown> {
-  throw new Error("runSubagentAnnounceFlow not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

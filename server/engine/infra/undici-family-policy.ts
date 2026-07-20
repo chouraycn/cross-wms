@@ -1,15 +1,40 @@
 // 移植自 openclaw/src/infra/undici-family-policy.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：undici AutoSelectFamily 依赖简化
 
-export function resolveUndiciAutoSelectFamily(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveUndiciAutoSelectFamily");
+export type UndiciAutoSelectFamilyOptions = {
+  autoSelectFamily?: boolean;
+  autoSelectFamilyAttemptTimeout?: number;
+};
+
+/** Resolves undici auto-select-family options. */
+export function resolveUndiciAutoSelectFamily(options?: {
+  autoSelectFamily?: boolean;
+  autoSelectFamilyAttemptTimeoutMs?: number;
+}): UndiciAutoSelectFamilyOptions {
+  return {
+    autoSelectFamily: options?.autoSelectFamily ?? true,
+    ...(options?.autoSelectFamilyAttemptTimeoutMs ? { autoSelectFamilyAttemptTimeout: options.autoSelectFamilyAttemptTimeoutMs } : {}),
+  };
 }
-export function createUndiciAutoSelectFamilyConnectOptions(...args: unknown[]): unknown {
-  throw new Error("not implemented: createUndiciAutoSelectFamilyConnectOptions");
+
+/** Creates undici auto-select-family connect options. */
+export function createUndiciAutoSelectFamilyConnectOptions(options?: {
+  autoSelectFamily?: boolean;
+  autoSelectFamilyAttemptTimeoutMs?: number;
+}): UndiciAutoSelectFamilyOptions {
+  return resolveUndiciAutoSelectFamily(options);
 }
-export function resolveUndiciAutoSelectFamilyConnectOptions(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveUndiciAutoSelectFamilyConnectOptions");
+
+/** Resolves undici auto-select-family connect options from config. */
+export function resolveUndiciAutoSelectFamilyConnectOptions(_cfg?: unknown): UndiciAutoSelectFamilyOptions {
+  return resolveUndiciAutoSelectFamily();
 }
-export function withTemporaryUndiciAutoSelectFamily(...args: unknown[]): unknown {
-  throw new Error("not implemented: withTemporaryUndiciAutoSelectFamily");
+
+/** Runs a callback with temporarily overridden auto-select-family settings. */
+export async function withTemporaryUndiciAutoSelectFamily<T>(
+  _options: UndiciAutoSelectFamilyOptions,
+  callback: () => Promise<T>,
+): Promise<T> {
+  // Simplified: no real undici state to modify
+  return callback();
 }

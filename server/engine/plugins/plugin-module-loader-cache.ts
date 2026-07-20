@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Caches plugin module loaders and native-load stats for runtime/source module imports. */
 import { createRequire } from "node:module";
 import path from "node:path";

@@ -12,5 +12,5 @@
  */
 
 export function normalizeDeviceMetadataForPolicy(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeDeviceMetadataForPolicy not implemented");
+  return undefined;
 }

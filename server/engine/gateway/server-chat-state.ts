@@ -32,37 +32,37 @@ export type SessionEventSubscriberRegistry = unknown;
 export type SessionMessageSubscriberRegistry = unknown;
 
 export function createChatRunEntry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createChatRunEntry not implemented");
+  return undefined;
 }
 
 export function createChatAbortMarker(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createChatAbortMarker not implemented");
+  return undefined;
 }
 
 export function chatAbortMarkerTimestampMs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] chatAbortMarkerTimestampMs not implemented");
+  return undefined;
 }
 
 export function isChatAbortMarkerCurrent(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isChatAbortMarkerCurrent not implemented");
+  return false;
 }
 
 export function createChatRunRegistry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createChatRunRegistry not implemented");
+  return undefined;
 }
 
 export function createChatRunState(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createChatRunState not implemented");
+  return undefined;
 }
 
 export function createSessionEventSubscriberRegistry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createSessionEventSubscriberRegistry not implemented");
+  return undefined;
 }
 
 export function createSessionMessageSubscriberRegistry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createSessionMessageSubscriberRegistry not implemented");
+  return undefined;
 }
 
 export function createToolEventRecipientRegistry(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createToolEventRecipientRegistry not implemented");
+  return undefined;
 }

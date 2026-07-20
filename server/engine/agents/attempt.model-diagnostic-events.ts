@@ -7,5 +7,5 @@
  */
 
 export function wrapStreamFnWithDiagnosticModelCallEvents(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnWithDiagnosticModelCallEvents not implemented (openclaw stub)");
+  return undefined;
 }

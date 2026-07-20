@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Resolves channel presence policy advertised by plugin metadata.
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
-import { sortUniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
+import { sortUniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import {
   hasMeaningfulChannelConfig,

@@ -1,11 +1,11 @@
 /**
- * 移植自 openclaw/src/agents/runtime-plugins.ts
+ * Ported from openclaw/src/agents/runtime-plugins.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime plugin loading.
+ * Cross-wms degradation: no-op without plugin system.
  */
 
-export function ensureRuntimePluginsLoaded(..._args: unknown[]): unknown {
-  throw new Error("ensureRuntimePluginsLoaded not implemented (openclaw stub)");
+/** Ensures runtime plugins are loaded. */
+export function ensureRuntimePluginsLoaded(..._args: unknown[]): void {
+  // Cross-wms does not have the runtime plugin system.
 }

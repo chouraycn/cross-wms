@@ -20,9 +20,9 @@ export type ResolvedGatewayAuth = unknown;
 export type EffectiveSharedGatewayAuth = unknown;
 
 export function resolveGatewayAuth(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayAuth not implemented");
+  return undefined;
 }
 
 export function resolveEffectiveSharedGatewayAuth(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveEffectiveSharedGatewayAuth not implemented");
+  return undefined;
 }

@@ -12,9 +12,9 @@
  */
 
 export function closeExpiredTalkRelaySessions(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] closeExpiredTalkRelaySessions not implemented");
+  return undefined;
 }
 
 export function requireActiveTalkRelaySession(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] requireActiveTalkRelaySession not implemented");
+  return undefined;
 }

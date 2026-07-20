@@ -7,20 +7,20 @@
  */
 
 export function getRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
-  throw new Error("getRuntimeAuthProfileStoreSnapshot not implemented (openclaw stub)");
+  return undefined;
 }
 export function hasRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
-  throw new Error("hasRuntimeAuthProfileStoreSnapshot not implemented (openclaw stub)");
+  return false;
 }
 export function hasAnyRuntimeAuthProfileStoreSource(..._args: unknown[]): unknown {
-  throw new Error("hasAnyRuntimeAuthProfileStoreSource not implemented (openclaw stub)");
+  return false;
 }
 export function replaceRuntimeAuthProfileStoreSnapshots(..._args: unknown[]): unknown {
-  throw new Error("replaceRuntimeAuthProfileStoreSnapshots not implemented (openclaw stub)");
+  return undefined;
 }
 export function clearRuntimeAuthProfileStoreSnapshots(..._args: unknown[]): unknown {
-  throw new Error("clearRuntimeAuthProfileStoreSnapshots not implemented (openclaw stub)");
+  return undefined;
 }
 export function setRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
-  throw new Error("setRuntimeAuthProfileStoreSnapshot not implemented (openclaw stub)");
+  return undefined;
 }

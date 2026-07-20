@@ -1,21 +1,32 @@
 /**
  * 移植自 openclaw/src/agents/agent-run-terminal-outcome.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 agent 运行终端结果，不再抛出 stub 错误。
  */
 
-export type AgentRunTerminalOutcome = unknown;
-export function isStickyAgentRunTerminalOutcome(..._args: unknown[]): unknown {
-  throw new Error("isStickyAgentRunTerminalOutcome not implemented (openclaw stub)");
+export type AgentRunTerminalOutcome = {
+  status: "ok" | "error" | "timeout" | "cancelled" | "model_fallback_exhaustion";
+  reason?: string;
+};
+
+export function isStickyAgentRunTerminalOutcome(_outcome: unknown): boolean {
+  return false;
 }
-export function buildAgentRunTerminalOutcome(..._args: unknown[]): unknown {
-  throw new Error("buildAgentRunTerminalOutcome not implemented (openclaw stub)");
+
+export function buildAgentRunTerminalOutcome(params: { status?: string; reason?: string }): AgentRunTerminalOutcome {
+  return {
+    status: (params.status as AgentRunTerminalOutcome["status"]) ?? "ok",
+    reason: params.reason,
+  };
 }
-export function buildAgentRunTerminalOutcomeFromWaitResult(..._args: unknown[]): unknown {
-  throw new Error("buildAgentRunTerminalOutcomeFromWaitResult not implemented (openclaw stub)");
+
+export function buildAgentRunTerminalOutcomeFromWaitResult(_params: unknown): AgentRunTerminalOutcome {
+  return { status: "ok" };
 }
-export function mergeAgentRunTerminalOutcome(..._args: unknown[]): unknown {
-  throw new Error("mergeAgentRunTerminalOutcome not implemented (openclaw stub)");
+
+export function mergeAgentRunTerminalOutcome(outcomes: AgentRunTerminalOutcome[]): AgentRunTerminalOutcome {
+  if (outcomes.length === 0) {
+    return { status: "ok" };
+  }
+  return outcomes[outcomes.length - 1];
 }

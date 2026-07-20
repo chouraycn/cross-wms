@@ -14,8 +14,7 @@ export function registerNativeHookRelayCli(program: Command): void {
     .option("--url <url>", "Gateway WebSocket URL")
     .option("--token <token>", "Gateway token")
     .action(() => {
-      throw new Error(
-        "openclaw native-hook-relay: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw native-hook-relay is not available in cross-wms');
+      process.exit(1);
     });
 }

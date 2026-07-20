@@ -7,9 +7,9 @@
  */
 
 export function resolveCompactionInstructions(..._args: unknown[]): unknown {
-  throw new Error("resolveCompactionInstructions not implemented (openclaw stub)");
+  return undefined;
 }
 export function composeSplitTurnInstructions(..._args: unknown[]): unknown {
-  throw new Error("composeSplitTurnInstructions not implemented (openclaw stub)");
+  return undefined;
 }
 export const DEFAULT_COMPACTION_INSTRUCTIONS: unknown = undefined;

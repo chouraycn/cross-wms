@@ -12,5 +12,5 @@ export type ResolvedResource = unknown;
 export type ResolvedPaths = unknown;
 export type PackageManager = unknown;
 export class DefaultPackageManager {
-  constructor(..._args: unknown[]) { throw new Error("DefaultPackageManager not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }

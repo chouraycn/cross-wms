@@ -15,14 +15,12 @@ export function registerSystemCli(program: Command): void {
     .description("Show system information")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw system info: not supported in stub mode (runtime, gateway-rpc not ported).",
-      );
+      console.error('openclaw system info is not available in cross-wms');
+      process.exit(1);
     });
 
   system.action(() => {
-    throw new Error(
-      "openclaw system: not supported in stub mode (runtime, gateway-rpc not ported).",
-    );
+    console.error('openclaw system is not available in cross-wms');
+      process.exit(1);
   });
 }

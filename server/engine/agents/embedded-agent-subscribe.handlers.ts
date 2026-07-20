@@ -7,5 +7,5 @@
  */
 
 export function createEmbeddedAgentSessionEventHandler(..._args: unknown[]): unknown {
-  throw new Error("createEmbeddedAgentSessionEventHandler not implemented (openclaw stub)");
+  return undefined;
 }

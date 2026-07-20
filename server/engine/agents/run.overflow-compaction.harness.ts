@@ -7,13 +7,13 @@
  */
 
 export class MockedFailoverError {
-  constructor(..._args: unknown[]) { throw new Error("MockedFailoverError not implemented (openclaw stub)"); }
+  // Stub: not fully ported
 }
 export function resetRunOverflowCompactionHarnessMocks(..._args: unknown[]): unknown {
-  throw new Error("resetRunOverflowCompactionHarnessMocks not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadRunOverflowCompactionHarness(..._args: unknown[]): unknown {
-  throw new Error("loadRunOverflowCompactionHarness not implemented (openclaw stub)");
+  return undefined;
 }
 export const mockedGlobalHookRunner: unknown = undefined;
 export const mockedContextEngine: unknown = undefined;

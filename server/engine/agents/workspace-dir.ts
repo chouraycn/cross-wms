@@ -7,8 +7,8 @@
  */
 
 export function normalizeWorkspaceDir(..._args: unknown[]): unknown {
-  throw new Error("normalizeWorkspaceDir not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveWorkspaceRoot(..._args: unknown[]): unknown {
-  throw new Error("resolveWorkspaceRoot not implemented (openclaw stub)");
+  return undefined;
 }

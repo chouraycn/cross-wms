@@ -1,11 +1,11 @@
 /**
- * 移植自 openclaw/src/agents/subagent-session-cleanup.ts
+ * Ported from openclaw/src/agents/subagent-session-cleanup.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Subagent session cleanup after run completion.
+ * Cross-wms degradation: no-op without session file management.
  */
 
-export async function deleteSubagentSessionForCleanup(..._args: unknown[]): Promise<unknown> {
-  throw new Error("deleteSubagentSessionForCleanup not implemented (openclaw stub)");
+/** Deletes subagent session data for cleanup. */
+export async function deleteSubagentSessionForCleanup(..._args: unknown[]): Promise<void> {
+  // Cross-wms does not have subagent session file management.
 }

@@ -1,16 +1,29 @@
 // 移植自 openclaw/src/infra/channel-selection.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin / config 依赖简化
 
-export type MessageChannelId = unknown;
-export type MessageChannelSelectionSource = unknown;
-export function isConfiguredChannel(...args: unknown[]): unknown {
-  throw new Error("not implemented: isConfiguredChannel");
+export type MessageChannelId = string;
+export type MessageChannelSelectionSource = "config" | "bootstrap" | "auto" | "explicit";
+
+/** Checks if a channel is configured. */
+export function isConfiguredChannel(_cfg: unknown, _channel: string): boolean {
+  // Simplified: no real config access
+  return false;
 }
-export function listConfiguredMessageChannels(...args: unknown[]): unknown {
-  throw new Error("not implemented: listConfiguredMessageChannels");
+
+/** Lists configured message channels. */
+export async function listConfiguredMessageChannels(_cfg: unknown): Promise<string[]> {
+  // Simplified: no real config access
+  return [];
 }
-export function resolveMessageChannelSelection(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveMessageChannelSelection");
+
+/** Resolves the message channel selection. */
+export function resolveMessageChannelSelection(params: {
+  channel?: string;
+  cfg?: unknown;
+}): { channel: string; source: MessageChannelSelectionSource } | null {
+  if (!params.channel?.trim()) return null;
+  return { channel: params.channel.trim(), source: "explicit" };
 }
-export const testing_channel_selection: unknown = undefined;
-export type __testing_channel_selection = unknown;
+
+export const testing_channel_selection = { isConfiguredChannel, listConfiguredMessageChannels, resolveMessageChannelSelection };
+export type __testing_channel_selection = typeof testing_channel_selection;

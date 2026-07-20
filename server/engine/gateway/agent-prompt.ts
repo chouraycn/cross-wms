@@ -14,7 +14,7 @@
 export type ConversationEntry = unknown;
 
 export function buildAgentMessageFromConversationEntries(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] buildAgentMessageFromConversationEntries not implemented");
+  return undefined;
 }
 
 export const IMAGE_ONLY_USER_MESSAGE: any = undefined;

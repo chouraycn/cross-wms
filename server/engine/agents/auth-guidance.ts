@@ -1,17 +1,34 @@
 /**
  * 移植自 openclaw/src/agents/sessions/auth-guidance.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared user-facing auth guidance for session/model selection failures.
+ * Uses docs paths instead of provider-specific instructions so guidance stays
+ * correct across OAuth/API-key providers.
  */
 
-export function formatNoModelsAvailableMessage(..._args: unknown[]): unknown {
-  throw new Error("formatNoModelsAvailableMessage not implemented (openclaw stub)");
+const UNKNOWN_PROVIDER = "unknown";
+
+/** Returns the standard provider login help block. */
+function getProviderLoginHelp(): string {
+  return [
+    "Use /login to log into a provider via OAuth or API key. See:",
+    "  docs/providers.md",
+    "  docs/models.md",
+  ].join("\n");
 }
-export function formatNoModelSelectedMessage(..._args: unknown[]): unknown {
-  throw new Error("formatNoModelSelectedMessage not implemented (openclaw stub)");
+
+/** Formats the message shown when no configured model can be used. */
+export function formatNoModelsAvailableMessage(): string {
+  return `No models available. ${getProviderLoginHelp()}`;
 }
-export function formatNoApiKeyFoundMessage(..._args: unknown[]): unknown {
-  throw new Error("formatNoApiKeyFoundMessage not implemented (openclaw stub)");
+
+/** Formats the message shown before a model is selected. */
+export function formatNoModelSelectedMessage(): string {
+  return `No model selected.\n\n${getProviderLoginHelp()}\n\nThen use /model to select a model.`;
+}
+
+/** Formats the missing API key guidance for a provider or unknown selected model. */
+export function formatNoApiKeyFoundMessage(provider: string): string {
+  const providerDisplay = provider === UNKNOWN_PROVIDER ? "the selected model" : provider;
+  return `No API key found for ${providerDisplay}.\n\n${getProviderLoginHelp()}`;
 }

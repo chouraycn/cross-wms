@@ -7,9 +7,9 @@
  */
 
 export function resolveImageModelConfigForTool(..._args: unknown[]): unknown {
-  throw new Error("resolveImageModelConfigForTool not implemented (openclaw stub)");
+  return undefined;
 }
 export function createImageTool(..._args: unknown[]): unknown {
-  throw new Error("createImageTool not implemented (openclaw stub)");
+  return undefined;
 }
 export const testing_image_tool: unknown = undefined;

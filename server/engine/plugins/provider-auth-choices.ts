@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds provider auth choice lists from plugin setup metadata.
 import { sanitizeForLog } from './_stub_parent__parent__packages__terminal_core__src__ansi.js';
 import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";

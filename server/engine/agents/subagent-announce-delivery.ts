@@ -8,23 +8,23 @@
 
 export const testing: unknown = undefined;
 export function resolveSubagentAnnounceTimeoutMs(..._args: unknown[]): unknown {
-  throw new Error("resolveSubagentAnnounceTimeoutMs not implemented (openclaw stub)");
+  return undefined;
 }
 export function isInternalAnnounceRequesterSession(..._args: unknown[]): unknown {
-  throw new Error("isInternalAnnounceRequesterSession not implemented (openclaw stub)");
+  return false;
 }
 export async function runAnnounceDeliveryWithRetry(..._args: unknown[]): Promise<unknown> {
-  throw new Error("runAnnounceDeliveryWithRetry not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export async function resolveSubagentCompletionOrigin(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveSubagentCompletionOrigin not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }
 export function loadRequesterSessionEntry(..._args: unknown[]): unknown {
-  throw new Error("loadRequesterSessionEntry not implemented (openclaw stub)");
+  return undefined;
 }
 export function loadSessionEntryByKey(..._args: unknown[]): unknown {
-  throw new Error("loadSessionEntryByKey not implemented (openclaw stub)");
+  return undefined;
 }
 export async function deliverSubagentAnnouncement(..._args: unknown[]): Promise<unknown> {
-  throw new Error("deliverSubagentAnnouncement not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

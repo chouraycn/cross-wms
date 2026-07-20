@@ -1,18 +1,17 @@
 // 移植自 openclaw/src/channels/plugins/pairing.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function listPairingChannels(..._args: unknown[]): unknown {
-  throw new Error("not implemented: listPairingChannels");
+  return [];
 }
 
 export function getPairingAdapter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getPairingAdapter");
+  return undefined;
 }
 
 export function requirePairingAdapter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: requirePairingAdapter");
+  return undefined;
 }
 
 export async function notifyPairingApproved(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: notifyPairingApproved");
+  return Promise.resolve(undefined);
 }

@@ -14,5 +14,5 @@
 export type ChannelManager = unknown;
 
 export function createChannelManager(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] createChannelManager not implemented");
+  return undefined;
 }

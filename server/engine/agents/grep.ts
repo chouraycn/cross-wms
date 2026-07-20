@@ -9,8 +9,8 @@
 export type GrepOperations = unknown;
 export type GrepToolOptions = unknown;
 export function createGrepToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("createGrepToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function createGrepTool(..._args: unknown[]): unknown {
-  throw new Error("createGrepTool not implemented (openclaw stub)");
+  return undefined;
 }

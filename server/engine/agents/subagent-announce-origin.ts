@@ -7,5 +7,5 @@
  */
 
 export function resolveAnnounceOrigin(..._args: unknown[]): unknown {
-  throw new Error("resolveAnnounceOrigin not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/harness/runtime-plugin.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Agent harness runtime plugin setup.
+ * In cross-wms the harness plugin infrastructure is not available,
+ * so ensureSelectedAgentHarnessPlugin is a no-op.
  */
 
-export function ensureSelectedAgentHarnessPlugin(..._args: unknown[]): unknown {
-  throw new Error("ensureSelectedAgentHarnessPlugin not implemented (openclaw stub)");
+/** Ensure the selected agent harness plugin is loaded (no-op in cross-wms). */
+export function ensureSelectedAgentHarnessPlugin(..._args: unknown[]): void {
+  // No-op: harness plugin setup not available in cross-wms.
 }

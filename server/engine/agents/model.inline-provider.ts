@@ -8,14 +8,14 @@
 
 export type InlineProviderConfig = unknown;
 export function normalizeResolvedTransportApi(..._args: unknown[]): unknown {
-  throw new Error("normalizeResolvedTransportApi not implemented (openclaw stub)");
+  return undefined;
 }
 export function sanitizeModelHeaders(..._args: unknown[]): unknown {
-  throw new Error("sanitizeModelHeaders not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveProviderModelInput(..._args: unknown[]): unknown {
-  throw new Error("resolveProviderModelInput not implemented (openclaw stub)");
+  return undefined;
 }
 export function buildInlineProviderModels(..._args: unknown[]): unknown {
-  throw new Error("buildInlineProviderModels not implemented (openclaw stub)");
+  return undefined;
 }

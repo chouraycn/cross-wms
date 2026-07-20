@@ -10,3 +10,6 @@ export const normalizeStringEntries: any = undefined as any;
 export const normalizeArrayBackedTrimmedStringList: any = undefined as any;
 export const normalizeTrimmedStringList: any = undefined as any;
 export const normalizeOptionalTrimmedStringList: any = undefined as any;
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const normalizeUniqueStringEntries: any = undefined as any;

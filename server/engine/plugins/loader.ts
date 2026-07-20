@@ -354,3 +354,8 @@ export function findMissingDependencies(
 export function logLoadOrder(order: string[]): void {
   logger.debug(`[Plugins:Loader] Load order: ${order.join(' → ') || '(empty)'}`);
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const resolveCompatibleRuntimePluginRegistry: any = undefined as any;
+export const resolvePluginRegistryLoadCacheKey: any = undefined as any;
+export const resolveRuntimePluginRegistry: any = undefined as any;

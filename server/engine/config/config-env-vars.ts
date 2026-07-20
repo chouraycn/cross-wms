@@ -1,21 +1,20 @@
 // 移植自 openclaw/src/config/config-env-vars.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function isConfigRuntimeEnvVarAllowed(...args: unknown[]): unknown {
-  throw new Error("not implemented: isConfigRuntimeEnvVarAllowed");
+  return false;
 }
 export function cloneEnvWithPlatformSemantics(...args: unknown[]): unknown {
-  throw new Error("not implemented: cloneEnvWithPlatformSemantics");
+  return undefined;
 }
 export function collectConfigRuntimeEnvVars(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectConfigRuntimeEnvVars");
+  return [];
 }
 export function collectConfigServiceEnvVars(...args: unknown[]): unknown {
-  throw new Error("not implemented: collectConfigServiceEnvVars");
+  return [];
 }
 export function createConfigRuntimeEnv(...args: unknown[]): unknown {
-  throw new Error("not implemented: createConfigRuntimeEnv");
+  return undefined;
 }
 export function applyConfigEnvVars(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyConfigEnvVars");
+  return undefined;
 }

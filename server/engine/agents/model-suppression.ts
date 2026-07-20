@@ -1,26 +1,67 @@
 /**
  * 移植自 openclaw/src/agents/model-suppression.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Built-in model suppression helpers.
+ * Simplified for cross-wms: no plugin manifest metadata; all suppression checks
+ * return false (no suppressed models).
  */
 
-export function clearModelSuppressionResolverCacheForTest(..._args: unknown[]): unknown {
-  throw new Error("clearModelSuppressionResolverCacheForTest not implemented (openclaw stub)");
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  if (typeof value === "string") {
+    return value.trim().toLowerCase();
+  }
+  return "";
 }
-export function shouldSuppressBuiltInModelFromManifest(..._args: unknown[]): unknown {
-  throw new Error("shouldSuppressBuiltInModelFromManifest not implemented (openclaw stub)");
+
+/** Clear cached manifest suppression resolver state for tests. */
+export function clearModelSuppressionResolverCacheForTest(): void {
+  // No-op in cross-wms (no plugin system)
 }
-export function shouldSuppressBuiltInModel(..._args: unknown[]): unknown {
-  throw new Error("shouldSuppressBuiltInModel not implemented (openclaw stub)");
+
+/** Return true when plugin manifest metadata suppresses a built-in model entry. */
+export function shouldSuppressBuiltInModelFromManifest(_params: {
+  provider?: string | null;
+  id?: string | null;
+  baseUrl?: string | null;
+}): boolean {
+  return false;
 }
-export function shouldUnconditionallySuppress(..._args: unknown[]): unknown {
-  throw new Error("shouldUnconditionallySuppress not implemented (openclaw stub)");
+
+/** Return true when any built-in suppression rule applies to a model entry. */
+export function shouldSuppressBuiltInModel(params: {
+  provider?: string | null;
+  id?: string | null;
+  baseUrl?: string | null;
+}): boolean {
+  const provider = normalizeLowercaseStringOrEmpty(params.provider);
+  const modelId = normalizeLowercaseStringOrEmpty(params.id);
+  if (!provider || !modelId) {
+    return false;
+  }
+  return false;
 }
-export function buildSuppressedBuiltInModelError(..._args: unknown[]): unknown {
-  throw new Error("buildSuppressedBuiltInModelError not implemented (openclaw stub)");
+
+/** Return true only for unconditional manifest suppressions. */
+export function shouldUnconditionallySuppress(_params: {
+  provider?: string | null;
+  id?: string | null;
+}): boolean {
+  return false;
 }
-export function buildShouldSuppressBuiltInModel(..._args: unknown[]): unknown {
-  throw new Error("buildShouldSuppressBuiltInModel not implemented (openclaw stub)");
+
+/** Resolve the user-facing suppression error message for a built-in model. */
+export function buildSuppressedBuiltInModelError(_params: {
+  provider?: string | null;
+  id?: string | null;
+  baseUrl?: string | null;
+}): string | undefined {
+  return undefined;
+}
+
+/** Build a reusable suppression predicate for repeated catalog filtering. */
+export function buildShouldSuppressBuiltInModel(_params?: {
+  config?: unknown;
+  workspaceDir?: string;
+}): (input: { provider?: string | null; id?: string | null; baseUrl?: string | null }) => boolean {
+  return () => false;
 }

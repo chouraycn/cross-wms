@@ -12,5 +12,5 @@
  */
 
 export function classifyControlUiRequest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] classifyControlUiRequest not implemented");
+  return undefined;
 }

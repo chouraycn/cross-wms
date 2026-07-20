@@ -154,17 +154,26 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ? dmid
       : (newModels.find(m => m.enabled)?.id || newModels[0]?.id || '');
 
+    // RC-3 修复：保存旧值快照，失败时回滚 state
+    const prevModels = models;
+    const prevDefaultModelId = defaultModelId;
+
+    // 乐观更新本地 state
     setModels(newModels);
     setDefaultModelId(validatedDefaultId);
 
     try {
       await api.saveModelsConfig(newModels, validatedDefaultId);
+      // 成功后同步 localStorage 缓存，避免与内存 state 不同步
+      saveModelsToCache(newModels, validatedDefaultId);
     } catch (e) {
-      // console.error('[ModelsContext] 保存模型配置失败:', e);
+      // 失败回滚：恢复到保存前的 state
+      setModels(prevModels);
+      setDefaultModelId(prevDefaultModelId);
       setError(e instanceof Error ? e.message : '保存失败');
       throw e;
     }
-  }, [defaultModelId]);
+  }, [defaultModelId, models]);
 
   /** 获取默认模型 */
   const getDefaultModel = useCallback(() => {

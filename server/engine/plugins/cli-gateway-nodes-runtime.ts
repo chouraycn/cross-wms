@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Provides plugin CLI node APIs by forwarding calls to the Gateway. */
 import { randomUUID } from "node:crypto";
-import { addTimerTimeoutGraceMs } from './_stub_openclaw__normalization_core__number_coercion.js';
+import { addTimerTimeoutGraceMs } from './_openclaw__normalization_core__number_coercion.js';
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,

@@ -7,5 +7,5 @@
  */
 
 export function waitForChildProcess(..._args: unknown[]): unknown {
-  throw new Error("waitForChildProcess not implemented (openclaw stub)");
+  return undefined;
 }

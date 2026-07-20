@@ -1,15 +1,23 @@
 // 移植自 openclaw/src/infra/tree-sitter-runtime.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：tree-sitter 依赖不可用
 
-export function resolvePackageFileForCommandExplanation(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolvePackageFileForCommandExplanation");
+/** Resolves the package file for command explanation. Not available without tree-sitter. */
+export function resolvePackageFileForCommandExplanation(_commandName: string): string | null {
+  // tree-sitter not available in cross-wms
+  return null;
 }
-export function getBashParserForCommandExplanation(...args: unknown[]): unknown {
-  throw new Error("not implemented: getBashParserForCommandExplanation");
+
+/** Gets a bash parser for command explanation. Not available without tree-sitter. */
+export function getBashParserForCommandExplanation(): null {
+  return null;
 }
-export function setBashParserLoaderForCommandExplanationForTest(...args: unknown[]): unknown {
-  throw new Error("not implemented: setBashParserLoaderForCommandExplanationForTest");
+
+/** Sets the bash parser loader for testing. No-op without tree-sitter. */
+export function setBashParserLoaderForCommandExplanationForTest(_loader: unknown): void {
+  // No-op
 }
-export function parseBashForCommandExplanation(...args: unknown[]): unknown {
-  throw new Error("not implemented: parseBashForCommandExplanation");
+
+/** Parses bash for command explanation. Returns null without tree-sitter. */
+export function parseBashForCommandExplanation(_source: string): null {
+  return null;
 }

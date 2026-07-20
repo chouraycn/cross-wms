@@ -172,3 +172,6 @@ export function safeJoinPath(...parts: string[]): string {
   }
   return normalized;
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const isPathInsideWithRealpath: any = undefined as any;

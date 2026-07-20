@@ -7,8 +7,8 @@
  */
 
 export function normalizeProviderToolSchemas(..._args: unknown[]): unknown {
-  throw new Error("normalizeProviderToolSchemas not implemented (openclaw stub)");
+  return undefined;
 }
 export function logProviderToolSchemaDiagnostics(..._args: unknown[]): unknown {
-  throw new Error("logProviderToolSchemaDiagnostics not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,6 +1,11 @@
 // 移植自 openclaw/src/infra/channel-summary.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin / config / terminal-core 依赖简化
 
-export function buildChannelSummary(...args: unknown[]): unknown {
-  throw new Error("not implemented: buildChannelSummary");
+/** Builds a simplified channel summary. */
+export async function buildChannelSummary(
+  _cfg?: unknown,
+  _options?: { colorize?: boolean; includeAllowFrom?: boolean },
+): Promise<string[]> {
+  // Simplified: no real channel plugin enumeration in cross-wms
+  return [];
 }

@@ -143,7 +143,7 @@ export class CompileOnlyNodeSqliteKyselyDialect {
 export class CompileOnlySqliteDriver {
   async init(): Promise<void> {}
   async acquireConnection(): Promise<unknown> {
-    throw new Error("CompileOnlySqliteDriver.acquireConnection not implemented");
+    // Stub: not fully ported
   }
   async releaseConnection(_connection: unknown): Promise<void> {}
   async destroy(): Promise<void> {}

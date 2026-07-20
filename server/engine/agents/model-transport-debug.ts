@@ -7,11 +7,11 @@
  */
 
 export function resolveModelPayloadDebugMode(..._args: unknown[]): unknown {
-  throw new Error("resolveModelPayloadDebugMode not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveModelSseDebugMode(..._args: unknown[]): unknown {
-  throw new Error("resolveModelSseDebugMode not implemented (openclaw stub)");
+  return undefined;
 }
 export function emitModelTransportDebug(..._args: unknown[]): unknown {
-  throw new Error("emitModelTransportDebug not implemented (openclaw stub)");
+  return undefined;
 }

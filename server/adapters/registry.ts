@@ -136,10 +136,21 @@ export function initBuiltinAdapters(): void {
     const m = await import('./moonshotAdapter.js');
     return m.moonshotAdapterFactory;
   });
-  // v1.7.86: Azure OpenAI adapter
   registerAdapter('azure-openai', async () => {
     const m = await import('./azureOpenAIAdapter.js');
     return m.azureOpenAIAdapterFactory;
+  });
+  registerAdapter('groq-chat', async () => {
+    const m = await import('./groqAdapter.js');
+    return m.groqAdapterFactory;
+  });
+  registerAdapter('xai-chat', async () => {
+    const m = await import('./xaiAdapter.js');
+    return m.xaiAdapterFactory;
+  });
+  registerAdapter('vllm-chat', async () => {
+    const m = await import('./vllmAdapter.js');
+    return m.vllmAdapterFactory;
   });
   logger.info('[AdapterRegistry] 内置适配器惰性注册完成');
 }
@@ -185,12 +196,32 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
     return 'moonshot-chat';
   }
 
-  // v1.7.86: Azure OpenAI
+  // Azure OpenAI
   if (providerLower === 'azure' ||
       providerLower === 'azure-openai' ||
       endpointLower.includes('.openai.azure.com') ||
       endpointLower.includes('/openai/deployments')) {
     return 'azure-openai';
+  }
+
+  // Groq
+  if (providerLower === 'groq' ||
+      endpointLower.includes('api.groq.com')) {
+    return 'groq-chat';
+  }
+
+  // XAI
+  if (providerLower === 'xai' ||
+      providerLower === 'x-ai' ||
+      endpointLower.includes('api.x.ai')) {
+    return 'xai-chat';
+  }
+
+  // vLLM
+  if (providerLower === 'vllm' ||
+      endpointLower.includes('vllm') ||
+      endpointLower.includes('localhost:8000')) {
+    return 'vllm-chat';
   }
 
   // OpenAI Responses API

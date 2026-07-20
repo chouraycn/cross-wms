@@ -1,12 +1,27 @@
 // 移植自 openclaw/src/channels/message/outbound-bridge.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export type ChannelMessageOutboundBridgeResult = unknown;
+export type ChannelMessageOutboundBridgeResult = {
+  ok: boolean;
+  messageId?: string;
+  error?: string;
+};
 
-export type ChannelMessageOutboundBridgeAdapter = unknown;
+export type ChannelMessageOutboundBridgeAdapter = {
+  send: (params: unknown) => Promise<ChannelMessageOutboundBridgeResult>;
+  update?: (params: unknown) => Promise<ChannelMessageOutboundBridgeResult>;
+  delete?: (params: unknown) => Promise<{ ok: boolean }>;
+};
 
-export type CreateChannelMessageAdapterFromOutboundParams = unknown;
+export type CreateChannelMessageAdapterFromOutboundParams = {
+  channel: string;
+  cfg?: unknown;
+  outboundAdapter?: unknown;
+};
 
-export function createChannelMessageAdapterFromOutbound(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createChannelMessageAdapterFromOutbound");
+/** Creates a channel message adapter from an outbound bridge. Simplified without real channel plugin. */
+export function createChannelMessageAdapterFromOutbound(
+  _params: CreateChannelMessageAdapterFromOutboundParams,
+): ChannelMessageOutboundBridgeAdapter | null {
+  return null;
 }

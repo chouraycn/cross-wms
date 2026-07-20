@@ -1,12 +1,48 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-runner/execution-phase.ts
+ * Ported from openclaw/src/agents/embedded-agent-runner/execution-phase.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Ordered execution milestones reported by the embedded runner while a turn starts up.
  */
 
-export type EmbeddedAgentExecutionPhase = unknown;
-export function formatEmbeddedAgentExecutionPhase(..._args: unknown[]): unknown {
-  throw new Error("formatEmbeddedAgentExecutionPhase not implemented (openclaw stub)");
+const EMBEDDED_AGENT_EXECUTION_PHASES = [
+  "runner_entered",
+  "workspace",
+  "runtime_plugins",
+  "before_agent_reply",
+  "model_resolution",
+  "auth",
+  "context_engine",
+  "attempt_dispatch",
+  "context_assembled",
+  "turn_accepted",
+  "process_spawned",
+  "tool_execution_started",
+  "assistant_output_started",
+  "model_call_started",
+] as const;
+
+export type EmbeddedAgentExecutionPhase = (typeof EMBEDDED_AGENT_EXECUTION_PHASES)[number];
+
+const EMBEDDED_AGENT_EXECUTION_PHASE_LABELS = {
+  runner_entered: "runner-entered",
+  workspace: "workspace",
+  runtime_plugins: "runtime-plugins",
+  before_agent_reply: "before-agent-reply",
+  model_resolution: "model-resolution",
+  auth: "auth",
+  context_engine: "context-engine",
+  attempt_dispatch: "attempt-dispatch",
+  context_assembled: "context-assembled",
+  turn_accepted: "turn-accepted",
+  process_spawned: "process-spawned",
+  tool_execution_started: "tool-execution-started",
+  assistant_output_started: "assistant-output-started",
+  model_call_started: "model-call-started",
+} as const satisfies Record<EmbeddedAgentExecutionPhase, string>;
+
+/** Converts an internal phase id into the compact label used in status output. */
+export function formatEmbeddedAgentExecutionPhase(
+  phase?: EmbeddedAgentExecutionPhase,
+): string | undefined {
+  return phase ? EMBEDDED_AGENT_EXECUTION_PHASE_LABELS[phase] : undefined;
 }

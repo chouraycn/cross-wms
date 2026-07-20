@@ -1,14 +1,23 @@
 /**
  * 移植自 openclaw/src/agents/tools-effective-inventory.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Effective tool inventory resolution.
+ * In cross-wms the full tool inventory infrastructure is not available,
+ * so both functions return empty defaults.
  */
 
-export function resolveEffectiveToolInventoryRuntimeModelContext(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveToolInventoryRuntimeModelContext not implemented (openclaw stub)");
+/** Resolve effective tool inventory runtime model context (returns empty in cross-wms). */
+export function resolveEffectiveToolInventoryRuntimeModelContext(..._args: unknown[]): null {
+  return null;
 }
-export function resolveEffectiveToolInventory(..._args: unknown[]): unknown {
-  throw new Error("resolveEffectiveToolInventory not implemented (openclaw stub)");
+
+/** Resolve effective tool inventory (returns empty in cross-wms). */
+export function resolveEffectiveToolInventory(..._args: unknown[]): {
+  tools: unknown[];
+  labels: Map<string, string>;
+} {
+  return {
+    tools: [],
+    labels: new Map(),
+  };
 }

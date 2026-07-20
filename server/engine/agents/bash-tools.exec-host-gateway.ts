@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/bash-tools.exec-host-gateway.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Gateway allowlist processing for bash exec host.
+ * In cross-wms the gateway allowlist infrastructure is not available,
+ * so processGatewayAllowlist returns an empty allowlist.
  */
 
-export async function processGatewayAllowlist(..._args: unknown[]): Promise<unknown> {
-  throw new Error("processGatewayAllowlist not implemented (openclaw stub)");
+/** Process gateway allowlist for exec host (returns empty in cross-wms). */
+export async function processGatewayAllowlist(..._args: unknown[]): Promise<never[]> {
+  return [];
 }

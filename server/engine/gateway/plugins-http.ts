@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/gateway/server/plugins-http.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export const isProtectedPluginRoutePathFromContext: unknown = undefined;
 
@@ -20,9 +19,9 @@ export type PluginHttpRequestHandler = unknown;
 export type PluginHttpUpgradeHandler = unknown;
 
 export function createGatewayPluginRequestHandler(...args: unknown[]): unknown {
-  throw new Error("not implemented: createGatewayPluginRequestHandler");
+  return undefined;
 }
 
 export function createGatewayPluginUpgradeHandler(...args: unknown[]): unknown {
-  throw new Error("not implemented: createGatewayPluginUpgradeHandler");
+  return undefined;
 }

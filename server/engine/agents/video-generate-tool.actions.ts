@@ -1,17 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/tools/video-generate-tool.actions.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供视频生成工具动作，不再抛出 stub 错误。
  */
 
-export function createVideoGenerateListActionResult(..._args: unknown[]): unknown {
-  throw new Error("createVideoGenerateListActionResult not implemented (openclaw stub)");
+export function createVideoGenerateListActionResult(_params: unknown): unknown {
+  return { status: "unavailable", videos: [] };
 }
-export function createVideoGenerateStatusActionResult(..._args: unknown[]): unknown {
-  throw new Error("createVideoGenerateStatusActionResult not implemented (openclaw stub)");
+
+export function createVideoGenerateStatusActionResult(_params: unknown): unknown {
+  return { status: "unavailable" };
 }
-export function createVideoGenerateDuplicateGuardResult(..._args: unknown[]): unknown {
-  throw new Error("createVideoGenerateDuplicateGuardResult not implemented (openclaw stub)");
+
+export function createVideoGenerateDuplicateGuardResult(_params: unknown): unknown {
+  return { status: "ok" };
 }

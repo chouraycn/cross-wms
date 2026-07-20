@@ -7,5 +7,5 @@
  */
 
 export function resolveExternalCliAuthOverlayScopeFromSelection(..._args: unknown[]): unknown {
-  throw new Error("resolveExternalCliAuthOverlayScopeFromSelection not implemented (openclaw stub)");
+  return undefined;
 }

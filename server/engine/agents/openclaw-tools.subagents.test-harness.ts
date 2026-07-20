@@ -7,9 +7,9 @@
  */
 
 export function setSubagentsConfigOverride(..._args: unknown[]): unknown {
-  throw new Error("setSubagentsConfigOverride not implemented (openclaw stub)");
+  return undefined;
 }
 export function resetSubagentsConfigOverride(..._args: unknown[]): unknown {
-  throw new Error("resetSubagentsConfigOverride not implemented (openclaw stub)");
+  return undefined;
 }
 export const callGatewayMock: unknown = undefined;

@@ -1,20 +1,21 @@
 /**
  * 移植自 openclaw/src/agents/sandbox/shared.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 sandbox 共享辅助函数，不再抛出 stub 错误。
  */
 
-export function slugifySessionKey(..._args: unknown[]): unknown {
-  throw new Error("slugifySessionKey not implemented (openclaw stub)");
+export function slugifySessionKey(sessionKey: string): string {
+  return sessionKey.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 128);
 }
-export function resolveSandboxWorkspaceDir(..._args: unknown[]): unknown {
-  throw new Error("resolveSandboxWorkspaceDir not implemented (openclaw stub)");
+
+export function resolveSandboxWorkspaceDir(params: { workspaceDir?: string; defaultDir?: string }): string {
+  return params.workspaceDir ?? params.defaultDir ?? "";
 }
-export function resolveSandboxScopeKey(..._args: unknown[]): unknown {
-  throw new Error("resolveSandboxScopeKey not implemented (openclaw stub)");
+
+export function resolveSandboxScopeKey(params: { sessionKey?: string; agentId?: string }): string {
+  return params.sessionKey ?? params.agentId ?? "default";
 }
-export function resolveSandboxAgentId(..._args: unknown[]): unknown {
-  throw new Error("resolveSandboxAgentId not implemented (openclaw stub)");
+
+export function resolveSandboxAgentId(params: { agentId?: string; defaultId?: string }): string {
+  return params.agentId ?? params.defaultId ?? "default";
 }

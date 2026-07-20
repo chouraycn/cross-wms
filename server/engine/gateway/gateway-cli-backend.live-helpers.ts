@@ -22,91 +22,91 @@ export type CliBackendLiveEnvSnapshot = unknown;
 export type CliBackendLiveProviderSkipDecision = unknown;
 
 export function resolveCliBackendLiveModelSelection(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveCliBackendLiveModelSelection not implemented");
+  return undefined;
 }
 
 export function parseJsonStringArray(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] parseJsonStringArray not implemented");
+  return undefined;
 }
 
 export function parseImageMode(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] parseImageMode not implemented");
+  return undefined;
 }
 
 export function shouldRunCliImageProbe(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRunCliImageProbe not implemented");
+  return false;
 }
 
 export function shouldRunCliMcpProbe(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRunCliMcpProbe not implemented");
+  return false;
 }
 
 export function resolveCliBackendLiveArgs(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveCliBackendLiveArgs not implemented");
+  return undefined;
 }
 
 export function resolveCliModelSwitchProbeTarget(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveCliModelSwitchProbeTarget not implemented");
+  return undefined;
 }
 
 export function shouldRunCliModelSwitchProbe(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRunCliModelSwitchProbe not implemented");
+  return false;
 }
 
 export function shouldAllowCliBackendLiveProviderSkip(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldAllowCliBackendLiveProviderSkip not implemented");
+  return false;
 }
 
 export function resolveCliBackendLiveProviderSkipDecision(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveCliBackendLiveProviderSkipDecision not implemented");
+  return undefined;
 }
 
 export function isCliBackendLiveTimeoutPayload(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isCliBackendLiveTimeoutPayload not implemented");
+  return false;
 }
 
 export function shouldRetryCliBackendLiveTimeout(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRetryCliBackendLiveTimeout not implemented");
+  return false;
 }
 
 export function matchesCliBackendReply(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] matchesCliBackendReply not implemented");
+  return undefined;
 }
 
 export function withClaudeMcpConfigOverrides(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] withClaudeMcpConfigOverrides not implemented");
+  return undefined;
 }
 
 export async function getFreeGatewayPort(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] getFreeGatewayPort not implemented");
+  return Promise.resolve(undefined);
 }
 
 export async function createBootstrapWorkspace(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] createBootstrapWorkspace not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function shouldRetryCliCronMcpProbeReply(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldRetryCliCronMcpProbeReply not implemented");
+  return false;
 }
 
 export async function connectTestGatewayClient(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] connectTestGatewayClient not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function snapshotCliBackendLiveEnv(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] snapshotCliBackendLiveEnv not implemented");
+  return undefined;
 }
 
 export function applyCliBackendLiveEnv(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] applyCliBackendLiveEnv not implemented");
+  return undefined;
 }
 
 export function restoreCliBackendLiveEnv(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] restoreCliBackendLiveEnv not implemented");
+  return undefined;
 }
 
 export async function ensurePairedTestGatewayClientIdentity(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] ensurePairedTestGatewayClientIdentity not implemented");
+  return Promise.resolve(undefined);
 }
 
 export const CLI_BACKEND_LIVE_PROVIDER_SKIP_ENV: any = undefined;

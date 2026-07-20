@@ -1,13 +1,40 @@
 /**
- * 移植自 openclaw/src/agents/tools/nodes-tool-media.ts
+ * Ported from openclaw/src/agents/tools/nodes-tool-media.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Nodes media action executor.
+ * Cross-wms degradation: exports constants and a no-op executor without
+ * camera/screen gateway dependencies.
  */
 
-export function executeNodeMediaAction(..._args: unknown[]): unknown {
-  throw new Error("executeNodeMediaAction not implemented (openclaw stub)");
+export const MEDIA_INVOKE_ACTIONS = {
+  "camera.snap": "camera_snap",
+  "camera.clip": "camera_clip",
+  "photos.latest": "photos_latest",
+  "screen.record": "screen_record",
+  "screen.snapshot": "screen_snapshot",
+  "file.fetch": "file_fetch",
+  "dir.list": "dir_list",
+  "dir.fetch": "dir_fetch",
+  "file.write": "file_write",
+} as const;
+
+export const POLICY_REDIRECT_INVOKE_COMMANDS: ReadonlySet<string> = new Set([
+  "file.fetch",
+  "dir.list",
+  "dir.fetch",
+  "file.write",
+]);
+
+/** Executes a node media action. Cross-wms degradation: returns error result. */
+export async function executeNodeMediaAction(input: {
+  action: string;
+  params: Record<string, unknown>;
+  gatewayOpts?: Record<string, unknown>;
+  modelHasVision?: boolean;
+  imageSanitization?: Record<string, unknown>;
+}): Promise<Record<string, unknown>> {
+  return {
+    content: [{ type: "text", text: `Node media action "${input.action}" not available in cross-wms` }],
+    details: {},
+  };
 }
-export const MEDIA_INVOKE_ACTIONS: unknown = undefined;
-export const POLICY_REDIRECT_INVOKE_COMMANDS: unknown = undefined;

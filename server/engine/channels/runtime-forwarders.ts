@@ -1,10 +1,28 @@
 // 移植自 openclaw/src/channels/plugins/runtime-forwarders.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export function createRuntimeDirectoryLiveAdapter(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createRuntimeDirectoryLiveAdapter");
+export type RuntimeDirectoryLiveAdapter = {
+  resolveTarget: (params: unknown) => Promise<unknown>;
+  resolveTargets: (params: unknown) => Promise<unknown[]>;
+};
+
+export type RuntimeOutboundDelegates = {
+  deliverPayload: (params: unknown) => Promise<unknown>;
+  resolveTarget: (params: unknown) => Promise<unknown>;
+};
+
+/** Creates a runtime directory live adapter. Simplified without real directory. */
+export function createRuntimeDirectoryLiveAdapter(_params?: unknown): RuntimeDirectoryLiveAdapter {
+  return {
+    resolveTarget: async () => null,
+    resolveTargets: async () => [],
+  };
 }
 
-export function createRuntimeOutboundDelegates(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createRuntimeOutboundDelegates");
+/** Creates runtime outbound delegates. Simplified without real channel plugin. */
+export function createRuntimeOutboundDelegates(_params?: unknown): RuntimeOutboundDelegates {
+  return {
+    deliverPayload: async () => null,
+    resolveTarget: async () => null,
+  };
 }

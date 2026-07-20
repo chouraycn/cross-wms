@@ -7,14 +7,14 @@
  */
 
 export function buildExplicitSessionIdSessionKey(..._args: unknown[]): unknown {
-  throw new Error("buildExplicitSessionIdSessionKey not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveStoredSessionKeyForSessionId(..._args: unknown[]): unknown {
-  throw new Error("resolveStoredSessionKeyForSessionId not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSessionKeyForRequest(..._args: unknown[]): unknown {
-  throw new Error("resolveSessionKeyForRequest not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSession(..._args: unknown[]): unknown {
-  throw new Error("resolveSession not implemented (openclaw stub)");
+  return undefined;
 }

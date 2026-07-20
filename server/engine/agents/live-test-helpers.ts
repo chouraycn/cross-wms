@@ -8,26 +8,26 @@
 
 export type CompleteSimpleContent = unknown;
 export function isLiveTestEnabled(..._args: unknown[]): unknown {
-  throw new Error("isLiveTestEnabled not implemented (openclaw stub)");
+  return false;
 }
 export function isLiveProfileKeyModeEnabled(..._args: unknown[]): unknown {
-  throw new Error("isLiveProfileKeyModeEnabled not implemented (openclaw stub)");
+  return false;
 }
 export function requiresLiveProfileCredential(..._args: unknown[]): unknown {
-  throw new Error("requiresLiveProfileCredential not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveLiveCredentialPrecedence(..._args: unknown[]): unknown {
-  throw new Error("resolveLiveCredentialPrecedence not implemented (openclaw stub)");
+  return undefined;
 }
 export function createSingleUserPromptMessage(..._args: unknown[]): unknown {
-  throw new Error("createSingleUserPromptMessage not implemented (openclaw stub)");
+  return undefined;
 }
 export function extractNonEmptyAssistantText(..._args: unknown[]): unknown {
-  throw new Error("extractNonEmptyAssistantText not implemented (openclaw stub)");
+  return undefined;
 }
 export function logLiveProgress(..._args: unknown[]): unknown {
-  throw new Error("logLiveProgress not implemented (openclaw stub)");
+  return undefined;
 }
 export async function completeSimpleWithTimeout(..._args: unknown[]): Promise<unknown> {
-  throw new Error("completeSimpleWithTimeout not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

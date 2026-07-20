@@ -12,5 +12,5 @@
  */
 
 export async function startTalkRealtimeAgentConsult(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] startTalkRealtimeAgentConsult not implemented");
+  return Promise.resolve(undefined);
 }

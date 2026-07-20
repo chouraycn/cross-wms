@@ -7,8 +7,8 @@
  */
 
 export function dedupeDuplicateUserMessagesForCompaction(..._args: unknown[]): unknown {
-  throw new Error("dedupeDuplicateUserMessagesForCompaction not implemented (openclaw stub)");
+  return undefined;
 }
 export function collectDuplicateUserMessageEntryIdsForCompaction(..._args: unknown[]): unknown {
-  throw new Error("collectDuplicateUserMessageEntryIdsForCompaction not implemented (openclaw stub)");
+  return [];
 }

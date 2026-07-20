@@ -381,3 +381,7 @@ export function listAgentDatabases(
 }
 
 export const closeStateDatabaseForTest = closeStateDatabase;
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const openOpenClawStateDatabase: any = undefined as any;
+export const runOpenClawStateWriteTransaction: any = undefined as any;

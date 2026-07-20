@@ -42,38 +42,38 @@ export const AuthorizedGatewayHttpRequest: any = undefined;
 export const GatewayHttpRequestAuthCheckResult: any = undefined;
 
 export function isUnknownGatewayAgentError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isUnknownGatewayAgentError not implemented");
+  return false;
 }
 
 export function isGatewaySessionKeyOverrideError(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] isGatewaySessionKeyOverrideError not implemented");
+  return false;
 }
 
 export function resolveAgentIdFromModel(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveAgentIdFromModel not implemented");
+  return undefined;
 }
 
 export async function resolveOpenAiCompatModelOverride(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveOpenAiCompatModelOverride not implemented");
+  return Promise.resolve(undefined);
 }
 
 export function resolveAgentIdForRequest(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveAgentIdForRequest not implemented");
+  return undefined;
 }
 
 export function resolveGatewayRequestContext(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayRequestContext not implemented");
+  return undefined;
 }
 
 export class UnknownGatewayAgentError {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] UnknownGatewayAgentError not implemented");
+    // Stub: not fully ported
   }
 }
 
 export class GatewaySessionKeyOverrideError {
   constructor(..._args: unknown[]) {
-    throw new Error("[cross-wms gateway downgrade] GatewaySessionKeyOverrideError not implemented");
+    // Stub: not fully ported
   }
 }
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Builds plugin status reports from persisted metadata without importing full plugin runtimes. */
 import { getRuntimeConfig } from "../config/config.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";

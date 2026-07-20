@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core tests cover jsonl storage behavior.
 import { describe, expect, it } from "vitest";
 import { ok, type FileSystem } from "../types";

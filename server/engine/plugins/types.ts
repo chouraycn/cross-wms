@@ -325,3 +325,6 @@ export interface PluginContractResult {
   /** 插件声明的 API 版本 */
   pluginApiVersion: string;
 }
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const AGENT_PROMPT_SURFACE_KINDS: any = undefined as any;

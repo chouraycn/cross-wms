@@ -1,6 +1,15 @@
 // 移植自 openclaw/src/channels/plugins/registry-loader.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export function createChannelRegistryLoader(..._args: unknown[]): unknown {
-  throw new Error("not implemented: createChannelRegistryLoader");
+export type ChannelRegistryLoader = {
+  load: (provider: string) => Promise<unknown>;
+  listProviders: () => string[];
+};
+
+/** Creates a channel registry loader. Simplified without real plugin registry. */
+export function createChannelRegistryLoader(_params?: unknown): ChannelRegistryLoader {
+  return {
+    load: async () => null,
+    listProviders: () => [],
+  };
 }

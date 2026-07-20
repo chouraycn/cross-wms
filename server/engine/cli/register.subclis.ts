@@ -1,17 +1,89 @@
-// 移植自 openclaw/src/cli/register.subclis.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Sub-CLI registration: core subcommands plus lazily imported command groups.
+// 移植自 openclaw/src/cli/program/register.subclis.ts
 
-export function getSubCliEntries(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getSubCliEntries");
+import type { Command } from "commander";
+import { resolveCliArgvInvocation } from "./argv-invocation.js";
+import {
+  shouldEagerRegisterSubcommands,
+  shouldRegisterPrimarySubcommandOnly,
+} from "./command-registration-policy.js";
+import {
+  buildCommandGroupEntries,
+  defineImportedProgramCommandGroupSpecs,
+  type CommandGroupDescriptorSpec,
+} from "./program/command-group-descriptors.js";
+import {
+  registerCommandGroupByName,
+  registerCommandGroups,
+  type CommandGroupEntry,
+} from "./register-command-groups.js";
+import {
+  registerSubCliByName as registerSubCliByNameCore,
+  registerSubCliCommands as registerSubCliCommandsCore,
+  type SubCliRegistrationContext,
+} from "./register.subclis-core.js";
+import {
+  getSubCliCommandsWithSubcommands,
+  getSubCliEntries as getSubCliEntryDescriptors,
+  type SubCliDescriptor,
+} from "./program/subcli-descriptors.js";
+
+export { getSubCliCommandsWithSubcommands };
+
+type SubCliRegistrar = (
+  program: Command,
+  argv: string[],
+  context: SubCliRegistrationContext,
+) => Promise<void> | void;
+
+const entrySpecs: readonly CommandGroupDescriptorSpec<SubCliRegistrar>[] = [
+  ...defineImportedProgramCommandGroupSpecs([
+    {
+      commandNames: ["completion"],
+      loadModule: () => import("./completion-cli.js"),
+      exportName: "registerCompletionCli",
+    },
+  ]),
+];
+
+function resolveSubCliCommandGroups(
+  argv: string[],
+  context: SubCliRegistrationContext = {},
+): CommandGroupEntry[] {
+  return buildCommandGroupEntries(
+    getSubCliEntryDescriptors(),
+    entrySpecs,
+    (register) => async (program) => {
+      await register(program, argv, context);
+    },
+  );
 }
 
-export async function registerSubCliByName(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: registerSubCliByName");
+/** Return visible sub-CLI descriptors after private QA filtering. */
+export function getSubCliEntries(): ReadonlyArray<SubCliDescriptor> {
+  return getSubCliEntryDescriptors();
 }
 
-export function registerSubCliCommands(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerSubCliCommands");
+/** Register one sub-CLI by name, including lazy command groups. */
+export async function registerSubCliByName(
+  program: Command,
+  name: string,
+  argv: string[] = process.argv,
+  context: SubCliRegistrationContext = {},
+): Promise<boolean> {
+  if (await registerSubCliByNameCore(program, name, argv, context)) {
+    return true;
+  }
+  return registerCommandGroupByName(program, resolveSubCliCommandGroups(argv, context), name);
 }
 
-export const getSubCliCommandsWithSubcommands: unknown = undefined;
+/** Register sub-CLI commands according to eager/lazy startup policy. */
+export function registerSubCliCommands(program: Command, argv: string[] = process.argv) {
+  registerSubCliCommandsCore(program, argv);
+  const { primary } = resolveCliArgvInvocation(argv);
+  registerCommandGroups(program, resolveSubCliCommandGroups(argv), {
+    eager: shouldEagerRegisterSubcommands(),
+    primary,
+    registerPrimaryOnly: Boolean(primary && shouldRegisterPrimarySubcommandOnly(argv)),
+  });
+}

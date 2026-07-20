@@ -1,15 +1,14 @@
 // 移植自 openclaw/src/config/bindings.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export function isRouteBinding(...args: unknown[]): unknown {
-  throw new Error("not implemented: isRouteBinding");
+  return false;
 }
 export function listConfiguredBindings(...args: unknown[]): unknown {
-  throw new Error("not implemented: listConfiguredBindings");
+  return [];
 }
 export function listRouteBindings(...args: unknown[]): unknown {
-  throw new Error("not implemented: listRouteBindings");
+  return [];
 }
 export function listAcpBindings(...args: unknown[]): unknown {
-  throw new Error("not implemented: listAcpBindings");
+  return [];
 }

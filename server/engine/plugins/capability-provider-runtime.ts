@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Resolves plugin capability providers through manifest contracts, bundled compat, and runtime registries. */
-import { sortUniqueStrings } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { sortUniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import { resolveVoiceModelRefs } from './_stub_parent__parent__packages__speech_core__voice_models.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getLoadedRuntimePluginRegistry } from "./active-runtime-registry.js";

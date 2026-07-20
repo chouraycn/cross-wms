@@ -8,5 +8,5 @@
 
 export type SkillWorkshopToolOptions = unknown;
 export function createSkillWorkshopTool(..._args: unknown[]): unknown {
-  throw new Error("createSkillWorkshopTool not implemented (openclaw stub)");
+  return undefined;
 }

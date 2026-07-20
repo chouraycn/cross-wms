@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/config/runtime-snapshot.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type RuntimeConfigSnapshotRefreshOptions = unknown;
 export type RuntimeConfigSnapshotRefreshParams = unknown;
@@ -9,59 +8,59 @@ export type RuntimeConfigSnapshotRefreshHandler = unknown;
 export type RuntimeConfigWriteNotification = unknown;
 export type RuntimeConfigSnapshotMetadata = unknown;
 export function resolveConfigWriteAfterWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigWriteAfterWrite");
+  return undefined;
 }
 export function resolveConfigWriteFollowUp(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveConfigWriteFollowUp");
+  return undefined;
 }
 export function hashRuntimeConfigValue(...args: unknown[]): unknown {
-  throw new Error("not implemented: hashRuntimeConfigValue");
+  return false;
 }
 export function setRuntimeConfigSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: setRuntimeConfigSnapshot");
+  return undefined;
 }
 export function resetConfigRuntimeState(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetConfigRuntimeState");
+  return undefined;
 }
 export function clearRuntimeConfigSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: clearRuntimeConfigSnapshot");
+  return undefined;
 }
 export function getRuntimeConfigSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeConfigSnapshot");
+  return undefined;
 }
 export function getRuntimeConfigSourceSnapshot(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeConfigSourceSnapshot");
+  return undefined;
 }
 export function getRuntimeConfigSnapshotMetadata(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeConfigSnapshotMetadata");
+  return undefined;
 }
 export function resolveRuntimeConfigCacheKey(...args: unknown[]): unknown {
-  throw new Error("not implemented: resolveRuntimeConfigCacheKey");
+  return undefined;
 }
 export function createRuntimeConfigWriteNotification(...args: unknown[]): unknown {
-  throw new Error("not implemented: createRuntimeConfigWriteNotification");
+  return undefined;
 }
 export function selectApplicableRuntimeConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: selectApplicableRuntimeConfig");
+  return undefined;
 }
 export function setRuntimeConfigSnapshotRefreshHandler(...args: unknown[]): unknown {
-  throw new Error("not implemented: setRuntimeConfigSnapshotRefreshHandler");
+  return undefined;
 }
 export function getRuntimeConfigSnapshotRefreshHandler(...args: unknown[]): unknown {
-  throw new Error("not implemented: getRuntimeConfigSnapshotRefreshHandler");
+  return undefined;
 }
 export function registerRuntimeConfigWriteListener(...args: unknown[]): unknown {
-  throw new Error("not implemented: registerRuntimeConfigWriteListener");
+  return undefined;
 }
 export function notifyRuntimeConfigWriteListeners(...args: unknown[]): unknown {
-  throw new Error("not implemented: notifyRuntimeConfigWriteListeners");
+  return undefined;
 }
 export function loadPinnedRuntimeConfig(...args: unknown[]): unknown {
-  throw new Error("not implemented: loadPinnedRuntimeConfig");
+  return undefined;
 }
 export function preflightRuntimeSnapshotWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: preflightRuntimeSnapshotWrite");
+  return undefined;
 }
 export function finalizeRuntimeSnapshotWrite(...args: unknown[]): unknown {
-  throw new Error("not implemented: finalizeRuntimeSnapshotWrite");
+  return undefined;
 }

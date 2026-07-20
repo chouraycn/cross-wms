@@ -12,5 +12,5 @@
  */
 
 export function resolveAllowedAgentIds(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveAllowedAgentIds not implemented");
+  return undefined;
 }

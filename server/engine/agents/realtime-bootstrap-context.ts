@@ -9,5 +9,5 @@
 export type RealtimeBootstrapContextFileName = unknown;
 export const REALTIME_BOOTSTRAP_CONTEXT_FILE_NAMES: unknown = undefined;
 export async function resolveRealtimeBootstrapContextInstructions(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveRealtimeBootstrapContextInstructions not implemented (openclaw stub)");
+  return Promise.resolve(undefined);
 }

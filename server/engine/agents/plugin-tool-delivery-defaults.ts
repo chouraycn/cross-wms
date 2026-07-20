@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/plugin-tool-delivery-defaults.ts
+ * Ported from openclaw/src/agents/plugin-tool-delivery-defaults.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Plugin tool delivery defaults.
+ * Cross-wms degradation: returns input unchanged without plugin system.
  */
 
-export function applyPluginToolDeliveryDefaults(..._args: unknown[]): unknown {
-  throw new Error("applyPluginToolDeliveryDefaults not implemented (openclaw stub)");
+/** Applies plugin tool delivery defaults to tool definitions. */
+export function applyPluginToolDeliveryDefaults<T>(tools: T): T {
+  // Cross-wms does not have plugin tool delivery defaults.
+  return tools;
 }

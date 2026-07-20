@@ -7,5 +7,5 @@
  */
 
 export function createRestrictedAgentSandboxConfig(..._args: unknown[]): unknown {
-  throw new Error("createRestrictedAgentSandboxConfig not implemented (openclaw stub)");
+  return undefined;
 }

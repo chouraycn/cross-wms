@@ -7,11 +7,11 @@
  */
 
 export function wrapToolDefinition(..._args: unknown[]): unknown {
-  throw new Error("wrapToolDefinition not implemented (openclaw stub)");
+  return undefined;
 }
 export function wrapToolDefinitions(..._args: unknown[]): unknown {
-  throw new Error("wrapToolDefinitions not implemented (openclaw stub)");
+  return undefined;
 }
 export function createToolDefinitionFromAgentTool(..._args: unknown[]): unknown {
-  throw new Error("createToolDefinitionFromAgentTool not implemented (openclaw stub)");
+  return undefined;
 }

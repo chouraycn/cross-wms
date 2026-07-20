@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Normalizes plugin command specs for CLI and slash command surfaces.
-import { normalizeOptionalLowercaseString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalLowercaseString } from './_openclaw__normalization_core__string_coerce.js';
 import { getLoadedChannelPlugin } from "../channels/plugins/index.js";
 import { resolveReadOnlyChannelCommandDefaults } from './_stub_parent__channels__plugins__read_only_command_defaults.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";

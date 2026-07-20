@@ -7,11 +7,11 @@
  */
 
 export function normalizeTextForComparison(..._args: unknown[]): unknown {
-  throw new Error("normalizeTextForComparison not implemented (openclaw stub)");
+  return undefined;
 }
 export function isMessagingToolDuplicateNormalized(..._args: unknown[]): unknown {
-  throw new Error("isMessagingToolDuplicateNormalized not implemented (openclaw stub)");
+  return false;
 }
 export function isMessagingToolDuplicate(..._args: unknown[]): unknown {
-  throw new Error("isMessagingToolDuplicate not implemented (openclaw stub)");
+  return false;
 }

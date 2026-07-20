@@ -1,7 +1,19 @@
-// 移植自 openclaw/src/cli/register.read-edit-delete.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// registerReadEditDeleteCommands: CLI command registration.
+// 移植自 openclaw/src/cli/program/register.read-edit-delete.ts
+//
+// 降级策略：
+//  - 原模块依赖 OpenClaw 内部模块。
+//    cross-wms 未移植；此处注册命令结构，action 输出 "not available in cross-wms"。
 
-export function registerMessageReadEditDeleteCommands(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerMessageReadEditDeleteCommands");
+import type { Command } from "commander";
+
+/** Register the read-edit-delete command(s). */
+export function registerReadEditDeleteCommands(program: Command): void {
+  program
+    .command("read-edit-delete")
+    .description("Read, edit, delete message commands")
+    .action(() => {
+      console.error("read-edit-delete is not available in cross-wms");
+      process.exit(1);
+    });
 }

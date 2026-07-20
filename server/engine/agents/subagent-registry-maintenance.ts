@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/subagent-registry-maintenance.ts
+ * Ported from openclaw/src/agents/subagent-registry-maintenance.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Session-store maintenance protection for subagent runs.
+ * Cross-wms degradation: no in-memory subagent registry, returns empty.
  */
 
-export function listSessionMaintenanceProtectedSubagentSessionKeys(..._args: unknown[]): unknown {
-  throw new Error("listSessionMaintenanceProtectedSubagentSessionKeys not implemented (openclaw stub)");
+/** Lists child session keys protected from session-store maintenance pruning. */
+export function listSessionMaintenanceProtectedSubagentSessionKeys(): string[] {
+  // Cross-wms does not maintain the subagent runs registry in memory.
+  return [];
 }

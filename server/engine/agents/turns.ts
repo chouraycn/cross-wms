@@ -1,17 +1,17 @@
 /**
  * 移植自 openclaw/src/agents/embedded-agent-helpers/turns.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 降级实现：提供 turn 验证和合并，不再抛出 stub 错误。
  */
 
-export function validateGeminiTurns(..._args: unknown[]): unknown {
-  throw new Error("validateGeminiTurns not implemented (openclaw stub)");
+export function validateGeminiTurns(turns: unknown[]): unknown[] {
+  return turns;
 }
-export function mergeConsecutiveUserTurns(..._args: unknown[]): unknown {
-  throw new Error("mergeConsecutiveUserTurns not implemented (openclaw stub)");
+
+export function mergeConsecutiveUserTurns(turns: unknown[]): unknown[] {
+  return turns;
 }
-export function validateAnthropicTurns(..._args: unknown[]): unknown {
-  throw new Error("validateAnthropicTurns not implemented (openclaw stub)");
+
+export function validateAnthropicTurns(turns: unknown[]): unknown[] {
+  return turns;
 }

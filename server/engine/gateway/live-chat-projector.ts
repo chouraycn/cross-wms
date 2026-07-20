@@ -12,19 +12,19 @@
  */
 
 export function resolveMergedAssistantText(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] resolveMergedAssistantText not implemented");
+  return undefined;
 }
 
 export function normalizeLiveAssistantEventText(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] normalizeLiveAssistantEventText not implemented");
+  return undefined;
 }
 
 export function projectLiveAssistantBufferedText(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] projectLiveAssistantBufferedText not implemented");
+  return undefined;
 }
 
 export function shouldSuppressAssistantEventForLiveChat(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] shouldSuppressAssistantEventForLiveChat not implemented");
+  return false;
 }
 
 export const MAX_LIVE_CHAT_BUFFER_CHARS: any = undefined;

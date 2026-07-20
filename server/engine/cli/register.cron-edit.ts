@@ -1,7 +1,19 @@
-// 移植自 openclaw/src/cli/register.cron-edit.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// registerCronEditCommand: CLI command registration.
+// 移植自 openclaw/src/cli/program/register.cron-edit.ts
+//
+// 降级策略：
+//  - 原模块依赖 OpenClaw 内部模块。
+//    cross-wms 未移植；此处注册命令结构，action 输出 "not available in cross-wms"。
 
-export function registerCronEditCommand(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerCronEditCommand");
+import type { Command } from "commander";
+
+/** Register the edit command(s). */
+export function registerCronEditCommand(program: Command): void {
+  program
+    .command("edit")
+    .description("Edit a cron job")
+    .action(() => {
+      console.error("edit is not available in cross-wms");
+      process.exit(1);
+    });
 }

@@ -7,8 +7,8 @@
  */
 
 export function renderExecOutputText(..._args: unknown[]): unknown {
-  throw new Error("renderExecOutputText not implemented (openclaw stub)");
+  return "";
 }
 export function renderExecUpdateText(..._args: unknown[]): unknown {
-  throw new Error("renderExecUpdateText not implemented (openclaw stub)");
+  return "";
 }

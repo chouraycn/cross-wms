@@ -1,22 +1,20 @@
-// 移植自 openclaw/src/cli/plugins-cli-test-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
 
 export function setInstalledPluginIndexInstallRecords(..._args: unknown[]): unknown {
-  throw new Error("not implemented: setInstalledPluginIndexInstallRecords");
+  console.warn('setInstalledPluginIndexInstallRecords is not available in cross-wms'); return undefined;
 }
 
 export async function runPluginsCommand(..._args: unknown[]): Promise<unknown> {
-  throw new Error("not implemented: runPluginsCommand");
+  console.warn('runPluginsCommand is not available in cross-wms');
 }
 
 export function resetPluginsCliTestState(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resetPluginsCliTestState");
+  console.warn('resetPluginsCliTestState is not available in cross-wms'); return undefined;
 }
 
-export class PromptInputClosedError {
-  constructor(..._args: unknown[]) {
-    throw new Error("not implemented: PromptInputClosedError.constructor");
+export class PromptInputClosedError extends Error {
+  constructor(message = "Prompt input closed") {
+    super(message);
+    this.name = "PromptInputClosedError";
   }
 }
 

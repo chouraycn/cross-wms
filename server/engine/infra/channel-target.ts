@@ -1,9 +1,46 @@
-// 移植自 openclaw/src/infra/channel-target.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 移植自 openclaw/src/infra/outbound/channel-target.ts
 
-export function applyTargetToParams(...args: unknown[]): unknown {
-  throw new Error("not implemented: applyTargetToParams");
+import { normalizeOptionalString, hasNonEmptyString } from "./string-coerce.js";
+
+export { hasNonEmptyString };
+
+export const CHANNEL_TARGET_DESCRIPTION =
+  "Recipient/channel: E.164 for WhatsApp/Signal, Telegram chat id/@username, Discord/Slack/Mattermost <channelId|user:ID|channel:ID>, or iMessage handle/chat_id";
+
+export const CHANNEL_TARGETS_DESCRIPTION =
+  "Recipient/channel targets (same format as --target); accepts ids or names when the directory is available.";
+
+const MESSAGE_ACTION_TARGET_MODE: Record<string, "none" | "channelId" | "to"> = {
+  send: "to",
+  sendMedia: "to",
+};
+
+/** Maps canonical `target` into the legacy field required by the action implementation. */
+export function applyTargetToParams(params: {
+  action: string;
+  args: Record<string, unknown>;
+}): void {
+  const target = normalizeOptionalString(params.args.target) ?? "";
+  const hasLegacyTo = hasNonEmptyString(params.args.to);
+  const hasLegacyChannelId = hasNonEmptyString(params.args.channelId);
+  const mode = MESSAGE_ACTION_TARGET_MODE[params.action] ?? "none";
+
+  if (mode !== "none") {
+    if (hasLegacyTo || hasLegacyChannelId) {
+      throw new Error("Use `target` instead of `to`/`channelId`.");
+    }
+  } else if (hasLegacyTo) {
+    throw new Error("Use `target` for actions that accept a destination.");
+  }
+
+  if (!target) return;
+  if (mode === "channelId") {
+    params.args.channelId = target;
+    return;
+  }
+  if (mode === "to") {
+    params.args.to = target;
+    return;
+  }
+  throw new Error(`Action ${params.action} does not accept a target.`);
 }
-export const hasNonEmptyString: unknown = undefined;
-export const CHANNEL_TARGET_DESCRIPTION: unknown = undefined;
-export const CHANNEL_TARGETS_DESCRIPTION: unknown = undefined;

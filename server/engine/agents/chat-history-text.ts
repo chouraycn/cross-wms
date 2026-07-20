@@ -1,17 +1,54 @@
 /**
- * 移植自 openclaw/src/agents/tools/chat-history-text.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Chat-history text helpers for session tools.
+ * Ported from openclaw/src/agents/tools/chat-history-text.ts
  */
 
-export function stripToolMessages(..._args: unknown[]): unknown {
-  throw new Error("stripToolMessages not implemented (openclaw stub)");
+/** Removes tool messages from a message array. */
+export function stripToolMessages(messages: unknown[]): unknown[] {
+  return messages.filter((msg) => {
+    if (!msg || typeof msg !== "object") {
+      return true;
+    }
+    const role = (msg as { role?: unknown }).role;
+    return role !== "toolResult" && role !== "tool";
+  });
 }
-export function sanitizeTextContent(..._args: unknown[]): unknown {
-  throw new Error("sanitizeTextContent not implemented (openclaw stub)");
+
+/** Sanitize text content to strip tool call markers and thinking tags. */
+export function sanitizeTextContent(text: string): string {
+  // Strip common thinking/reasoning tags that would leak to user-facing text
+  let result = text;
+  result = result.replace(/<\/?thinking[^>]*>/gi, "");
+  result = result.replace(/<\/?reasoning[^>]*>/gi, "");
+  result = result.replace(/<\/?thought[^>]*>/gi, "");
+  return result.trim();
 }
-export function extractAssistantText(..._args: unknown[]): unknown {
-  throw new Error("extractAssistantText not implemented (openclaw stub)");
+
+/** Extract assistant-visible text from a message object. */
+export function extractAssistantText(message: unknown): string | undefined {
+  if (!message || typeof message !== "object") {
+    return undefined;
+  }
+  if ((message as { role?: unknown }).role !== "assistant") {
+    return undefined;
+  }
+  const content = (message as { content?: unknown }).content;
+  if (typeof content === "string") {
+    return sanitizeTextContent(content);
+  }
+  if (!Array.isArray(content)) {
+    return undefined;
+  }
+  const textParts: string[] = [];
+  for (const block of content) {
+    if (!block || typeof block !== "object") {
+      continue;
+    }
+    const typedBlock = block as { type?: string; text?: string };
+    if (typedBlock.type === "text" && typeof typedBlock.text === "string") {
+      textParts.push(typedBlock.text);
+    }
+  }
+  const joined = textParts.join("");
+  return joined ? sanitizeTextContent(joined) : undefined;
 }

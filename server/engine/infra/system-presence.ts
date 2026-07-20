@@ -1,13 +1,44 @@
 // 移植自 openclaw/src/infra/system-presence.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：presence 存储/网络依赖简化
 
-export type SystemPresence = unknown;
-export function updateSystemPresence(...args: unknown[]): unknown {
-  throw new Error("not implemented: updateSystemPresence");
+export type SystemPresence = {
+  agentId?: string;
+  status?: "online" | "away" | "offline" | "busy";
+  lastSeenMs?: number;
+  channels?: string[];
+  [key: string]: unknown;
+};
+
+const presenceStore = new Map<string, SystemPresence>();
+
+/** Updates system presence for an agent. */
+export function updateSystemPresence(params: {
+  agentId: string;
+  status?: "online" | "away" | "offline" | "busy";
+  channels?: string[];
+}): SystemPresence {
+  const existing = presenceStore.get(params.agentId) ?? {};
+  const updated: SystemPresence = {
+    ...existing,
+    agentId: params.agentId,
+    status: params.status ?? existing.status ?? "online",
+    lastSeenMs: Date.now(),
+    channels: params.channels ?? existing.channels ?? [],
+  };
+  presenceStore.set(params.agentId, updated);
+  return updated;
 }
-export function upsertPresence(...args: unknown[]): unknown {
-  throw new Error("not implemented: upsertPresence");
+
+/** Upserts presence entry. */
+export function upsertPresence(params: {
+  agentId: string;
+  status?: "online" | "away" | "offline" | "busy";
+  channels?: string[];
+}): SystemPresence {
+  return updateSystemPresence(params);
 }
-export function listSystemPresence(...args: unknown[]): unknown {
-  throw new Error("not implemented: listSystemPresence");
+
+/** Lists all system presence entries. */
+export function listSystemPresence(): SystemPresence[] {
+  return [...presenceStore.values()];
 }

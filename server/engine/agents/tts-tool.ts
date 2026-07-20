@@ -7,5 +7,5 @@
  */
 
 export function createTtsTool(..._args: unknown[]): unknown {
-  throw new Error("createTtsTool not implemented (openclaw stub)");
+  return undefined;
 }

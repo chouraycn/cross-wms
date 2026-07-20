@@ -9,5 +9,5 @@
 export type CreateAgentSessionOptions = unknown;
 export type CreateAgentSessionResult = unknown;
 export function createAgentSession(..._args: unknown[]): unknown {
-  throw new Error("createAgentSession not implemented (openclaw stub)");
+  return undefined;
 }

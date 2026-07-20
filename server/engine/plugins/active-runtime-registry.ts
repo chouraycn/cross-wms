@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Stores active runtime plugin registry state and activation metadata.
-import { normalizeSortedUniqueStringEntries } from './_stub_openclaw__normalization_core__string_normalization.js';
+import { normalizeSortedUniqueStringEntries } from './_openclaw__normalization_core__string_normalization.js';
 import { resolveCompatibleRuntimePluginRegistry, type PluginLoadOptions } from "./loader.js";
 import type { PluginRegistry } from "./registry-types.js";
 import {

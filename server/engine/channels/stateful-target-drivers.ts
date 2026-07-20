@@ -1,26 +1,54 @@
 // 移植自 openclaw/src/channels/plugins/stateful-target-drivers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel plugin 依赖简化
 
-export type StatefulBindingTargetReadyResult = unknown;
+export type StatefulBindingTargetReadyResult = {
+  ready: boolean;
+  reason?: string;
+};
 
-export type StatefulBindingTargetSessionResult = unknown;
+export type StatefulBindingTargetSessionResult = {
+  target: string;
+  threadId?: string;
+  [key: string]: unknown;
+};
 
-export type StatefulBindingTargetResetResult = unknown;
+export type StatefulBindingTargetResetResult = {
+  reset: boolean;
+  reason?: string;
+};
 
-export type StatefulBindingTargetDriver = unknown;
+export type StatefulBindingTargetDriver = {
+  provider: string;
+  isReady: (params: unknown) => Promise<StatefulBindingTargetReadyResult>;
+  resolveSession: (params: unknown) => Promise<StatefulBindingTargetSessionResult | null>;
+  reset: (params: unknown) => Promise<StatefulBindingTargetResetResult>;
+};
 
-export function registerStatefulBindingTargetDriver(..._args: unknown[]): unknown {
-  throw new Error("not implemented: registerStatefulBindingTargetDriver");
+const drivers = new Map<string, StatefulBindingTargetDriver>();
+
+/** Registers a stateful binding target driver. */
+export function registerStatefulBindingTargetDriver(driver: StatefulBindingTargetDriver): void {
+  if (driver.provider?.trim()) {
+    drivers.set(driver.provider.trim().toLowerCase(), driver);
+  }
 }
 
-export function unregisterStatefulBindingTargetDriver(..._args: unknown[]): unknown {
-  throw new Error("not implemented: unregisterStatefulBindingTargetDriver");
+/** Unregisters a stateful binding target driver. */
+export function unregisterStatefulBindingTargetDriver(provider: string): boolean {
+  return drivers.delete(provider?.trim().toLowerCase());
 }
 
-export function getStatefulBindingTargetDriver(..._args: unknown[]): unknown {
-  throw new Error("not implemented: getStatefulBindingTargetDriver");
+/** Gets a stateful binding target driver. */
+export function getStatefulBindingTargetDriver(provider: string): StatefulBindingTargetDriver | null {
+  return drivers.get(provider?.trim().toLowerCase()) ?? null;
 }
 
-export function resolveStatefulBindingTargetBySessionKey(..._args: unknown[]): unknown {
-  throw new Error("not implemented: resolveStatefulBindingTargetBySessionKey");
+/** Resolves a stateful binding target by session key. */
+export async function resolveStatefulBindingTargetBySessionKey(params: {
+  provider: string;
+  sessionKey: string;
+}): Promise<StatefulBindingTargetSessionResult | null> {
+  const driver = getStatefulBindingTargetDriver(params.provider);
+  if (!driver) return null;
+  return driver.resolveSession(params);
 }

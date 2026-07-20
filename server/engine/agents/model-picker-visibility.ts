@@ -7,8 +7,8 @@
  */
 
 export function isRetiredModelPickerProvider(..._args: unknown[]): unknown {
-  throw new Error("isRetiredModelPickerProvider not implemented (openclaw stub)");
+  return false;
 }
 export function createModelPickerVisibleProviderPredicate(..._args: unknown[]): unknown {
-  throw new Error("createModelPickerVisibleProviderPredicate not implemented (openclaw stub)");
+  return undefined;
 }

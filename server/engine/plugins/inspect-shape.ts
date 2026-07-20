@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Inspects plugin registry shape for diagnostics and snapshots.
 import type { PluginRegistry } from "./registry.js";
 import { hasKind } from "./slots.js";

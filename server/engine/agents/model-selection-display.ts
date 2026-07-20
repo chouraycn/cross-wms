@@ -7,11 +7,11 @@
  */
 
 export function resolveModelDisplayRef(..._args: unknown[]): unknown {
-  throw new Error("resolveModelDisplayRef not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveModelDisplayName(..._args: unknown[]): unknown {
-  throw new Error("resolveModelDisplayName not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolveSessionInfoModelSelection(..._args: unknown[]): unknown {
-  throw new Error("resolveSessionInfoModelSelection not implemented (openclaw stub)");
+  return undefined;
 }

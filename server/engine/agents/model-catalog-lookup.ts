@@ -7,11 +7,11 @@
  */
 
 export function modelSupportsInput(..._args: unknown[]): unknown {
-  throw new Error("modelSupportsInput not implemented (openclaw stub)");
+  return undefined;
 }
 export function findModelInCatalog(..._args: unknown[]): unknown {
-  throw new Error("findModelInCatalog not implemented (openclaw stub)");
+  return [];
 }
 export function findModelCatalogEntry(..._args: unknown[]): unknown {
-  throw new Error("findModelCatalogEntry not implemented (openclaw stub)");
+  return [];
 }

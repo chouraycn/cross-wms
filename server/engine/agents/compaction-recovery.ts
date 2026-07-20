@@ -7,8 +7,8 @@
  */
 
 export function isRecoverableNativeHarnessBindingReason(..._args: unknown[]): unknown {
-  throw new Error("isRecoverableNativeHarnessBindingReason not implemented (openclaw stub)");
+  return false;
 }
 export function isRecoverableNativeHarnessBindingFailure(..._args: unknown[]): unknown {
-  throw new Error("isRecoverableNativeHarnessBindingFailure not implemented (openclaw stub)");
+  return false;
 }

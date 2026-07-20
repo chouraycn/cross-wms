@@ -1,14 +1,30 @@
 /**
  * 移植自 openclaw/src/agents/agent-hooks/context-pruning/settings.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Context pruning settings computation.
+ * In cross-wms the full pruning settings infrastructure is not available,
+ * so computeEffectiveSettings returns a default and the constant is provided.
  */
 
-export type ContextPruningToolMatch = unknown;
-export type EffectiveContextPruningSettings = unknown;
-export function computeEffectiveSettings(..._args: unknown[]): unknown {
-  throw new Error("computeEffectiveSettings not implemented (openclaw stub)");
+/** A tool match entry for context pruning. */
+export type ContextPruningToolMatch = {
+  name: string;
+  keep?: boolean;
+};
+
+/** Effective context pruning settings. */
+export type EffectiveContextPruningSettings = {
+  enabled: boolean;
+  toolMatches: ContextPruningToolMatch[];
+};
+
+/** Default context pruning settings (disabled). */
+export const DEFAULT_CONTEXT_PRUNING_SETTINGS: EffectiveContextPruningSettings = {
+  enabled: false,
+  toolMatches: [],
+};
+
+/** Compute effective context pruning settings (returns disabled default in cross-wms). */
+export function computeEffectiveSettings(..._args: unknown[]): EffectiveContextPruningSettings {
+  return DEFAULT_CONTEXT_PRUNING_SETTINGS;
 }
-export const DEFAULT_CONTEXT_PRUNING_SETTINGS: unknown = undefined;

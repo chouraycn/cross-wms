@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Emits agent events requested by plugin hook contracts.
-import { normalizeOptionalString } from './_stub_openclaw__normalization_core__string_coerce.js';
+import { normalizeOptionalString } from './_openclaw__normalization_core__string_coerce.js';
 import { emitAgentEvent } from "../infra/agent-events.js";
 import {
   isPluginJsonValue,

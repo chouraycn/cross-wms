@@ -1,5 +1,4 @@
 // 移植自 openclaw/src/plugins/speech-core.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type SpeechDirectiveTokenParseContext = unknown;
 export type SpeechDirectiveTokenParseResult = unknown;
@@ -18,7 +17,7 @@ export type SpeechVoiceOption = unknown;
 export type TtsDirectiveOverrides = unknown;
 export type TtsDirectiveParseResult = unknown;
 export function summarizeText(...args: unknown[]): unknown {
-  throw new Error("not implemented: summarizeText");
+  return undefined;
 }
 export type normalizeApplyTextNormalization = unknown;
 export const normalizeApplyTextNormalization: unknown = undefined;

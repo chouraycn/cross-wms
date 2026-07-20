@@ -7,5 +7,5 @@
  */
 
 export function createSessionManagerRuntimeRegistry(..._args: unknown[]): unknown {
-  throw new Error("createSessionManagerRuntimeRegistry not implemented (openclaw stub)");
+  return undefined;
 }

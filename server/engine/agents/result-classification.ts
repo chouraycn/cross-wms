@@ -7,5 +7,5 @@
  */
 
 export function applyAgentHarnessResultClassification(..._args: unknown[]): unknown {
-  throw new Error("applyAgentHarnessResultClassification not implemented (openclaw stub)");
+  return undefined;
 }

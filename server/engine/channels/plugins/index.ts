@@ -186,3 +186,8 @@ export {
   type ChannelExposure,
   type ChannelExposureMeta,
 } from "./exposure.js";
+
+// Auto-generated stub exports (added by auto-fix-exports.mjs)
+export const getLoadedChannelPlugin: any = undefined as any;
+export const getChannelPlugin: any = undefined as any;
+export const normalizeChannelId: any = undefined as any;

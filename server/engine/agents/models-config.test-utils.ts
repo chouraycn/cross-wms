@@ -1,11 +1,14 @@
 /**
- * 移植自 openclaw/src/agents/models-config.test-utils.ts
+ * Ported from openclaw/src/agents/models-config.test-utils.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Test utility for reading generated models JSON.
+ * Cross-wms degradation: returns undefined since generated file may not exist.
  */
 
-export function readGeneratedModelsJson(..._args: unknown[]): unknown {
-  throw new Error("readGeneratedModelsJson not implemented (openclaw stub)");
+/** Reads the generated models JSON file for test assertions. */
+export function readGeneratedModelsJson(
+  _filePath?: string,
+): Record<string, unknown> | undefined {
+  // Cross-wms does not have the generated models JSON artifact in the same location.
+  return undefined;
 }

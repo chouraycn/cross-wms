@@ -1,12 +1,46 @@
 /**
- * 移植自 openclaw/src/agents/sandbox/fs-bridge-shell-command-plans.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shell command plans for sandbox filesystem bridge operations.
+ * Ported from openclaw/src/agents/sandbox/fs-bridge-shell-command-plans.ts
  */
 
-export type SandboxFsCommandPlan = unknown;
-export function buildStatPlan(..._args: unknown[]): unknown {
-  throw new Error("buildStatPlan not implemented (openclaw stub)");
+/** Path plus operation constraints to validate before execution. */
+type PathSafetyCheck = {
+  target: {
+    containerPath: string;
+    hostPath: string;
+  };
+  options: {
+    action: string;
+    aliasPolicy?: unknown;
+    requireWritable?: boolean;
+    allowedType?: "file" | "directory";
+  };
+};
+
+/** Entry anchored by canonical parent path after symlink resolution. */
+type AnchoredSandboxEntry = {
+  canonicalParentPath: string;
+  basename: string;
+};
+
+export type SandboxFsCommandPlan = {
+  checks: PathSafetyCheck[];
+  script: string;
+  args?: string[];
+  stdin?: Buffer | string;
+  recheckBeforeCommand?: boolean;
+  allowFailure?: boolean;
+};
+
+/** Builds a stat command that anchors the path at its canonical parent before reading metadata. */
+export function buildStatPlan(
+  target: { containerPath: string; hostPath: string },
+  anchoredTarget: AnchoredSandboxEntry,
+): SandboxFsCommandPlan {
+  return {
+    checks: [{ target, options: { action: "stat files" } }],
+    script: 'set -eu\ncd -- "$1"\nstat -c "%F|%s|%y" -- "$2"',
+    args: [anchoredTarget.canonicalParentPath, anchoredTarget.basename],
+    allowFailure: true,
+  };
 }

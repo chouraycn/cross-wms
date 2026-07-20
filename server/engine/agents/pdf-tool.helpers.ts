@@ -7,20 +7,20 @@
  */
 
 export function resolvePdfInputs(..._args: unknown[]): unknown {
-  throw new Error("resolvePdfInputs not implemented (openclaw stub)");
+  return undefined;
 }
 export function providerSupportsNativePdf(..._args: unknown[]): unknown {
-  throw new Error("providerSupportsNativePdf not implemented (openclaw stub)");
+  return undefined;
 }
 export function parsePageRange(..._args: unknown[]): unknown {
-  throw new Error("parsePageRange not implemented (openclaw stub)");
+  return undefined;
 }
 export function coercePdfAssistantText(..._args: unknown[]): unknown {
-  throw new Error("coercePdfAssistantText not implemented (openclaw stub)");
+  return undefined;
 }
 export function coercePdfModelConfig(..._args: unknown[]): unknown {
-  throw new Error("coercePdfModelConfig not implemented (openclaw stub)");
+  return undefined;
 }
 export function resolvePdfToolMaxTokens(..._args: unknown[]): unknown {
-  throw new Error("resolvePdfToolMaxTokens not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,20 +1,35 @@
 // 移植自 openclaw/src/infra/undici-global-dispatcher.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：undici Dispatcher 依赖简化
 
-export function ensureGlobalUndiciEnvProxyDispatcher(...args: unknown[]): unknown {
-  throw new Error("not implemented: ensureGlobalUndiciEnvProxyDispatcher");
+export const DEFAULT_UNDICI_STREAM_TIMEOUT_MS = 300_000;
+export let globalUndiciStreamTimeoutMs: number | undefined = DEFAULT_UNDICI_STREAM_TIMEOUT_MS;
+
+/** Ensures the global undici dispatcher has env proxy configured. No-op in cross-wms. */
+export function ensureGlobalUndiciEnvProxyDispatcher(_params?: {
+  proxyUrl?: string;
+  noProxy?: string;
+}): void {
+  // Simplified: undici global dispatcher not available in cross-wms
 }
-export function ensureGlobalUndiciStreamTimeouts(...args: unknown[]): unknown {
-  throw new Error("not implemented: ensureGlobalUndiciStreamTimeouts");
+
+/** Ensures global undici stream timeouts are set. */
+export function ensureGlobalUndiciStreamTimeouts(timeoutMs?: number): void {
+  if (timeoutMs !== undefined && timeoutMs > 0) {
+    globalUndiciStreamTimeoutMs = timeoutMs;
+  }
 }
-export function ensureGlobalUndiciDispatcherStreamTimeouts(...args: unknown[]): unknown {
-  throw new Error("not implemented: ensureGlobalUndiciDispatcherStreamTimeouts");
+
+/** Ensures the global undici dispatcher has stream timeout configuration. */
+export function ensureGlobalUndiciDispatcherStreamTimeouts(_dispatcher?: unknown, _timeoutMs?: number): void {
+  // Simplified: undici dispatcher not available
 }
-export function resetGlobalUndiciStreamTimeoutsForTests(...args: unknown[]): unknown {
-  throw new Error("not implemented: resetGlobalUndiciStreamTimeoutsForTests");
+
+/** Resets global undici stream timeouts for tests. */
+export function resetGlobalUndiciStreamTimeoutsForTests(): void {
+  globalUndiciStreamTimeoutMs = DEFAULT_UNDICI_STREAM_TIMEOUT_MS;
 }
-export function forceResetGlobalDispatcher(...args: unknown[]): unknown {
-  throw new Error("not implemented: forceResetGlobalDispatcher");
+
+/** Force resets the global dispatcher. No-op in cross-wms. */
+export function forceResetGlobalDispatcher(): void {
+  // Simplified: no real global dispatcher to reset
 }
-export const DEFAULT_UNDICI_STREAM_TIMEOUT_MS: unknown = undefined;
-export const globalUndiciStreamTimeoutMs: unknown = undefined;

@@ -12,5 +12,5 @@
  */
 
 export async function reconcileNodePairingOnConnect(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] reconcileNodePairingOnConnect not implemented");
+  return Promise.resolve(undefined);
 }

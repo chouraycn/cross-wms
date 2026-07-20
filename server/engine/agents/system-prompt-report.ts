@@ -7,5 +7,5 @@
  */
 
 export function buildSystemPromptReport(..._args: unknown[]): unknown {
-  throw new Error("buildSystemPromptReport not implemented (openclaw stub)");
+  return undefined;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent Core helper module supports utils behavior.
 import type { Message } from "@cdf-know/llm-core";
 import type { AgentMessage } from "../../types";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Applies mutually exclusive plugin slot selection for memory and context-engine plugins. */
 import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import type { PluginSlotsConfig } from "../config/types.plugins.js";

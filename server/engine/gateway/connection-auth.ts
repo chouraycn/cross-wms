@@ -14,5 +14,5 @@
 export type GatewayConnectionAuthOptions = unknown;
 
 export async function resolveGatewayConnectionAuth(..._args: unknown[]): Promise<any> {
-  throw new Error("[cross-wms gateway downgrade] resolveGatewayConnectionAuth not implemented");
+  return Promise.resolve(undefined);
 }

@@ -25,7 +25,6 @@ export type OutboundSendDeps = {
  * "not supported" 错误，保留函数签名以便未来替换为正式实现。
  */
 export function createOutboundSendDeps(_deps: CliDeps): OutboundSendDeps {
-  throw new Error(
-    "createOutboundSendDeps: not supported in stub mode (outbound-send-mapping not ported).",
-  );
+  console.error('createOutboundSendDeps is not available in cross-wms');
+      process.exit(1);
 }

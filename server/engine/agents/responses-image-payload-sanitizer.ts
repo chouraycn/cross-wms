@@ -1,11 +1,12 @@
 /**
- * 移植自 openclaw/src/agents/responses-image-payload-sanitizer.ts
+ * Ported from openclaw/src/agents/responses-image-payload-sanitizer.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Responses API image payload sanitizer.
+ * Cross-wms degradation: returns input unchanged without sanitization.
  */
 
-export function sanitizeResponsesImagePayload(..._args: unknown[]): unknown {
-  throw new Error("sanitizeResponsesImagePayload not implemented (openclaw stub)");
+/** Sanitizes image payloads in responses API format. */
+export function sanitizeResponsesImagePayload<T>(payload: T): T {
+  // Cross-wms does not have image sanitization for responses API.
+  return payload;
 }

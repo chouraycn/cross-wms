@@ -7,5 +7,5 @@
  */
 
 export function resolveOpenClawPluginToolsForOptions(..._args: unknown[]): unknown {
-  throw new Error("resolveOpenClawPluginToolsForOptions not implemented (openclaw stub)");
+  return undefined;
 }

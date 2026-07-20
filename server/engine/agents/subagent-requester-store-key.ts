@@ -7,5 +7,5 @@
  */
 
 export function resolveRequesterStoreKey(..._args: unknown[]): unknown {
-  throw new Error("resolveRequesterStoreKey not implemented (openclaw stub)");
+  return undefined;
 }

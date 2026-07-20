@@ -1,11 +1,14 @@
 /**
  * 移植自 openclaw/src/agents/bash-tools.exec-approval-request.runtime.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Lazy runtime for exec approval command highlighting.
+ * In cross-wms the command explainer infrastructure is not available,
+ * so resolveExecApprovalCommandSpans returns undefined.
  */
 
-export async function resolveExecApprovalCommandSpans(..._args: unknown[]): Promise<unknown> {
-  throw new Error("resolveExecApprovalCommandSpans not implemented (openclaw stub)");
+/** Resolve command spans used to highlight exec approval prompts. */
+export async function resolveExecApprovalCommandSpans(
+  _command: string,
+): Promise<undefined> {
+  return undefined;
 }

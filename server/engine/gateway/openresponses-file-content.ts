@@ -12,5 +12,5 @@
  */
 
 export function wrapUntrustedFileContent(..._args: unknown[]): any {
-  throw new Error("[cross-wms gateway downgrade] wrapUntrustedFileContent not implemented");
+  return undefined;
 }

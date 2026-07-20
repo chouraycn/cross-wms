@@ -7,11 +7,11 @@
  */
 
 export function wrapStreamFnRepairMalformedToolCallArguments(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnRepairMalformedToolCallArguments not implemented (openclaw stub)");
+  return undefined;
 }
 export function shouldRepairMalformedToolCallArguments(..._args: unknown[]): unknown {
-  throw new Error("shouldRepairMalformedToolCallArguments not implemented (openclaw stub)");
+  return false;
 }
 export function wrapStreamFnDecodeXaiToolCallArguments(..._args: unknown[]): unknown {
-  throw new Error("wrapStreamFnDecodeXaiToolCallArguments not implemented (openclaw stub)");
+  return undefined;
 }

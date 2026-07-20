@@ -1,11 +1,12 @@
 /**
  * 移植自 openclaw/src/agents/auth-profiles/credential-normalize.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Normalizes auth profile credentials for safe storage.
+ * In cross-wms the full secret normalization infrastructure is not available,
+ * so normalizeAuthProfileCredential returns credentials as-is.
  */
 
-export function normalizeAuthProfileCredential(..._args: unknown[]): unknown {
-  throw new Error("normalizeAuthProfileCredential not implemented (openclaw stub)");
+/** Normalize an auth profile credential for safe storage (passthrough in cross-wms). */
+export function normalizeAuthProfileCredential<T = unknown>(credential: T): T {
+  return credential;
 }

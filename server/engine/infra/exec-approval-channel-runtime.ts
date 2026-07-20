@@ -1,15 +1,37 @@
 // 移植自 openclaw/src/infra/exec-approval-channel-runtime.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// 降级：channel runtime 依赖简化
 
-export type ExecApprovalChannelRuntime = unknown;
-export type ExecApprovalChannelRuntimeAdapter = unknown;
-export type ExecApprovalChannelRuntimeEventKind = unknown;
-export function isExecApprovalChannelRuntimeTerminalStartError(...args: unknown[]): unknown {
-  throw new Error("not implemented: isExecApprovalChannelRuntimeTerminalStartError");
+export type ExecApprovalChannelRuntimeEventKind = "approval-requested" | "approval-resolved" | "approval-expired";
+
+export type ExecApprovalChannelRuntimeAdapter = {
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+  isRunning: () => boolean;
+};
+
+export type ExecApprovalChannelRuntime = {
+  adapter: ExecApprovalChannelRuntimeAdapter | null;
+  eventKinds: ExecApprovalChannelRuntimeEventKind[];
+};
+
+export class ExecApprovalChannelRuntimeTerminalStartError extends Error {
+  readonly cause?: Error;
+  constructor(message: string, cause?: Error) {
+    super(message);
+    this.name = "ExecApprovalChannelRuntimeTerminalStartError";
+    this.cause = cause;
+  }
 }
-export function createExecApprovalChannelRuntime(...args: unknown[]): unknown {
-  throw new Error("not implemented: createExecApprovalChannelRuntime");
+
+/** Checks if an error is a terminal start error. */
+export function isExecApprovalChannelRuntimeTerminalStartError(error: unknown): error is ExecApprovalChannelRuntimeTerminalStartError {
+  return error instanceof ExecApprovalChannelRuntimeTerminalStartError;
 }
-export class ExecApprovalChannelRuntimeTerminalStartError {
-  constructor(...args: unknown[]) { throw new Error("not implemented: ExecApprovalChannelRuntimeTerminalStartError"); }
+
+/** Creates an exec approval channel runtime. Simplified without real channel integration. */
+export function createExecApprovalChannelRuntime(_params?: unknown): ExecApprovalChannelRuntime {
+  return {
+    adapter: null,
+    eventKinds: ["approval-requested", "approval-resolved", "approval-expired"],
+  };
 }

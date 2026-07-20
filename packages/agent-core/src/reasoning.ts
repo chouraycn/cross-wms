@@ -1,4 +1,6 @@
 import type { AgentMessage, ReasoningStep } from './types';
+import type { Model, SimpleStreamOptions, ModelThinkingLevel } from "@cdf-know/llm-core";
+import { resolveClaudeFable5ModelIdentity } from "@cdf-know/llm-core";
 import { v4 as uuidv4 } from 'uuid';
 
 export type ReasoningMode = 'none' | 'simple' | 'deep' | 'adaptive';
@@ -139,4 +141,32 @@ export class ReasoningEngine {
   getSummary(): string {
     return this.steps.map((s) => `[${s.type}] ${s.content.slice(0, 50)}...`).join('\n');
   }
+}
+
+type EnabledThinkingLevel = Exclude<ModelThinkingLevel, "off">;
+
+const ENABLED_THINKING_LEVELS = new Set<string>([
+  "minimal", "low", "medium", "high", "xhigh", "max",
+]);
+
+function isEnabledThinkingLevel(value: unknown): value is EnabledThinkingLevel {
+  return typeof value === "string" && ENABLED_THINKING_LEVELS.has(value);
+}
+
+/** Resolve the thinking/reasoning option for the given model and thinking level. */
+export function resolveAgentReasoningOption(
+  model: Model,
+  thinkingLevel: ModelThinkingLevel,
+): SimpleStreamOptions["reasoning"] {
+  if (thinkingLevel !== "off") {
+    return thinkingLevel;
+  }
+  const offFallback =
+    (model as Record<string, unknown>).thinkingLevelMap !== undefined
+      ? ((model as Record<string, unknown>).thinkingLevelMap as Record<string, unknown>).off as string | undefined
+      : ((model.api === "anthropic-messages" || model.api === "bedrock-converse-stream") &&
+        resolveClaudeFable5ModelIdentity(model.id as never)
+          ? "low"
+          : undefined);
+  return isEnabledThinkingLevel(offFallback) ? offFallback : undefined;
 }

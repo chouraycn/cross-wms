@@ -15,9 +15,8 @@ export function registerSecretsCli(program: Command): void {
     .description("List secret keys")
     .option("--json", "Output JSON", false)
     .action(() => {
-      throw new Error(
-        "openclaw secrets list: not supported in stub mode (secrets/*, runtime not ported).",
-      );
+      console.error('openclaw secrets list is not available in cross-wms');
+      process.exit(1);
     });
 
   secrets
@@ -25,9 +24,8 @@ export function registerSecretsCli(program: Command): void {
     .description("Get a secret value")
     .argument("<key>", "Secret key")
     .action(() => {
-      throw new Error(
-        "openclaw secrets get: not supported in stub mode (secrets/*, runtime not ported).",
-      );
+      console.error('openclaw secrets get is not available in cross-wms');
+      process.exit(1);
     });
 
   secrets
@@ -36,9 +34,8 @@ export function registerSecretsCli(program: Command): void {
     .argument("<key>", "Secret key")
     .argument("<value>", "Secret value")
     .action(() => {
-      throw new Error(
-        "openclaw secrets set: not supported in stub mode (secrets/*, runtime not ported).",
-      );
+      console.error('openclaw secrets set is not available in cross-wms');
+      process.exit(1);
     });
 
   secrets
@@ -46,14 +43,12 @@ export function registerSecretsCli(program: Command): void {
     .description("Delete a secret")
     .argument("<key>", "Secret key")
     .action(() => {
-      throw new Error(
-        "openclaw secrets delete: not supported in stub mode (secrets/*, runtime not ported).",
-      );
+      console.error('openclaw secrets delete is not available in cross-wms');
+      process.exit(1);
     });
 
   secrets.action(() => {
-    throw new Error(
-      "openclaw secrets: not supported in stub mode (secrets/*, runtime not ported).",
-    );
+    console.error('openclaw secrets is not available in cross-wms');
+      process.exit(1);
   });
 }
