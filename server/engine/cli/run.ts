@@ -1,5 +1,5 @@
 
-export async function runGatewayCommand(..._args: unknown[]): Promise<unknown> {
+export async function runGatewayCommand(..._args: unknown[]): Promise<void> {
   console.warn('runGatewayCommand is not available in cross-wms');
 }
 

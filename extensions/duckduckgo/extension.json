@@ -1,0 +1,10 @@
+{
+  "id": "duckduckgo",
+  "name": "DuckDuckGo Web Search",
+  "description": "DuckDuckGo web search provider extension (no API key required)",
+  "version": "1.0.0",
+  "kind": "web-search",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

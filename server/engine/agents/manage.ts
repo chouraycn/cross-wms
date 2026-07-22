@@ -3,6 +3,7 @@
  *
  * CLI-facing sandbox management helpers.
  * cross-wms 简化实现：返回空列表，容器管理为空操作。
+ * removeSandboxContainer 已在 ./docker.ts 中实现完整版本。
  */
 
 export type SandboxContainerInfo = {
@@ -31,10 +32,7 @@ export async function listSandboxBrowsers(): Promise<SandboxBrowserInfo[]> {
   return [];
 }
 
-/** Removes one sandbox container — no-op in cross-wms. */
-export async function removeSandboxContainer(_containerName: string): Promise<void> {
-  // No-op: sandbox management not available in cross-wms
-}
+// removeSandboxContainer is exported from ./docker.js
 
 /** Removes one browser sandbox container — no-op in cross-wms. */
 export async function removeSandboxBrowserContainer(_containerName: string): Promise<void> {

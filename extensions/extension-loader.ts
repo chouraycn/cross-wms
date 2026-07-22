@@ -197,6 +197,28 @@ export class ExtensionLoader {
     return Array.from(this.extensions.values()).filter(e => e.enabled);
   }
 
+  /**
+   * 静态注册内置扩展（绕过文件系统发现）
+   *
+   * 用于 registry.ts 中已实例化的 Provider 直接注入已加载集合，
+   * 与基于 extension.json 的 discover/load 互补。
+   */
+  registerStatic(id: string, provider: ExtensionProvider): boolean {
+    if (this.extensions.has(id)) {
+      this.logger.warn(`Extension already loaded: ${id}`);
+      return false;
+    }
+    const manifest = provider.manifest;
+    this.extensions.set(id, {
+      id,
+      manifest,
+      provider,
+      enabled: false,
+    });
+    this.logger.info(`Statically registered extension: ${id} (${manifest.kind})`);
+    return true;
+  }
+
   async loadPluginConfig(extDir: string): Promise<CrossClawPluginConfig | null> {
     const pluginConfigPath = path.join(extDir, 'crossclaw.plugin.json');
     try {

@@ -3,7 +3,7 @@ export function createCliRuntimeCapture(..._args: unknown[]): unknown {
   console.warn('createCliRuntimeCapture is not available in cross-wms'); return undefined;
 }
 
-export async function mockRuntimeModule(..._args: unknown[]): Promise<unknown> {
+export async function mockRuntimeModule(..._args: unknown[]): Promise<void> {
   console.warn('mockRuntimeModule is not available in cross-wms');
 }
 

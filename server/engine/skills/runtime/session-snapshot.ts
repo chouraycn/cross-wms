@@ -455,8 +455,8 @@ export function buildSessionSkillSnapshot(
   const result: SessionSkillSnapshot = {
     skills: filtered.map((e) => e.skill),
     resolvedSkills: filtered.map((e) => ({
-      name: e.skill.name,
       ...e.skill,
+      name: e.skill.name,
     })),
     promptFormatVersion: "1.0.0",
     version: "1.0.0",

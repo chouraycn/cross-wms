@@ -158,23 +158,27 @@ export type OpenClawStateDatabase = {
 
 /**
  * 打开 OpenClaw 状态数据库。
- * 降级实现：抛出错误，cross-wms 未移植 openclaw-state-db。
+ * 降级实现：cross-wms 未移植 openclaw-state-db，返回空数据库占位。
+ * 调用方应通过 try-catch 或可选链安全处理 db 为 undefined 的情况。
  */
 export function openOpenClawStateDatabase(_options?: {
   env?: NodeJS.ProcessEnv;
 }): OpenClawStateDatabase {
-  throw new Error("openOpenClawStateDatabase stub: openclaw-state-db not ported");
+  return { db: undefined };
 }
 
 /**
  * 运行 OpenClaw 状态写事务。
- * 降级实现：抛出错误。
+ * 降级实现：cross-wms 未移植 openclaw-state-db，以 undefined 作为 db 调用回调。
+ * 使用高级 Kysely facade 的调用方（如 conversation-binding.ts）会优雅降级为空操作；
+ * 直接使用 DatabaseSync 的调用方（如 state-migrations.debug-proxy.ts）会
+ * 在回调内崩溃，由其自身的 try-catch 捕获并报告为降级失败。
  */
 export function runOpenClawStateWriteTransaction<T>(
-  _fn: (params: { db: unknown }) => T,
+  fn: (params: { db: unknown }) => T,
   _options?: { env?: NodeJS.ProcessEnv },
 ): T {
-  throw new Error("runOpenClawStateWriteTransaction stub: openclaw-state-db not ported");
+  return fn({ db: undefined });
 }
 
 // ============================================================================

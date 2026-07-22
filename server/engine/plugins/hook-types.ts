@@ -181,3 +181,117 @@ export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = 
   timeoutMs?: number;
   source: string;
 };
+
+// ---------------------------------------------------------------------------
+// 降级类型桩：以下类型对应 openclaw 中聚合了 ../agents/runtime、../auto-reply、
+// ../config 等外部模块的事件/上下文/结果类型。cross-wms 暂未移植这些模块，
+// 此处以最小化结构占位，保证 import 兼容；运行时行为不受影响。
+// ---------------------------------------------------------------------------
+
+export type PluginHookAgentContext = {
+  agentId?: string;
+  sessionKey?: string;
+  [key: string]: unknown;
+};
+
+export type PluginHookSessionContext = {
+  sessionKey?: string;
+  [key: string]: unknown;
+};
+
+export type PluginHookMessageContext = PluginHookSessionContext & {
+  channel?: string;
+  accountId?: string;
+  [key: string]: unknown;
+};
+
+export type PluginHookToolContext = {
+  toolName?: string;
+  [key: string]: unknown;
+};
+
+export type PluginHookSubagentContext = {
+  subagentId?: string;
+  [key: string]: unknown;
+};
+
+export type PluginHookBeforeDispatchContext = PluginHookMessageContext;
+export type PluginHookReplyDispatchContext = PluginHookMessageContext;
+export type PluginHookReplyPayloadSendingContext = PluginHookMessageContext;
+export type PluginHookToolResultPersistContext = PluginHookToolContext;
+export type PluginHookInboundClaimContext = PluginHookMessageContext;
+export type PluginHookBeforeInstallContext = {
+  [key: string]: unknown;
+};
+export type PluginHookResolveExecEnvContext = {
+  [key: string]: unknown;
+};
+
+export type PluginHookBeforeModelResolveEvent = { [key: string]: unknown };
+export type PluginHookBeforeModelResolveResult = { [key: string]: unknown };
+export type PluginHookBeforePromptBuildEvent = { [key: string]: unknown };
+export type PluginHookBeforePromptBuildResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentStartEvent = { [key: string]: unknown };
+export type PluginHookBeforeAgentStartResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentRunEvent = { [key: string]: unknown };
+export type PluginHookBeforeAgentReplyEvent = { [key: string]: unknown };
+export type PluginHookBeforeAgentReplyResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentFinalizeEvent = { [key: string]: unknown };
+export type PluginHookBeforeAgentFinalizeResult = { [key: string]: unknown };
+export type PluginHookAgentEndEvent = { [key: string]: unknown };
+export type PluginHookBeforeCompactionEvent = { [key: string]: unknown };
+export type PluginHookAfterCompactionEvent = { [key: string]: unknown };
+export type PluginHookBeforeResetEvent = { [key: string]: unknown };
+export type PluginHookLlmInputEvent = { [key: string]: unknown };
+export type PluginHookLlmOutputEvent = { [key: string]: unknown };
+export type PluginHookModelCallStartedEvent = { [key: string]: unknown };
+export type PluginHookModelCallEndedEvent = { [key: string]: unknown };
+export type PluginHookInboundClaimEvent = { [key: string]: unknown };
+export type PluginHookInboundClaimResult = { [key: string]: unknown };
+export type PluginHookMessageReceivedEvent = { [key: string]: unknown };
+export type PluginHookMessageSendingEvent = { [key: string]: unknown };
+export type PluginHookMessageSendingResult = { [key: string]: unknown };
+export type PluginHookMessageSentEvent = { [key: string]: unknown };
+export type PluginHookBeforeDispatchEvent = { [key: string]: unknown };
+export type PluginHookBeforeDispatchResult = { [key: string]: unknown };
+export type PluginHookReplyDispatchEvent = { [key: string]: unknown };
+export type PluginHookReplyDispatchResult = { [key: string]: unknown };
+export type PluginHookReplyPayloadSendingEvent = { [key: string]: unknown };
+export type PluginHookReplyPayloadSendingResult = { [key: string]: unknown };
+export type PluginHookReplyPayload = { [key: string]: unknown };
+export type PluginHookBeforeToolCallEvent = { [key: string]: unknown };
+export type PluginHookBeforeToolCallResult = { [key: string]: unknown };
+export type PluginHookAfterToolCallEvent = { [key: string]: unknown };
+export type PluginHookToolResultPersistEvent = { [key: string]: unknown };
+export type PluginHookToolResultPersistResult = { [key: string]: unknown };
+export type PluginHookBeforeMessageWriteEvent = { [key: string]: unknown };
+export type PluginHookBeforeMessageWriteResult = { [key: string]: unknown };
+export type PluginHookSessionStartEvent = { [key: string]: unknown };
+export type PluginHookSessionEndEvent = { [key: string]: unknown };
+export type PluginHookSubagentSpawningEvent = { [key: string]: unknown };
+export type PluginHookSubagentSpawningResult = { [key: string]: unknown };
+export type PluginHookSubagentDeliveryTargetEvent = { [key: string]: unknown };
+export type PluginHookSubagentDeliveryTargetResult = { [key: string]: unknown };
+export type PluginHookSubagentSpawnedEvent = { [key: string]: unknown };
+export type PluginHookSubagentEndedEvent = { [key: string]: unknown };
+export type PluginHookGatewayStartEvent = { [key: string]: unknown };
+export type PluginHookGatewayStopEvent = { [key: string]: unknown };
+export type PluginHookCronChangedEvent = { [key: string]: unknown };
+export type PluginHookGatewayCronRunStatus = "ok" | "error" | "skipped";
+export type PluginHookGatewayCronDeliveryStatus = "delivered" | "failed" | "skipped";
+export type PluginHookGatewayCronJobState = { [key: string]: unknown };
+export type PluginHookResolveExecEnvEvent = { [key: string]: unknown };
+export type PluginHookBeforeInstallEvent = { [key: string]: unknown };
+export type PluginHookBeforeInstallResult = { [key: string]: unknown };
+
+export type PluginAgentTurnPrepareEvent = { [key: string]: unknown };
+export type PluginAgentTurnPrepareResult = { [key: string]: unknown };
+export type PluginHeartbeatPromptContributionEvent = { [key: string]: unknown };
+export type PluginHeartbeatPromptContributionResult = { [key: string]: unknown };
+
+export type PluginHookGatewayContext = {
+  [key: string]: unknown;
+};
+
+export type PluginHookToolKind = "code_mode_exec";
+export type PluginHookToolInputKind = "javascript" | "typescript";

@@ -1,16 +1,16 @@
 // 移植自 openclaw/src/infra/outbound/outbound-policy.ts
 // 出站策略：执行消息工具允许列表和跨上下文交付标记/装饰
 
-import { normalizeUniqueStringEntries } from "../string-normalization.js";
-import { getChannelPlugin } from "../../channels/plugins/index.js";
+import { normalizeUniqueStringEntries } from "./string-normalization.js";
+import { getChannelPlugin } from "../channels/plugins/index.js";
 import type {
   ChannelId,
   ChannelMessageActionName,
   ChannelThreadingToolContext,
-} from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../_runtime-stubs.js";
-import type { MessageToolsConfig } from "../../config/types.tools.js";
-import type { MessagePresentation } from "../../interactive/payload.js";
+} from "../channels/types.public.js";
+import type { OpenClawConfig } from "./_runtime-stubs.js";
+import type { MessageToolsConfig } from "../config/types.tools.js";
+import type { MessagePresentation } from "../interactive/payload.js";
 import { normalizeTargetForProvider } from "./target-normalization.js";
 import { formatTargetDisplay, lookupDirectoryDisplay } from "./target-resolver.js";
 

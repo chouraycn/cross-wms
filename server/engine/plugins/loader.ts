@@ -359,3 +359,18 @@ export function logLoadOrder(order: string[]): void {
 export const resolveCompatibleRuntimePluginRegistry: any = undefined as any;
 export const resolvePluginRegistryLoadCacheKey: any = undefined as any;
 export const resolveRuntimePluginRegistry: any = undefined as any;
+
+// 降级类型桩：对应 openclaw 中 loader.ts 的完整类型/函数
+export type PluginLoadOptions = {
+  pluginDir?: string;
+  skipDependencies?: boolean;
+  [key: string]: unknown;
+};
+
+export async function loadOpenClawPlugins(_options?: PluginLoadOptions): Promise<unknown[]> {
+  return [];
+}
+
+export async function loadOpenClawPluginCliRegistry(_options?: PluginLoadOptions): Promise<unknown> {
+  return {};
+}

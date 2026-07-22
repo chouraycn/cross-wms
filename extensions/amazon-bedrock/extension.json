@@ -1,0 +1,10 @@
+{
+  "id": "amazon-bedrock",
+  "name": "Amazon Bedrock Provider",
+  "description": "Amazon Bedrock managed LLM provider extension (Claude / Llama / Titan)",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

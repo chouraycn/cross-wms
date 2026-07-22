@@ -1,0 +1,10 @@
+{
+  "id": "llama-cpp",
+  "name": "llama.cpp Provider",
+  "description": "llama.cpp local server OpenAI-compatible LLM provider extension (no API key required)",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

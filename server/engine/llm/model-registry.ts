@@ -201,3 +201,23 @@ export class LlmModelRegistry implements ModelRegistry {
 }
 
 export const modelRegistry = new LlmModelRegistry();
+
+export function registerModel(model: Model): void {
+  modelRegistry.register(model);
+}
+
+export function getModel(provider: string, modelId: string): Model | undefined {
+  return modelRegistry.find(provider, modelId);
+}
+
+export function listRegisteredModels(): Model[] {
+  return modelRegistry.getAll();
+}
+
+export function findModel(provider: string, modelId: string): Model | undefined {
+  return modelRegistry.find(provider, modelId);
+}
+
+export function findModelsByProvider(provider: string): Model[] {
+  return modelRegistry.getModelsByProvider(provider);
+}

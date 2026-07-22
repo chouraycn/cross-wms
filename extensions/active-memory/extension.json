@@ -1,0 +1,10 @@
+{
+  "id": "active-memory",
+  "name": "Active Memory Host",
+  "description": "Active working-memory host extension for short-lived session memory",
+  "version": "1.0.0",
+  "kind": "memory-host",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

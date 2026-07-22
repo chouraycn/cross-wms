@@ -157,3 +157,12 @@ export function createPluginRegistry(): PluginRegistryImpl {
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const createEmptyPluginRegistry: any = undefined as any;
+
+// 降级类型桩：对应 openclaw 中 registry.ts 的完整类型/函数
+export type PluginRecord = RegistryEntry;
+export type PluginRegistry = PluginRegistryImpl;
+export type PluginHttpRouteRegistration = { [key: string]: unknown };
+
+export function normalizeAnyChannelId(value: unknown): string {
+  return typeof value === "string" ? value : String(value ?? "");
+}

@@ -1,5 +1,5 @@
 
-export async function collectMissingPluginInstallPayloads(..._args: unknown[]): Promise<unknown> {
+export async function collectMissingPluginInstallPayloads(..._args: unknown[]): Promise<void> {
   console.warn('collectMissingPluginInstallPayloads is not available in cross-wms');
 }
 
@@ -15,11 +15,11 @@ export function shouldUseLegacyProcessRestartAfterUpdate(..._args: unknown[]): u
   console.warn('shouldUseLegacyProcessRestartAfterUpdate is not available in cross-wms'); return undefined;
 }
 
-export async function recoverInstalledLaunchAgentAfterUpdate(..._args: unknown[]): Promise<unknown> {
+export async function recoverInstalledLaunchAgentAfterUpdate(..._args: unknown[]): Promise<void> {
   console.warn('recoverInstalledLaunchAgentAfterUpdate is not available in cross-wms');
 }
 
-export async function recoverLaunchAgentAndRecheckGatewayHealth(..._args: unknown[]): Promise<unknown> {
+export async function recoverLaunchAgentAndRecheckGatewayHealth(..._args: unknown[]): Promise<void> {
   console.warn('recoverLaunchAgentAndRecheckGatewayHealth is not available in cross-wms');
 }
 
@@ -39,11 +39,11 @@ export function resolvePostUpdateServiceStateReadEnv(..._args: unknown[]): unkno
   console.warn('resolvePostUpdateServiceStateReadEnv is not available in cross-wms'); return undefined;
 }
 
-export async function updatePluginsAfterCoreUpdate(..._args: unknown[]): Promise<unknown> {
+export async function updatePluginsAfterCoreUpdate(..._args: unknown[]): Promise<void> {
   console.warn('updatePluginsAfterCoreUpdate is not available in cross-wms');
 }
 
-export async function updateFinalizeCommand(..._args: unknown[]): Promise<unknown> {
+export async function updateFinalizeCommand(..._args: unknown[]): Promise<void> {
   console.warn('updateFinalizeCommand is not available in cross-wms');
 }
 
@@ -51,6 +51,6 @@ export function resolvePostCoreUpdateChildStdio(..._args: unknown[]): unknown {
   console.warn('resolvePostCoreUpdateChildStdio is not available in cross-wms'); return undefined;
 }
 
-export async function updateCommand(..._args: unknown[]): Promise<unknown> {
+export async function updateCommand(..._args: unknown[]): Promise<void> {
   console.warn('updateCommand is not available in cross-wms');
 }

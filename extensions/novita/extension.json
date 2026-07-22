@@ -1,0 +1,10 @@
+{
+  "id": "novita",
+  "name": "Novita Provider",
+  "description": "Novita AI serverless LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

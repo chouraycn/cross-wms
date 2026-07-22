@@ -1,0 +1,10 @@
+{
+  "id": "opencode",
+  "name": "Opencode Provider",
+  "description": "Opencode CLI harness LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

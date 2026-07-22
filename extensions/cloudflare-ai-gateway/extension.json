@@ -1,0 +1,10 @@
+{
+  "id": "cloudflare-ai-gateway",
+  "name": "Cloudflare AI Gateway Provider",
+  "description": "Cloudflare AI Gateway proxying LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

@@ -693,7 +693,7 @@ export {
 export type {
   SanitizedEnvResult,
   SyncConfig,
-  SyncResult,
+  SyncResult as SandboxSyncResult,
 } from "./security/sandbox.js";
 
 export {
@@ -763,7 +763,7 @@ export type {
   ChatCommandAction,
   ChatCommand,
   CommandResult,
-  CommandHandler,
+  CommandHandler as ChatCommandHandler,
 } from "./discovery/chat-commands.js";
 
 export {
@@ -1003,7 +1003,7 @@ export {
 export type {
   SkillFrontmatter,
   Skill,
-  LoadSkillsResult,
+  LoadSkillsResult as SessionLoadSkillsResult,
   LoadSkillsFromDirOptions,
   LoadSkillsOptions,
 } from "./loading/session.js";

@@ -60,40 +60,30 @@ export function getNodeSqliteKysely<DB = Record<string, unknown>>(
 
 /**
  * 执行编译后的 Kysely SQLite 查询（同步）。
- * 降级实现：kysely 包不可用，抛出 "not implemented" 错误。
+ * 降级实现：kysely 包不可用，返回空结果集而非抛出错误。
+ * 调用方应预期在降级模式下获得空结果。
  */
 export function executeCompiledSqliteQuerySync(
-  db: unknown,
+  _db: unknown,
   query: CompiledSqliteQuery,
 ): SqliteQueryResult {
-  throw new Error(
-    `executeCompiledSqliteQuerySync not implemented: kysely package not available (sql: ${query.sql})`,
-  );
+  return { rows: [], changes: 0, lastInsertRowid: null };
 }
 
 /**
  * 执行 Kysely 查询构建器并返回结果（同步）。
- * 降级实现：kysely 包不可用，抛出 "not implemented" 错误。
+ * 降级实现：kysely 包不可用，返回空结果集而非抛出错误。
  */
 export function executeSqliteQuerySync<T = Record<string, unknown>>(
-  db: unknown,
-  queryBuilder: KyselyQueryBuilder,
+  _db: unknown,
+  _queryBuilder: KyselyQueryBuilder,
 ): SqliteQueryResult<T> {
-  // 尝试编译查询以获取 SQL 用于错误信息
-  let sql = "<unknown>";
-  try {
-    sql = queryBuilder.compile().sql;
-  } catch {
-    // 忽略编译错误
-  }
-  throw new Error(
-    `executeSqliteQuerySync not implemented: kysely package not available (sql: ${sql})`,
-  );
+  return { rows: [], changes: 0, lastInsertRowid: null };
 }
 
 /**
  * 执行 Kysely 查询并返回第一行（同步）。
- * 降级实现：kysely 包不可用，抛出 "not implemented" 错误。
+ * 降级实现：kysely 包不可用，返回 undefined（空结果集的第一行）。
  */
 export function executeSqliteQueryTakeFirstSync<T = Record<string, unknown>>(
   db: unknown,
@@ -116,7 +106,13 @@ export function clearNodeSqliteKyselyCacheForDatabase(db: unknown): void {
 // ============================================================================
 
 function createCompileOnlyKyselyFacade<DB>(_db: unknown): KyselyDatabase<DB> {
-  // 返回一个代理对象，任何属性访问都会返回抛出错误的函数
+  // 返回一个链式代理对象，任何属性访问都返回可链式调用的 no-op 函数。
+  // 最终调用 .compile() 时返回空查询。这允许调用方链式构建查询而不崩溃。
+  const noopChain = (): any => {
+    const fn = (): any => noopChain();
+    fn.compile = (): CompiledSqliteQuery => ({ sql: "", parameters: [] });
+    return fn;
+  };
   return new Proxy(
     { __DB: undefined as unknown as DB },
     {
@@ -124,12 +120,8 @@ function createCompileOnlyKyselyFacade<DB>(_db: unknown): KyselyDatabase<DB> {
         if (prop === "__DB") {
           return undefined;
         }
-        // 返回一个会抛出错误的函数
-        return (..._args: unknown[]) => {
-          throw new Error(
-            `Kysely query builder method "${String(prop)}" not implemented: kysely package not available`,
-          );
-        };
+        // 返回可链式调用的 no-op 函数，最终 compile() 返回空查询
+        return noopChain();
       },
     },
   ) as KyselyDatabase<DB>;
@@ -143,7 +135,7 @@ export class CompileOnlyNodeSqliteKyselyDialect {
 export class CompileOnlySqliteDriver {
   async init(): Promise<void> {}
   async acquireConnection(): Promise<unknown> {
-    // Stub: not fully ported
+    return undefined;
   }
   async releaseConnection(_connection: unknown): Promise<void> {}
   async destroy(): Promise<void> {}

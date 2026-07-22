@@ -1,26 +1,8 @@
 /**
  * 移植自 openclaw/src/agents/sandbox/validate-sandbox-security.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 沙箱安全校验函数已在 ./docker.ts 中实现完整版本。
+ * 本文件仅保留 getBlockedBindReason 辅助函数，其他校验函数从 docker.ts 导出。
  */
 
-export function getBlockedBindReason(..._args: unknown[]): unknown {
-  return undefined;
-}
-export function validateBindMounts(..._args: unknown[]): unknown {
-  return undefined;
-}
-export function validateNetworkMode(..._args: unknown[]): unknown {
-  return undefined;
-}
-export function validateSeccompProfile(..._args: unknown[]): unknown {
-  return undefined;
-}
-export function validateApparmorProfile(..._args: unknown[]): unknown {
-  return undefined;
-}
-export function validateSandboxSecurity(..._args: unknown[]): unknown {
-  return undefined;
-}
+export { validateBindMounts, validateNetworkMode, validateSeccompProfile, validateApparmorProfile, validateSandboxSecurity } from "./docker.js";

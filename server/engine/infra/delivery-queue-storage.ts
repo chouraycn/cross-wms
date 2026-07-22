@@ -1,11 +1,10 @@
 // 移植自 openclaw/src/infra/outbound/delivery-queue-storage.ts
 // 持久化可重放的出站发送意图并跟踪平台发送恢复状态
 
-import type { ReplyDispatchKind } from "../auto-reply/reply/reply-dispatcher.types.js";
+import type { ReplyDispatchKind } from "../reply/types.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
-import type { RenderedMessageBatchPlanItem } from "../channels/message/types.js";
-import type { ReplyToMode } from "../config/types.js";
-import type { PluginHookReplyPayloadSendingContext } from "../plugins/hook-types.js";
+import type { ReplyToMode } from "../config/types/base.js";
+import type { PluginHookReplyPayloadSendingContext } from "../plugins/hooks.js";
 import {
   deleteDeliveryQueueEntry,
   loadDeliveryQueueEntries,
@@ -16,11 +15,13 @@ import {
   type DeliveryQueueRowMetadata,
 } from "./delivery-queue-sqlite.js";
 import { generateSecureUuid } from "./secure-random.js";
-import type { OutboundDeliveryFormattingOptions } from "./outbound/formatting.js";
-import type { OutboundIdentity } from "./outbound/identity.js";
-import type { OutboundMirror } from "./outbound/mirror.js";
-import type { OutboundSessionContext } from "./outbound/session-context.js";
-import type { OutboundChannel } from "./outbound/targets.js";
+import type { OutboundDeliveryFormattingOptions } from "./formatting.js";
+import type { OutboundIdentity } from "./identity.js";
+import type { OutboundMirror } from "./mirror.js";
+import type { OutboundSessionContext } from "./session-context.js";
+import type { OutboundChannel } from "./targets.js";
+
+type RenderedMessageBatchPlanItem = unknown;
 
 const QUEUE_NAME = "outbound";
 

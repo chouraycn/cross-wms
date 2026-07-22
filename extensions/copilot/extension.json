@@ -1,0 +1,10 @@
+{
+  "id": "copilot",
+  "name": "GitHub Copilot Provider",
+  "description": "GitHub Copilot LLM provider extension (OpenAI-compatible)",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "token"
+}

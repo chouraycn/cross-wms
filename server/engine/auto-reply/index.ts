@@ -89,13 +89,88 @@ export {
   isHeartbeatContentEffectivelyEmpty,
   parseHeartbeatTasks,
   resolveHeartbeatPrompt,
+  resolveHeartbeatPromptForResponseTool,
   isTaskDue,
   HEARTBEAT_TOKEN,
   HEARTBEAT_PROMPT,
+  HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS,
+  HEARTBEAT_RESPONSE_TOOL_PROMPT,
+  HEARTBEAT_TRANSCRIPT_PROMPT,
   DEFAULT_HEARTBEAT_EVERY,
   DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
 } from './heartbeat.js';
 export type { HeartbeatTask, StripHeartbeatResult } from './heartbeat.js';
+
+export {
+  isHeartbeatUserMessage,
+  isHeartbeatOkResponse,
+  filterHeartbeatTranscriptArtifacts,
+} from './heartbeat-filter.js';
+
+export {
+  HEARTBEAT_RESPONSE_TOOL_NAME,
+  HEARTBEAT_TOOL_OUTCOMES,
+  HEARTBEAT_TOOL_PRIORITIES,
+  normalizeHeartbeatToolResponse,
+  getHeartbeatToolNotificationText,
+  createHeartbeatToolResponsePayload,
+  resolveHeartbeatToolResponseFromReplyResult,
+} from './heartbeat-tool-response.js';
+export type { HeartbeatToolResponse } from './heartbeat-tool-response.js';
+
+export { resolveHeartbeatReplyPayload } from './heartbeat-reply-payload.js';
+
+export {
+  hasControlCommand,
+  isControlCommandMessage,
+  hasInlineCommandTokens,
+  shouldComputeCommandAuthorized,
+  normalizeCommandBody,
+  stripInboundMetadata,
+  isAbortTrigger,
+  listDetectionCommands,
+} from './command-detection.js';
+export type {
+  CommandNormalizeOptions,
+  CommandDetectionConfig,
+} from './command-detection.js';
+export type {
+  IsControlCommandMessage,
+  ShouldComputeCommandAuthorized,
+} from './command-detection.runtime-types.js';
+
+export { parseSendPolicyCommand } from './send-policy.js';
+export type { SendPolicyCommandResult } from './send-policy.js';
+
+export { buildHierarchyReinforcementMessage } from './handoff-summarizer.js';
+export type { AgentMessage, HandoffSnapshot } from './handoff-summarizer.js';
+
+export {
+  FAST_MODE_AUTO_PROGRESS_KIND,
+  isFastModeAutoProgressPayload,
+  appendReplyMediaFailureWarning,
+  getReplyPayloadTtsSupplement,
+  isReplyPayloadTtsSupplement,
+  markReplyPayloadAsTtsSupplement,
+  buildTtsSupplementMediaPayload,
+  setReplyPayloadMetadata,
+  getReplyPayloadMetadata,
+  isReplyPayloadNonTerminalToolErrorWarning,
+  copyReplyPayloadMetadata,
+  markReplyPayloadForSourceSuppressionDelivery,
+  markCommandReplyForDelivery,
+  isReplyPayloadStatusNotice,
+} from './reply-payload.js';
+export type {
+  ReplyPayload as RichReplyPayload,
+  ReplyToMode,
+  MessagePresentation,
+  InteractiveReply,
+  ReplyPayloadDelivery,
+  ReplyPayloadTtsSupplement,
+  ReplyDeliveryContext,
+  ReplyPayloadMetadata,
+} from './reply-payload.js';
 
 export {
   queueInboundMessage,

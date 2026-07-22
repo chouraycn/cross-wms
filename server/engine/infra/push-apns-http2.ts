@@ -3,7 +3,7 @@
 //  - @openclaw/normalization-core/number-coercion → ./_runtime-stubs.js
 //  - net/proxy/active-proxy-state 未移植 → 内联降级为 undefined（无代理）
 //  - net/proxy/proxy-tls 未移植 → 内联类型降级
-//  - openHttpConnectTunnel 未移植 → probeApnsHttp2ReachabilityViaProxy 抛出 not implemented
+//  - openHttpConnectTunnel 未移植 → probeApnsHttp2ReachabilityViaProxy 返回降级结果（status=0）
 import http2 from "node:http2";
 import { resolveTimerTimeoutMs } from "./_runtime-stubs.js";
 import { toErrorObject } from "./errors.js";
@@ -136,10 +136,14 @@ export async function probeApnsHttp2ReachabilityViaProxy(
   params: ProbeApnsHttp2ReachabilityViaProxyParams,
 ): Promise<ProbeApnsHttp2ReachabilityViaProxyResult> {
   // 降级：net/proxy/active-proxy-state 与 openHttpConnectTunnel 未移植。
+  // 返回 status=0 表示探测无法执行（代理子系统不可用），而非抛出错误。
+  // 调用方可据此判断代理探测功能在当前环境中不可用。
   void params;
-  throw new Error(
-    "probeApnsHttp2ReachabilityViaProxy not implemented: net/proxy subsystem not ported",
-  );
+  return {
+    status: 0,
+    body: "",
+    responseHeaders: {},
+  };
 }
 
 // 抑制未使用导入警告

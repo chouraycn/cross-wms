@@ -270,7 +270,7 @@ setTimeout(async () => {
       const { bootstrapConfig } = await import('./config/config-bootstrap.js');
       const { AppPaths } = await import('./config/appPaths.js');
       const bootstrapResult = await bootstrapConfig({
-        configPath: AppPaths.configFile,
+        configPath: AppPaths.userConfigFile,
         failOnError: false,
         persistAfterMigrate: true,
         createBackup: true,
@@ -288,7 +288,7 @@ setTimeout(async () => {
     try {
       const { permissionPolicyLoader } = await import('./engine/agents/permission-policy-loader.js');
       const { AppPaths } = await import('./config/appPaths.js');
-      const policiesPath = path.join(path.dirname(AppPaths.configFile), 'agent-policies.json');
+      const policiesPath = path.join(path.dirname(AppPaths.userConfigFile), 'agent-policies.json');
       const policyResult = permissionPolicyLoader.loadPoliciesFromFile(policiesPath);
       if (policyResult.loaded > 0) {
         logger.info(`[PermissionPolicyLoader] 已加载 ${policyResult.loaded} 个权限策略`);

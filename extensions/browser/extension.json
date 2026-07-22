@@ -1,0 +1,10 @@
+{
+  "id": "browser",
+  "name": "Browser Tool",
+  "description": "Browser automation tool extension (CDP / Playwright snapshot-and-act)",
+  "version": "1.0.0",
+  "kind": "tool",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

@@ -19,7 +19,7 @@ export function handleCronCliError(..._args: unknown[]): unknown {
   console.warn('handleCronCliError is not available in cross-wms'); return undefined;
 }
 
-export async function warnIfCronSchedulerDisabled(..._args: unknown[]): Promise<unknown> {
+export async function warnIfCronSchedulerDisabled(..._args: unknown[]): Promise<void> {
   console.warn('warnIfCronSchedulerDisabled is not available in cross-wms');
 }
 

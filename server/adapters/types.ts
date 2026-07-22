@@ -47,7 +47,32 @@ export type ModelApiType =
   | 'exa-chat'
   | 'firecrawl-chat'
   | 'deepgram-stt'
-  | 'fal-generate';
+  | 'fal-generate'
+  | 'together-chat'
+  | 'fireworks-chat'
+  | 'volcengine-chat'
+  | 'tencent-chat'
+  | 'stepfun-chat'
+  | 'venice-chat'
+  | 'sglang-chat'
+  | 'opencode-chat'
+  | 'minimax-chat'
+  | 'codex-chat'
+  | 'clickclack-chat'
+  | 'gradium-chat'
+  | 'gmi-chat'
+  | 'parallel-chat'
+  | 'kilocode-chat'
+  | 'opencode-go-chat'
+  | 'zalouser-chat'
+  | 'copilot-chat'
+  | 'copilot-proxy-chat'
+  | 'github-models-chat'
+  | 'deepinfra-chat'
+  | 'bedrock-chat'
+  | 'cloudflare-chat'
+  | 'vercel-gateway-chat'
+  | 'cf-ai-gateway-chat';
 
 /** 适配器通用配置 */
 export interface AdapterConfig {

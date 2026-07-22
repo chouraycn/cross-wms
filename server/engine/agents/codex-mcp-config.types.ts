@@ -1,11 +1,29 @@
 /**
- * 移植自 openclaw/src/agents/codex-mcp-config.types.ts
+ * Shared types for projecting bundle MCP config into Codex app-server threads.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 移植自 openclaw/src/agents/codex-mcp-config.types.ts
  */
+import type { OpenClawConfig } from "../infra/_runtime-stubs.js";
+import type { BundleMcpDiagnostic } from "../plugins/bundle-mcp.js";
 
-export type CodexMcpServersConfig = unknown;
-export type CodexBundleMcpThreadConfig = unknown;
-export type LoadCodexBundleMcpThreadConfigParams = unknown;
+/** Codex app-server `mcp_servers` config map. */
+export type CodexMcpServersConfig = Record<string, Record<string, unknown>>;
+
+/** Loaded Codex thread-config patch plus diagnostics and cache metadata. */
+export type CodexBundleMcpThreadConfig = {
+  configPatch?: {
+    mcp_servers: CodexMcpServersConfig;
+  };
+  diagnostics: BundleMcpDiagnostic[];
+  evaluated: boolean;
+  fingerprint?: string;
+};
+
+/** Inputs used to load a Codex bundle-MCP thread config patch. */
+export type LoadCodexBundleMcpThreadConfigParams = {
+  workspaceDir: string;
+  cfg?: OpenClawConfig;
+  toolsEnabled?: boolean;
+  disableTools?: boolean;
+  toolsAllow?: string[];
+};

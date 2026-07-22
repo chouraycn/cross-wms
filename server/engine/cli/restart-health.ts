@@ -1,13 +1,13 @@
 
-export async function inspectGatewayRestart(..._args: unknown[]): Promise<unknown> {
+export async function inspectGatewayRestart(..._args: unknown[]): Promise<void> {
   console.warn('inspectGatewayRestart is not available in cross-wms');
 }
 
-export async function waitForGatewayHealthyRestart(..._args: unknown[]): Promise<unknown> {
+export async function waitForGatewayHealthyRestart(..._args: unknown[]): Promise<void> {
   console.warn('waitForGatewayHealthyRestart is not available in cross-wms');
 }
 
-export async function waitForGatewayHealthyListener(..._args: unknown[]): Promise<unknown> {
+export async function waitForGatewayHealthyListener(..._args: unknown[]): Promise<void> {
   console.warn('waitForGatewayHealthyListener is not available in cross-wms');
 }
 
@@ -19,7 +19,7 @@ export function renderGatewayPortHealthDiagnostics(..._args: unknown[]): unknown
   console.warn('renderGatewayPortHealthDiagnostics is not available in cross-wms'); return undefined;
 }
 
-export async function terminateStaleGatewayPids(..._args: unknown[]): Promise<unknown> {
+export async function terminateStaleGatewayPids(..._args: unknown[]): Promise<void> {
   console.warn('terminateStaleGatewayPids is not available in cross-wms');
 }
 

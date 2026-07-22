@@ -822,3 +822,50 @@ export * from './task-domain-types.js';
 export * from './tts-contract-suites.js';
 export * from './types-channel.js';
 export * from './types-core.js';
+
+// ===================== 深化模块（v5.0 — Plugin SDK 扩展） =====================
+// 以下模块为 SDK 层新增文件，提供统一的插件运行时、能力提供者、
+// 通道运行时、安装管道与 API/Route 层。
+// 注意：plugin-registry.ts 已在上方导出（line 622），此处不再重复。
+// 注意：provider-runtime.ts 因 testing 符号冲突已从 barrel 移除（line 593-594），此处不再重复。
+
+// ---- Core Runtime ----
+export * from './plugin-errors.js';
+export * from './plugin-types.js';
+export * from './plugin-constants.js';
+export * from './plugin-events.js';
+export * from './plugin-context.js';
+export * from './plugin-permissions.js';
+export * from './plugin-sandbox.js';
+export * from './plugin-manifest.js';
+export * from './plugin-loader.js';
+export * from './plugin-lifecycle.js';
+export * from './plugin-runtime.js';
+
+// ---- Capability Providers ----
+export * from './capability-provider.js';
+export * from './llm-capability.js';
+export * from './tool-capability.js';
+export * from './channel-capability.js';
+export * from './memory-capability.js';
+export * from './search-capability.js';
+export * from './media-capability.js';
+export * from './embedding-capability.js';
+export * from './skill-capability.js';
+
+// ---- Bundled Channel Runtime ----
+export * from './channel-adapter-runtime.js';
+export * from './channel-message-router.js';
+export * from './channel-health-checker.js';
+
+// ---- Plugin Installation Pipeline ----
+export * from './install-pipeline.js';
+export * from './plugin-validator.js';
+export * from './plugin-scanner.js';
+export * from './plugin-dependency-resolver.js';
+export * from './plugin-version-manager.js';
+
+// ---- API/Route Layer ----
+export * from './plugin-api.js';
+export * from './plugin-utils.js';
+export * from './plugin-helpers.js';

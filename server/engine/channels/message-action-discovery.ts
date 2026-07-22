@@ -10,7 +10,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 import { defaultRuntime } from "../infra/_runtime-stubs.js";
 import { normalizeAnyChannelId } from "./registry.js";
 import { getChannelPlugin, getLoadedChannelPlugin, listChannelPlugins } from "./plugins/index.js";
-import type { ChannelMessageCapability } from "./plugins/message-capabilities.js";
+import type { ChannelMessageCapability } from "./message-capabilities.js";
 import {
   resolveBundledChannelMessageToolDiscoveryAdapter,
   type ChannelMessageToolDiscoveryAdapter,
@@ -20,7 +20,7 @@ import type {
   ChannelMessageActionName,
   ChannelMessageToolDiscovery,
   ChannelMessageToolSchemaContribution,
-} from "./plugins/types.public.js";
+} from "./types.public.js";
 
 export type ChannelMessageActionDiscoveryInput = {
   cfg?: OpenClawConfig;

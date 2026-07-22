@@ -1,0 +1,10 @@
+{
+  "id": "voyage",
+  "name": "Voyage Embedding Provider",
+  "description": "Voyage AI embedding provider extension",
+  "version": "1.0.0",
+  "kind": "embedding-provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

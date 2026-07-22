@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/outbound/session-binding-service.ts
 // 会话绑定服务多路复用通道适配器和通用当前会话存储
 
-import { resolveGlobalMap } from "../../shared/global-singleton.js";
+import { resolveGlobalMap } from "../shared/global-singleton.js";
 import {
   buildChannelAccountKey,
   normalizeConversationRef,

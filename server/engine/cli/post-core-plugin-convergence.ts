@@ -1,5 +1,5 @@
 
-export async function runPostCorePluginConvergence(..._args: unknown[]): Promise<unknown> {
+export async function runPostCorePluginConvergence(..._args: unknown[]): Promise<void> {
   console.warn('runPostCorePluginConvergence is not available in cross-wms');
 }
 
