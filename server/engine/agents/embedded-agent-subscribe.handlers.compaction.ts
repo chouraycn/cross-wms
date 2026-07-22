@@ -59,3 +59,15 @@ export function createLoggingCompactionHandler(
 export function createNoOpCompactionHandler(): CompactionHandler {
   return {};
 }
+
+/** Handle compaction start event. */
+export function handleCompactionStart(event: CompactionEvent): void {
+  // no-op default handler
+  void event;
+}
+
+/** Handle compaction end event. */
+export function handleCompactionEnd(event: CompactionEvent): void {
+  // no-op default handler
+  void event;
+}

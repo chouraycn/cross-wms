@@ -223,3 +223,7 @@ export {
 };
 
 export type { SearchResult, SearchIndex };
+
+export function normalizeSkillIndexName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+}

@@ -236,3 +236,44 @@ export function shouldUsePty(command: string): boolean {
   ];
   return ptyIndicators.some((pattern) => pattern.test(command));
 }
+
+// ============================================================================
+// Node host approval / system-run phase stubs.
+// Full node-approval infrastructure is not available in cross-wms; these are
+// no-op stubs that preserve module shape for callers ported from openclaw.
+// ============================================================================
+
+/** Stub: never skip approval preparation in cross-wms. */
+export function shouldSkipNodeApprovalPrepare(_params?: unknown): boolean {
+  return false;
+}
+
+/** Stub: no formatted node run tool result available. */
+export function formatNodeRunToolResult(_params?: unknown): string {
+  return "";
+}
+
+/** Stub: no node execution target resolution available. */
+export function resolveNodeExecutionTarget(_params?: unknown): unknown {
+  return undefined;
+}
+
+/** Stub: no node system-run invoke builder available. */
+export function buildNodeSystemRunInvoke(_params?: unknown): unknown {
+  return undefined;
+}
+
+/** Stub: direct node system-run invocation not available in cross-wms. */
+export function invokeNodeSystemRunDirect(_params?: unknown): unknown {
+  return undefined;
+}
+
+/** Stub: no node system-run preparation available. */
+export function prepareNodeSystemRun(_params?: unknown): unknown {
+  return undefined;
+}
+
+/** Stub: no node approval requirement analysis available. */
+export function analyzeNodeApprovalRequirement(_params?: unknown): unknown {
+  return undefined;
+}

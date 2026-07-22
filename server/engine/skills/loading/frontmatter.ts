@@ -252,6 +252,16 @@ function parseOpenClawBlock(block: string): SkillMetadata | undefined {
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+export function resolveSkillKey(
+  skill: { name: string },
+  metadata?: SkillMetadata | undefined,
+): string {
+  if (metadata?.skillKey) {
+    return metadata.skillKey;
+  }
+  return skill.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+}
+
 export function parseInstallSpec(input: string): SkillInstallSpec | undefined {
   const parts = input.split(",").map((s) => s.trim());
   if (parts.length === 0) return undefined;

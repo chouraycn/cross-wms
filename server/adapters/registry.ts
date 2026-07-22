@@ -356,6 +356,22 @@ export function initBuiltinAdapters(): void {
     const m = await import('./llamaCppAdapter.js');
     return m.llamaCppAdapterFactory;
   });
+  registerAdapter('nvidia-chat', async () => {
+    const m = await import('./nvidiaAdapter.js');
+    return m.nvidiaAdapterFactory;
+  });
+  registerAdapter('brave-chat', async () => {
+    const m = await import('./braveAdapter.js');
+    return m.braveAdapterFactory;
+  });
+  registerAdapter('exa-chat', async () => {
+    const m = await import('./exaAdapter.js');
+    return m.exaAdapterFactory;
+  });
+  registerAdapter('firecrawl-chat', async () => {
+    const m = await import('./firecrawlAdapter.js');
+    return m.firecrawlAdapterFactory;
+  });
   // 非生成式 / 多媒体适配器
   registerSttAdapter('deepgram-stt', async () => {
     const m = await import('./deepgramSttAdapter.js');
@@ -564,6 +580,34 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
       endpointLower.includes('volces.com') ||
       endpointLower.includes('ark.cn-beijing')) {
     return 'byteplus-chat';
+  }
+
+  // NVIDIA
+  if (providerLower === 'nvidia' ||
+      providerLower === 'nvidia-ai' ||
+      endpointLower.includes('nvidia.com') ||
+      endpointLower.includes('integrate.api.nvidia')) {
+    return 'nvidia-chat';
+  }
+
+  // Brave
+  if (providerLower === 'brave' ||
+      endpointLower.includes('api.brave.com')) {
+    return 'brave-chat';
+  }
+
+  // Exa
+  if (providerLower === 'exa' ||
+      providerLower === 'exa-ai' ||
+      endpointLower.includes('api.exa.ai')) {
+    return 'exa-chat';
+  }
+
+  // Firecrawl
+  if (providerLower === 'firecrawl' ||
+      providerLower === 'fire-crawl' ||
+      endpointLower.includes('api.firecrawl.dev')) {
+    return 'firecrawl-chat';
   }
 
   // Deepgram (语音转文字)

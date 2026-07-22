@@ -97,3 +97,30 @@ export function composeToolCallHandlers(handlers: ToolCallHandler[]): ToolCallHa
 export function createNoOpToolCallHandler(): ToolCallHandler {
   return {};
 }
+
+// ============================================================================
+// Tool-execution lifecycle event stubs.
+// Full embedded-agent subscribe infrastructure is not available in cross-wms;
+// these are no-op stubs that preserve module shape for callers ported from
+// openclaw.
+// ============================================================================
+
+/** Stub: no active tool executions tracked in cross-wms. */
+export function countActiveToolExecutions(): number {
+  return 0;
+}
+
+/** Stub: no-op for tool execution start events. */
+export function handleToolExecutionStart(_event?: unknown): void {
+  // no-op
+}
+
+/** Stub: no-op for tool execution update events. */
+export function handleToolExecutionUpdate(_event?: unknown): void {
+  // no-op
+}
+
+/** Stub: no-op for tool execution end events. */
+export function handleToolExecutionEnd(_event?: unknown): void {
+  // no-op
+}

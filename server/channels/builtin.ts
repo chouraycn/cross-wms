@@ -134,3 +134,4 @@ export { createSlackChannelPlugin, SLACK_CHANNEL_ID } from "./builtin-slack.js";
 export { createMatrixChannelPlugin, MATRIX_CHANNEL_ID } from "./builtin-matrix.js";
 export { createNostrChannelPlugin, NOSTR_CHANNEL_ID } from "./builtin-nostr.js";
 export { createMsTeamsChannelPlugin, MSTEAMS_CHANNEL_ID } from "./builtin-msteams.js";
+export { createMattermostChannelPlugin, MATTERMOST_CHANNEL_ID } from "./builtin-mattermost.js";

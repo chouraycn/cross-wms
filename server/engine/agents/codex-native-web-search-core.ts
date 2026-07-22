@@ -244,3 +244,18 @@ export function shouldSuppressManagedWebSearchTool(params: {
 }): boolean {
   return resolveCodexNativeSearchActivation(params).state === "native_active";
 }
+
+/** Parameters for evaluating native web search against a sandbox tool policy. */
+export type NativeWebSearchToolPolicyParams = {
+  config?: unknown;
+  sandboxToolPolicy?: unknown;
+  modelProvider?: string;
+  modelApi?: string;
+  modelId?: string;
+  agentId?: string;
+};
+
+/** Stub: native web search is never allowed by tool policy in cross-wms. */
+export function isNativeWebSearchAllowedByToolPolicy(_params: NativeWebSearchToolPolicyParams): boolean {
+  return false;
+}

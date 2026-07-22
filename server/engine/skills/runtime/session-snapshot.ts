@@ -431,10 +431,16 @@ export interface SessionSkillSnapshot {
   [key: string]: unknown;
 }
 
+/** 构建会话技能快照的选项 */
+export interface BuildSnapshotOptions {
+  includePrompt?: boolean;
+  skillFilter?: string[];
+}
+
 /** 构建会话技能快照 */
 export function buildSessionSkillSnapshot(
   skillEntries: Array<{ skill: { name: string; disableModelInvocation?: boolean; [key: string]: unknown }; frontmatter: Record<string, unknown> }>,
-  options?: { includePrompt?: boolean; skillFilter?: string[] }
+  options?: BuildSnapshotOptions
 ): SessionSkillSnapshot {
   let filtered = skillEntries;
 

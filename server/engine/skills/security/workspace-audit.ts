@@ -196,3 +196,105 @@ export async function auditWorkspaceSkills(workspaceDir: string): Promise<Securi
 
   return findings;
 }
+
+export interface WorkspaceAuditResult {
+  findings: SecurityAuditFinding[];
+  totalSkills: number;
+  criticalCount: number;
+  warningCount: number;
+}
+
+export interface AuditOptions {
+  includeSymlinkCheck?: boolean;
+  includeContentScan?: boolean;
+  maxFiles?: number;
+}
+
+export async function auditSingleSkill(skillPath: string): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+
+  try {
+    const content = await fs.readFile(skillPath, "utf8").catch(() => "");
+    if (!content) {
+      return findings;
+    }
+
+    if (content.includes("eval(") || content.includes("new Function(")) {
+      findings.push({
+        checkId: "skills.single.dynamic_code",
+        severity: "warn",
+        title: "Skill contains dynamic code execution",
+        detail: `Skill at ${skillPath} contains potential dynamic code execution patterns.`,
+        remediation: "Review the skill for security risks and remove unnecessary dynamic code.",
+      });
+    }
+
+    if (content.includes("process.env") && content.includes("SECRET")) {
+      findings.push({
+        checkId: "skills.single.secret_access",
+        severity: "warn",
+        title: "Skill accesses environment secrets",
+        detail: `Skill at ${skillPath} accesses environment variables that may contain secrets.`,
+        remediation: "Ensure secrets are properly managed and not exposed in skill prompts.",
+      });
+    }
+
+    if (content.includes("<script") || content.includes("javascript:")) {
+      findings.push({
+        checkId: "skills.single.xss_risk",
+        severity: "error",
+        title: "Skill contains potential XSS patterns",
+        detail: `Skill at ${skillPath} contains potential XSS-related patterns.`,
+        remediation: "Remove or sanitize any script tags or javascript: URIs.",
+      });
+    }
+  } catch (err) {
+    logger.error("[Audit] Failed to audit single skill:", err);
+  }
+
+  return findings;
+}
+
+export function getSkillsWithCriticalIssues(findings: SecurityAuditFinding[]): string[] {
+  return findings
+    .filter((f) => f.severity === "error")
+    .map((f) => f.checkId);
+}
+
+export function getSkillIssueCount(findings: SecurityAuditFinding[]): {
+  critical: number;
+  warning: number;
+  info: number;
+} {
+  return {
+    critical: findings.filter((f) => f.severity === "error").length,
+    warning: findings.filter((f) => f.severity === "warn").length,
+    info: findings.filter((f) => f.severity === "info").length,
+  };
+}
+
+export function formatAuditReport(findings: SecurityAuditFinding[]): string {
+  if (findings.length === 0) {
+    return "No security issues found.";
+  }
+
+  const lines: string[] = ["Security Audit Report", "=" .repeat(40), ""];
+
+  for (const finding of findings) {
+    lines.push(`[${finding.severity.toUpperCase()}] ${finding.title}`);
+    lines.push(`  Check: ${finding.checkId}`);
+    lines.push(`  Detail: ${finding.detail}`);
+    if (finding.remediation) {
+      lines.push(`  Remediation: ${finding.remediation}`);
+    }
+    lines.push("");
+  }
+
+  const counts = getSkillIssueCount(findings);
+  lines.push("Summary:");
+  lines.push(`  Critical: ${counts.critical}`);
+  lines.push(`  Warning: ${counts.warning}`);
+  lines.push(`  Info: ${counts.info}`);
+
+  return lines.join("\n");
+}

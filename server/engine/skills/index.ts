@@ -935,6 +935,7 @@ export {
 
 // ============================================================================
 // 测试支持：test-support
+// 这些文件已改为惰性加载 vitest，生产环境可安全导入。
 // ============================================================================
 
 export {
@@ -952,6 +953,7 @@ export {
   runCommandWithTimeoutMock,
   fetchWithSsrFGuardMock,
   hasBinaryMock,
+  setupTestMocks,
 } from "./test-support/install-test-mocks.js";
 
 export {

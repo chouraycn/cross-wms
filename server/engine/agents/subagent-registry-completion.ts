@@ -120,3 +120,25 @@ export function extractCompletedSubagentResults(
     .filter((h) => h.status === "completed" && h.result !== undefined)
     .map((h) => ({ subagentId: h.subagentId, result: h.result }));
 }
+
+// ============================================================================
+// Subagent registry completion lifecycle stubs.
+// Full subagent lifecycle hook infrastructure is not available in cross-wms;
+// these are no-op stubs that preserve module shape for callers ported from
+// openclaw.
+// ============================================================================
+
+/** Stub: never update run outcome in cross-wms. */
+export function shouldUpdateRunOutcome(_params?: unknown): boolean {
+  return false;
+}
+
+/** Stub: no lifecycle outcome resolution in cross-wms. */
+export function resolveLifecycleOutcomeFromRunOutcome(_params?: unknown): unknown {
+  return undefined;
+}
+
+/** Stub: no-op for subagent ended hook emission. */
+export function emitSubagentEndedHookOnce(_params?: unknown): void {
+  // no-op
+}
