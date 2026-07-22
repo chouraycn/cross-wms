@@ -16,6 +16,11 @@ import LinkIcon from '@mui/icons-material/Link';
 import GavelIcon from '@mui/icons-material/Gavel';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import InsightsIcon from '@mui/icons-material/Insights';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SkillRecommendationsPanel from '../components/Skills/SkillRecommendationsPanel';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { isMacOSApp, isPyWebView } from '../utils/env';
 import type { TaskType, AutomationExecution } from '../services/automation';
@@ -947,7 +952,6 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               上传技能
             </MenuItem>
           </Menu>
-          {/* T05: 匹配引擎设置入口 */}
           <Tooltip title="匹配引擎设置">
             <IconButton
               onClick={() => setMatchConfigOpen(true)}
@@ -961,6 +965,70 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               }}
             >
               <TuneIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          {/* 依赖图谱入口 */}
+          <Tooltip title="依赖图谱">
+            <IconButton
+              onClick={() => navigate('/skills/dependency-graph')}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
+                border: `1px solid ${gs.border}`,
+                color: gs.textMuted,
+                '&:hover': { borderColor: COLORS.purple, color: COLORS.purple, bgcolor: '#FAF5FF' },
+              }}
+            >
+              <AccountTreeIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          {/* 使用分析入口 */}
+          <Tooltip title="使用分析">
+            <IconButton
+              onClick={() => navigate('/skills/usage-analytics')}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
+                border: `1px solid ${gs.border}`,
+                color: gs.textMuted,
+                '&:hover': { borderColor: COLORS.purple, color: COLORS.purple, bgcolor: '#FAF5FF' },
+              }}
+            >
+              <InsightsIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          {/* 健康度仪表盘入口 */}
+          <Tooltip title="健康度检查">
+            <IconButton
+              onClick={() => navigate('/skills/health')}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
+                border: `1px solid ${gs.border}`,
+                color: gs.textMuted,
+                '&:hover': { borderColor: '#10B981', color: '#10B981', bgcolor: '#ECFDF5' },
+              }}
+            >
+              <HealthAndSafetyIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          {/* 文档质量检查入口 */}
+          <Tooltip title="文档质量检查">
+            <IconButton
+              onClick={() => navigate('/skills/doc-quality')}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
+                border: `1px solid ${gs.border}`,
+                color: gs.textMuted,
+                '&:hover': { borderColor: '#0284C7', color: '#0284C7', bgcolor: '#F0F9FF' },
+              }}
+            >
+              <MenuBookIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -1607,6 +1675,16 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           }}>
             {featuredSkills.slice(0, 6).map(renderSkillCard)}
           </Box>
+        </Box>
+      )}
+
+      {/* 智能推荐（基于协同过滤） */}
+      {activeTab === 'market' && searchQuery === '' && selectedCategory === 'all' && (
+        <Box sx={{ mb: 4, p: 2.5, borderRadius: '12px', border: `1px solid ${gs.border}`, backgroundColor: gs.bgPanel }}>
+          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
+            智能推荐
+          </Typography>
+          <SkillRecommendationsPanel isDark={isDark} />
         </Box>
       )}
 

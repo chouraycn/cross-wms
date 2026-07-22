@@ -11,6 +11,8 @@ final class WebViewManager: NSObject {
     private(set) var webView: WKWebView!
     private var configuration: WKWebViewConfiguration!
     private let ipcHandler = IPCHandler()
+    private var loadAttempts = 0
+    private let maxLoadAttempts = 3
 
     override init() {
         super.init()
@@ -77,12 +79,65 @@ final class WebViewManager: NSObject {
     }
 
     func loadMainAppDirect() {
+        loadAttempts = 0
         let mainURL = detectMainAppURL()
         webViewLogger.info("Loading main app directly from: \(mainURL.absoluteString, privacy: .public)")
+        loadMainApp(url: mainURL)
+    }
 
-        var request = URLRequest(url: mainURL)
+    private func loadMainApp(url: URL) {
+        loadAttempts += 1
+        webViewLogger.info("Loading attempt \(self.loadAttempts)/\(self.maxLoadAttempts): \(url.absoluteString, privacy: .public)")
+
+        var request = URLRequest(url: url)
         request.timeoutInterval = 30
-        webView.load(request)
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        let navigation = webView.load(request)
+        webViewLogger.info("Navigation started: \(navigation != nil ? "yes" : "no")")
+    }
+
+    private func loadFromLocalFallback() {
+        webViewLogger.info("Loading from local fallback")
+        
+        if let localIndexPath = Bundle.main.path(forResource: "index", ofType: "html", inDirectory: "Resources/frontend_dist") {
+            let localURL = URL(fileURLWithPath: localIndexPath)
+            webViewLogger.info("Loading local index.html: \(localURL.path, privacy: .public)")
+            webView.loadFileURL(localURL, allowingReadAccessTo: localURL.deletingLastPathComponent())
+        } else if let splashPath = Bundle.main.path(forResource: "splash", ofType: "html", inDirectory: "Resources") {
+            let splashURL = URL(fileURLWithPath: splashPath)
+            webViewLogger.info("Loading local splash.html: \(splashURL.path, privacy: .public)")
+            webView.loadFileURL(splashURL, allowingReadAccessTo: splashURL.deletingLastPathComponent())
+        } else {
+            webViewLogger.error("No local fallback available")
+            showErrorPage()
+        }
+    }
+
+    private func showErrorPage() {
+        let errorHTML = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>CDF Know Clow - 加载失败</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px; background: #1a1a2e; color: #fff; }
+                .error-icon { font-size: 64px; margin-bottom: 20px; }
+                .error-title { font-size: 24px; margin-bottom: 10px; }
+                .error-message { font-size: 14px; color: #aaa; margin-bottom: 30px; }
+                .retry-button { padding: 12px 32px; background: #4a69bd; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer; }
+                .retry-button:hover { background: #3a59ad; }
+            </style>
+        </head>
+        <body>
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">无法启动应用</div>
+            <div class="error-message">服务器连接失败，请检查网络或重启应用</div>
+            <button class="retry-button" onclick="window.location.reload()">重试</button>
+        </body>
+        </html>
+        """
+        webView.loadHTMLString(errorHTML, baseURL: nil)
     }
 
     private func detectMainAppURL() -> URL {
@@ -202,6 +257,37 @@ extension WebViewManager: WKNavigationDelegate {
     ) {
         Task { @MainActor in
             webViewLogger.error("Navigation failed: \(error.localizedDescription, privacy: .public)")
+            let nsError = error as NSError
+            webViewLogger.error("Error domain=\(nsError.domain), code=\(nsError.code), userInfo=\(nsError.userInfo, privacy: .public)")
+            handleLoadError()
+        }
+    }
+
+    nonisolated func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        Task { @MainActor in
+            webViewLogger.error("Provisional navigation failed: \(error.localizedDescription, privacy: .public)")
+            let nsError = error as NSError
+            webViewLogger.error("Error domain=\(nsError.domain), code=\(nsError.code), userInfo=\(nsError.userInfo, privacy: .public)")
+            handleLoadError()
+        }
+    }
+
+    @MainActor
+    private func handleLoadError() {
+        if self.loadAttempts < self.maxLoadAttempts {
+            webViewLogger.info("Retrying load (\(self.loadAttempts)/\(self.maxLoadAttempts))...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(self.loadAttempts) * 3.0) { [weak self] in
+                guard let self else { return }
+                let mainURL = self.detectMainAppURL()
+                self.loadMainApp(url: mainURL)
+            }
+        } else {
+            webViewLogger.error("All \(self.maxLoadAttempts) load attempts failed, falling back to local files")
+            loadFromLocalFallback()
         }
     }
 

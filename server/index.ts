@@ -223,6 +223,11 @@ app.use((req, res, next) => {
 // API version middleware — adds X-API-Version header and deprecation warnings
 app.use(apiVersionMiddleware);
 
+// I18n middleware — detects Accept-Language header and sets locale
+import { i18nMiddleware, setLocaleMiddleware } from './middleware/i18nMiddleware.js';
+app.use(i18nMiddleware);
+app.use(setLocaleMiddleware);
+
 // 静态文件服务：提供已上传文件的访问（必须在 express.json() 之前）
 ensureUploadsDir();
 app.use('/api/uploads', express.static(UPLOADS_DIR));
@@ -260,6 +265,40 @@ setTimeout(async () => {
       logger.warn('[ConfigSchema] 加载失败（可忽略）:', cfgErr);
     }
 
+    // 死代码接入：config-bootstrap — 启动时配置迁移与校验
+    try {
+      const { bootstrapConfig } = await import('./config/config-bootstrap.js');
+      const { AppPaths } = await import('./config/appPaths.js');
+      const bootstrapResult = await bootstrapConfig({
+        configPath: AppPaths.configFile,
+        failOnError: false,
+        persistAfterMigrate: true,
+        createBackup: true,
+      });
+      if (bootstrapResult.success) {
+        logger.info(`[ConfigBootstrap] 配置引导完成 (v${bootstrapResult.config.configVersion ?? 'unknown'})`);
+      } else {
+        logger.warn(`[ConfigBootstrap] 配置引导失败: ${bootstrapResult.error}`);
+      }
+    } catch (bootstrapErr) {
+      logger.warn('[ConfigBootstrap] 启动失败（可忽略）:', bootstrapErr);
+    }
+
+    // 死代码接入：permission-policy-loader — 加载权限策略
+    try {
+      const { permissionPolicyLoader } = await import('./engine/agents/permission-policy-loader.js');
+      const { AppPaths } = await import('./config/appPaths.js');
+      const policiesPath = path.join(path.dirname(AppPaths.configFile), 'agent-policies.json');
+      const policyResult = permissionPolicyLoader.loadPoliciesFromFile(policiesPath);
+      if (policyResult.loaded > 0) {
+        logger.info(`[PermissionPolicyLoader] 已加载 ${policyResult.loaded} 个权限策略`);
+      } else {
+        logger.debug('[PermissionPolicyLoader] 未找到权限策略配置文件');
+      }
+    } catch (policyErr) {
+      logger.warn('[PermissionPolicyLoader] 加载失败（可忽略）:', policyErr);
+    }
+
     // 动态 require 避免循环依赖（hooks/loader 内部 import logger）
     const { registerBuiltinHooks, loadHookHandler } = await import('./engine/hooks/loader.js');
     const { AppPaths } = await import('./config/appPaths.js');
@@ -287,6 +326,21 @@ setTimeout(async () => {
 setTimeout(() => {
   channelHealthMonitor.start();
   logger.info('[ChannelHealth] 已延迟启动');
+
+  // 死代码接入：把 channelCircuitBreakerManager 绑定到 channels/ 下的健康监控单例
+  // 注意：此 healthMonitor 与 services/channelHealthMonitor 是两个独立实现，
+  // 通道熔断器仅在显式调用 canDeliver/recordDelivery 时生效，不阻塞现有发送路径（additive）
+  try {
+    void import('./channels/channel-health-monitor.js').then(({ channelHealthMonitor: channelsMonitor }) => {
+      void import('./channels/channel-circuit-breaker.js').then(({ channelCircuitBreakerManager }) => {
+        channelCircuitBreakerManager.bindHealthMonitor(channelsMonitor);
+        channelCircuitBreakerManager.startSync(15_000);
+        logger.info('[ChannelCircuitBreaker] 已绑定到 channels/channel-health-monitor');
+      });
+    });
+  } catch (e) {
+    logger.warn('[ChannelCircuitBreaker] 绑定失败（可忽略）:', e instanceof Error ? e.message : String(e));
+  }
 }, 300);
 
 setTimeout(() => {
@@ -304,6 +358,7 @@ app.use('/api', eventsRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/health', healthEnhancedRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/api/i18n', lazyRouter(() => import('./routes/i18n.js'), undefined, 'i18n'));
 
 // ========== Business Data API Routes (lazy — on-demand loading) ==========
 
@@ -314,6 +369,7 @@ app.use('/api/inbound-records', lazyRouter(() => import('./routes/inbound.js'), 
 app.use('/api/outbound-records', lazyRouter(() => import('./routes/outbound.js'), undefined, 'outbound'));
 app.use('/api/transfer-orders', lazyRouter(() => import('./routes/transfer.js'), undefined, 'transfer'));
 app.use('/api/partners', lazyRouter(() => import('./routes/partners.js'), undefined, 'partners'));
+app.use("/api/skills", lazyRouter(() => import("./routes/skills-api.js"), undefined, "skills-api"));
 app.use('/api', lazyRouter(() => import('./routes/skills.js'), undefined, 'skills'));
 app.use('/api/app-settings', lazyRouter(() => import('./routes/settings.js'), undefined, 'settings'));
 app.use('/api/migrate', lazyRouter(() => import('./routes/migrate.js'), undefined, 'migrate'));
@@ -403,6 +459,8 @@ app.use('/api/talk', lazyRouter(() => import('./routes/talk.js'), undefined, 'ta
 app.use('/api/channels', lazyRouter(() => import('./routes/channels.js'), undefined, 'channels'));
 app.use('/api/cache', lazyRouter(() => import('./routes/cache.js'), undefined, 'cache'));
 app.use('/api/keyword-trigger', lazyRouter(() => import('./routes/keywordTrigger.js'), undefined, 'keyword-trigger'));
+// 系统洞察（Agent 审计跟踪 / 通道健康度 / LLM 成本 / 配置迁移 / 技能版本）
+app.use('/api/insights', lazyRouter(() => import('./routes/insights.js'), undefined, 'insights'));
 
 // 设备配对管理（Pairing）
 app.use('/api/pairing', lazyRouter(() => import('./routes/pairing.js'), undefined, 'pairing'));
@@ -471,6 +529,7 @@ app.use(`${API_PREFIX}`, eventsRouter);
 app.use(`${API_PREFIX}/health`, healthRouter);
 app.use(`${API_PREFIX}/health`, healthEnhancedRouter);
 app.use(`${API_PREFIX}/agents`, agentsRouter);
+app.use(`${API_PREFIX}/i18n`, lazyRouter(() => import('./routes/i18n.js'), undefined, 'i18n'));
 app.use(`${API_PREFIX}/memory`, lazyRouter(() => import('./routes/memory.js'), undefined, 'memory'));
 app.use(`${API_PREFIX}/inventory-transactions`, lazyRouter(() => import('./routes/inventory-transactions.js'), undefined, 'inventory-transactions'));
 app.use(`${API_PREFIX}/warehouses`, lazyRouter(() => import('./routes/warehouses.js'), undefined, 'warehouses'));
@@ -573,313 +632,257 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   }
 });
 
-server.listen(PORT, async () => {
+server.listen(PORT, () => {
   const addr = server.address();
   const actualPort = typeof addr === 'object' && addr ? addr.port : PORT;
   setServerPort(actualPort);
   recordBackendPhase('server:http-listen', performance.now() - serverStartupStartedAt);
   logger.info(`CDF Know Clow Chat Server running on port ${actualPort}`);
 
-  const dbInitStart = performance.now();
-  const db = initDb();
-  recordBackendPhase('server:db-init', performance.now() - dbInitStart);
+  void (async () => {
+    const dbInitStart = performance.now();
+    const db = initDb();
+    recordBackendPhase('server:db-init', performance.now() - dbInitStart);
 
-  // v1.5.203: 预热模型配置缓存（含 Keychain 注入），避免首次 GET /api/models 阻塞
-  // 不 await，不阻塞启动流程；失败仅 warn
-  loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
+    loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
 
-  // 并行初始化 Tool Registry、插件加载和扩展加载器，减少启动阻塞
-  const coreInitStart = performance.now();
-  await Promise.all([
-    initDefaultTools().then(() => {
-      logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
-    }),
-    pluginRegistry.loadEnabledPlugins().then(() => {
-      const pluginToolNames = listPluginTools();
-      if (pluginToolNames.length > 0) {
-        logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
-      }
-    }),
-    extensionLoader.loadAll().then((count) => {
-      logger.info(`[Extension Loader] 扩展加载完成: ${count} 个扩展已加载`);
-    }).catch((err) => {
-      logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-    }),
-  ]);
-  recordBackendPhase('server:core-init', performance.now() - coreInitStart);
-
-  // v4.1: 注册内置通道插件（web、feishu、wecom、dingtalk）
-  registerBuiltinChannels();
-  logger.info('[Channel Registry] 内置通道已注册');
-
-  // P0-C: 把内置 Provider（deepseek/minimax/moonshot/...）显式注册进统一 Provider 注册中心
-  initBuiltinProviders();
-
-  // v12.0: 初始化 Doctor 诊断框架的通道注册表
-  import('./engine/acp/doctor.js').then(({ initDoctorChannelRegistry }) => {
-    import('./channels/index.js').then(({ getGlobalChannelRegistry }) => {
-      initDoctorChannelRegistry(getGlobalChannelRegistry);
-      logger.info('[Doctor] 通道注册表已初始化');
-    });
-  }).catch(err => {
-    logger.warn('[Server] Doctor 通道注册表初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-  });
-
-  // v9.x: 增量接入 WebSocket Hub（Group C gateway 子系统）。
-  // 挂在 httpServer 的 /gateway/ws，仅提供双向实时通道，绝不劫持/替换 SSE 主链路。
-  // ws 模块已安装（node_modules/ws），WebSocketServer 在 server 上以 path 过滤挂载。
-  import('./gateway/webSocketHub.js').then(({ startGatewayWebSocket }) => {
-    startGatewayWebSocket(server).catch((e) =>
-      logger.warn('[Server] WebSocket Hub 启动失败（非阻塞）:', e instanceof Error ? e.message : String(e)),
-    );
-  }).catch((e) => {
-    logger.warn('[Server] WebSocket Hub 模块加载失败（非阻塞）:', e instanceof Error ? e.message : String(e));
-  });
-
-  // v1.9.4: Agent Registry 和 Soul 文件改为后台初始化，不阻塞启动流程
-  setTimeout(() => {
-    agentRegistry.initialize();
-    logger.info('[AgentRegistry] 已后台初始化');
-  }, 0);
-
-  setTimeout(() => {
-    initDefaultSoulFiles();
-  }, 100);
-
-  // v4.0: 启动时连接所有已启用的 MCP Server（异步，不阻塞主流程）
-  setTimeout(async () => {
-    try {
-      await mcpClientManager.connectAllEnabled();
-    } catch (err) {
-      logger.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
-    }
-  }, 5000);
-
-  // v3.0: BrowserHost 已改为延迟启动，首次调用 browser tool 时自动启动（节省 ~114MB 内存）
-
-  // 启动消息归档定时任务
-  import('./engine/messageArchive.js').then(({ startArchiveScheduler }) => {
-    startArchiveScheduler(getDb);
-  }).catch(err => {
-    logger.warn('[Server] 消息归档调度器启动失败:', err instanceof Error ? err.message : String(err));
-  });
-
-  // 自动发现新模型（异步，不阻塞启动）
-  setTimeout(() => {
-    syncModelsFromApi().catch(e => {
-      logger.error('[ModelDiscovery] 启动同步失败:', e);
-    });
-  }, 5000);
-
-  // 启动内存压力监控（60s 采样间隔）
-  startMemoryMonitor(60_000);
-
-  // v1.9.4: WMS 表初始化改为后台执行，不阻塞启动
-  setTimeout(() => {
-    ensureWmsTables();
-    logger.info('[WMS] 行业技能表已后台初始化');
-  }, 500);
-
-  // v11.2: 初始化技能注册表（后台执行，不阻塞启动）
-  setTimeout(async () => {
-    try {
-      const currentFile = process.argv[1];
-      const __dirname = path.dirname(currentFile);
-      let bundledDir = path.join(__dirname, '../../skills');
-      for (let i = 0; i < 6; i++) {
-        if (fs.existsSync(path.join(bundledDir, 'hscode-assistant'))) break;
-        bundledDir = path.join(bundledDir, '../');
-      }
-      const userGlobalDir = AppPaths.skillsDir;
-      const workspaceDir = path.join(process.cwd(), 'skills');
-      await skillRegistry.init({
-        builtinDir: bundledDir,
-        userGlobalDir,
-        workspaceDir,
-      });
-      logger.info(`[SkillRegistry] 初始化完成，已注册 ${skillRegistry.getAllSkills().length} 个技能`);
-    } catch (err) {
-      logger.warn('[SkillRegistry] 初始化失败:', err instanceof Error ? err.message : String(err));
-    }
-  }, 1000);
-
-  // 端到端性能采集：后端启动完成
-  recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);
-
-  // v9.0: 初始化 Event Ledger (事件溯源) — 后台执行，不阻塞启动
-  // 事件账本是辅助系统，延迟初始化不影响核心功能
-  initEventLedger()
-    .then(async () => {
-      const ledgerStats = await getEventLedger().getStats();
-      logger.info(
-        `[EventLedger] 初始化完成: ${ledgerStats.totalSessions} 个会话, ` +
-        `${ledgerStats.totalEvents} 个事件, ` +
-        `${(ledgerStats.dbSizeBytes / 1024 / 1024).toFixed(2)} MB`
-      );
-
-      // 检查并恢复不完整的会话（崩溃恢复）
-      const incompleteSessions = await getEventLedger().findIncompleteSessions();
-      if (incompleteSessions.length > 0) {
-        logger.warn(
-          `[EventLedger] 发现 ${incompleteSessions.length} 个不完整会话，正在标记恢复...`
-        );
-        for (const session of incompleteSessions) {
-          try {
-            await getEventLedger().markSessionIncomplete(
-              session.sessionId,
-              `恢复自上次中断，最后事件: ${session.lastEventType}`
-            );
-          } catch (e) {
-            logger.warn(`[EventLedger] 标记会话失败: ${session.sessionId}`, e);
-          }
+    const coreInitStart = performance.now();
+    await Promise.all([
+      initDefaultTools().then(() => {
+        logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
+      }),
+      pluginRegistry.loadEnabledPlugins().then(() => {
+        const pluginToolNames = listPluginTools();
+        if (pluginToolNames.length > 0) {
+          logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
         }
-        logger.info(`[EventLedger] 崩溃恢复完成`);
+      }),
+      extensionLoader.loadAll().then((count) => {
+        logger.info(`[Extension Loader] 扩展加载完成: ${count} 个扩展已加载`);
+      }).catch((err) => {
+        logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      }),
+    ]);
+    recordBackendPhase('server:core-init', performance.now() - coreInitStart);
+
+    registerBuiltinChannels();
+    logger.info('[Channel Registry] 内置通道已注册');
+
+    initBuiltinProviders();
+
+    import('./engine/acp/doctor.js').then(({ initDoctorChannelRegistry }) => {
+      import('./channels/index.js').then(({ getGlobalChannelRegistry }) => {
+        initDoctorChannelRegistry(getGlobalChannelRegistry);
+        logger.info('[Doctor] 通道注册表已初始化');
+      });
+    }).catch(err => {
+      logger.warn('[Server] Doctor 通道注册表初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+    });
+
+    import('./gateway/webSocketHub.js').then(({ startGatewayWebSocket }) => {
+      startGatewayWebSocket(server).catch((e) =>
+        logger.warn('[Server] WebSocket Hub 启动失败（非阻塞）:', e instanceof Error ? e.message : String(e)),
+      );
+    }).catch((e) => {
+      logger.warn('[Server] WebSocket Hub 模块加载失败（非阻塞）:', e instanceof Error ? e.message : String(e));
+    });
+
+    setTimeout(() => {
+      agentRegistry.initialize();
+      logger.info('[AgentRegistry] 已后台初始化');
+    }, 0);
+
+    setTimeout(() => {
+      initDefaultSoulFiles();
+    }, 100);
+
+    setTimeout(async () => {
+      try {
+        await mcpClientManager.connectAllEnabled();
+      } catch (err) {
+        logger.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
       }
-    })
-    .catch(err => {
-      logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
+    }, 5000);
+
+    import('./engine/messageArchive.js').then(({ startArchiveScheduler }) => {
+      startArchiveScheduler(getDb);
+    }).catch(err => {
+      logger.warn('[Server] 消息归档调度器启动失败:', err instanceof Error ? err.message : String(err));
     });
 
-  // 初始化语义匹配引擎（延迟 15s，ONNX 预热已异步开始，缩短等待时间）
-  setTimeout(async () => {
-    try {
-      const stats = await initMatchingEngine();
-      logger.info(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
-    } catch (e) {
-      logger.error('[Matching] 嵌入初始化失败:', e);
-    }
-  }, 15_000).unref();
+    setTimeout(() => {
+      syncModelsFromApi().catch(e => {
+        logger.error('[ModelDiscovery] 启动同步失败:', e);
+      });
+    }, 5000);
 
-  // 启动自动化引擎 v2.0（30s 轮询）
-  const { stop } = startEngine(30_000);
+    startMemoryMonitor(60_000);
 
-  // 启动触发器引擎 v2.0（触发器系统）
-  startTriggerEngine();
-  initTriggerManager();
-  startEventListener();
+    setTimeout(() => {
+      ensureWmsTables();
+      logger.info('[WMS] 行业技能表已后台初始化');
+    }, 500);
 
-  // v6.0: 启动会话生命周期管理器（空闲归档 + 每日重置）— 异步导入，不阻塞启动
-  import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
-    sessionLifecycleManager.start();
-    logger.info('[SessionLifecycle] 已启动');
-  }).catch(err => {
-    logger.warn('[SessionLifecycle] 启动失败:', err instanceof Error ? err.message : String(err));
-  });
+    setTimeout(async () => {
+      try {
+        const currentFile = process.argv[1];
+        const __dirname = path.dirname(currentFile);
+        let bundledDir = path.join(__dirname, '../../skills');
+        for (let i = 0; i < 6; i++) {
+          if (fs.existsSync(path.join(bundledDir, 'hscode-assistant'))) break;
+          bundledDir = path.join(bundledDir, '../');
+        }
+        const userGlobalDir = AppPaths.skillsDir;
+        const workspaceDir = path.join(process.cwd(), 'skills');
+        await skillRegistry.init({
+          builtinDir: bundledDir,
+          userGlobalDir,
+          workspaceDir,
+        });
+        logger.info(`[SkillRegistry] 初始化完成，已注册 ${skillRegistry.getAllSkills().length} 个技能`);
+      } catch (err) {
+        logger.warn('[SkillRegistry] 初始化失败:', err instanceof Error ? err.message : String(err));
+      }
+    }, 1000);
 
-  // v7.0: 启动消息队列（空闲会话清理 + 全局并发度控制）
-  messageQueue.start();
+    recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);
 
-  // v10.0: 启动 AttemptRunner（统一 attempt 调度器，已完成 attempt 自动清理）
-  getAttemptRunner().start();
+    initEventLedger()
+      .then(async () => {
+        const ledgerStats = await getEventLedger().getStats();
+        logger.info(
+          `[EventLedger] 初始化完成: ${ledgerStats.totalSessions} 个会话, ` +
+          `${ledgerStats.totalEvents} 个事件, ` +
+          `${(ledgerStats.dbSizeBytes / 1024 / 1024).toFixed(2)} MB`
+        );
 
-  // v11.0: 启动文件锁 watchdog（定期清理过期锁）
-  startWatchdog();
+        const incompleteSessions = await getEventLedger().findIncompleteSessions();
+        if (incompleteSessions.length > 0) {
+          logger.warn(
+            `[EventLedger] 发现 ${incompleteSessions.length} 个不完整会话，正在标记恢复...`
+          );
+          for (const session of incompleteSessions) {
+            try {
+              await getEventLedger().markSessionIncomplete(
+                session.sessionId,
+                `恢复自上次中断，最后事件: ${session.lastEventType}`
+              );
+            } catch (e) {
+              logger.warn(`[EventLedger] 标记会话失败: ${session.sessionId}`, e);
+            }
+          }
+          logger.info(`[EventLedger] 崩溃恢复完成`);
+        }
+      })
+      .catch(err => {
+        logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
+      });
 
-  // v11.1: 启动 MCP Server 健康检查（定期心跳 + 自动重连）
-  import('./engine/mcpServerHealth.js').then(({ startMcpHealthCheck }) => {
-    startMcpHealthCheck();
-    logger.info('[Server] MCP Server 健康检查已启动');
-  }).catch(err => {
-    logger.warn('[Server] MCP 健康检查启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-  });
+    setTimeout(async () => {
+      try {
+        const stats = await initMatchingEngine();
+        logger.info(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
+      } catch (e) {
+        logger.error('[Matching] 嵌入初始化失败:', e);
+      }
+    }, 15_000).unref();
 
-  // v11.1: 启动 abortPrimitives 定时清理（防止已完成控制器累积内存泄漏）
-  import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => {
-    abortPrimitives.startAutoCleanup();
-  }).catch(() => {});
+    const { stop } = startEngine(30_000);
 
-  // v11.1: 启动 toolSendReceipts 定时清理过期回执文件
-  import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => {
-    toolSendReceipts.startAutoCleanup();
-  }).catch(() => {});
+    startTriggerEngine();
+    initTriggerManager();
+    startEventListener();
 
-  // v11.1: 启动 toolExecutionStats 定时快照持久化
-  import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => {
-    toolExecutionStats.startAutoSnapshot();
-  }).catch(() => {});
-
-  // v11.1: 启动 CircuitBreaker 定时快照持久化
-  import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => {
-    defaultCircuitBreaker.startAutoSnapshot();
-  }).catch(() => {});
-
-  // v12.0: 注册 ACP ChatService runtime backend（统一聊天框架接入 ACP 引擎）
-  import('./engine/acp/chatServiceRuntime.js').then(({ registerChatServiceRuntime }) => {
-    registerChatServiceRuntime();
-  }).catch(err => {
-    logger.warn('[Server] ACP ChatService runtime 注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-  });
-
-  // P0: 启动时异步预热 ONNX 模型 + 语义路由意图锚点，避免首次 chat 请求阻塞
-  // 串联执行：先就绪 ONNX 会话，再预热意图锚点（Auto Model v2.0 意图维度的 embedding 分类用）。
-  // 两者均非阻塞、失败仅 warn，不影响核心启动流程。
-  import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => initOnnxEmbedding())
-    .then(() => import('./routes/modelSelector.js').then(({ warmupIntentAnchors }) => warmupIntentAnchors()))
-    .catch(err => {
-      logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-    });
-
-  // 绑定优雅关闭 — 在进程退出时停止引擎
-  const gracefulShutdown = () => {
-    logger.info('[Server] 正在关闭自动化引擎...');
-    stop();
-    // v2.0: 停止触发器引擎和事件监听器
-    stopTriggerEngine();
-    stopEventListener();
-    // v6.0: 停止会话生命周期守护 — 异步导入
     import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
-      sessionLifecycleManager.stop();
+      sessionLifecycleManager.start();
+      logger.info('[SessionLifecycle] 已启动');
+    }).catch(err => {
+      logger.warn('[SessionLifecycle] 启动失败:', err instanceof Error ? err.message : String(err));
+    });
+
+    messageQueue.start();
+
+    getAttemptRunner().start();
+
+    startWatchdog();
+
+    import('./engine/mcpServerHealth.js').then(({ startMcpHealthCheck }) => {
+      startMcpHealthCheck();
+      logger.info('[Server] MCP Server 健康检查已启动');
+    }).catch(err => {
+      logger.warn('[Server] MCP 健康检查启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+    });
+
+    import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => {
+      abortPrimitives.startAutoCleanup();
     }).catch(() => {});
-    // v7.0: 停止消息队列
-    messageQueue.stop();
-    // v10.0: 停止 AttemptRunner
-    getAttemptRunner().stop();
-    // v11.0: 停止 watchdog 并释放所有持有的文件锁
-    stopWatchdog();
-    releaseAllHeldLocks();
-    // 清理所有 TimerManager 管理的定时器
-    const timerCount = TimerManager.clearAll();
-    logger.info(`[Server] 已清理 ${timerCount} 个定时器`);
-    // v3.0: 关闭 BrowserHost 进程
-    stopBrowserHost().catch(err => {
-      logger.warn('[Server] BrowserHost 关闭异常:', err);
+
+    import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => {
+      toolSendReceipts.startAutoCleanup();
+    }).catch(() => {});
+
+    import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => {
+      toolExecutionStats.startAutoSnapshot();
+    }).catch(() => {});
+
+    import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => {
+      defaultCircuitBreaker.startAutoSnapshot();
+    }).catch(() => {});
+
+    import('./engine/acp/chatServiceRuntime.js').then(({ registerChatServiceRuntime }) => {
+      registerChatServiceRuntime();
+    }).catch(err => {
+      logger.warn('[Server] ACP ChatService runtime 注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     });
-    // v4.0: 关闭 MCP Client Manager
-    mcpClientManager.shutdown().catch(err => {
-      logger.warn('[Server] MCP Client Manager 关闭异常:', err);
-    });
-    // v11.1: 停止 MCP 健康检查 + 关闭审计日志
-    import('./engine/mcpServerHealth.js').then(({ stopMcpHealthCheck }) => stopMcpHealthCheck()).catch(() => {});
-    import('./engine/toolAuditLog.js').then(({ toolAuditLog }) => toolAuditLog.shutdown()).catch(() => {});
-    // v11.1: 中止所有运行中的 AbortController（防止泄漏）
-    import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => abortPrimitives.dispose()).catch(() => {});
-    // P0-3: 清空工具执行队列 — reject 所有等待中的任务，清理 retryTimerHandle
-    import('./engine/toolExecutionQueue.js').then(({ toolExecutionQueue }) => toolExecutionQueue.clear()).catch(() => {});
-    // v11.1: 停止 toolExecutionStats 定时快照并保存最终状态
-    import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => toolExecutionStats.stopAutoSnapshot()).catch(() => {});
-    // v11.1: 停止 toolSendReceipts 定时清理
-    import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => toolSendReceipts.stopAutoCleanup()).catch(() => {});
-    // v11.1: 停止 CircuitBreaker 定时快照并保存最终状态
-    import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => defaultCircuitBreaker.stopAutoSnapshot()).catch(() => {});
-    // v2.x: 保存 modelFailover 最终健康状态到 model-failover-state.json
-    import('./engine/modelFailover.js').then(({ destroyDefaultManager }) => destroyDefaultManager()).catch(() => {});
-    // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
-    // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。
-    // pywebview 端在 stop_server() 中通过 os.killpg(SIGTERM) 触发本流程。
-    // v4.0: checkpoint 后安全关闭数据库连接，确保所有数据刷入磁盘
-    try {
-      const dbInstance = initDb();
-      const ckpt = dbInstance.pragma('wal_checkpoint(TRUNCATE)');
-      logger.info('[Server] ✅ WAL checkpoint 完成:', JSON.stringify(ckpt));
-      dbInstance.close();
-      logger.info('[Server] ✅ 数据库连接已安全关闭');
-    } catch (err) {
-      logger.warn('[Server] WAL checkpoint 失败:', err instanceof Error ? err.message : String(err));
-    }
-    process.exit(0);
-  };
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('SIGINT', gracefulShutdown);
+
+    import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => initOnnxEmbedding())
+      .then(() => import('./routes/modelSelector.js').then(({ warmupIntentAnchors }) => warmupIntentAnchors()))
+      .catch(err => {
+        logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      });
+
+    const gracefulShutdown = () => {
+      logger.info('[Server] 正在关闭自动化引擎...');
+      stop();
+      stopTriggerEngine();
+      stopEventListener();
+      import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
+        sessionLifecycleManager.stop();
+      }).catch(() => {});
+      messageQueue.stop();
+      getAttemptRunner().stop();
+      stopWatchdog();
+      releaseAllHeldLocks();
+      const timerCount = TimerManager.clearAll();
+      logger.info(`[Server] 已清理 ${timerCount} 个定时器`);
+      stopBrowserHost().catch(err => {
+        logger.warn('[Server] BrowserHost 关闭异常:', err);
+      });
+      mcpClientManager.shutdown().catch(err => {
+        logger.warn('[Server] MCP Client Manager 关闭异常:', err);
+      });
+      import('./engine/mcpServerHealth.js').then(({ stopMcpHealthCheck }) => stopMcpHealthCheck()).catch(() => {});
+      import('./engine/toolAuditLog.js').then(({ toolAuditLog }) => toolAuditLog.shutdown()).catch(() => {});
+      import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => abortPrimitives.dispose()).catch(() => {});
+      import('./engine/toolExecutionQueue.js').then(({ toolExecutionQueue }) => toolExecutionQueue.clear()).catch(() => {});
+      import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => toolExecutionStats.stopAutoSnapshot()).catch(() => {});
+      import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => toolSendReceipts.stopAutoCleanup()).catch(() => {});
+      import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => defaultCircuitBreaker.stopAutoSnapshot()).catch(() => {});
+      import('./engine/modelFailover.js').then(({ destroyDefaultManager }) => destroyDefaultManager()).catch(() => {});
+      try {
+        const dbInstance = initDb();
+        const ckpt = dbInstance.pragma('wal_checkpoint(TRUNCATE)');
+        logger.info('[Server] ✅ WAL checkpoint 完成:', JSON.stringify(ckpt));
+        dbInstance.close();
+        logger.info('[Server] ✅ 数据库连接已安全关闭');
+      } catch (err) {
+        logger.warn('[Server] WAL checkpoint 失败:', err instanceof Error ? err.message : String(err));
+      }
+      process.exit(0);
+    };
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
+  })();
 });
 
 // 异步批量审查预置技能（不阻塞启动，延迟 5 秒执行）

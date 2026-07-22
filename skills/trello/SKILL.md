@@ -1,25 +1,30 @@
 ---
 name: trello
-description: "通过 Trello REST API 管理看板（boards）、列表（lists）和卡片（cards）。"
+description: 通过 Trello REST API 管理看板（boards）、列表（lists）和卡片（cards）。
+version: 1.0.0
 homepage: https://developer.atlassian.com/cloud/trello/rest/
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📋",
-        "requires": { "bins": ["curl", "jq"], "env": ["TRELLO_API_KEY", "TRELLO_TOKEN"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "jq",
-              "bins": ["jq"],
-              "label": "Install jq (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📋
+    requires:
+      bins:
+        - curl
+        - jq
+      env:
+        - TRELLO_API_KEY
+        - TRELLO_TOKEN
+    install:
+      - id: brew
+        kind: brew
+        formula: jq
+        bins:
+          - jq
+        label: Install jq (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Trello 技能

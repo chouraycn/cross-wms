@@ -3,7 +3,7 @@
  * Ported from openclaw/src/agents/embedded-agent-runner/run/attempt.bootstrap-context.ts
  */
 import path from "node:path";
-import { isAcpSessionKey, isSubagentSessionKey } from "../../sessions/session-key-utils.js";
+import { isAcpSessionKey, isSubagentSessionKey } from "../sessions/session-key-utils.js";
 import type { EmbeddedContextFile } from "./embedded-agent-helpers/types.js";
 
 /**

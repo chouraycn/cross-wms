@@ -1,25 +1,27 @@
 ---
 name: mcporter
-description: "List, configure, authenticate, call, and inspect MCP servers/tools with mcporter over HTTP or stdio."
+description: List, configure, authenticate, call, and inspect MCP servers/tools
+  with mcporter over HTTP or stdio.
+version: 1.0.0
 homepage: http://mcporter.dev
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📦",
-        "requires": { "bins": ["mcporter"] },
-        "install":
-          [
-            {
-              "id": "node",
-              "kind": "node",
-              "package": "mcporter",
-              "bins": ["mcporter"],
-              "label": "Install mcporter (node)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📦
+    requires:
+      bins:
+        - mcporter
+    install:
+      - id: node
+        kind: node
+        package: mcporter
+        bins:
+          - mcporter
+        label: Install mcporter (node)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # mcporter

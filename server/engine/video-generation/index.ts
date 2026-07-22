@@ -139,3 +139,18 @@ export type {
   HunyuanVideoModel,
   HunyuanVideoProviderOptions,
 } from "./providers/index.js";
+
+// PixVerse 视频生成 Provider（含文生视频、图生视频与异步轮询）
+export {
+  createPixVerseProvider,
+  pixverseProvider,
+  PIXVERSE_PROVIDER_ID,
+} from "./pixverseProvider.js";
+
+export type {
+  PixVerseProviderOptions,
+  PixVerseApiRegion,
+} from "./pixverseProvider.js";
+
+// PixVerse Provider 自动注册（副作用导入）
+import "./pixverseProvider.js";

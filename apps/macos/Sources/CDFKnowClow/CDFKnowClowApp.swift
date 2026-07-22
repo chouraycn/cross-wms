@@ -469,6 +469,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 statusText = "运行中 (PID: \(pid))"
             case .failed(let message):
                 statusText = "失败: \(message)"
+            case .timeout:
+                statusText = "启动超时"
             }
 
             let alert = NSAlert()

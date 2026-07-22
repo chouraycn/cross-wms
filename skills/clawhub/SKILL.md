@@ -1,6 +1,14 @@
 ---
 name: clawhub
-description: "Search ClawHub for skills when a requested capability is not already available; install, verify, update, publish, or sync skills."
+description: Search ClawHub for skills when a requested capability is not
+  already available; install, verify, update, publish, or sync skills.
+version: 1.0.0
+metadata:
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # ClawHub

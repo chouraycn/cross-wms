@@ -1,29 +1,14 @@
 ---
 name: pdf_exporter
-description: "导出为 PDF。将对话、报告或表格整理为排版良好的 PDF 文档。"
+description: 导出为 PDF。将对话、报告或表格整理为排版良好的 PDF 文档。
 version: 0.1.0
-triggers:
-  - "keyword:导出"
-  - "keyword:pdf"
-  - "keyword:export"
-allowed-tools:
-  - file_readFile
-  - file_writeFile
-  - file_generateFile
-parameters:
-  type: object
-  properties:
-    content:
-      type: string
-      description: 导出内容（Markdown / HTML / 纯文本）
-    title:
-      type: string
-      description: 文档标题（可选，默认「导出文档 · 日期」）
-    fileName:
-      type: string
-      description: 文件名（可选，默认以标题命名 .pdf）
-  required:
-    - content
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:导出 / keyword:pdf / keyword:export
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # PDF 导出

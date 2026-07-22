@@ -900,17 +900,33 @@ export type FileStore = {
 
 /**
  * 文件存储单例。
- * 降级实现：抛出错误，cross-wms 未移植完整的 fs-safe/store。
+ * 实现基于 Node.js fs 的简单文件存储，替代原来的 throw stub。
  */
 export const fileStore: FileStore = {
-  async read() {
-    throw new Error("fileStore stub: fs-safe/store not ported");
+  async read(filePath: string): Promise<Buffer | null> {
+    try {
+      return await fs.readFile(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return null;
+      }
+      throw error;
+    }
   },
-  async write() {
-    throw new Error("fileStore stub: fs-safe/store not ported");
+  async write(filePath: string, data: Buffer): Promise<void> {
+    const dir = path.dirname(filePath);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(filePath, data);
   },
-  async delete() {
-    throw new Error("fileStore stub: fs-safe/store not ported");
+  async delete(filePath: string): Promise<void> {
+    try {
+      await fs.unlink(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
   },
 };
 

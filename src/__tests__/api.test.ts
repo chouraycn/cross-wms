@@ -770,3 +770,97 @@ describe('Inventory Transactions API', () => {
     await expect(api.getInventoryTransactions()).rejects.toThrow('查询变动历史失败');
   });
 });
+
+// ===================== Skill Dependency Graph API =====================
+
+describe('Skill Dependency Graph API', () => {
+  it('fetchSkillDependencyGraph() should GET /api/skills/dependency-graph', async () => {
+    const graph = {
+      nodes: [
+        { id: 'builtin-core', name: '核心技能', status: 'active' as const },
+        { id: 'builtin-feature', name: '特性技能', status: 'available' as const },
+      ],
+      edges: [
+        { source: 'builtin-feature', target: 'builtin-core', type: 'required' as const },
+      ],
+    };
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse(graph));
+
+    const result = await api.fetchSkillDependencyGraph();
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/dependency-graph`);
+    expect(result).toEqual(graph);
+  });
+
+  it('fetchSkillDependencies() should GET /api/skills/:id/skill-dependencies', async () => {
+    const detail = {
+      dependencies: [{ skillId: 'builtin-core', name: '核心技能', required: true }],
+      dependents: [{ skillId: 'builtin-app', name: '应用技能' }],
+      conflicts: [],
+      cycles: [],
+    };
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse(detail));
+
+    const result = await api.fetchSkillDependencies('builtin-feature');
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/builtin-feature/skill-dependencies`);
+    expect(result).toEqual(detail);
+  });
+
+  it('fetchSkillDependencies() should encode skill ID in URL', async () => {
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse({ dependencies: [], dependents: [], conflicts: [], cycles: [] }));
+
+    await api.fetchSkillDependencies('skill/with spaces');
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/skill%2Fwith%20spaces/skill-dependencies`);
+  });
+});
+
+// ===================== Skill Usage Analytics API =====================
+
+describe('Skill Usage Analytics API', () => {
+  it('fetchSkillUsageAnalytics() should GET /api/skills/usage-analytics with default params', async () => {
+    const analytics: api.SkillUsageAnalytics = {
+      days: 7,
+      total: 5,
+      totalUses: 30,
+      topSkills: [
+        { rank: 1, skillId: 'skill-a', count: 12, uniqueSessions: 4, lastUsedAt: '2026-07-20T00:00:00Z', firstUsedAt: '2026-07-14T00:00:00Z' },
+      ],
+      trend: [
+        { date: '2026-07-14', count: 3 },
+        { date: '2026-07-15', count: 5 },
+      ],
+      topCoOccurrence: [{ skills: ['skill-a', 'skill-b'], count: 4 }],
+      statusBreakdown: { active: 3, available: 1, disabled: 0, unknown: 1 },
+    };
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse(analytics));
+
+    const result = await api.fetchSkillUsageAnalytics();
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/usage-analytics`);
+    expect(result).toEqual(analytics);
+  });
+
+  it('fetchSkillUsageAnalytics() should pass days and top as query params', async () => {
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse({
+      days: 30, total: 0, totalUses: 0, topSkills: [], trend: [], topCoOccurrence: [],
+      statusBreakdown: { active: 0, available: 0, disabled: 0, unknown: 0 },
+    }));
+
+    await api.fetchSkillUsageAnalytics({ days: 30, top: 5 });
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/usage-analytics?days=30&top=5`);
+  });
+
+  it('fetchSkillUsageAnalytics() should only include defined query params', async () => {
+    mockFetch.mockResolvedValueOnce(mockSuccessResponse({
+      days: 14, total: 0, totalUses: 0, topSkills: [], trend: [], topCoOccurrence: [],
+      statusBreakdown: { active: 0, available: 0, disabled: 0, unknown: 0 },
+    }));
+
+    await api.fetchSkillUsageAnalytics({ days: 14 });
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/skills/usage-analytics?days=14`);
+  });
+});

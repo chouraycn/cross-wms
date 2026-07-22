@@ -1,11 +1,13 @@
 ---
 name: skill-creator
-description: "在对话中创建、编辑、审核或重构技能（SKILL.md）。当用户想把某类任务固化为可复用技能、或新增/修改一个能力时使用。"
+description: 在对话中创建、编辑、审核或重构技能（SKILL.md）。当用户想把某类任务固化为可复用技能、或新增/修改一个能力时使用。
 version: 0.1.0
-allowed-tools:
-  - skill_createProposal
-  - file_readFile
-  - file_writeFile
+metadata:
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Skill Creator（技能创建引导）

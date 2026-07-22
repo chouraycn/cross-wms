@@ -7,7 +7,15 @@
  * 避免启动时全量导入所有适配器及其依赖。外部注册的同步工厂仍被支持。
  */
 
-import type { IAiApiAdapter, ModelApiType, AdapterFactory } from './types.js';
+import type {
+  IAiApiAdapter,
+  ModelApiType,
+  AdapterFactory,
+  ISttAdapter,
+  SttAdapterFactory,
+  IMediaGenAdapter,
+  MediaGenAdapterFactory,
+} from './types.js';
 import { logger } from '../logger.js';
 
 /** 惰性加载器：动态 import 后返回适配器工厂 */
@@ -15,6 +23,67 @@ type LazyAdapterFactory = () => Promise<AdapterFactory>;
 
 /** 注册项：同步工厂 或 惰性加载器 */
 type AdapterFactoryLoader = AdapterFactory | LazyAdapterFactory;
+
+/** 通用惰性加载器：动态 import 后返回工厂 */
+type LazyFactoryLoader<TFactory> = TFactory | (() => Promise<TFactory>);
+
+/**
+ * 通用惰性注册表工厂
+ *
+ * 为非 IAiApiAdapter 类型的适配器（STT / 多媒体生成）复用同一套惰性加载机制，
+ * 避免重复实现缓存与并发去重逻辑。
+ */
+function createLazyRegistry<TFactory extends () => unknown>() {
+  const registry = new Map<ModelApiType, LazyFactoryLoader<TFactory>>();
+  const cache = new Map<ModelApiType, TFactory>();
+  const loading = new Map<ModelApiType, Promise<TFactory>>();
+
+  function register(apiType: ModelApiType, loader: LazyFactoryLoader<TFactory>): void {
+    registry.set(apiType, loader);
+    cache.delete(apiType);
+    loading.delete(apiType);
+    logger.info(`[AdapterRegistry] 已注册适配器: ${apiType}`);
+  }
+
+  async function get(apiType: ModelApiType): Promise<TFactory | null> {
+    const cached = cache.get(apiType);
+    if (cached) return cached;
+
+    const loader = registry.get(apiType);
+    if (!loader) {
+      logger.error(`[AdapterRegistry] 未找到适配器: ${apiType}`);
+      return null;
+    }
+
+    const result = loader();
+
+    if (result instanceof Promise) {
+      let loadingPromise = loading.get(apiType);
+      if (!loadingPromise) {
+        loadingPromise = result as Promise<TFactory>;
+        loading.set(apiType, loadingPromise);
+      }
+      try {
+        const factory = await loadingPromise;
+        cache.set(apiType, factory);
+        return factory;
+      } catch (err) {
+        logger.error(`[AdapterRegistry] 加载适配器 ${apiType} 失败:`, err);
+        return null;
+      } finally {
+        loading.delete(apiType);
+      }
+    }
+
+    return result as TFactory;
+  }
+
+  function has(apiType: ModelApiType): boolean {
+    return registry.has(apiType);
+  }
+
+  return { register, get, has };
+}
 
 /** 适配器注册表 — 存储 apiType → 加载器 */
 const adapterRegistry = new Map<ModelApiType, AdapterFactoryLoader>();
@@ -24,6 +93,12 @@ const factoryCache = new Map<ModelApiType, AdapterFactory>();
 
 /** 进行中的动态 import Promise（防止并发重复加载） */
 const loadingPromises = new Map<ModelApiType, Promise<AdapterFactory>>();
+
+/** STT（语音转文字）适配器注册表 */
+const sttRegistry = createLazyRegistry<SttAdapterFactory>();
+
+/** 多媒体生成适配器注册表（图像 / 视频） */
+const mediaGenRegistry = createLazyRegistry<MediaGenAdapterFactory>();
 
 /**
  * 注册适配器
@@ -102,6 +177,63 @@ export function getRegisteredApiTypes(): ModelApiType[] {
   return Array.from(adapterRegistry.keys());
 }
 
+// ============================================================================
+// STT / 多媒体生成适配器注册接口
+//
+// 这些适配器与 IAiApiAdapter 调用语义不同，因此提供独立的注册 / 获取入口，
+// 但同样使用 ModelApiType 作为键，并复用惰性加载机制。
+// ============================================================================
+
+/**
+ * 注册 STT（语音转文字）适配器
+ */
+export function registerSttAdapter(
+  apiType: ModelApiType,
+  loader: SttAdapterFactory | (() => Promise<SttAdapterFactory>),
+): void {
+  sttRegistry.register(apiType, loader);
+}
+
+/**
+ * 获取 STT 适配器实例（惰性加载）
+ */
+export async function getSttAdapter(apiType: ModelApiType): Promise<ISttAdapter | null> {
+  const factory = await sttRegistry.get(apiType);
+  return factory ? factory() : null;
+}
+
+/**
+ * 检查 STT 适配器是否已注册
+ */
+export function hasSttAdapter(apiType: string): boolean {
+  return sttRegistry.has(apiType as ModelApiType);
+}
+
+/**
+ * 注册多媒体生成适配器（图像 / 视频）
+ */
+export function registerMediaGenAdapter(
+  apiType: ModelApiType,
+  loader: MediaGenAdapterFactory | (() => Promise<MediaGenAdapterFactory>),
+): void {
+  mediaGenRegistry.register(apiType, loader);
+}
+
+/**
+ * 获取多媒体生成适配器实例（惰性加载）
+ */
+export async function getMediaGenAdapter(apiType: ModelApiType): Promise<IMediaGenAdapter | null> {
+  const factory = await mediaGenRegistry.get(apiType);
+  return factory ? factory() : null;
+}
+
+/**
+ * 检查多媒体生成适配器是否已注册
+ */
+export function hasMediaGenAdapter(apiType: string): boolean {
+  return mediaGenRegistry.has(apiType as ModelApiType);
+}
+
 /**
  * 初始化内置适配器
  *
@@ -152,6 +284,87 @@ export function initBuiltinAdapters(): void {
     const m = await import('./vllmAdapter.js');
     return m.vllmAdapterFactory;
   });
+  registerAdapter('deepseek-chat', async () => {
+    const m = await import('./deepseekAdapter.js');
+    return m.deepseekAdapterFactory;
+  });
+  registerAdapter('qianfan-chat', async () => {
+    const m = await import('./qianfanAdapter.js');
+    return m.qianfanAdapterFactory;
+  });
+  registerAdapter('perplexity-chat', async () => {
+    const m = await import('./perplexityAdapter.js');
+    return m.perplexityAdapterFactory;
+  });
+  registerAdapter('claude-chat', async () => {
+    const m = await import('./claudeAdapter.js');
+    return m.claudeAdapterFactory;
+  });
+  registerAdapter('zai-chat', async () => {
+    const m = await import('./zaiAdapter.js');
+    return m.zaiAdapterFactory;
+  });
+  registerAdapter('ollama-chat', async () => {
+    const m = await import('./ollamaAdapter.js');
+    return m.ollamaAdapterFactory;
+  });
+  registerAdapter('mistral-chat', async () => {
+    const m = await import('./mistralAdapter.js');
+    return m.mistralAdapterFactory;
+  });
+  registerAdapter('openrouter-chat', async () => {
+    const m = await import('./openrouterAdapter.js');
+    return m.openrouterAdapterFactory;
+  });
+  registerAdapter('cohere-chat', async () => {
+    const m = await import('./cohereAdapter.js');
+    return m.cohereAdapterFactory;
+  });
+  registerAdapter('arcee-chat', async () => {
+    const m = await import('./arceeAdapter.js');
+    return m.arceeAdapterFactory;
+  });
+  registerAdapter('cerebras-chat', async () => {
+    const m = await import('./cerebrasAdapter.js');
+    return m.cerebrasAdapterFactory;
+  });
+  registerAdapter('chutes-chat', async () => {
+    const m = await import('./chutesAdapter.js');
+    return m.chutesAdapterFactory;
+  });
+  registerAdapter('huggingface-chat', async () => {
+    const m = await import('./huggingfaceAdapter.js');
+    return m.huggingfaceAdapterFactory;
+  });
+  registerAdapter('lmstudio-chat', async () => {
+    const m = await import('./lmstudioAdapter.js');
+    return m.lmstudioAdapterFactory;
+  });
+  registerAdapter('novita-chat', async () => {
+    const m = await import('./novitaAdapter.js');
+    return m.novitaAdapterFactory;
+  });
+  registerAdapter('byteplus-chat', async () => {
+    const m = await import('./byteplusAdapter.js');
+    return m.byteplusAdapterFactory;
+  });
+  registerAdapter('kimi-coding-chat', async () => {
+    const m = await import('./kimiCodingAdapter.js');
+    return m.kimiCodingAdapterFactory;
+  });
+  registerAdapter('llama-cpp-chat', async () => {
+    const m = await import('./llamaCppAdapter.js');
+    return m.llamaCppAdapterFactory;
+  });
+  // 非生成式 / 多媒体适配器
+  registerSttAdapter('deepgram-stt', async () => {
+    const m = await import('./deepgramSttAdapter.js');
+    return m.deepgramSttFactory;
+  });
+  registerMediaGenAdapter('fal-generate', async () => {
+    const m = await import('./falAdapter.js');
+    return m.falAdapterFactory;
+  });
   logger.info('[AdapterRegistry] 内置适配器惰性注册完成');
 }
 
@@ -189,6 +402,13 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
     return 'qwen-chat';
   }
 
+  // Kimi Coding
+  if (providerLower === 'kimi-coding' ||
+      providerLower === 'kimi coding' ||
+      endpointLower.includes('api.kimi-coding.cn')) {
+    return 'kimi-coding-chat';
+  }
+
   // Moonshot (月之暗面)
   if (providerLower === 'moonshot' ||
       providerLower === 'kimi' ||
@@ -217,11 +437,148 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
     return 'xai-chat';
   }
 
+  // llama.cpp (本地 LLM)
+  if (providerLower === 'llama-cpp' ||
+      providerLower === 'llamacpp' ||
+      providerLower === 'llama.cpp' ||
+      providerLower === 'llama cpp' ||
+      endpointLower.includes('localhost:8080') ||
+      endpointLower.includes('127.0.0.1:8080')) {
+    return 'llama-cpp-chat';
+  }
+
   // vLLM
   if (providerLower === 'vllm' ||
       endpointLower.includes('vllm') ||
       endpointLower.includes('localhost:8000')) {
     return 'vllm-chat';
+  }
+
+  // DeepSeek
+  if (providerLower === 'deepseek' ||
+      endpointLower.includes('api.deepseek.com')) {
+    return 'deepseek-chat';
+  }
+
+  // Qianfan (百度千帆)
+  if (providerLower === 'qianfan' ||
+      providerLower === 'baidu' ||
+      providerLower === 'wenxin' ||
+      endpointLower.includes('aip.baidubce.com') ||
+      endpointLower.includes('wenxinworkshop')) {
+    return 'qianfan-chat';
+  }
+
+  // Perplexity
+  if (providerLower === 'perplexity' ||
+      endpointLower.includes('api.perplexity.ai')) {
+    return 'perplexity-chat';
+  }
+
+  // Claude (Anthropic)
+  if (providerLower === 'claude') {
+    return 'anthropic-messages';
+  }
+
+  // ZAI (智谱 GLM)
+  if (providerLower === 'zai' ||
+      providerLower === 'zhipu' ||
+      providerLower === 'glm' ||
+      endpointLower.includes('api.z.ai') ||
+      endpointLower.includes('bigmodel.cn')) {
+    return 'zai-chat';
+  }
+
+  // Ollama (本地 LLM)
+  if (providerLower === 'ollama' ||
+      endpointLower.includes('localhost:11434') ||
+      endpointLower.includes('127.0.0.1:11434') ||
+      endpointLower.includes('/api/chat')) {
+    return 'ollama-chat';
+  }
+
+  // Mistral
+  if (providerLower === 'mistral' ||
+      endpointLower.includes('api.mistral.ai')) {
+    return 'mistral-chat';
+  }
+
+  // OpenRouter
+  if (providerLower === 'openrouter' ||
+      endpointLower.includes('openrouter.ai')) {
+    return 'openrouter-chat';
+  }
+
+  // Cohere
+  if (providerLower === 'cohere' ||
+      providerLower === 'command' ||
+      endpointLower.includes('api.cohere.com')) {
+    return 'cohere-chat';
+  }
+
+  // Arcee
+  if (providerLower === 'arcee' ||
+      endpointLower.includes('api.arcee.ai')) {
+    return 'arcee-chat';
+  }
+
+  // Cerebras
+  if (providerLower === 'cerebras' ||
+      endpointLower.includes('api.cerebras.ai')) {
+    return 'cerebras-chat';
+  }
+
+  // Chutes
+  if (providerLower === 'chutes' ||
+      endpointLower.includes('api.chutes.ai')) {
+    return 'chutes-chat';
+  }
+
+  // Hugging Face
+  if (providerLower === 'huggingface' ||
+      providerLower === 'hf' ||
+      endpointLower.includes('api-inference.huggingface.co') ||
+      endpointLower.includes('huggingface.co')) {
+    return 'huggingface-chat';
+  }
+
+  // LM Studio (本地 LLM)
+  if (providerLower === 'lmstudio' ||
+      providerLower === 'lm-studio' ||
+      endpointLower.includes('localhost:1234') ||
+      endpointLower.includes('127.0.0.1:1234')) {
+    return 'lmstudio-chat';
+  }
+
+  // Novita
+  if (providerLower === 'novita' ||
+      endpointLower.includes('api.novita.ai')) {
+    return 'novita-chat';
+  }
+
+  // BytePlus (火山引擎方舟)
+  if (providerLower === 'byteplus' ||
+      providerLower === 'volcengine' ||
+      providerLower === '火山引擎' ||
+      providerLower === 'doubao' ||
+      endpointLower.includes('volces.com') ||
+      endpointLower.includes('ark.cn-beijing')) {
+    return 'byteplus-chat';
+  }
+
+  // Deepgram (语音转文字)
+  if (providerLower === 'deepgram' ||
+      endpointLower.includes('api.deepgram.com')) {
+    return 'deepgram-stt';
+  }
+
+  // Fal AI (图像/视频生成)
+  if (providerLower === 'fal' ||
+      providerLower === 'fal-ai' ||
+      providerLower === 'falai' ||
+      providerLower === 'fal ai' ||
+      endpointLower.includes('fal.run')) {
+    return 'fal-generate';
   }
 
   // OpenAI Responses API

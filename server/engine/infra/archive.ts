@@ -24,6 +24,17 @@ export async function createArchive(entries: ArchiveEntry[]): Promise<string> {
   return JSON.stringify(archive, null, 2);
 }
 
+export function resolveArchiveKind(path: string): string | undefined {
+  const lower = path.toLowerCase();
+  if (lower.endsWith('.zip')) return 'zip';
+  if (lower.endsWith('.tar')) return 'tar';
+  if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) return 'tar.gz';
+  if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz')) return 'tar.bz2';
+  if (lower.endsWith('.rar')) return 'rar';
+  if (lower.endsWith('.7z')) return '7z';
+  return undefined;
+}
+
 export async function readArchive(content: string): Promise<ArchiveEntry[]> {
   try {
     const archive = JSON.parse(content);

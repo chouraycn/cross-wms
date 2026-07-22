@@ -106,3 +106,57 @@ export type SkillSnapshot = {
   version?: number;
   promptFormatVersion?: number;
 };
+
+// ============================================================================
+// 技能依赖与冲突管理
+// ============================================================================
+
+/** 技能依赖声明 */
+export type SkillDependency = {
+  /** 依赖的技能名称 */
+  skill: string;
+  /** 版本约束（可选） */
+  version?: string;
+  /** 是否必需（false 表示可选依赖） */
+  required?: boolean;
+  /** 依赖原因说明 */
+  reason?: string;
+};
+
+/** 技能冲突声明 */
+export type SkillConflict = {
+  /** 冲突的技能名称 */
+  skill: string;
+  /** 冲突原因 */
+  reason: string;
+  /** 建议的解决方案 */
+  suggestion?: string;
+};
+
+/** 技能依赖图节点 */
+export type SkillDependencyNode = {
+  skill: SkillEntry;
+  dependencies: SkillDependencyNode[];
+  dependents: SkillDependencyNode[];
+  depth: number;
+};
+
+/** 依赖检查结果 */
+export type DependencyCheckResult = {
+  /** 是否通过检查 */
+  valid: boolean;
+  /** 缺失的必需依赖 */
+  missing: SkillDependency[];
+  /** 检测到的冲突 */
+  conflicts: SkillConflict[];
+  /** 可选依赖未满足（仅警告） */
+  optionalMissing: SkillDependency[];
+  /** 依赖循环 */
+  cycles: string[][];
+};
+
+/** 技能依赖配置（从 metadata 解析） */
+export type SkillDependencyConfig = {
+  dependsOn?: SkillDependency[];
+  conflictsWith?: SkillConflict[];
+};

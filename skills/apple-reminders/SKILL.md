@@ -1,26 +1,27 @@
 ---
 name: apple-reminders
-description: "List, add, edit, complete, or delete Apple Reminders and reminder lists via remindctl."
+description: List, add, edit, complete, or delete Apple Reminders and reminder
+  lists via remindctl.
+version: 1.0.0
 homepage: https://github.com/steipete/remindctl
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "⏰",
-        "os": ["darwin"],
-        "requires": { "bins": ["remindctl"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "steipete/tap/remindctl",
-              "bins": ["remindctl"],
-              "label": "Install remindctl via Homebrew",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: ⏰
+    requires:
+      bins:
+        - remindctl
+    install:
+      - id: brew
+        kind: brew
+        formula: steipete/tap/remindctl
+        bins:
+          - remindctl
+        label: Install remindctl via Homebrew
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Apple Reminders CLI (remindctl)

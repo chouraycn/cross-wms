@@ -30,6 +30,8 @@ import { getCategoryLabel, getCategoryColors, getCategoryGradient } from '../con
 import * as api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
+import SkillDependencyPanel from '../components/Skills/SkillDependencyPanel';
+import SkillRecommendationsPanel from '../components/Skills/SkillRecommendationsPanel';
 import EditSkillDialog from '../components/Skills/EditSkillDialog';
 import { getGrayScale } from '../constants/theme';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
@@ -503,6 +505,22 @@ const SkillDetailPage: React.FC = () => {
         onTriggerAutomation={handleTriggerAutomation}
         onNavigateAutomation={() => navigate('/automation')}
       />
+
+      {/* 技能依赖关系面板 */}
+      <Box sx={{ mt: 3, mb: 2, p: 2.5, borderRadius: '12px', border: `1px solid ${gs.border}`, backgroundColor: gs.bgPanel }}>
+        <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
+          技能依赖关系
+        </Typography>
+        <SkillDependencyPanel skillId={skill.id} isDark={isDark} />
+      </Box>
+
+      {/* 相关推荐面板 */}
+      <Box sx={{ mt: 3, mb: 2, p: 2.5, borderRadius: '12px', border: `1px solid ${gs.border}`, backgroundColor: gs.bgPanel }}>
+        <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
+          相关推荐
+        </Typography>
+        <SkillRecommendationsPanel skillId={skill.id} isDark={isDark} />
+      </Box>
 
       {/* 底部操作栏 */}
       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: `1px solid ${gs.border}` }}>

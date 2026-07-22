@@ -83,3 +83,13 @@ export type {
   DiagnosticEventHandler,
 } from './diagnosticEvents.js';
 export { LogRotator } from './logRotation.js';
+
+export {
+  createSkillLogger,
+  logSkillAction,
+  logSkillExecution,
+  logSkillInstallation,
+  logSkillSecurity,
+  logSkillDiscovery,
+} from './skill-logger.js';
+export type { SkillLogContext } from './skill-logger.js';

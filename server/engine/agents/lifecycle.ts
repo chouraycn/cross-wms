@@ -20,7 +20,7 @@ export interface AgentLifecycleEvent {
   metadata?: Record<string, unknown>;
 }
 
-const VALID_TRANSITIONS: Record<AgentLifecycleState, AgentLifecycleState[]> = {
+export const VALID_TRANSITIONS: Record<AgentLifecycleState, AgentLifecycleState[]> = {
   created: ['initializing', 'destroyed'],
   initializing: ['idle', 'failed', 'destroyed'],
   idle: ['running', 'destroyed'],

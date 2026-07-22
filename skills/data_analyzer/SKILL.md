@@ -1,29 +1,14 @@
 ---
 name: data_analyzer
-description: "数据分析。对给定的表格或指标进行统计、对比与归因分析，输出图表建议与结论。"
+description: 数据分析。对给定的表格或指标进行统计、对比与归因分析，输出图表建议与结论。
 version: 0.1.0
-triggers:
-  - "intent:analyze"
-  - "intent:compare"
-  - "keyword:分析"
-  - "keyword:analyze"
-allowed-tools:
-  - file_readFile
-  - file_writeFile
-  - file_generateFile
-parameters:
-  type: object
-  properties:
-    sql:
-      type: string
-      description: 待分析的 SELECT 查询语句（与 content 二选一）
-    content:
-      type: string
-      description: JSON 数组文本（与 sql 二选一）
-    fileName:
-      type: string
-      description: 可选，指定后把分析结论落盘
-  required: []
+metadata:
+  crosswms:
+    category: general
+    trigger: intent:analyze / intent:compare / keyword:分析 / keyword:analyze
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # 数据分析

@@ -1,26 +1,29 @@
 ---
 name: goplaces
-description: "Query Google Places for text search, place details, resolve, reviews, or scriptable JSON via goplaces."
+description: Query Google Places for text search, place details, resolve,
+  reviews, or scriptable JSON via goplaces.
+version: 1.0.0
 homepage: https://github.com/steipete/goplaces
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📍",
-        "requires": { "bins": ["goplaces"], "env": ["GOOGLE_PLACES_API_KEY"] },
-        "primaryEnv": "GOOGLE_PLACES_API_KEY",
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "steipete/tap/goplaces",
-              "bins": ["goplaces"],
-              "label": "Install goplaces (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📍
+    requires:
+      bins:
+        - goplaces
+      env:
+        - GOOGLE_PLACES_API_KEY
+    install:
+      - id: brew
+        kind: brew
+        formula: steipete/tap/goplaces
+        bins:
+          - goplaces
+        label: Install goplaces (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # goplaces

@@ -1,25 +1,26 @@
 ---
 name: gemini
-description: "Gemini CLI 一次性提示、摘要、生成、技能、钩子、MCP 或 Gemma 路由。"
+description: Gemini CLI 一次性提示、摘要、生成、技能、钩子、MCP 或 Gemma 路由。
+version: 1.0.0
 homepage: https://ai.google.dev/
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "✨",
-        "requires": { "bins": ["gemini"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "gemini-cli",
-              "bins": ["gemini"],
-              "label": "Install Gemini CLI (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: ✨
+    requires:
+      bins:
+        - gemini
+    install:
+      - id: brew
+        kind: brew
+        formula: gemini-cli
+        bins:
+          - gemini
+        label: Install Gemini CLI (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Gemini CLI

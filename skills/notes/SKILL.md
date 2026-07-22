@@ -1,14 +1,14 @@
 ---
 name: notes
-description: "笔记管理，支持创建、读取、搜索和编辑笔记"
+description: 笔记管理，支持创建、读取、搜索和编辑笔记
 version: 0.1.0
-triggers:
-  - "keyword:笔记"
-  - "keyword:note"
-  - "keyword:记录"
-allowed-tools:
-  - file_readFile
-  - file_writeFile
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:笔记 / keyword:note / keyword:记录
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Notes 笔记管理

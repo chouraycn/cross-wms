@@ -16,7 +16,7 @@ export function getCallGatewayMock(): {
   mockFn: (params: { method: string; params: Record<string, unknown> }) => Promise<unknown>;
 } {
   const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
-  const mockFn = async (params: { method: string; params: Record<string, unknown> }>) => {
+  const mockFn = async (params: { method: string; params: Record<string, unknown> }): Promise<unknown> => {
     calls.push(params);
     return { ok: true };
   };

@@ -340,6 +340,122 @@
       "retry": "重试",
       "history": "执行历史",
       "recentExecutions": "最近执行记录"
+    },
+    "dependency": {
+      "title": "技能依赖关系",
+      "dependencies": "依赖项",
+      "dependents": "被依赖",
+      "conflicts": "冲突",
+      "noDependencies": "无依赖项",
+      "noDependents": "无依赖此技能的技能",
+      "noConflicts": "无冲突",
+      "circularDependency": "循环依赖",
+      "circularWarning": "检测到循环依赖",
+      "required": "必需",
+      "optional": "可选",
+      "dependencyGraph": "依赖图谱",
+      "viewGraph": "查看图谱",
+      "edgeTypes": {
+        "required": "必需依赖",
+        "optional": "可选依赖",
+        "conflict": "冲突",
+        "plugin": "插件扩展"
+      }
+    },
+    "health": {
+      "title": "技能健康度",
+      "overall": "综合评分",
+      "metadata": "元数据完整性",
+      "dependencies": "依赖声明",
+      "documentation": "文档质量",
+      "security": "安全合规",
+      "score": "分数",
+      "healthy": "健康",
+      "warning": "警告",
+      "critical": "严重",
+      "checking": "检查中",
+      "summary": {
+        "totalSkills": "技能总数",
+        "healthySkills": "健康技能",
+        "warningSkills": "警告技能",
+        "criticalSkills": "严重技能",
+        "avgScore": "平均分"
+      },
+      "detail": {
+        "metaCompleteness": "元数据完整性",
+        "depDeclarations": "依赖声明",
+        "docQuality": "文档质量",
+        "securityCompliance": "安全合规"
+      }
+    },
+    "docQuality": {
+      "title": "文档质量检查",
+      "overallScore": "综合评分",
+      "level": {
+        "excellent": "优秀",
+        "good": "良好",
+        "fair": "一般",
+        "poor": "较差"
+      },
+      "checks": {
+        "structure": "结构完整性",
+        "readability": "可读性",
+        "examples": "示例完整性",
+        "parameters": "参数说明",
+        "formatting": "格式规范"
+      },
+      "summary": {
+        "total": "总计",
+        "excellent": "优秀",
+        "good": "良好",
+        "fair": "一般",
+        "poor": "较差",
+        "avgScore": "平均分"
+      },
+      "issues": "问题",
+      "suggestions": "建议"
+    },
+    "usage": {
+      "title": "使用分析",
+      "trend": "调用趋势",
+      "topSkills": "Top 技能",
+      "cooccurrence": "共现组合",
+      "statusDistribution": "状态分布",
+      "timeRange": {
+        "7days": "近7天",
+        "14days": "近14天",
+        "30days": "近30天",
+        "90days": "近90天"
+      },
+      "totalCalls": "总调用次数",
+      "avgDaily": "日均调用",
+      "successRate": "成功率",
+      "errorRate": "错误率"
+    },
+    "recommendations": {
+      "title": "智能推荐",
+      "related": "相关推荐",
+      "basedOn": "基于您的使用习惯",
+      "noData": "暂无推荐数据（使用技能后将生成个性化推荐）",
+      "reason": {
+        "cooccurrence": "关联使用",
+        "similarity": "内容相似",
+        "trending": "热门趋势",
+        "collaborative": "协同过滤"
+      }
+    },
+    "search": {
+      "hasDependencies": "有依赖",
+      "noDependencies": "无依赖",
+      "healthy": "健康",
+      "warning": "警告",
+      "critical": "严重",
+      "sortBy": {
+        "score": "按评分",
+        "name": "按名称",
+        "recent": "按时间",
+        "health": "按健康度"
+      }
     }
   },
   "slashCommands": {

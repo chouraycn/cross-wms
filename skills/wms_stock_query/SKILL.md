@@ -1,29 +1,14 @@
 ---
 name: wms_stock_query
-description: "查询仓库库存与物料状态。根据 SKU、库位或仓库维度检索实时库存、在途量与预警。"
+description: 查询仓库库存与物料状态。根据 SKU、库位或仓库维度检索实时库存、在途量与预警。
 version: 0.1.0
-triggers:
-  - "intent:query"
-  - "keyword:库存"
-  - "keyword:stock"
-  - "keyword:sku"
-allowed-tools:
-  - file_readFile
-  - file_listDir
-  - wms_inventory
-parameters:
-  type: object
-  properties:
-    sku:
-      type: string
-      description: 物料编码（可选，提供则精确检索该物料全部库存记录）
-    warehouse:
-      type: string
-      description: 仓库编码（可选，默认全部仓库）
-    location:
-      type: string
-      description: 库位（可选）
-  required: []
+metadata:
+  crosswms:
+    category: wms
+    trigger: intent:query / keyword:库存 / keyword:stock / keyword:sku
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # WMS 库存查询

@@ -1,25 +1,27 @@
 ---
 name: himalaya
-description: "Himalaya CLI for IMAP/SMTP mail: list, read, search, compose, reply, forward, copy, move, delete."
+description: "Himalaya CLI for IMAP/SMTP mail: list, read, search, compose,
+  reply, forward, copy, move, delete."
+version: 1.0.0
 homepage: https://github.com/pimalaya/himalaya
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📧",
-        "requires": { "bins": ["himalaya"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "himalaya",
-              "bins": ["himalaya"],
-              "label": "Install Himalaya (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📧
+    requires:
+      bins:
+        - himalaya
+    install:
+      - id: brew
+        kind: brew
+        formula: himalaya
+        bins:
+          - himalaya
+        label: Install Himalaya (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Himalaya

@@ -32,6 +32,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import PhonelinkIcon from '@mui/icons-material/Phonelink';
 import DnsIcon from '@mui/icons-material/Dns';
+import HubIcon from '@mui/icons-material/Hub';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -155,6 +156,7 @@ const navItems: NavItem[] = [
       { label: '设备配对', path: '/pairing', icon: <PhonelinkIcon />, desc: 'Pairing' },
       { label: '进程管理', path: '/process', icon: <MemoryIcon />, desc: 'Process Monitor' },
       { label: '节点主机', path: '/node-host', icon: <DnsIcon />, desc: 'Node Host' },
+      { label: '集成监控', path: '/integration', icon: <HubIcon />, desc: 'Integration Dashboard' },
     ],
   },
 ];

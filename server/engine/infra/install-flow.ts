@@ -6,7 +6,7 @@ import path from "node:path";
 import os from "node:os";
 
 type ExistingInstallPathResult =
-  | { ok: true; resolvedPath: string; stat: await fs.Stat }
+  | { ok: true; resolvedPath: string; stat: fs.Stats }
   | { ok: false; error: string };
 
 /** Resolve and stat a user-provided install path. */
@@ -17,7 +17,7 @@ export async function resolveExistingInstallPath(
   try {
     await fs.access(resolvedPath);
     const stat = await fs.stat(resolvedPath);
-    return { ok: true, resolvedPath, stat: stat as unknown as await fs.Stat };
+    return { ok: true, resolvedPath, stat };
   } catch {
     return { ok: false, error: `path not found: ${resolvedPath}` };
   }

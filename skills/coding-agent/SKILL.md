@@ -1,35 +1,36 @@
 ---
 name: coding-agent
-description: "Delegate coding work to Codex, Claude Code, or OpenCode as background workers; not simple edits or read-only code lookup."
+description: Delegate coding work to Codex, Claude Code, or OpenCode as
+  background workers; not simple edits or read-only code lookup.
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🧩",
-        "requires":
-          {
-            "anyBins": ["claude", "codex", "opencode"],
-            "config": ["skills.entries.coding-agent.enabled"],
-          },
-        "install":
-          [
-            {
-              "id": "node-claude",
-              "kind": "node",
-              "package": "@anthropic-ai/claude-code",
-              "bins": ["claude"],
-              "label": "Install Claude Code CLI (npm)",
-            },
-            {
-              "id": "node-codex",
-              "kind": "node",
-              "package": "@openai/codex",
-              "bins": ["codex"],
-              "label": "Install Codex CLI (npm)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🧩
+    requires:
+      anyBins:
+        - claude
+        - codex
+        - opencode
+      config:
+        - skills.entries.coding-agent.enabled
+    install:
+      - id: node-claude
+        kind: node
+        package: "@anthropic-ai/claude-code"
+        bins:
+          - claude
+        label: Install Claude Code CLI (npm)
+      - id: node-codex
+        kind: node
+        package: "@openai/codex"
+        bins:
+          - codex
+        label: Install Codex CLI (npm)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Coding Agent

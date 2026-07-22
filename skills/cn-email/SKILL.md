@@ -1,25 +1,26 @@
 ---
 name: cn-email
-description: "国内邮件服务：QQ邮箱、网易邮箱、阿里云企业邮箱、腾讯企业邮箱"
+description: 国内邮件服务：QQ邮箱、网易邮箱、阿里云企业邮箱、腾讯企业邮箱
+version: 1.0.0
 homepage: https://github.com/pimalaya/himalaya
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📧",
-        "requires": { "bins": ["himalaya"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "himalaya",
-              "bins": ["himalaya"],
-              "label": "Install Himalaya (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📧
+    requires:
+      bins:
+        - himalaya
+    install:
+      - id: brew
+        kind: brew
+        formula: himalaya
+        bins:
+          - himalaya
+        label: Install Himalaya (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # 国内邮件服务

@@ -10,6 +10,20 @@ export { registerApiProvider, getApiProvider, listApiProviders, clearApiProvider
 export type { OAuthFlowResult, OAuthProvider } from './oauth.js';
 export { startOAuthFlow, refreshOAuthToken, isOAuthTokenExpired, getStoredOAuthToken, clearStoredOAuthToken } from './oauth.js';
 
+// LLM 调用统一包装器
+export type { InvokeResult, InvokeOptions, CircuitState } from './llm-invoker.js';
+export {
+  invokeWithGuards,
+  LlmCircuitBreaker,
+  getCircuitBreaker,
+  removeCircuitBreaker,
+  clearCircuitBreakers,
+  listCircuitBreakers,
+  CircuitOpenError,
+  RateLimitExceededError,
+  DEFAULT_CIRCUIT_BREAKER_OPTIONS,
+} from './llm-invoker.js';
+
 // Provider 抽象层
 export type {
   Provider,

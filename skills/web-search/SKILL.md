@@ -1,14 +1,14 @@
 ---
 name: web-search
-description: "网络搜索，支持 DuckDuckGo 和其他搜索引擎"
+description: 网络搜索，支持 DuckDuckGo 和其他搜索引擎
 version: 0.1.0
-triggers:
-  - "keyword:搜索"
-  - "keyword:查找"
-  - "keyword:web"
-  - "keyword:internet"
-allowed-tools:
-  - web_search
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:搜索 / keyword:查找 / keyword:web / keyword:internet
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Web Search 网络搜索

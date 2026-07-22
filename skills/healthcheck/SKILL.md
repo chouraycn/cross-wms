@@ -1,6 +1,14 @@
 ---
 name: healthcheck
-description: "Audit/harden OpenClaw hosts: SSH, firewall, updates, exposure, backups, disk encryption, gateway security."
+description: "Audit/harden OpenClaw hosts: SSH, firewall, updates, exposure,
+  backups, disk encryption, gateway security."
+version: 1.0.0
+metadata:
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # OpenClaw host healthcheck

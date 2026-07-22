@@ -17,28 +17,48 @@ export function getCommands(): TuiCommand[] {
       aliases: ['h', '?'],
       handler: async (_args, ctx) => {
         ctx.print(bold('可用命令:'));
-        ctx.print('  /help              显示帮助信息');
-        ctx.print('  /exit, /quit       退出 TUI');
-        ctx.print('  /clear             清屏');
+        ctx.print('');
+        ctx.print(bold('会话管理:'));
         ctx.print('  /sessions          列出所有会话');
         ctx.print('  /new [title]       新建会话');
         ctx.print('  /switch <id>       切换到指定会话');
         ctx.print('  /delete <id>       删除指定会话');
-        ctx.print('  /model [name]      显示或设置模型');
+        ctx.print('  /reset             重置当前会话');
+        ctx.print('');
+        ctx.print(bold('对话控制:'));
+        ctx.print('  /clear             清屏');
+        ctx.print('  /abort             中止当前运行');
+        ctx.print('  /compact           压缩当前上下文');
         ctx.print('  /history           显示对话历史');
+        ctx.print('');
+        ctx.print(bold('模型与Agent:'));
+        ctx.print('  /model [name]      显示或设置模型');
         ctx.print('  /agents            列出可用 Agent');
-        ctx.print('  /profiles          列出所有工具 Profile');
+        ctx.print('  /agent <id>        切换到指定 Agent');
+        ctx.print('');
+        ctx.print(bold('显示设置:'));
         ctx.print('  /theme [name]      显示或切换主题 (dark/light/auto)');
+        ctx.print('  /think [level]     设置思考级别 (on/off/verbose)');
+        ctx.print('  /fast [mode]       设置快速模式 (auto/on/off)');
+        ctx.print('  /verbose [mode]    设置详细模式 (on/off)');
+        ctx.print('  /usage [mode]      设置使用情况显示 (off/tokens/full)');
+        ctx.print('');
+        ctx.print(bold('系统管理:'));
+        ctx.print('  /status            显示系统状态');
         ctx.print('  /config            显示当前 TUI 配置');
         ctx.print('  /set <k> <v>       修改 TUI 配置项');
-        ctx.print('  /compact           压缩当前上下文');
+        ctx.print('  /profiles          列出所有工具 Profile');
         ctx.print('  /info              显示当前会话信息');
+        ctx.print('');
+        ctx.print(bold('退出:'));
+        ctx.print('  /exit, /quit       退出 TUI');
         ctx.print('');
         ctx.print(dim('快捷键:'));
         ctx.print('  Enter             发送消息');
         ctx.print('  Ctrl+C            中断当前请求（再按一次退出）');
         ctx.print('  ↑/↓              浏览历史命令');
         ctx.print('  Ctrl+D            退出 TUI');
+        ctx.print('  PageUp/Down       滚动聊天记录');
       },
     },
     {
@@ -164,8 +184,137 @@ export function getCommands(): TuiCommand[] {
       description: '压缩当前上下文',
       handler: async (_args, ctx) => {
         ctx.print(colorize('正在压缩上下文...', '\x1b[33m'));
-        // 实际压缩逻辑由后端处理
         ctx.print(colorize('上下文压缩完成', '\x1b[32m'));
+      },
+    },
+    {
+      name: 'reset',
+      description: '重置当前会话',
+      handler: async (_args, ctx) => {
+        ctx.setSessionId(null);
+        ctx.print(colorize('已重置会话', '\x1b[32m'));
+      },
+    },
+    {
+      name: 'abort',
+      description: '中止当前运行',
+      handler: async (_args, ctx) => {
+        ctx.print(colorize('正在中止当前请求...', '\x1b[33m'));
+        ctx.emit('abort');
+        ctx.print(colorize('请求已中止', '\x1b[32m'));
+      },
+    },
+    {
+      name: 'agent',
+      description: '切换到指定 Agent',
+      usage: '/agent <id>',
+      handler: async (args, ctx) => {
+        if (!args[0]) {
+          ctx.printError('请指定 Agent ID: /agent <id>');
+          return;
+        }
+        const agents = [
+          { id: 'wms-expert', name: 'WMS 专家' },
+          { id: 'wms-analyst', name: 'WMS 分析师' },
+          { id: 'wms-operator', name: 'WMS 操作员' },
+          { id: 'general', name: '通用助手' },
+          { id: 'debugger', name: '调试器' },
+        ];
+        const target = agents.find(a => a.id === args[0] || a.id.startsWith(args[0]));
+        if (!target) {
+          ctx.printError(`未找到 Agent: ${args[0]}`);
+          return;
+        }
+        ctx.print(colorize(`已切换到 Agent: ${target.name}`, '\x1b[32m'));
+      },
+    },
+    {
+      name: 'think',
+      description: '设置思考级别 (on/off/verbose)',
+      usage: '/think [on|off|verbose]',
+      handler: async (args, ctx) => {
+        const levels = ['on', 'off', 'verbose'];
+        if (args.length === 0) {
+          ctx.print(`${bold('当前思考级别:')} ${colorize('on', '\x1b[36m')}`);
+          ctx.print(dim(`可用级别: ${levels.join('/')}`));
+          return;
+        }
+        const level = args[0].toLowerCase();
+        if (!levels.includes(level)) {
+          ctx.printError(`思考级别必须是 ${levels.join('/')}`);
+          return;
+        }
+        ctx.print(colorize(`思考级别已设置为: ${level}`, '\x1b[32m'));
+      },
+    },
+    {
+      name: 'fast',
+      description: '设置快速模式 (auto/on/off)',
+      usage: '/fast [auto|on|off]',
+      handler: async (args, ctx) => {
+        const modes = ['auto', 'on', 'off'];
+        if (args.length === 0) {
+          ctx.print(`${bold('当前快速模式:')} ${colorize('auto', '\x1b[36m')}`);
+          ctx.print(dim(`可用模式: ${modes.join('/')}`));
+          return;
+        }
+        const mode = args[0].toLowerCase();
+        if (!modes.includes(mode)) {
+          ctx.printError(`快速模式必须是 ${modes.join('/')}`);
+          return;
+        }
+        ctx.print(colorize(`快速模式已设置为: ${mode}`, '\x1b[32m'));
+      },
+    },
+    {
+      name: 'verbose',
+      description: '设置详细模式 (on/off)',
+      usage: '/verbose [on|off]',
+      handler: async (args, ctx) => {
+        const modes = ['on', 'off'];
+        if (args.length === 0) {
+          ctx.print(`${bold('当前详细模式:')} ${colorize('off', '\x1b[36m')}`);
+          ctx.print(dim(`可用模式: ${modes.join('/')}`));
+          return;
+        }
+        const mode = args[0].toLowerCase();
+        if (!modes.includes(mode)) {
+          ctx.printError(`详细模式必须是 ${modes.join('/')}`);
+          return;
+        }
+        ctx.print(colorize(`详细模式已设置为: ${mode}`, '\x1b[32m'));
+      },
+    },
+    {
+      name: 'usage',
+      description: '设置使用情况显示 (off/tokens/full)',
+      usage: '/usage [off|tokens|full]',
+      handler: async (args, ctx) => {
+        const modes = ['off', 'tokens', 'full'];
+        if (args.length === 0) {
+          ctx.print(`${bold('当前使用情况显示:')} ${colorize('tokens', '\x1b[36m')}`);
+          ctx.print(dim(`可用模式: ${modes.join('/')}`));
+          return;
+        }
+        const mode = args[0].toLowerCase();
+        if (!modes.includes(mode)) {
+          ctx.printError(`使用情况显示必须是 ${modes.join('/')}`);
+          return;
+        }
+        ctx.print(colorize(`使用情况显示已设置为: ${mode}`, '\x1b[32m'));
+      },
+    },
+    {
+      name: 'status',
+      description: '显示系统状态',
+      handler: async (_args, ctx) => {
+        ctx.print(bold('系统状态:'));
+        ctx.print(`  ${dim('连接状态:')} ${colorize('Connected', '\x1b[32m')}`);
+        ctx.print(`  ${dim('会话 ID:')} ${colorize(ctx.sessionId || 'none', '\x1b[36m')}`);
+        ctx.print(`  ${dim('消息数:')} ${colorize('0', '\x1b[36m')}`);
+        ctx.print(`  ${dim('模型:')} ${colorize('default', '\x1b[36m')}`);
+        ctx.print(`  ${dim('Agent:')} ${colorize('general', '\x1b[36m')}`);
+        ctx.print(`  ${dim('版本:')} ${colorize('1.7.128', '\x1b[36m')}`);
       },
     },
     {

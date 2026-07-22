@@ -1,26 +1,27 @@
 ---
 name: notion
-description: "Notion CLI/API，用于管理页面、Markdown 内容、数据源、文件、评论、搜索、Workers 及原始 API 调用。"
+description: Notion CLI/API，用于管理页面、Markdown 内容、数据源、文件、评论、搜索、Workers 及原始 API 调用。
+version: 1.0.0
 homepage: https://developers.notion.com/cli/get-started/overview
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📝",
-        "requires": { "anyBins": ["ntn", "curl"] },
-        "primaryEnv": "NOTION_API_TOKEN",
-        "install":
-          [
-            {
-              "id": "node",
-              "kind": "node",
-              "package": "ntn",
-              "bins": ["ntn"],
-              "label": "Install official Notion CLI (npm)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📝
+    requires:
+      anyBins:
+        - ntn
+        - curl
+    install:
+      - id: node
+        kind: node
+        package: ntn
+        bins:
+          - ntn
+        label: Install official Notion CLI (npm)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Notion

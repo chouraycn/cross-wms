@@ -64,6 +64,54 @@ export function resolveConfigSchema(): ConfigSchema {
           redactSecrets: { type: 'boolean', default: true },
         },
       },
+      skills: {
+        type: 'object',
+        properties: {
+          clawhub: {
+            type: 'object',
+            properties: {
+              url: { type: 'string', description: 'ClawHub registry URL' },
+              enabled: { type: 'boolean', default: true, description: 'Enable ClawHub integration' },
+            },
+          },
+          snapshotIntervalMs: { type: 'number', default: 300000, description: 'Skill snapshot refresh interval in milliseconds' },
+          envOverrides: { type: 'boolean', default: true, description: 'Enable environment variable overrides for skills' },
+          remoteSync: {
+            type: 'object',
+            properties: {
+              enabled: { type: 'boolean', default: false, description: 'Enable remote skill sync' },
+              intervalMs: { type: 'number', default: 60000, description: 'Remote sync interval in milliseconds' },
+              nodes: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    nodeId: { type: 'string', description: 'Unique node identifier' },
+                    nodeUrl: { type: 'string', description: 'Node URL' },
+                    nodeName: { type: 'string', description: 'Human-readable node name' },
+                    autoPull: { type: 'boolean', default: false, description: 'Auto-pull new skills' },
+                  },
+                },
+                description: 'List of remote skill nodes',
+              },
+            },
+          },
+          security: {
+            type: 'object',
+            properties: {
+              autoVerify: { type: 'boolean', default: true, description: 'Auto-verify skill security' },
+              minScore: { type: 'number', default: 0.7, description: 'Minimum security score to allow installation' },
+              cacheTtlMs: { type: 'number', default: 86400000, description: 'Security verdict cache TTL in milliseconds' },
+            },
+          },
+          agentFilter: {
+            type: 'object',
+            properties: {
+              defaultVisibility: { type: 'string', enum: ['all', 'whitelist', 'tagged'], default: 'all', description: 'Default skill visibility for agents' },
+            },
+          },
+        },
+      },
     },
   };
 }

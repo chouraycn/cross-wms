@@ -129,3 +129,8 @@ export { createDingTalkChannelPlugin, DINGTALK_CHANNEL_ID } from "./builtin-ding
 export { createWeChatWorkChannelPlugin, WECHATWORK_CHANNEL_ID } from "./builtin-wechatwork.js";
 export { createWeChatChannelPlugin, WECHAT_CHANNEL_ID } from "./builtin-wechat.js";
 export { createQQChannelPlugin, QQ_CHANNEL_ID } from "./builtin-qq.js";
+export { createDiscordChannelPlugin, DISCORD_CHANNEL_ID } from "./builtin-discord.js";
+export { createSlackChannelPlugin, SLACK_CHANNEL_ID } from "./builtin-slack.js";
+export { createMatrixChannelPlugin, MATRIX_CHANNEL_ID } from "./builtin-matrix.js";
+export { createNostrChannelPlugin, NOSTR_CHANNEL_ID } from "./builtin-nostr.js";
+export { createMsTeamsChannelPlugin, MSTEAMS_CHANNEL_ID } from "./builtin-msteams.js";

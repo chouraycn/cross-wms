@@ -1,25 +1,26 @@
 ---
 name: tmux
-description: "Control tmux sessions/panes for interactive CLIs: list, capture output, send keys, paste text, monitor prompts."
+description: "Control tmux sessions/panes for interactive CLIs: list, capture
+  output, send keys, paste text, monitor prompts."
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🧵",
-        "os": ["darwin", "linux"],
-        "requires": { "bins": ["tmux"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "tmux",
-              "bins": ["tmux"],
-              "label": "Install tmux (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🧵
+    requires:
+      bins:
+        - tmux
+    install:
+      - id: brew
+        kind: brew
+        formula: tmux
+        bins:
+          - tmux
+        label: Install tmux (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # tmux

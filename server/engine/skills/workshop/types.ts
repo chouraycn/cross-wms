@@ -42,6 +42,26 @@ export type SkillProposalSupportFile = {
   targetContentHash?: string;
 };
 
+export type ProposalReview = {
+  reviewer: string;
+  reviewAt: string;
+  status: "approved" | "rejected" | "needs_revision";
+  comments?: string;
+};
+
+export type ProposalRevision = {
+  revisionNumber: number;
+  changes: string;
+  timestamp: string;
+  author: string;
+};
+
+export type ProposalMetadata = {
+  tags?: string[];
+  category?: string;
+  affectedSkills?: string[];
+};
+
 export type SkillProposalRecord = {
   schema: typeof SKILL_WORKSHOP_SCHEMA;
   id: string;
@@ -66,6 +86,15 @@ export type SkillProposalRecord = {
   quarantinedAt?: string;
   staleAt?: string;
   statusReason?: string;
+  reviews?: ProposalReview[];
+  revisions?: ProposalRevision[];
+  metadata?: ProposalMetadata;
+  history?: Array<{
+    timestamp: string;
+    action: string;
+    actor?: string;
+    details?: string;
+  }>;
 };
 
 export type SkillProposalManifestEntry = {
@@ -132,6 +161,45 @@ export type SkillProposalActionInput = {
   reason?: string;
 };
 
+export type SkillProposalReviewInput = {
+  workspaceDir: string;
+  proposalId: string;
+  reviewer: string;
+  status: "approved" | "rejected" | "needs_revision";
+  comments?: string;
+};
+
+export type SkillProposalReviseWithRevisionInput = {
+  workspaceDir: string;
+  proposalId: string;
+  content: string;
+  changes: string;
+  author: string;
+  supportFiles?: SkillProposalSupportFileInput[];
+  description?: string;
+  goal?: string;
+  evidence?: string;
+};
+
+export type SkillProposalSearchInput = {
+  workspaceDir: string;
+  query?: string;
+  status?: SkillProposalStatus;
+  skillName?: string;
+  kind?: "create" | "update";
+  tags?: string[];
+  category?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export type SkillProposalRollbackInput = {
+  workspaceDir: string;
+  proposalId: string;
+  targetRevision?: number;
+  reason?: string;
+};
+
 export type SkillProposalReadResult = {
   record: SkillProposalRecord;
   content: string;
@@ -141,4 +209,23 @@ export type SkillProposalReadResult = {
 export type SkillProposalApplyResult = {
   record: SkillProposalRecord;
   targetSkillFile: string;
+};
+
+export type SkillProposalSearchResult = {
+  proposals: SkillProposalRecord[];
+  total: number;
+};
+
+export type ProposalEvent = {
+  type: "created" | "updated" | "revised" | "reviewed" | "applied" | "rejected" | "quarantined" | "deleted";
+  payload: ProposalEventPayload;
+};
+
+export type ProposalEventPayload = {
+  proposalId: string;
+  skillName: string;
+  status: SkillProposalStatus;
+  actor?: string;
+  reason?: string;
+  timestamp: string;
 };

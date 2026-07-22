@@ -205,6 +205,120 @@ export class SkillStatsManager {
     };
   }
 
+  /** 获取技能健康度概览（依赖完整性 + 启用率） */
+  getHealthOverview(): {
+    total: number;
+    enabled: number;
+    disabled: number;
+    enabledRate: number;
+    withDependencies: number;
+    withConflicts: number;
+    withDocumentation: number;
+    healthScore: number;
+  } {
+    const allSkills = skillRegistry.list();
+    const enabled = allSkills.filter(s => s.enabled).length;
+    const disabled = allSkills.length - enabled;
+
+    let withDeps = 0;
+    let withConflicts = 0;
+    let withDocs = 0;
+
+    for (const skill of allSkills) {
+      // metadata 中可能包含 dependencies 信息
+      const meta = skill.metadata;
+      if (meta && typeof meta === 'object') {
+        const m = meta as Record<string, unknown>;
+        if (m.dependencies) withDeps++;
+        if (m.conflicts) withConflicts++;
+      }
+      // 检查是否有文档（description 字段长度 >= 20）
+      if (skill.description && skill.description.length >= 20) withDocs++;
+    }
+
+    const enabledRate = allSkills.length > 0 ? enabled / allSkills.length : 0;
+    const docRate = allSkills.length > 0 ? withDocs / allSkills.length : 0;
+
+    // 健康度评分（0-100）：启用率(40) + 文档完整率(40) + 依赖声明(20)
+    const healthScore = Math.round(enabledRate * 40 + docRate * 40 + (withDeps / Math.max(allSkills.length, 1)) * 20);
+
+    return {
+      total: allSkills.length,
+      enabled,
+      disabled,
+      enabledRate,
+      withDependencies: withDeps,
+      withConflicts,
+      withDocumentation: withDocs,
+      healthScore,
+    };
+  }
+
+  /** 获取技能源分类的统计摘要 */
+  getSourceSummary(): Array<{ source: string; count: number; percentage: number; label: string }> {
+    const stats = this.getOverviewStats();
+    const total = stats.total || 1;
+
+    const labels: Record<string, string> = {
+      builtin: '内置',
+      market: '市场',
+      user: '用户',
+      workspace: '工作区',
+    };
+
+    return Object.entries(stats.bySource).map(([source, count]) => ({
+      source,
+      label: labels[source] || source,
+      count,
+      percentage: (count / total) * 100,
+    })).sort((a, b) => b.count - a.count);
+  }
+
+  /** 获取最近活跃的技能 */
+  getRecentlyActiveSkills(limit: number = 5): Array<{ id: string; name: string; lastUsed: number | null }> {
+    const recent = getRecentSkills();
+    return recent.slice(0, limit).map((id) => {
+      const skill = skillRegistry.list().find(s => s.id === id);
+      // lastUsed 不是 SkillEntry 的标准字段，通过 metadata 或额外属性查找
+      const lastUsed = skill ? ((skill as unknown as Record<string, unknown>)?.lastUsed as number | undefined) ?? null : null;
+      return {
+        id,
+        name: skill?.name || id,
+        lastUsed,
+      };
+    });
+  }
+
+  /** 获取推荐的技能（基于当前最常用 + 最近活跃） */
+  getRecommendedSkills(limit: number = 5): Array<{ id: string; name: string; reason: string }> {
+    const recent = new Set(getRecentSkills());
+    const favorites = new Set(getFavoriteSkills());
+
+    const recs: Array<{ id: string; name: string; reason: string; score: number }> = [];
+
+    for (const skill of skillRegistry.list()) {
+      if (!skill.enabled) continue;
+      let score = 0;
+      let reason = '可用';
+      if (favorites.has(skill.id)) {
+        score += 10;
+        reason = '已收藏';
+      }
+      if (recent.has(skill.id)) {
+        score += 5;
+        reason = reason === '可用' ? '最近使用' : reason + ' · 最近使用';
+      }
+      if (score > 0) {
+        recs.push({ id: skill.id, name: skill.name, reason, score });
+      }
+    }
+
+    return recs
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ id, name, reason }) => ({ id, name, reason }));
+  }
+
   generateReport(): string {
     const stats = this.getOverviewStats();
     const categoryStats = skillCategoryManager.getCategoryStats();

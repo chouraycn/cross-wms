@@ -1,47 +1,14 @@
 ---
 name: wms_inbound_create
-description: "创建入库单。根据采购单或到货信息生成入库任务，校验物料与数量后提交。"
+description: 创建入库单。根据采购单或到货信息生成入库任务，校验物料与数量后提交。
 version: 0.1.0
-triggers:
-  - "intent:create"
-  - "keyword:入库"
-  - "keyword:inbound"
-allowed-tools:
-  - file_readFile
-  - file_writeFile
-  - file_generateFile
-  - wms_inventory
-parameters:
-  type: object
-  properties:
-    supplier:
-      type: string
-      description: 供应商名称或编码
-    warehouse:
-      type: string
-      description: 目标仓库编码
-    lines:
-      type: array
-      description: 入库明细数组
-      items:
-        type: object
-        properties:
-          sku:
-            type: string
-          qty:
-            type: number
-          batch:
-            type: string
-        required:
-          - sku
-          - qty
-    expectedAt:
-      type: string
-      description: 预计到货时间（可选）
-  required:
-    - supplier
-    - warehouse
-    - lines
+metadata:
+  crosswms:
+    category: wms
+    trigger: intent:create / keyword:入库 / keyword:inbound
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # WMS 入库单创建

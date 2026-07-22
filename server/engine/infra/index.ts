@@ -164,6 +164,19 @@ export {
 export type { SecurityPathCheckResult } from './security-path.js';
 export { checkPathSecurity, isPathSecure, assertPathSecure, sanitizePath, resolveSafePath, isPathInAllowedDirectory } from './security-path.js';
 
+// fs-safe 高级文件系统防护
+export {
+  assertNoHardlinkedFinalPath,
+  assertNoSymlinkParents,
+  assertNoSymlinkParentsSync,
+  sameFileIdentity,
+  writeViaSiblingTempPath,
+  sanitizeUntrustedFileName,
+  formatPosixMode,
+  type AssertNoSymlinkParentsOptions,
+  type FileIdentityStat,
+} from './fs-safe-advanced.js';
+
 export type { ScanResult, ScanOptions } from './includes-scan.js';
 export { scanFileForPattern, scanDirectoryForPattern, containsPattern, countPatternOccurrences, scanForIncludes } from './includes-scan.js';
 
@@ -442,11 +455,81 @@ export {
 // SQLite number/bigint 规范化
 export { normalizeSqliteNumber } from './sqlite-number.js';
 
+// SQLite 事务管理
+export { runSqliteImmediateTransactionSync } from './sqlite-transaction.js';
+
+// SQLite WAL 维护
+export {
+  configureSqliteWalMaintenance,
+  configureSqliteConnectionPragmas,
+  DEFAULT_SQLITE_WAL_AUTOCHECKPOINT_PAGES,
+  DEFAULT_SQLITE_WAL_CHECKPOINT_INTERVAL_MS,
+  type SqliteWalMaintenance,
+  type SqliteWalMaintenanceOptions,
+  type SqliteConnectionPragmaOptions,
+} from './sqlite-wal.js';
+
+// SQLite 用户版本
+export { readSqliteUserVersion } from './sqlite-user-version.js';
+
+// SQLite 数据库文件路径
+export { resolveSqliteDatabaseFilePaths, SQLITE_DATABASE_FILE_SUFFIXES } from './sqlite-files.js';
+
 // 严格普通对象守卫
 export { isPlainObject } from './plain-object.js';
 
 // HTTP 响应体片段读取
 export { readResponseBodySnippet } from './http-error-body.js';
+
+// 运行时版本检查与状态
+export {
+  type RuntimeEnv,
+  defaultRuntime,
+  parseSemver,
+  detectRuntime,
+  runtimeSatisfies,
+  isSupportedNodeVersion,
+  parseMinimumNodeEngine,
+  nodeVersionSatisfiesEngine,
+  assertSupportedRuntime,
+} from './runtime-guard.js';
+
+export { formatRuntimeStatusWithDetails } from './runtime-status.js';
+
+// 本地文件 URL 访问
+export {
+  assertNoWindowsNetworkPath,
+  basenameFromMediaSource,
+  hasEncodedFileUrlSeparator,
+  isWindowsNetworkPath,
+  safeFileURLToPath,
+  trySafeFileURLToPath,
+} from './local-file-access.js';
+
+// 系统事件队列
+export {
+  type SystemEvent,
+  enqueueSystemEvent,
+  enqueueSystemEventEntry,
+  drainSystemEventEntries,
+  drainSystemEvents,
+  peekSystemEventEntries,
+  peekSystemEvents,
+  hasSystemEvents,
+  consumeSystemEventEntries,
+  consumeSelectedSystemEventEntries,
+  isSystemEventContextChanged,
+  resolveSystemEventDeliveryContext,
+  resetSystemEventsForTest,
+} from './system-events.js';
+
+// 系统在线状态
+export {
+  type SystemPresence,
+  updateSystemPresence,
+  upsertPresence,
+  listSystemPresence,
+} from './system-presence.js';
 
 // 锁文件失效检测
 export {

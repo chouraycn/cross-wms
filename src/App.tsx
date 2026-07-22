@@ -21,6 +21,7 @@ import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
 import { isWKWebView, isMacOSApp } from './utils/env';
 import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
+const SettingsPopover = React.lazy(() => import('./components/Layout/SettingsPopover'));
 
 // v3.2: WKWebView 环境检测，用于禁用高成本效果
 const IS_WKWEBVIEW = isWKWebView();
@@ -30,6 +31,10 @@ const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SkillsPage = React.lazy(() => import('./pages/SkillsPage'));
 const SkillDetailPage = React.lazy(() => import('./pages/SkillDetailPage'));
 const SkillAuditPage = React.lazy(() => import('./pages/SkillAuditPage'));
+const SkillDependencyGraphPage = React.lazy(() => import('./pages/SkillDependencyGraphPage'));
+const SkillUsageAnalyticsPage = React.lazy(() => import('./pages/SkillUsageAnalyticsPage'));
+const SkillHealthDashboardPage = React.lazy(() => import('./pages/SkillHealthDashboardPage'));
+const SkillDocQualityPage = React.lazy(() => import('./pages/SkillDocQualityPage'));
 
 
 const WarehousesPage = React.lazy(() => import('./pages/WarehousesPage'));
@@ -108,6 +113,7 @@ const MediaLibraryPage = React.lazy(() => import('./pages/MediaLibraryPage'));
 const ProcessManagementPage = React.lazy(() => import('./pages/ProcessManagementPage'));
 const NodeHostPage = React.lazy(() => import('./pages/NodeHostPage'));
 const MediaToolsPage = React.lazy(() => import('./pages/MediaToolsPage'));
+const IntegrationDashboardPage = React.lazy(() => import('./pages/IntegrationDashboardPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -772,6 +778,7 @@ const MainLayout: React.FC = () => {
   }, [toggleSidebar]);
 
   const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
+  const settingsButtonRef = useRef<HTMLDivElement | null>(null);
 
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
@@ -809,6 +816,14 @@ const MainLayout: React.FC = () => {
       <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: gs.bgSidebar }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
+        {/* 统一设置弹窗 */}
+        <Suspense fallback={null}>
+          <SettingsPopover
+            open={settingsPopoverOpen}
+            onClose={() => setSettingsPopoverOpen(false)}
+            anchorEl={settingsButtonRef.current}
+          />
+        </Suspense>
 
       {/* Main content area */}
       {/* v1.7.15: 收起侧边栏后左边距也要保持，让灰色背景可见 */}
@@ -904,6 +919,10 @@ const MainLayout: React.FC = () => {
                     <Route path="/skills" element={<SkillsPage />} />
                     <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                     <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
+                    <Route path="/skills/dependency-graph" element={<SkillDependencyGraphPage />} />
+                    <Route path="/skills/usage-analytics" element={<SkillUsageAnalyticsPage />} />
+                    <Route path="/skills/health" element={<SkillHealthDashboardPage />} />
+                    <Route path="/skills/doc-quality" element={<SkillDocQualityPage />} />
                     <Route path="/skills/workshop" element={<SkillsPage initialTab="workshop" />} />
                     <Route path="/secrets" element={<SecretsPage />} />
                     <Route path="/memory" element={<MemoryPage />} />
@@ -966,6 +985,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/channels" element={<ChannelsPage />} />
                     <Route path="/webhook" element={<WebhookPage />} />
                     <Route path="/metrics" element={<MetricsPage />} />
+                    <Route path="/integration" element={<IntegrationDashboardPage />} />
                     <Route path="/browser-profiles" element={<BrowserProfilesPage />} />
                     <Route path="/permissions" element={<PermissionsPage />} />
                     <Route path="/models" element={<ModelsPage />} />

@@ -1,31 +1,32 @@
 ---
 name: session-logs
-description: "Search and analyze your own session logs (older/parent conversations) using jq."
+description: Search and analyze your own session logs (older/parent conversations) using jq.
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📜",
-        "requires": { "bins": ["jq", "rg"] },
-        "install":
-          [
-            {
-              "id": "brew-jq",
-              "kind": "brew",
-              "formula": "jq",
-              "bins": ["jq"],
-              "label": "Install jq (brew)",
-            },
-            {
-              "id": "brew-rg",
-              "kind": "brew",
-              "formula": "ripgrep",
-              "bins": ["rg"],
-              "label": "Install ripgrep (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📜
+    requires:
+      bins:
+        - jq
+        - rg
+    install:
+      - id: brew-jq
+        kind: brew
+        formula: jq
+        bins:
+          - jq
+        label: Install jq (brew)
+      - id: brew-rg
+        kind: brew
+        formula: ripgrep
+        bins:
+          - rg
+        label: Install ripgrep (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # session-logs

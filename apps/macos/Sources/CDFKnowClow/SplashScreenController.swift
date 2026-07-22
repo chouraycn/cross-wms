@@ -63,14 +63,19 @@ final class SplashScreenController {
             return
         }
 
+        splashLogger.info("Starting server (port=\(config.serverPort))...")
         await serverManager.start()
+        splashLogger.info("ServerManager.start() returned")
 
-        let deadline = Date().addingTimeInterval(60)
+        let deadline = Date().addingTimeInterval(90)
         var isReady = false
         var errorMessage: String?
+        var checkCount = 0
 
         while Date() < deadline {
+            checkCount += 1
             let status = await serverManager.status
+            splashLogger.info("Health check #\(checkCount): status=\(String(describing: status))")
             switch status {
             case .running:
                 isReady = true
@@ -82,8 +87,12 @@ final class SplashScreenController {
                 splashLogger.error("Server failed: \(message)")
                 errorMessage = message
                 animatedSplashView?.showError("服务器启动失败")
+            case .timeout:
+                splashLogger.error("Server timeout")
+                errorMessage = "服务器启动超时"
+                animatedSplashView?.showError("服务器启动超时")
             case .starting:
-                animatedSplashView?.updateStatus("正在启动服务器...")
+                animatedSplashView?.updateStatus("正在启动服务器... (#\(checkCount))")
             case .stopped:
                 animatedSplashView?.updateStatus("正在连接...")
             }
@@ -96,7 +105,8 @@ final class SplashScreenController {
         }
 
         if !isReady && errorMessage == nil {
-            splashLogger.warning("Server startup timeout after 60s, proceeding anyway")
+            splashLogger.warning("Server startup timeout after 90s, proceeding anyway")
+            animatedSplashView?.showError("服务器启动超时，正在尝试加载...")
             try? await Task.sleep(nanoseconds: 2_000_000_000)
         }
 

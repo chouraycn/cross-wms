@@ -1,26 +1,27 @@
 ---
 name: things-mac
-description: "Add, update, list, search, or inspect Things 3 todos, inbox, today, projects, areas, and tags on macOS."
+description: Add, update, list, search, or inspect Things 3 todos, inbox, today,
+  projects, areas, and tags on macOS.
+version: 1.0.0
 homepage: https://github.com/ossianhempel/things3-cli
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "✅",
-        "os": ["darwin"],
-        "requires": { "bins": ["things"] },
-        "install":
-          [
-            {
-              "id": "go",
-              "kind": "go",
-              "module": "github.com/ossianhempel/things3-cli/cmd/things@latest",
-              "bins": ["things"],
-              "label": "Install things3-cli (go)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: ✅
+    requires:
+      bins:
+        - things
+    install:
+      - id: go
+        kind: go
+        module: github.com/ossianhempel/things3-cli/cmd/things@latest
+        bins:
+          - things
+        label: Install things3-cli (go)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Things 3 CLI

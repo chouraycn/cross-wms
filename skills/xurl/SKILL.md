@@ -1,31 +1,32 @@
 ---
 name: xurl
-description: "xurl CLI for authenticated X posts, replies, reads/search, DMs, media upload, followers, auth status, or raw v2 API calls."
+description: xurl CLI for authenticated X posts, replies, reads/search, DMs,
+  media upload, followers, auth status, or raw v2 API calls.
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🐦",
-        "requires": { "bins": ["xurl"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "xdevplatform/tap/xurl",
-              "bins": ["xurl"],
-              "label": "Install xurl (brew)",
-            },
-            {
-              "id": "npm",
-              "kind": "npm",
-              "package": "@xdevplatform/xurl",
-              "bins": ["xurl"],
-              "label": "Install xurl (npm)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🐦
+    requires:
+      bins:
+        - xurl
+    install:
+      - id: brew
+        kind: brew
+        formula: xdevplatform/tap/xurl
+        bins:
+          - xurl
+        label: Install xurl (brew)
+      - id: npm
+        kind: npm
+        package: "@xdevplatform/xurl"
+        bins:
+          - xurl
+        label: Install xurl (npm)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # xurl

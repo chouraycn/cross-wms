@@ -22,6 +22,26 @@ import path from "path";
 import yaml from "js-yaml";
 import { remoteSkillLoader, type RemoteSkillSource } from "../../engine/remoteSkillLoader.js";
 import { AppPaths } from '../../config/appPaths.js';
+import {
+  searchClawHubSkills,
+  fetchClawHubSkillDetail,
+  installSkillFromClawHub,
+  getSkillSecurityVerdict,
+  getVerdictSummary,
+  computeLocalVerdict,
+  checkAllDependencies,
+  generateDependencyReport,
+  listSkillProposals,
+  createSkillProposal,
+  readSkillProposal,
+  applySkillProposal,
+  rejectSkillProposal,
+  deleteSkillProposal,
+  type ClawHubSkillSearchResult,
+  type ClawHubSkillDetail,
+  type SecurityVerdict,
+} from "../../engine/skills/index.js";
+import { logger } from "../../logger.js";
 
 // CommonJS 环境下 __dirname 原生可用
 
@@ -302,6 +322,43 @@ export class RealSkillProvider implements SkillCommandProvider {
       };
     }
 
+    // ClawHub 安装：通过 ClawHub 模块安装
+    const clawHubDetail = fetchClawHubSkillDetail(id);
+    if (clawHubDetail) {
+      const workspaceDir = process.cwd();
+      const installResult = await installSkillFromClawHub(
+        workspaceDir,
+        id,
+        version === "0.0.0" ? undefined : version,
+      );
+
+      if (!installResult.ok) {
+        return {
+          id,
+          name: id,
+          description: "",
+          version,
+          enabled: false,
+          source: "remote",
+          installedAt: new Date().toISOString(),
+          error: `ClawHub 安装失败: ${installResult.error}`,
+        };
+      }
+
+      const installed = this.scanFilesystem().find((s) => s.id === id);
+      return installed
+        ? { ...installed, enabled: true }
+        : {
+            id,
+            name: clawHubDetail.displayName,
+            description: clawHubDetail.summary,
+            version: installResult.version,
+            enabled: true,
+            source: "remote",
+            installedAt: new Date().toISOString(),
+          };
+    }
+
     // 远程 / 市场安装：通过 RemoteSkillLoader 实际下载并安装文件
     const remote = this.resolveRemoteSource(spec);
     if (!remote) {
@@ -313,7 +370,7 @@ export class RealSkillProvider implements SkillCommandProvider {
         enabled: false,
         source: "remote",
         installedAt: new Date().toISOString(),
-        error: `无法识别远程源 '${spec}'：CLI 支持 http(s)://、git、file:// 或 npm: 形式的远程安装`,
+        error: `无法识别远程源 '${spec}'：CLI 支持 http(s)://、git、file://、npm: 形式或 ClawHub 技能名称`,
       };
     }
 
@@ -650,6 +707,261 @@ export function registerSkillsCommand(
         );
       } else {
         process.stdout.write(formatSkillInfo(skill, id));
+      }
+    });
+
+  skillsCmd
+    .command("search <query>")
+    .description("搜索技能（本地 + ClawHub）")
+    .option("--json", "JSON 输出格式")
+    .option("--local", "仅搜索本地技能")
+    .option("--remote", "仅搜索 ClawHub")
+    .action(async (query: string, options: any) => {
+      const results: Array<{ id: string; name: string; description: string; version: string; source: string }> = [];
+
+      if (!options.remote) {
+        const localSkills = await provider.list();
+        const localMatches = localSkills.filter((s) =>
+          s.id.toLowerCase().includes(query.toLowerCase()) ||
+          s.name.toLowerCase().includes(query.toLowerCase()) ||
+          s.description.toLowerCase().includes(query.toLowerCase())
+        );
+        results.push(...localMatches.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          version: s.version,
+          source: `local (${s.source})`,
+        })));
+      }
+
+      if (!options.local) {
+        const clawHubResults = searchClawHubSkills(query, 20);
+        results.push(...clawHubResults.map((s) => ({
+          id: s.slug,
+          name: s.displayName,
+          description: s.summary,
+          version: s.version,
+          source: "ClawHub",
+        })));
+      }
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput({ results, total: results.length }) + "\n");
+      } else {
+        process.stdout.write(`\n  搜索结果 (共 ${results.length} 个):\n\n`);
+        for (const r of results) {
+          process.stdout.write(`    ${r.source.padEnd(14)} ${r.id.padEnd(16)} v${r.version}  ${r.name}\n`);
+          process.stdout.write(`             ${r.description}\n`);
+        }
+        process.stdout.write("\n");
+      }
+    });
+
+  skillsCmd
+    .command("verify <slug>")
+    .description("验证技能安全性")
+    .option("--json", "JSON 输出格式")
+    .option("--local", "本地验证（扫描技能目录）")
+    .option("--version <version>", "技能版本")
+    .action(async (slug: string, options: any) => {
+      let verdict: SecurityVerdict;
+      let source: string;
+
+      if (options.local) {
+        const skillDir = path.join(process.cwd(), "skills", slug);
+        verdict = await computeLocalVerdict(skillDir);
+        source = "local";
+      } else {
+        verdict = await getSkillSecurityVerdict(slug, options.version);
+        source = "clawhub";
+      }
+
+      const summary = getVerdictSummary(verdict);
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput({ slug, version: options.version, verdict, summary }) + "\n");
+      } else {
+        process.stdout.write(`\n${summary}\n\n`);
+      }
+    });
+
+  skillsCmd
+    .command("check")
+    .description("检查技能状态和依赖")
+    .option("--json", "JSON 输出格式")
+    .option("--skill <id>", "检查指定技能")
+    .action(async (options: any) => {
+      const skills = await provider.list();
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput({
+          total: skills.length,
+          enabled: skills.filter((s: SkillEntry) => s.enabled).length,
+          disabled: skills.filter((s: SkillEntry) => !s.enabled).length,
+          sources: skills.reduce((acc: Record<string, number>, s: SkillEntry) => {
+            acc[s.source] = (acc[s.source] || 0) + 1;
+            return acc;
+          }, {}),
+        }) + "\n");
+      } else {
+        process.stdout.write(`\n  技能状态检查:\n\n`);
+        process.stdout.write(`    总数: ${skills.length}\n`);
+        process.stdout.write(`    已启用: ${skills.filter((s: SkillEntry) => s.enabled).length}\n`);
+        process.stdout.write(`    已禁用: ${skills.filter((s: SkillEntry) => !s.enabled).length}\n\n`);
+
+        const bySource = skills.reduce((acc: Record<string, SkillEntry[]>, s: SkillEntry) => {
+          acc[s.source] = acc[s.source] || [];
+          acc[s.source].push(s);
+          return acc;
+        }, {});
+
+        for (const [source, sourceSkills] of Object.entries(bySource)) {
+          process.stdout.write(`    [${source}]: ${sourceSkills.length} 个\n`);
+        }
+        process.stdout.write("\n");
+      }
+    });
+
+  const workshopCmd = skillsCmd
+    .command("workshop")
+    .description("提案管理 (list/create/read/apply/reject/delete)");
+
+  workshopCmd
+    .command("list")
+    .description("列出所有提案")
+    .option("--json", "JSON 输出格式")
+    .option("--status <status>", "按状态筛选 (pending/applied/rejected/quarantined)")
+    .action(async (options: any) => {
+      const proposals = await listSkillProposals(process.cwd(), options.status);
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(proposals) + "\n");
+      } else {
+        process.stdout.write(`\n  提案列表 (共 ${proposals.length} 个):\n\n`);
+        for (const p of proposals) {
+          const statusColor = p.status === "pending" ? "等待" : p.status === "applied" ? "已应用" : p.status === "rejected" ? "已拒绝" : "隔离";
+          process.stdout.write(`    ${statusColor.padEnd(6)} ${p.id.padEnd(16)} ${p.skillName}\n`);
+          process.stdout.write(`             ${p.title}\n`);
+          process.stdout.write(`             创建于: ${new Date(p.createdAt).toLocaleString("zh-CN")}\n`);
+        }
+        process.stdout.write("\n");
+      }
+    });
+
+  workshopCmd
+    .command("create <name>")
+    .description("创建新提案")
+    .option("--json", "JSON 输出格式")
+    .option("--description <desc>", "提案描述")
+    .option("--goal <goal>", "提案目标")
+    .action(async (name: string, options: any) => {
+      const result = await createSkillProposal({
+        workspaceDir: process.cwd(),
+        name,
+        description: options.description || `Create skill: ${name}`,
+        content: `---\nname: ${name}\ndescription: ${options.description || ""}\n---\n\n# ${name}\n\n${options.description || ""}`,
+        goal: options.goal,
+      });
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(result) + "\n");
+      } else {
+        if (result.success) {
+          process.stdout.write(`\n  提案创建成功: ${result.proposalId}\n\n`);
+        } else {
+          process.stdout.write(`\n  提案创建失败: ${result.error}\n\n`);
+        }
+      }
+    });
+
+  workshopCmd
+    .command("read <id>")
+    .description("查看提案详情")
+    .option("--json", "JSON 输出格式")
+    .action(async (id: string, options: any) => {
+      const result = await readSkillProposal(process.cwd(), id);
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(result) + "\n");
+      } else {
+        if (!result) {
+          process.stdout.write(`\n  提案 ${id} 不存在\n\n`);
+        } else {
+          const p = result.record;
+          process.stdout.write(`\n  提案详情: ${p.title}\n`);
+          process.stdout.write(`    ID:          ${p.id}\n`);
+          process.stdout.write(`    状态:        ${p.status}\n`);
+          process.stdout.write(`    技能名称:    ${p.target.skillName}\n`);
+          process.stdout.write(`    创建时间:    ${new Date(p.createdAt).toLocaleString("zh-CN")}\n`);
+          process.stdout.write(`    描述:        ${p.description}\n`);
+          if (p.goal) process.stdout.write(`    目标:        ${p.goal}\n`);
+          process.stdout.write("\n");
+        }
+      }
+    });
+
+  workshopCmd
+    .command("apply <id>")
+    .description("应用提案")
+    .option("--json", "JSON 输出格式")
+    .option("--reason <reason>", "应用理由")
+    .action(async (id: string, options: any) => {
+      const result = await applySkillProposal({
+        workspaceDir: process.cwd(),
+        proposalId: id,
+        reason: options.reason,
+      });
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(result) + "\n");
+      } else {
+        if ("success" in result && !result.success) {
+          process.stdout.write(`\n  应用提案失败: ${result.error}\n\n`);
+        } else {
+          process.stdout.write(`\n  提案 ${id} 已应用\n\n`);
+        }
+      }
+    });
+
+  workshopCmd
+    .command("reject <id>")
+    .description("拒绝提案")
+    .option("--json", "JSON 输出格式")
+    .option("--reason <reason>", "拒绝理由")
+    .action(async (id: string, options: any) => {
+      const result = await rejectSkillProposal({
+        workspaceDir: process.cwd(),
+        proposalId: id,
+        reason: options.reason,
+      });
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(result) + "\n");
+      } else {
+        if (result.success) {
+          process.stdout.write(`\n  提案 ${id} 已拒绝\n\n`);
+        } else {
+          process.stdout.write(`\n  拒绝提案失败: ${result.error}\n\n`);
+        }
+      }
+    });
+
+  workshopCmd
+    .command("delete <id>")
+    .description("删除提案")
+    .option("--json", "JSON 输出格式")
+    .action(async (id: string, options: any) => {
+      const result = await deleteSkillProposal(process.cwd(), id);
+
+      if (options.json) {
+        process.stdout.write(formatJsonOutput(result) + "\n");
+      } else {
+        if (result.success) {
+          process.stdout.write(`\n  提案 ${id} 已删除\n\n`);
+        } else {
+          process.stdout.write(`\n  删除提案失败: ${result.error}\n\n`);
+        }
       }
     });
 

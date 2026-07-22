@@ -1,0 +1,6 @@
+export const codingAgentSkill = {
+  name: "coding-agent",
+  description: "Delegate coding work to Codex, Claude Code, or OpenCode as background workers; not simple edits or read-only code lookup.",
+};
+
+export default codingAgentSkill;

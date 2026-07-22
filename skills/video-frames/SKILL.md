@@ -1,25 +1,26 @@
 ---
 name: video-frames
-description: "Extract frames or short clips from videos using ffmpeg."
+description: Extract frames or short clips from videos using ffmpeg.
+version: 1.0.0
 homepage: https://ffmpeg.org
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🎬",
-        "requires": { "bins": ["ffmpeg"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "ffmpeg",
-              "bins": ["ffmpeg"],
-              "label": "Install ffmpeg (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🎬
+    requires:
+      bins:
+        - ffmpeg
+    install:
+      - id: brew
+        kind: brew
+        formula: ffmpeg
+        bins:
+          - ffmpeg
+        label: Install ffmpeg (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Video Frames (ffmpeg)

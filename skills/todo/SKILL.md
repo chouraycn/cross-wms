@@ -1,15 +1,14 @@
 ---
 name: todo
-description: "待办事项管理，支持创建、完成、列出和搜索任务"
+description: 待办事项管理，支持创建、完成、列出和搜索任务
 version: 0.1.0
-triggers:
-  - "keyword:待办"
-  - "keyword:todo"
-  - "keyword:任务"
-  - "keyword:清单"
-allowed-tools:
-  - file_readFile
-  - file_writeFile
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:待办 / keyword:todo / keyword:任务 / keyword:清单
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Todo 待办事项

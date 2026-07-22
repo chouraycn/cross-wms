@@ -1,4 +1,9 @@
 import { logger } from '../../logger.js';
+import {
+  checkSkillPermission,
+  type SkillPermissionAction,
+  type PermissionCheckResult,
+} from '../skills/security/permission.js';
 
 export type GatewayAuthSurface = 'http' | 'ws-control-ui';
 
@@ -9,6 +14,11 @@ export type GatewayAuthResult = {
   reason?: string;
   rateLimited?: boolean;
   retryAfterMs?: number;
+};
+
+export type SkillAccessCheckResult = {
+  allowed: boolean;
+  reason?: string;
 };
 
 export type AuthorizeGatewayConnectParams = {
@@ -119,4 +129,67 @@ export function assertGatewayAuthConfigured(auth: AuthorizeGatewayConnectParams[
   if (mode === 'password' && !auth.password) {
     throw new Error('Gateway auth mode is password but no password is configured');
   }
+}
+
+export function checkSkillAccess(
+  skillName: string,
+  action: SkillPermissionAction,
+  userRole: string,
+): SkillAccessCheckResult {
+  const result = checkSkillPermission(skillName, action, userRole);
+
+  logger.debug(`[GatewayAuth] Skill access check: ${skillName}::${action}::${userRole} = ${result.allowed}`);
+
+  if (!result.allowed) {
+    return {
+      allowed: false,
+      reason: result.reason,
+    };
+  }
+
+  return {
+    allowed: true,
+  };
+}
+
+export type SkillAccessMiddlewareParams = {
+  skillName: string;
+  action: SkillPermissionAction;
+  userRole?: string;
+};
+
+export function createSkillAccessMiddleware(params: SkillAccessMiddlewareParams): (req: unknown) => SkillAccessCheckResult {
+  return function skillAccessMiddleware(req: unknown): SkillAccessCheckResult {
+    const userRole = params.userRole ?? 'user';
+
+    const result = checkSkillAccess(params.skillName, params.action, userRole);
+
+    if (!result.allowed) {
+      logger.warn(`[GatewayAuth] Skill access denied: ${params.skillName}::${params.action} (role: ${userRole})`);
+    }
+
+    return result;
+  };
+}
+
+export function authorizeSkillOperation(
+  skillName: string,
+  action: SkillPermissionAction,
+  userRole: string,
+): GatewayAuthResult {
+  const accessResult = checkSkillAccess(skillName, action, userRole);
+
+  if (!accessResult.allowed) {
+    return {
+      ok: false,
+      method: 'token',
+      reason: accessResult.reason,
+    };
+  }
+
+  return {
+    ok: true,
+    method: 'token',
+    user: userRole,
+  };
 }

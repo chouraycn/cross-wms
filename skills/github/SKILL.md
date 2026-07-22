@@ -1,14 +1,14 @@
 ---
 name: github
-description: "GitHub CLI 操作，支持 issues、PRs、CI 检查、评论、发布等"
+description: GitHub CLI 操作，支持 issues、PRs、CI 检查、评论、发布等
 version: 0.1.0
-triggers:
-  - "keyword:github"
-  - "keyword:pr"
-  - "keyword:issue"
-  - "keyword:git"
-allowed-tools:
-  - shell_exec
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:github / keyword:pr / keyword:issue / keyword:git
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # GitHub
