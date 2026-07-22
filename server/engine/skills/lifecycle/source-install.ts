@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { logger } from "../../../logger.js";
 import { ensureWorkspaceSkillsDir } from "../loading/workspace.js";
+import { writeWorkspaceSkill, readWorkspaceSkillFile, assertInsideWorkspace } from "./workspace-skill-write.js";
+import type { WorkspaceSkillSupportFile } from "./install-types.js";
 
 export type SourceInstallResult = {
   success: boolean;
@@ -220,3 +222,167 @@ export function validateSkillName(name: string): { valid: boolean; error?: strin
 
   return { valid: true };
 }
+
+// ============================================================================
+// 带支持文件的技能安装
+// ============================================================================
+
+/**
+ * 从源代码安装技能（带支持文件）
+ *
+ * @param options - 安装选项
+ * @param supportFiles - 支持文件列表
+ * @returns Promise<SourceInstallResult>
+ */
+export async function installFromSourceWithSupportFiles(
+  options: SourceInstallOptions,
+  supportFiles: WorkspaceSkillSupportFile[] = [],
+): Promise<SourceInstallResult> {
+  const { workspaceDir, skillName, content, force = false, description } = options;
+
+  try {
+    if (!skillName || skillName.trim().length === 0) {
+      return {
+        success: false,
+        error: "Skill name is required",
+      };
+    }
+
+    if (!content || content.trim().length === 0) {
+      return {
+        success: false,
+        error: "Skill content is required",
+      };
+    }
+
+    const nameValidation = validateSkillName(skillName);
+    if (!nameValidation.valid) {
+      return {
+        success: false,
+        error: nameValidation.error,
+      };
+    }
+
+    const skillsDir = await ensureWorkspaceSkillsDir(workspaceDir);
+    const skillDir = path.join(skillsDir, skillName);
+    const skillFile = path.join(skillDir, "SKILL.md");
+
+    let skillExists = false;
+    try {
+      await fs.access(skillFile);
+      skillExists = true;
+    } catch {
+      // Skill doesn't exist
+    }
+
+    if (skillExists && !force) {
+      return {
+        success: false,
+        skillName,
+        error: `Skill '${skillName}' already exists. Use force=true to overwrite.`,
+      };
+    }
+
+    let finalContent = content;
+    if (!content.includes("SKILL.md") && !content.startsWith("---")) {
+      finalContent = generateSkillWithFrontmatter(skillName, content, description);
+    }
+
+    await writeWorkspaceSkill({
+      workspaceDir,
+      skillDir,
+      skillFile,
+      content: finalContent,
+      supportFiles: supportFiles.map((f) => ({ path: f.path, content: f.content })),
+      mode: skillExists ? "update" : "create",
+      symlinkPolicy: { allowWrites: false, allowedTargetRealPaths: [] },
+    });
+
+    logger.info("[Skills] Installed skill from source with support files:", skillName);
+
+    return {
+      success: true,
+      skillName,
+      installedPath: skillDir,
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Source install with support files failed:", err);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * 读取技能及其支持文件
+ *
+ * @param workspaceDir - 工作区目录
+ * @param skillName - 技能名称
+ * @returns Promise<{ success: boolean; content?: string; supportFiles?: string[]; error?: string }>
+ */
+export async function readSkillWithSupportFiles(
+  workspaceDir: string,
+  skillName: string,
+): Promise<{ success: boolean; content?: string; supportFiles?: string[]; error?: string }> {
+  try {
+    const skillsDir = path.join(workspaceDir, ".cross-wms", "skills");
+    const skillDir = path.join(skillsDir, skillName);
+    const skillFile = path.join(skillDir, "SKILL.md");
+
+    const content = await readWorkspaceSkillFile(skillFile);
+
+    if (content === null) {
+      return {
+        success: false,
+        error: `Skill '${skillName}' not found`,
+      };
+    }
+
+    const supportFiles: string[] = [];
+    const entries = await fs.readdir(skillDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name !== "SKILL.md") {
+        supportFiles.push(entry.name);
+      } else if (entry.isDirectory()) {
+        const subFiles = await listFilesInDir(path.join(skillDir, entry.name), entry.name);
+        supportFiles.push(...subFiles);
+      }
+    }
+
+    return {
+      success: true,
+      content,
+      supportFiles: supportFiles.sort(),
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to read skill with support files:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * 递归列出目录中的文件（相对路径）
+ */
+async function listFilesInDir(dir: string, prefix: string): Promise<string[]> {
+  const results: string[] = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    const relativePath = path.join(prefix, entry.name);
+
+    if (entry.isDirectory()) {
+      const subFiles = await listFilesInDir(fullPath, relativePath);
+      results.push(...subFiles);
+    } else if (entry.isFile()) {
+      results.push(relativePath);
+    }
+  }
+
+  return results;
+}
+

@@ -173,20 +173,105 @@ export class TUI extends EventEmitter {
         this.clearMessages();
         break;
       case '/theme':
-        this.toggleTheme();
+        if (command.args.length > 0) {
+          this.setTheme(command.args[0]);
+        } else {
+          this.toggleTheme();
+        }
         break;
       case '/sessions':
         this.showSessionList();
         break;
-      case '/exit':
-      case '/quit':
-        this.stop();
+      case '/new':
+        this.createNewSession(command.args.join(' '));
+        break;
+      case '/switch':
+        if (command.args.length > 0) {
+          this.switchSession(command.args[0]);
+        } else {
+          this.showSessionList();
+        }
+        break;
+      case '/delete':
+        if (command.args.length > 0) {
+          this.deleteSession(command.args[0]);
+        } else {
+          this.addSystemMessage('Usage: /delete <session-id>');
+        }
+        break;
+      case '/reset':
+        this.resetSession();
+        break;
+      case '/abort':
+        this.abortCurrentRun();
+        break;
+      case '/compact':
+        this.compactContext();
+        break;
+      case '/history':
+        this.showHistory();
+        break;
+      case '/model':
+        if (command.args.length > 0) {
+          this.setModel(command.args.join(' '));
+        } else {
+          this.showCurrentModel();
+        }
+        break;
+      case '/models':
+        this.showModelList();
+        break;
+      case '/agent':
+        if (command.args.length > 0) {
+          this.setAgent(command.args[0]);
+        } else {
+          this.showAgentList();
+        }
+        break;
+      case '/agents':
+        this.showAgentList();
+        break;
+      case '/think':
+      case '/thinking':
+        if (command.args.length > 0) {
+          this.setThinkingLevel(command.args[0]);
+        } else {
+          this.toggleThinking();
+        }
+        break;
+      case '/fast':
+        if (command.args.length > 0) {
+          this.setFastMode(command.args[0]);
+        } else {
+          this.showFastMode();
+        }
+        break;
+      case '/verbose':
+        if (command.args.length > 0) {
+          this.setVerboseMode(command.args[0]);
+        } else {
+          this.toggleVerbose();
+        }
+        break;
+      case '/usage':
+        if (command.args.length > 0) {
+          this.setUsageMode(command.args[0]);
+        } else {
+          this.showUsageMode();
+        }
+        break;
+      case '/status':
+        this.showStatus();
+        break;
+      case '/info':
+        this.showSessionInfo();
         break;
       case '/tools':
         this.toggleTools();
         break;
-      case '/thinking':
-        this.toggleThinking();
+      case '/exit':
+      case '/quit':
+        this.stop();
         break;
       default:
         this.addSystemMessage(`Unknown command: ${command.type}. Type /help for available commands.`);
@@ -326,6 +411,262 @@ export class TUI extends EventEmitter {
     this.state.showThinking = !this.state.showThinking;
     this.chatLog.setShowThinking(this.state.showThinking);
     this.addSystemMessage(`Thinking: ${this.state.showThinking ? 'shown' : 'hidden'}`);
+    this.render();
+  }
+
+  setTheme(mode: string): void {
+    const validModes: TUIThemeMode[] = ['auto', 'light', 'dark'];
+    const normalized = mode.toLowerCase() as TUIThemeMode;
+    if (!validModes.includes(normalized)) {
+      this.addSystemMessage(`Invalid theme mode: ${mode}. Valid options: auto, light, dark`);
+      return;
+    }
+    this.state.themeMode = normalized;
+    const palette = getPalette(this.state.themeMode);
+    this.currentMarkdownTheme = {
+      ...markdownTheme,
+      heading: (text) => text,
+      link: (text) => text,
+      linkUrl: (text) => text,
+      code: (text) => text,
+      codeBlock: (text) => text,
+      codeBlockBorder: (text) => text,
+      quote: (text) => text,
+      quoteBorder: (text) => text,
+      hr: (text) => text,
+      listBullet: (text) => text,
+      bold: (text) => text,
+      italic: (text) => text,
+      strikethrough: (text) => text,
+      underline: (text) => text,
+      highlightCode: (code: string) => code.split('\n'),
+    };
+    this.chatLog = new ChatLog(this.state.messages, this.currentMarkdownTheme);
+    this.addSystemMessage(`Theme: ${this.state.themeMode}`);
+    this.emit('theme-change', this.state.themeMode);
+    this.render();
+  }
+
+  createNewSession(title?: string): void {
+    const newId = this.generateId();
+    const newTitle = title || `Session ${new Date().toLocaleTimeString()}`;
+    const newSession: TUISession = {
+      id: newId,
+      title: newTitle,
+      updatedAt: Date.now(),
+      messageCount: 0,
+    };
+    this.state.sessions.push(newSession);
+    this.state.sessionId = newId;
+    this.clearMessages();
+    this.addSystemMessage(`Created new session: ${newTitle}`);
+    this.emit('session-change', newId);
+    this.render();
+  }
+
+  switchSession(sessionId: string): void {
+    const session = this.state.sessions.find((s) => s.id === sessionId);
+    if (!session) {
+      this.addSystemMessage(`Session not found: ${sessionId}`);
+      return;
+    }
+    this.state.sessionId = sessionId;
+    this.addSystemMessage(`Switched to session: ${session.title}`);
+    this.emit('session-change', sessionId);
+    this.render();
+  }
+
+  deleteSession(sessionId: string): void {
+    const index = this.state.sessions.findIndex((s) => s.id === sessionId);
+    if (index === -1) {
+      this.addSystemMessage(`Session not found: ${sessionId}`);
+      return;
+    }
+    const deletedSession = this.state.sessions[index];
+    this.state.sessions.splice(index, 1);
+    if (this.state.sessionId === sessionId) {
+      this.state.sessionId = this.state.sessions.length > 0 ? this.state.sessions[0].id : 'default';
+      this.clearMessages();
+    }
+    this.addSystemMessage(`Deleted session: ${deletedSession.title}`);
+    this.render();
+  }
+
+  resetSession(): void {
+    this.state.sessionId = 'default';
+    this.clearMessages();
+    this.addSystemMessage('Session reset to default');
+    this.emit('session-change', 'default');
+    this.render();
+  }
+
+  abortCurrentRun(): void {
+    this.addSystemMessage('Aborting current run...');
+    this.emit('abort');
+    this.state.isProcessing = false;
+    this.render();
+  }
+
+  compactContext(): void {
+    this.addSystemMessage('Compacting context...');
+    this.emit('compact');
+    this.render();
+  }
+
+  showHistory(): void {
+    const messages = this.getMessages();
+    if (messages.length === 0) {
+      this.addSystemMessage('No history available');
+      return;
+    }
+    const historyText = messages
+      .map((m) => {
+        const role = m.role === 'user' ? '[User]' : m.role === 'assistant' ? '[Assistant]' : '[System]';
+        return `${role} ${m.content.slice(0, 100)}${m.content.length > 100 ? '...' : ''}`;
+      })
+      .join('\n');
+    this.addSystemMessage(`\n${historyText}`);
+    this.render();
+  }
+
+  showCurrentModel(): void {
+    this.addSystemMessage('Current model: default');
+    this.render();
+  }
+
+  setModel(modelName: string): void {
+    this.addSystemMessage(`Model set to: ${modelName}`);
+    this.emit('model-change', modelName);
+    this.render();
+  }
+
+  showModelList(): void {
+    const models = [
+      'gpt-4o-mini',
+      'gpt-4o',
+      'claude-3-sonnet',
+      'deepseek-chat',
+      'qwen-2.5-7b',
+      'moonshot-v1-8k',
+    ];
+    this.addSystemMessage(`Available models:\n${models.map((m) => `  - ${m}`).join('\n')}`);
+    this.render();
+  }
+
+  showAgentList(): void {
+    const agents = [
+      { id: 'wms-expert', name: 'WMS Expert', desc: 'Warehouse management specialist' },
+      { id: 'wms-analyst', name: 'WMS Analyst', desc: 'Data analysis and reporting' },
+      { id: 'wms-operator', name: 'WMS Operator', desc: 'Execute warehouse operations' },
+      { id: 'general', name: 'General', desc: 'General purpose assistant' },
+      { id: 'debugger', name: 'Debugger', desc: 'Issue troubleshooting' },
+    ];
+    const agentText = agents
+      .map((a) => `  ${a.id} - ${a.name}: ${a.desc}`)
+      .join('\n');
+    this.addSystemMessage(`Available agents:\n${agentText}`);
+    this.render();
+  }
+
+  setAgent(agentId: string): void {
+    const agents = ['wms-expert', 'wms-analyst', 'wms-operator', 'general', 'debugger'];
+    if (!agents.includes(agentId)) {
+      this.addSystemMessage(`Unknown agent: ${agentId}`);
+      return;
+    }
+    this.addSystemMessage(`Agent set to: ${agentId}`);
+    this.emit('agent-change', agentId);
+    this.render();
+  }
+
+  setThinkingLevel(level: string): void {
+    const validLevels = ['on', 'off', 'verbose'];
+    const normalized = level.toLowerCase();
+    if (!validLevels.includes(normalized)) {
+      this.addSystemMessage(`Invalid thinking level: ${level}. Valid options: ${validLevels.join(', ')}`);
+      return;
+    }
+    this.state.showThinking = normalized !== 'off';
+    this.chatLog.setShowThinking(this.state.showThinking);
+    this.addSystemMessage(`Thinking level: ${normalized}`);
+    this.render();
+  }
+
+  setFastMode(mode: string): void {
+    const validModes = ['auto', 'on', 'off'];
+    const normalized = mode.toLowerCase();
+    if (!validModes.includes(normalized)) {
+      this.addSystemMessage(`Invalid fast mode: ${mode}. Valid options: ${validModes.join(', ')}`);
+      return;
+    }
+    this.addSystemMessage(`Fast mode: ${normalized}`);
+    this.render();
+  }
+
+  showFastMode(): void {
+    this.addSystemMessage('Fast mode: auto');
+    this.render();
+  }
+
+  setVerboseMode(mode: string): void {
+    const validModes = ['on', 'off'];
+    const normalized = mode.toLowerCase();
+    if (!validModes.includes(normalized)) {
+      this.addSystemMessage(`Invalid verbose mode: ${mode}. Valid options: ${validModes.join(', ')}`);
+      return;
+    }
+    this.addSystemMessage(`Verbose mode: ${normalized}`);
+    this.render();
+  }
+
+  toggleVerbose(): void {
+    this.addSystemMessage('Verbose mode: off (toggling is not supported, use /verbose on|off)');
+    this.render();
+  }
+
+  setUsageMode(mode: string): void {
+    const validModes = ['off', 'tokens', 'full'];
+    const normalized = mode.toLowerCase();
+    if (!validModes.includes(normalized)) {
+      this.addSystemMessage(`Invalid usage mode: ${mode}. Valid options: ${validModes.join(', ')}`);
+      return;
+    }
+    this.addSystemMessage(`Usage mode: ${normalized}`);
+    this.render();
+  }
+
+  showUsageMode(): void {
+    this.addSystemMessage('Usage mode: tokens');
+    this.render();
+  }
+
+  showStatus(): void {
+    const statusText = `
+System Status:
+  - Connection: ${this.state.isConnected ? 'Connected' : 'Disconnected'}
+  - Session: ${this.state.sessionId}
+  - Messages: ${this.state.messages.length}
+  - Theme: ${this.state.themeMode}
+  - Tools: ${this.state.showTools ? 'Visible' : 'Hidden'}
+  - Thinking: ${this.state.showThinking ? 'Visible' : 'Hidden'}
+    `.trim();
+    this.addSystemMessage(statusText);
+    this.render();
+  }
+
+  showSessionInfo(): void {
+    const session = this.state.sessions.find((s) => s.id === this.state.sessionId);
+    if (session) {
+      this.addSystemMessage(`
+Session Info:
+  - ID: ${session.id}
+  - Title: ${session.title}
+  - Updated: ${new Date(session.updatedAt).toLocaleString()}
+  - Messages: ${session.messageCount}
+        `.trim());
+    } else {
+      this.addSystemMessage(`Session: ${this.state.sessionId}`);
+    }
     this.render();
   }
 
@@ -508,7 +849,7 @@ const builtinCommands: TUICommand[] = [
   { name: 'exit', description: '退出 TUI', handler: () => {} },
 ];
 
-let customCommands: TUICommand[] = [];
+const customCommands: TUICommand[] = [];
 
 export function getCommands(): TUICommand[] {
   return [...builtinCommands, ...customCommands];

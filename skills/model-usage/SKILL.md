@@ -1,25 +1,26 @@
 ---
 name: model-usage
-description: "Summarize CodexBar local cost logs by model for Codex or Claude, including current or full breakdowns."
+description: Summarize CodexBar local cost logs by model for Codex or Claude,
+  including current or full breakdowns.
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📊",
-        "os": ["darwin"],
-        "requires": { "bins": ["codexbar"] },
-        "install":
-          [
-            {
-              "id": "brew-cask",
-              "kind": "brew",
-              "formula": "steipete/tap/codexbar",
-              "bins": ["codexbar"],
-              "label": "Install CodexBar (brew cask)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📊
+    requires:
+      bins:
+        - codexbar
+    install:
+      - id: brew-cask
+        kind: brew
+        formula: steipete/tap/codexbar
+        bins:
+          - codexbar
+        label: Install CodexBar (brew cask)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Model usage

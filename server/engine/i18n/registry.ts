@@ -12,6 +12,7 @@ import {
   type LocaleCode,
   type LocaleDefinition,
   type LocaleMessages,
+  type LocaleMessageValue,
   type I18nRegistryOptions,
   type I18nFormatOptions,
   type I18nChangeCallback,
@@ -149,13 +150,18 @@ export class I18nRegistry {
     return definition?.messages ?? {};
   }
 
-  private resolveMessage(messages: LocaleMessages, key: string): unknown {
+  private resolveMessage(messages: LocaleMessages, key: string): LocaleMessageValue | undefined {
     const parts = key.split('.');
-    let current: unknown = messages;
+    let current: LocaleMessageValue | undefined = messages;
 
     for (const part of parts) {
-      if (typeof current === 'object' && current !== null && !Array.isArray(current)) {
-        current = (current as Record<string, unknown>)[part];
+      if (
+        current !== null &&
+        typeof current === 'object' &&
+        !Array.isArray(current) &&
+        part in (current as Record<string, LocaleMessageValue>)
+      ) {
+        current = (current as Record<string, LocaleMessageValue>)[part];
       } else {
         return undefined;
       }

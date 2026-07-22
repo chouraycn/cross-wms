@@ -1,6 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { logger } from "../../../logger.js";
+import {
+  scanForMaliciousCode,
+  MaliciousScanResult,
+} from "./malicious-scanner.js";
+import {
+  checkDependencySecurity,
+  DependencyScanResult,
+} from "./dependency-security.js";
 
 export type SkillScanSeverity = "info" | "warn" | "critical";
 
@@ -20,6 +28,8 @@ export type SkillScanSummary = {
   info: number;
   truncated: boolean;
   findings: SkillScanFinding[];
+  maliciousCodeScan?: MaliciousScanResult;
+  dependencySecurityScan?: DependencyScanResult;
 };
 
 export type SkillScanOptions = {
@@ -307,6 +317,8 @@ export async function scanDirectoryWithSummary(
   let warn = 0;
   let info = 0;
   let truncated = false;
+  let maliciousCodeScan: MaliciousScanResult | undefined;
+  let dependencySecurityScan: DependencyScanResult | undefined;
 
   try {
     const files = await collectScannableFiles(dirPath, {
@@ -318,6 +330,8 @@ export async function scanDirectoryWithSummary(
 
     truncated = files.truncated;
 
+    let combinedSource = "";
+
     for (const file of files.paths) {
       try {
         const stat = await fs.stat(file);
@@ -326,6 +340,8 @@ export async function scanDirectoryWithSummary(
         }
 
         const source = await fs.readFile(file, "utf-8");
+        combinedSource += source + "\n";
+
         let findings: SkillScanFinding[];
 
         if (file.endsWith(".md")) {
@@ -345,6 +361,40 @@ export async function scanDirectoryWithSummary(
         logger.debug("[Skills] Failed to scan file:", file, err);
       }
     }
+
+    const skillName = path.basename(dirPath);
+    maliciousCodeScan = scanForMaliciousCode(combinedSource, skillName);
+
+    for (const finding of maliciousCodeScan.findings) {
+      allFindings.push({
+        ruleId: finding.patternId,
+        severity: finding.severity as SkillScanSeverity,
+        file: dirPath,
+        line: finding.line,
+        message: finding.description,
+        evidence: finding.evidence,
+      });
+      if (finding.severity === "critical") critical += 1;
+      else if (finding.severity === "warn") warn += 1;
+      else info += 1;
+    }
+
+    dependencySecurityScan = await checkDependencySecurity(dirPath);
+
+    for (const vulnerability of dependencySecurityScan.vulnerabilities) {
+      const severity = vulnerability.severity === "high" ? "critical" : vulnerability.severity;
+      allFindings.push({
+        ruleId: `dep-vuln-${vulnerability.name}`,
+        severity: severity as SkillScanSeverity,
+        file: path.join(dirPath, "package.json"),
+        line: 0,
+        message: `${vulnerability.name}@${vulnerability.version} has ${vulnerability.severity} vulnerability${vulnerability.cve ? ` (${vulnerability.cve})` : ""}: ${vulnerability.description}`,
+        evidence: vulnerability.fixedVersion ? `Fixed in ${vulnerability.fixedVersion}` : "",
+      });
+      if (severity === "critical") critical += 1;
+      else if (severity === "warn") warn += 1;
+      else info += 1;
+    }
   } catch (err) {
     logger.error("[Skills] Directory scan failed:", err);
   }
@@ -356,6 +406,8 @@ export async function scanDirectoryWithSummary(
     info,
     truncated,
     findings: allFindings,
+    maliciousCodeScan,
+    dependencySecurityScan,
   };
 }
 

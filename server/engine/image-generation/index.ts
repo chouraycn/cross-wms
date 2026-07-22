@@ -310,5 +310,15 @@ export type {
   HunyuanProviderOptions,
 } from "./providers/index.js";
 
+// Fal AI 图像生成 Provider（含队列模式与图像到图像）
+export {
+  createFalProvider,
+  falProvider,
+} from "./falProvider.js";
+
+export type { FalProviderOptions } from "./falProvider.js";
+
 // 国内 Provider 自动注册（副作用导入）
 import "./chinese-providers.js";
+// Fal Provider 自动注册（副作用导入）
+import "./falProvider.js";

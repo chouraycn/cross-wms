@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_BUNDLE="dist-app/CDFKnowClow.app"
 IDENTITY="${SIGN_IDENTITY:-}"
+KEYCHAIN="${CODESIGN_KEYCHAIN:-}"
 TIMESTAMP_MODE="${CODESIGN_TIMESTAMP:-auto}"
 DISABLE_LIBRARY_VALIDATION="${DISABLE_LIBRARY_VALIDATION:-0}"
 SKIP_TEAM_ID_CHECK="${SKIP_TEAM_ID_CHECK:-1}"
@@ -189,12 +190,20 @@ xattr -cr "$APP_BUNDLE" 2>/dev/null || true
 sign_item() {
   local target="$1"
   local entitlements="$2"
-  codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --entitlements "$entitlements" --sign "$IDENTITY" "$target"
+  if [[ -n "$KEYCHAIN" ]]; then
+    codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --entitlements "$entitlements" --sign "$IDENTITY" --keychain "$KEYCHAIN" "$target"
+  else
+    codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --entitlements "$entitlements" --sign "$IDENTITY" "$target"
+  fi
 }
 
 sign_plain_item() {
   local target="$1"
-  codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --sign "$IDENTITY" "$target"
+  if [[ -n "$KEYCHAIN" ]]; then
+    codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --sign "$IDENTITY" --keychain "$KEYCHAIN" "$target"
+  else
+    codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --sign "$IDENTITY" "$target"
+  fi
 }
 
 team_id_for() {

@@ -1,14 +1,22 @@
 ---
-name: "HS Code 海关商品编码查询与归类助手"
-description: "HS Code（海关商品编码）查询与归类助手，支持商品编码查询、税率查询、归类分析、WMS场景批量归类等"
-version: "1.0.0"
-category: "wms"
-icon: "BarChartHorizontalBig"
-tags: ["wms", "海关", "HS Code", "商品编码", "贸易"]
-status: "active"
-featured: true
-trigger: "hscode"
-executionMode: "agent"
+name: HS Code 海关商品编码查询与归类助手
+description: HS Code（海关商品编码）查询与归类助手，支持商品编码查询、税率查询、归类分析、WMS场景批量归类等
+version: 1.0.0
+metadata:
+  crosswms:
+    category: wms
+    icon: BarChartHorizontalBig
+    tags:
+      - wms
+      - 海关
+      - HS Code
+      - 商品编码
+      - 贸易
+    trigger: hscode
+    executionMode: agent
+    source: workspace
+    featured: true
+    status: active
 ---
 
 # HS Code 海关商品编码查询与归类助手

@@ -6,7 +6,17 @@
 
 export type LocaleCode = 'zh-CN' | 'en';
 
-export type LocaleMessages = Record<string, string | string[] | Record<string, unknown>>;
+/**
+ * Locale message tree. Leaf values are strings (or arrays of strings for
+ * plural-friendly keys), while intermediate nodes are nested objects that
+ * group related keys (e.g. `chat.messageCopied`).
+ */
+export type LocaleMessageValue =
+  | string
+  | string[]
+  | { [key: string]: LocaleMessageValue };
+
+export type LocaleMessages = Record<string, LocaleMessageValue>;
 
 export type LocaleDefinition = {
   code: LocaleCode;

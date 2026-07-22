@@ -1,14 +1,14 @@
 ---
 name: weather
-description: "查询天气和天气预报，支持当前天气、温度、降水、风速等信息"
+description: 查询天气和天气预报，支持当前天气、温度、降水、风速等信息
 version: 0.1.0
-triggers:
-  - "keyword:天气"
-  - "keyword:天气预报"
-  - "keyword:温度"
-  - "keyword:下雨"
-allowed-tools:
-  - shell_exec
+metadata:
+  crosswms:
+    category: general
+    trigger: keyword:天气 / keyword:天气预报 / keyword:温度 / keyword:下雨
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Weather 天气查询

@@ -1,26 +1,27 @@
 ---
 name: apple-notes
-description: "Create, view, edit, delete, search, move, or export Apple Notes via the memo CLI on macOS."
+description: Create, view, edit, delete, search, move, or export Apple Notes via
+  the memo CLI on macOS.
+version: 1.0.0
 homepage: https://github.com/antoniorodr/memo
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📝",
-        "os": ["darwin"],
-        "requires": { "bins": ["memo"] },
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "antoniorodr/memo/memo",
-              "bins": ["memo"],
-              "label": "Install memo via Homebrew",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 📝
+    requires:
+      bins:
+        - memo
+    install:
+      - id: brew
+        kind: brew
+        formula: antoniorodr/memo/memo
+        bins:
+          - memo
+        label: Install memo via Homebrew
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Apple Notes CLI

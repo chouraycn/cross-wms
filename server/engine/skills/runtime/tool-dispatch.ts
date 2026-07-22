@@ -1,4 +1,6 @@
 import type { SkillCommandSpec } from "../types.js";
+import { logSkillExecution } from "../../logging/index.js";
+import { recordExecution } from "../metrics/skill-metrics.js";
 
 export type ToolDispatchContext = {
   skillName: string;
@@ -71,14 +73,22 @@ export async function dispatchSkillCommand(
     rawArgs,
   };
 
+  const startTime = Date.now();
+
   try {
     const result = await handler(context);
+    const durationMs = Date.now() - startTime;
+    logSkillExecution(command.skillName, `dispatch:${command.name}`, durationMs, result.success, result.error);
+    recordExecution(command.skillName, durationMs, result.success);
     return {
       ...result,
       toolInvoked: toolName,
     };
   } catch (err) {
+    const durationMs = Date.now() - startTime;
     const errorMessage = err instanceof Error ? err.message : String(err);
+    logSkillExecution(command.skillName, `dispatch:${command.name}`, durationMs, false, errorMessage);
+    recordExecution(command.skillName, durationMs, false);
     return {
       success: false,
       error: `Tool '${toolName}' failed: ${errorMessage}`,

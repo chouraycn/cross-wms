@@ -1,26 +1,30 @@
 ---
 name: openai-whisper-api
-description: "OpenAI Audio Transcriptions API via curl; gpt-4o-transcribe, mini, diarize, or whisper-1."
+description: OpenAI Audio Transcriptions API via curl; gpt-4o-transcribe, mini,
+  diarize, or whisper-1.
+version: 1.0.0
 homepage: https://platform.openai.com/docs/guides/speech-to-text
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🌐",
-        "requires": { "bins": ["curl", "node"], "env": ["OPENAI_API_KEY"] },
-        "primaryEnv": "OPENAI_API_KEY",
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "curl",
-              "bins": ["curl"],
-              "label": "Install curl (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🌐
+    requires:
+      bins:
+        - curl
+        - node
+      env:
+        - OPENAI_API_KEY
+    install:
+      - id: brew
+        kind: brew
+        formula: curl
+        bins:
+          - curl
+        label: Install curl (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # OpenAI transcriptions API

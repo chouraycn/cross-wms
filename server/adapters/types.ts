@@ -24,7 +24,26 @@ export type ModelApiType =
   | 'groq-chat'
   | 'xai-chat'
   | 'vllm-chat'
-  | 'zai-chat';
+  | 'zai-chat'
+  | 'deepseek-chat'
+  | 'qianfan-chat'
+  | 'perplexity-chat'
+  | 'claude-chat'
+  | 'cohere-chat'
+  | 'mistral-chat'
+  | 'ollama-chat'
+  | 'openrouter-chat'
+  | 'arcee-chat'
+  | 'cerebras-chat'
+  | 'chutes-chat'
+  | 'huggingface-chat'
+  | 'lmstudio-chat'
+  | 'novita-chat'
+  | 'byteplus-chat'
+  | 'kimi-coding-chat'
+  | 'llama-cpp-chat'
+  | 'deepgram-stt'
+  | 'fal-generate';
 
 /** 适配器通用配置 */
 export interface AdapterConfig {
@@ -167,3 +186,118 @@ export interface IAiApiAdapter {
 
 /** 适配器工厂函数类型 */
 export type AdapterFactory = () => IAiApiAdapter;
+
+// ============================================================================
+// 非生成式 / 多媒体适配器接口
+//
+// 以下接口面向非 LLM 能力（语音转文字、图像/视频生成）。它们与 IAiApiAdapter
+// 的调用语义不同，因此独立定义；统一通过 ModelApiType 在 registry 中注册。
+// ============================================================================
+
+/** STT（语音转文字）适配器配置 */
+export interface SttAdapterConfig {
+  apiEndpoint: string;
+  apiKey?: string;
+  modelId: string;
+  /** 音频语言提示（如 'zh'、'en'），不指定则由服务端自动检测 */
+  language?: string;
+  /** 采样率（Hz），用于流式编码协商 */
+  sampleRate?: number;
+  signal?: AbortSignal;
+}
+
+/** 批量转写音频输入 */
+export interface SttAudioInput {
+  /** 音频数据 */
+  data: Uint8Array | ArrayBuffer | Blob;
+  /** MIME 类型，如 'audio/wav'、'audio/mp3' */
+  mimeType: string;
+}
+
+/** 转写结果 */
+export interface SttResponse {
+  /** 完整转写文本 */
+  text: string;
+  /** 分段时间轴 */
+  segments?: Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>;
+  /** 检测到的语言 */
+  language?: string;
+  /** 音频时长（秒） */
+  duration?: number;
+}
+
+/** 流式转写回调 */
+export interface SttStreamCallbacks {
+  /** 收到增量/最终文本时触发 */
+  onTranscript: (text: string, isFinal: boolean) => void;
+}
+
+/** STT 适配器接口（支持批量与流式） */
+export interface ISttAdapter {
+  readonly apiType: ModelApiType;
+  /** 批量转写整段音频 */
+  transcribe(config: SttAdapterConfig, audio: SttAudioInput): Promise<SttResponse>;
+  /** 流式转写：实时读取音频流并回调结果 */
+  transcribeStream(
+    config: SttAdapterConfig,
+    audioStream: ReadableStream<Uint8Array>,
+    callbacks: SttStreamCallbacks,
+  ): Promise<SttResponse>;
+}
+
+/** STT 适配器工厂函数类型 */
+export type SttAdapterFactory = () => ISttAdapter;
+
+/** 多媒体生成适配器配置 */
+export interface MediaGenAdapterConfig {
+  apiEndpoint: string;
+  apiKey?: string;
+  modelId: string;
+  signal?: AbortSignal;
+}
+
+/** 图像生成输入 */
+export interface ImageGenInput {
+  prompt: string;
+  negativePrompt?: string;
+  width?: number;
+  height?: number;
+  numImages?: number;
+  extraParams?: Record<string, unknown>;
+}
+
+/** 视频生成输入 */
+export interface VideoGenInput {
+  prompt: string;
+  negativePrompt?: string;
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  extraParams?: Record<string, unknown>;
+}
+
+/** 多媒体生成结果 */
+export interface MediaGenResponse {
+  /** 生成产物 URL 列表（图片或视频） */
+  urls: string[];
+  /** 任务状态（同步端点通常为 succeeded） */
+  status: 'succeeded' | 'failed' | 'pending';
+  /** 原始响应（调试用） */
+  raw?: unknown;
+}
+
+/** 多媒体生成适配器接口（图像/视频） */
+export interface IMediaGenAdapter {
+  readonly apiType: ModelApiType;
+  /** 图像生成 */
+  generateImage(config: MediaGenAdapterConfig, input: ImageGenInput): Promise<MediaGenResponse>;
+  /** 视频生成 */
+  generateVideo(config: MediaGenAdapterConfig, input: VideoGenInput): Promise<MediaGenResponse>;
+}
+
+/** 多媒体生成适配器工厂函数类型 */
+export type MediaGenAdapterFactory = () => IMediaGenAdapter;

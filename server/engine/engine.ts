@@ -6,7 +6,7 @@
  *
  * 用法：
  *   import { startEngine, stopEngine } from './engine.js';
- *   const { stop } = startEngine(30_000);
+ *   const { stop } = await startEngine(30_000);
  *   // 关闭时
  *   stop();   // 或 stopEngine();
  */
@@ -25,6 +25,18 @@ import {
   updateRun,
   updateAutomation,
 } from '../dao/automationDao.js';
+import {
+  startSkillSnapshotCron,
+  stopSkillSnapshotCron,
+  triggerManualRefresh,
+  startHotReload,
+  stopHotReload,
+  getDefaultConfig,
+  type ScheduledRefreshHandle,
+  type SkillSnapshotConfig,
+  type HotReloadConfig,
+  DEFAULT_SNAPSHOT_INTERVAL_MS,
+} from './skills/index.js';
 import { logger } from '../logger.js';
 
 // ===================== 内部状态 =====================
@@ -36,6 +48,12 @@ const runningAutomations = new Set<string>();
 const lastExecutionTimes = new Map<string, number>();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+/** 技能定时快照句柄 */
+let skillSnapshotHandle: ScheduledRefreshHandle | null = null;
+
+/** 热重载停止函数 */
+let hotReloadStop: (() => void) | null = null;
 
 // ===================== 轮询判断 =====================
 
@@ -58,7 +76,7 @@ function isAutomationDue(automation: {
   if (!lastRunAt) return true;
 
   const lastRun = new Date(lastRunAt).getTime();
-  if (Number.isNaN(lastRun)) return true; // 无效时间，视为到期
+  if (Number.isNaN(lastRun)) return true;
 
   const intervalMinutes =
     typeof executionPolicy?.intervalMinutes === 'number'
@@ -96,7 +114,6 @@ export async function executeAndRecord(
 ): Promise<ExecutionResult | null> {
   const automationId = automation.id;
 
-  // 并发保护
   if (runningAutomations.has(automationId)) {
     logger.warn(`[Engine] 自动化 ${automationId} 正在执行中，跳过此次触发`);
     return null;
@@ -108,7 +125,6 @@ export async function executeAndRecord(
   let runId: string | null = null;
 
   try {
-    // 1. 创建运行记录
     const run = createRun({
       automationId,
       taskType: automation.taskType,
@@ -125,7 +141,6 @@ export async function executeAndRecord(
     } as Parameters<typeof createRun>[0]);
     runId = run.id;
 
-    // 2. 发布开始事件
     emitAutomationEvent(AutomationEventType.AUTOMATION_STARTED, {
       automationId,
       taskType: automation.taskType,
@@ -133,13 +148,11 @@ export async function executeAndRecord(
       timestamp: new Date(startTime).toISOString(),
     } as AutomationEventPayload);
 
-    // 3. 执行
     const result: ExecutionResult = await executeAutomation(automation);
 
     const completedAt = new Date().toISOString();
     const duration = Date.now() - startTime;
 
-    // 4. 更新运行记录
     updateRun(runId, {
       status: result.success ? 'success' : 'failed',
       completedAt,
@@ -148,7 +161,6 @@ export async function executeAndRecord(
       steps: result.steps as Parameters<typeof updateRun>[1]['steps'],
     });
 
-    // 5. 发布结果事件
     if (result.success) {
       emitAutomationEvent(AutomationEventType.AUTOMATION_COMPLETED, {
         automationId,
@@ -167,25 +179,21 @@ export async function executeAndRecord(
       } as AutomationEventPayload);
     }
 
-    // 6. 更新 automation 的 lastRunAt 和 runCount
     updateAutomation(automationId, {
       lastRunAt: completedAt,
       runCount: (automation.runCount ?? 0) + 1,
     });
 
-    // 7. 更新内存中的上次执行时间
     lastExecutionTimes.set(automationId, Date.now());
 
     return result;
   } catch (err) {
-    // 意外错误（非 executor 内部的错误）
     const message = err instanceof Error ? err.message : String(err);
     logger.error(`[Engine] executeAndRecord 意外错误 ${automationId}:`, err);
 
     const completedAt = new Date().toISOString();
     const duration = Date.now() - startTime;
 
-    // 更新运行记录为失败
     if (runId) {
       try {
         updateRun(runId, {
@@ -198,7 +206,6 @@ export async function executeAndRecord(
       } catch { /* ignore */ }
     }
 
-    // 发布失败事件
     try {
       emitAutomationEvent(AutomationEventType.AUTOMATION_FAILED, {
         automationId,
@@ -222,11 +229,6 @@ export async function executeAndRecord(
 
 // ===================== 轮询 =====================
 
-/**
- * 轮询调度型自动化，执行到期的任务
- *
- * 单个自动化失败不影响其他自动化的执行。
- */
 async function pollSchedules(): Promise<void> {
   try {
     const schedules = getActiveAutomationsByTriggerType('schedule');
@@ -234,11 +236,14 @@ async function pollSchedules(): Promise<void> {
     for (const automation of schedules) {
       if (!isAutomationDue(automation)) continue;
 
-      // 不 await，避免单个执行阻塞轮询循环
       executeAndRecord(automation, 'schedule').catch((err) => {
         logger.error(`[Engine] 调度执行异常 ${automation.id}:`, err);
       });
     }
+
+    triggerManualRefresh(process.cwd()).catch((err) => {
+      logger.error('[Engine] 技能状态刷新异常:', err);
+    });
   } catch (err) {
     logger.error('[Engine] 轮询异常:', err);
   }
@@ -246,11 +251,6 @@ async function pollSchedules(): Promise<void> {
 
 // ===================== Webhook 事件处理 =====================
 
-/**
- * 处理 webhook:received 事件
- *
- * 不 await executeAndRecord，避免阻塞事件循环。
- */
 function handleWebhookEvent(payload: AutomationEventPayload): void {
   const { automationId } = payload;
   if (!automationId) {
@@ -264,7 +264,6 @@ function handleWebhookEvent(payload: AutomationEventPayload): void {
     return;
   }
 
-  // 不 await，避免阻塞事件循环
   executeAndRecord(automation, 'webhook').catch((err) => {
     logger.error('[Engine] webhook 执行异常:', err);
   });
@@ -276,13 +275,19 @@ function handleWebhookEvent(payload: AutomationEventPayload): void {
  * 启动自动化引擎
  *
  * - 初始化通知器
+ * - 启动技能定时快照
+ * - 启动技能热重载
  * - 启动定时轮询（默认 30 秒）
  * - 监听 webhook:received 事件
  *
  * @param pollIntervalMs 轮询间隔（毫秒），默认 30000
+ * @param hotReloadConfig 热重载配置（可选）
  * @returns { stop: () => void } 停止函数
  */
-export function startEngine(pollIntervalMs: number = 30_000): { stop: () => void } {
+export async function startEngine(
+  pollIntervalMs: number = 30_000,
+  hotReloadConfig?: HotReloadConfig,
+): Promise<{ stop: () => void }> {
   if (pollTimer !== null) {
     logger.warn('[Engine] 引擎已在运行中，跳过重复启动');
     return { stop: stopEngine };
@@ -290,16 +295,24 @@ export function startEngine(pollIntervalMs: number = 30_000): { stop: () => void
 
   logger.debug(`[Engine] 启动引擎，轮询间隔 ${pollIntervalMs}ms`);
 
-  // 1. 初始化通知器
   initNotifier();
 
-  // 2. 启动定时轮询（立即执行一次，触发首次运行）
+  const snapshotConfig: SkillSnapshotConfig = {
+    intervalMs: DEFAULT_SNAPSHOT_INTERVAL_MS,
+    workspaceDir: process.cwd(),
+  };
+  skillSnapshotHandle = startSkillSnapshotCron(snapshotConfig);
+  logger.debug(`[Engine] 技能定时快照已启动，间隔 ${DEFAULT_SNAPSHOT_INTERVAL_MS}ms`);
+
+  const hrConfig = hotReloadConfig ?? await getDefaultConfig(process.cwd());
+  hotReloadStop = await startHotReload(hrConfig);
+  logger.debug('[Engine] 技能热重载已启动');
+
   void pollSchedules();
   pollTimer = setInterval(() => {
     void pollSchedules();
   }, pollIntervalMs);
 
-  // 3. 监听 Webhook 事件
   eventBus.on(AutomationEventType.WEBHOOK_RECEIVED, (payload: AutomationEventPayload) => {
     handleWebhookEvent(payload);
   });
@@ -313,6 +326,8 @@ export function startEngine(pollIntervalMs: number = 30_000): { stop: () => void
  * 停止自动化引擎
  *
  * - 清除轮询定时器
+ * - 停止技能热重载
+ * - 停止技能定时快照
  * - 销毁通知器
  * - 清空内部状态
  */
@@ -320,6 +335,18 @@ export function stopEngine(): void {
   if (pollTimer !== null) {
     clearInterval(pollTimer);
     pollTimer = null;
+  }
+
+  if (hotReloadStop !== null) {
+    hotReloadStop();
+    hotReloadStop = null;
+    logger.debug('[Engine] 技能热重载已停止');
+  }
+
+  if (skillSnapshotHandle !== null) {
+    stopSkillSnapshotCron(skillSnapshotHandle);
+    skillSnapshotHandle = null;
+    logger.debug('[Engine] 技能定时快照已停止');
   }
 
   destroyNotifier();

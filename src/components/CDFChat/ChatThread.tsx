@@ -818,7 +818,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               height: 32,
               width: 240,
               pl: 1.5,
-              pr: 0.5,
+              pr: 0.375,
               gap: 0,
               boxShadow: 'none',
               border: 'none',

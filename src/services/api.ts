@@ -20,6 +20,7 @@ import type {
 } from '../types/partners';
 import { API_BASE_URL } from '../constants/api';
 import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
+import { createApiError, type ApiError } from './apiErrorHandler.js';
 
 const BASE_URL = API_BASE_URL;
 
@@ -56,7 +57,8 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   const res = await fetchWithTimeout(`${BASE_URL}${path}`, opts);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `API error ${res.status}`);
+    const apiError = createApiError(new Error(err.error || `API error ${res.status}`));
+    throw apiError;
   }
   const json = await res.json();
   return (json.data ?? json) as T;
@@ -467,6 +469,115 @@ export function connectChainExecutionEvents(executionId: string, onMessage?: (da
   return connectSSE(`${BASE_URL}/api/chain-execution-events?execId=${encodeURIComponent(executionId)}`, { onMessage });
 }
 
+// ===================== 技能使用分析 API =====================
+
+export interface SkillUsageTopItem {
+  rank: number;
+  skillId: string;
+  count: number;
+  uniqueSessions: number;
+  lastUsedAt: string | null;
+  firstUsedAt: string | null;
+}
+
+export interface SkillUsageTrendPoint {
+  date: string;
+  count: number;
+}
+
+export interface SkillCoOccurrence {
+  skills: [string, string];
+  count: number;
+}
+
+export interface SkillUsageAnalytics {
+  days: number;
+  total: number;
+  totalUses: number;
+  topSkills: SkillUsageTopItem[];
+  trend: SkillUsageTrendPoint[];
+  topCoOccurrence: SkillCoOccurrence[];
+  statusBreakdown: { active: number; available: number; disabled: number; unknown: number };
+}
+
+/** 获取技能使用分析数据 */
+export async function fetchSkillUsageAnalytics(opts?: { days?: number; top?: number }): Promise<SkillUsageAnalytics> {
+  const params = new URLSearchParams();
+  if (opts?.days) params.set('days', String(opts.days));
+  if (opts?.top) params.set('top', String(opts.top));
+  const qs = params.toString();
+  return request<SkillUsageAnalytics>('GET', `/api/skills/usage-analytics${qs ? `?${qs}` : ''}`);
+}
+
+// ===================== 技能健康度 API =====================
+
+export interface SkillHealthCheckItem {
+  skillId: string;
+  name: string;
+  overallScore: number;
+  checks: {
+    metadata: { pass: boolean; score: number; issues: string[] };
+    dependencies: { pass: boolean; score: number; issues: string[] };
+    documentation: { pass: boolean; score: number; issues: string[] };
+    security: { pass: boolean; score: number; issues: string[] };
+  };
+}
+
+export interface SkillHealthSummary {
+  total: number;
+  healthy: number;
+  warning: number;
+  critical: number;
+  avgScore: number;
+}
+
+export interface SkillHealthResult {
+  summary: SkillHealthSummary;
+  skills: SkillHealthCheckItem[];
+}
+
+/** 获取技能健康度检查结果 */
+export async function fetchSkillHealthCheck(): Promise<SkillHealthResult> {
+  return request<SkillHealthResult>('GET', '/api/skills/health-check');
+}
+
+// ===================== 技能依赖图谱 API =====================
+
+export interface SkillDepNode {
+  id: string;
+  name: string;
+  category?: string;
+  status: 'active' | 'available' | 'unknown';
+}
+
+export interface SkillDepEdge {
+  source: string;
+  target: string;
+  type: 'required' | 'optional' | 'conflicts';
+}
+
+export interface SkillDepGraph {
+  nodes: SkillDepNode[];
+  edges: SkillDepEdge[];
+}
+
+export interface SkillDepDetail {
+  dependencies: Array<{ skillId: string; name: string; required: boolean; reason?: string }>;
+  dependents: Array<{ skillId: string; name: string }>;
+  conflicts: Array<{ skillId: string; name: string; reason: string }>;
+  cycles: string[][];
+}
+
+/** 获取技能依赖图谱 */
+export async function fetchSkillDependencyGraph(): Promise<SkillDepGraph> {
+  return request<SkillDepGraph>('GET', '/api/skills/dependency-graph');
+}
+
+/** 获取单个技能的依赖详情 */
+export async function fetchSkillDependencies(skillId: string): Promise<SkillDepDetail> {
+  return request<SkillDepDetail>('GET', `/api/skills/${encodeURIComponent(skillId)}/skill-dependencies`);
+}
+
 // ===================== 安全审查 API =====================
 
 /** 批量检测技能环境依赖 */
@@ -492,6 +603,88 @@ export async function triggerSkillAudit(skillId: string, _skillPath: string, _fo
 /** 导出审计报告（返回文件下载 URL） */
 export async function exportSkillAuditReport(skillId: string, format: 'md' | 'pdf'): Promise<string> {
   return request<string>('POST', `/api/skills/${encodeURIComponent(skillId)}/audit-export`, { format });
+}
+
+// ===================== 技能文档质量检查 API =====================
+
+export interface DocQualityIssueItem {
+  code: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  fix?: string;
+  lineNumber?: number;
+}
+
+export interface DocQualityCheckItem {
+  pass: boolean;
+  score: number;
+  issues: DocQualityIssueItem[];
+  suggestions: string[];
+}
+
+export interface DocQualitySkillItem {
+  skillId: string;
+  skillName: string;
+  overallScore: number;
+  level: 'excellent' | 'good' | 'fair' | 'poor';
+  checks: {
+    structure: DocQualityCheckItem;
+    readability: DocQualityCheckItem;
+    examples: DocQualityCheckItem;
+    parameters: DocQualityCheckItem;
+    formatting: DocQualityCheckItem;
+  };
+  checkedAt: string;
+}
+
+export interface DocQualitySummary {
+  total: number;
+  excellent: number;
+  good: number;
+  fair: number;
+  poor: number;
+  avgScore: number;
+}
+
+export interface DocQualityResult {
+  summary: DocQualitySummary;
+  skills: DocQualitySkillItem[];
+}
+
+/** 批量获取技能文档质量检查结果 */
+export async function fetchDocQualityCheck(): Promise<DocQualityResult> {
+  return request<DocQualityResult>('GET', '/api/skills/doc-quality-check');
+}
+
+/** 获取单个技能文档质量检查结果 */
+export async function fetchSingleDocQualityCheck(skillId: string): Promise<DocQualitySkillItem> {
+  return request<DocQualitySkillItem>('GET', `/api/skills/${encodeURIComponent(skillId)}/doc-quality-check`);
+}
+
+// ===================== 技能推荐引擎 API =====================
+
+export interface SkillRecommendationItem {
+  skillId: string;
+  skillName: string;
+  score: number;
+  reason: string;
+  reasonType: 'cooccurrence' | 'similarity' | 'trending' | 'collaborative' | 'category' | 'default';
+}
+
+export interface SkillRecommendationsResult {
+  targetSkillId?: string;
+  recommendations: SkillRecommendationItem[];
+  generatedAt: string;
+}
+
+/** 获取技能推荐列表 */
+export async function fetchSkillRecommendations(opts?: { skillId?: string; topN?: number; days?: number }): Promise<SkillRecommendationsResult> {
+  const params = new URLSearchParams();
+  if (opts?.skillId) params.set('skillId', opts.skillId);
+  if (opts?.topN) params.set('topN', String(opts.topN));
+  if (opts?.days) params.set('days', String(opts.days));
+  const qs = params.toString();
+  return request<SkillRecommendationsResult>('GET', `/api/skills/recommendations${qs ? `?${qs}` : ''}`);
 }
 
 // ===================== Skill Export API =====================

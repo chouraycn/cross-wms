@@ -1,0 +1,1 @@
+export function detectInlineEvalArgv(_argv: string[]): boolean { return false; }

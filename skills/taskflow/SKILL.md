@@ -1,7 +1,16 @@
 ---
 name: taskflow
-description: "Coordinate multi-step detached tasks as one durable TaskFlow job with owner context, state, waits, and child tasks."
-metadata: { "openclaw": { "emoji": "🪝" } }
+description: Coordinate multi-step detached tasks as one durable TaskFlow job
+  with owner context, state, waits, and child tasks.
+version: 1.0.0
+metadata:
+  openclaw:
+    emoji: 🪝
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # TaskFlow

@@ -2,10 +2,17 @@
  * 执行审批决策引擎 — 参考 OpenClaw infra/exec-approvals.ts
  *
  * 管理命令执行的审批流程，支持自动允许、需要审批、拒绝等决策。
+ * 集成技能级权限检查，确保只有授权用户才能执行特定技能的命令。
  */
 
 import { logger } from '../logger.js';
 import { ExecApprovalManager } from './execApprovalManager.js';
+import {
+  checkSkillPermission,
+  type SkillPermissionAction,
+  type PermissionCheckResult,
+  initDefaultPermissions,
+} from './skills/security/permission.js';
 
 export type ExecApprovalDecision = 'allow' | 'deny' | 'require_approval';
 
@@ -17,6 +24,8 @@ export interface ExecApprovalRequest {
   sessionId?: string;
   agentId?: string;
   timestamp: number;
+  skillName?: string;
+  userRole?: string;
 }
 
 export interface ExecApprovalResult {
@@ -43,6 +52,16 @@ const defaultRules: ExecApprovalRule[] = [
   { id: 'default', pattern: '.*', decision: 'require_approval', priority: 0 },
 ];
 
+initDefaultPermissions();
+
+function checkSkillExecutionPermission(skillName?: string, userRole?: string): PermissionCheckResult | null {
+  if (!skillName || !userRole) {
+    return null;
+  }
+
+  return checkSkillPermission(skillName, 'execute', userRole);
+}
+
 export async function evaluateExecApproval(request: Omit<ExecApprovalRequest, 'requestId' | 'timestamp'>): Promise<ExecApprovalResult> {
   const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const fullRequest: ExecApprovalRequest = {
@@ -51,7 +70,16 @@ export async function evaluateExecApproval(request: Omit<ExecApprovalRequest, 'r
     timestamp: Date.now(),
   };
 
-  logger.info(`[ExecApproval] 评估审批: ${request.command}`);
+  logger.info(`[ExecApproval] 评估审批: ${request.command}${request.skillName ? ` (技能: ${request.skillName})` : ''}`);
+
+  const permissionCheck = checkSkillExecutionPermission(request.skillName, request.userRole);
+  if (permissionCheck && !permissionCheck.allowed) {
+    logger.warn(`[ExecApproval] 技能权限拒绝: ${request.skillName} (角色: ${request.userRole})`);
+    return {
+      decision: 'deny',
+      reason: permissionCheck.reason,
+    };
+  }
 
   const rule = findMatchingRule(request.command);
 

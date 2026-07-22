@@ -1,6 +1,14 @@
 ---
 name: node-connect
-description: "Diagnose OpenClaw Android, iOS, or macOS node pairing, QR/setup code, route, auth, and connection failures."
+description: Diagnose OpenClaw Android, iOS, or macOS node pairing, QR/setup
+  code, route, auth, and connection failures.
+version: 1.0.0
+metadata:
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Node Connect

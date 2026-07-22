@@ -18,7 +18,7 @@ export type VideoStyle =
   | "artistic";
 
 /** 视频分辨率档位 */
-export type VideoResolution = "360P" | "480P" | "720P" | "1080P" | "4K";
+export type VideoResolution = "360P" | "480P" | "540P" | "720P" | "1080P" | "4K";
 
 /** 生成视频资产 */
 export type GeneratedVideoAsset = {

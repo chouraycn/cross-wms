@@ -12,6 +12,7 @@
  *
  * 海外搜索引擎（保留但优先级低，需 API Key 才激活）：
  * - Brave Search (order=5)
+ * - DuckDuckGo (order=6) — 无需 API Key，HTML 解析
  * - Perplexity (order=15)
  * - Google Search (order=25)
  * - Tavily (order=30)
@@ -31,6 +32,7 @@ import "./360-search-provider.js";
 import "./tavily-search-provider.js";
 import "./perplexity-search-provider.js";
 import "./brave-search-provider.js";
+import "./duckduckgo-search-provider.js";
 import "./google-search-provider.js";
 import "./exa-search-provider.js";
 import "./kimi-search-provider.js";

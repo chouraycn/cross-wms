@@ -1,7 +1,19 @@
 ---
 name: node-inspect-debugger
-description: Debug Node.js with node inspect, --inspect, breakpoints, CDP, heap, and CPU profiles.
-metadata: { "openclaw": { "emoji": "🪲", "requires": { "bins": ["node"] } } }
+description: Debug Node.js with node inspect, --inspect, breakpoints, CDP, heap,
+  and CPU profiles.
+version: 1.0.0
+metadata:
+  openclaw:
+    emoji: 🪲
+    requires:
+      bins:
+        - node
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Node Inspect Debugger

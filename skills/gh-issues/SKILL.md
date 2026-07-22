@@ -1,25 +1,26 @@
 ---
 name: gh-issues
-description: "Fetch GitHub issues, select candidates, spawn background fix agents, open PRs, and optionally process PR review comments."
-user-invocable: true
+description: Fetch GitHub issues, select candidates, spawn background fix
+  agents, open PRs, and optionally process PR review comments.
+version: 1.0.0
 metadata:
-  {
-    "openclaw":
-      {
-        "requires": { "bins": ["git", "gh"] },
-        "primaryEnv": "GH_TOKEN",
-        "install":
-          [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "gh",
-              "bins": ["gh"],
-              "label": "Install GitHub CLI (brew)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    requires:
+      bins:
+        - git
+        - gh
+    install:
+      - id: brew
+        kind: brew
+        formula: gh
+        bins:
+          - gh
+        label: Install GitHub CLI (brew)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # gh-issues

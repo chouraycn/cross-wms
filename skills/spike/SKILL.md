@@ -1,7 +1,16 @@
 ---
 name: spike
-description: Run throwaway prototypes to validate feasibility, compare approaches, and report a verdict.
-metadata: { "openclaw": { "emoji": "🧪" } }
+description: Run throwaway prototypes to validate feasibility, compare
+  approaches, and report a verdict.
+version: 1.0.0
+metadata:
+  openclaw:
+    emoji: 🧪
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Spike

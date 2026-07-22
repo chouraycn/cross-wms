@@ -1,6 +1,17 @@
 import type { SkillEntry } from "../types.js";
 import { resolveSkillKey, resolveSkillSource } from "../loading/skill-contract.js";
 import { normalizeSkillName } from "./filter.js";
+import {
+  combinedSearch,
+  fuzzySearch,
+  semanticSearch,
+  suggestSkills,
+  findRelatedSkills,
+  buildSkillIndex,
+  type SearchResult,
+  type SearchIndex,
+} from "./semantic-search.js";
+import { logger } from "../../../logger.js";
 
 export type SkillIndexEntry = {
   entry: SkillEntry;
@@ -95,19 +106,120 @@ export function findSkillByNormalizedName(
   );
 }
 
+export type SearchMode = "exact" | "fuzzy" | "semantic" | "combined";
+
+export type SearchOptions = {
+  mode?: SearchMode;
+  topK?: number;
+  fuzzyThreshold?: number;
+  exactBoost?: number;
+  fuzzyBoost?: number;
+  semanticBoost?: number;
+  tagBoost?: number;
+};
+
 export function searchSkills(
   index: readonly SkillIndexEntry[],
   query: string,
+  options: SearchOptions = {},
 ): SkillIndexEntry[] {
+  const { mode = "combined" } = options;
   const normalizedQuery = normalizeSkillName(query);
+  
   if (!normalizedQuery) {
     return [...index];
   }
-  return index.filter((entry) => {
-    if (entry.normalizedName.includes(normalizedQuery)) return true;
-    if (entry.normalizedSkillKey.includes(normalizedQuery)) return true;
-    const description = entry.entry.skill.description.toLowerCase();
-    if (description.includes(query.toLowerCase())) return true;
-    return false;
-  });
+  
+  if (mode === "exact") {
+    return index.filter((entry) => {
+      if (entry.normalizedName.includes(normalizedQuery)) return true;
+      if (entry.normalizedSkillKey.includes(normalizedQuery)) return true;
+      const description = entry.entry.skill.description.toLowerCase();
+      if (description.includes(query.toLowerCase())) return true;
+      return false;
+    });
+  }
+  
+  const skills = index.map((e) => e.entry);
+  let searchResults: SearchResult[];
+  
+  switch (mode) {
+    case "fuzzy":
+      searchResults = fuzzySearch(query, skills, options.fuzzyThreshold);
+      break;
+    case "semantic":
+      searchResults = semanticSearch(query, skills, options.topK);
+      break;
+    case "combined":
+    default:
+      searchResults = combinedSearch(query, skills, {
+        topK: options.topK,
+        fuzzyThreshold: options.fuzzyThreshold,
+        exactBoost: options.exactBoost,
+        fuzzyBoost: options.fuzzyBoost,
+        semanticBoost: options.semanticBoost,
+        tagBoost: options.tagBoost,
+      });
+      break;
+  }
+  
+  const resultNames = new Set(searchResults.map((r) => r.skillName));
+  return index.filter((entry) => resultNames.has(entry.name));
 }
+
+export function searchSkillsWithScores(
+  index: readonly SkillIndexEntry[],
+  query: string,
+  options: SearchOptions = {},
+): (SkillIndexEntry & { score: number; matchType: SearchResult["matchType"] })[] {
+  const { mode = "combined" } = options;
+  const normalizedQuery = normalizeSkillName(query);
+  
+  if (!normalizedQuery) {
+    return index.map((entry) => ({ ...entry, score: 0, matchType: "exact" }));
+  }
+  
+  const skills = index.map((e) => e.entry);
+  let searchResults: SearchResult[];
+  
+  switch (mode) {
+    case "fuzzy":
+      searchResults = fuzzySearch(query, skills, options.fuzzyThreshold);
+      break;
+    case "semantic":
+      searchResults = semanticSearch(query, skills, options.topK);
+      break;
+    case "combined":
+    default:
+      searchResults = combinedSearch(query, skills, {
+        topK: options.topK,
+        fuzzyThreshold: options.fuzzyThreshold,
+        exactBoost: options.exactBoost,
+        fuzzyBoost: options.fuzzyBoost,
+        semanticBoost: options.semanticBoost,
+        tagBoost: options.tagBoost,
+      });
+      break;
+  }
+  
+  const resultsMap = new Map(searchResults.map((r) => [r.skillName, r]));
+  return index
+    .map((entry) => {
+      const result = resultsMap.get(entry.name);
+      if (!result) return null;
+      return { ...entry, score: result.score, matchType: result.matchType };
+    })
+    .filter((entry): entry is SkillIndexEntry & { score: number; matchType: SearchResult["matchType"] } => entry !== null)
+    .sort((a, b) => b.score - a.score);
+}
+
+export {
+  combinedSearch,
+  fuzzySearch,
+  semanticSearch,
+  suggestSkills,
+  findRelatedSkills,
+  buildSkillIndex,
+};
+
+export type { SearchResult, SearchIndex };

@@ -1,8 +1,20 @@
 ---
 name: obsidian
-description: "Work with Obsidian vaults using the official obsidian CLI: read/search/create/edit notes, tasks, links, properties, plugins."
+description: "Work with Obsidian vaults using the official obsidian CLI:
+  read/search/create/edit notes, tasks, links, properties, plugins."
+version: 1.0.0
 homepage: https://obsidian.md/cli
-metadata: { "openclaw": { "emoji": "💎", "requires": { "bins": ["obsidian"] } } }
+metadata:
+  openclaw:
+    emoji: 💎
+    requires:
+      bins:
+        - obsidian
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Obsidian

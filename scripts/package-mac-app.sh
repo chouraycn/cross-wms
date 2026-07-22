@@ -407,9 +407,15 @@ echo "✅ Info.plist ready (version=$APP_VERSION, build=$BUILD_NUMBER)"
 # ===================== 8. Code signing =====================
 
 echo "🔏 Signing app bundle..."
-# Default to ad-hoc signing for dev builds; set SIGN_IDENTITY for proper codesign
-ALLOW_ADHOC_SIGNING="${ALLOW_ADHOC_SIGNING:-1}" DISABLE_LIBRARY_VALIDATION="${DISABLE_LIBRARY_VALIDATION:-1}" \
+ALLOW_ADHOC_SIGNING=1 DISABLE_LIBRARY_VALIDATION="${DISABLE_LIBRARY_VALIDATION:-1}" \
     "$ROOT_DIR/scripts/codesign-mac-app.sh" "$APP_ROOT"
+
+if [ -f "$ROOT_DIR/certs/CDFKnowClow.p12" ]; then
+    echo ""
+    echo "📝 To sign with self-signed certificate for persistent TCC permissions, run:"
+    echo "   bash $ROOT_DIR/scripts/sign-with-self-signed.sh"
+    echo "   (Note: You may need to unlock your keychain first)"
+fi
 
 echo ""
 echo "=== Build complete ==="

@@ -210,17 +210,122 @@ export type DescribedFailoverError = {
 };
 
 /**
- * 描述 failover 错误（降级实现）。
+ * 描述 failover 错误（增强实现）。
  *
- * 降级原因：openclaw agents/failover-error 依赖复杂的错误分类链。
- * 这里仅从 Error 实例提取 message，reason 留空，使 openai-compat-errors 在
- * 缺失 failover 元数据时安全返回 undefined。
+ * 基于错误消息和状态码进行分类，提供更准确的 failover 原因判断。
  */
 export function describeFailoverError(err: unknown): DescribedFailoverError {
+  let message = "";
+  let status: number | undefined;
+  let code: string | undefined;
+  let reason: FailoverReason | undefined;
+
   if (err instanceof Error) {
-    return { message: err.message };
+    message = err.message;
+    code = err.name;
+
+    if ("status" in err && typeof (err as any).status === "number") {
+      status = (err as any).status;
+    }
+    if ("code" in err && typeof (err as any).code === "string") {
+      code = (err as any).code;
+    }
+  } else if (typeof err === "string") {
+    message = err;
+  } else if (typeof err === "object" && err !== null) {
+    if ("message" in err && typeof (err as any).message === "string") {
+      message = (err as any).message;
+    }
+    if ("status" in err && typeof (err as any).status === "number") {
+      status = (err as any).status;
+    }
+    if ("code" in err && typeof (err as any).code === "string") {
+      code = (err as any).code;
+    }
   }
-  return { message: typeof err === "string" ? err : "request failed" };
+
+  if (!message) {
+    message = "request failed";
+  }
+
+  const lowerMessage = message.toLowerCase();
+  const lowerCode = code?.toLowerCase() || "";
+
+  if (status !== undefined) {
+    switch (status) {
+      case 401:
+        reason = "auth";
+        break;
+      case 402:
+        reason = "billing";
+        break;
+      case 408:
+        reason = "timeout";
+        break;
+      case 429:
+        reason = "rate_limit";
+        break;
+      case 502:
+      case 503:
+        reason = "overloaded";
+        break;
+      case 504:
+        reason = "timeout";
+        break;
+    }
+  }
+
+  if (!reason) {
+    if (
+      lowerMessage.includes("auth") ||
+      lowerMessage.includes("invalid key") ||
+      lowerMessage.includes("unauthorized") ||
+      lowerMessage.includes("forbidden") ||
+      lowerCode.includes("auth")
+    ) {
+      reason = "auth";
+    } else if (
+      lowerMessage.includes("billing") ||
+      lowerMessage.includes("payment") ||
+      lowerMessage.includes("insufficient") ||
+      lowerMessage.includes("quota")
+    ) {
+      reason = "billing";
+    } else if (
+      lowerMessage.includes("rate") ||
+      lowerMessage.includes("429") ||
+      lowerMessage.includes("too many")
+    ) {
+      reason = "rate_limit";
+    } else if (
+      lowerMessage.includes("timeout") ||
+      lowerMessage.includes("timed out") ||
+      lowerMessage.includes("etimedout") ||
+      lowerMessage.includes("esockettimedout")
+    ) {
+      reason = "timeout";
+    } else if (
+      lowerMessage.includes("model") ||
+      lowerMessage.includes("not found")
+    ) {
+      reason = "model_not_found";
+    } else if (
+      lowerMessage.includes("format") ||
+      lowerMessage.includes("invalid") ||
+      lowerMessage.includes("malformed")
+    ) {
+      reason = "format";
+    } else if (
+      lowerMessage.includes("server") ||
+      lowerMessage.includes("service unavailable") ||
+      lowerMessage.includes("overloaded") ||
+      lowerMessage.includes("busy")
+    ) {
+      reason = "server_error";
+    }
+  }
+
+  return { reason, status, code, message };
 }
 
 /** 解析 failover 原因对应的 HTTP 状态（降级实现）。 */

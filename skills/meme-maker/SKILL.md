@@ -1,7 +1,19 @@
 ---
 name: meme-maker
-description: Search meme templates, suggest formats, and generate local or hosted image memes.
-metadata: { "openclaw": { "emoji": "🖼️", "requires": { "bins": ["node"] } } }
+description: Search meme templates, suggest formats, and generate local or
+  hosted image memes.
+version: 1.0.0
+metadata:
+  openclaw:
+    emoji: 🖼️
+    requires:
+      bins:
+        - node
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # Meme Maker

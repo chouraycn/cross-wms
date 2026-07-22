@@ -41,6 +41,7 @@ export interface MessageSendContext<TPayload = unknown, TSendResult = unknown> {
   durability: MessageDurability;
   attempt: number;
   signal: AbortSignal;
+  metadata?: Record<string, unknown>;
 
   render(): Promise<RenderedMessageBatch<TPayload>>;
   previewUpdate(rendered: RenderedMessageBatch<TPayload>): Promise<unknown>;

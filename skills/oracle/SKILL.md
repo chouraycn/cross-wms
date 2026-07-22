@@ -1,25 +1,27 @@
 ---
 name: oracle
-description: "Oracle CLI second-model review/debug/refactor/design with selected files, dry-run token checks, API or browser engine."
+description: Oracle CLI second-model review/debug/refactor/design with selected
+  files, dry-run token checks, API or browser engine.
+version: 1.0.0
 homepage: https://askoracle.dev
 metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🧿",
-        "requires": { "bins": ["oracle"] },
-        "install":
-          [
-            {
-              "id": "node",
-              "kind": "node",
-              "package": "@steipete/oracle",
-              "bins": ["oracle"],
-              "label": "Install oracle (node)",
-            },
-          ],
-      },
-  }
+  openclaw:
+    emoji: 🧿
+    requires:
+      bins:
+        - oracle
+    install:
+      - id: node
+        kind: node
+        package: "@steipete/oracle"
+        bins:
+          - oracle
+        label: Install oracle (node)
+  crosswms:
+    category: general
+    executionMode: agent
+    source: workspace
+    status: active
 ---
 
 # oracle

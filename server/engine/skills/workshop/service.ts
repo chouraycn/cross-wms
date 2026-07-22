@@ -19,8 +19,14 @@ import type {
   SkillProposalActionInput,
   SkillProposalApplyResult,
   SkillProposalReadResult,
+  SkillProposalReviewInput,
+  SkillProposalReviseWithRevisionInput,
+  SkillProposalSearchInput,
+  SkillProposalRollbackInput,
+  SkillProposalSearchResult,
 } from "./types.js";
 import { ensureWorkspaceSkillsDir } from "../loading/workspace.js";
+import { emitProposalEvent } from "./event-bus.js";
 
 export async function createSkillProposal(
   input: SkillProposalCreateInput,
@@ -53,8 +59,25 @@ export async function createSkillProposal(
       record.status = "quarantined";
     }
 
+    record.history = [
+      {
+        timestamp: record.createdAt,
+        action: "created",
+        actor: input.createdBy,
+        details: `Created ${record.kind} proposal`,
+      },
+    ];
+
     await saveProposal(workspaceDir, record);
     logger.info("[Skills] Created skill proposal:", name, record.id);
+
+    emitProposalEvent(record.status === "quarantined" ? "quarantined" : "created", {
+      proposalId: record.id,
+      skillName: name,
+      status: record.status,
+      actor: input.createdBy,
+      timestamp: record.createdAt,
+    });
 
     return { success: true, proposalId: record.id };
   } catch (err) {
@@ -194,10 +217,26 @@ ${record.description}
       input.reason,
     );
 
+    if (!updatedRecord.history) updatedRecord.history = [];
+    updatedRecord.history.push({
+      timestamp: updatedRecord.updatedAt,
+      action: "applied",
+      details: input.reason,
+    });
+
+    await saveProposal(workspaceDir, updatedRecord);
     logger.info("[Skills] Applied skill proposal:", proposalId, record.target.skillName);
 
+    emitProposalEvent("applied", {
+      proposalId: updatedRecord.id,
+      skillName: updatedRecord.target.skillName,
+      status: "applied",
+      reason: input.reason,
+      timestamp: updatedRecord.updatedAt,
+    });
+
     return {
-      record: updatedRecord!,
+      record: updatedRecord,
       targetSkillFile: skillFile,
     };
   } catch (err) {
@@ -218,8 +257,25 @@ export async function rejectSkillProposal(
       return { success: false, error: "Proposal not found" };
     }
 
-    await updateProposalStatus(workspaceDir, proposalId, "rejected", input.reason);
+    const updatedRecord = await updateProposalStatus(workspaceDir, proposalId, "rejected", input.reason);
+
+    if (!updatedRecord.history) updatedRecord.history = [];
+    updatedRecord.history.push({
+      timestamp: updatedRecord.updatedAt,
+      action: "rejected",
+      details: input.reason,
+    });
+
+    await saveProposal(workspaceDir, updatedRecord);
     logger.info("[Skills] Rejected skill proposal:", proposalId);
+
+    emitProposalEvent("rejected", {
+      proposalId: updatedRecord.id,
+      skillName: updatedRecord.target.skillName,
+      status: "rejected",
+      reason: input.reason,
+      timestamp: updatedRecord.updatedAt,
+    });
 
     return { success: true };
   } catch (err) {
@@ -260,12 +316,360 @@ export async function deleteSkillProposal(
   workspaceDir: string,
   proposalId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const result = await deleteProposal(workspaceDir, proposalId);
-  if (!result) {
+  const record = await loadProposal(workspaceDir, proposalId);
+  if (!record) {
     return { success: false, error: "Proposal not found" };
   }
+
+  const result = await deleteProposal(workspaceDir, proposalId);
+  if (!result) {
+    return { success: false, error: "Failed to delete proposal" };
+  }
+
   logger.info("[Skills] Deleted skill proposal:", proposalId);
+
+  emitProposalEvent("deleted", {
+    proposalId: record.id,
+    skillName: record.target.skillName,
+    status: record.status,
+    timestamp: new Date().toISOString(),
+  });
+
   return { success: true };
+}
+
+export async function createRevision(
+  input: SkillProposalReviseWithRevisionInput,
+): Promise<{ success: boolean; revisionNumber?: number; error?: string }> {
+  const { workspaceDir, proposalId, content, changes, author } = input;
+
+  try {
+    const record = await loadProposal(workspaceDir, proposalId);
+    if (!record) {
+      return { success: false, error: "Proposal not found" };
+    }
+
+    const revisionNumber = (record.revisions?.length || 0) + 1;
+    const timestamp = new Date().toISOString();
+
+    record.draftHash = hashContent(content);
+    record.updatedAt = timestamp;
+
+    if (input.description) record.description = input.description;
+    if (input.goal) record.goal = input.goal;
+    if (input.evidence) record.evidence = input.evidence;
+
+    const scanResult = await scanProposalContent(content);
+    record.scan = scanResult;
+
+    if (scanResult.state === "quarantined") {
+      record.status = "quarantined";
+    } else if (record.status === "quarantined") {
+      record.status = "pending";
+    }
+
+    if (!record.revisions) record.revisions = [];
+    record.revisions.push({
+      revisionNumber,
+      changes,
+      timestamp,
+      author,
+    });
+
+    if (!record.history) record.history = [];
+    record.history.push({
+      timestamp,
+      action: "revised",
+      actor: author,
+      details: `Revision ${revisionNumber}: ${changes}`,
+    });
+
+    await saveProposal(workspaceDir, record);
+    logger.info("[Skills] Created revision for proposal:", proposalId, revisionNumber);
+
+    emitProposalEvent("revised", {
+      proposalId: record.id,
+      skillName: record.target.skillName,
+      status: record.status,
+      actor: author,
+      timestamp,
+    });
+
+    return { success: true, revisionNumber };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to create revision:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function reviewProposal(
+  input: SkillProposalReviewInput,
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceDir, proposalId, reviewer, status, comments } = input;
+
+  try {
+    const record = await loadProposal(workspaceDir, proposalId);
+    if (!record) {
+      return { success: false, error: "Proposal not found" };
+    }
+
+    const reviewAt = new Date().toISOString();
+
+    if (!record.reviews) record.reviews = [];
+    record.reviews.push({
+      reviewer,
+      reviewAt,
+      status,
+      comments,
+    });
+
+    record.updatedAt = reviewAt;
+
+    if (!record.history) record.history = [];
+    record.history.push({
+      timestamp: reviewAt,
+      action: "reviewed",
+      actor: reviewer,
+      details: `Review: ${status}`,
+    });
+
+    await saveProposal(workspaceDir, record);
+    logger.info("[Skills] Reviewed proposal:", proposalId, status);
+
+    emitProposalEvent("reviewed", {
+      proposalId: record.id,
+      skillName: record.target.skillName,
+      status: record.status,
+      actor: reviewer,
+      reason: comments,
+      timestamp: reviewAt,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to review proposal:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function quarantineProposal(
+  input: SkillProposalActionInput,
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceDir, proposalId, reason } = input;
+
+  try {
+    const record = await loadProposal(workspaceDir, proposalId);
+    if (!record) {
+      return { success: false, error: "Proposal not found" };
+    }
+
+    const updatedRecord = await updateProposalStatus(workspaceDir, proposalId, "quarantined", reason);
+    if (!updatedRecord) {
+      return { success: false, error: "Failed to update proposal status" };
+    }
+
+    if (!updatedRecord.history) updatedRecord.history = [];
+    updatedRecord.history.push({
+      timestamp: updatedRecord.updatedAt,
+      action: "quarantined",
+      details: reason,
+    });
+
+    await saveProposal(workspaceDir, updatedRecord);
+    logger.info("[Skills] Quarantined proposal:", proposalId);
+
+    emitProposalEvent("quarantined", {
+      proposalId: updatedRecord.id,
+      skillName: updatedRecord.target.skillName,
+      status: "quarantined",
+      reason,
+      timestamp: updatedRecord.updatedAt,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to quarantine proposal:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function mergeProposal(
+  input: SkillProposalActionInput,
+): Promise<SkillProposalApplyResult | { success: false; error: string }> {
+  const { workspaceDir, proposalId, reason } = input;
+
+  try {
+    const record = await loadProposal(workspaceDir, proposalId);
+    if (!record) {
+      return { success: false, error: "Proposal not found" };
+    }
+
+    if (record.status !== "pending") {
+      return { success: false, error: `Cannot merge proposal with status: ${record.status}` };
+    }
+
+    const skillDir = record.target.skillDir;
+    const skillFile = record.target.skillFile;
+
+    await fs.mkdir(skillDir, { recursive: true });
+
+    const content = `---
+name: ${record.target.skillName}
+description: ${record.description}
+---
+
+# ${record.target.skillName}
+
+${record.description}
+`;
+
+    await fs.writeFile(skillFile, content, "utf-8");
+
+    const updatedRecord = await updateProposalStatus(
+      workspaceDir,
+      proposalId,
+      "applied",
+      reason || "Merged",
+    );
+
+    if (!updatedRecord.history) updatedRecord.history = [];
+    updatedRecord.history.push({
+      timestamp: updatedRecord.updatedAt,
+      action: "merged",
+      details: reason,
+    });
+
+    await saveProposal(workspaceDir, updatedRecord);
+    logger.info("[Skills] Merged skill proposal:", proposalId, record.target.skillName);
+
+    emitProposalEvent("applied", {
+      proposalId: updatedRecord.id,
+      skillName: updatedRecord.target.skillName,
+      status: "applied",
+      reason,
+      timestamp: updatedRecord.updatedAt,
+    });
+
+    return {
+      record: updatedRecord,
+      targetSkillFile: skillFile,
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to merge proposal:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function rollbackProposal(
+  input: SkillProposalRollbackInput,
+): Promise<{ success: boolean; error?: string }> {
+  const { workspaceDir, proposalId, targetRevision, reason } = input;
+
+  try {
+    const record = await loadProposal(workspaceDir, proposalId);
+    if (!record) {
+      return { success: false, error: "Proposal not found" };
+    }
+
+    if (!record.revisions || record.revisions.length === 0) {
+      return { success: false, error: "No revisions available to rollback" };
+    }
+
+    const rollbackTo = targetRevision || record.revisions.length;
+    const revision = record.revisions.find((r) => r.revisionNumber === rollbackTo);
+
+    if (!revision) {
+      return { success: false, error: `Revision ${rollbackTo} not found` };
+    }
+
+    record.revisions = record.revisions.filter((r) => r.revisionNumber <= rollbackTo);
+    record.updatedAt = new Date().toISOString();
+
+    if (!record.history) record.history = [];
+    record.history.push({
+      timestamp: record.updatedAt,
+      action: "rollback",
+      details: `Rolled back to revision ${rollbackTo}: ${reason}`,
+    });
+
+    await saveProposal(workspaceDir, record);
+    logger.info("[Skills] Rolled back proposal:", proposalId, "to revision", rollbackTo);
+
+    emitProposalEvent("updated", {
+      proposalId: record.id,
+      skillName: record.target.skillName,
+      status: record.status,
+      reason: `Rollback to revision ${rollbackTo}`,
+      timestamp: record.updatedAt,
+    });
+
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error("[Skills] Failed to rollback proposal:", err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function searchProposals(
+  input: SkillProposalSearchInput,
+): Promise<SkillProposalSearchResult> {
+  const { workspaceDir, query, status, skillName, kind, tags, category, limit = 20, offset = 0 } = input;
+
+  try {
+    let proposals = await listProposals(workspaceDir);
+
+    if (status) {
+      proposals = proposals.filter((p) => p.status === status);
+    }
+
+    if (skillName) {
+      proposals = proposals.filter((p) =>
+        p.target.skillName.toLowerCase().includes(skillName.toLowerCase()),
+      );
+    }
+
+    if (kind) {
+      proposals = proposals.filter((p) => p.kind === kind);
+    }
+
+    if (category) {
+      proposals = proposals.filter((p) => p.metadata?.category === category);
+    }
+
+    if (tags && tags.length > 0) {
+      proposals = proposals.filter((p) =>
+        tags.every((tag) => p.metadata?.tags?.includes(tag)),
+      );
+    }
+
+    if (query) {
+      const queryLower = query.toLowerCase();
+      proposals = proposals.filter((p) =>
+        p.title.toLowerCase().includes(queryLower) ||
+        p.description.toLowerCase().includes(queryLower) ||
+        p.target.skillName.toLowerCase().includes(queryLower),
+      );
+    }
+
+    const total = proposals.length;
+    const paginated = proposals.slice(offset, offset + limit);
+
+    return {
+      proposals: paginated,
+      total,
+    };
+  } catch (err) {
+    logger.error("[Skills] Failed to search proposals:", err);
+    return {
+      proposals: [],
+      total: 0,
+    };
+  }
 }
 
 async function scanProposalContent(content: string): Promise<{

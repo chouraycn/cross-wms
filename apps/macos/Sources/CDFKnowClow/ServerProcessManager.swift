@@ -9,6 +9,7 @@ actor ServerProcessManager {
         case starting
         case running(pid: Int32)
         case failed(String)
+        case timeout
     }
 
     private(set) var status: Status = .stopped
@@ -124,7 +125,7 @@ actor ServerProcessManager {
         self.desiredActive = true
 
         switch self.status {
-        case .starting, .running:
+        case .starting, .running, .timeout:
             return
         case .stopped, .failed:
             break
@@ -169,14 +170,14 @@ actor ServerProcessManager {
         let entry = self.serverEntry
         if entry.hasSuffix(".ts") {
             proc.arguments = [
-                "--max-old-space-size=512",
+                "--max-old-space-size=2048",
                 "--import", "tsx",
                 entry
             ]
         } else {
             // .cjs or .js — run directly
             proc.arguments = [
-                "--max-old-space-size=512",
+                "--max-old-space-size=2048",
                 entry
             ]
         }
@@ -306,17 +307,30 @@ actor ServerProcessManager {
 
     private func waitForServerReady(port: Int) async -> Bool {
         let deadline = Date().addingTimeInterval(self.startTimeout)
+        var checkCount = 0
+        
         while Date() < deadline {
             if !self.desiredActive { return false }
+            
+            checkCount += 1
+            if checkCount % 4 == 0 {
+                serverLogger.info("Health check #\(checkCount) for port \(port)")
+            }
+            
             if await self.checkHealth(port: port) {
                 return true
             }
+            
             do {
                 try await Task.sleep(nanoseconds: 500_000_000)
             } catch {
+                serverLogger.error("Wait interrupted: \(error.localizedDescription)")
                 return false
             }
         }
+        
+        serverLogger.error("Server readiness timeout after \(self.startTimeout)s")
+        self.status = .timeout
         return false
     }
 

@@ -1,230 +1,198 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { logger } from "../../../logger.js";
-import {
-  scanDirectoryWithSummary,
-  type SkillScanSummary,
-  type SkillScanFinding,
-  hasCriticalFindings,
-} from "./scanner.js";
+import { getChildLogger } from "../../logging/logger.js";
 
-export type WorkspaceAuditResult = {
-  success: boolean;
-  workspaceDir: string;
-  skillsDir: string;
-  skillsScanned: number;
-  skillNames: string[];
-  summary: SkillScanSummary;
-  hasCriticalIssues: boolean;
-  findingsBySkill: Record<string, SkillScanFinding[]>;
-  error?: string;
-};
+const logger = getChildLogger("skills");
 
-export type AuditOptions = {
-  includeAllFiles?: boolean;
-  maxFilesPerSkill?: number;
-  onProgress?: (skillName: string, index: number, total: number) => void;
-};
+const MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE = 2000;
 
-export async function auditWorkspaceSkills(
-  workspaceDir: string,
-  options?: AuditOptions,
-): Promise<WorkspaceAuditResult> {
-  const skillsDir = path.join(workspaceDir, ".cross-wms", "skills");
-  const includeAllFiles = options?.includeAllFiles ?? false;
-  const maxFilesPerSkill = options?.maxFilesPerSkill ?? 50;
+export interface SecurityAuditFinding {
+  checkId: string;
+  severity: "error" | "warn" | "info";
+  title: string;
+  detail: string;
+  remediation?: string;
+}
 
-  const result: WorkspaceAuditResult = {
-    success: false,
-    workspaceDir,
-    skillsDir,
-    skillsScanned: 0,
-    skillNames: [],
-    summary: {
-      scannedFiles: 0,
-      critical: 0,
-      warn: 0,
-      info: 0,
-      truncated: false,
-      findings: [],
-    },
-    hasCriticalIssues: false,
-    findingsBySkill: {},
-  };
-
+async function safeStat(targetPath: string): Promise<{ ok: boolean; isDir: boolean }> {
   try {
-    try {
-      await fs.access(skillsDir);
-    } catch {
-      result.success = true;
+    const lst = await fs.lstat(targetPath);
+    return { ok: true, isDir: lst.isDirectory() };
+  } catch {
+    return { ok: false, isDir: false };
+  }
+}
+
+function realpathWithTimeout(p: string, timeoutMs = 2000): Promise<string | null> {
+  let timerHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const realpathPromise = fs
+    .realpath(p)
+    .catch(() => null)
+    .then((result) => {
+      clearTimeout(timerHandle);
       return result;
+    });
+
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timerHandle = setTimeout(() => resolve(null), timeoutMs);
+    timerHandle.unref?.();
+  });
+
+  return Promise.race([realpathPromise, timeoutPromise]);
+}
+
+async function listWorkspaceSkillMarkdownFiles(
+  workspaceDir: string,
+  maxFiles = MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE,
+): Promise<{ skillFilePaths: string[]; truncated: boolean }> {
+  const skillsRoot = path.join(workspaceDir, "skills");
+  const rootStat = await safeStat(skillsRoot);
+  if (!rootStat.ok || !rootStat.isDir) {
+    return { skillFilePaths: [], truncated: false };
+  }
+
+  const skillFiles: string[] = [];
+  const queue: string[] = [skillsRoot];
+  const visitedDirs = new Set<string>();
+  const maxTotalDirVisits = maxFiles * 20;
+
+  for (const _ of Array.from({ length: maxTotalDirVisits })) {
+    if (queue.length === 0 || skillFiles.length >= maxFiles) {
+      break;
     }
+    const dir = queue.shift()!;
+    const dirRealPath = (await realpathWithTimeout(dir)) ?? path.resolve(dir);
+    if (visitedDirs.has(dirRealPath)) {
+      continue;
+    }
+    visitedDirs.add(dirRealPath);
 
-    const entries = await fs.readdir(skillsDir, { withFileTypes: true });
-    const skillDirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
-    result.skillNames = skillDirs.sort();
-
-    let allFindings: SkillScanFinding[] = [];
-    let totalFiles = 0;
-    let totalCritical = 0;
-    let totalWarn = 0;
-    let totalInfo = 0;
-    let anyTruncated = false;
-
-    for (let i = 0; i < skillDirs.length; i++) {
-      const skillName = skillDirs[i];
-      const skillDir = path.join(skillsDir, skillName);
-
-      options?.onProgress?.(skillName, i + 1, skillDirs.length);
-
-      try {
-        const scanResult = await scanDirectoryWithSummary(skillDir, {
-          maxFiles: maxFilesPerSkill,
-          excludeTestFiles: !includeAllFiles,
-          includeNodeModules: false,
-        });
-
-        result.findingsBySkill[skillName] = scanResult.findings;
-        allFindings = allFindings.concat(scanResult.findings);
-        totalFiles += scanResult.scannedFiles;
-        totalCritical += scanResult.critical;
-        totalWarn += scanResult.warn;
-        totalInfo += scanResult.info;
-        if (scanResult.truncated) anyTruncated = true;
-
-        result.skillsScanned += 1;
-      } catch (err) {
-        logger.debug("[Skills] Failed to scan skill:", skillName, err);
-        result.findingsBySkill[skillName] = [];
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {
+        continue;
+      }
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(fullPath);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        const stat = await fs.stat(fullPath).catch(() => null);
+        if (!stat) {
+          continue;
+        }
+        if (stat.isDirectory()) {
+          queue.push(fullPath);
+          continue;
+        }
+        if (stat.isFile() && entry.name === "SKILL.md") {
+          skillFiles.push(fullPath);
+        }
+        continue;
+      }
+      if (entry.isFile() && entry.name === "SKILL.md") {
+        skillFiles.push(fullPath);
       }
     }
-
-    result.summary = {
-      scannedFiles: totalFiles,
-      critical: totalCritical,
-      warn: totalWarn,
-      info: totalInfo,
-      truncated: anyTruncated,
-      findings: allFindings,
-    };
-    result.hasCriticalIssues = hasCriticalFindings(allFindings);
-    result.success = true;
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    logger.error("[Skills] Workspace audit failed:", err);
-    result.error = errorMessage;
   }
 
-  return result;
+  return { skillFilePaths: skillFiles, truncated: queue.length > 0 };
 }
 
-export async function auditSingleSkill(
-  workspaceDir: string,
-  skillName: string,
-): Promise<{
-  success: boolean;
-  skillName: string;
-  skillDir: string;
-  summary?: SkillScanSummary;
-  hasCriticalIssues?: boolean;
-  error?: string;
-}> {
-  const skillDir = path.join(workspaceDir, ".cross-wms", "skills", skillName);
-
-  try {
-    await fs.access(skillDir);
-  } catch {
-    return {
-      success: false,
-      skillName,
-      skillDir,
-      error: `Skill '${skillName}' not found`,
-    };
+export async function collectWorkspaceSkillSymlinkEscapeFindings(
+  workspaceDirs: string[],
+): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+  if (workspaceDirs.length === 0) {
+    return findings;
   }
 
-  try {
-    const summary = await scanDirectoryWithSummary(skillDir);
-    return {
-      success: true,
-      skillName,
-      skillDir,
-      summary,
-      hasCriticalIssues: hasCriticalFindings(summary.findings),
-    };
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    return {
-      success: false,
-      skillName,
-      skillDir,
-      error: errorMessage,
-    };
-  }
-}
+  const seenSkillPaths = new Set<string>();
 
-export function getSkillsWithCriticalIssues(
-  auditResult: WorkspaceAuditResult,
-): string[] {
-  const result: string[] = [];
-  for (const [skillName, findings] of Object.entries(auditResult.findingsBySkill)) {
-    if (hasCriticalFindings(findings)) {
-      result.push(skillName);
+  for (const workspaceDir of workspaceDirs) {
+    const workspacePath = path.resolve(workspaceDir);
+    const workspaceRealPath = (await realpathWithTimeout(workspacePath)) ?? workspacePath;
+    const { skillFilePaths, truncated } = await listWorkspaceSkillMarkdownFiles(workspacePath);
+
+    if (truncated) {
+      findings.push({
+        checkId: "skills.workspace.scan_truncated",
+        severity: "warn",
+        title: "Workspace skill scan reached the directory visit limit",
+        detail:
+          `The skills/ directory scan in ${workspacePath} stopped early after reaching the ` +
+          `BFS visit cap. Skill files in the unscanned portion of the tree were not checked ` +
+          "for symlink escapes.",
+        remediation:
+          "Flatten or simplify the skills/ directory hierarchy to stay within the scan budget, " +
+          "or move deeply-nested skill collections to a managed skill location.",
+      });
     }
-  }
-  return result.sort();
-}
 
-export function getSkillIssueCount(
-  auditResult: WorkspaceAuditResult,
-  skillName: string,
-): { critical: number; warn: number; info: number; total: number } {
-  const findings = auditResult.findingsBySkill[skillName] || [];
-  let critical = 0;
-  let warn = 0;
-  let info = 0;
+    for (const skillFilePath of skillFilePaths) {
+      const canonicalSkillPath = path.resolve(skillFilePath);
+      if (seenSkillPaths.has(canonicalSkillPath)) {
+        continue;
+      }
+      seenSkillPaths.add(canonicalSkillPath);
 
-  for (const finding of findings) {
-    if (finding.severity === "critical") critical++;
-    else if (finding.severity === "warn") warn++;
-    else info++;
-  }
-
-  return {
-    critical,
-    warn,
-    info,
-    total: findings.length,
-  };
-}
-
-export function formatAuditReport(auditResult: WorkspaceAuditResult): string {
-  const lines = [
-    "Workspace Skills Audit Report",
-    "============================",
-    "",
-    `Workspace: ${auditResult.workspaceDir}`,
-    `Skills directory: ${auditResult.skillsDir}`,
-    `Skills scanned: ${auditResult.skillsScanned}`,
-    "",
-    "Summary:",
-    `  Total findings: ${auditResult.summary.findings.length}`,
-    `  Critical: ${auditResult.summary.critical}`,
-    `  Warn: ${auditResult.summary.warn}`,
-    `  Info: ${auditResult.summary.info}`,
-    `  Files scanned: ${auditResult.summary.scannedFiles}`,
-    `  Has critical issues: ${auditResult.hasCriticalIssues ? "YES" : "NO"}`,
-    "",
-  ];
-
-  if (auditResult.skillNames.length > 0) {
-    lines.push("Skills:");
-    for (const skillName of auditResult.skillNames) {
-      const counts = getSkillIssueCount(auditResult, skillName);
-      lines.push(
-        `  ${skillName}: ${counts.total} issues (${counts.critical} critical, ${counts.warn} warn, ${counts.info} info)`,
-      );
+      const skillRealPath = (await realpathWithTimeout(skillFilePath)) ?? canonicalSkillPath;
+      if (skillRealPath !== canonicalSkillPath) {
+        if (!skillRealPath.startsWith(workspaceRealPath)) {
+          findings.push({
+            checkId: "skills.workspace.symlink_escape",
+            severity: "error",
+            title: "Skill file escapes workspace via symlink",
+            detail:
+              `Found a symlink at ${skillFilePath} that resolves outside the workspace directory ` +
+              `(${skillRealPath}). This could allow skills to read or execute content from ` +
+              "unexpected locations.",
+            remediation:
+              "Remove or relocate symlinks that point outside the workspace, or move the " +
+              "target content inside the workspace skills directory.",
+          });
+        }
+      }
     }
   }
 
-  return lines.join("\n");
+  return findings;
+}
+
+export async function auditWorkspaceSkills(workspaceDir: string): Promise<SecurityAuditFinding[]> {
+  const findings: SecurityAuditFinding[] = [];
+
+  try {
+    const { skillFilePaths } = await listWorkspaceSkillMarkdownFiles(workspaceDir);
+
+    for (const skillFilePath of skillFilePaths) {
+      const content = await fs.readFile(skillFilePath, "utf8").catch(() => "");
+
+      if (content.includes("eval(") || content.includes("new Function(")) {
+        findings.push({
+          checkId: "skills.workspace.dynamic_code",
+          severity: "warn",
+          title: "Skill contains dynamic code execution",
+          detail: `Skill at ${skillFilePath} contains potential dynamic code execution patterns.`,
+          remediation: "Review the skill for security risks and remove unnecessary dynamic code.",
+        });
+      }
+
+      if (content.includes("process.env") && content.includes("SECRET")) {
+        findings.push({
+          checkId: "skills.workspace.secret_access",
+          severity: "warn",
+          title: "Skill accesses environment secrets",
+          detail: `Skill at ${skillFilePath} accesses environment variables that may contain secrets.`,
+          remediation: "Ensure secrets are properly managed and not exposed in skill prompts.",
+        });
+      }
+    }
+  } catch (err) {
+    logger.error("[Audit] Failed to audit workspace skills:", err);
+  }
+
+  return findings;
 }

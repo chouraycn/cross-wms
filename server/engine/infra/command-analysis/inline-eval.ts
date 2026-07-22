@@ -1,0 +1,1 @@
+export function isInterpreterLikeAllowlistPattern(_pattern: string): boolean { return false; }
