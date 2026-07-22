@@ -54,7 +54,7 @@ export async function recoverStartupOrphanedMainSessions(_params?: {
 
 /** Schedule restart-aborted main session recovery with retries. */
 export function scheduleRestartAbortedMainSessionRecovery(
-  _params?: {
+  _params: {
     delayMs?: number;
     maxRetries?: number;
   } = {},

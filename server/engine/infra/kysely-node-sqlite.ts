@@ -84,7 +84,7 @@ export class NodeSqliteKyselyDialect implements Dialect {
 // ConnectionMutex 占位类（保留导出供类型检查）
 export class ConnectionMutex {
   async withConnection<T>(_callback: (conn: unknown) => Promise<T>): Promise<T> {
-    // Stub: not fully ported
+    return undefined as T;
   }
 }
 

@@ -30,6 +30,46 @@ import {
   createMattermostChannelPlugin,
 } from "./builtin-mattermost.js";
 
+import {
+  createTelegramChannelPlugin,
+} from "./builtin-telegram.js";
+
+import {
+  createSignalChannelPlugin,
+} from "./builtin-signal.js";
+
+import {
+  createWhatsAppChannelPlugin,
+} from "./builtin-whatsapp.js";
+
+import {
+  createIrcChannelPlugin,
+} from "./builtin-irc.js";
+
+import {
+  createLineChannelPlugin,
+} from "./builtin-line.js";
+
+import {
+  createTwitchChannelPlugin,
+} from "./builtin-twitch.js";
+
+import {
+  createGoogleChatChannelPlugin,
+} from "./builtin-googlechat.js";
+
+import {
+  createSmsChannelPlugin,
+} from "./builtin-sms.js";
+
+import {
+  createTlonChannelPlugin,
+} from "./builtin-tlon.js";
+
+import {
+  createZaloChannelPlugin,
+} from "./builtin-zalo.js";
+
 export type {
   ChannelId,
   AccountId,
@@ -125,6 +165,80 @@ export {
 } from "./builtin-mattermost.js";
 
 export {
+  createTelegramChannelPlugin,
+  TELEGRAM_CHANNEL_ID,
+  parseTelegramUpdate,
+  type TelegramWebhookResult,
+} from "./builtin-telegram.js";
+
+export {
+  createSignalChannelPlugin,
+  SIGNAL_CHANNEL_ID,
+  parseSignalWebhook,
+  type SignalWebhookResult,
+} from "./builtin-signal.js";
+
+export {
+  createWhatsAppChannelPlugin,
+  WHATSAPP_CHANNEL_ID,
+  parseWhatsAppWebhook,
+  verifyWhatsAppWebhook,
+  type WhatsAppWebhookResult,
+} from "./builtin-whatsapp.js";
+
+export {
+  createIrcChannelPlugin,
+  IRC_CHANNEL_ID,
+  parseIrcLine,
+  closeAllIrcConnections,
+  type IrcWebhookResult,
+} from "./builtin-irc.js";
+
+export {
+  createLineChannelPlugin,
+  LINE_CHANNEL_ID,
+  parseLineWebhook,
+  type LineWebhookResult,
+} from "./builtin-line.js";
+
+export {
+  createTwitchChannelPlugin,
+  TWITCH_CHANNEL_ID,
+  parseTwitchIrcLine,
+  closeAllTwitchConnections,
+  type TwitchWebhookResult,
+} from "./builtin-twitch.js";
+
+export {
+  createGoogleChatChannelPlugin,
+  GOOGLECHAT_CHANNEL_ID,
+  parseGoogleChatWebhook,
+  type GoogleChatWebhookResult,
+} from "./builtin-googlechat.js";
+
+export {
+  createSmsChannelPlugin,
+  SMS_CHANNEL_ID,
+  parseSmsWebhook,
+  type SmsWebhookResult,
+} from "./builtin-sms.js";
+
+export {
+  createTlonChannelPlugin,
+  TLON_CHANNEL_ID,
+  parseTlonEvent,
+  type TlonWebhookResult,
+} from "./builtin-tlon.js";
+
+export {
+  createZaloChannelPlugin,
+  ZALO_CHANNEL_ID,
+  parseZaloWebhook,
+  verifyZaloWebhook,
+  type ZaloWebhookResult,
+} from "./builtin-zalo.js";
+
+export {
   TypingIndicator,
   TypingCallbacks,
   type TypingCallback,
@@ -172,5 +286,35 @@ export function registerBuiltinChannels(): void {
   }
   if (!registry.has("mattermost" as never)) {
     registry.register(createMattermostChannelPlugin());
+  }
+  if (!registry.has("telegram" as never)) {
+    registry.register(createTelegramChannelPlugin());
+  }
+  if (!registry.has("signal" as never)) {
+    registry.register(createSignalChannelPlugin());
+  }
+  if (!registry.has("whatsapp" as never)) {
+    registry.register(createWhatsAppChannelPlugin());
+  }
+  if (!registry.has("irc" as never)) {
+    registry.register(createIrcChannelPlugin());
+  }
+  if (!registry.has("line" as never)) {
+    registry.register(createLineChannelPlugin());
+  }
+  if (!registry.has("twitch" as never)) {
+    registry.register(createTwitchChannelPlugin());
+  }
+  if (!registry.has("googlechat" as never)) {
+    registry.register(createGoogleChatChannelPlugin());
+  }
+  if (!registry.has("sms" as never)) {
+    registry.register(createSmsChannelPlugin());
+  }
+  if (!registry.has("tlon" as never)) {
+    registry.register(createTlonChannelPlugin());
+  }
+  if (!registry.has("zalo" as never)) {
+    registry.register(createZaloChannelPlugin());
   }
 }

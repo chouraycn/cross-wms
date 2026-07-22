@@ -1,11 +1,16 @@
 /**
  * TTS (文本转语音) 路由
  *
- * 对接 server/engine/tts，提供：
- *   POST /api/tts/synthesize — 合成语音，返回音频
- *   GET  /api/tts/voices     — 列出所有 Provider 及其可用音色
+ * 对接 server/adapters/tts 可插拔适配器注册表，提供：
+ *   GET  /api/tts/providers — 列出已注册的 Provider（含配置状态与完整元数据）
+ *   GET  /api/tts/voices     — 列出指定 Provider 的可用音色
+ *   POST /api/tts/synthesize — 合成语音，返回音频文件 URL
  *   GET  /api/tts/history    — 列出最近合成记录（模块级内存缓存）
- *   GET  /api/tts/providers  — 列出已注册的 Provider（轻量元数据）
+ *   DELETE /api/tts/history/:id — 删除指定历史记录
+ *
+ * Provider 通过 initBuiltinTtsProviders 惰性注册；首次访问时动态 import 对应
+ * 适配器模块。凭证默认从环境变量读取，调用方可通过请求体覆盖 apiKey/apiEndpoint
+ * 等字段以支持多账号场景。
  */
 
 import { Router } from 'express';
@@ -15,12 +20,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 import {
-  getDefaultTTSRuntime,
-  listVoices,
-  type TTSRequest,
-  type Voice,
-  type TTSProviderId,
-} from '../engine/tts/index.js';
+  initBuiltinTtsProviders,
+  getTtsProvider,
+  listTtsProviderIds,
+  normalizeProviderId,
+  type ITTSProvider,
+  type TTSConfig,
+  type AudioFormat,
+} from '../adapters/tts/index.js';
+
+// 模块加载时注册内置 Provider（覆盖式注册，可安全重复调用）
+initBuiltinTtsProviders();
 
 const router: Router = Router();
 
@@ -63,7 +73,14 @@ interface SynthesizeRequestBody {
   volume?: unknown;
   sampleRate?: unknown;
   ssml?: unknown;
-  /** 文本预处理选项。 */
+  /** 凭证/端点覆盖（可选，默认走环境变量）。 */
+  apiKey?: unknown;
+  apiEndpoint?: unknown;
+  region?: unknown;
+  modelId?: unknown;
+  appId?: unknown;
+  token?: unknown;
+  /** 文本预处理选项（前端预处理开关，后端透传元数据）。 */
   normalizeNumbers?: unknown;
   normalizePunctuation?: unknown;
   fullWidthToHalf?: unknown;
@@ -94,21 +111,81 @@ function truncate(text: string, max = 80): string {
 }
 
 /**
- * GET /api/tts/providers
- * 返回已注册的 Provider 元数据（用于 UI 选择器）。
+ * 自动选择已配置的 Provider — 按 autoSelectOrder 升序遍历，返回首个
+ * isConfigured 的 Provider。未配置任何凭证时返回 null。
  */
-router.get('/providers', (_req, res) => {
+async function autoSelectProvider(config: TTSConfig): Promise<ITTSProvider | null> {
+  const ids = listTtsProviderIds();
+  const candidates = await Promise.all(
+    ids.map(async (id) => {
+      const provider = await getTtsProvider(id);
+      if (!provider) return null;
+      try {
+        return provider.isConfigured(config) ? provider : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const configured = candidates.filter((p): p is ITTSProvider => p !== null);
+  if (configured.length === 0) return null;
+  configured.sort((a, b) => a.autoSelectOrder - b.autoSelectOrder);
+  return configured[0];
+}
+
+/**
+ * 解析合成目标 Provider：显式指定（含别名）走 normalizeProviderId；
+ * 'auto' 或未指定走 autoSelectProvider。
+ */
+async function resolveProviderForSynthesis(
+  hint: string | undefined,
+  config: TTSConfig,
+): Promise<ITTSProvider | null> {
+  const trimmed = hint?.trim().toLowerCase();
+  if (!trimmed || trimmed === 'auto') {
+    return autoSelectProvider(config);
+  }
+  const canonical = normalizeProviderId(trimmed);
+  if (!canonical) return null;
+  return getTtsProvider(canonical);
+}
+
+/**
+ * GET /api/tts/providers
+ * 返回已注册的 Provider 完整元数据（含 configured 标志，用于 UI 选择器）。
+ */
+router.get('/providers', async (_req, res) => {
   try {
-    const runtime = getDefaultTTSRuntime();
-    const providers = runtime.getRegistry().list().map((p) => ({
-      id: p.id,
-      label: p.label,
-      languages: [...p.languages],
-      defaultVoice: p.defaultVoice,
-      defaultFormat: p.defaultFormat,
-      supportedFormats: [...p.supportedFormats],
-    }));
-    res.json({ ok: true, data: providers });
+    const ids = listTtsProviderIds();
+    const providers = await Promise.all(
+      ids.map(async (id) => {
+        const provider = await getTtsProvider(id);
+        if (!provider) return null;
+        let configured = false;
+        try {
+          configured = provider.isConfigured({});
+        } catch {
+          configured = false;
+        }
+        return {
+          id: provider.id,
+          label: provider.label,
+          aliases: provider.aliases ? [...provider.aliases] : [],
+          autoSelectOrder: provider.autoSelectOrder,
+          languages: [...provider.languages],
+          voices: [...provider.voices],
+          defaultVoice: provider.defaultVoice,
+          defaultModel: provider.defaultModel,
+          defaultFormat: provider.defaultFormat,
+          supportedFormats: [...provider.supportedFormats],
+          configured,
+        };
+      }),
+    );
+    res.json({
+      ok: true,
+      data: providers.filter((p): p is NonNullable<typeof p> => p !== null),
+    });
   } catch (err) {
     logger.error('[TTSRoute] GET /providers failed:', err);
     res.status(500).json({ ok: false, error: '获取 Provider 列表失败' });
@@ -117,14 +194,43 @@ router.get('/providers', (_req, res) => {
 
 /**
  * GET /api/tts/voices
- * 返回所有 Provider 的音色清单，可按 provider 过滤。
+ * 返回指定 Provider 的音色清单；未指定 provider 时聚合所有 Provider 的内置预设。
+ * query: provider=openai|elevenlabs|...（支持别名）
  */
-router.get('/voices', (req, res) => {
+router.get('/voices', async (req, res) => {
   try {
-    const providerId = toStr(req.query.provider);
-    const runtime = getDefaultTTSRuntime();
-    const voices: Voice[] = listVoices(runtime.getRegistry(), providerId);
-    res.json({ ok: true, data: voices });
+    const providerHint = toStr(req.query.provider);
+    if (providerHint && providerHint !== 'auto') {
+      const canonical = normalizeProviderId(providerHint);
+      if (!canonical) {
+        return res
+          .status(404)
+          .json({ ok: false, error: `未知 Provider: ${providerHint}` });
+      }
+      const provider = await getTtsProvider(canonical);
+      if (!provider) {
+        return res
+          .status(404)
+          .json({ ok: false, error: `Provider 未注册: ${canonical}` });
+      }
+      const voices = await provider.listVoices();
+      return res.json({ ok: true, data: voices });
+    }
+
+    // 聚合所有 Provider 的内置声音
+    const ids = listTtsProviderIds();
+    const all = await Promise.all(
+      ids.map(async (id) => {
+        const provider = await getTtsProvider(id);
+        if (!provider) return [] as ITTSProvider['voices'];
+        try {
+          return await provider.listVoices();
+        } catch {
+          return [...provider.voices];
+        }
+      }),
+    );
+    res.json({ ok: true, data: all.flat() });
   } catch (err) {
     logger.error('[TTSRoute] GET /voices failed:', err);
     res.status(500).json({ ok: false, error: '获取音色列表失败' });
@@ -143,28 +249,18 @@ router.post('/synthesize', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'text 不能为空' });
     }
 
-    const provider = toStr(body.provider) as TTSProviderId | 'auto' | undefined;
+    const providerHint = toStr(body.provider);
     const voice = toStr(body.voice);
     const language = toStr(body.language);
-    const format = toStr(body.format) as
-      | 'mp3'
-      | 'opus'
-      | 'wav'
-      | 'pcm'
-      | 'aac'
-      | undefined;
+    const format = toStr(body.format) as AudioFormat | undefined;
     const speed = toNumber(body.speed);
     const pitch = toNumber(body.pitch);
     const volume = toNumber(body.volume);
     const sampleRate = toNumber(body.sampleRate);
     const ssml = toBool(body.ssml, false);
 
-    // 文本预处理：UI 开关控制是否在客户端预处理，这里后端兜底执行。
-    // normalizeNumbers / normalizePunctuation / fullWidthToHalf 为前端预处理开关，
-    // 后端 synthesize 内部会按 Provider 自身策略执行预处理；此处仅作元数据透传。
-    const ttsRequest: TTSRequest = {
-      text,
-      provider,
+    // 构建 TTSConfig：请求体覆盖优先，缺失字段由 Provider 自行从环境变量解析
+    const config: TTSConfig = {
       voice,
       language,
       format,
@@ -172,11 +268,35 @@ router.post('/synthesize', async (req, res) => {
       pitch,
       volume,
       sampleRate,
-      ssml,
+      apiKey: toStr(body.apiKey),
+      apiEndpoint: toStr(body.apiEndpoint),
+      region: toStr(body.region),
+      modelId: toStr(body.modelId),
+      appId: toStr(body.appId),
+      token: toStr(body.token),
+      // ssml / 文本预处理开关透传给 Provider 自行解释
+      ['ssml']: ssml,
     };
 
-    const runtime = getDefaultTTSRuntime();
-    const result = await runtime.synthesize(ttsRequest);
+    const provider = await resolveProviderForSynthesis(providerHint, config);
+    if (!provider) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          providerHint && providerHint !== 'auto'
+            ? `未知或未注册的 Provider: ${providerHint}`
+            : '未配置任何 TTS Provider 凭证，请设置环境变量（如 OPENAI_API_KEY / ELEVENLABS_API_KEY / AZURE_SPEECH_KEY）或使用免密钥的 microsoft (Edge) Provider',
+      });
+    }
+
+    if (!provider.isConfigured(config)) {
+      return res.status(400).json({
+        ok: false,
+        error: `Provider "${provider.id}" 未配置凭证`,
+      });
+    }
+
+    const result = await provider.synthesize({ text, config });
 
     // 落盘到 uploads 目录，便于前端 <audio> 标签直接访问
     const fileId = uuidv4();
@@ -186,14 +306,15 @@ router.post('/synthesize', async (req, res) => {
     fs.writeFileSync(filePath, result.audio);
     const audioUrl = `/api/uploads/${savedFileName}`;
 
+    const meta = (result.metadata ?? {}) as Record<string, unknown>;
     const entry: TTSHistoryEntry = {
       id: fileId,
       text,
       textPreview: truncate(text),
-      provider: result.provider,
-      voice: result.voice,
+      provider: String(meta['provider'] ?? provider.id),
+      voice: String(meta['voice'] ?? voice ?? provider.defaultVoice),
       format: result.format,
-      sampleRate: result.sampleRate,
+      sampleRate: result.sampleRate ?? sampleRate,
       speed,
       pitch,
       volume,
@@ -208,7 +329,7 @@ router.post('/synthesize', async (req, res) => {
     }
 
     logger.info(
-      `[TTSRoute] 合成成功 provider=${result.provider} voice=${result.voice} format=${result.format} size=${result.audio.length}`,
+      `[TTSRoute] 合成成功 provider=${entry.provider} voice=${entry.voice} format=${result.format} size=${result.audio.length}`,
     );
 
     res.json({ ok: true, data: entry });

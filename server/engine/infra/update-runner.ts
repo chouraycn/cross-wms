@@ -802,29 +802,34 @@ async function runStep(opts: RunStepOptions): Promise<UpdateStepResult> {
 }
 
 // ============================================================================
-// 降级的主函数（依赖未移植模块，抛出 "not implemented" 错误）
+// 降级的主函数（依赖未移植模块，返回降级结果）
 // ============================================================================
 
 /**
  * 解析更新安装表面。
  * 降级说明：依赖 update-global.ts 的 detectGlobalInstallManagerForRoot 等函数，
- * 这些模块尚未移植，此处降级为抛出错误。
+ * 这些模块尚未移植，此处降级为返回 "missing" 安装表面。
  */
 export async function resolveUpdateInstallSurface(
   _opts: Pick<UpdateRunnerOptions, "cwd" | "argv1" | "timeoutMs" | "runCommand"> = {},
 ): Promise<UpdateInstallSurface> {
-  throw new Error(
-    "resolveUpdateInstallSurface not implemented: update-global module not ported",
-  );
+  return {
+    kind: "missing",
+    mode: "unknown",
+  };
 }
 
 /**
  * 运行网关更新。
  * 降级说明：依赖 update-global.ts、control-ui-assets.ts、daemon/gateway-entrypoint.ts 等
- * 未移植模块，此处降级为抛出错误。完整实现见 openclaw/src/infra/update-runner.ts。
+ * 未移植模块，此处降级为返回 "skipped" 结果。完整实现见 openclaw/src/infra/update-runner.ts。
  */
 export async function runGatewayUpdate(_opts: UpdateRunnerOptions = {}): Promise<UpdateRunResult> {
-  throw new Error(
-    "runGatewayUpdate not implemented: update-global/control-ui-assets/gateway-entrypoint modules not ported",
-  );
+  return {
+    status: "skipped",
+    mode: "unknown",
+    steps: [],
+    durationMs: 0,
+    reason: "update-global/control-ui-assets/gateway-entrypoint modules not ported",
+  };
 }

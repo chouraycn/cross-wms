@@ -4,8 +4,8 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "../../infra/string-coerce.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
+} from "../infra/string-coerce.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import type {
   CompiledConfiguredBinding,
   ConfiguredBindingChannel,
@@ -15,7 +15,7 @@ import type {
   ChannelConfiguredBindingConversationRef,
   ChannelConfiguredBindingMatch,
 } from "./types.adapters.js";
-import type { ConversationRef } from "../../infra/outbound/session-binding-service.js";
+import type { ConversationRef } from "../infra/session-binding-service.js";
 
 export function resolveAccountMatchPriority(match: string | undefined, actual: string): 0 | 1 | 2 {
   const trimmed = (match ?? "").trim();

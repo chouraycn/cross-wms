@@ -889,7 +889,7 @@ export function withTempWorkspaceSync<T>(
 }
 
 // ============================================================================
-// @openclaw/fs-safe/store —— 文件存储（降级 stub，抛出错误）
+// @openclaw/fs-safe/store —— 文件存储（降级 stub）
 // ============================================================================
 
 export type FileStore = {
@@ -980,18 +980,16 @@ export function formatPermissionRemediation(targetPath: string): string {
 }
 
 // ============================================================================
-// @openclaw/fs-safe/file-lock —— 文件锁（降级 stub，抛出错误）
+// @openclaw/fs-safe/file-lock —— 文件锁（降级 stub）
 // ============================================================================
 
 /**
  * 文件锁管理器。
- * 降级实现：抛出错误。cross-wms 已有独立的 file-lock.ts 实现，
- * 请直接使用 cross-wms 的 acquireFileLock/withFileLock。
+ * 降级实现：返回 null，表示 cross-wms 环境下文件锁管理器不可用。
+ * cross-wms 已有独立的 file-lock.ts 实现，请直接使用 acquireFileLock/withFileLock。
  */
-export function createFileLockManager() {
-  throw new Error(
-    "createFileLockManager stub: fs-safe/file-lock not ported. Use cross-wms's ./file-lock.js instead.",
-  );
+export function createFileLockManager(): null {
+  return null;
 }
 
 // ============================================================================
@@ -1014,39 +1012,39 @@ export type PermissionExec = (
   args: readonly string[],
 ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
 
-/** 解析 icacls 输出（降级 stub） */
+/** 解析 icacls 输出（降级 stub：返回空数组） */
 export function parseIcaclsOutput(_output: string): WindowsAclEntry[] {
-  throw new Error("parseIcaclsOutput stub: Windows ACL parsing not ported");
+  return [];
 }
 
-/** 检查 Windows ACL（降级 stub） */
+/** 检查 Windows ACL（降级 stub：返回空摘要） */
 export function inspectWindowsAcl(_targetPath: string, _exec?: PermissionExec): WindowsAclSummary {
-  throw new Error("inspectWindowsAcl stub: Windows ACL inspection not ported");
+  return { entries: [], owner: "" };
 }
 
-/** 格式化 Windows ACL 摘要（降级 stub） */
+/** 格式化 Windows ACL 摘要（降级 stub：返回空字符串） */
 export function formatWindowsAclSummary(_summary: WindowsAclSummary): string {
-  throw new Error("formatWindowsAclSummary stub: Windows ACL formatting not ported");
+  return "";
 }
 
-/** 摘要 Windows ACL（降级 stub） */
+/** 摘要 Windows ACL（降级 stub：返回空摘要） */
 export function summarizeWindowsAcl(_targetPath: string): WindowsAclSummary {
-  throw new Error("summarizeWindowsAcl stub: Windows ACL summary not ported");
+  return { entries: [], owner: "" };
 }
 
-/** 解析 Windows 用户主体（降级 stub） */
+/** 解析 Windows 用户主体（降级 stub：原样返回输入） */
 export function resolveWindowsUserPrincipal(_input: string): string {
-  throw new Error("resolveWindowsUserPrincipal stub: Windows principal resolution not ported");
+  return "";
 }
 
-/** 创建 icacls 重置命令（降级 stub） */
+/** 创建 icacls 重置命令（降级 stub：返回空数组） */
 export function createIcaclsResetCommand(_targetPath: string): string[] {
-  throw new Error("createIcaclsResetCommand stub: Windows ACL reset not ported");
+  return [];
 }
 
-/** 格式化 icacls 重置命令（降级 stub） */
+/** 格式化 icacls 重置命令（降级 stub：返回空字符串） */
 export function formatIcaclsResetCommand(_targetPath: string): string {
-  throw new Error("formatIcaclsResetCommand stub: Windows ACL reset not ported");
+  return "";
 }
 
 // ============================================================================

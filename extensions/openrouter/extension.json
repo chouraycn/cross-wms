@@ -1,0 +1,10 @@
+{
+  "id": "openrouter",
+  "name": "OpenRouter Provider",
+  "description": "OpenRouter multi-model aggregator LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

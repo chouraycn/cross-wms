@@ -1645,7 +1645,16 @@ export * from "./prepare.runtime.js";
 export * from "./prepare.js";
 export * from "./private-temp-file.js";
 export * from "./profile-list.js";
-export * from "./profiles.js";
+export {
+  ProfileUsageStats,
+  setAuthProfileOrder,
+  promoteAuthProfileInOrder,
+  upsertAuthProfile,
+  upsertAuthProfileWithLock,
+  removeProviderAuthProfilesWithLock,
+  clearLastGoodProfileWithLock,
+  markAuthProfileSuccess,
+} from "./profiles.js";
 export * from "./prompt-cache-observability.js";
 export * from "./prompt-cache-retention.js";
 export * from "./prompt-compaction-hook-helpers.js";
@@ -1693,7 +1702,34 @@ export * from "./session-history.js";
 export * from "./session-manager-cache.js";
 export * from "./session-manager-init.js";
 export * from "./session-manager-runtime-registry.js";
-export * from "./session-manager.js";
+export {
+  SessionEntry,
+  FileEntry,
+  ReadonlySessionManager,
+  SessionListProgress,
+  SessionHeader,
+  NewSessionOptions,
+  SessionEntryBase,
+  SessionMessageEntry,
+  ThinkingLevelChangeEntry,
+  ModelChangeEntry,
+  CompactionEntry,
+  BranchSummaryEntry,
+  CustomEntry,
+  LabelEntry,
+  SessionInfoEntry,
+  CustomMessageEntry,
+  SessionTreeNode,
+  SessionContext,
+  SessionInfo,
+  migrateSessionEntries,
+  parseSessionEntries,
+  getLatestCompactionEntry,
+  buildSessionContext,
+  getDefaultSessionDir,
+  loadEntriesFromFile,
+  findMostRecentSession,
+} from "./session-manager.js";
 export * from "./session-override.js";
 export * from "./session-status-tool.js";
 export * from "./session-status.runtime.js";
@@ -1745,7 +1781,12 @@ export * from "./tool-definition-wrapper.js";
 export * from "./tool-media-payloads.js";
 export * from "./tool-name-allowlist.js";
 export * from "./tool-result-char-estimator.js";
-export * from "./tool-result-context-guard.js";
+export {
+  PREEMPTIVE_CONTEXT_OVERFLOW_MESSAGE,
+  installToolResultContextGuard,
+  installContextEngineLoopHook,
+  markTranscriptPromptText,
+} from "./tool-result-context-guard.js";
 export * from "./tool-result-middleware.js";
 export * from "./tool-result-truncation.js";
 export * from "./tool-runtime.helpers.js";

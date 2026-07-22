@@ -4,7 +4,13 @@ export type ExtensionKind =
   | 'memory-host'
   | 'channel'
   | 'tool'
-  | 'service';
+  | 'service'
+  | 'web-search'
+  | 'image-generation'
+  | 'video-generation'
+  | 'audio-provider'
+  | 'security-provider'
+  | 'api-integration';
 
 export interface ExtensionManifest {
   id: string;

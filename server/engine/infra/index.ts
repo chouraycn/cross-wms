@@ -716,7 +716,7 @@ export * from './exec-argv-analysis.js';
 export * from './exec-authorization-plan.js';
 export * from './exec-authorization-render.js';
 export * from './exec-auto-review.js';
-export * from './exec-command-analysis-types.js';
+export { ShellChainOperator } from './exec-command-analysis-types.js';
 export * from './exec-command-resolution.js';
 export * from './exec-control-command-guard.js';
 export * from './exec-policy.js';
@@ -735,7 +735,11 @@ export * from './form-data.js';
 export * from './format-datetime.js';
 export * from './format-duration.js';
 export * from './format-relative.js';
-export * from './format.js';
+export {
+  formatCommandSpans,
+  formatOutboundDeliverySummary,
+  formatGatewaySummary,
+} from './format.js';
 export * from './formatting.js';
 export * from './gateway.js';
 export * from './heartbeat-cooldown.js';
@@ -767,7 +771,11 @@ export * from './mirror.js';
 export * from './network-discovery-display.js';
 export * from './node-pairing.js';
 export * from './node-proxy-agent.js';
-export * from './npm-integrity.js';
+export {
+  NpmIntegrityDriftPayload,
+  resolveNpmIntegrityDrift,
+  resolveNpmIntegrityDriftWithDefaultMessage,
+} from './npm-integrity.js';
 export * from './npm-managed-root.js';
 export * from './npm-pack-install.js';
 export * from './outbound-policy.js';
@@ -778,7 +786,21 @@ export * from './package-json.js';
 export * from './package-update-steps.js';
 export * from './package-update-utils.js';
 export * from './parse-offsetless-zoned-datetime.js';
-export * from './payloads.js';
+export {
+  NormalizedOutboundPayload,
+  OutboundPayloadPlan,
+  OutboundPayloadMirror,
+  createOutboundPayloadPlan,
+  projectOutboundPayloadPlanForDelivery,
+  projectOutboundPayloadPlanForOutbound,
+  projectOutboundPayloadPlanForJson,
+  projectOutboundPayloadPlanForMirror,
+  summarizeOutboundPayloadForTransport,
+  normalizeReplyPayloadsForDelivery,
+  normalizeOutboundPayloads,
+  normalizeOutboundPayloadsForJson,
+  formatOutboundPayloadLog,
+} from './payloads.js';
 export * from './policy.js';
 export * from './provider-usage-plugin-runtime.test-mocks.js';
 export * from './provider-usage.auth.js';
@@ -794,7 +816,7 @@ export * from './provider-usage.fetch.zai.js';
 // export * from './provider-usage.load.js';  // removed: TS2308 conflict
 // export * from './provider-usage.shared.js';  // removed: TS2308 conflict
 // export * from './provider-usage.js';  // removed: TS2308 conflict
-export * from './provider-usage.types.js';
+export { UsageSummary, UsageProviderId } from './provider-usage.types.js';
 export * from './proxy-fetch.js';
 export * from './proxy-lifecycle.js';
 export * from './proxy-tls.js';
@@ -817,7 +839,15 @@ export * from './scripts-modules.js';
 export * from './send-deps.js';
 export * from './session-binding-normalization.js';
 // export * from './session-binding-service.js';  // removed: TS2308 conflict
-export * from './session-binding.types.js';
+export {
+  BindingTargetKind,
+  BindingStatus,
+  SessionBindingPlacement,
+  SessionBindingErrorCode,
+  SessionBindingBindInput,
+  SessionBindingUnbindInput,
+  SessionBindingCapabilities,
+} from './session-binding.types.js';
 export * from './session-context.js';
 export * from './session-cost-usage.js';
 export * from './session-maintenance-warning.js';

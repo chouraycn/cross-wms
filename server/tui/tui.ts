@@ -3,7 +3,7 @@ import type {
   TUIMessage,
   TUIState,
   TUIThemeMode,
-  TUICommand,
+  TUICommand as TUIParsedCommand,
   TUISession,
   TUIRenderOptions,
 } from './types.js';
@@ -157,7 +157,7 @@ export class TUI extends EventEmitter {
       return;
     }
 
-    const command: TUICommand = {
+    const command: TUIParsedCommand = {
       type: parsed.command,
       args: parsed.args,
       raw: input,

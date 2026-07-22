@@ -538,8 +538,23 @@ export * from './configured-state.js';
 export * from './conversation-bindings.js';
 export * from './decision.js';
 export * from './direct-text-media.js';
-export * from './directory-config-helpers.js';
-export * from './directory-types.js';
+export {
+  DirectoryConfigParams,
+  applyDirectoryQueryAndLimit,
+  toDirectoryEntries,
+  collectNormalizedDirectoryIds,
+  listDirectoryEntriesFromSources,
+  listInspectedDirectoryEntriesFromSources,
+  createInspectedDirectoryEntriesLister,
+  listResolvedDirectoryEntriesFromSources,
+  createResolvedDirectoryEntriesLister,
+  listDirectoryUserEntriesFromAllowFrom,
+  listDirectoryUserEntriesFromAllowFromAndMapKeys,
+  listDirectoryGroupEntriesFromMapKeys,
+  listDirectoryGroupEntriesFromMapKeysAndAllowFrom,
+  listResolvedDirectoryUserEntriesFromAllowFrom,
+  listResolvedDirectoryGroupEntriesFromMapKeys,
+} from './directory-config-helpers.js';
 export * from './dm-access.js';
 export * from './dm-allow-state.js';
 export * from './doctor-contract-api.js';

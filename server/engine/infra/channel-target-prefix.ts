@@ -1,9 +1,9 @@
 // 移植自 openclaw/src/infra/outbound/channel-target-prefix.ts
 // 目标前缀辅助函数分离 provider 前缀和通用目标类型前缀
 
-import { normalizeOptionalLowercaseString } from "../string-coerce.js";
-import { getActivePluginChannelRegistryFromState } from "../../plugins/runtime-channel-state.js";
-import { normalizeMessageChannel } from "../../utils/message-channel-core.js";
+import { normalizeOptionalLowercaseString } from "./string-coerce.js";
+import { getActivePluginChannelRegistryFromState } from "../plugins/runtime-channel-state.js";
+import { normalizeMessageChannel } from "../channels/message-channel.js";
 
 const TARGET_KIND_PREFIXES = new Set([
   "channel", "conversation", "dm", "group", "room", "thread", "user",

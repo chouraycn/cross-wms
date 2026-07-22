@@ -1,8 +1,8 @@
 // 移植自 openclaw/src/channels/plugins/config-writes.ts
 // 渠道配置写入策略门面
 
-import { normalizeLowercaseStringOrEmpty } from "../../infra/string-coerce.js";
-import type { OpenClawConfig } from "../../infra/_runtime-stubs.js";
+import { normalizeLowercaseStringOrEmpty } from "../infra/string-coerce.js";
+import type { OpenClawConfig } from "../infra/_runtime-stubs.js";
 import {
   authorizeConfigWriteShared,
   canBypassConfigWritePolicyShared,

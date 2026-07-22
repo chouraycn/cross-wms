@@ -1,0 +1,10 @@
+{
+  "id": "stepfun",
+  "name": "StepFun Provider",
+  "description": "StepFun (Step) LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "ollama",
+  "name": "Ollama Provider",
+  "description": "Ollama local LLM provider extension (no API key required)",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

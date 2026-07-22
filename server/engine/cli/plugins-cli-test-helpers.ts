@@ -3,7 +3,7 @@ export function setInstalledPluginIndexInstallRecords(..._args: unknown[]): unkn
   console.warn('setInstalledPluginIndexInstallRecords is not available in cross-wms'); return undefined;
 }
 
-export async function runPluginsCommand(..._args: unknown[]): Promise<unknown> {
+export async function runPluginsCommand(..._args: unknown[]): Promise<void> {
   console.warn('runPluginsCommand is not available in cross-wms');
 }
 

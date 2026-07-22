@@ -1,5 +1,5 @@
 
-export async function gatherDaemonStatus(..._args: unknown[]): Promise<unknown> {
+export async function gatherDaemonStatus(..._args: unknown[]): Promise<void> {
   console.warn('gatherDaemonStatus is not available in cross-wms');
 }
 

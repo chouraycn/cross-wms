@@ -1,0 +1,10 @@
+{
+  "id": "exa",
+  "name": "Exa Web Search",
+  "description": "Exa (Metaphor) neural web search provider extension",
+  "version": "1.0.0",
+  "kind": "web-search",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

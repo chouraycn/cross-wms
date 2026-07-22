@@ -15,7 +15,7 @@ export function createDaemonActionContext(..._args: unknown[]): unknown {
   console.warn('createDaemonActionContext is not available in cross-wms'); return undefined;
 }
 
-export async function installDaemonServiceAndEmit(..._args: unknown[]): Promise<unknown> {
+export async function installDaemonServiceAndEmit(..._args: unknown[]): Promise<void> {
   console.warn('installDaemonServiceAndEmit is not available in cross-wms');
 }
 

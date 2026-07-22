@@ -1,0 +1,10 @@
+{
+  "id": "video-generation-core",
+  "name": "Video Generation Core",
+  "description": "Core video generation contract and routing extension",
+  "version": "1.0.0",
+  "kind": "video-generation",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

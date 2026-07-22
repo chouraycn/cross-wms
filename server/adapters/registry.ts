@@ -372,6 +372,106 @@ export function initBuiltinAdapters(): void {
     const m = await import('./firecrawlAdapter.js');
     return m.firecrawlAdapterFactory;
   });
+  registerAdapter('together-chat', async () => {
+    const m = await import('./togetherAdapter.js');
+    return m.togetherAdapterFactory;
+  });
+  registerAdapter('fireworks-chat', async () => {
+    const m = await import('./fireworksAdapter.js');
+    return m.fireworksAdapterFactory;
+  });
+  registerAdapter('volcengine-chat', async () => {
+    const m = await import('./volcengineAdapter.js');
+    return m.volcengineAdapterFactory;
+  });
+  registerAdapter('tencent-chat', async () => {
+    const m = await import('./tencentAdapter.js');
+    return m.tencentAdapterFactory;
+  });
+  registerAdapter('stepfun-chat', async () => {
+    const m = await import('./stepfunAdapter.js');
+    return m.stepfunAdapterFactory;
+  });
+  registerAdapter('venice-chat', async () => {
+    const m = await import('./veniceAdapter.js');
+    return m.veniceAdapterFactory;
+  });
+  registerAdapter('sglang-chat', async () => {
+    const m = await import('./sglangAdapter.js');
+    return m.sglangAdapterFactory;
+  });
+  registerAdapter('opencode-chat', async () => {
+    const m = await import('./opencodeAdapter.js');
+    return m.opencodeAdapterFactory;
+  });
+  registerAdapter('minimax-chat', async () => {
+    const m = await import('./minimaxAdapter.js');
+    return m.minimaxAdapterFactory;
+  });
+  registerAdapter('codex-chat', async () => {
+    const m = await import('./codexAdapter.js');
+    return m.codexAdapterFactory;
+  });
+  registerAdapter('clickclack-chat', async () => {
+    const m = await import('./clickclackAdapter.js');
+    return m.clickclackAdapterFactory;
+  });
+  registerAdapter('gradium-chat', async () => {
+    const m = await import('./gradiumAdapter.js');
+    return m.gradiumAdapterFactory;
+  });
+  registerAdapter('gmi-chat', async () => {
+    const m = await import('./gmiAdapter.js');
+    return m.gmiAdapterFactory;
+  });
+  registerAdapter('parallel-chat', async () => {
+    const m = await import('./parallelAdapter.js');
+    return m.parallelAdapterFactory;
+  });
+  registerAdapter('kilocode-chat', async () => {
+    const m = await import('./kilocodeAdapter.js');
+    return m.kilocodeAdapterFactory;
+  });
+  registerAdapter('opencode-go-chat', async () => {
+    const m = await import('./opencodeGoAdapter.js');
+    return m.opencodeGoAdapterFactory;
+  });
+  registerAdapter('zalouser-chat', async () => {
+    const m = await import('./zalouserAdapter.js');
+    return m.zalouserAdapterFactory;
+  });
+  registerAdapter('copilot-chat', async () => {
+    const m = await import('./copilotAdapter.js');
+    return m.copilotAdapterFactory;
+  });
+  registerAdapter('copilot-proxy-chat', async () => {
+    const m = await import('./copilotProxyAdapter.js');
+    return m.copilotProxyAdapterFactory;
+  });
+  registerAdapter('github-models-chat', async () => {
+    const m = await import('./githubModelsAdapter.js');
+    return m.githubModelsAdapterFactory;
+  });
+  registerAdapter('deepinfra-chat', async () => {
+    const m = await import('./deepinfraAdapter.js');
+    return m.deepinfraAdapterFactory;
+  });
+  registerAdapter('bedrock-chat', async () => {
+    const m = await import('./amazonBedrockAdapter.js');
+    return m.amazonBedrockAdapterFactory;
+  });
+  registerAdapter('cloudflare-chat', async () => {
+    const m = await import('./cloudflareAiAdapter.js');
+    return m.cloudflareAiAdapterFactory;
+  });
+  registerAdapter('vercel-gateway-chat', async () => {
+    const m = await import('./vercelAiGatewayAdapter.js');
+    return m.vercelAiGatewayAdapterFactory;
+  });
+  registerAdapter('cf-ai-gateway-chat', async () => {
+    const m = await import('./cloudflareAiGatewayAdapter.js');
+    return m.cloudflareAiGatewayAdapterFactory;
+  });
   // 非生成式 / 多媒体适配器
   registerSttAdapter('deepgram-stt', async () => {
     const m = await import('./deepgramSttAdapter.js');
@@ -608,6 +708,195 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
       providerLower === 'fire-crawl' ||
       endpointLower.includes('api.firecrawl.dev')) {
     return 'firecrawl-chat';
+  }
+
+  // Together AI
+  if (providerLower === 'together' ||
+      providerLower === 'together-ai' ||
+      providerLower === 'together ai' ||
+      endpointLower.includes('api.together.xyz')) {
+    return 'together-chat';
+  }
+
+  // Fireworks AI
+  if (providerLower === 'fireworks' ||
+      providerLower === 'fireworks-ai' ||
+      providerLower === 'fireworks ai' ||
+      endpointLower.includes('api.fireworks.ai')) {
+    return 'fireworks-chat';
+  }
+
+  // Volcengine Ark (火山引擎方舟 - 显式 volcengine-chat provider 时使用新适配器；
+  // 注意：通用 volcengine/doubao/volces.com 仍优先走 byteplus-chat，见上方块)
+  if (providerLower === 'volcengine-chat' ||
+      providerLower === 'volcengine-ark' ||
+      providerLower === 'ark-chat') {
+    return 'volcengine-chat';
+  }
+
+  // Tencent Hunyuan (腾讯混元)
+  if (providerLower === 'tencent' ||
+      providerLower === 'hunyuan' ||
+      providerLower === 'tencent-hunyuan' ||
+      endpointLower.includes('hunyuan.tencentcloudapi.com')) {
+    return 'tencent-chat';
+  }
+
+  // StepFun (阶跃星辰)
+  if (providerLower === 'stepfun' ||
+      providerLower === 'step-fun' ||
+      providerLower === 'step fun' ||
+      endpointLower.includes('api.stepfun.com')) {
+    return 'stepfun-chat';
+  }
+
+  // Venice AI
+  if (providerLower === 'venice' ||
+      endpointLower.includes('api.venice.ai')) {
+    return 'venice-chat';
+  }
+
+  // SGLang (本地推理引擎)
+  if (providerLower === 'sglang' ||
+      providerLower === 'sg-lang' ||
+      endpointLower.includes('localhost:30000') ||
+      endpointLower.includes('127.0.0.1:30000')) {
+    return 'sglang-chat';
+  }
+
+  // OpenCode (OpenAI 兼容代理)
+  if (providerLower === 'opencode' ||
+      providerLower === 'open-code' ||
+      providerLower === 'open code') {
+    return 'opencode-chat';
+  }
+
+  // MiniMax
+  if (providerLower === 'minimax' ||
+      providerLower === 'mini-max' ||
+      providerLower === 'mini max' ||
+      endpointLower.includes('api.minimax.chat')) {
+    return 'minimax-chat';
+  }
+
+  // Codex (OpenAI Codex API)
+  if (providerLower === 'codex' ||
+      providerLower === 'openai-codex' ||
+      providerLower === 'codex-cli') {
+    return 'codex-chat';
+  }
+
+  // ClickClack
+  if (providerLower === 'clickclack' ||
+      providerLower === 'click-clack' ||
+      providerLower === 'click clack') {
+    return 'clickclack-chat';
+  }
+
+  // Gradium
+  if (providerLower === 'gradium' ||
+      endpointLower.includes('api.gradium.ai')) {
+    return 'gradium-chat';
+  }
+
+  // GMI (Global Motor Intelligence)
+  if (providerLower === 'gmi' ||
+      endpointLower.includes('api.gmi.cn') ||
+      endpointLower.includes('api.gmi.ai')) {
+    return 'gmi-chat';
+  }
+
+  // Parallel AI
+  if (providerLower === 'parallel' ||
+      providerLower === 'parallel-ai' ||
+      providerLower === 'parallel ai' ||
+      endpointLower.includes('api.parallel.ai')) {
+    return 'parallel-chat';
+  }
+
+  // Kilocode
+  if (providerLower === 'kilocode' ||
+      providerLower === 'kilo-code' ||
+      providerLower === 'kilo code') {
+    return 'kilocode-chat';
+  }
+
+  // OpenCode Go
+  if (providerLower === 'opencode-go' ||
+      providerLower === 'opencode go' ||
+      providerLower === 'opencodego') {
+    return 'opencode-go-chat';
+  }
+
+  // Zalo Server (本地推理)
+  if (providerLower === 'zalouser' ||
+      providerLower === 'zalo-server' ||
+      providerLower === 'zalo server' ||
+      endpointLower.includes('zaloserver.local')) {
+    return 'zalouser-chat';
+  }
+
+  // GitHub Copilot
+  if (providerLower === 'copilot' ||
+      providerLower === 'github-copilot' ||
+      providerLower === 'github copilot' ||
+      endpointLower.includes('api.githubcopilot.com')) {
+    return 'copilot-chat';
+  }
+
+  // Copilot Proxy (OpenAI 代理)
+  if (providerLower === 'copilot-proxy' ||
+      providerLower === 'copilot proxy') {
+    return 'copilot-proxy-chat';
+  }
+
+  // GitHub Models (Azure-hosted)
+  if (providerLower === 'github-models' ||
+      providerLower === 'github models' ||
+      providerLower === 'githubmodels' ||
+      endpointLower.includes('models.inference.ai.azure.com')) {
+    return 'github-models-chat';
+  }
+
+  // DeepInfra
+  if (providerLower === 'deepinfra' ||
+      providerLower === 'deep-infra' ||
+      providerLower === 'deep infra' ||
+      endpointLower.includes('api.deepinfra.com')) {
+    return 'deepinfra-chat';
+  }
+
+  // Amazon Bedrock
+  if (providerLower === 'bedrock' ||
+      providerLower === 'aws-bedrock' ||
+      providerLower === 'aws bedrock' ||
+      providerLower === 'amazon-bedrock' ||
+      endpointLower.includes('bedrock-runtime.amazonaws.com')) {
+    return 'bedrock-chat';
+  }
+
+  // Cloudflare AI
+  if (providerLower === 'cloudflare' ||
+      providerLower === 'cloudflare-ai' ||
+      providerLower === 'cloudflare ai' ||
+      endpointLower.includes('api.cloudflare.com/client/v4')) {
+    return 'cloudflare-chat';
+  }
+
+  // Vercel AI Gateway
+  if (providerLower === 'vercel-gateway' ||
+      providerLower === 'vercel gateway' ||
+      providerLower === 'vercel-ai-gateway' ||
+      endpointLower.includes('ai-gateway.vercel.app')) {
+    return 'vercel-gateway-chat';
+  }
+
+  // Cloudflare AI Gateway
+  if (providerLower === 'cf-ai-gateway' ||
+      providerLower === 'cloudflare-ai-gateway' ||
+      providerLower === 'cloudflare ai gateway' ||
+      endpointLower.includes('gateway.ai.cloudflare.com')) {
+    return 'cf-ai-gateway-chat';
   }
 
   // Deepgram (语音转文字)

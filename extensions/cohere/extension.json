@@ -1,0 +1,10 @@
+{
+  "id": "cohere",
+  "name": "Cohere Provider",
+  "description": "Cohere Command R LLM provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

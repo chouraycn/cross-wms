@@ -135,3 +135,13 @@ export { createMatrixChannelPlugin, MATRIX_CHANNEL_ID } from "./builtin-matrix.j
 export { createNostrChannelPlugin, NOSTR_CHANNEL_ID } from "./builtin-nostr.js";
 export { createMsTeamsChannelPlugin, MSTEAMS_CHANNEL_ID } from "./builtin-msteams.js";
 export { createMattermostChannelPlugin, MATTERMOST_CHANNEL_ID } from "./builtin-mattermost.js";
+export { createTelegramChannelPlugin, TELEGRAM_CHANNEL_ID } from "./builtin-telegram.js";
+export { createSignalChannelPlugin, SIGNAL_CHANNEL_ID } from "./builtin-signal.js";
+export { createWhatsAppChannelPlugin, WHATSAPP_CHANNEL_ID } from "./builtin-whatsapp.js";
+export { createIrcChannelPlugin, IRC_CHANNEL_ID } from "./builtin-irc.js";
+export { createLineChannelPlugin, LINE_CHANNEL_ID } from "./builtin-line.js";
+export { createTwitchChannelPlugin, TWITCH_CHANNEL_ID } from "./builtin-twitch.js";
+export { createGoogleChatChannelPlugin, GOOGLECHAT_CHANNEL_ID } from "./builtin-googlechat.js";
+export { createSmsChannelPlugin, SMS_CHANNEL_ID } from "./builtin-sms.js";
+export { createTlonChannelPlugin, TLON_CHANNEL_ID } from "./builtin-tlon.js";
+export { createZaloChannelPlugin, ZALO_CHANNEL_ID } from "./builtin-zalo.js";

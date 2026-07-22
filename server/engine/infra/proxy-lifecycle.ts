@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/net/proxy/proxy-lifecycle.ts
 // 托管代理生命周期管理
 
-import type { ProxyConfig } from "../_runtime-stubs.js";
+import type { ProxyConfig } from "./_runtime-stubs.js";
 import {
   getActiveManagedProxyLoopbackMode,
   getActiveManagedProxyUrl,

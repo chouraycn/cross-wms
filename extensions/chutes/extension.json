@@ -1,0 +1,10 @@
+{
+  "id": "chutes",
+  "name": "Chutes Provider",
+  "description": "Chutes AI OpenAI-compatible inference provider extension",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

@@ -2,8 +2,14 @@ export const HEARTBEAT_TOKEN = 'HEARTBEAT_OK';
 export const DEFAULT_HEARTBEAT_EVERY = '30m';
 export const DEFAULT_HEARTBEAT_ACK_MAX_CHARS = 300;
 
-export const HEARTBEAT_PROMPT =
-  'Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.';
+const HEARTBEAT_CONTEXT_PROMPT =
+  'Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats.';
+
+export const HEARTBEAT_PROMPT = `${HEARTBEAT_CONTEXT_PROMPT} If nothing needs attention, reply HEARTBEAT_OK.`;
+export const HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS =
+  "Use heartbeat_respond to report the wake outcome. Set notify=false when nothing needs the user's attention. Set notify=true with notificationText only when the user should be interrupted.";
+export const HEARTBEAT_RESPONSE_TOOL_PROMPT = `${HEARTBEAT_CONTEXT_PROMPT} ${HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS}`;
+export const HEARTBEAT_TRANSCRIPT_PROMPT = '[OpenClaw heartbeat poll]';
 
 export type HeartbeatTask = {
   name: string;
@@ -236,6 +242,19 @@ export function parseHeartbeatTasks(content: string): HeartbeatTask[] {
 export function resolveHeartbeatPrompt(raw?: string): string {
   const trimmed = raw?.trim() ?? '';
   return trimmed || HEARTBEAT_PROMPT;
+}
+
+function appendHeartbeatResponseToolInstructions(prompt: string): string {
+  const trimmed = prompt.trim();
+  if (!trimmed) return HEARTBEAT_RESPONSE_TOOL_PROMPT;
+  if (trimmed.includes(HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS)) return trimmed;
+  return `${trimmed}\n\n${HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS}`;
+}
+
+/** Resolves heartbeat prompt text and guarantees heartbeat_respond tool instructions are present. */
+export function resolveHeartbeatPromptForResponseTool(raw?: string): string {
+  const trimmed = raw?.trim() ?? '';
+  return trimmed ? appendHeartbeatResponseToolInstructions(trimmed) : HEARTBEAT_RESPONSE_TOOL_PROMPT;
 }
 
 function parseDurationMs(duration: string): number {

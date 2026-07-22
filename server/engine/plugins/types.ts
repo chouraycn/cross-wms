@@ -21,7 +21,10 @@ export type PluginCapabilityKind =
   | 'provider'
   | 'memory-host'
   | 'embedding'
-  | 'service';
+  | 'service'
+  | 'search'
+  | 'media'
+  | 'skill';
 
 /** 插件来源 — 与 loader-state.ts 中的 source 字段对齐 */
 export type PluginSource = 'local' | 'npm' | 'git' | 'zip' | 'bundled' | 'dev';
@@ -328,3 +331,53 @@ export interface PluginContractResult {
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const AGENT_PROMPT_SURFACE_KINDS: any = undefined as any;
+
+// ---------------------------------------------------------------------------
+// 降级类型桩：对应 openclaw src/plugins/types.ts 中引用外部模块的类型。
+// cross-wms 暂未移植这些模块，以最小化结构占位保证 import 兼容。
+// ---------------------------------------------------------------------------
+
+export type AgentHarness = { [key: string]: unknown };
+export type AgentPromptGuidance = { [key: string]: unknown };
+export type AgentPromptGuidanceEntry = { [key: string]: unknown };
+export type AnyAgentTool = { [key: string]: unknown };
+export type CliBackendPlugin = { [key: string]: unknown };
+export type ImageGenerationProviderPlugin = { [key: string]: unknown };
+export type MediaUnderstandingProviderPlugin = { [key: string]: unknown };
+export type MigrationProviderPlugin = { [key: string]: unknown };
+export type MusicGenerationProviderPlugin = { [key: string]: unknown };
+export type OpenClawPluginApi = { [key: string]: unknown };
+export type OpenClawPluginCliCommandDescriptor = { [key: string]: unknown };
+export type OpenClawPluginCliContext = { [key: string]: unknown };
+export type OpenClawPluginCliRegistrar = { [key: string]: unknown };
+export type OpenClawPluginCommandDefinition = { [key: string]: unknown };
+export type OpenClawPluginDefinition = { [key: string]: unknown };
+export type OpenClawPluginHttpRouteMatch = { [key: string]: unknown };
+export type OpenClawPluginModule = { [key: string]: unknown };
+export type OpenClawPluginToolContext = { [key: string]: unknown };
+export type PluginCommandContext = { [key: string]: unknown };
+export type PluginCommandResult = { [key: string]: unknown };
+export type PluginConfigMigration = { [key: string]: unknown };
+export type PluginConversationBindingRequestParams = { [key: string]: unknown };
+export type PluginInteractiveHandlerRegistration = { [key: string]: unknown };
+export type PluginSetupAutoEnableProbe = { [key: string]: unknown };
+export type PluginTextTransformRegistration = { [key: string]: unknown };
+export type PluginTextTransforms = { [key: string]: unknown };
+export type PluginWebFetchProviderEntry = { [key: string]: unknown };
+export type PluginWebSearchProviderEntry = { [key: string]: unknown };
+export type ProviderAuthContext = { [key: string]: unknown };
+export type ProviderAuthMethod = { [key: string]: unknown };
+export type ProviderAuthMethodNonInteractiveContext = { [key: string]: unknown };
+export type ProviderAuthResult = { [key: string]: unknown };
+export type ProviderDiscoveryContext = { [key: string]: unknown };
+export type ProviderNonInteractiveApiKeyResult = { [key: string]: unknown };
+export type ProviderPlugin = { [key: string]: unknown };
+export type RealtimeTranscriptionProviderPlugin = { [key: string]: unknown };
+export type RealtimeVoiceProviderPlugin = { [key: string]: unknown };
+export type SpeechProviderPlugin = { [key: string]: unknown };
+export type TranscriptSourceProvider = { [key: string]: unknown };
+export type UnifiedModelCatalogProviderContext = { [key: string]: unknown };
+export type UnifiedModelCatalogProviderPlugin = { [key: string]: unknown };
+export type VideoGenerationProviderPlugin = { [key: string]: unknown };
+export type WebFetchProviderPlugin = { [key: string]: unknown };
+export type WebSearchProviderPlugin = { [key: string]: unknown };

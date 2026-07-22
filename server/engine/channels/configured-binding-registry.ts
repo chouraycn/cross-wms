@@ -1,8 +1,8 @@
 // 移植自 openclaw/src/channels/plugins/configured-binding-registry.ts
 // 配置绑定注册表：预热、计数和解析编译的绑定记录
 
-import type { OpenClawConfig } from "../../infra/_runtime-stubs.js";
-import type { ConversationRef } from "../../infra/outbound/session-binding-service.js";
+import type { OpenClawConfig } from "../infra/_runtime-stubs.js";
+import type { ConversationRef } from "../infra/session-binding-service.js";
 import type {
   ConfiguredBindingRecordResolution,
   ConfiguredBindingResolution,

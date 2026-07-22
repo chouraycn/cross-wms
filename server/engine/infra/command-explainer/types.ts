@@ -85,3 +85,14 @@ export type ExplainCommandOptions = {
   includeExamples?: boolean;
   includeDocumentation?: boolean;
 };
+
+export type CommandStep = {
+  id?: string;
+  parentCommandId?: string;
+  context: unknown;
+  executable: string;
+  argv: string[];
+  text: string;
+  span: { start: number; end: number };
+  executableSpan: { start: number; end: number };
+};

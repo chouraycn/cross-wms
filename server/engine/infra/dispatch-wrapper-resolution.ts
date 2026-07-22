@@ -115,5 +115,4 @@ export function hasDispatchEnvManipulation(argv: string[]): boolean {
   return extractEnvAssignmentKeysFromDispatchWrappers(argv).length > 0;
 }
 
-export type { UnwrapEnvInvocation };
 export const unwrapEnvInvocation: unique symbol = Symbol("unwrapEnvInvocation");

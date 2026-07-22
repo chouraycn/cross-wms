@@ -1,0 +1,10 @@
+{
+  "id": "brave",
+  "name": "Brave Web Search",
+  "description": "Brave Search provider plugin for web search",
+  "version": "1.0.0",
+  "kind": "web-search",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

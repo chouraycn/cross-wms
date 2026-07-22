@@ -19,15 +19,15 @@ export function unauthorizedHintForMessage(..._args: unknown[]): unknown {
   console.warn('unauthorizedHintForMessage is not available in cross-wms'); return undefined;
 }
 
-export async function resolveNodeId(..._args: unknown[]): Promise<unknown> {
+export async function resolveNodeId(..._args: unknown[]): Promise<void> {
   console.warn('resolveNodeId is not available in cross-wms');
 }
 
-export async function resolveNodeDiagnosticsId(..._args: unknown[]): Promise<unknown> {
+export async function resolveNodeDiagnosticsId(..._args: unknown[]): Promise<void> {
   console.warn('resolveNodeDiagnosticsId is not available in cross-wms');
 }
 
-export async function resolveNode(..._args: unknown[]): Promise<unknown> {
+export async function resolveNode(..._args: unknown[]): Promise<void> {
   console.warn('resolveNode is not available in cross-wms');
 }
 

@@ -1,5 +1,5 @@
 
-export async function recoverInstalledLaunchAgent(..._args: unknown[]): Promise<unknown> {
+export async function recoverInstalledLaunchAgent(..._args: unknown[]): Promise<void> {
   console.warn('recoverInstalledLaunchAgent is not available in cross-wms');
 }
 

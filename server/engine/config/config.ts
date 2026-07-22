@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/config/config.ts
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-import type {
+export type {
   SkillConfig,
   ClawHubConfig,
   RemoteSyncConfig,
@@ -9,13 +9,6 @@ import type {
   SecurityConfig,
   AgentFilterConfig,
 } from '../skills/config/config-loader.js';
-
-export type SkillConfig = SkillConfig;
-export type ClawHubConfig = ClawHubConfig;
-export type RemoteSyncConfig = RemoteSyncConfig;
-export type RemoteSyncNodeConfig = RemoteSyncNodeConfig;
-export type SecurityConfig = SecurityConfig;
-export type AgentFilterConfig = AgentFilterConfig;
 
 export {
   loadSkillConfig,

@@ -151,13 +151,13 @@ export function filterByPattern(
 }
 
 export function filterByRange(
-  items: readonly { name: string; [key: string]: number | undefined }[],
+  items: readonly { name: string; [key: string]: number | string | undefined }[],
   field: string,
   min?: number,
   max?: number,
 ): typeof items {
   return items.filter((item) => {
-    const value = item[field];
+    const value = item[field] as number | undefined;
     if (value === undefined) return false;
     if (min !== undefined && value < min) return false;
     if (max !== undefined && value > max) return false;

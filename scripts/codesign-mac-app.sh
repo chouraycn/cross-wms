@@ -161,6 +161,10 @@ cat > "$ENT_TMP_APP" <<'PLIST'
 <dict>
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
     <key>com.apple.security.device.camera</key>
@@ -252,16 +256,21 @@ verify_team_ids() {
 }
 
 NODE_BIN="$APP_BUNDLE/Contents/Resources/node/bin/node"
-if [ -f "$NODE_BIN" ]; then
-  echo "Signing Node.js binary"; sign_plain_item "$NODE_BIN"
-fi
 
 if [ -d "$APP_BUNDLE/Contents/Resources" ]; then
   find "$APP_BUNDLE/Contents/Resources" -type f -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    # Skip the Node.js binary — it needs JIT entitlements, signed separately below
+    if [[ "$f" == "$NODE_BIN" ]]; then
+      continue
+    fi
     if /usr/bin/file "$f" 2>/dev/null | /usr/bin/grep -q "Mach-O"; then
       echo "Signing binary: $f"; sign_plain_item "$f"
     fi
   done || true
+fi
+
+if [ -f "$NODE_BIN" ]; then
+  echo "Signing Node.js binary (with JIT entitlement)"; sign_item "$NODE_BIN" "$APP_ENTITLEMENTS"
 fi
 
 SPARKLE="$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
