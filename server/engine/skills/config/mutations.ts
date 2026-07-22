@@ -237,8 +237,34 @@ export function loadMutationHistory(skillName: string, filePath: string): boolea
     if (data.config) {
       configStore.set(skillName, data.config);
     }
+
     return true;
   } catch {
     return false;
   }
+}
+
+export function patchSkillConfigEntry(
+  skillName: string,
+  patch: Record<string, unknown>,
+): void {
+  const current = getCurrentConfig(skillName);
+  const next = { ...current, ...patch };
+  configStore.set(skillName, next);
+
+  const diff = deepDiff(current, next);
+  if (diff.length > 0) {
+    recordMutation(skillName, {
+      type: 'update',
+      changes: diff,
+    });
+  }
+}
+
+export function updateSkillConfigEntry(
+  skillName: string,
+  key: string,
+  value: unknown,
+): void {
+  patchSkillConfigEntry(skillName, { [key]: value });
 }

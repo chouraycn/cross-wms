@@ -42,6 +42,10 @@ export type ModelApiType =
   | 'byteplus-chat'
   | 'kimi-coding-chat'
   | 'llama-cpp-chat'
+  | 'nvidia-chat'
+  | 'brave-chat'
+  | 'exa-chat'
+  | 'firecrawl-chat'
   | 'deepgram-stt'
   | 'fal-generate';
 

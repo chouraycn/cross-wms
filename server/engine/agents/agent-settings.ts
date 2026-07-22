@@ -88,3 +88,76 @@ export function hasToolPermission(config: AgentConfig, toolName: string): boolea
 export function extractModelId(config: AgentConfig, fallback?: string): string | undefined {
   return config.model ?? fallback;
 }
+
+// ============================================================================
+// Compaction guard compatibility exports.
+// Full infrastructure (settings manager, context engine, provider attribution)
+// is not available in cross-wms. These are no-op stubs that preserve module
+// shape for callers ported from openclaw.
+// ============================================================================
+
+/** Default reserve-token floor for agent compaction. Mirrors openclaw default. */
+export const DEFAULT_AGENT_COMPACTION_RESERVE_TOKENS_FLOOR = 20_000;
+
+type AgentCompactionMode = "default" | "safeguard";
+
+type AgentSettingsManagerLike = {
+  getCompactionReserveTokens?: () => number;
+  getCompactionKeepRecentTokens?: () => number;
+  applyOverrides?: (overrides: {
+    compaction: {
+      reserveTokens?: number;
+      keepRecentTokens?: number;
+    };
+  }) => void;
+  setCompactionEnabled?: (enabled: boolean) => void;
+};
+
+/**
+ * Compatibility stub for applying configured compaction reserve/keep-recent
+ * settings. cross-wms has no live settings manager, so this is a no-op that
+ * reports no overrides applied.
+ */
+export function applyAgentCompactionSettingsFromConfig(params: {
+  settingsManager: AgentSettingsManagerLike;
+  cfg?: unknown;
+  contextTokenBudget?: number;
+}): {
+  didOverride: boolean;
+  compaction: { reserveTokens: number; keepRecentTokens: number };
+} {
+  const reserveTokens = params.settingsManager.getCompactionReserveTokens?.() ?? 0;
+  const keepRecentTokens = params.settingsManager.getCompactionKeepRecentTokens?.() ?? 0;
+  return {
+    didOverride: false,
+    compaction: { reserveTokens, keepRecentTokens },
+  };
+}
+
+/** Compatibility stub: always resolves to the default compaction mode. */
+export function resolveEffectiveCompactionMode(_cfg?: unknown): AgentCompactionMode {
+  return "default";
+}
+
+/** Compatibility stub: never classifies a model as silent-overflow-prone. */
+export function isSilentOverflowProneModel(_model: {
+  provider?: string | null;
+  modelId?: string | null;
+  baseUrl?: string | null;
+}): boolean {
+  return false;
+}
+
+/**
+ * Compatibility stub for the auto-compaction guard. cross-wms has no live
+ * settings manager with `setCompactionEnabled`, so this reports unsupported.
+ */
+export function applyAgentAutoCompactionGuard(params: {
+  settingsManager: AgentSettingsManagerLike;
+  contextEngineInfo?: unknown;
+  compactionMode?: AgentCompactionMode;
+  silentOverflowProneProvider?: boolean;
+}): { supported: boolean; disabled: boolean } {
+  const hasMethod = typeof params.settingsManager.setCompactionEnabled === "function";
+  return { supported: hasMethod, disabled: false };
+}

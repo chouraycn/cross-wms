@@ -452,6 +452,7 @@ export async function refreshSkills(workspaceDir: string): Promise<RefreshResult
     }
 
     cachedSkills = skills;
+    lastRefreshTime = Date.now();
 
     bumpSkillsSnapshotVersion({ workspaceDir, reason: "manual" });
 
@@ -464,4 +465,35 @@ export async function refreshSkills(workspaceDir: string): Promise<RefreshResult
 
 export function getCachedSkills(): Array<{ skill: { name: string; [key: string]: unknown }; [key: string]: unknown }> {
   return cachedSkills;
+}
+
+let lastRefreshTime = 0;
+let refreshIntervalMs = 5 * 60 * 1000;
+
+export function getLastRefreshTime(): number {
+  return lastRefreshTime;
+}
+
+export function clearSkillCache(): void {
+  cachedSkills = [];
+  lastRefreshTime = 0;
+}
+
+export function needsRefresh(): boolean {
+  if (lastRefreshTime === 0) return true;
+  return Date.now() - lastRefreshTime > refreshIntervalMs;
+}
+
+export async function getSkills(workspaceDir?: string): Promise<Array<{ skill: { name: string; [key: string]: unknown }; [key: string]: unknown }>> {
+  if (cachedSkills.length > 0 && !needsRefresh()) {
+    return cachedSkills;
+  }
+  if (workspaceDir) {
+    await refreshSkills(workspaceDir);
+  }
+  return cachedSkills;
+}
+
+export function setRefreshInterval(intervalMs: number): void {
+  refreshIntervalMs = intervalMs;
 }

@@ -12,6 +12,9 @@ import { getSkillGatingManager } from "../discovery/skill-gating.js";
 import { getSkillPriorityResolver } from "../discovery/skill-priority.js";
 import { getAgentAllowlistManager } from "../discovery/agent-allowlist.js";
 import { getSessionSnapshotManager } from "../runtime/session-snapshot.js";
+import type { SkillCommandSpec } from "./command-specs.js";
+import { getAllCommandSpecs } from "./command-specs.js";
+import { listAvailableCommands } from "./command-dispatch.js";
 
 const logger = getChildLogger("chat-commands");
 
@@ -422,4 +425,39 @@ export async function parseAndRoute(message: string): Promise<CommandResult | nu
   }
 
   return router.route(command);
+}
+
+/** 从技能中提取命令规格 */
+export function extractCommandSpecsFromSkill(skill: { name: string; commands?: SkillCommandSpec[] }): SkillCommandSpec[] {
+  return skill.commands ?? [];
+}
+
+/** 构建命令索引 */
+export function buildCommandIndex(): Map<string, SkillCommandSpec> {
+  const index = new Map<string, SkillCommandSpec>();
+  const specs = getAllCommandSpecs();
+  for (const spec of specs) {
+    for (const cmd of spec.commands) {
+      index.set(`${spec.skillName}:${cmd.name}`, cmd);
+    }
+  }
+  return index;
+}
+
+/** 按名称查找命令 */
+export function findCommandByName(name: string): SkillCommandSpec | undefined {
+  const specs = getAllCommandSpecs();
+  for (const spec of specs) {
+    for (const cmd of spec.commands) {
+      if (cmd.name === name) {
+        return cmd;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** 列出所有可用命令 */
+export function listAllCommands(): string[] {
+  return listAvailableCommands();
 }

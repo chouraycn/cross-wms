@@ -54,3 +54,14 @@ export function parseSendKeysSequence(input: string): string[] {
 export function encodeSendKeysForPty(sequences: string[]): string {
   return sequences.join("");
 }
+
+// Minimal writable stdin surface expected by send-keys callers.
+export type WritableStdin = {
+  write: (chunk: string | Buffer | Uint8Array, cb?: (err?: Error | null) => void) => boolean;
+  end: (cb?: () => void) => void;
+};
+
+/** Stub: process send-keys handling is provided by the bash executor in cross-wms. */
+export function handleProcessSendKeys(_params?: unknown): unknown {
+  return undefined;
+}

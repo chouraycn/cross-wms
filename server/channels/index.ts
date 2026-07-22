@@ -22,6 +22,14 @@ import {
   createDingTalkChannelPlugin,
 } from "./builtin-dingtalk.js";
 
+import {
+  createMatrixChannelPlugin,
+} from "./builtin-matrix.js";
+
+import {
+  createMattermostChannelPlugin,
+} from "./builtin-mattermost.js";
+
 export type {
   ChannelId,
   AccountId,
@@ -103,6 +111,20 @@ export {
 } from "./builtin-dingtalk.js";
 
 export {
+  createMatrixChannelPlugin,
+  MATRIX_CHANNEL_ID,
+  parseMatrixWebhook,
+  type MatrixWebhookResult,
+} from "./builtin-matrix.js";
+
+export {
+  createMattermostChannelPlugin,
+  MATTERMOST_CHANNEL_ID,
+  parseMattermostWebhook,
+  type MattermostWebhookResult,
+} from "./builtin-mattermost.js";
+
+export {
   TypingIndicator,
   TypingCallbacks,
   type TypingCallback,
@@ -144,5 +166,11 @@ export function registerBuiltinChannels(): void {
   }
   if (!registry.has("dingtalk" as never)) {
     registry.register(createDingTalkChannelPlugin());
+  }
+  if (!registry.has("matrix" as never)) {
+    registry.register(createMatrixChannelPlugin());
+  }
+  if (!registry.has("mattermost" as never)) {
+    registry.register(createMattermostChannelPlugin());
   }
 }

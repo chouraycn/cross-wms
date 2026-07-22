@@ -75,3 +75,66 @@ export function hasFallbackChain(key: string): boolean {
 export function getModelsWithFallbackChains(): string[] {
   return Object.keys(BUILT_IN_FALLBACK_CHAINS);
 }
+
+// ============================================================================
+// Model fallback run / image fallback stubs.
+// Full runtime fallback execution (probe throttling, summary error aggregation,
+// image fallback) is not available in cross-wms; these are stubs that preserve
+// module shape for callers ported from openclaw.
+// ============================================================================
+
+export type ModelFallbackRunOptions = {
+  maxFallbacks?: number;
+  onFailure?: (err: unknown) => void;
+  contextTokenBudget?: number;
+};
+
+export type ModelFallbackResultClassification =
+  | "success"
+  | "fallback_used"
+  | "all_failed";
+
+/** Aggregate error raised when all fallback candidates have been exhausted. */
+export class FallbackSummaryError extends Error {
+  readonly failures: unknown[];
+  constructor(message: string, failures: unknown[] = []) {
+    super(message);
+    this.name = "FallbackSummaryError";
+    this.failures = failures;
+  }
+}
+
+/** Stub: value is never classified as a FallbackSummaryError in cross-wms. */
+export function isFallbackSummaryError(value: unknown): value is FallbackSummaryError {
+  return value instanceof FallbackSummaryError;
+}
+
+/** Stub: no throttle internals exposed in cross-wms. */
+export function probeThrottleInternals(): unknown {
+  return undefined;
+}
+
+/** Stub: no image fallback candidates resolved in cross-wms. */
+export function resolveImageFallbackCandidates(_params?: unknown): unknown[] {
+  return [];
+}
+
+/** Stub: no image fallback default provider resolved in cross-wms. */
+export function resolveImageFallbackDefaultProvider(_params?: unknown): string | undefined {
+  return undefined;
+}
+
+/** Stub: no model candidate chain resolved in cross-wms. */
+export function resolveModelCandidateChain(_params?: unknown): unknown[] {
+  return [];
+}
+
+/** Stub: model fallback execution not available in cross-wms. */
+export async function runWithModelFallback(_params?: unknown): Promise<unknown> {
+  return undefined;
+}
+
+/** Stub: image model fallback execution not available in cross-wms. */
+export async function runWithImageModelFallback(_params?: unknown): Promise<unknown> {
+  return undefined;
+}

@@ -324,3 +324,21 @@ export function loadAgentFiltersFromFile(filePath: string): boolean {
 export function getAgentFilterCount(): number {
   return agentFilters.size;
 }
+
+export function resolveEffectiveAgentSkillFilter(
+  agentSkillFilter: string[] | undefined,
+  entries: readonly SkillEntry[],
+): string[] | undefined {
+  if (!agentSkillFilter || agentSkillFilter.length === 0) {
+    return undefined;
+  }
+  const normalizedFilter = new Set(agentSkillFilter.map(normalizeSkillName));
+  const result: string[] = [];
+  for (const entry of entries) {
+    const name = normalizeSkillName(entry.skill.name);
+    if (normalizedFilter.has(name)) {
+      result.push(entry.skill.name);
+    }
+  }
+  return result.length > 0 ? result : undefined;
+}

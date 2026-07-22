@@ -67,3 +67,34 @@ export function isSettingsSnapshotValid(
   const age = Date.now() - snapshot.frozenAt.getTime();
   return age < options.maxAgeMs;
 }
+
+// ============================================================================
+// Embedded agent project settings policy stubs.
+// Full embedded-agent settings infrastructure is not available in cross-wms;
+// these provide module-shape compatibility for callers ported from openclaw.
+// ============================================================================
+
+export const DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY = Object.freeze({
+  allowProjectOverrides: true,
+  requireSnapshot: false,
+  compactionReserveTokens: 0,
+});
+
+/** Stub: no enabled bundle-agent settings snapshot exists in cross-wms. */
+export function loadEnabledBundleAgentSettingsSnapshot(_params?: unknown): SettingsSnapshot | undefined {
+  return undefined;
+}
+
+/** Stub: resolves to the default policy (no project-level overrides). */
+export function resolveEmbeddedAgentProjectSettingsPolicy(_params?: unknown): typeof DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY {
+  return DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY;
+}
+
+/** Stub: builds an empty snapshot for the requested agent. */
+export function buildEmbeddedAgentSettingsSnapshot(_params?: unknown): SettingsSnapshot {
+  return {
+    settings: {},
+    frozenAt: new Date(),
+    source: "cross-wms-default",
+  };
+}
