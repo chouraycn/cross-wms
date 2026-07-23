@@ -17,6 +17,8 @@
  *   exec-argv-analysis.js}
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import type { OpenClawConfig } from "./_runtime-stubs.js";
 
 // ============================================================================
@@ -539,14 +541,44 @@ export function analyzeArgvCommand(argv: readonly string[]): {
 // ./fs-safe-advanced.js —— 符号链接父目录检查
 // ============================================================================
 
-/** 断言路径父目录不含符号链接（降级 stub） */
-export function assertNoSymlinkParentsSync(_params: {
+/**
+ * 断言路径父目录不含符号链接。
+ * 检查从 rootDir 到 targetPath 的路径中是否存在符号链接，
+ * 如果存在则抛出错误，防止路径遍历攻击。
+ */
+export function assertNoSymlinkParentsSync(params: {
   rootDir: string;
   targetPath: string;
   allowOutsideRoot?: boolean;
   messagePrefix?: string;
 }): void {
-  // 降级实现：不进行检查，cross-wms 未移植完整的 fs-safe-advanced
+  const { rootDir, targetPath, allowOutsideRoot = false, messagePrefix = "安全检查" } = params;
+  const resolvedRoot = path.resolve(rootDir);
+  const resolvedTarget = path.resolve(targetPath);
+
+  // 检查 targetPath 是否在 rootDir 下
+  const relative = path.relative(resolvedRoot, resolvedTarget);
+  if (!allowOutsideRoot && (relative.startsWith("..") || path.isAbsolute(relative))) {
+    throw new Error(`${messagePrefix}: 目标路径 "${targetPath}" 在根目录 "${rootDir}" 之外`);
+  }
+
+  // 从 rootDir 开始逐级检查是否有符号链接
+  const segments = relative.split(path.sep).filter(Boolean);
+  let currentPath = resolvedRoot;
+  for (const segment of segments) {
+    currentPath = path.join(currentPath, segment);
+    try {
+      const stat = fs.lstatSync(currentPath);
+      if (stat.isSymbolicLink()) {
+        throw new Error(`${messagePrefix}: 路径 "${currentPath}" 是符号链接，存在安全风险`);
+      }
+    } catch (e) {
+      // 路径不存在不视为错误
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw e;
+      }
+    }
+  }
 }
 
 // ============================================================================

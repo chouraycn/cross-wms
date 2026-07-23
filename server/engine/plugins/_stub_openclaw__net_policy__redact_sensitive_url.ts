@@ -1,5 +1,2 @@
-// Auto-generated stub for: @openclaw/net-policy/redact-sensitive-url
-// This is a type-degraded stub to enable compilation.
-// Replace with real implementation when available.
-
-export const redactSensitiveUrlLikeString: any = undefined as any;
+// 原本是 openclaw stub，现已替换为 cross-wms 同源包导入
+export * from '@cdf-know/net-policy';

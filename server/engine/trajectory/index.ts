@@ -1,115 +1,63 @@
-/**
- * 轨迹模块统一导出
- * 汇总路径管理、类型定义、记录器、回放、导出、清理、元数据、运行时管理等功能。
- */
-
-// paths
-export {
-  resolveTrajectoryPath,
-  ensureTrajectoryDir,
-  resolveTrajectoryFilePath,
-  resolveTrajectoryPointerFilePath,
-  safeTrajectorySessionFileName,
-  resolveTrajectoryRootDir,
-  resolveMetadataFilePath,
-  isPathInsideTrajectoryDir,
-  generateArchiveFileName,
-  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
-  TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
-  TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
-  TRAJECTORY_METADATA_FILE,
-  TRAJECTORY_ARCHIVE_DIR,
-} from './paths.js';
-export type { TrajectoryPaths } from './paths.js';
+// Trajectory module public API.
+// 移植自 openclaw/src/trajectory/ — 统一导出所有公共接口。
+//
+// 适配说明：
+// - 所有模块均从 cross-wms 本地文件导入（./xxx.js）
+// - 不导出 recorder.ts 和 replay.ts（cross-wms 特有文件，不属于 openclaw 移植范围）
 
 // types
-export { TrajectoryEntry, TrajectoryRecorder } from './types.js';
 export type {
-  TrajectoryStatus,
-  TrajectoryEntryData,
-  TrajectoryStep,
   TrajectoryEvent,
   TrajectoryToolDefinition,
   TrajectoryBundleManifest,
   TrajectoryBundleWarning,
-  TrajectoryRecorderConfig,
-  TrajectoryRecorderDiagnostics,
-  TrajectoryRecord,
-  TrajectoryMetadata,
-  TrajectoryExportOptions,
-  TrajectoryExportResult,
-  TrajectoryExportFormat,
-  CleanupPolicy,
-  CleanupResult,
-  CleanupSessionInfo,
-  TrajectoryReplayOptions,
-  TrajectoryReplayResult,
-  TrajectoryReplayController,
-  EventFilter,
-  EventSamplingConfig,
-  MetadataSearchCriteria,
-  RetentionRule,
-} from './types.js';
+} from "./types.js";
 
-// recorder
-export { createTrajectoryRecorder, toTrajectoryToolDefinitions } from './recorder.js';
-export type { CreateTrajectoryRecorderParams, TrajectoryRecorderInstance } from './recorder.js';
-
-// replay
-export { replayTrajectory, replayTrajectorySummary, listTrajectorySessions, createReplayController } from './replay.js';
-export type { TrajectoryReplaySummary } from './replay.js';
-
-// 元数据管理
+// paths
 export {
-  TrajectoryMetadataManager,
-  createTrajectoryMetadataManager,
-} from './metadata.js';
-export type {
-  TrajectoryMetadataSummary,
-} from './metadata.js';
+  TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
+  TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
+  TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
+  safeTrajectorySessionFileName,
+  resolveTrajectoryPointerOpenFlags,
+  resolveTrajectoryFilePath,
+  resolveTrajectoryPointerFilePath,
+} from "./paths.js";
 
-// 清理
+// runtime-file
 export {
-  TrajectoryCleanupManager,
-  createTrajectoryCleanupManager,
-} from './cleanup.js';
-export type {
-  TrajectoryCleanupOptions,
-  TrajectoryCleanupResult,
-  TrajectorySessionInfo,
-} from './cleanup.js';
-
-// 通用导出
-export {
-  TrajectoryExporter,
-  createTrajectoryExporter,
-} from './export.js';
-
-// 命令导出
-export {
-  TrajectoryCommandExporter,
-  trajectoryCommandExporter,
-  runTrajectoryCommand,
-} from './command-export.js';
-export type {
-  CommandExportOptions,
-  CommandExportResult,
-} from './command-export.js';
-
-// 运行时文件管理
-export {
-  resolveTrajectoryRuntimeFile,
-  validateTrajectoryRuntimeFile,
-  readTrajectoryEvents,
   isRegularNonSymlinkFile,
-  parseTrajectoryJsonl,
-  parseJsonlFile,
-  isRuntimeTrajectoryEvent,
-} from './runtime-file.js';
+  resolveTrajectoryRuntimeFile,
+} from "./runtime-file.js";
 
-// 运行时管理
+// runtime
 export {
+  toTrajectoryToolDefinitions,
   createTrajectoryRuntimeRecorder,
-  toTrajectoryToolDefinitionsRuntime,
-  limitTrajectoryPayloadValue,
-} from './runtime.js';
+} from "./runtime.js";
+
+// metadata
+export {
+  buildTrajectoryRunMetadata,
+  buildTrajectoryArtifacts,
+} from "./metadata.js";
+
+// export
+export {
+  resolveDefaultTrajectoryExportDir,
+  exportTrajectoryBundle,
+} from "./export.js";
+
+// command-export
+export {
+  resolveTrajectoryCommandOutputDir,
+  exportTrajectoryForCommand,
+  formatTrajectoryCommandExportSummary,
+} from "./command-export.js";
+export type { TrajectoryCommandExportSummary } from "./command-export.js";
+
+// cleanup
+export {
+  removeSessionTrajectoryArtifacts,
+  removeRemovedSessionTrajectoryArtifacts,
+} from "./cleanup.js";

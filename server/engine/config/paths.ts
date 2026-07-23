@@ -46,4 +46,14 @@ export function resolvePaths(): ConfigPaths {
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const resolveIsNixMode: any = undefined as any;
-export const resolveStateDir: any = undefined as any;
+
+/**
+ * 解析 OpenClaw 状态目录。
+ * 优先使用 OPENCLAW_STATE_DIR 环境变量，否则回退到 ~/.openclaw。
+ */
+export function resolveStateDir(env: NodeJS.ProcessEnv = process.env): string {
+  const envDir = env.OPENCLAW_STATE_DIR;
+  if (envDir) return resolve(envDir);
+  const home = env.HOME ?? env.USERPROFILE ?? homedir();
+  return join(home, '.openclaw');
+}

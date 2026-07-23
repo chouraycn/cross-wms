@@ -158,27 +158,38 @@ export type OpenClawStateDatabase = {
 
 /**
  * 打开 OpenClaw 状态数据库。
- * 降级实现：cross-wms 未移植 openclaw-state-db，返回空数据库占位。
- * 调用方应通过 try-catch 或可选链安全处理 db 为 undefined 的情况。
+ * 委托给 cross-wms 的 state/openclaw-state-db.ts 真实实现。
  */
 export function openOpenClawStateDatabase(_options?: {
   env?: NodeJS.ProcessEnv;
 }): OpenClawStateDatabase {
-  return { db: undefined };
+  try {
+    // 动态导入避免循环依赖
+    const { openStateDatabase } = require("../state/openclaw-state-db.js");
+    const result = openStateDatabase(_options);
+    return { db: result.db };
+  } catch (err) {
+    logger.debug(`[runtime-stubs] openOpenClawStateDatabase 降级: ${err}`);
+    return { db: undefined };
+  }
 }
 
 /**
  * 运行 OpenClaw 状态写事务。
- * 降级实现：cross-wms 未移植 openclaw-state-db，以 undefined 作为 db 调用回调。
- * 使用高级 Kysely facade 的调用方（如 conversation-binding.ts）会优雅降级为空操作；
- * 直接使用 DatabaseSync 的调用方（如 state-migrations.debug-proxy.ts）会
- * 在回调内崩溃，由其自身的 try-catch 捕获并报告为降级失败。
+ * 委托给 cross-wms 的 state/openclaw-state-db.ts 真实实现。
  */
 export function runOpenClawStateWriteTransaction<T>(
   fn: (params: { db: unknown }) => T,
   _options?: { env?: NodeJS.ProcessEnv },
 ): T {
-  return fn({ db: undefined });
+  try {
+    const { openStateDatabase } = require("../state/openclaw-state-db.js");
+    const result = openStateDatabase(_options);
+    return fn({ db: result.db });
+  } catch (err) {
+    logger.debug(`[runtime-stubs] runOpenClawStateWriteTransaction 降级: ${err}`);
+    return fn({ db: undefined });
+  }
 }
 
 // ============================================================================

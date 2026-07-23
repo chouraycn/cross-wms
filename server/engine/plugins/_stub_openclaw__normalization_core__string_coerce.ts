@@ -1,10 +1,2 @@
-// Auto-generated stub for: @openclaw/normalization-core/string-coerce
-// This is a type-degraded stub to enable compilation.
-// Replace with real implementation when available.
-
-export const normalizeOptionalLowercaseString: any = undefined as any;
-export const normalizeOptionalString: any = undefined as any;
-export const normalizeLowercaseStringOrEmpty: any = undefined as any;
-
-// Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const normalizeStringifiedOptionalString: any = undefined as any;
+// 原本是 openclaw stub，现已替换为 cross-wms 同源包导入
+export * from '@cdf-know/normalization-core';
