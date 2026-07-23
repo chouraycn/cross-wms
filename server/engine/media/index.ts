@@ -171,3 +171,43 @@ export {
   getManifestForSession,
   cleanupExpiredSessions,
 } from "./streaming-server.js";
+
+// FFmpeg 执行与限制（移植自 openclaw media）
+export {
+  MEDIA_FFMPEG_MAX_BUFFER_BYTES,
+  MEDIA_FFPROBE_TIMEOUT_MS,
+  MEDIA_FFMPEG_TIMEOUT_MS,
+  MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS,
+} from "./ffmpeg-limits.js";
+export {
+  resolveFfmpegBin,
+  runFfprobe,
+  runFfmpeg,
+  parseFfprobeCsvFields,
+  parseFfprobeCodecAndSampleRate,
+  type MediaExecOptions,
+} from "./ffmpeg-exec.js";
+
+// 音频转码（移植自 openclaw media）
+export {
+  transcodeAudioBufferToOpus,
+  transcodeAudioBuffer,
+  type AudioContainerTranscodeOutcome,
+} from "./audio-transcode.js";
+
+// QR 渲染（移植自 openclaw media）
+export {
+  renderQrPngBase64,
+  formatQrPngDataUrl,
+  renderQrPngDataUrl,
+  writeQrPngTempFile,
+} from "./qr-image.js";
+export { renderQrTerminal } from "./qr-terminal.js";
+export { loadQrCodeRuntime, normalizeQrText } from "./qr-runtime.js";
+
+// PDF 抽取（移植自 openclaw media）
+export {
+  extractPdfContent,
+  type PdfExtractedImage,
+  type PdfExtractedContent,
+} from "./pdf-extract.js";
