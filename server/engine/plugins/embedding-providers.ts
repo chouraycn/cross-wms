@@ -8,6 +8,8 @@ import type {
   RegisteredEmbeddingProvider,
 } from "./embedding-provider-types.js";
 
+export type { EmbeddingProviderAdapter } from "./embedding-provider-types.js";
+
 const providers = new Map<string, RegisteredEmbeddingProvider>();
 
 export function registerEmbeddingProvider(

@@ -1,4 +1,33 @@
 // 移植自 openclaw/src/config/types.installs.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type InstallRecordBase = unknown;
+/** Base persisted install record shared by plugin and skill install tracking. */
+export type InstallRecordBase = {
+  source: "npm" | "archive" | "path" | "clawhub" | "git";
+  spec?: string;
+  sourcePath?: string;
+  installPath?: string;
+  version?: string;
+  resolvedName?: string;
+  resolvedVersion?: string;
+  resolvedSpec?: string;
+  integrity?: string;
+  shasum?: string;
+  resolvedAt?: string;
+  installedAt?: string;
+  clawhubUrl?: string;
+  clawhubPackage?: string;
+  clawhubFamily?: "code-plugin" | "bundle-plugin";
+  clawhubChannel?: "official" | "community" | "private";
+  artifactKind?: "legacy-zip" | "npm-pack";
+  artifactFormat?: "zip" | "tgz";
+  npmIntegrity?: string;
+  npmShasum?: string;
+  npmTarballName?: string;
+  clawpackSha256?: string;
+  clawpackSpecVersion?: number;
+  clawpackManifestSha256?: string;
+  clawpackSize?: number;
+  gitUrl?: string;
+  gitRef?: string;
+  gitCommit?: string;
+};

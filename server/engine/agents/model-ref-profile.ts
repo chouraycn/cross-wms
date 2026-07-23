@@ -6,6 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function splitTrailingAuthProfile(..._args: unknown[]): unknown {
-  return undefined;
+export function splitTrailingAuthProfile(raw: string): {
+  model: string;
+  profile?: string;
+} {
+  void raw;
+  return { model: "" };
 }

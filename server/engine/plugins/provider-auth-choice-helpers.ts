@@ -13,7 +13,8 @@ import {
 } from "../config/model-input.js";
 import { normalizeProviderConfigForConfigDefaults } from "../config/provider-policy.js";
 import type { AgentModelConfig } from "../config/types.agents-shared.js";
-import type { ModelProviderConfig } from "../config/types.models.js";
+import type { AgentModelEntryConfig } from "../config/types/agent-defaults.js";
+import type { ModelProviderConfig } from "../config/types/models.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { ProviderAuthMethod, ProviderPlugin } from "./types.js";
 
@@ -142,7 +143,10 @@ function normalizeProviderCatalogModelIdForWrite(provider: string, modelId: stri
   if (!trimmed) {
     return trimmed;
   }
-  return normalizeConfiguredProviderCatalogModelId(normalizeProviderId(provider), trimmed);
+  return normalizeConfiguredProviderCatalogModelId(
+    normalizeProviderId(provider),
+    trimmed,
+  ) as string;
 }
 
 function normalizeProviderCatalogModelIdsForWrite(
@@ -167,6 +171,16 @@ function normalizeProviderCatalogModelIdsForWrite(
   return mutated ? { ...providerConfig, models: nextModels } : providerConfig;
 }
 
+function normalizeProviderConfigForConfigDefaultsTyped(
+  provider: string,
+  providerConfig: ModelProviderConfig,
+): ModelProviderConfig {
+  return normalizeProviderConfigForConfigDefaults({
+    provider,
+    providerConfig,
+  }) as ModelProviderConfig;
+}
+
 function normalizeModelProviderConfigsForWrite(cfg: OpenClawConfig): OpenClawConfig {
   const providers = cfg.models?.providers;
   if (!providers) {
@@ -178,10 +192,7 @@ function normalizeModelProviderConfigsForWrite(cfg: OpenClawConfig): OpenClawCon
   for (const [provider, providerConfig] of Object.entries(providers)) {
     const normalizedProviderConfig = normalizeProviderCatalogModelIdsForWrite(
       provider,
-      normalizeProviderConfigForConfigDefaults({
-        provider,
-        providerConfig,
-      }),
+      normalizeProviderConfigForConfigDefaultsTyped(provider, providerConfig),
     );
     if (normalizedProviderConfig === providerConfig) {
       continue;
@@ -332,9 +343,12 @@ export function applyDefaultModel(
   model: string,
   opts?: { preserveExistingPrimary?: boolean },
 ): OpenClawConfig {
-  const normalizedModel = normalizeAgentModelRefForConfig(model);
-  const models = {
-    ...normalizeAgentModelMapForConfig(cfg.agents?.defaults?.models ?? {}),
+  const normalizedModel = normalizeAgentModelRefForConfig(model) as string;
+  const models: Record<string, AgentModelEntryConfig> = {
+    ...(normalizeAgentModelMapForConfig(cfg.agents?.defaults?.models ?? {}) as Record<
+      string,
+      AgentModelEntryConfig
+    >),
   };
   models[normalizedModel] = models[normalizedModel] ?? {};
 
@@ -346,12 +360,12 @@ export function applyDefaultModel(
         ? (existingModel as { primary?: string }).primary
         : undefined;
   const normalizedExistingPrimary = existingPrimary
-    ? normalizeAgentModelRefForConfig(existingPrimary)
+    ? (normalizeAgentModelRefForConfig(existingPrimary) as string)
     : undefined;
   const existingFallbacks =
     existingModel && typeof existingModel === "object" && "fallbacks" in existingModel
-      ? (existingModel as { fallbacks?: string[] }).fallbacks?.map((fallback) =>
-          normalizeAgentModelRefForConfig(fallback),
+      ? (existingModel as { fallbacks?: string[] }).fallbacks?.map(
+          (fallback) => normalizeAgentModelRefForConfig(fallback) as string,
         )
       : undefined;
   return {

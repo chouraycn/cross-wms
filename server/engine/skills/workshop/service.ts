@@ -217,6 +217,10 @@ ${record.description}
       input.reason,
     );
 
+    if (!updatedRecord) {
+      return { success: false, error: "Proposal not found" };
+    }
+
     if (!updatedRecord.history) updatedRecord.history = [];
     updatedRecord.history.push({
       timestamp: updatedRecord.updatedAt,
@@ -258,6 +262,10 @@ export async function rejectSkillProposal(
     }
 
     const updatedRecord = await updateProposalStatus(workspaceDir, proposalId, "rejected", input.reason);
+
+    if (!updatedRecord) {
+      return { success: false, error: "Proposal not found" };
+    }
 
     if (!updatedRecord.history) updatedRecord.history = [];
     updatedRecord.history.push({
@@ -534,6 +542,10 @@ ${record.description}
       "applied",
       reason || "Merged",
     );
+
+    if (!updatedRecord) {
+      return { success: false, error: "Proposal not found" };
+    }
 
     if (!updatedRecord.history) updatedRecord.history = [];
     updatedRecord.history.push({

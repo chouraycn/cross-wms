@@ -1,5 +1,5 @@
 import { normalizeStringEntries } from "../../infra/string-normalization.js";
-import type { SkillConfig, OpenClawConfig } from "../../config/types.skills.js";
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { SkillEligibilityContext, SkillEntry, SkillsInstallPreferences } from "../types.js";
 import { resolveSkillKey } from "./frontmatter.js";
 import { resolveSkillSource } from "./source.js";
@@ -7,6 +7,12 @@ import { resolveSkillSource } from "./source.js";
 const DEFAULT_CONFIG_VALUES: Record<string, boolean> = {
   "browser.enabled": true,
   "browser.evaluateEnabled": true,
+};
+
+type ResolvedSkillConfig = {
+  enabled?: boolean;
+  env?: Record<string, string>;
+  apiKey?: string;
 };
 
 export function resolveSkillsInstallPreferences(config?: OpenClawConfig): SkillsInstallPreferences {
@@ -58,12 +64,12 @@ function getNestedValue(obj: unknown, pathStr: string): unknown {
 export function resolveSkillConfig(
   config: OpenClawConfig | undefined,
   skillKey: string,
-): SkillConfig | undefined {
+): ResolvedSkillConfig | undefined {
   const skills = config?.skills?.entries;
   if (!skills || typeof skills !== "object") {
     return undefined;
   }
-  const entry = (skills as Record<string, SkillConfig | undefined>)[skillKey];
+  const entry = (skills as Record<string, ResolvedSkillConfig | undefined>)[skillKey];
   if (!entry || typeof entry !== "object") {
     return undefined;
   }
@@ -98,7 +104,7 @@ export function isBundledSkillAllowed(entry: SkillEntry, allowlist?: ReadonlySet
   if (!isBundledSkill(entry)) {
     return true;
   }
-  const key = resolveSkillKey(entry.skill, entry);
+  const key = resolveSkillKey(entry.skill, entry.metadata);
   return allowlist.has(key) || allowlist.has(entry.skill.name);
 }
 
@@ -155,7 +161,7 @@ export function shouldIncludeSkill(params: {
   eligibility?: SkillEligibilityContext;
 }): boolean {
   const { entry, config, bundledAllowlist, eligibility } = params;
-  const skillKey = resolveSkillKey(entry.skill, entry);
+  const skillKey = resolveSkillKey(entry.skill, entry.metadata);
   const skillConfig = resolveSkillConfig(config, skillKey);
 
   if (skillConfig?.enabled === false) {

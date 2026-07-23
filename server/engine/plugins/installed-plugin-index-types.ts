@@ -19,6 +19,7 @@
 import type { PluginInstallSourceInfo } from "./install-source-info.js";
 import type { InstalledPluginFileSignature } from "./installed-plugin-index-hash.js";
 import type { PluginDiagnostic } from "./manifest-types.js";
+import type { PluginOrigin } from "./plugin-origin.types.js";
 
 // ============================================================================
 // 内联降级类型占位：../config/types.js —— OpenClawConfig
@@ -114,7 +115,7 @@ type PluginDiscoveryResult = unknown;
 type PluginManifestRecord = {
   format?: string;
   bundleFormat?: string;
-  origin?: string;
+  origin: PluginOrigin;
 };
 
 // ============================================================================

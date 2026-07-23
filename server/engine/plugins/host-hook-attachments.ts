@@ -14,7 +14,7 @@ import { extractDeliveryInfo } from './_stub_parent__config__sessions__delivery_
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
-import { isDeliverableMessageChannel, normalizeMessageChannel } from './_parent__utils__message_channel.js';
+import { isDeliverableMessageChannel, normalizeMessageChannel } from './_stub_parent__utils__message_channel.js';
 import type {
   PluginAttachmentChannelHints,
   PluginSessionAttachmentCaptionFormat,
@@ -30,11 +30,11 @@ export const attachmentProbeFs = {
 };
 const MAX_ATTACHMENT_FILES = 10;
 
-type SendMessage = typeof import("../infra/outbound/message.js").sendMessage;
+type SendMessage = typeof import("./_stub_parent__infra__outbound__message.js").sendMessage;
 let sendMessagePromise: Promise<SendMessage> | undefined;
 
 async function loadSendMessage(): Promise<SendMessage> {
-  sendMessagePromise ??= import("../infra/outbound/message.js").then(
+  sendMessagePromise ??= import("./_stub_parent__infra__outbound__message.js").then(
     (module) => module.sendMessage,
   );
   return sendMessagePromise;
@@ -211,7 +211,7 @@ function resolveAttachmentFilePath(params: {
     params.sessionKey && params.config
       ? resolveAgentWorkspaceDir(params.config, resolveAgentIdFromSessionKey(params.sessionKey))
       : undefined;
-  return resolvePathFromInput(params.filePath, resolveWorkspaceRoot(workspaceDir));
+  return resolvePathFromInput(params.filePath, resolveWorkspaceRoot(workspaceDir) as string);
 }
 
 function normalizeOptionalThreadId(value: unknown): string | number | undefined {

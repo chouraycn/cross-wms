@@ -23,7 +23,6 @@ import {
   resolveConfigScopedRuntimeCacheValue,
   type ConfigScopedRuntimeCache,
 } from "./plugin-cache-primitives.js";
-import type { PluginMetadataSnapshot } from "./plugin-metadata-snapshot.types.js";
 import type { PluginRegistry } from "./registry-types.js";
 
 type CapabilityProviderRegistryKey =
@@ -96,7 +95,7 @@ function shouldSkipCapabilityResolution(params: {
   );
 }
 
-function uniqueSorted(values: Iterable<string>): string[] {
+function uniqueSorted(values: readonly string[]): string[] {
   return sortUniqueStrings(values);
 }
 
@@ -104,7 +103,7 @@ function uniqueSorted(values: Iterable<string>): string[] {
 export function loadCapabilityManifestSnapshot(params: {
   cfg?: OpenClawConfig;
   workspaceDir?: string;
-}): Pick<PluginMetadataSnapshot, "index" | "plugins"> {
+}) {
   return loadManifestContractSnapshot({
     config: params.cfg,
     ...(params.workspaceDir ? { workspaceDir: params.workspaceDir } : {}),

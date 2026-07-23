@@ -1,11 +1,11 @@
 // 共享的会话成本与用量记账类型契约。
 // 降级：agents/usage.js 未导出 NormalizedUsage，此处本地定义兼容类型
-type NormalizedUsage = {
-  inputTokens?: number;
-  outputTokens?: number;
-  cacheReadTokens?: number;
-  cacheWriteTokens?: number;
-  totalTokens?: number;
+export type NormalizedUsage = {
+  input?: number;
+  output?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+  total?: number;
 };
 import type {
   SessionUsageTimePoint as SharedSessionUsageTimePoint,

@@ -11,6 +11,7 @@ type InstallPolicyRequestKind = string;
 export type InstallSecurityScanResult = {
   ok: boolean;
   findings: Array<{ kind: string; message: string; severity: "info" | "warn" | "error" }>;
+  blocked?: { reason: string; code?: string };
 };
 
 export type PluginInstallRequestKind = Exclude<InstallPolicyRequestKind, "skill-install">;
@@ -51,7 +52,16 @@ export async function scanFileInstallSource(_params: {
 }
 
 export async function preflightPluginNpmInstallPolicy(_params: {
-  npmSpec: string;
+  npmSpec?: string;
+  config?: unknown;
+  logger?: unknown;
+  mode?: string;
+  packageName?: string;
+  pluginId?: string;
+  requestedSpecifier?: string;
+  source?: unknown;
+  sourcePath?: string;
+  sourcePathKind?: string;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }

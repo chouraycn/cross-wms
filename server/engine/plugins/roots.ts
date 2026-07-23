@@ -1,5 +1,11 @@
 import { logger } from '../../logger.js';
 
+export type PluginSourceRoots = {
+  stock?: string;
+  global: string;
+  workspace?: string;
+};
+
 export interface PluginRoot {
   path: string;
   name?: string;

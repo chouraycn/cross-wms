@@ -7,7 +7,7 @@ import { loadSkillsFromDirectory } from "../loading/local-loader.js";
 import { resolveEffectiveAgentSkillFilter } from "./agent-filter.js";
 import { normalizeSkillIndexName } from "./skill-index.js";
 
-const logger = getChildLogger("skills");
+const logger = getChildLogger({ component: "skills" });
 
 export interface SkillStatusConfigCheck {
   name: string;
@@ -192,7 +192,7 @@ export async function buildSkillStatusReport(params: {
   const bundledSkills: SkillEntry[] = [];
   if (bundledContext.dir) {
     try {
-      bundledSkills.push(...loadSkillsFromDirectory(bundledContext.dir, "bundled"));
+      bundledSkills.push(...(await loadSkillsFromDirectory(bundledContext.dir, "bundled")));
     } catch (err) {
       logger.debug("[Status] Failed to load bundled skills:", err);
     }
@@ -200,7 +200,7 @@ export async function buildSkillStatusReport(params: {
 
   const managedSkills: SkillEntry[] = [];
   try {
-    managedSkills.push(...loadSkillsFromDirectory(managedSkillsDir, "managed"));
+    managedSkills.push(...(await loadSkillsFromDirectory(managedSkillsDir, "managed")));
   } catch (err) {
     logger.debug("[Status] Failed to load managed skills:", err);
   }

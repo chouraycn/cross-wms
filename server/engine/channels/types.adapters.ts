@@ -107,13 +107,25 @@ export type ChannelApprovalCapability = unknown;
 
 export type ChannelAllowlistAdapter = unknown;
 
-export type ChannelConfiguredBindingConversationRef = unknown;
+export type ChannelConfiguredBindingConversationRef = {
+  conversationId: string;
+  parentConversationId?: string;
+};
 
-export type ChannelConfiguredBindingMatch = unknown;
+export type ChannelConfiguredBindingMatch = ChannelConfiguredBindingConversationRef & {
+  matchPriority?: number;
+};
 
 export type ChannelCommandConversationContext = unknown;
 
-export type ChannelConfiguredBindingProvider = unknown;
+export type ChannelConfiguredBindingProvider = {
+  matchInboundConversation: (params: {
+    binding: unknown;
+    compiledBinding: ChannelConfiguredBindingConversationRef;
+    conversationId: string;
+    parentConversationId?: string;
+  }) => ChannelConfiguredBindingMatch | null;
+};
 
 export type ChannelConversationBindingSupport = unknown;
 

@@ -8,6 +8,29 @@ import {
 import { callGateway } from "../gateway/call.js";
 import type { PluginRuntime } from './_stub_local__runtime__types.js';
 
+type RuntimeNodeListParams = {
+  connected?: boolean;
+};
+
+type RuntimeNodeListResult = {
+  nodes: Array<{
+    nodeId: string;
+    displayName?: string;
+    remoteIp?: string;
+    connected?: boolean;
+    caps?: string[];
+    commands?: string[];
+  }>;
+};
+
+type RuntimeNodeInvokeParams = {
+  nodeId: string;
+  command: string;
+  params?: unknown;
+  timeoutMs?: number;
+  idempotencyKey?: string;
+};
+
 /** Adds Gateway timer grace for plugin CLI node invoke calls. */
 export function resolvePluginCliNodeInvokeGatewayTimeoutMs(
   timeoutMs: number | undefined,
@@ -20,8 +43,8 @@ export function resolvePluginCliNodeInvokeGatewayTimeoutMs(
 /** Creates the `runtime.nodes` implementation exposed to CLI plugin code. */
 export function createPluginCliGatewayNodesRuntime(): PluginRuntime["nodes"] {
   return {
-    async list(params) {
-      const payload = await callGateway({
+    async list(params: RuntimeNodeListParams | undefined): Promise<RuntimeNodeListResult> {
+      const payload = await callGateway<{ nodes?: unknown[] }>({
         method: "node.list",
         params: {},
         clientName: GATEWAY_CLIENT_NAMES.CLI,
@@ -31,17 +54,17 @@ export function createPluginCliGatewayNodesRuntime(): PluginRuntime["nodes"] {
       const filteredNodes =
         params?.connected === true
           ? nodes.filter(
-              (node) =>
+              (node: unknown) =>
                 node !== null &&
                 typeof node === "object" &&
                 (node as { connected?: unknown }).connected === true,
             )
           : nodes;
       return {
-        nodes: filteredNodes as Awaited<ReturnType<PluginRuntime["nodes"]["list"]>>["nodes"],
+        nodes: filteredNodes as RuntimeNodeListResult["nodes"],
       };
     },
-    async invoke(params) {
+    async invoke(params: RuntimeNodeInvokeParams): Promise<unknown> {
       return await callGateway({
         method: "node.invoke",
         params: {

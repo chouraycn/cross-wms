@@ -5,6 +5,8 @@
  * 降级策略：运行时函数降级为返回默认值。
  */
 
+import type { PluginJsonValue } from "./host-hook-json.js";
+
 export { clearPluginOwnedSessionState } from "./host-hook-cleanup.js";
 
 export async function enqueuePluginNextTurnInjection(params: {
@@ -32,9 +34,11 @@ export async function drainPluginNextTurnInjectionContext(params: {
 }
 
 export function getPluginSessionExtensionStateSync(params: {
-  sessionId: string;
+  sessionId?: string;
   pluginId?: string;
-}): unknown {
+  cfg?: unknown;
+  sessionKey?: string;
+}): Record<string, PluginJsonValue> | undefined {
   void params;
   return undefined;
 }

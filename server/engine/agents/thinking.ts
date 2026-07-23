@@ -4,15 +4,23 @@
  * Simplified: stream recovery and error graph collection replaced with no-op defaults.
  */
 
+type ContentBlock = Record<string, unknown>;
+
 type AgentMessage = {
   role: string;
-  content: Array<Record<string, unknown>>;
+  content: ContentBlock[];
   stopReason?: string;
   timestamp?: unknown;
 };
 
-type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
-type AssistantContentBlock = AssistantMessage["content"][number];
+type AssistantMessage = {
+  role: "assistant";
+  content: ContentBlock[];
+  stopReason?: string;
+  timestamp?: unknown;
+};
+
+type AssistantContentBlock = ContentBlock;
 type RecoveryAssessment = "valid" | "incomplete-thinking" | "incomplete-text";
 
 const THINKING_BLOCK_ERROR_PATTERN =

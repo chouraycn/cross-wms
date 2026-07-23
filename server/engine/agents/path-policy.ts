@@ -163,4 +163,12 @@ export function clearPathPolicies(): void {
   policyStore.clear();
 }
 
+/** Resolves a user-provided file path relative to a sandbox working directory. */
+export function resolvePathFromInput(filePath: string, cwd: string): string {
+  const resolved = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(cwd, filePath);
+  return path.normalize(resolved);
+}
+
 logger.debug('[Agents:PathPolicy] Module loaded');

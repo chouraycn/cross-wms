@@ -152,7 +152,7 @@ export function getTrustedToolPolicyDiagnosticEntries(
 
 function normalizeDerivedEventFields(
   value: Pick<PluginHookBeforeToolCallEvent, "derivedPaths"> | undefined,
-): Pick<PluginHookBeforeToolCallEvent, "derivedPaths"> {
+): Partial<Pick<PluginHookBeforeToolCallEvent, "derivedPaths">> {
   return Array.isArray(value?.derivedPaths)
     ? { derivedPaths: Object.freeze([...value.derivedPaths]) }
     : {};
@@ -165,8 +165,8 @@ function normalizeToolIdentity(
     | undefined,
 ): { toolKind?: PluginHookToolKind; toolInputKind?: PluginHookToolInputKind } {
   return {
-    ...(value?.toolKind && { toolKind: value.toolKind }),
-    ...(value?.toolInputKind && { toolInputKind: value.toolInputKind }),
+    ...(value?.toolKind ? { toolKind: value.toolKind as PluginHookToolKind } : {}),
+    ...(value?.toolInputKind ? { toolInputKind: value.toolInputKind as PluginHookToolInputKind } : {}),
   };
 }
 
@@ -193,7 +193,7 @@ export async function runTrustedToolPolicies(
   },
 ): Promise<PluginHookBeforeToolCallResult | undefined> {
   const policies = copyTrustedPolicyRegistrations(options?.registry ?? getActivePluginRegistry());
-  let adjustedParams = event.params;
+  let adjustedParams = event.params as Record<string, unknown> | undefined;
   let hasAdjustedParams = false;
   let approval: PluginHookBeforeToolCallResult["requireApproval"];
   const sessionExtensionStateCache = new Map<string, Record<string, PluginJsonValue> | undefined>();
@@ -203,7 +203,7 @@ export async function runTrustedToolPolicies(
     if (!didResolveSessionConfig) {
       didResolveSessionConfig = true;
       try {
-        resolvedSessionConfig = getRuntimeConfig();
+        resolvedSessionConfig = (getRuntimeConfig as () => OpenClawConfig | undefined)();
       } catch {
         resolvedSessionConfig = undefined;
       }
@@ -263,9 +263,11 @@ export async function runTrustedToolPolicies(
       return trustedPolicyFailureResult(registration, "policy is unreadable");
     }
 
-    let decision: Awaited<ReturnType<PluginTrustedToolPolicyRegistration["evaluate"]>>;
+    let decision:
+      | Awaited<ReturnType<NonNullable<PluginTrustedToolPolicyRegistration["evaluate"]>>>
+      | undefined;
     try {
-      decision = await policy.policy.evaluate(buildEvent(), policyCtx);
+      decision = await policy.policy.evaluate?.(buildEvent(), policyCtx);
     } catch {
       return trustedPolicyFailureResult(registration, "policy evaluation failed");
     }
@@ -312,7 +314,9 @@ export async function runTrustedToolPolicies(
           currentContextToolIdentity = normalizeToolIdentity(normalized.event);
         }
         hasAdjustedParams = true;
-        currentDerivedEvent = normalizeDerivedEventFields(options?.deriveEvent?.(adjustedParams));
+        currentDerivedEvent = normalizeDerivedEventFields(
+          options?.deriveEvent?.(adjustedParams as Record<string, unknown>),
+        );
       }
       if ("requireApproval" in decision && decision.requireApproval && !approval) {
         approval = decision.requireApproval;

@@ -43,18 +43,18 @@ function buildPluginCapabilityEntries(
 ): PluginCapabilityEntry[] {
   return [
     { kind: "cli-backend" as const, ids: plugin.cliBackendIds ?? [] },
-    { kind: "text-inference" as const, ids: plugin.providerIds },
-    { kind: "embedding" as const, ids: plugin.embeddingProviderIds },
-    { kind: "speech" as const, ids: plugin.speechProviderIds },
-    { kind: "realtime-transcription" as const, ids: plugin.realtimeTranscriptionProviderIds },
-    { kind: "realtime-voice" as const, ids: plugin.realtimeVoiceProviderIds },
-    { kind: "media-understanding" as const, ids: plugin.mediaUnderstandingProviderIds },
-    { kind: "transcript-source" as const, ids: plugin.transcriptSourceProviderIds },
-    { kind: "image-generation" as const, ids: plugin.imageGenerationProviderIds },
-    { kind: "video-generation" as const, ids: plugin.videoGenerationProviderIds },
-    { kind: "music-generation" as const, ids: plugin.musicGenerationProviderIds },
-    { kind: "web-search" as const, ids: plugin.webSearchProviderIds },
-    { kind: "agent-harness" as const, ids: plugin.agentHarnessIds },
+    { kind: "text-inference" as const, ids: plugin.providerIds ?? [] },
+    { kind: "embedding" as const, ids: plugin.embeddingProviderIds ?? [] },
+    { kind: "speech" as const, ids: plugin.speechProviderIds ?? [] },
+    { kind: "realtime-transcription" as const, ids: plugin.realtimeTranscriptionProviderIds ?? [] },
+    { kind: "realtime-voice" as const, ids: plugin.realtimeVoiceProviderIds ?? [] },
+    { kind: "media-understanding" as const, ids: plugin.mediaUnderstandingProviderIds ?? [] },
+    { kind: "transcript-source" as const, ids: plugin.transcriptSourceProviderIds ?? [] },
+    { kind: "image-generation" as const, ids: plugin.imageGenerationProviderIds ?? [] },
+    { kind: "video-generation" as const, ids: plugin.videoGenerationProviderIds ?? [] },
+    { kind: "music-generation" as const, ids: plugin.musicGenerationProviderIds ?? [] },
+    { kind: "web-search" as const, ids: plugin.webSearchProviderIds ?? [] },
+    { kind: "agent-harness" as const, ids: plugin.agentHarnessIds ?? [] },
     {
       kind: "context-engine" as const,
       ids:
@@ -62,7 +62,7 @@ function buildPluginCapabilityEntries(
           ? (plugin.contextEngineIds ?? [])
           : [],
     },
-    { kind: "channel" as const, ids: plugin.channelIds },
+    { kind: "channel" as const, ids: plugin.channelIds ?? [] },
   ].filter((entry) => entry.ids.length > 0);
 }
 
@@ -123,12 +123,12 @@ export function buildPluginShapeSummary(params: {
     typedHookCount,
     customHookCount,
     toolCount,
-    commandCount: params.plugin.commands.length,
-    cliCount: params.plugin.cliCommands.length,
-    serviceCount: params.plugin.services.length,
-    gatewayDiscoveryServiceCount: params.plugin.gatewayDiscoveryServiceIds.length,
+    commandCount: (params.plugin.commands ?? []).length,
+    cliCount: (params.plugin.cliCommands ?? []).length,
+    serviceCount: (params.plugin.services ?? []).length,
+    gatewayDiscoveryServiceCount: (params.plugin.gatewayDiscoveryServiceIds ?? []).length,
     gatewayMethodCount,
-    httpRouteCount: params.plugin.httpRoutes,
+    httpRouteCount: params.plugin.httpRoutes ?? 0,
   });
 
   return {

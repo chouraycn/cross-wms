@@ -213,13 +213,13 @@ function validateOpenClawPackageInstallCompatibility(params: {
     if (minHostVersionCheck.kind === "unknown_host_version") {
       return {
         ok: false,
-        error: `plugin "${params.pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host version could not be determined. Re-run from a released build or set OPENCLAW_VERSION and retry.`,
+        error: `plugin "${params.pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement?.minimumLabel ?? "unknown"}, but this host version could not be determined. Re-run from a released build or set OPENCLAW_VERSION and retry.`,
         code: PLUGIN_INSTALL_ERROR_CODE.UNKNOWN_HOST_VERSION,
       };
     }
     return {
       ok: false,
-      error: `plugin "${params.pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement.minimumLabel}, but this host is ${minHostVersionCheck.currentVersion}. Upgrade OpenClaw and retry.`,
+      error: `plugin "${params.pluginId}" requires OpenClaw >=${minHostVersionCheck.requirement?.minimumLabel ?? "unknown"}, but this host is ${minHostVersionCheck.currentVersion ?? "unknown"}. Upgrade OpenClaw and retry.`,
       code: PLUGIN_INSTALL_ERROR_CODE.INCOMPATIBLE_HOST_VERSION,
     };
   }
@@ -1641,7 +1641,7 @@ async function installPluginFromManagedNpmRoot(
     }
     const requiredPlatformPackageNames = resolveRequiredPlatformPackageNames(
       packageManifestResult.manifest
-        ? runtime.getPackageManifestMetadata(packageManifestResult.manifest)
+        ? (runtime.getPackageManifestMetadata(packageManifestResult.manifest) as OpenClawPackageManifest | undefined)
         : undefined,
     );
     if (!requiredPlatformPackageNames.ok) {
@@ -2278,8 +2278,8 @@ async function installBundleFromSourceDir(
   if (!packageManifestResult.ok) {
     return packageManifestResult;
   }
-  const packageMetadata = packageManifestResult.manifest
-    ? runtime.getPackageManifestMetadata(packageManifestResult.manifest)
+  const packageMetadata: OpenClawPackageManifest | undefined = packageManifestResult.manifest
+    ? (runtime.getPackageManifestMetadata(packageManifestResult.manifest) as OpenClawPackageManifest | undefined)
     : undefined;
   const compatibilityError = validateOpenClawPackageInstallCompatibility({
     runtime,
@@ -2327,7 +2327,7 @@ async function installBundleFromSourceDir(
   return await installPluginDirectoryIntoExtensions({
     sourceDir: params.sourceDir,
     pluginId,
-    manifestName: manifestRes.manifest.name,
+    manifestName: manifestRes.manifest.name as string | undefined,
     version: manifestRes.manifest.version,
     extensions: [],
     targetDir: targetResult.target.targetPath,
@@ -2465,7 +2465,7 @@ async function validatePackagePluginInstallSource(params: {
     );
   }
 
-  const packageMetadata = params.runtime.getPackageManifestMetadata(manifest);
+  const packageMetadata = params.runtime.getPackageManifestMetadata(manifest) as OpenClawPackageManifest | undefined;
   const compatibilityError = validateOpenClawPackageInstallCompatibility({
     runtime: params.runtime,
     pluginId,
@@ -2801,7 +2801,7 @@ export async function installPluginFromArchive(
   };
   const archivePathResult = await runtime.resolveArchiveSourcePath(params.archivePath);
   if (!archivePathResult.ok) {
-    return archivePathResult;
+    return archivePathResult as InstallPluginResult;
   }
   const archivePath = archivePathResult.path;
   let effectiveMode = mode;
@@ -3348,7 +3348,7 @@ export async function installPluginFromPath(
   const runtime = await loadPluginInstallRuntime();
   const pathResult = await runtime.resolveExistingInstallPath(params.path);
   if (!pathResult.ok) {
-    return pathResult;
+    return pathResult as InstallPluginResult;
   }
   const { resolvedPath: resolved, stat } = pathResult;
   const packageInstallOptions = pickPackageInstallCommonParams(params);

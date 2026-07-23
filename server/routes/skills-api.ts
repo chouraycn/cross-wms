@@ -146,9 +146,9 @@ router.get('/search', (req: Request, res: Response) => {
     const skills = dbGetSkills();
     const filtered = skills.filter(
       s =>
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        s.desc.toLowerCase().includes(query.toLowerCase()) ||
-        (s.tags && s.tags.toLowerCase().includes(query.toLowerCase())),
+        (s.name as string).toLowerCase().includes(query.toLowerCase()) ||
+        (s.desc as string).toLowerCase().includes(query.toLowerCase()) ||
+        (s.tags && (s.tags as string).toLowerCase().includes(query.toLowerCase())),
     );
 
     successResponse(res, filtered);
@@ -166,15 +166,15 @@ router.get('/audit', async (_req: Request, res: Response) => {
 
     for (const skill of skills) {
       try {
-        const content = skill.promptTemplate || '';
-        const audit = await auditSkillMd(content);
+        const content = (skill.promptTemplate as string) || '';
+        const audit = await auditSkillMd((skill.path as string) || (skill.name as string) || (skill.id as string), content);
         const report = generateMarkdownReport(audit);
         auditResults.push({
           skillId: skill.id,
           skillName: skill.name,
-          score: audit.score,
-          level: audit.level,
-          issues: audit.issues,
+          score: audit.summary.score,
+          level: audit.summary.level,
+          issues: [...audit.maliciousFindings, ...audit.suspiciousFindings, ...audit.informationalNotes],
           report,
         });
       } catch (auditError) {
@@ -198,7 +198,7 @@ router.get('/audit', async (_req: Request, res: Response) => {
 router.get('/metrics', (_req: Request, res: Response) => {
   try {
     const skills = dbGetSkills();
-    const usageStats = dbGetSkillUsageStats();
+    const usageStats = dbGetSkillUsageStats("");
 
     const metrics = {
       totalCount: skills.length,

@@ -1,12 +1,52 @@
 // 移植自 openclaw/src/infra/session-binding.types.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type BindingTargetKind = unknown;
-export type BindingStatus = unknown;
-export type SessionBindingPlacement = unknown;
-export type SessionBindingErrorCode = unknown;
-export type ConversationRef = unknown;
-export type SessionBindingRecord = unknown;
-export type SessionBindingBindInput = unknown;
-export type SessionBindingUnbindInput = unknown;
-export type SessionBindingCapabilities = unknown;
+export type BindingTargetKind = "subagent" | "session";
+
+export type BindingStatus = "active" | "ending" | "ended";
+
+export type SessionBindingPlacement = "current" | "child";
+
+export type SessionBindingErrorCode =
+  | "BINDING_ADAPTER_UNAVAILABLE"
+  | "BINDING_CAPABILITY_UNSUPPORTED"
+  | "BINDING_CREATE_FAILED";
+
+export type ConversationRef = {
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+};
+
+export type SessionBindingRecord = {
+  bindingId: string;
+  targetSessionKey: string;
+  targetKind: BindingTargetKind;
+  conversation: ConversationRef;
+  status: BindingStatus;
+  boundAt: number;
+  expiresAt?: number;
+  metadata?: Record<string, unknown>;
+};
+
+export type SessionBindingBindInput = {
+  targetSessionKey: string;
+  targetKind: BindingTargetKind;
+  conversation: ConversationRef;
+  placement?: SessionBindingPlacement;
+  metadata?: Record<string, unknown>;
+  ttlMs?: number;
+};
+
+export type SessionBindingUnbindInput = {
+  bindingId?: string;
+  targetSessionKey?: string;
+  reason: string;
+};
+
+export type SessionBindingCapabilities = {
+  adapterAvailable: boolean;
+  bindSupported: boolean;
+  unbindSupported: boolean;
+  placements: SessionBindingPlacement[];
+};

@@ -15,7 +15,11 @@
     "jsx": "preserve",
     "paths": {
       "@src/*": ["../src/*"],
-      "@openclaw/media-core/*": ["../packages/media-core/src/*"]
+      "@openclaw/media-core/*": ["../packages/media-core/src/*"],
+      "@cdf-know/memory-host-sdk": ["../packages/memory-host-sdk/src/index.ts"],
+      "@cdf-know/memory-host-sdk/*": ["../packages/memory-host-sdk/src/*"],
+      "@cdf-know/media-generation-core/*": ["../packages/media-generation-core/src/*"],
+      "@cdf-know/gateway-protocol/*": ["../packages/gateway-protocol/src/*"]
     }
   },
   "include": ["**/*.ts"],

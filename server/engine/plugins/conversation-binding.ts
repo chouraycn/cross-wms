@@ -13,6 +13,7 @@ import {
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
+import type { KyselyExpressionBuilder } from "../infra/kysely-sync.js";
 import type { ConversationRef } from './_stub_parent__infra__outbound__session_binding_service.js';
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveGlobalMap, resolveGlobalSingleton } from "../shared/global-singleton.js";
@@ -342,7 +343,14 @@ function loadApprovalsFromDatabase(): PluginBindingApprovalsState {
   try {
     const database = openApprovalsDatabase();
     const approvalsDb = getNodeSqliteKysely<PluginBindingApprovalsDatabase>(database.db);
-    const rows = executeSqliteQuerySync(
+    const rows = executeSqliteQuerySync<{
+      plugin_root: string;
+      plugin_id: string;
+      plugin_name: string | null;
+      channel: string;
+      account_id: string;
+      approved_at: number;
+    }>(
       database.db,
       approvalsDb
         .selectFrom("plugin_binding_approvals")
@@ -389,9 +397,9 @@ async function persistApprovalEntry(entry: PluginBindingApprovalEntry): Promise<
             .values(row)
             .onConflict((conflict) =>
               conflict.columns(["plugin_root", "channel", "account_id"]).doUpdateSet({
-                plugin_id: (eb) => eb.ref("excluded.plugin_id"),
-                plugin_name: (eb) => eb.ref("excluded.plugin_name"),
-                approved_at: (eb) => eb.ref("excluded.approved_at"),
+                plugin_id: (eb: KyselyExpressionBuilder) => eb.ref("excluded.plugin_id"),
+                plugin_name: (eb: KyselyExpressionBuilder) => eb.ref("excluded.plugin_name"),
+                approved_at: (eb: KyselyExpressionBuilder) => eb.ref("excluded.approved_at"),
               }),
             ),
         );

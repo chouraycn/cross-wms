@@ -605,7 +605,7 @@ export async function requestDevicePairing(
   request: DevicePairingPendingRequest;
   created: boolean;
 }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const deviceId = normalizeDeviceId(req.deviceId);
     if (!deviceId) {
@@ -677,7 +677,7 @@ export async function approveDevicePairing(
       ? undefined
       : optionsOrBaseDir;
   const baseDir = typeof optionsOrBaseDir === "string" ? optionsOrBaseDir : maybeBaseDir;
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const pending = state.pendingById[requestId];
     if (!pending) {
@@ -795,7 +795,7 @@ export async function approveBootstrapDevicePairing(
     approvedRoles,
     bootstrapProfile.scopes,
   );
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const pending = state.pendingById[requestId];
     if (!pending) {
@@ -871,7 +871,7 @@ export async function rejectDevicePairing(
   requestId: string,
   baseDir?: string,
 ): Promise<{ requestId: string; deviceId: string } | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const pending = state.pendingById[requestId];
     if (!pending) {
@@ -893,7 +893,7 @@ export async function removePairedDevice(
   deviceId: string,
   baseDir?: string,
 ): Promise<{ deviceId: string } | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const normalized = normalizeDeviceId(deviceId);
     if (!normalized || !state.pairedByDeviceId[normalized]) {
@@ -916,7 +916,7 @@ export async function removePairedDeviceRole(params: {
   role: string;
   baseDir?: string;
 }): Promise<{ deviceId: string; role: string; removedDevice: boolean } | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const normalizedDeviceId = normalizeDeviceId(params.deviceId);
     const role = normalizeRole(params.role);
@@ -994,7 +994,7 @@ export async function updatePairedDeviceMetadata(
   patch: Partial<PairedDeviceMetadataPatch>,
   baseDir?: string,
 ): Promise<boolean> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(baseDir);
     const normalizedDeviceId = normalizeDeviceId(deviceId);
     const existing = state.pairedByDeviceId[normalizedDeviceId];
@@ -1058,7 +1058,7 @@ export async function verifyDeviceToken(params: {
   requiredSharedGatewaySessionGeneration?: string;
   baseDir?: string;
 }): Promise<{ ok: boolean; reason?: string; issuer?: DeviceAuthToken["issuer"] }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const device = getPairedDeviceFromState(state, params.deviceId);
     if (!device) {
@@ -1125,7 +1125,7 @@ export async function ensureDeviceToken(params: {
   issuer?: DeviceAuthToken["issuer"];
   baseDir?: string;
 }): Promise<DeviceAuthToken | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const requestedScopes = normalizeDeviceAuthScopes(params.scopes);
     const context = resolveDeviceTokenUpdateContext({
@@ -1214,7 +1214,7 @@ export async function rotateDeviceToken(params: {
   callerScopes?: readonly string[];
   baseDir?: string;
 }): Promise<RotateDeviceTokenResult> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const context = resolveDeviceTokenUpdateContext({
       state,
@@ -1275,7 +1275,7 @@ export async function revokeDeviceToken(params: {
   callerScopes?: readonly string[];
   baseDir?: string;
 }): Promise<RevokeDeviceTokenResult> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const context = resolveDeviceTokenUpdateContext({
       state,

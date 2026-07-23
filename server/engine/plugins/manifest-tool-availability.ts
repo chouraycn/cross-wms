@@ -69,6 +69,7 @@ export function hasManifestToolAvailability(params: {
   toolNames: string[];
   config?: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
+  hasAuthForProvider?: (providerId: string) => boolean;
 }): boolean {
   void params;
   return true;

@@ -196,4 +196,4 @@ export const memoryDreaming = new MemoryDreaming();
 export const DEFAULT_MEMORY_DREAMING_PLUGIN_ID = 'memory-dreaming';
 export const resolveMemoryDreamingConfig = (_config?: unknown) => ({ enabled: true });
 export const resolveMemoryDreamingPluginConfig = resolveMemoryDreamingConfig;
-export const resolveMemoryDreamingPluginId = () => DEFAULT_MEMORY_DREAMING_PLUGIN_ID;
+export const resolveMemoryDreamingPluginId = (_cfg?: unknown) => DEFAULT_MEMORY_DREAMING_PLUGIN_ID;

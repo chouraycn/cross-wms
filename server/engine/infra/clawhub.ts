@@ -277,3 +277,132 @@ export const parseClawHubPluginSpec: any = undefined as any;
 export const resolveClawHubBaseUrl: any = undefined as any;
 export const resolveLatestVersionFromPackage: any = undefined as any;
 export const satisfiesGatewayMinimum: any = undefined as any;
+
+// Type stubs for ClawHub package types (degraded placeholders)
+export type ClawHubPackageCompatibility = {
+  pluginApiRange?: string;
+  builtWithOpenClawVersion?: string;
+  pluginSdkVersion?: string;
+  minGatewayVersion?: string;
+};
+export type ClawHubPackageArtifactSummary = {
+  kind?: string | null;
+  sha256?: string | null;
+  size?: number | null;
+  format?: string | null;
+  npmIntegrity?: string | null;
+  npmShasum?: string | null;
+  npmTarballName?: string | null;
+  npmUnpackedSize?: number | null;
+  npmFileCount?: number | null;
+  downloadUrl?: string | null;
+  tarballUrl?: string | null;
+  legacyDownloadUrl?: string | null;
+};
+export type ClawHubPackageClawPackSummary = {
+  available: boolean;
+  specVersion?: number | null;
+  format?: string | null;
+  sha256?: string | null;
+  size?: number | null;
+  fileCount?: number | null;
+  manifestSha256?: string | null;
+  npmIntegrity?: string | null;
+  npmShasum?: string | null;
+  npmTarballName?: string | null;
+  kind?: string | null;
+};
+export type ClawHubResolvedArtifact =
+  | {
+      source: "clawhub";
+      artifactKind: "legacy-zip";
+      packageName: string;
+      version: string;
+      downloadUrl?: string | null;
+      artifactSha256?: string | null;
+    }
+  | {
+      source: "clawhub";
+      artifactKind: "npm-pack";
+      packageName: string;
+      version: string;
+      downloadUrl?: string | null;
+      npmIntegrity: string;
+      npmShasum?: string | null;
+      artifactSha256?: string | null;
+    };
+export type ClawHubPackageArtifactResolverResponse = {
+  package?: {
+    name?: string | null;
+    displayName?: string | null;
+    family?: string | null;
+  } | null;
+  version?:
+    | {
+        version?: string | null;
+        createdAt?: number | null;
+        changelog?: string | null;
+        distTags?: string[];
+        files?: unknown[];
+        sha256hash?: string | null;
+        compatibility?: ClawHubPackageCompatibility | null;
+        artifact?: ClawHubPackageArtifactSummary | null;
+        clawpack?: ClawHubPackageClawPackSummary | null;
+      }
+    | string
+    | null;
+  artifact?: ClawHubResolvedArtifact | null;
+};
+export type ClawHubPackageDetail = {
+  package:
+    | {
+        name: string;
+        displayName: string;
+        family: string;
+        channel: string;
+        isOfficial: boolean;
+        ownerHandle?: string | null;
+        tags?: Record<string, string>;
+        compatibility?: ClawHubPackageCompatibility | null;
+        verification?: {
+          tier?: string;
+          scope?: string;
+          summary?: string;
+          sourceRepo?: string;
+          sourceCommit?: string;
+          hasProvenance?: boolean;
+          scanStatus?: string;
+        } | null;
+        artifact?: ClawHubPackageArtifactSummary | null;
+        clawpack?: ClawHubPackageClawPackSummary;
+      }
+    | null;
+  owner?: {
+    handle?: string | null;
+    displayName?: string | null;
+    image?: string | null;
+  } | null;
+};
+export type ClawHubPackageVersion = {
+  package: {
+    name: string;
+    displayName: string;
+    family: string;
+  } | null;
+  version: {
+    version: string;
+    createdAt: number;
+    changelog: string;
+    distTags?: string[];
+    files?: Array<{
+      path: string;
+      size?: number;
+      sha256: string;
+      contentType?: string;
+    }>;
+    sha256hash?: string | null;
+    compatibility?: ClawHubPackageCompatibility | null;
+    artifact?: ClawHubPackageArtifactSummary | null;
+    clawpack?: ClawHubPackageClawPackSummary;
+  } | null;
+};

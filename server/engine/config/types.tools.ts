@@ -27,7 +27,25 @@ export type SessionsSpawnToolsConfig = unknown;
 export type AgentToolsConfig = unknown;
 export type MemorySearchConfig = unknown;
 export type ToolsConfig = unknown;
-export type MessageToolsConfig = unknown;
+export type MessageToolsConfig = {
+  /** @deprecated Use tools.message.crossContext settings. */
+  allowCrossContextSend?: boolean;
+  crossContext?: {
+    allowWithinProvider?: boolean;
+    allowAcrossProviders?: boolean;
+    marker?: {
+      enabled?: boolean;
+      prefix?: string;
+      suffix?: string;
+    };
+  };
+  actions?: {
+    allow?: string[];
+  };
+  broadcast?: {
+    enabled?: boolean;
+  };
+};
 export function parseToolsBySenderTypedKey(...args: unknown[]): unknown {
   return undefined;
 }

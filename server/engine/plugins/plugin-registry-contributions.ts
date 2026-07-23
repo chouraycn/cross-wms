@@ -28,6 +28,7 @@ import {
   createPluginRegistryIdNormalizer,
   type PluginRegistryIdNormalizerOptions,
 } from "./plugin-registry-id-normalizer.js";
+import type { NormalizedPluginsConfig } from "./config-normalization-shared.js";
 export {
   createPluginRegistryIdNormalizer,
   type PluginRegistryIdNormalizerOptions,
@@ -340,13 +341,14 @@ export function loadPluginManifestRegistryForPluginRegistry(
 function normalizePluginsConfigWithResolver(
   _config: unknown,
   _resolver: (pluginId: string) => string,
-): unknown {
+): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},
     allow: [],
     deny: [],
     loadPaths: [],
+    slots: {},
   };
 }
 
@@ -354,7 +356,7 @@ export function normalizePluginsConfigWithRegistry(
   config: OpenClawConfig["plugins"] | undefined,
   index: PluginRegistrySnapshot,
   options: PluginRegistryIdNormalizerOptions = {},
-): unknown {
+): NormalizedPluginsConfig {
   return normalizePluginsConfigWithResolver(
     config,
     createPluginRegistryIdNormalizer(index, options),

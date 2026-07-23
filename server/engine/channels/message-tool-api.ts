@@ -1,7 +1,17 @@
 // 移植自 openclaw/src/channels/plugins/message-tool-api.ts
 
-export type ChannelMessageToolDiscoveryAdapter = unknown;
+import type {
+  ChannelMessageActionAdapter,
+  ChannelMessageActionDiscoveryContext,
+  ChannelMessageToolDiscovery,
+} from "./types.public.js";
 
-export function resolveBundledChannelMessageToolDiscoveryAdapter(..._args: unknown[]): unknown {
+export type ChannelMessageToolDiscoveryAdapter = ChannelMessageActionAdapter;
+
+export function resolveBundledChannelMessageToolDiscoveryAdapter(
+  ..._args: unknown[]
+): ChannelMessageToolDiscoveryAdapter | undefined {
   return undefined;
 }
+
+export type { ChannelMessageActionDiscoveryContext, ChannelMessageToolDiscovery };

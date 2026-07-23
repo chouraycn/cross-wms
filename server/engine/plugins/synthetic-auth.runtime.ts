@@ -105,7 +105,10 @@ export function resolveRuntimeExternalAuthProviderRefs(
   const registry = getPluginRegistryState()?.activeRegistry;
   if (registry) {
     return uniqueProviderRefs([
-      ...registry.plugins.flatMap((plugin) => plugin.contracts?.externalAuthProviders ?? []),
+      ...registry.plugins.flatMap(
+        (plugin) =>
+          (plugin.contracts?.externalAuthProviders as string[] | undefined) ?? [],
+      ),
       ...(registry.providers ?? [])
         .filter(
           (entry) =>

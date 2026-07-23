@@ -7,6 +7,7 @@ import {
 import { compileGlobPatterns, matchesAnyGlobPattern } from "../agents/glob-pattern.js";
 import { DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY, normalizeToolName } from "../agents/tool-policy.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
+import type { AgentToolUpdateCallback } from "../agents/tools/common.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getLoadedRuntimePluginRegistry } from "./active-runtime-registry.js";
 import { applyTestPluginDefaults, normalizePluginsConfig } from "./config-state.js";
@@ -197,8 +198,9 @@ function wrapPluginToolFactoryResult(
 }
 
 function resolvePluginToolFactory(entry: PluginToolRegistration, ctx: OpenClawPluginToolContext) {
+  const factory = entry.factory as (ctx: OpenClawPluginToolContext) => PluginToolFactoryResult;
   return runWithPluginToolScope(entry, () =>
-    wrapPluginToolFactoryResult(entry, entry.factory(ctx)),
+    wrapPluginToolFactoryResult(entry, factory(ctx)),
   );
 }
 
@@ -209,8 +211,8 @@ export function buildPluginToolMetadataKey(pluginId: string, toolName: string): 
   return JSON.stringify([pluginId, toolName]);
 }
 
-function normalizeAllowlist(list?: string[]) {
-  return new Set(normalizeUniqueStringEntries((list ?? []).map(normalizeToolName)));
+function normalizeAllowlist(list?: string[]): Set<string> {
+  return new Set(uniqueStrings((list ?? []).map(normalizeToolName)));
 }
 
 function normalizeDenylist(list?: string[]) {
@@ -571,14 +573,16 @@ function resolvePluginToolRuntimePluginIds(params: {
   const pluginIds = new Set<string>();
   const allowlist = normalizeAllowlist(params.toolAllowlist);
   const denylist = normalizeDenylist(params.toolDenylist);
-  const normalizedPlugins = normalizePluginsConfig(params.config?.plugins);
-  const snapshot =
+  const normalizedPlugins = normalizePluginsConfig(
+    (params.config as { plugins?: unknown } | undefined)?.plugins as Parameters<typeof normalizePluginsConfig>[0],
+  );
+  const snapshot: PluginMetadataManifestView =
     params.snapshot ??
-    loadManifestContractSnapshot({
+    (loadManifestContractSnapshot({
       config: params.config,
       workspaceDir: params.workspaceDir,
       env: params.env,
-    });
+    }) as unknown as PluginMetadataManifestView);
   for (const plugin of snapshot.plugins) {
     if (
       !isManifestPluginAvailableForControlPlane({
@@ -677,12 +681,12 @@ function createCachedDescriptorPluginTool(params: {
   const { descriptor } = params.descriptor;
   const pluginId = descriptor.owner.kind === "plugin" ? descriptor.owner.pluginId : "";
   const toolName = descriptor.name;
-  const tool: AnyAgentTool = {
+  const tool = {
     name: descriptor.name,
     label: descriptor.title ?? descriptor.name,
     description: descriptor.description,
     parameters: descriptor.inputSchema as never,
-    async execute(toolCallId, executeParams, signal, onUpdate) {
+    async execute(toolCallId: string, executeParams: unknown, signal: AbortSignal | undefined, onUpdate: AgentToolUpdateCallback | undefined) {
       const loadOptions = buildPluginRuntimeLoadOptions(params.loadContext, {
         activate: false,
         toolDiscovery: true,
@@ -734,7 +738,7 @@ function createCachedDescriptorPluginTool(params: {
       }
       throw new Error(`plugin tool runtime missing (${pluginId}): ${toolName}`);
     },
-  };
+  } as unknown as AnyAgentTool;
   if (params.descriptor.displaySummary) {
     tool.displaySummary = params.descriptor.displaySummary;
   }
@@ -899,11 +903,11 @@ function resolveCachedPluginTools(params: {
 function resolvePluginToolRegistry(params: {
   loadOptions: PluginLoadOptions;
   onlyPluginIds?: readonly string[];
-}) {
+}): PluginRegistry | undefined {
   const lookup = {
     env: params.loadOptions.env,
     loadOptions: params.loadOptions,
-    workspaceDir: params.loadOptions.workspaceDir,
+    workspaceDir: params.loadOptions.workspaceDir as string | undefined,
     requiredPluginIds: params.onlyPluginIds,
   };
   const channelRegistry = getLoadedRuntimePluginRegistry({
@@ -992,7 +996,7 @@ function resolvePluginToolLoadState(params: {
     config: context.config,
     workspaceDir: context.workspaceDir,
     env,
-  });
+  }) as unknown as PluginMetadataManifestView;
   const onlyPluginIds = resolvePluginToolRuntimePluginIds({
     config: context.config,
     availabilityConfig: params.context.runtimeConfig ?? context.config,
@@ -1066,7 +1070,7 @@ export function resolvePluginTools(params: {
     params.context.runtimeConfig;
   if (currentRuntimeConfigForDescriptorCache === undefined && params.context.getRuntimeConfig) {
     try {
-      currentRuntimeConfigForDescriptorCache = params.context.getRuntimeConfig();
+      currentRuntimeConfigForDescriptorCache = (params.context.getRuntimeConfig as () => unknown)();
     } catch {
       currentRuntimeConfigForDescriptorCache = null;
     }

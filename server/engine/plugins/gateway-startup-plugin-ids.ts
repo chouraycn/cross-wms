@@ -439,7 +439,11 @@ function buildManifestModelProviderLookup(
   manifestRegistry: PluginManifestRegistry,
 ): ManifestModelProviderLookup {
   const modelApis = new Map(
-    planManifestModelCatalogRows({ registry: manifestRegistry }).rows.flatMap((row) =>
+    planManifestModelCatalogRows({
+      registry: manifestRegistry as unknown as Parameters<
+        typeof planManifestModelCatalogRows
+      >[0]["registry"],
+    }).rows.flatMap((row) =>
       row.api ? [[row.mergeKey, row.api] as const] : [],
     ),
   );

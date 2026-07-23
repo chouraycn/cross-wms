@@ -14,12 +14,32 @@ import {
 } from "./official-external-plugin-catalog.js";
 import type { PluginWebSearchProviderEntry } from "./web-provider-types.js";
 
+/** Extended provider entry with install/setup fields used by the catalog. */
+type CatalogWebSearchProviderEntry = PluginWebSearchProviderEntry & {
+  hint: string;
+  envVars: string[];
+  placeholder: string;
+  signupUrl: string;
+  credentialPath: string;
+  onboardingScopes?: readonly "text-inference"[];
+  requiresCredential?: boolean;
+  credentialLabel?: string;
+  docsUrl?: string;
+  autoDetectOrder?: number;
+  getCredentialValue: (searchConfig?: Record<string, unknown>) => unknown;
+  setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => void;
+  getConfiguredCredentialValue: (config?: OpenClawConfig) => unknown;
+  setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: unknown) => void;
+  applySelectionConfig: (config: OpenClawConfig) => unknown;
+  createTool: () => unknown;
+};
+
 /** Install catalog entry for an official external web-search provider plugin. */
 export type WebSearchInstallCatalogEntry = {
   pluginId: string;
   label: string;
   install: PluginPackageInstall;
-  provider: PluginWebSearchProviderEntry;
+  provider: CatalogWebSearchProviderEntry;
   trustedSourceLinkedOfficialInstall?: boolean;
 };
 
@@ -70,7 +90,7 @@ function setConfigPath(target: OpenClawConfig, path: string, value: unknown): vo
 function buildProviderEntry(params: {
   pluginId: string;
   provider: OfficialExternalWebSearchProvider;
-}): PluginWebSearchProviderEntry | null {
+}): CatalogWebSearchProviderEntry | null {
   const providerId = normalizeString(params.provider.id);
   const label = normalizeString(params.provider.label);
   const hint = normalizeString(params.provider.hint);
@@ -156,7 +176,7 @@ export function resolveWebSearchInstallCatalogEntries(): WebSearchInstallCatalog
   }
   return entries.toSorted(
     (left, right) =>
-      left.provider.label.localeCompare(right.provider.label) ||
+      (left.provider.label ?? "").localeCompare(right.provider.label ?? "") ||
       left.provider.id.localeCompare(right.provider.id),
   );
 }

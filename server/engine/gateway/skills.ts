@@ -15,6 +15,11 @@ import {
   type ClawHubSkillSearchResult,
   type ClawHubSkillDetail,
   type SecurityVerdict,
+  type SkillEntry,
+  type SkillIndexEntry,
+  type SkillStatusReport,
+  type SkillInstallSpec,
+  type InstallResult,
 } from "../skills/index.js";
 
 export type SkillStatusResult = {
@@ -64,13 +69,24 @@ export type ClawHubSearchResult = {
 
 export type ClawHubDetailResult = ClawHubSkillDetail | null;
 
+type GatewaySkillEntry = {
+  skill: {
+    name: string;
+    description?: string;
+    version?: string;
+  };
+  source: string;
+  promptVisible: boolean;
+  runtimeVisible: boolean;
+};
+
 export const skillsHandlers = {
   async skills_status(): Promise<SkillStatusResult> {
     logger.debug("[Gateway:Skills] skills.status called");
     await refreshSkills(process.cwd());
-    const entries = getSkills();
+    const entries = getSkills() as unknown as SkillEntry[];
     const status = computeSkillStatus(entries);
-    const report = formatStatusReport(status);
+    const report = formatStatusReport(status as unknown as SkillStatusReport);
     return { status, report };
   },
 
@@ -78,8 +94,8 @@ export const skillsHandlers = {
     const { query, limit = 20 } = params || {};
     logger.debug("[Gateway:Skills] skills.search called", { query, limit });
 
-    const entries = getSkills();
-    const results = searchSkills(entries, query || "", limit);
+    const entries = getSkills() as unknown as SkillIndexEntry[];
+    const results = searchSkills(entries, query || "", limit) as unknown as Array<{ skill: { name: string; description?: string; version?: string }; source: string }>;
 
     const mappedResults = results.map((entry) => ({
       id: entry.skill.name,
@@ -103,7 +119,7 @@ export const skillsHandlers = {
       return null;
     }
 
-    const entries = getSkills();
+    const entries = getSkills() as unknown as GatewaySkillEntry[];
     const entry = entries.find((e) => e.skill.name === id);
 
     if (!entry) {
@@ -130,7 +146,7 @@ export const skillsHandlers = {
     }
 
     try {
-      const result = await installSkill(spec, { version });
+      const result = await installSkill(spec as unknown as SkillInstallSpec, { workspaceDir: process.cwd() } as unknown as Parameters<typeof installSkill>[1]) as unknown as InstallResult & { skill?: { name?: string; version?: string } };
 
       if (result.success) {
         await refreshSkills(process.cwd());
@@ -159,7 +175,7 @@ export const skillsHandlers = {
     }
 
     try {
-      const result = await uninstallSkill(id);
+      const result = await uninstallSkill(id, process.cwd());
 
       if (result.success) {
         await refreshSkills(process.cwd());
@@ -183,7 +199,7 @@ export const skillsHandlers = {
     }
 
     await refreshSkills(process.cwd());
-    const entries = getSkills();
+    const entries = getSkills() as unknown as GatewaySkillEntry[];
     const entry = entries.find((e) => e.skill.name === id);
 
     if (!entry) {
@@ -202,7 +218,7 @@ export const skillsHandlers = {
     }
 
     await refreshSkills(process.cwd());
-    const entries = getSkills();
+    const entries = getSkills() as unknown as GatewaySkillEntry[];
     const entry = entries.find((e) => e.skill.name === id);
 
     if (!entry) {

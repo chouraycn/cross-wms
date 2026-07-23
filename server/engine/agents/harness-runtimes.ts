@@ -6,7 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export type ConfiguredAgentHarnessRuntimeOptions = unknown;
-export function collectConfiguredAgentHarnessRuntimes(..._args: unknown[]): unknown {
+export type ConfiguredAgentHarnessRuntimeOptions = {
+  includeImplicitRuntimePreferences?: boolean;
+};
+export function collectConfiguredAgentHarnessRuntimes(
+  _config: unknown,
+  _options: ConfiguredAgentHarnessRuntimeOptions = {},
+): string[] {
   return [];
 }

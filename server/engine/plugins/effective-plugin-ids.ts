@@ -77,7 +77,7 @@ function collectBundledChannelOwnerPluginIds(params: {
       continue;
     }
     if (
-      plugin.channels.some((channelId) =>
+      plugin.channels?.some((channelId) =>
         channelIds.has(normalizeOptionalLowercaseString(channelId) ?? ""),
       )
     ) {
@@ -152,7 +152,7 @@ export function resolveEffectivePluginIds(params: {
     config: params.config,
     env: params.env,
   });
-  const effectiveConfig = autoEnabled.config;
+  const effectiveConfig = autoEnabled.config as OpenClawConfig;
   const ids = new Set(collectExplicitEffectivePluginIds(effectiveConfig));
   for (const pluginId of collectSelectedContextEnginePluginIds(effectiveConfig)) {
     ids.add(pluginId);

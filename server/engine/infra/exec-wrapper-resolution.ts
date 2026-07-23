@@ -1,41 +1,84 @@
 // 移植自 openclaw/src/infra/exec-wrapper-resolution.ts
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type basenameLower = unknown;
-export const basenameLower: unknown = undefined;
-export type normalizeExecutableToken = unknown;
-export const normalizeExecutableToken: unknown = undefined;
-export type extractEnvAssignmentKeysFromDispatchWrappers = unknown;
-export const extractEnvAssignmentKeysFromDispatchWrappers: unknown = undefined;
-export type isDispatchWrapperExecutable = unknown;
-export const isDispatchWrapperExecutable: unknown = undefined;
-export type resolveDispatchWrapperTrustPlan = unknown;
-export const resolveDispatchWrapperTrustPlan: unknown = undefined;
-export type unwrapDispatchWrappersForResolution = unknown;
-export const unwrapDispatchWrappersForResolution: unknown = undefined;
-export type unwrapEnvInvocation = unknown;
-export const unwrapEnvInvocation: unknown = undefined;
-export type unwrapKnownDispatchWrapperInvocation = unknown;
-export const unwrapKnownDispatchWrapperInvocation: unknown = undefined;
-export type extractBindableShellWrapperInlineCommand = unknown;
-export const extractBindableShellWrapperInlineCommand: unknown = undefined;
-export type extractShellWrapperCommand = unknown;
-export const extractShellWrapperCommand: unknown = undefined;
-export type extractShellWrapperInlineCommand = unknown;
-export const extractShellWrapperInlineCommand: unknown = undefined;
-export type hasEnvManipulationBeforeShellWrapper = unknown;
-export const hasEnvManipulationBeforeShellWrapper: unknown = undefined;
-export type isBlockedShellWrapperCommand = unknown;
-export const isBlockedShellWrapperCommand: unknown = undefined;
-export type isShellWrapperExecutable = unknown;
-export const isShellWrapperExecutable: unknown = undefined;
-export type isShellWrapperInvocation = unknown;
-export const isShellWrapperInvocation: unknown = undefined;
-export type POSIX_SHELL_WRAPPERS = unknown;
-export const POSIX_SHELL_WRAPPERS: unknown = undefined;
-export type POWERSHELL_WRAPPERS = unknown;
-export const POWERSHELL_WRAPPERS: unknown = undefined;
-export type resolveShellWrapperTransportArgv = unknown;
-export const resolveShellWrapperTransportArgv: unknown = undefined;
-export type unwrapKnownShellMultiplexerInvocation = unknown;
-export const unwrapKnownShellMultiplexerInvocation: unknown = undefined;
+import type { UnwrapEnvInvocation } from "./dispatch-wrapper-resolution.js";
+
+export function basenameLower(token: string): string {
+  return (token ?? "").split("/").pop()?.toLowerCase() ?? "";
+}
+
+export function normalizeExecutableToken(token: string): string {
+  return basenameLower(token ?? "");
+}
+
+export function extractEnvAssignmentKeysFromDispatchWrappers(_argv: string[]): string[] {
+  return [];
+}
+
+export function isDispatchWrapperExecutable(_executable: string): boolean {
+  return false;
+}
+
+export function resolveDispatchWrapperTrustPlan(argv: string[]): {
+  unwrappedArgv: string[];
+  wrapperChain: string[];
+  envAssignments: Record<string, string>;
+} {
+  return { unwrappedArgv: argv, wrapperChain: [], envAssignments: {} };
+}
+
+export function unwrapDispatchWrappersForResolution(argv: string[]): string[] {
+  return argv;
+}
+
+export function unwrapEnvInvocation(_argv: string[]): UnwrapEnvInvocation | null {
+  return null;
+}
+
+export function unwrapKnownDispatchWrapperInvocation(_argv: string[]): string[] | null {
+  return null;
+}
+
+export function extractBindableShellWrapperInlineCommand(_argv: string[]): string | null {
+  return null;
+}
+
+export function extractShellWrapperCommand(_argv: string[]): string | null {
+  return null;
+}
+
+export function extractShellWrapperInlineCommand(_argv: string[]): string | null {
+  return null;
+}
+
+export function hasEnvManipulationBeforeShellWrapper(_argv: string[]): boolean {
+  return false;
+}
+
+export function isBlockedShellWrapperCommand(_argv: string[]): boolean {
+  return false;
+}
+
+export function isShellWrapperExecutable(_executable: string): boolean {
+  return false;
+}
+
+export function isShellWrapperInvocation(_argv: string[]): boolean {
+  return false;
+}
+
+export const POSIX_SHELL_WRAPPERS: Set<string> = new Set([
+  "sh", "bash", "zsh", "dash", "ksh", "csh", "tcsh", "fish",
+]);
+
+export const POWERSHELL_WRAPPERS: Set<string> = new Set([
+  "powershell", "pwsh", "powershell.exe", "pwsh.exe",
+]);
+
+export function resolveShellWrapperTransportArgv(_argv: string[]): string[] | null {
+  return null;
+}
+
+export function unwrapKnownShellMultiplexerInvocation(_argv: string[]): string[] | null {
+  return null;
+}

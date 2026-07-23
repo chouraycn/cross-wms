@@ -19,7 +19,7 @@ import {
 const log = createSubsystemLogger("plugins/runtime");
 
 function asPluginRegistry(registry: RegistryState["activeRegistry"]): PluginRegistry | null {
-  return registry;
+  return registry as PluginRegistry | null;
 }
 
 const state: RegistryState = (() => {
@@ -89,6 +89,7 @@ async function cleanupPreviousPluginHostRegistry(params: {
     import("../config/config.js"),
     import("./host-hook-cleanup.js"),
   ]);
+  const getRuntimeConfigFn = (getRuntimeConfig as () => unknown) ?? (() => undefined);
   const nextRegistry = asPluginRegistry(state.activeRegistry);
   if (!nextRegistry || nextRegistry === params.previousRegistry) {
     return;
@@ -97,7 +98,7 @@ async function cleanupPreviousPluginHostRegistry(params: {
   // active, but later swaps should not strand cleanup for the retiring registry.
   const shouldCleanup = () => state.activeRegistry !== params.previousRegistry;
   await cleanupReplacedPluginHostRegistry({
-    cfg: getRuntimeConfig(),
+    cfg: getRuntimeConfigFn(),
     previousRegistry: params.previousRegistry,
     nextRegistry,
     shouldCleanup,
@@ -232,7 +233,7 @@ export function getActivePluginRegistryWorkspaceDir(): string | undefined {
 export function requireActivePluginRegistry(): PluginRegistry {
   if (!state.activeRegistry) {
     state.activeRegistry = createEmptyPluginRegistry();
-    markPluginRegistryActive(state.activeRegistry);
+    markPluginRegistryActive(state.activeRegistry as PluginRegistry);
     state.activeVersion += 1;
     syncTrackedSurface(state.httpRoute, state.activeRegistry);
     syncTrackedSurface(state.channel, state.activeRegistry);

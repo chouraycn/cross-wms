@@ -11,12 +11,12 @@ export type ExecPolicyLayer = {
 /** Resolve exec policy for a given mode. Simplified port without full config access. */
 function resolveExecPolicyForMode(mode: ExecMode): Partial<ExecPolicyLayer> {
   switch (mode) {
-    case "auto-approve":
-      return { security: "standard", ask: "never" };
-    case "ask-each-time":
-      return { security: "standard", ask: "always" };
-    case "manual":
-      return { security: "strict", ask: "always" };
+    case "auto":
+      return { security: "allowlist", ask: "off" };
+    case "ask":
+      return { security: "allowlist", ask: "always" };
+    case "deny":
+      return { security: "deny", ask: "always" };
     default:
       return {};
   }

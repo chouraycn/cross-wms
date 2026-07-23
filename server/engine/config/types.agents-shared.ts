@@ -1,7 +1,3 @@
-// 移植自 openclaw/src/config/types.agents-shared.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-
-export type AgentModelConfig = unknown;
-export type AgentToolModelConfig = unknown;
-export type AgentRuntimePolicyConfig = unknown;
-export type AgentSandboxConfig = unknown;
+// 重新导出 types/agents-shared.ts 的完整类型定义
+// 避免两个不同路径的类型冲突
+export * from './types/agents-shared.js';
