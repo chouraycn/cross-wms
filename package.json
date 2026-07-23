@@ -154,7 +154,7 @@
     "turndown": "^7.2.4",
     "typebox": "^1.1.39",
     "typescript": "^5.9.3",
-    "vite": "^7.3.6",
+    "vite": "^8.1.5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.7"
   },
