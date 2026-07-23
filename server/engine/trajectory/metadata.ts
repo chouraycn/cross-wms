@@ -1,476 +1,420 @@
-/**
- * 轨迹元数据管理
- *
- * 管理轨迹 bundle 的元数据，包括生成清单、统计信息、提取、更新、搜索等。
- */
+// Trajectory metadata helpers capture environment metadata for trajectory files.
+// 移植自 openclaw/src/trajectory/metadata.ts
+//
+// 适配说明：
+// - resolveStateDir: cross-wms 为 undefined stub，stateDir 将为 undefined
+// - redactConfigObject: cross-wms 为 stub（返回 undefined），导入即可
+// - SessionSystemPromptReport: cross-wms 未提供，降级为 unknown
+// - resolveCommitHash: cross-wms 未提供，降级为返回 undefined
+// - redactPathForSupport/sanitizeSupportSnapshotValue/SupportRedactionContext:
+//   cross-wms 未提供，降级为本地 identity 实现
+// - VERSION: 从 ../../version.js 导入（server/version.ts）
+// - PluginManifestRecord 缺少 source/workspaceDir/hooks 字段，通过类型断言访问
+// - Skill 缺少 sourceInfo 字段，通过类型断言访问
+import { resolveStateDir } from "../config/paths.js";
+import { redactConfigObject } from "../config/redact-snapshot.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveOsSummary } from "../infra/os-summary.js";
+import { loadPluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
+import { getActivePluginRegistry, listImportedRuntimePluginIds } from "../plugins/runtime.js";
+import type { SkillSnapshot } from "../skills/types.js";
+import { VERSION } from "../../version.js";
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { logger } from '../../logger.js';
-import type {
-  TrajectoryBundleManifest,
-  TrajectoryBundleWarning,
-  TrajectoryEvent,
-  TrajectoryStatus,
-  TrajectoryRecordMetadata,
-  TrajectoryRecord,
-  MetadataSearchCriteria,
-  TrajectoryMetadataSummary,
-  TrajectorySessionInfo,
-} from './types.js';
+// 降级：cross-wms 未提供 SessionSystemPromptReport
+type SessionSystemPromptReport = unknown;
 
-export type TrajectoryMetadata = TrajectoryRecordMetadata;
+// 降级：cross-wms 未提供 SupportRedactionContext
+type SupportRedactionContext = {
+  env: NodeJS.ProcessEnv;
+  stateDir: string | undefined;
+};
 
-export { TrajectoryMetadataSummary };
-
-export class TrajectoryMetadataManager {
-  private readonly rootDir: string;
-
-  constructor(rootDir: string) {
-    this.rootDir = rootDir;
-  }
-
-  async createManifest(params: {
-    traceId: string;
-    sessionId: string;
-    sessionKey?: string;
-    workspaceDir: string;
-    leafId: string | null;
-    sourceFiles: {
-      session: string;
-      runtime?: string;
-    };
-    events?: TrajectoryEvent[];
-    warnings?: TrajectoryBundleWarning[];
-    contents?: Array<{ path: string; mediaType: string; bytes: number }>;
-  }): Promise<TrajectoryBundleManifest> {
-    const {
-      traceId,
-      sessionId,
-      sessionKey,
-      workspaceDir,
-      leafId,
-      sourceFiles,
-      events = [],
-      warnings = [],
-      contents,
-    } = params;
-
-    const runtimeEvents = events.filter((e) => e.source === 'runtime');
-    const transcriptEvents = events.filter((e) => e.source === 'transcript');
-
-    const manifest: TrajectoryBundleManifest = {
-      traceSchema: 'cdf-know-trajectory',
-      schemaVersion: 1,
-      generatedAt: new Date().toISOString(),
-      traceId,
-      sessionId,
-      sessionKey,
-      workspaceDir,
-      leafId,
-      eventCount: events.length,
-      runtimeEventCount: runtimeEvents.length,
-      transcriptEventCount: transcriptEvents.length,
-      sourceFiles,
-      warnings,
-      contents,
-    };
-
-    return manifest;
-  }
-
-  async saveManifest(manifest: TrajectoryBundleManifest, outputPath: string): Promise<void> {
-    try {
-      const dir = path.dirname(outputPath);
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(outputPath, JSON.stringify(manifest, null, 2), 'utf-8');
-      logger.debug(`[Trajectory Metadata] Saved manifest: ${outputPath}`);
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to save manifest: ${String(err)}`);
-      throw err;
-    }
-  }
-
-  async loadManifest(manifestPath: string): Promise<TrajectoryBundleManifest> {
-    try {
-      const content = await fs.readFile(manifestPath, 'utf-8');
-      const manifest = JSON.parse(content) as TrajectoryBundleManifest;
-      return manifest;
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to load manifest: ${String(err)}`);
-      throw err;
-    }
-  }
-
-  async extractFromEvents(events: TrajectoryEvent[], sessionId: string): Promise<TrajectoryRecordMetadata> {
-    if (events.length === 0) {
-      return {
-        traceId: sessionId,
-        sessionId,
-        startTime: new Date().toISOString(),
-        status: 'started',
-        eventCount: 0,
-        errorCount: 0,
-        toolCallCount: 0,
-      };
-    }
-
-    const sortedEvents = [...events].sort((a, b) => a.ts.localeCompare(b.ts));
-    const firstEvent = sortedEvents[0]!;
-    const lastEvent = sortedEvents[sortedEvents.length - 1]!;
-
-    let errorCount = 0;
-    let toolCallCount = 0;
-    let status: TrajectoryStatus = 'running';
-
-    for (const event of sortedEvents) {
-      if (event.type === 'error' || event.type.includes('error')) {
-        errorCount++;
-      }
-      if (event.type === 'tool_call' || event.type === 'tool.call' || event.type.includes('tool_call')) {
-        toolCallCount++;
-      }
-      if (event.type === 'session_end' || event.type === 'session.ended' || event.type === 'system' && event.data?.event === 'session_end') {
-        status = 'completed';
-      }
-    }
-
-    const startTime = new Date(firstEvent.ts).getTime();
-    const endTime = new Date(lastEvent.ts).getTime();
-
-    return {
-      traceId: firstEvent.traceId,
-      sessionId: firstEvent.sessionId,
-      sessionKey: firstEvent.sessionKey,
-      runId: firstEvent.runId,
-      workspaceDir: firstEvent.workspaceDir,
-      provider: firstEvent.provider,
-      modelId: firstEvent.modelId,
-      modelApi: firstEvent.modelApi,
-      startTime: firstEvent.ts,
-      endTime: lastEvent.ts,
-      durationMs: endTime - startTime,
-      status,
-      eventCount: events.length,
-      errorCount,
-      toolCallCount,
-      tags: [],
-      customFields: {},
-    };
-  }
-
-  async readSessionMetadata(sessionDir: string): Promise<TrajectoryRecordMetadata | null> {
-    const metadataPath = path.join(sessionDir, 'metadata.json');
-    try {
-      const content = await fs.readFile(metadataPath, 'utf-8');
-      return JSON.parse(content) as TrajectoryRecordMetadata;
-    } catch {
-      const trajectoryFile = path.join(sessionDir, 'trajectory.jsonl');
-      try {
-        const content = await fs.readFile(trajectoryFile, 'utf-8');
-        const lines = content.split('\n').filter((line) => line.trim());
-        const events: TrajectoryEvent[] = [];
-        for (const line of lines) {
-          try {
-            const event = JSON.parse(line) as TrajectoryEvent;
-            if (event.traceSchema === 'cdf-know-trajectory' || event.traceSchema === 'openclaw-trajectory') {
-              events.push(event);
-            }
-          } catch {
-            // skip invalid lines
-          }
-        }
-        const sessionId = path.basename(sessionDir);
-        return await this.extractFromEvents(events, sessionId);
-      } catch {
-        return null;
-      }
-    }
-  }
-
-  async updateSessionMetadata(sessionDir: string, updates: Partial<TrajectoryRecordMetadata>): Promise<TrajectoryRecordMetadata> {
-    const existing = await this.readSessionMetadata(sessionDir) ?? {
-      traceId: path.basename(sessionDir),
-      sessionId: path.basename(sessionDir),
-      startTime: new Date().toISOString(),
-      status: 'running' as TrajectoryStatus,
-      eventCount: 0,
-      errorCount: 0,
-      toolCallCount: 0,
-    };
-
-    const updated: TrajectoryRecordMetadata = {
-      ...existing,
-      ...updates,
-    };
-
-    const metadataPath = path.join(sessionDir, 'metadata.json');
-    try {
-      await fs.writeFile(metadataPath, JSON.stringify(updated, null, 2), 'utf-8');
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to update metadata: ${String(err)}`);
-    }
-
-    return updated;
-  }
-
-  async addTags(sessionDir: string, tags: string[]): Promise<TrajectoryRecordMetadata> {
-    const metadata = await this.readSessionMetadata(sessionDir);
-    const existingTags = metadata?.tags ?? [];
-    const newTags = [...new Set([...existingTags, ...tags])];
-    return this.updateSessionMetadata(sessionDir, { tags: newTags });
-  }
-
-  async removeTags(sessionDir: string, tags: string[]): Promise<TrajectoryRecordMetadata> {
-    const metadata = await this.readSessionMetadata(sessionDir);
-    const existingTags = metadata?.tags ?? [];
-    const tagSet = new Set(tags);
-    const newTags = existingTags.filter((t) => !tagSet.has(t));
-    return this.updateSessionMetadata(sessionDir, { tags: newTags });
-  }
-
-  async setCustomField(sessionDir: string, key: string, value: string): Promise<TrajectoryRecordMetadata> {
-    const metadata = await this.readSessionMetadata(sessionDir);
-    const customFields = metadata?.customFields ?? {};
-    return this.updateSessionMetadata(sessionDir, {
-      customFields: { ...customFields, [key]: value },
-    });
-  }
-
-  async getSessionInfo(sessionId: string): Promise<TrajectorySessionInfo | null> {
-    const sessionDir = path.join(this.rootDir, sessionId);
-    try {
-      const dirStat = await fs.stat(sessionDir);
-      if (!dirStat.isDirectory()) return null;
-
-      const trajectoryFile = path.join(sessionDir, 'trajectory.jsonl');
-      const metadata = await this.readSessionMetadata(sessionDir);
-
-      let sizeBytes = 0;
-      try {
-        const fileStat = await fs.stat(trajectoryFile);
-        sizeBytes = fileStat.size;
-      } catch {
-        // ignore
-      }
-
-      return {
-        sessionId,
-        directory: sessionDir,
-        sizeBytes,
-        modifiedAt: dirStat.mtime,
-        createdAt: dirStat.birthtime,
-        eventCount: metadata?.eventCount,
-        status: metadata?.status,
-        tags: metadata?.tags,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  async searchSessions(criteria: MetadataSearchCriteria): Promise<TrajectorySessionInfo[]> {
-    const sessions = await this.listAllSessions();
-    const results: TrajectorySessionInfo[] = [];
-
-    for (const session of sessions) {
-      let matches = true;
-
-      if (criteria.sessionId && !session.sessionId.includes(criteria.sessionId)) {
-        matches = false;
-      }
-
-      if (criteria.status && session.status !== criteria.status) {
-        matches = false;
-      }
-
-      if (criteria.minEventCount !== undefined) {
-        if (session.eventCount === undefined || session.eventCount < criteria.minEventCount) {
-          matches = false;
-        }
-      }
-
-      if (criteria.maxEventCount !== undefined) {
-        if (session.eventCount === undefined || session.eventCount > criteria.maxEventCount) {
-          matches = false;
-        }
-      }
-
-      if (criteria.tags && criteria.tags.length > 0) {
-        const sessionTags = new Set(session.tags ?? []);
-        if (!criteria.tags.every((tag) => sessionTags.has(tag))) {
-          matches = false;
-        }
-      }
-
-      if (matches) {
-        results.push(session);
-      }
-    }
-
-    return results;
-  }
-
-  private async listAllSessions(): Promise<TrajectorySessionInfo[]> {
-    const sessions: TrajectorySessionInfo[] = [];
-
-    try {
-      const entries = await fs.readdir(this.rootDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const info = await this.getSessionInfo(entry.name);
-        if (info) {
-          sessions.push(info);
-        }
-      }
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to list sessions: ${String(err)}`);
-    }
-
-    return sessions;
-  }
-
-  async getDirectorySummary(directory?: string): Promise<TrajectoryMetadataSummary> {
-    const targetDir = directory ?? this.rootDir;
-    const summary: TrajectoryMetadataSummary = {
-      totalSessions: 0,
-      totalEvents: 0,
-      totalBytes: 0,
-      byStatus: {
-        started: 0,
-        running: 0,
-        completed: 0,
-        failed: 0,
-        aborted: 0,
-      },
-      byProvider: {},
-      byModel: {},
-    };
-
-    try {
-      const entries = await fs.readdir(targetDir, { withFileTypes: true });
-      let oldestTime = Infinity;
-      let newestTime = 0;
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const sessionDir = path.join(targetDir, entry.name);
-        const sessionInfo = await this.getSessionInfo(entry.name);
-        const metadata = await this.readSessionMetadata(sessionDir);
-
-        if (sessionInfo) {
-          summary.totalSessions++;
-          summary.totalBytes += sessionInfo.sizeBytes;
-
-          if (metadata) {
-            summary.totalEvents += metadata.eventCount;
-
-            if (metadata.status) {
-              summary.byStatus[metadata.status] = (summary.byStatus[metadata.status] ?? 0) + 1;
-            }
-            if (metadata.provider) {
-              summary.byProvider[metadata.provider] = (summary.byProvider[metadata.provider] ?? 0) + 1;
-            }
-            if (metadata.modelId) {
-              summary.byModel[metadata.modelId] = (summary.byModel[metadata.modelId] ?? 0) + 1;
-            }
-          }
-
-          const mtime = sessionInfo.modifiedAt.getTime();
-          if (mtime < oldestTime) {
-            oldestTime = mtime;
-            summary.oldestSession = entry.name;
-          }
-          if (mtime > newestTime) {
-            newestTime = mtime;
-            summary.newestSession = entry.name;
-          }
-        }
-      }
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to get directory summary: ${String(err)}`);
-    }
-
-    return summary;
-  }
-
-  async listSessions(directory?: string): Promise<Array<{ sessionId: string; createdAt: string; eventCount: number; sizeBytes: number; status?: TrajectoryStatus }>> {
-    const targetDir = directory ?? this.rootDir;
-    const sessions: Array<{ sessionId: string; createdAt: string; eventCount: number; sizeBytes: number; status?: TrajectoryStatus }> = [];
-
-    try {
-      const entries = await fs.readdir(targetDir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const sessionDir = path.join(targetDir, entry.name);
-        const info = await this.getSessionInfo(entry.name);
-        const metadata = await this.readSessionMetadata(sessionDir);
-
-        if (info) {
-          sessions.push({
-            sessionId: entry.name,
-            createdAt: info.createdAt.toISOString(),
-            eventCount: info.eventCount ?? metadata?.eventCount ?? 0,
-            sizeBytes: info.sizeBytes,
-            status: info.status,
-          });
-        }
-      }
-
-      sessions.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    } catch (err) {
-      logger.error(`[Trajectory Metadata] Failed to list sessions: ${String(err)}`);
-    }
-
-    return sessions;
-  }
-
-  async getFullRecord(sessionId: string): Promise<TrajectoryRecord | null> {
-    const sessionDir = path.join(this.rootDir, sessionId);
-    const trajectoryFile = path.join(sessionDir, 'trajectory.jsonl');
-
-    try {
-      const info = await this.getSessionInfo(sessionId);
-      if (!info) return null;
-
-      const metadata = await this.readSessionMetadata(sessionDir);
-      if (!metadata) return null;
-
-      const events: TrajectoryEvent[] = [];
-      try {
-        const content = await fs.readFile(trajectoryFile, 'utf-8');
-        const lines = content.split('\n').filter((line) => line.trim());
-        for (const line of lines) {
-          try {
-            const event = JSON.parse(line) as TrajectoryEvent;
-            events.push(event);
-          } catch {
-            // skip
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      const dirStat = await fs.stat(sessionDir);
-
-      return {
-        metadata,
-        events,
-        filePath: trajectoryFile,
-        sizeBytes: info.sizeBytes,
-        createdAt: dirStat.birthtime.toISOString(),
-        updatedAt: dirStat.mtime.toISOString(),
-      };
-    } catch {
-      return null;
-    }
-  }
+// 降级：cross-wms 未提供 resolveCommitHash，返回 undefined
+function resolveCommitHash(_params: {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  moduleUrl?: string;
+}): string | undefined {
+  return undefined;
 }
 
-export function createTrajectoryMetadataManager(rootDir: string): TrajectoryMetadataManager {
-  return new TrajectoryMetadataManager(rootDir);
+// 降级：cross-wms 未提供 redactPathForSupport，返回原始路径
+function redactPathForSupport(
+  filePath: string | undefined,
+  _redaction: SupportRedactionContext,
+): string | undefined {
+  return filePath;
+}
+
+// 降级：cross-wms 未提供 sanitizeSupportSnapshotValue，返回原始值
+function sanitizeSupportSnapshotValue<T>(
+  value: T,
+  _redaction: SupportRedactionContext,
+  _label?: string,
+): T {
+  return value;
+}
+
+// Runtime metadata capture for trajectory events. This records enough config,
+// plugin, skill, and prompt context to explain a run after logs are exported.
+type BuildTrajectoryRunMetadataParams = {
+  env?: NodeJS.ProcessEnv;
+  config?: OpenClawConfig;
+  workspaceDir: string;
+  sessionFile?: string;
+  sessionKey?: string;
+  agentId?: string;
+  trigger?: string;
+  messageProvider?: string;
+  messageChannel?: string;
+  provider?: string;
+  modelId?: string;
+  modelApi?: string | null;
+  timeoutMs: number;
+  fastMode?: boolean;
+  thinkLevel?: string;
+  reasoningLevel?: string;
+  toolResultFormat?: string;
+  disableTools?: boolean;
+  toolsAllow?: string[];
+  skillsSnapshot?: SkillSnapshot;
+  systemPromptReport?: SessionSystemPromptReport;
+  userPromptPrefixText?: string;
+};
+
+type BuildTrajectoryArtifactsParams = {
+  status: "success" | "error" | "interrupted" | "cleanup";
+  aborted: boolean;
+  externalAbort: boolean;
+  timedOut: boolean;
+  idleTimedOut: boolean;
+  timedOutDuringCompaction: boolean;
+  timedOutDuringToolExecution: boolean;
+  promptError?: string;
+  promptErrorSource?: string | null;
+  terminalError?: string;
+  usage?: unknown;
+  promptCache?: unknown;
+  compactionCount: number;
+  assistantTexts: string[];
+  finalPromptText?: string;
+  itemLifecycle: {
+    startedCount: number;
+    completedCount: number;
+    activeCount: number;
+  };
+  toolMetas: Array<{ toolName: string; meta?: string; asyncStarted?: boolean }>;
+  didSendViaMessagingTool: boolean;
+  successfulCronAdds: number;
+  messagingToolSentTexts: string[];
+  messagingToolSentMediaUrls: string[];
+  messagingToolSentTargets: unknown[];
+  lastToolError?: unknown;
+};
+
+function toSortedUniqueStrings(values: readonly string[] | undefined): string[] | undefined {
+  if (!values || values.length === 0) {
+    return undefined;
+  }
+  return [
+    ...new Set(values.filter((value) => typeof value === "string" && value.trim().length > 0)),
+  ]
+    .map((value) => value.trim())
+    .toSorted((left, right) => left.localeCompare(right));
+}
+
+// 类型断言辅助：PluginManifestRecord 在 cross-wms 中缺少 source/workspaceDir/hooks 字段
+type ManifestPluginEntry = {
+  id: string;
+  name?: string;
+  version?: string;
+  description?: string;
+  origin: string;
+  enabledByDefault?: boolean;
+  format?: unknown;
+  bundleFormat?: unknown;
+  bundleCapabilities?: string[];
+  kind?: unknown;
+  source?: string;
+  rootDir: string;
+  workspaceDir?: string;
+  channels: string[];
+  providers: string[];
+  cliBackends: string[];
+  hooks?: string[];
+  skills?: string[];
+};
+
+function buildPluginsFromActiveRegistry() {
+  const registry = getActivePluginRegistry();
+  if (!registry || registry.plugins.length === 0) {
+    return null;
+  }
+  return {
+    source: "active-registry",
+    importedRuntimePluginIds: listImportedRuntimePluginIds(),
+    entries: registry.plugins
+      .map((plugin) => ({
+        id: plugin.id,
+        name: plugin.name,
+        version: plugin.version,
+        description: plugin.description,
+        origin: plugin.origin,
+        enabled: plugin.enabled,
+        explicitlyEnabled: plugin.explicitlyEnabled,
+        activated: plugin.activated,
+        imported: plugin.imported,
+        activationSource: plugin.activationSource,
+        activationReason: plugin.activationReason,
+        status: plugin.status,
+        error: plugin.error,
+        format: plugin.format,
+        bundleFormat: plugin.bundleFormat,
+        bundleCapabilities: plugin.bundleCapabilities,
+        kind: plugin.kind,
+        source: plugin.source,
+        rootDir: plugin.rootDir,
+        workspaceDir: plugin.workspaceDir,
+        toolNames: toSortedUniqueStrings(plugin.toolNames),
+        hookNames: toSortedUniqueStrings(plugin.hookNames),
+        channelIds: toSortedUniqueStrings(plugin.channelIds),
+        cliBackendIds: toSortedUniqueStrings(plugin.cliBackendIds),
+        providerIds: toSortedUniqueStrings(plugin.providerIds),
+        speechProviderIds: toSortedUniqueStrings(plugin.speechProviderIds),
+        realtimeTranscriptionProviderIds: toSortedUniqueStrings(
+          plugin.realtimeTranscriptionProviderIds,
+        ),
+        realtimeVoiceProviderIds: toSortedUniqueStrings(plugin.realtimeVoiceProviderIds),
+        mediaUnderstandingProviderIds: toSortedUniqueStrings(plugin.mediaUnderstandingProviderIds),
+        imageGenerationProviderIds: toSortedUniqueStrings(plugin.imageGenerationProviderIds),
+        videoGenerationProviderIds: toSortedUniqueStrings(plugin.videoGenerationProviderIds),
+        musicGenerationProviderIds: toSortedUniqueStrings(plugin.musicGenerationProviderIds),
+        webFetchProviderIds: toSortedUniqueStrings(plugin.webFetchProviderIds),
+        webSearchProviderIds: toSortedUniqueStrings(plugin.webSearchProviderIds),
+        memoryEmbeddingProviderIds: toSortedUniqueStrings(plugin.memoryEmbeddingProviderIds),
+        agentHarnessIds: toSortedUniqueStrings(plugin.agentHarnessIds),
+      }))
+      .toSorted((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
+function buildPluginsFromManifest(params: {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  // Startup captures can happen before runtime activation. Fall back to the
+  // manifest snapshot so exported runs still show configured plugin surfaces.
+  const snapshot = loadPluginMetadataSnapshot({
+    config: params.config ?? {},
+    workspaceDir: params.workspaceDir,
+    env: params.env ?? process.env,
+  });
+  // 类型断言：cross-wms PluginManifestRecord 缺少 source/workspaceDir/hooks 字段
+  const plugins = snapshot.plugins as unknown as ManifestPluginEntry[];
+  return {
+    source: "manifest-registry",
+    entries: plugins
+      .map((plugin) => ({
+        id: plugin.id,
+        name: plugin.name,
+        version: plugin.version,
+        description: plugin.description,
+        origin: plugin.origin,
+        enabledByDefault: plugin.enabledByDefault,
+        format: plugin.format,
+        bundleFormat: plugin.bundleFormat,
+        bundleCapabilities: toSortedUniqueStrings(plugin.bundleCapabilities),
+        kind: plugin.kind,
+        source: plugin.source,
+        rootDir: plugin.rootDir,
+        workspaceDir: plugin.workspaceDir,
+        channels: toSortedUniqueStrings(plugin.channels),
+        providers: toSortedUniqueStrings(plugin.providers),
+        cliBackends: toSortedUniqueStrings(plugin.cliBackends),
+        hooks: toSortedUniqueStrings(plugin.hooks),
+        skills: toSortedUniqueStrings(plugin.skills),
+      }))
+      .toSorted((left, right) => left.id.localeCompare(right.id)),
+  };
+}
+
+// 类型断言辅助：Skill 在 cross-wms 中缺少 sourceInfo 字段
+type SkillWithSourceInfo = {
+  name: string;
+  description: string;
+  filePath: string;
+  baseDir: string;
+  source: string;
+  sourceInfo?: unknown;
+  disableModelInvocation: boolean;
+};
+
+function buildSkillsCapture(
+  skillsSnapshot: SkillSnapshot | undefined,
+  redaction: SupportRedactionContext,
+) {
+  if (!skillsSnapshot) {
+    return undefined;
+  }
+  const filteredResolvedSkills =
+    skillsSnapshot.resolvedSkills?.filter(
+      (skill) => typeof skill.name === "string" && skill.name.length > 0,
+    ) ?? [];
+  const entries =
+    // Prefer resolved skill files when available; older call sites may only
+    // have the summarized skill catalog, which is still useful for support.
+    filteredResolvedSkills.length > 0
+      ? filteredResolvedSkills.map((skill) => {
+          // 类型断言：cross-wms Skill 缺少 sourceInfo 字段
+          const skillInfo = skill as unknown as SkillWithSourceInfo;
+          return {
+            id: skill.name,
+            name: skill.name,
+            description: skill.description,
+            filePath: redactPathForSupport(skill.filePath, redaction),
+            baseDir: redactPathForSupport(skill.baseDir, redaction),
+            source: skill.source,
+            sourceInfo: sanitizeSupportSnapshotValue(skillInfo.sourceInfo, redaction),
+            disableModelInvocation: skill.disableModelInvocation,
+            available: true,
+          };
+        })
+      : skillsSnapshot.skills
+          .filter((skill) => typeof skill.name === "string" && skill.name.length > 0)
+          .map((skill) => ({
+            id: skill.name,
+            name: skill.name,
+            primaryEnv: skill.primaryEnv,
+            requiredEnv: skill.requiredEnv,
+            available: true,
+          }));
+  return {
+    snapshotVersion: skillsSnapshot.version,
+    skillFilter: toSortedUniqueStrings(skillsSnapshot.skillFilter),
+    entries: entries.toSorted((left, right) => (left.name ?? "").localeCompare(right.name ?? "")),
+  };
+}
+
+function buildTrajectorySupportRedaction(env: NodeJS.ProcessEnv): SupportRedactionContext {
+  return {
+    env,
+    stateDir: resolveStateDir(env),
+  };
+}
+
+export function buildTrajectoryRunMetadata(
+  params: BuildTrajectoryRunMetadataParams,
+): Record<string, unknown> {
+  const env = params.env ?? process.env;
+  const redaction = buildTrajectorySupportRedaction(env);
+  const os = resolveOsSummary();
+  const plugins =
+    buildPluginsFromActiveRegistry() ??
+    buildPluginsFromManifest({
+      config: params.config,
+      workspaceDir: params.workspaceDir,
+      env,
+    });
+  return {
+    capturedAt: new Date().toISOString(),
+    harness: {
+      type: "openclaw",
+      name: "OpenClaw",
+      version: VERSION,
+      gitSha:
+        resolveCommitHash({ cwd: params.workspaceDir, env, moduleUrl: import.meta.url }) ??
+        undefined,
+      os,
+      runtime: {
+        node: process.version,
+      },
+      invocation: sanitizeSupportSnapshotValue([...process.argv], redaction, "programArguments"),
+      entrypoint: process.argv[1] ? redactPathForSupport(process.argv[1], redaction) : undefined,
+      workspaceDir: redactPathForSupport(params.workspaceDir, redaction),
+      sessionFile: params.sessionFile
+        ? redactPathForSupport(params.sessionFile, redaction)
+        : undefined,
+    },
+    model: {
+      provider: params.provider,
+      name: params.modelId,
+      api: params.modelApi,
+      fastMode: params.fastMode ?? false,
+      thinkLevel: params.thinkLevel,
+      reasoningLevel: params.reasoningLevel ?? "off",
+    },
+    config: {
+      redacted: params.config ? redactConfigObject(params.config) : undefined,
+      runtime: {
+        timeoutMs: params.timeoutMs,
+        trigger: params.trigger,
+        disableTools: params.disableTools ?? false,
+        toolResultFormat: params.toolResultFormat,
+        toolsAllow: toSortedUniqueStrings(params.toolsAllow),
+      },
+    },
+    plugins,
+    skills: buildSkillsCapture(params.skillsSnapshot, redaction),
+    prompting: {
+      skillsPrompt: params.skillsSnapshot?.prompt,
+      userPromptPrefixText: params.userPromptPrefixText,
+      systemPromptReport: params.systemPromptReport,
+    },
+    redaction: {
+      config: {
+        mode: "redactConfigObject",
+        secretsMasked: true,
+      },
+      payloads: {
+        mode: "sanitizeDiagnosticPayload",
+        credentialsRemoved: true,
+        imageDataRedacted: true,
+      },
+      harness: {
+        mode: "diagnostic-support-redaction",
+        programArgumentsRedacted: true,
+        localPathsRedacted: true,
+      },
+    },
+    metadata: {
+      sessionKey: params.sessionKey,
+      agentId: params.agentId,
+      messageProvider: params.messageProvider,
+      messageChannel: params.messageChannel,
+    },
+  };
+}
+
+// Completion artifact schema mirrored into trajectory export artifacts.json.
+// Keep field names close to runtime event data to make bundle diffs readable.
+export function buildTrajectoryArtifacts(
+  params: BuildTrajectoryArtifactsParams,
+): Record<string, unknown> {
+  return {
+    capturedAt: new Date().toISOString(),
+    finalStatus: params.status,
+    aborted: params.aborted,
+    externalAbort: params.externalAbort,
+    timedOut: params.timedOut,
+    idleTimedOut: params.idleTimedOut,
+    timedOutDuringCompaction: params.timedOutDuringCompaction,
+    timedOutDuringToolExecution: params.timedOutDuringToolExecution,
+    promptError: params.promptError,
+    promptErrorSource: params.promptErrorSource,
+    terminalError: params.terminalError,
+    usage: params.usage,
+    promptCache: params.promptCache,
+    compactionCount: params.compactionCount,
+    assistantTexts: params.assistantTexts,
+    finalPromptText: params.finalPromptText,
+    itemLifecycle: params.itemLifecycle,
+    toolMetas: params.toolMetas,
+    didSendViaMessagingTool: params.didSendViaMessagingTool,
+    successfulCronAdds: params.successfulCronAdds,
+    messagingToolSentTexts: params.messagingToolSentTexts,
+    messagingToolSentMediaUrls: params.messagingToolSentMediaUrls,
+    messagingToolSentTargets: params.messagingToolSentTargets,
+    lastToolError: params.lastToolError,
+  };
 }

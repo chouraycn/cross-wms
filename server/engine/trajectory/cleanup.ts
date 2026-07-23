@@ -1,370 +1,273 @@
-/**
- * 轨迹清理
- *
- * 提供轨迹数据的清理和维护功能，
- * 包括策略化清理、保留规则、磁盘空间管理等。
- */
+// Trajectory cleanup helpers remove old trajectory files by retention policy.
+// 移植自 openclaw/src/trajectory/cleanup.ts
+//
+// 适配说明：
+// - isRecord: 从 ../infra/record-coerce.js 导入（替代 @openclaw/normalization-core/record-coerce）
+// - resolveSessionFilePath: cross-wms 未提供该函数，本地 stub 实现
+// - isPathInside: 从 ../infra/path-guards.js 导入，签名为 (targetPath, rootDir)
+//   openclaw 为 (basePath, targetPath)，调用时参数顺序互换
+import fs from "node:fs";
+import path from "node:path";
+import { isRecord } from "../infra/record-coerce.js";
+import { isPathInside } from "../infra/path-guards.js";
+import {
+  resolveTrajectoryFilePath,
+  resolveTrajectoryPointerFilePath,
+  safeTrajectorySessionFileName,
+} from "./paths.js";
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { logger } from '../../logger.js';
-import type {
-  CleanupPolicy,
-  CleanupPolicyType,
-  TrajectoryCleanupResult,
-  TrajectorySessionInfo,
-  TrajectoryStatus,
-} from './types.js';
+// 降级：cross-wms 未提供 resolveSessionFilePath，本地 stub
+// openclaw 中该函数从 ../config/sessions/paths.js 导入，用于解析会话文件路径
+// cross-wms 的 sessions/paths.ts 仅提供 getSessionFilePath(baseDir, sessionId)
+// 这里提供与 openclaw 兼容的签名
+function resolveSessionFilePath(
+  sessionId: string,
+  options?: { sessionFile?: string },
+  context?: { sessionsDir?: string },
+): string {
+  if (options?.sessionFile) {
+    return path.resolve(options.sessionFile);
+  }
+  const dir = context?.sessionsDir ?? process.cwd();
+  return path.join(dir, `${sessionId}.jsonl`);
+}
 
-export type TrajectoryCleanupOptions = {
-  maxAgeDays?: number;
-  maxTotalBytes?: number;
-  minSessionsToKeep?: number;
-  dryRun?: boolean;
+type RemovedTrajectoryArtifact = {
+  kind: "pointer" | "runtime";
+  path: string;
 };
 
-export { TrajectoryCleanupResult, TrajectorySessionInfo };
+type TrajectoryPointer = {
+  runtimeFile: string;
+};
 
-const DEFAULT_MAX_AGE_DAYS = 30;
-const DEFAULT_MIN_SESSIONS_TO_KEEP = 10;
-
-export class TrajectoryCleanupManager {
-  private readonly rootDir: string;
-
-  constructor(rootDir: string) {
-    this.rootDir = rootDir;
+function canonicalizePathForComparison(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
   }
+}
 
-  async listSessions(): Promise<TrajectorySessionInfo[]> {
-    const sessions: TrajectorySessionInfo[] = [];
+function isPathWithinDir(parentDir: string, filePath: string): boolean {
+  const resolvedParent = canonicalizePathForComparison(parentDir);
+  const resolvedFile = canonicalizePathForComparison(filePath);
+  // cross-wms isPathInside 签名为 (targetPath, rootDir)，参数顺序与 openclaw 相反
+  return resolvedFile !== resolvedParent && isPathInside(resolvedFile, resolvedParent);
+}
 
-    try {
-      const entries = await fs.readdir(this.rootDir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const sessionDir = path.join(this.rootDir, entry.name);
-        const trajectoryFile = path.join(sessionDir, 'trajectory.jsonl');
-
-        try {
-          const stats = await fs.stat(trajectoryFile);
-          const dirStats = await fs.stat(sessionDir);
-
-          let eventCount: number | undefined;
-          let status: TrajectoryStatus | undefined;
-          let tags: string[] | undefined;
-
-          try {
-            const metadataPath = path.join(sessionDir, 'metadata.json');
-            const metadataContent = await fs.readFile(metadataPath, 'utf-8');
-            const metadata = JSON.parse(metadataContent);
-            eventCount = metadata.eventCount;
-            status = metadata.status;
-            tags = metadata.tags;
-          } catch {
-            // ignore missing metadata
-          }
-
-          sessions.push({
-            sessionId: entry.name,
-            directory: sessionDir,
-            sizeBytes: stats.size,
-            modifiedAt: stats.mtime,
-            createdAt: dirStats.birthtime,
-            eventCount,
-            status,
-            tags,
-          });
-        } catch {
-          // skip sessions without trajectory files
-        }
-      }
-
-      sessions.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
-    } catch (err) {
-      logger.error(`[Trajectory Cleanup] Failed to list sessions: ${String(err)}`);
+function isRegularNonSymlinkFile(filePath: string): boolean {
+  try {
+    const lst = fs.lstatSync(filePath);
+    if (!lst.isFile() || lst.isSymbolicLink()) {
+      return false;
     }
-
-    return sessions;
-  }
-
-  private async getDirectorySize(dir: string): Promise<number> {
-    let totalSize = 0;
-
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-          totalSize += await this.getDirectorySize(fullPath);
-        } else if (entry.isFile()) {
-          try {
-            const stats = await fs.stat(fullPath);
-            totalSize += stats.size;
-          } catch {
-            // skip files we can't stat
-          }
-        }
-      }
-    } catch {
-      // return 0;
-    }
-
-    return totalSize;
-  }
-
-  private shouldPreserve(session: TrajectorySessionInfo, policy: CleanupPolicy): boolean {
-    if (policy.preserveTags && policy.preserveTags.length > 0 && session.tags) {
-      const sessionTags = new Set(session.tags);
-      if (policy.preserveTags.some((tag) => sessionTags.has(tag))) {
-        return true;
-      }
-    }
-
-    if (policy.preservePattern) {
-      if (policy.preservePattern.test(session.sessionId)) {
-        return true;
-      }
-    }
-
+    return fs.statSync(filePath).isFile();
+  } catch {
     return false;
   }
+}
 
-  async cleanupByAge(maxAgeDays: number, dryRun = false): Promise<TrajectoryCleanupResult> {
-    const policy: CleanupPolicy = {
-      type: 'age',
-      maxAgeDays,
-      dryRun,
-    };
-    return this.executeCleanup(policy);
+function readTrajectoryPointerFile(
+  pointerPath: string,
+  sessionId: string,
+): TrajectoryPointer | null {
+  if (!isRegularNonSymlinkFile(pointerPath)) {
+    return null;
   }
-
-  async cleanupBySize(
-    maxTotalBytes: number,
-    minSessionsToKeep = DEFAULT_MIN_SESSIONS_TO_KEEP,
-    dryRun = false,
-  ): Promise<TrajectoryCleanupResult> {
-    const policy: CleanupPolicy = {
-      type: 'size',
-      maxTotalBytes,
-      minSessionsToKeep,
-      dryRun,
-    };
-    return this.executeCleanup(policy);
-  }
-
-  async cleanupByCount(
-    maxSessionCount: number,
-    minSessionsToKeep = DEFAULT_MIN_SESSIONS_TO_KEEP,
-    dryRun = false,
-  ): Promise<TrajectoryCleanupResult> {
-    const policy: CleanupPolicy = {
-      type: 'count',
-      maxSessionCount,
-      minSessionsToKeep,
-      dryRun,
-    };
-    return this.executeCleanup(policy);
-  }
-
-  async executeCleanup(policy: CleanupPolicy): Promise<TrajectoryCleanupResult> {
-    const sessions = await this.listSessions();
-    const totalBytes = sessions.reduce((sum, s) => sum + s.sizeBytes, 0);
-
-    const result: TrajectoryCleanupResult = {
-      deletedSessions: [],
-      freedBytes: 0,
-      totalSessionsBefore: sessions.length,
-      totalSessionsAfter: sessions.length,
-      totalBytesBefore: totalBytes,
-      totalBytesAfter: totalBytes,
-      policy,
-      errors: [],
-    };
-
-    const minSessionsToKeep = policy.minSessionsToKeep ?? DEFAULT_MIN_SESSIONS_TO_KEEP;
-
-    const candidates = sessions.filter((s) => !this.shouldPreserve(s, policy));
-    const preserved = sessions.filter((s) => this.shouldPreserve(s, policy));
-
-    let toDelete: TrajectorySessionInfo[] = [];
-
-    switch (policy.type) {
-      case 'age': {
-        const maxAgeMs = (policy.maxAgeDays ?? DEFAULT_MAX_AGE_DAYS) * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        toDelete = candidates.filter((session) => {
-          const age = now - session.modifiedAt.getTime();
-          return age > maxAgeMs;
-        });
-        break;
-      }
-      case 'size': {
-        const maxTotalBytes = policy.maxTotalBytes ?? 0;
-        if (totalBytes <= maxTotalBytes) {
-          return result;
-        }
-        const sortedByAge = [...candidates].sort(
-          (a, b) => a.modifiedAt.getTime() - b.modifiedAt.getTime(),
-        );
-        let currentBytes = totalBytes;
-        for (const session of sortedByAge) {
-          if (result.totalSessionsAfter - toDelete.length <= minSessionsToKeep + preserved.length) {
-            break;
-          }
-          if (currentBytes <= maxTotalBytes) {
-            break;
-          }
-          toDelete.push(session);
-          currentBytes -= session.sizeBytes;
-        }
-        break;
-      }
-      case 'count': {
-        const maxSessionCount = policy.maxSessionCount ?? 0;
-        if (sessions.length <= maxSessionCount) {
-          return result;
-        }
-        const sortedByAge = [...candidates].sort(
-          (a, b) => a.modifiedAt.getTime() - b.modifiedAt.getTime(),
-        );
-        const deleteCount = Math.max(0, sessions.length - maxSessionCount);
-        toDelete = sortedByAge.slice(0, deleteCount);
-        break;
-      }
-      case 'manual':
-      default:
-        return result;
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(pointerPath, "utf8"));
+    if (!isRecord(parsed)) {
+      return null;
     }
-
-    if (result.totalSessionsAfter - toDelete.length < minSessionsToKeep + preserved.length) {
-      const canDelete = Math.max(0, result.totalSessionsAfter - minSessionsToKeep - preserved.length);
-      toDelete = toDelete.slice(0, canDelete);
+    if (
+      parsed.traceSchema !== "openclaw-trajectory-pointer" ||
+      parsed.schemaVersion !== 1 ||
+      parsed.sessionId !== sessionId ||
+      typeof parsed.runtimeFile !== "string" ||
+      !parsed.runtimeFile.trim()
+    ) {
+      return null;
     }
+    return { runtimeFile: path.resolve(parsed.runtimeFile) };
+  } catch {
+    return null;
+  }
+}
 
-    for (const session of toDelete) {
-      if (!policy.dryRun) {
-        try {
-          await fs.rm(session.directory, { recursive: true, force: true });
-          result.deletedSessions.push(session.sessionId);
-          result.freedBytes += session.sizeBytes;
-          result.totalSessionsAfter--;
-          result.totalBytesAfter -= session.sizeBytes;
-          logger.info(`[Trajectory Cleanup] Deleted session: ${session.sessionId}`);
-        } catch (err) {
-          result.errors.push({
-            sessionId: session.sessionId,
-            error: String(err),
-          });
-          logger.error(`[Trajectory Cleanup] Failed to delete session ${session.sessionId}: ${String(err)}`);
-        }
-      } else {
-        result.deletedSessions.push(session.sessionId);
-        result.freedBytes += session.sizeBytes;
-        result.totalSessionsAfter--;
-        result.totalBytesAfter -= session.sizeBytes;
+function readFirstNonEmptyLine(filePath: string): string | null {
+  let fd: number | null = null;
+  try {
+    fd = fs.openSync(filePath, "r");
+    const buffer = Buffer.alloc(64 * 1024);
+    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    if (bytesRead <= 0) {
+      return null;
+    }
+    for (const line of buffer.subarray(0, bytesRead).toString("utf8").split(/\r?\n/u)) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        return trimmed;
       }
     }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== null) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        // Ignore best-effort cleanup close failures.
+      }
+    }
+  }
+}
 
-    logger.info(
-      `[Trajectory Cleanup] Cleanup complete: deleted ${result.deletedSessions.length} sessions, freed ${formatBytes(result.freedBytes)}`,
+function runtimeFileStartsWithSessionEvent(filePath: string, sessionId: string): boolean {
+  if (!isRegularNonSymlinkFile(filePath)) {
+    return false;
+  }
+  const firstLine = readFirstNonEmptyLine(filePath);
+  if (!firstLine) {
+    return false;
+  }
+  try {
+    const parsed: unknown = JSON.parse(firstLine);
+    return (
+      isRecord(parsed) &&
+      parsed.traceSchema === "openclaw-trajectory" &&
+      parsed.schemaVersion === 1 &&
+      parsed.source === "runtime" &&
+      parsed.sessionId === sessionId
     );
-
-    return result;
-  }
-
-  async cleanup(options: TrajectoryCleanupOptions = {}): Promise<TrajectoryCleanupResult> {
-    const {
-      maxAgeDays = DEFAULT_MAX_AGE_DAYS,
-      maxTotalBytes,
-      minSessionsToKeep = DEFAULT_MIN_SESSIONS_TO_KEEP,
-      dryRun = false,
-    } = options;
-
-    let policy: CleanupPolicy = {
-      type: 'age',
-      maxAgeDays,
-      minSessionsToKeep,
-      dryRun,
-    };
-
-    if (maxTotalBytes !== undefined) {
-      policy = {
-        type: 'size',
-        maxTotalBytes,
-        minSessionsToKeep,
-        dryRun,
-      };
-    }
-
-    return this.executeCleanup(policy);
-  }
-
-  async getTotalSize(): Promise<number> {
-    return this.getDirectorySize(this.rootDir);
-  }
-
-  async getDiskUsage(): Promise<{
-    totalBytes: number;
-    sessionCount: number;
-    averageSize: number;
-    largestSession?: { sessionId: string; sizeBytes: number };
-    oldestSession?: { sessionId: string; modifiedAt: Date };
-  }> {
-    const sessions = await this.listSessions();
-    const totalBytes = sessions.reduce((sum, s) => sum + s.sizeBytes, 0);
-    const averageSize = sessions.length > 0 ? totalBytes / sessions.length : 0;
-
-    let largestSession: { sessionId: string; sizeBytes: number } | undefined;
-    let oldestSession: { sessionId: string; modifiedAt: Date } | undefined;
-
-    for (const session of sessions) {
-      if (!largestSession || session.sizeBytes > largestSession.sizeBytes) {
-        largestSession = { sessionId: session.sessionId, sizeBytes: session.sizeBytes };
-      }
-      if (!oldestSession || session.modifiedAt < oldestSession.modifiedAt) {
-        oldestSession = { sessionId: session.sessionId, modifiedAt: session.modifiedAt };
-      }
-    }
-
-    return {
-      totalBytes,
-      sessionCount: sessions.length,
-      averageSize,
-      largestSession,
-      oldestSession,
-    };
-  }
-
-  async estimateCleanupImpact(policy: CleanupPolicy): Promise<{
-    wouldDelete: number;
-    wouldFreeBytes: number;
-    wouldRemain: number;
-    wouldRemainBytes: number;
-  }> {
-    const dryRunPolicy = { ...policy, dryRun: true };
-    const result = await this.executeCleanup(dryRunPolicy);
-
-    return {
-      wouldDelete: result.deletedSessions.length,
-      wouldFreeBytes: result.freedBytes,
-      wouldRemain: result.totalSessionsAfter,
-      wouldRemainBytes: result.totalBytesAfter,
-    };
+  } catch {
+    return false;
   }
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+async function removeRegularFile(
+  filePath: string,
+  kind: RemovedTrajectoryArtifact["kind"],
+): Promise<RemovedTrajectoryArtifact | null> {
+  if (!isRegularNonSymlinkFile(filePath)) {
+    return null;
+  }
+  await fs.promises.rm(filePath, { force: true });
+  return { kind, path: path.resolve(filePath) };
 }
 
-export function createTrajectoryCleanupManager(rootDir: string): TrajectoryCleanupManager {
-  return new TrajectoryCleanupManager(rootDir);
+function resolveRemovedSessionFile(params: {
+  sessionId: string;
+  sessionFile?: string;
+  storePath: string;
+}): string | null {
+  try {
+    return resolveSessionFilePath(
+      params.sessionId,
+      params.sessionFile ? { sessionFile: params.sessionFile } : undefined,
+      { sessionsDir: path.dirname(params.storePath) },
+    );
+  } catch {
+    return null;
+  }
+}
+
+function mayRemoveRuntimeTarget(params: {
+  defaultRuntimePath: string;
+  filePath: string;
+  sessionId: string;
+  storeDir: string;
+  restrictToStoreDir: boolean;
+}): boolean {
+  const resolved = canonicalizePathForComparison(params.filePath);
+  const withinStoreDir = isPathWithinDir(params.storeDir, resolved);
+  if (canonicalizePathForComparison(params.defaultRuntimePath) === resolved) {
+    return !params.restrictToStoreDir || withinStoreDir;
+  }
+  if (params.restrictToStoreDir && withinStoreDir) {
+    return true;
+  }
+  const expectedName = `${safeTrajectorySessionFileName(params.sessionId)}.jsonl`;
+  if (path.basename(resolved) !== expectedName) {
+    return false;
+  }
+  return runtimeFileStartsWithSessionEvent(resolved, params.sessionId);
+}
+
+export async function removeSessionTrajectoryArtifacts(params: {
+  sessionId: string;
+  sessionFile?: string;
+  storePath: string;
+  restrictToStoreDir?: boolean;
+}): Promise<RemovedTrajectoryArtifact[]> {
+  const sessionFile = resolveRemovedSessionFile(params);
+  if (!sessionFile) {
+    return [];
+  }
+  const storeDir = path.dirname(path.resolve(params.storePath));
+  const restrictToStoreDir = params.restrictToStoreDir === true;
+  const removed: RemovedTrajectoryArtifact[] = [];
+  const pointerPath = resolveTrajectoryPointerFilePath(sessionFile);
+  const pointer = readTrajectoryPointerFile(pointerPath, params.sessionId);
+  const defaultRuntimePath = resolveTrajectoryFilePath({
+    env: {},
+    sessionFile,
+    sessionId: params.sessionId,
+  });
+  const runtimeCandidates = new Set<string>([defaultRuntimePath]);
+  if (pointer?.runtimeFile) {
+    runtimeCandidates.add(pointer.runtimeFile);
+  }
+
+  for (const runtimePath of runtimeCandidates) {
+    if (
+      !mayRemoveRuntimeTarget({
+        defaultRuntimePath,
+        filePath: runtimePath,
+        sessionId: params.sessionId,
+        storeDir,
+        restrictToStoreDir,
+      })
+    ) {
+      continue;
+    }
+    const deleted = await removeRegularFile(runtimePath, "runtime");
+    if (deleted) {
+      removed.push(deleted);
+    }
+  }
+
+  if (!restrictToStoreDir || isPathWithinDir(storeDir, pointerPath)) {
+    const deletedPointer = await removeRegularFile(pointerPath, "pointer");
+    if (deletedPointer) {
+      removed.push(deletedPointer);
+    }
+  }
+
+  return removed;
+}
+
+export async function removeRemovedSessionTrajectoryArtifacts(params: {
+  removedSessionFiles: Iterable<[string, string | undefined]>;
+  referencedSessionIds: ReadonlySet<string>;
+  storePath: string;
+  restrictToStoreDir?: boolean;
+}): Promise<RemovedTrajectoryArtifact[]> {
+  const removed: RemovedTrajectoryArtifact[] = [];
+  for (const [sessionId, sessionFile] of params.removedSessionFiles) {
+    if (params.referencedSessionIds.has(sessionId)) {
+      continue;
+    }
+    removed.push(
+      ...(await removeSessionTrajectoryArtifacts({
+        sessionId,
+        sessionFile,
+        storePath: params.storePath,
+        restrictToStoreDir: params.restrictToStoreDir,
+      })),
+    );
+  }
+  return removed;
 }

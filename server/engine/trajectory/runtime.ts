@@ -1,22 +1,53 @@
-/**
- * 运行时轨迹记录器
- * 将运行时事件记录到轨迹日志文件中。
- * 参考 openclaw/src/trajectory/runtime.ts 对齐实现。
- */
-import fs from 'node:fs';
-import path from 'node:path';
-import { logger } from '../../logger.js';
+// Trajectory runtime records runtime events into trajectory log files.
+// 移植自 openclaw/src/trajectory/runtime.ts
+//
+// 适配说明：
+// - sanitizeDiagnosticPayload: cross-wms 未提供，降级为 redactPayload
+// - assertNoSymlinkParents: cross-wms 签名为 (filePath, options?)，openclaw 为对象参数
+// - writeSiblingTempFile: cross-wms 签名不支持 writeTemp 回调，改用 writeViaSiblingTempPath（原子写入+重命名）
+// - readRegularFileSync: cross-wms 签名为 (filePath): string，openclaw 为 ({filePath, maxBytes}): {buffer}
+// - redactSecrets: cross-wms 未提供，降级为 redactObject
+// - parseBooleanValue: 从 ../infra/boolean-coerce.js 导入
+// - safeJsonStringify: 从 ../infra/safe-json.js 导入
+import fs from "node:fs";
+import path from "node:path";
+import { redactPayload } from "../agents/payload-redaction.js";
+import type {
+  QueuedFileWriter,
+  QueuedFileWriterDiagnostics,
+} from "../agents/queued-file-writer.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  assertNoSymlinkParents,
+  writeViaSiblingTempPath,
+} from "../infra/fs-safe-advanced.js";
+import { readRegularFileSync } from "../infra/_fs-safe-stubs.js";
+import { redactObject } from "../logging/redact.js";
+import { parseBooleanValue } from "../infra/boolean-coerce.js";
+import { safeJsonStringify } from "../infra/safe-json.js";
 import {
   TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES,
   TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
   TRAJECTORY_RUNTIME_FILE_MAX_BYTES,
   resolveTrajectoryFilePath,
   resolveTrajectoryPointerFilePath,
-} from './paths.js';
-import type { TrajectoryEvent, TrajectoryToolDefinition, TrajectoryRuntimeWriter, TrajectoryRuntimeWriterDiagnostics } from './types.js';
+  resolveTrajectoryPointerOpenFlags,
+} from "./paths.js";
+import type { TrajectoryEvent, TrajectoryToolDefinition } from "./types.js";
+
+// 降级：cross-wms 未提供 sanitizeDiagnosticPayload，使用 redactPayload 替代
+function sanitizeDiagnosticPayload(value: unknown): unknown {
+  return redactPayload(value);
+}
+
+// 降级：cross-wms 未提供 redactSecrets，使用 redactObject 替代
+function redactSecrets<T>(value: T): T {
+  return redactObject(value);
+}
 
 type TrajectoryRuntimeInit = {
-  env?: Record<string, string | undefined>;
+  cfg?: OpenClawConfig;
+  env?: NodeJS.ProcessEnv;
   maxRuntimeFileBytes?: number;
   runId?: string;
   sessionId: string;
@@ -29,6 +60,14 @@ type TrajectoryRuntimeInit = {
   writer?: TrajectoryRuntimeWriter;
 };
 
+type TrajectoryRuntimeRecorder = {
+  enabled: true;
+  filePath: string;
+  recordEvent: (type: string, data?: Record<string, unknown>) => void;
+  flush: () => Promise<void>;
+  describeFlushState: () => string | undefined;
+};
+
 const writers = new Map<string, TrajectoryRuntimeWriter>();
 const windowFlushes = new Map<string, Promise<void>>();
 const MAX_TRAJECTORY_WRITERS = 100;
@@ -36,6 +75,15 @@ const TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS = 32_768;
 const TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS = 64;
 const TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS = 64;
 const TRAJECTORY_RUNTIME_DATA_MAX_DEPTH = 6;
+
+type TrajectoryRuntimeWriterDiagnostics = Omit<QueuedFileWriterDiagnostics, "activeOperation"> & {
+  activeOperation: QueuedFileWriterDiagnostics["activeOperation"] | "file-replace";
+};
+
+type TrajectoryRuntimeWriter = Omit<QueuedFileWriter, "describeQueue"> & {
+  describeQueue?: () => TrajectoryRuntimeWriterDiagnostics;
+  nextSourceSeq?: () => number;
+};
 
 function writeTrajectoryPointerBestEffort(params: {
   filePath: string;
@@ -48,21 +96,25 @@ function writeTrajectoryPointerBestEffort(params: {
   const pointerPath = resolveTrajectoryPointerFilePath(params.sessionFile);
   try {
     const pointerDir = path.resolve(path.dirname(pointerPath));
-    try {
-      if (fs.lstatSync(pointerDir).isSymbolicLink()) return;
-    } catch { /* ignore */ }
-    try {
-      if (fs.lstatSync(pointerPath).isSymbolicLink()) return;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return;
+    if (fs.lstatSync(pointerDir).isSymbolicLink()) {
+      return;
     }
-    const fd = fs.openSync(pointerPath, fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_WRONLY, 0o600);
+    try {
+      if (fs.lstatSync(pointerPath).isSymbolicLink()) {
+        return;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        return;
+      }
+    }
+    const fd = fs.openSync(pointerPath, resolveTrajectoryPointerOpenFlags(), 0o600);
     try {
       fs.writeFileSync(
         fd,
         `${JSON.stringify(
           {
-            traceSchema: 'cdf-know-trajectory-pointer',
+            traceSchema: "openclaw-trajectory-pointer",
             schemaVersion: 1,
             sessionId: params.sessionId,
             runtimeFile: params.filePath,
@@ -70,21 +122,23 @@ function writeTrajectoryPointerBestEffort(params: {
           null,
           2,
         )}\n`,
-        'utf8',
+        "utf8",
       );
-      try { fs.fchmodSync(fd, 0o600); } catch { /* ignore */ }
+      fs.fchmodSync(fd, 0o600);
     } finally {
       fs.closeSync(fd);
     }
   } catch {
-    // 指针文件是尽力写入，不影响轨迹记录本身
+    // Pointer files are best-effort; the runtime sidecar itself is authoritative.
   }
 }
 
 function trimTrajectoryWriterCache(): void {
   while (writers.size >= MAX_TRAJECTORY_WRITERS) {
     const oldestKey = writers.keys().next().value;
-    if (!oldestKey) return;
+    if (!oldestKey) {
+      return;
+    }
     writers.delete(oldestKey);
   }
 }
@@ -93,20 +147,20 @@ function truncateOversizedTrajectoryEvent(
   event: TrajectoryEvent,
   line: string,
 ): string | undefined {
-  const bytes = Buffer.byteLength(line, 'utf8');
+  const bytes = Buffer.byteLength(line, "utf8");
   if (bytes <= TRAJECTORY_RUNTIME_EVENT_MAX_BYTES) {
     return line;
   }
-  const truncated = JSON.stringify({
+  const truncated = safeJsonStringify({
     ...event,
     data: {
       truncated: true,
       originalBytes: bytes,
       limitBytes: TRAJECTORY_RUNTIME_EVENT_MAX_BYTES,
-      reason: 'trajectory-event-size-limit',
+      reason: "trajectory-event-size-limit",
     },
   });
-  if (truncated && Buffer.byteLength(truncated, 'utf8') <= TRAJECTORY_RUNTIME_EVENT_MAX_BYTES) {
+  if (truncated && Buffer.byteLength(truncated, "utf8") <= TRAJECTORY_RUNTIME_EVENT_MAX_BYTES) {
     return truncated;
   }
   return undefined;
@@ -120,28 +174,28 @@ function truncatedTrajectoryValue(reason: string, details: Record<string, unknow
   };
 }
 
-export function limitTrajectoryPayloadValue(
+function limitTrajectoryPayloadValue(
   value: unknown,
   depth = 0,
   seen: WeakSet<object> = new WeakSet(),
 ): unknown {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     if (value.length > TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS) {
-      return truncatedTrajectoryValue('trajectory-field-size-limit', {
+      return truncatedTrajectoryValue("trajectory-field-size-limit", {
         originalChars: value.length,
         limitChars: TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS,
       });
     }
     return value;
   }
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return value;
   }
   if (seen.has(value)) {
-    return truncatedTrajectoryValue('trajectory-circular-reference');
+    return truncatedTrajectoryValue("trajectory-circular-reference");
   }
   if (depth >= TRAJECTORY_RUNTIME_DATA_MAX_DEPTH) {
-    return truncatedTrajectoryValue('trajectory-depth-limit', {
+    return truncatedTrajectoryValue("trajectory-depth-limit", {
       limitDepth: TRAJECTORY_RUNTIME_DATA_MAX_DEPTH,
     });
   }
@@ -152,7 +206,7 @@ export function limitTrajectoryPayloadValue(
       .map((item) => limitTrajectoryPayloadValue(item, depth + 1, seen));
     if (value.length > TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS) {
       limited.push(
-        truncatedTrajectoryValue('trajectory-array-size-limit', {
+        truncatedTrajectoryValue("trajectory-array-size-limit", {
           originalLength: value.length,
           limitItems: TRAJECTORY_RUNTIME_DATA_ARRAY_MAX_ITEMS,
         }),
@@ -168,7 +222,7 @@ export function limitTrajectoryPayloadValue(
     limited[key] = limitTrajectoryPayloadValue(record[key], depth + 1, seen);
   }
   if (keys.length > TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS) {
-    limited['_truncated'] = truncatedTrajectoryValue('trajectory-object-size-limit', {
+    limited["_truncated"] = truncatedTrajectoryValue("trajectory-object-size-limit", {
       originalKeys: keys.length,
       limitKeys: TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS,
     });
@@ -178,17 +232,22 @@ export function limitTrajectoryPayloadValue(
 }
 
 function sanitizeTrajectoryPayload(data: Record<string, unknown>): Record<string, unknown> {
-  return limitTrajectoryPayloadValue(data) as Record<string, unknown>;
+  return redactSecrets(sanitizeDiagnosticPayload(limitTrajectoryPayloadValue(data))) as Record<
+    string,
+    unknown
+  >;
 }
 
 function describeTrajectoryWriterFlushState(writer: TrajectoryRuntimeWriter): string | undefined {
   const diagnostics = writer.describeQueue?.();
-  if (!diagnostics) return undefined;
+  if (!diagnostics) {
+    return undefined;
+  }
   const parts = [
     `pendingWrites=${diagnostics.pendingWrites}`,
     `queuedBytes=${diagnostics.queuedBytes}`,
     `activeOperation=${diagnostics.activeOperation}`,
-    `yieldBeforeWrite=${diagnostics.yieldBeforeWrite ?? false}`,
+    `yieldBeforeWrite=${diagnostics.yieldBeforeWrite}`,
   ];
   if (diagnostics.activeWriteBytes !== undefined) {
     parts.push(`activeWriteBytes=${diagnostics.activeWriteBytes}`);
@@ -199,18 +258,18 @@ function describeTrajectoryWriterFlushState(writer: TrajectoryRuntimeWriter): st
   if (diagnostics.maxFileBytes !== undefined) {
     parts.push(`maxFileBytes=${diagnostics.maxFileBytes}`);
   }
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 function trimJsonlWindow(lines: string[], maxBytes: number): number {
   let bytes = 0;
   for (const line of lines) {
-    bytes += Buffer.byteLength(line, 'utf8');
+    bytes += Buffer.byteLength(line, "utf8");
   }
   while (bytes > maxBytes && lines.length > 0) {
     const line = lines.shift();
     if (line !== undefined) {
-      bytes -= Buffer.byteLength(line, 'utf8');
+      bytes -= Buffer.byteLength(line, "utf8");
     }
   }
   return bytes;
@@ -220,16 +279,18 @@ function compareTrajectoryWindowLines(left: string, right: string): number {
   const leftEvent = parseTrajectoryWindowLine(left);
   const rightEvent = parseTrajectoryWindowLine(right);
   const byTs = leftEvent.ts - rightEvent.ts;
-  if (byTs !== 0) return byTs;
+  if (byTs !== 0) {
+    return byTs;
+  }
   return leftEvent.seq - rightEvent.seq;
 }
 
 function parseTrajectoryWindowLine(line: string): { ts: number; seq: number } {
   try {
     const parsed = JSON.parse(line) as { ts?: unknown; sourceSeq?: unknown; seq?: unknown };
-    const ts = typeof parsed.ts === 'string' ? Date.parse(parsed.ts) : Number.POSITIVE_INFINITY;
-    const sourceSeq = typeof parsed.sourceSeq === 'number' ? parsed.sourceSeq : undefined;
-    const seq = typeof parsed.seq === 'number' ? parsed.seq : undefined;
+    const ts = typeof parsed.ts === "string" ? Date.parse(parsed.ts) : Number.POSITIVE_INFINITY;
+    const sourceSeq = typeof parsed.sourceSeq === "number" ? parsed.sourceSeq : undefined;
+    const seq = typeof parsed.seq === "number" ? parsed.seq : undefined;
     return {
       ts: Number.isFinite(ts) ? ts : Number.POSITIVE_INFINITY,
       seq: sourceSeq ?? seq ?? Number.POSITIVE_INFINITY,
@@ -245,9 +306,9 @@ function readMaxTrajectorySourceSeq(filePath: string): number {
       try {
         const parsed = JSON.parse(line) as { sourceSeq?: unknown; seq?: unknown };
         const seq =
-          typeof parsed.sourceSeq === 'number'
+          typeof parsed.sourceSeq === "number"
             ? parsed.sourceSeq
-            : typeof parsed.seq === 'number'
+            : typeof parsed.seq === "number"
               ? parsed.seq
               : 0;
         return Math.max(max, seq);
@@ -261,7 +322,8 @@ function readMaxTrajectorySourceSeq(filePath: string): number {
 
 function readTrajectoryWindowLines(filePath: string, maxBytes: number): string[] {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    // 适配：cross-wms readRegularFileSync 签名为 (filePath): string
+    const raw = readRegularFileSync(filePath);
     const lines = raw
       .split(/\r?\n/u)
       .filter((line) => line.length > 0)
@@ -280,24 +342,22 @@ async function replaceTrajectoryWindow(params: {
 }): Promise<void> {
   const dir = path.dirname(params.filePath);
   await fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
+  // 适配：cross-wms assertNoSymlinkParents 签名为 (filePath, options?)
+  await assertNoSymlinkParents(path.resolve(dir), {
+    rootDir: path.parse(path.resolve(dir)).root,
+    allowSymlinkInRoot: true,
+  });
   const lines = readTrajectoryWindowLines(params.filePath, params.maxFileBytes);
   lines.push(...params.appendedLines);
   lines.sort(compareTrajectoryWindowLines);
   trimJsonlWindow(lines, params.maxFileBytes);
-
-  const tempPath = `${params.filePath}.tmp-${Date.now()}`;
-  try {
-    await fs.promises.writeFile(tempPath, lines.join(''), {
-      encoding: 'utf8',
-      mode: 0o600,
-    });
-    await fs.promises.rename(tempPath, params.filePath);
-  } catch (err) {
-    logger.error(`[Trajectory:Runtime] Failed to replace trajectory window: ${err}`);
-    try {
-      await fs.promises.unlink(tempPath);
-    } catch { /* ignore */ }
-  }
+  // 适配：cross-wms 使用 writeViaSiblingTempPath 替代 writeSiblingTempFile
+  // writeViaSiblingTempPath 写入临时文件并原子重命名到目标路径
+  await writeViaSiblingTempPath({
+    filePath: params.filePath,
+    content: lines.join(""),
+    mode: 0o600,
+  });
 }
 
 async function queueTrajectoryWindowFlush(params: {
@@ -327,22 +387,22 @@ function createTrajectoryWindowWriter(
   let pendingLines: string[] = [];
   let queuedBytes = 0;
   let pendingWrites = 0;
-  let activeOperation: TrajectoryRuntimeWriterDiagnostics['activeOperation'] = 'idle';
+  let activeOperation: TrajectoryRuntimeWriterDiagnostics["activeOperation"] = "idle";
   let queue: Promise<unknown> = Promise.resolve();
   let sourceSeq = readMaxTrajectorySourceSeq(filePath);
 
   return {
     filePath,
     write: (line) => {
-      const lineBytes = Buffer.byteLength(line, 'utf8');
+      const lineBytes = Buffer.byteLength(line, "utf8");
       if (lineBytes > maxFileBytes) {
-        return 'dropped';
+        return "dropped";
       }
       pendingLines.push(line);
       queuedBytes += lineBytes;
       queuedBytes = trimJsonlWindow(pendingLines, maxFileBytes);
       pendingWrites = 1;
-      return 'queued';
+      return "queued";
     },
     flush: async () => {
       if (pendingLines.length === 0) {
@@ -354,7 +414,7 @@ function createTrajectoryWindowWriter(
       queuedBytes = 0;
       queue = queue
         .then(async () => {
-          activeOperation = 'file-replace';
+          activeOperation = "file-replace";
           await queueTrajectoryWindowFlush({
             filePath,
             maxFileBytes,
@@ -364,7 +424,7 @@ function createTrajectoryWindowWriter(
         .catch(() => undefined)
         .finally(() => {
           pendingWrites = pendingLines.length > 0 ? 1 : 0;
-          activeOperation = 'idle';
+          activeOperation = "idle";
         });
       await queue;
     },
@@ -388,65 +448,61 @@ function getTrajectoryWindowWriter(
   maxFileBytes: number,
 ): TrajectoryRuntimeWriter {
   const existing = writers.get(filePath);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   trimTrajectoryWriterCache();
   const writer = createTrajectoryWindowWriter(filePath, maxFileBytes);
   writers.set(filePath, writer);
   return writer;
 }
 
-/**
- * 将工具定义转为轨迹工具定义。
- */
-export function toTrajectoryToolDefinitionsRuntime(
+export function toTrajectoryToolDefinitions(
   tools: ReadonlyArray<{ name?: string; description?: string; parameters?: unknown }>,
 ): TrajectoryToolDefinition[] {
   return tools
     .flatMap((tool) => {
       const name = tool.name?.trim();
-      if (!name) return [];
+      if (!name) {
+        return [];
+      }
       return [
         {
           name,
           description: tool.description,
-          parameters: sanitizeTrajectoryPayload(tool.parameters as Record<string, unknown>),
+          parameters: sanitizeDiagnosticPayload(limitTrajectoryPayloadValue(tool.parameters)),
         },
       ];
     })
     .toSorted((left, right) => left.name.localeCompare(right.name));
 }
 
-/**
- * 创建运行时轨迹记录器。
- * 参考 openclaw createTrajectoryRuntimeRecorder。
- */
 export function createTrajectoryRuntimeRecorder(
   params: TrajectoryRuntimeInit,
-): TrajectoryRuntimeWriter & { enabled: true; recordEvent: (type: string, data?: Record<string, unknown>) => void; describeFlushState: () => string | undefined } | null {
-  const env = params.env ?? process.env as Record<string, string | undefined>;
-
-  const trajectoryEnv = env.CDF_TRAJECTORY?.trim();
-  const enabled = trajectoryEnv !== '0' && trajectoryEnv?.toLowerCase() !== 'false';
-  if (!enabled) return null;
+): TrajectoryRuntimeRecorder | null {
+  const env = params.env ?? process.env;
+  // Trajectory capture is now default-on. The env var remains as an explicit
+  // override so operators can still disable recording with OPENCLAW_TRAJECTORY=0.
+  const enabled = parseBooleanValue(env.OPENCLAW_TRAJECTORY) ?? true;
+  if (!enabled) {
+    return null;
+  }
 
   const filePath = resolveTrajectoryFilePath({
     env,
     sessionFile: params.sessionFile,
     sessionId: params.sessionId,
   });
-
   const maxRuntimeFileBytes = Math.max(
     1,
     Math.floor(params.maxRuntimeFileBytes ?? TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES),
   );
-
   const writer = params.writer ?? getTrajectoryWindowWriter(filePath, maxRuntimeFileBytes);
   writeTrajectoryPointerBestEffort({
     filePath,
     sessionFile: params.sessionFile,
     sessionId: params.sessionId,
   });
-
   let seq = 0;
   const traceId = params.sessionId;
 
@@ -459,10 +515,10 @@ export function createTrajectoryRuntimeRecorder(
     const nextSeq = seq + 1;
     const sourceSeq = writer.nextSourceSeq?.() ?? nextSeq;
     const event: TrajectoryEvent = {
-      traceSchema: 'cdf-know-trajectory',
+      traceSchema: "openclaw-trajectory",
       schemaVersion: 1,
       traceId,
-      source: 'runtime',
+      source: "runtime",
       type,
       ts: new Date().toISOString(),
       seq: nextSeq,
@@ -476,10 +532,14 @@ export function createTrajectoryRuntimeRecorder(
       modelApi: params.modelApi,
       data: data ? sanitizeTrajectoryPayload(data) : undefined,
     };
-    const line = JSON.stringify(event);
-    if (!line) return undefined;
+    const line = safeJsonStringify(event);
+    if (!line) {
+      return undefined;
+    }
     const boundedLine = truncateOversizedTrajectoryEvent(event, line);
-    if (!boundedLine) return undefined;
+    if (!boundedLine) {
+      return undefined;
+    }
     seq = nextSeq;
     return boundedLine;
   };
@@ -489,15 +549,14 @@ export function createTrajectoryRuntimeRecorder(
     filePath,
     recordEvent: (type, data) => {
       const line = buildEventLine(type, data);
-      if (!line) return;
+      if (!line) {
+        return;
+      }
       writeBoundedLine(line);
     },
     flush: async () => {
       await writer.flush();
     },
     describeFlushState: () => describeTrajectoryWriterFlushState(writer),
-    write: writer.write,
-    describeQueue: writer.describeQueue,
-    nextSourceSeq: writer.nextSourceSeq,
   };
 }

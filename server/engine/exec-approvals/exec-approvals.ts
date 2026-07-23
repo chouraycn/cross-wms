@@ -253,9 +253,9 @@ function ensureDir(filePath: string) {
   }
   try {
     fs.chmodSync(dir, 0o700);
-  } catch {
+  } catch (err) {
     if (process.platform !== 'win32') {
-      throw;
+      throw err;
     }
   }
   return dir;
@@ -283,7 +283,7 @@ function writeExecApprovalsRaw(filePath: string, raw: string) {
     fs.writeFileSync(tempPath, raw, { mode: 0o600, flag: 'wx' });
     try {
       fs.chmodSync(tempPath, 0o600);
-    } catch {
+    } catch (_chmodErr) {
     }
     tempWritten = true;
     fs.renameSync(tempPath, filePath);
@@ -303,7 +303,7 @@ function writeExecApprovalsRaw(filePath: string, raw: string) {
   }
   try {
     fs.chmodSync(filePath, 0o600);
-  } catch {
+  } catch (_chmodErr) {
   }
 }
 
@@ -489,10 +489,18 @@ export function readExecApprovalsSnapshot(): ExecApprovalsSnapshot {
   let parsed: ExecApprovalsFile | null;
   try {
     parsed = JSON.parse(raw) as ExecApprovalsFile;
-  } catch {
+  } catch (_parseErr) {
     parsed = null;
   }
   const file =
     parsed?.version === 1
       ? normalizeExecApprovals(parsed)
       : normalizeExecApprovals({ version: 1, agents: {} });
+  return {
+    path: filePath,
+    exists: true,
+    raw,
+    file,
+    hash: hashExecApprovalsRaw(raw),
+  };
+}
