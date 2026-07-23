@@ -145,6 +145,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   const skillsBtnRef = useRef<HTMLDivElement>(null);
   const thinkingBtnRef = useRef<HTMLDivElement>(null);
   const [thinkingMenuOpen, setThinkingMenuOpen] = useState(false);
+  // 在 hooks 之后定义 selectedOption，避免在渲染早期使用未初始化的常量
+  const selectedOption: ModelOption | undefined =
+    modelOptions.length > 0 ? modelOptions.find(o => o.name === selectedModel) : undefined;
 
   const BASE_THINKING_LEVELS = [
     { value: 'off', label: '关闭思考', desc: '直接输出结果，不进行深度推理' },
@@ -398,15 +401,25 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 userSelect: 'none',
               }}
             >
-              <Typography sx={{ fontSize: 12, fontWeight: 500, color: modelsLoading ? gs.textMuted : gs.textPrimary, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {modelsLoading ? '加载中...' : (() => {
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: modelsLoading && !selectedOption ? gs.textMuted : gs.textPrimary, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {(() => {
+                  // 优先显示已选模型，避免"加载中..."灰色字面
                   const autoOption = modelOptions.find(o => o.provider === 'auto');
                   if (autoOption && selectedModel === autoOption.name) {
                     return 'CDF Auto Model';
                   }
-                  const selectedOption = modelOptions.find(o => o.name === selectedModel);
+                  if (selectedOption) {
+                    return (<>
+                      {providerIcon(selectedOption.provider, 14)}
+                      {selectedModel}
+                    </>);
+                  }
+                  if (modelsLoading) {
+                    // 加载中：若 modelOptions 已有数据，显示 Auto；否则显示"加载中..."
+                    return autoOption ? 'CDF Auto Model' : '加载中...';
+                  }
                   return (<>
-                    {selectedOption && providerIcon(selectedOption.provider, 14)}
+                    {selectedOption ? providerIcon((selectedOption as ModelOption).provider, 14) : null}
                     {selectedModel}
                   </>);
                 })()}
