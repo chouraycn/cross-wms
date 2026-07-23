@@ -99,7 +99,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { models: modelList, isLoading: modelsLoading, ensureInitialized } = useModels();
+  const { models: modelList, isLoading: modelsLoading, ensureInitialized, defaultModelId } = useModels();
 
   useEffect(() => {
     ensureInitialized();
@@ -435,6 +435,19 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 模型加载完成后，若当前选中仍为默认 'Auto' 但后端有别的 defaultModelId，
+  // 同步 selectedModel 为真实模型名，避免重新安装后模型选择器长时间显示灰色"加载中..."
+  useEffect(() => {
+    if (modelsLoading) return;
+    if (!defaultModelId || defaultModelId === 'auto') return;
+    if (selectedModelId !== 'auto') return; // 用户已主动选择其他模型，不覆盖
+    const found = modelList.find(m => m.id === defaultModelId);
+    if (found && selectedModel === 'Auto') {
+      setSelectedModel(found.name);
+      setSelectedModelId(found.id);
+    }
+  }, [modelsLoading, defaultModelId, modelList, selectedModel, selectedModelId]);
 
   /** 模型切换：Auto 模式发送 "auto"，其他按名称匹配 ID */
   const handleModelChange = useCallback((name: string) => {

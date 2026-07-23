@@ -162,4 +162,4 @@ export type AgentsConfig = {
   defaults?: AgentDefaultsConfig;
   list?: AgentConfig[];
 };
-// TODO: cross-wms 暂缺 FastMode 导出
+// FastMode 类型已从 server/engine/infra/string-coerce.ts 导入

@@ -104,10 +104,10 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   /** 从后端加载模型配置（含自动重试：后端可能尚未就绪，使用指数退避） */
   const loadModels = useCallback(async () => {
-    // 减少重试次数从 8 → 4，缩短首屏等待
-    const MAX_RETRIES = 4;
-    const INITIAL_DELAY_MS = 500;
-    const MAX_DELAY_MS = 5000;
+    // 减少重试次数从 4 → 2，缩短重装/冷启动时的"加载中..."灰色持续时间
+    const MAX_RETRIES = 2;
+    const INITIAL_DELAY_MS = 300;
+    const MAX_DELAY_MS = 1500;
     try {
       setIsLoading(true);
       setError(null);
@@ -131,7 +131,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch (e) {
           lastError = e;
           if (attempt < MAX_RETRIES) {
-            // 指数退避：0.5s, 1s, 2s, 4s（上限 5s）
+            // 指数退避：0.3s, 0.6s（上限 1.5s）
             const delay = Math.min(INITIAL_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
             await new Promise(r => setTimeout(r, delay));
           }
