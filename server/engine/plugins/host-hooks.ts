@@ -5,7 +5,14 @@
  * 降级策略：类型定义保留，运行时函数降级。
  */
 
+import type {
+  PluginHookBeforeToolCallEvent,
+  PluginHookBeforeToolCallResult,
+  PluginHookToolContext,
+} from "./hook-types.js";
+
 export { isPluginJsonValue } from "./host-hook-json.js";
+import type { PluginJsonValue } from "./host-hook-json.js";
 export type { PluginJsonPrimitive, PluginJsonValue } from "./host-hook-json.js";
 export type {
   PluginNextTurnInjectionPlacement,
@@ -49,6 +56,19 @@ export type PluginTrustedToolPolicyRegistration = {
   policyId: string;
   toolName?: string;
   decision: PluginToolPolicyDecision;
+  /** OpenClaw-compatible trusted policy fields (optional for cross-wms stubs). */
+  id?: string;
+  description?: string;
+  evaluate?: (
+    event: PluginHookBeforeToolCallEvent,
+    ctx: PluginHookToolContext,
+  ) =>
+    | PluginHookBeforeToolCallResult
+    | { allow?: boolean; reason?: string }
+    | void
+    | Promise<
+        PluginHookBeforeToolCallResult | { allow?: boolean; reason?: string } | void
+      >;
 };
 
 export type PluginToolMetadataRegistration = {
@@ -92,14 +112,15 @@ export type PluginAgentEventSubscriptionRegistration = {
 };
 
 export type PluginAgentEventEmitParams = {
-  pluginId: string;
-  event: string;
-  payload?: unknown;
+  runId: string;
+  stream: string;
+  data: PluginJsonValue;
+  sessionKey?: string;
 };
 
 export type PluginAgentEventEmitResult =
-  | { ok: true }
-  | { ok: false; error: string };
+  | { emitted: true; stream: string }
+  | { emitted: false; reason: string };
 
 export type PluginRunContextPatch = {
   pluginId: string;
@@ -113,14 +134,22 @@ export type PluginRunContextGetParams = {
 };
 
 export type PluginSessionSchedulerJobRegistration = {
-  pluginId: string;
-  sessionId: string;
-  jobId: string;
-  tag?: string;
+  id: string;
+  sessionKey: string;
+  kind: string;
+  description?: string;
+  cleanup?: (ctx: {
+    reason: PluginHostCleanupReason;
+    sessionKey: string;
+    jobId: string;
+  }) => void | Promise<void>;
 };
 
 export type PluginSessionSchedulerJobHandle = {
-  jobId: string;
+  id: string;
+  pluginId: string;
+  sessionKey: string;
+  kind: string;
   cancel: () => Promise<void>;
 };
 
@@ -133,6 +162,14 @@ export type PluginSessionAttachmentFile = {
 export type PluginAttachmentChannelHints = {
   maxAttachmentBytes?: number;
   supportedContentTypes?: string[];
+  telegram?: {
+    parseMode?: "HTML";
+    disableNotification?: boolean;
+    forceDocumentMime?: string;
+  };
+  slack?: {
+    threadTs?: string;
+  };
 };
 
 export type PluginSessionAttachmentCaptionFormat = "plain" | "html" | "markdown";
@@ -141,13 +178,20 @@ export type PluginSessionAttachmentParams = {
   sessionId: string;
   pluginId: string;
   file?: PluginSessionAttachmentFile;
+  files: PluginSessionAttachmentFile[];
   url?: string;
   content?: unknown;
+  text?: string;
+  sessionKey?: string;
+  threadId?: string | number;
+  forceDocument?: boolean;
+  maxBytes?: number;
   captionFormat?: PluginSessionAttachmentCaptionFormat;
+  channelHints?: PluginAttachmentChannelHints;
 };
 
 export type PluginSessionAttachmentResult =
-  | { ok: true; attachmentId?: string }
+  | { ok: true; attachmentId?: string; channel: string; deliveredTo: string; count: number }
   | { ok: false; error: string };
 
 export type PluginSessionTurnSchedule = {
@@ -160,10 +204,13 @@ export type PluginSessionTurnSchedule = {
 };
 
 export type PluginSessionTurnScheduleParams = {
-  sessionId: string;
-  pluginId: string;
+  sessionKey: string;
+  sessionId?: string;
+  pluginId?: string;
+  message?: string;
   cron?: string;
   delayMs?: number;
+  at?: string | number | Date;
   tag?: string;
   payload?: unknown;
 };

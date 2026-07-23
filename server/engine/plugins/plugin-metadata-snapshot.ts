@@ -658,9 +658,9 @@ function canMemoizePluginMetadataSnapshotResult(result: {
     Array.isArray(snapshot.registryDiagnostics) &&
     Array.isArray((snapshot.manifestRegistry as { plugins?: unknown[] })?.plugins ?? []) &&
     Array.isArray((snapshot.manifestRegistry as { diagnostics?: unknown[] })?.diagnostics ?? []) &&
-    Array.isArray((snapshot.index as { plugins?: unknown[] })?.plugins ?? []) &&
-    Array.isArray((snapshot.index as { diagnostics?: unknown[] })?.diagnostics ?? []);
-  const hasPluginMetadata = snapshot.plugins.length > 0 || (snapshot.index as { plugins?: unknown[] }).plugins!.length > 0;
+    Array.isArray((snapshot.index as unknown as { plugins?: unknown[] })?.plugins ?? []) &&
+    Array.isArray((snapshot.index as unknown as { diagnostics?: unknown[] })?.diagnostics ?? []);
+  const hasPluginMetadata = snapshot.plugins.length > 0 || (snapshot.index as unknown as { plugins?: unknown[] }).plugins!.length > 0;
   return hasCompleteSnapshotShape && hasPluginMetadata;
 }
 

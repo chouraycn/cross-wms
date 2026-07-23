@@ -72,8 +72,12 @@ export type AgentToolExecute<TResult> = (
 export type AgentToolWithMeta<TResult = unknown> = ToolDefinition & {
   /** 工具的简短展示摘要 */
   displaySummary?: string;
+  /** 工具的展示标签 */
+  label?: string;
   /** 执行函数 */
   execute: AgentToolExecute<TResult>;
+  /** 在工具调用前对参数进行预处理（如注入默认值） */
+  prepareArguments?: (args: unknown) => unknown;
   /** 在工具调用前对参数进行预处理（如注入默认值） */
   prepareBeforeToolCallParams?: (
     params: unknown,
@@ -106,6 +110,8 @@ export type ErasedAgentToolExecute = {
 export type AnyAgentTool = Omit<AgentToolWithMeta<unknown>, 'execute'> &
   ErasedAgentToolExecute & {
     displaySummary?: string;
+    label?: string;
+    prepareArguments?: AgentToolWithMeta<unknown>['prepareArguments'];
     prepareBeforeToolCallParams?: AgentToolWithMeta<unknown>['prepareBeforeToolCallParams'];
     finalizeBeforeToolCallParams?: AgentToolWithMeta<unknown>['finalizeBeforeToolCallParams'];
   };

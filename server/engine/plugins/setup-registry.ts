@@ -95,6 +95,7 @@ const NOOP_LOGGER: PluginLogger = {
   info() {},
   warn() {},
   error() {},
+  debug() {},
 };
 
 const moduleLoaders: PluginModuleLoaderCache = createPluginModuleLoaderCache();
@@ -352,7 +353,9 @@ function matchesProvider(provider: ProviderPlugin, providerId: string): boolean 
   if (normalizeProviderId(provider.id) === normalized) {
     return true;
   }
-  return [...(provider.aliases ?? []), ...(provider.hookAliases ?? [])].some(
+  const aliases = Array.isArray(provider.aliases) ? (provider.aliases as readonly string[]) : [];
+  const hookAliases = Array.isArray(provider.hookAliases) ? (provider.hookAliases as readonly string[]) : [];
+  return [...aliases, ...hookAliases].some(
     (alias) => normalizeProviderId(alias) === normalized,
   );
 }
@@ -657,7 +660,7 @@ export function resolvePluginSetupRegistry(params?: {
       record,
       setupSource: setupRegistration.setupSource,
       handlers: {
-        registerProvider(provider) {
+        registerProvider(provider: ProviderPlugin) {
           const key = `${record.id}:${normalizeProviderId(provider.id)}`;
           if (providerKeys.has(key)) {
             return;
@@ -669,7 +672,7 @@ export function resolvePluginSetupRegistry(params?: {
           });
           recordProviders.push(provider);
         },
-        registerCliBackend(backend) {
+        registerCliBackend(backend: CliBackendPlugin) {
           const key = `${record.id}:${normalizeProviderId(backend.id)}`;
           if (cliBackendKeys.has(key)) {
             return;
@@ -681,13 +684,13 @@ export function resolvePluginSetupRegistry(params?: {
           });
           recordCliBackends.push(backend);
         },
-        registerConfigMigration(migrate) {
+        registerConfigMigration(migrate: PluginConfigMigration) {
           configMigrations.push({
             pluginId: record.id,
             migrate,
           });
         },
-        registerAutoEnableProbe(probe) {
+        registerAutoEnableProbe(probe: PluginSetupAutoEnableProbe) {
           autoEnableProbes.push({
             pluginId: record.id,
             probe,
@@ -762,7 +765,7 @@ export function resolvePluginSetupProvider(params: {
     record,
     setupSource: setupRegistration.setupSource,
     handlers: {
-      registerProvider(provider) {
+      registerProvider(provider: ProviderPlugin) {
         const key = normalizeProviderId(provider.id);
         if (localProviderKeys.has(key)) {
           return;
@@ -830,7 +833,7 @@ export function resolvePluginSetupCliBackend(params: {
       registerProvider() {},
       registerConfigMigration() {},
       registerAutoEnableProbe() {},
-      registerCliBackend(backend) {
+      registerCliBackend(backend: CliBackendPlugin) {
         const key = normalizeProviderId(backend.id);
         if (localBackendKeys.has(key)) {
           return;
@@ -882,7 +885,7 @@ export function runPluginSetupConfigMigrations(params: {
     if (!migration || migration.changes.length === 0) {
       continue;
     }
-    next = migration.config;
+    next = migration.config as OpenClawConfig;
     changes.push(...migration.changes);
   }
 

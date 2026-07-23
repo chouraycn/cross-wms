@@ -7,6 +7,7 @@
  * 依赖的常量（PLUGIN_HOOK_NAMES、弃用策略、分类集合）与仅依赖本目录已
  * 移植文件的类型，其余外部类型以 unknown 占位或省略 re-export。
  */
+import type { ReplyPayload } from "./_stub_parent__auto_reply__reply_payload.js";
 
 export type PluginHookName =
   | "before_model_resolve"
@@ -207,6 +208,9 @@ export type PluginHookMessageContext = PluginHookSessionContext & {
 
 export type PluginHookToolContext = {
   toolName?: string;
+  sessionKey?: string;
+  toolKind?: PluginHookToolKind;
+  toolInputKind?: PluginHookToolInputKind;
   [key: string]: unknown;
 };
 
@@ -228,16 +232,38 @@ export type PluginHookResolveExecEnvContext = {
 };
 
 export type PluginHookBeforeModelResolveEvent = { [key: string]: unknown };
-export type PluginHookBeforeModelResolveResult = { [key: string]: unknown };
+export type PluginHookBeforeModelResolveResult = {
+  modelOverride?: string;
+  providerOverride?: string;
+};
 export type PluginHookBeforePromptBuildEvent = { [key: string]: unknown };
-export type PluginHookBeforePromptBuildResult = { [key: string]: unknown };
+export type PluginHookBeforePromptBuildResult = {
+  systemPrompt?: string;
+  prependContext?: string;
+  appendContext?: string;
+  prependSystemContext?: string;
+  appendSystemContext?: string;
+};
 export type PluginHookBeforeAgentStartEvent = { [key: string]: unknown };
-export type PluginHookBeforeAgentStartResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
+  PluginHookBeforeModelResolveResult;
 export type PluginHookBeforeAgentRunEvent = { [key: string]: unknown };
 export type PluginHookBeforeAgentReplyEvent = { [key: string]: unknown };
-export type PluginHookBeforeAgentReplyResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentReplyResult = {
+  handled: boolean;
+  reply?: ReplyPayload;
+  reason?: string;
+};
 export type PluginHookBeforeAgentFinalizeEvent = { [key: string]: unknown };
-export type PluginHookBeforeAgentFinalizeResult = { [key: string]: unknown };
+export type PluginHookBeforeAgentFinalizeResult = {
+  action?: "continue" | "revise" | "finalize";
+  reason?: string;
+  retry?: {
+    instruction: string;
+    idempotencyKey?: string;
+    maxAttempts?: number;
+  };
+};
 export type PluginHookAgentEndEvent = { [key: string]: unknown };
 export type PluginHookBeforeCompactionEvent = { [key: string]: unknown };
 export type PluginHookAfterCompactionEvent = { [key: string]: unknown };
@@ -247,20 +273,52 @@ export type PluginHookLlmOutputEvent = { [key: string]: unknown };
 export type PluginHookModelCallStartedEvent = { [key: string]: unknown };
 export type PluginHookModelCallEndedEvent = { [key: string]: unknown };
 export type PluginHookInboundClaimEvent = { [key: string]: unknown };
-export type PluginHookInboundClaimResult = { [key: string]: unknown };
+export type PluginHookInboundClaimResult = {
+  handled: boolean;
+  reply?: ReplyPayload;
+};
 export type PluginHookMessageReceivedEvent = { [key: string]: unknown };
 export type PluginHookMessageSendingEvent = { [key: string]: unknown };
-export type PluginHookMessageSendingResult = { [key: string]: unknown };
+export type PluginHookMessageSendingResult = {
+  content?: string;
+  cancel?: boolean;
+  cancelReason?: string;
+  metadata?: Record<string, unknown>;
+};
 export type PluginHookMessageSentEvent = { [key: string]: unknown };
 export type PluginHookBeforeDispatchEvent = { [key: string]: unknown };
-export type PluginHookBeforeDispatchResult = { [key: string]: unknown };
+export type PluginHookBeforeDispatchResult = {
+  handled: boolean;
+  text?: string;
+};
 export type PluginHookReplyDispatchEvent = { [key: string]: unknown };
-export type PluginHookReplyDispatchResult = { [key: string]: unknown };
+export type PluginHookReplyDispatchResult = {
+  handled: boolean;
+  queuedFinal: boolean;
+  counts: Record<string, number>;
+};
 export type PluginHookReplyPayloadSendingEvent = { [key: string]: unknown };
-export type PluginHookReplyPayloadSendingResult = { [key: string]: unknown };
-export type PluginHookReplyPayload = { [key: string]: unknown };
+export type PluginHookReplyPayloadSendingResult = {
+  payload?: PluginHookReplyPayload;
+  cancel?: boolean;
+  reason?: string;
+};
+export type PluginHookReplyPayload = Omit<ReplyPayload, "trustedLocalMedia">;
 export type PluginHookBeforeToolCallEvent = { [key: string]: unknown };
-export type PluginHookBeforeToolCallResult = { [key: string]: unknown };
+export type PluginHookBeforeToolCallResult = {
+  params?: Record<string, unknown>;
+  block?: boolean;
+  blockReason?: string;
+  requireApproval?: {
+    title: string;
+    description: string;
+    severity?: "info" | "warning" | "critical";
+    timeoutMs?: number;
+    timeoutBehavior?: "allow" | "deny";
+    allowedDecisions?: Array<"allow-once" | "allow-always" | "deny">;
+    pluginId?: string;
+  };
+};
 export type PluginHookAfterToolCallEvent = { [key: string]: unknown };
 export type PluginHookToolResultPersistEvent = { [key: string]: unknown };
 export type PluginHookToolResultPersistResult = { [key: string]: unknown };
@@ -282,12 +340,31 @@ export type PluginHookGatewayCronDeliveryStatus = "delivered" | "failed" | "skip
 export type PluginHookGatewayCronJobState = { [key: string]: unknown };
 export type PluginHookResolveExecEnvEvent = { [key: string]: unknown };
 export type PluginHookBeforeInstallEvent = { [key: string]: unknown };
-export type PluginHookBeforeInstallResult = { [key: string]: unknown };
+
+export type PluginInstallFinding = {
+  ruleId: string;
+  severity: "info" | "warn" | "critical";
+  file: string;
+  line: number;
+  message: string;
+};
+
+export type PluginHookBeforeInstallResult = {
+  findings?: PluginInstallFinding[];
+  block?: boolean;
+  blockReason?: string;
+};
 
 export type PluginAgentTurnPrepareEvent = { [key: string]: unknown };
-export type PluginAgentTurnPrepareResult = { [key: string]: unknown };
+export type PluginAgentTurnPrepareResult = {
+  prependContext?: string;
+  appendContext?: string;
+};
 export type PluginHeartbeatPromptContributionEvent = { [key: string]: unknown };
-export type PluginHeartbeatPromptContributionResult = { [key: string]: unknown };
+export type PluginHeartbeatPromptContributionResult = {
+  prependContext?: string;
+  appendContext?: string;
+};
 
 export type PluginHookGatewayContext = {
   [key: string]: unknown;

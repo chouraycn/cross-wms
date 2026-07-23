@@ -36,10 +36,12 @@ import {
   requestPluginConversationBinding,
 } from "./conversation-binding.js";
 import { getActivePluginChannelRegistry } from "./runtime.js";
+import type { RuntimeLlmAuthority } from "./runtime-llm.runtime.js";
 import type {
   OpenClawPluginCommandDefinition,
   PluginCommandContext,
   PluginCommandResult,
+  PluginConversationBindingRequestParams,
 } from "./types.js";
 
 // Maximum allowed length for command arguments (defense in depth)
@@ -153,8 +155,8 @@ function resolveBindingConversationFromCommand(params: {
   threadId?: string | number;
 } | null {
   const channelPlugin = getActivePluginChannelRegistry()?.channels.find(
-    (entry) => entry.plugin.id === params.channel,
-  )?.plugin;
+    (entry) => (entry.plugin as { id: string }).id === params.channel,
+  )?.plugin as { bindings?: { resolveCommandConversation?: unknown } } | undefined;
   if (!channelPlugin?.bindings?.resolveCommandConversation) {
     return null;
   }
@@ -168,10 +170,10 @@ function resolveBindingConversationFromCommand(params: {
     originatingTo: params.from,
     commandTo: params.to,
     fallbackTo: params.to ?? params.from,
-  });
+  } as unknown as Parameters<typeof resolveConversationBindingContext>[0]);
 }
 
-type PluginCommandRuntimeLlm = NonNullable<PluginCommandContext["runtimeContext"]>["llm"];
+type PluginCommandRuntimeLlm = { complete: (request: unknown) => Promise<unknown> } | undefined;
 type PluginCommandLlmCompleteParams = Parameters<
   NonNullable<PluginCommandRuntimeLlm>["complete"]
 >[0];
@@ -195,7 +197,7 @@ function buildPluginCommandRuntimeContext(params: {
   return {
     llm: {
       complete: async (request: PluginCommandLlmCompleteParams) => {
-        const { createRuntimeLlm } = await import("./runtime/runtime-llm.runtime.js");
+        const { createRuntimeLlm } = await import("./runtime-llm.runtime.js");
         return await createRuntimeLlm({
           getConfig: () => params.config,
           authority: {
@@ -212,7 +214,7 @@ function buildPluginCommandRuntimeContext(params: {
             allowAgentIdOverride: false,
             allowModelOverride: false,
             allowComplete: true,
-          },
+          } as RuntimeLlmAuthority,
         }).complete(request);
       },
     },
@@ -253,6 +255,7 @@ export async function executePluginCommand(params: {
   diagnosticsPrivateRouted?: PluginCommandContext["diagnosticsPrivateRouted"];
 }): Promise<PluginCommandResult> {
   const { command, args, senderId, channel, isAuthorizedSender, commandBody, config } = params;
+  const commandName = command.name as string;
 
   // Check authorization
   if (!pluginCommandSupportsChannel(command, channel)) {
@@ -300,40 +303,40 @@ export async function executePluginCommand(params: {
     config,
     channel,
     senderId,
-    from: params.from,
-    to: params.to,
-    accountId: params.accountId,
-    messageThreadId: params.messageThreadId,
-    threadParentId: params.threadParentId,
+    from: params.from as string | undefined,
+    to: params.to as string | undefined,
+    accountId: params.accountId as string | undefined,
+    messageThreadId: params.messageThreadId as string | number | undefined,
+    threadParentId: params.threadParentId as string | undefined,
   });
   const effectiveAccountId = bindingConversation?.accountId ?? params.accountId;
   const senderIsOwnerForCommand =
     canExposeSenderIsOwner(command) ||
     (isTrustedReservedCommandOwner(command) &&
       command.ownership === "reserved" &&
-      isReservedCommandName(command.name) &&
-      command.pluginId === normalizeLowercaseStringOrEmpty(command.name))
+      isReservedCommandName(commandName) &&
+      command.pluginId === normalizeLowercaseStringOrEmpty(commandName))
       ? params.senderIsOwner
       : undefined;
   const diagnosticsPrivateRoutedForCommand =
     isTrustedReservedCommandOwner(command) &&
     command.ownership === "reserved" &&
-    isReservedCommandName(command.name) &&
-    command.pluginId === normalizeLowercaseStringOrEmpty(command.name)
+    isReservedCommandName(commandName) &&
+    command.pluginId === normalizeLowercaseStringOrEmpty(commandName)
       ? params.diagnosticsPrivateRouted
       : undefined;
   const diagnosticsUploadApprovedForCommand =
     isTrustedReservedCommandOwner(command) &&
     command.ownership === "reserved" &&
-    isReservedCommandName(command.name) &&
-    command.pluginId === normalizeLowercaseStringOrEmpty(command.name)
+    isReservedCommandName(commandName) &&
+    command.pluginId === normalizeLowercaseStringOrEmpty(commandName)
       ? params.diagnosticsUploadApproved
       : undefined;
   const diagnosticsPreviewOnlyForCommand =
     isTrustedReservedCommandOwner(command) &&
     command.ownership === "reserved" &&
-    isReservedCommandName(command.name) &&
-    command.pluginId === normalizeLowercaseStringOrEmpty(command.name)
+    isReservedCommandName(commandName) &&
+    command.pluginId === normalizeLowercaseStringOrEmpty(commandName)
       ? params.diagnosticsPreviewOnly
       : undefined;
 
@@ -359,8 +362,8 @@ export async function executePluginCommand(params: {
     runtimeContext: buildPluginCommandRuntimeContext({
       command,
       config,
-      agentId: params.agentId,
-      sessionKey: params.sessionKey,
+      agentId: params.agentId as string | undefined,
+      sessionKey: params.sessionKey as string | undefined,
       authProfileId: params.authProfileId,
     }),
     ...(diagnosticsUploadApprovedForCommand === undefined
@@ -372,7 +375,7 @@ export async function executePluginCommand(params: {
     ...(diagnosticsPrivateRoutedForCommand === undefined
       ? {}
       : { diagnosticsPrivateRouted: diagnosticsPrivateRoutedForCommand }),
-    requestConversationBinding: async (bindingParams) => {
+    requestConversationBinding: async (bindingParams: PluginConversationBindingRequestParams) => {
       if (!command.pluginRoot || !bindingConversation) {
         return {
           status: "error",
@@ -411,7 +414,7 @@ export async function executePluginCommand(params: {
   // Lock registry during execution to prevent concurrent modifications
   setPluginCommandRegistryLocked(true);
   try {
-    const result = await command.handler(ctx);
+    const result = await (command.handler as (ctx: PluginCommandContext) => PluginCommandResult | Promise<PluginCommandResult>)(ctx);
     logVerbose(
       `Plugin command /${command.name} executed successfully for ${senderId || "unknown"}`,
     );
@@ -441,10 +444,10 @@ export function listPluginCommands(): Array<{
   acceptsArgs: boolean;
 }> {
   return Array.from(pluginCommands.values()).map((cmd) => ({
-    name: cmd.name,
-    description: cmd.description,
+    name: cmd.name as string,
+    description: cmd.description as string,
     pluginId: cmd.pluginId,
-    acceptsArgs: cmd.acceptsArgs ?? false,
+    acceptsArgs: (cmd.acceptsArgs as boolean | undefined) ?? false,
   }));
 }
 

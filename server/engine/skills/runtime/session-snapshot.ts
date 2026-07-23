@@ -11,10 +11,10 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 import { getSkillEnvTracker } from "../security/sandbox.js";
-import { getSkillOriginTracker } from "../lifecycle/skill-origin.js";
+import { getSkillOriginTracker, type SkillOrigin } from "../lifecycle/skill-origin.js";
 import { getAgentAllowlistManager } from "../discovery/agent-allowlist.js";
 
-const logger = getChildLogger("session-snapshot");
+const logger = getChildLogger("session-snapshot" as unknown as Record<string, unknown>);
 
 // ============================================================================
 // 类型定义
@@ -305,7 +305,7 @@ export class SessionSnapshotManager {
       // 恢复技能来源
       if (options?.restoreOrigins !== false) {
         const count = await originTracker.importOrigins(
-          snapshot.skillOrigins as Record<string, unknown>
+          snapshot.skillOrigins as Record<string, SkillOrigin>
         );
         restored.origins = count;
       }
@@ -421,10 +421,7 @@ export function resetSessionSnapshotManager(): void {
 
 /** 技能快照格式（旧版） */
 export interface SessionSkillSnapshot {
-  skills: Array<{
-    skill: { name: string; [key: string]: unknown };
-    frontmatter: Record<string, unknown>;
-  }>;
+  skills: Array<{ name: string; [key: string]: unknown }>;
   prompt?: string;
   resolvedSkills?: Array<{ name: string; description?: string; [key: string]: unknown }>;
   promptFormatVersion?: string;

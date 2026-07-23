@@ -11,6 +11,15 @@
 import type { PluginPermission } from './permissions.js';
 import type { PluginLoadState } from './loader-state.js';
 import type { PluginStatus } from './status.js';
+import type {
+  UnifiedModelCatalogEntry,
+  UnifiedModelCatalogKind,
+} from './_openclaw__model_catalog_core__model_catalog_types.js';
+import type { OpenClawConfig } from '../config/types.openclaw.js';
+import type {
+  ApiKeyCredential,
+  AuthProfileCredential,
+} from '../agents/auth-profiles/types.js';
 
 /** 插件能力种类 — 对应 plugin-sdk 装饰器可声明的扩展点 */
 export type PluginCapabilityKind =
@@ -330,54 +339,178 @@ export interface PluginContractResult {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const AGENT_PROMPT_SURFACE_KINDS: any = undefined as any;
+export const AGENT_PROMPT_SURFACE_KINDS: readonly string[] = [
+  "openclaw_main",
+  "pi_main",
+  "openclaw_subagent",
+  "openclaw_compaction",
+  "openclaw_planner",
+];
 
 // ---------------------------------------------------------------------------
 // 降级类型桩：对应 openclaw src/plugins/types.ts 中引用外部模块的类型。
 // cross-wms 暂未移植这些模块，以最小化结构占位保证 import 兼容。
 // ---------------------------------------------------------------------------
 
-export type AgentHarness = { [key: string]: unknown };
-export type AgentPromptGuidance = { [key: string]: unknown };
-export type AgentPromptGuidanceEntry = { [key: string]: unknown };
-export type AnyAgentTool = { [key: string]: unknown };
-export type CliBackendPlugin = { [key: string]: unknown };
-export type ImageGenerationProviderPlugin = { [key: string]: unknown };
-export type MediaUnderstandingProviderPlugin = { [key: string]: unknown };
-export type MigrationProviderPlugin = { [key: string]: unknown };
-export type MusicGenerationProviderPlugin = { [key: string]: unknown };
+export type AgentHarness = { id: string; [key: string]: unknown };
+export type AgentPromptGuidanceEntry = {
+  text: string;
+  surfaces?: readonly string[];
+};
+export type AgentPromptGuidance = string | AgentPromptGuidanceEntry;
+export type AnyAgentTool = { name: string; [key: string]: unknown };
+export type CliBackendPlugin = { id: string; [key: string]: unknown };
+export type ImageGenerationProviderPlugin = { id: string; [key: string]: unknown };
+export type MediaUnderstandingProviderPlugin = { id: string; [key: string]: unknown };
+export type MigrationProviderPlugin = { id: string; [key: string]: unknown };
+export type MusicGenerationProviderPlugin = { id: string; [key: string]: unknown };
 export type OpenClawPluginApi = { [key: string]: unknown };
-export type OpenClawPluginCliCommandDescriptor = { [key: string]: unknown };
+export type OpenClawPluginCliCommandDescriptor = {
+  name: string;
+  description: string;
+  hasSubcommands: boolean;
+};
 export type OpenClawPluginCliContext = { [key: string]: unknown };
-export type OpenClawPluginCliRegistrar = { [key: string]: unknown };
-export type OpenClawPluginCommandDefinition = { [key: string]: unknown };
+export type OpenClawPluginCliRegistrar = (ctx: OpenClawPluginCliContext) => void | Promise<void>;
+export type OpenClawPluginCommandDefinition = {
+  name: string;
+  description: string;
+  nativeNames?: Partial<Record<string, string>> & { default?: string };
+  nativeProgressMessages?: Partial<Record<string, string>> & { default?: string };
+  descriptionLocalizations?: Record<string, string>;
+  channels?: readonly string[];
+  agentPromptGuidance?: readonly AgentPromptGuidance[];
+  acceptsArgs?: boolean;
+  requireAuth?: boolean;
+  requiredScopes?: readonly string[];
+  exposeSenderIsOwner?: boolean;
+  ownership?: "plugin" | "reserved";
+  handler: (...args: unknown[]) => unknown;
+};
 export type OpenClawPluginDefinition = { [key: string]: unknown };
-export type OpenClawPluginHttpRouteMatch = { [key: string]: unknown };
+export type OpenClawPluginHttpRouteAuth = "gateway" | "plugin";
+export type OpenClawPluginHttpRouteMatch = "exact" | "prefix";
 export type OpenClawPluginModule = { [key: string]: unknown };
 export type OpenClawPluginToolContext = { [key: string]: unknown };
 export type PluginCommandContext = { [key: string]: unknown };
 export type PluginCommandResult = { [key: string]: unknown };
-export type PluginConfigMigration = { [key: string]: unknown };
+export type PluginConfigMigration = (config: unknown) =>
+  | { config: unknown; changes: string[] }
+  | null;
 export type PluginConversationBindingRequestParams = { [key: string]: unknown };
 export type PluginInteractiveHandlerRegistration = { [key: string]: unknown };
-export type PluginSetupAutoEnableProbe = { [key: string]: unknown };
+export type PluginSetupAutoEnableProbe = (
+  ctx: { config: unknown; env: NodeJS.ProcessEnv },
+) => string | string[] | null | undefined;
 export type PluginTextTransformRegistration = { [key: string]: unknown };
 export type PluginTextTransforms = { [key: string]: unknown };
 export type PluginWebFetchProviderEntry = { [key: string]: unknown };
 export type PluginWebSearchProviderEntry = { [key: string]: unknown };
 export type ProviderAuthContext = { [key: string]: unknown };
 export type ProviderAuthMethod = { [key: string]: unknown };
-export type ProviderAuthMethodNonInteractiveContext = { [key: string]: unknown };
-export type ProviderAuthResult = { [key: string]: unknown };
-export type ProviderDiscoveryContext = { [key: string]: unknown };
-export type ProviderNonInteractiveApiKeyResult = { [key: string]: unknown };
-export type ProviderPlugin = { [key: string]: unknown };
-export type RealtimeTranscriptionProviderPlugin = { [key: string]: unknown };
-export type RealtimeVoiceProviderPlugin = { [key: string]: unknown };
-export type SpeechProviderPlugin = { [key: string]: unknown };
-export type TranscriptSourceProvider = { [key: string]: unknown };
+export type ProviderAuthMethodNonInteractiveContext = {
+  authChoice: string;
+  config: OpenClawConfig;
+  baseConfig?: OpenClawConfig;
+  opts: {
+    customBaseUrl?: unknown;
+    customModelId?: unknown;
+    customApiKey?: unknown;
+    token?: string;
+    tokenProvider?: string;
+    [key: string]: unknown;
+  };
+  runtime: {
+    log: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+    exit: (code: number) => void;
+  };
+  agentDir?: string;
+  workspaceDir?: string;
+  resolveApiKey: (params: {
+    provider: string;
+    flagValue?: string;
+    flagName: string;
+    envVar: string;
+    envVarName?: string;
+    allowProfile?: boolean;
+    required?: boolean;
+  }) => Promise<ProviderNonInteractiveApiKeyResult | null>;
+  toApiKeyCredential: (params: {
+    provider: string;
+    resolved: ProviderNonInteractiveApiKeyResult;
+    email?: string;
+    metadata?: Record<string, string>;
+  }) => ApiKeyCredential | null;
+};
+export type ProviderAuthResult = {
+  profiles: Array<{ profileId: string; credential: AuthProfileCredential }>;
+  configPatch?: Partial<OpenClawConfig>;
+  defaultModel?: string;
+  notes?: string[];
+  replaceDefaultModels?: boolean;
+};
+export type ProviderDiscoveryContext = {
+  config: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  resolveProviderApiKey: (providerId?: string) => {
+    apiKey: string | undefined;
+    discoveryApiKey?: string;
+  };
+  resolveProviderAuth?: (
+    providerId?: string,
+    options?: { oauthMarker?: string },
+  ) => {
+    apiKey: string | undefined;
+    discoveryApiKey?: string;
+    mode: 'api_key' | 'aws-sdk' | 'oauth' | 'token' | 'none';
+    source: 'env' | 'profile' | 'none';
+    profileId?: string;
+  };
+};
+export type ProviderNonInteractiveApiKeyResult = {
+  key: string;
+  source: 'profile' | 'env' | 'flag';
+  envVarName?: string;
+};
+export type ProviderPluginCatalog = {
+  run: (ctx: unknown) => Promise<unknown>;
+};
+export type ProviderPlugin = {
+  id: string;
+  pluginId?: string;
+  label?: string;
+  aliases?: string[];
+  auth: ProviderAuthMethod[];
+  catalog?: ProviderPluginCatalog;
+  staticCatalog?: ProviderPluginCatalog;
+  [key: string]: unknown;
+};
+export type RealtimeTranscriptionProviderPlugin = { id: string; [key: string]: unknown };
+export type RealtimeVoiceProviderPlugin = { id: string; [key: string]: unknown };
+export type SpeechProviderPlugin = { id: string; [key: string]: unknown };
+export type TranscriptSourceProvider = { id: string; [key: string]: unknown };
 export type UnifiedModelCatalogProviderContext = { [key: string]: unknown };
-export type UnifiedModelCatalogProviderPlugin = { [key: string]: unknown };
-export type VideoGenerationProviderPlugin = { [key: string]: unknown };
-export type WebFetchProviderPlugin = { [key: string]: unknown };
-export type WebSearchProviderPlugin = { [key: string]: unknown };
+export type UnifiedModelCatalogProviderPlugin = {
+  provider: string;
+  kinds: readonly UnifiedModelCatalogKind[];
+  staticCatalog?: (
+    ctx: UnifiedModelCatalogProviderContext,
+  ) =>
+    | readonly UnifiedModelCatalogEntry[]
+    | Promise<readonly UnifiedModelCatalogEntry[] | null | undefined>
+    | null
+    | undefined;
+  liveCatalog?: (
+    ctx: UnifiedModelCatalogProviderContext,
+  ) =>
+    | readonly UnifiedModelCatalogEntry[]
+    | Promise<readonly UnifiedModelCatalogEntry[] | null | undefined>
+    | null
+    | undefined;
+};
+export type VideoGenerationProviderPlugin = { id: string; [key: string]: unknown };
+export type WebFetchProviderPlugin = { id: string; [key: string]: unknown };
+export type WebSearchProviderPlugin = { id: string; [key: string]: unknown };

@@ -1,6 +1,6 @@
 import { logger } from '../../logger.js';
 
-export type PluginStatus = 'installed' | 'enabled' | 'disabled' | 'error' | 'updating';
+export type PluginStatus = 'installed' | 'enabled' | 'disabled' | 'error' | 'updating' | 'loaded';
 
 export interface PluginStatusInfo {
   pluginId: string;

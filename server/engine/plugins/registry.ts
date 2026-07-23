@@ -1,6 +1,8 @@
 import { logger } from '../../logger.js';
 import type { PluginInstance, PluginManifest, PluginCapabilityKind } from './types.js';
 import type { PluginStatus } from './status.js';
+import type { PluginKind } from './plugin-kind.types.js';
+import type { PluginCliRegistration } from "./registry-types.js";
 
 /**
  * 插件注册表 — 注册 / 查找 / 列表 / 状态管理
@@ -25,6 +27,13 @@ export interface RegistryEntry {
 
 class PluginRegistryImpl {
   private entries = new Map<string, RegistryEntry>();
+  plugins: PluginRecord[] = [];
+  diagnostics: Array<Record<string, unknown>> = [];
+  hooks: Array<{ pluginId: string }> = [];
+  typedHooks: Array<{ pluginId: string; hookName: string }> = [];
+  tools: Array<{ pluginId: string }> = [];
+  gatewayMethodDescriptors: Array<{ owner: { kind: string; pluginId?: string } }> = [];
+  cliRegistrars: PluginCliRegistration[] = [];
 
   /** 注册一个插件实例 */
   register(plugin: PluginInstance): RegistryEntry {
@@ -159,7 +168,69 @@ export function createPluginRegistry(): PluginRegistryImpl {
 export const createEmptyPluginRegistry: any = undefined as any;
 
 // 降级类型桩：对应 openclaw 中 registry.ts 的完整类型/函数
-export type PluginRecord = RegistryEntry;
+export interface PluginRecord {
+  pluginId?: string;
+  manifest?: PluginManifest;
+  instance?: unknown;
+  capabilities?: PluginCapabilityKind[];
+  status?: PluginStatus;
+  registeredAt?: number;
+  updatedAt?: number;
+  id?: string;
+  name?: string;
+  description?: string;
+  version?: string;
+  packageName?: string;
+  format?: string;
+  bundleFormat?: string;
+  bundleCapabilities?: string[];
+  kind?: PluginKind | PluginKind[];
+  source?: string;
+  rootDir?: string;
+  origin?: string;
+  workspaceDir?: string;
+  trustedOfficialInstall?: boolean;
+  enabled?: boolean;
+  compat?: readonly unknown[];
+  explicitlyEnabled?: boolean;
+  activated?: boolean;
+  activationSource?: string;
+  activationReason?: string;
+  syntheticAuthRefs?: string[];
+  toolNames?: string[];
+  hookNames?: string[];
+  channelIds?: string[];
+  cliBackendIds?: string[];
+  providerIds?: string[];
+  embeddingProviderIds?: string[];
+  speechProviderIds?: string[];
+  realtimeTranscriptionProviderIds?: string[];
+  realtimeVoiceProviderIds?: string[];
+  mediaUnderstandingProviderIds?: string[];
+  transcriptSourceProviderIds?: string[];
+  imageGenerationProviderIds?: string[];
+  videoGenerationProviderIds?: string[];
+  musicGenerationProviderIds?: string[];
+  webFetchProviderIds?: string[];
+  webSearchProviderIds?: string[];
+  migrationProviderIds?: string[];
+  contextEngineIds?: string[];
+  memoryEmbeddingProviderIds?: string[];
+  agentHarnessIds?: string[];
+  cliCommands?: unknown[];
+  services?: unknown[];
+  gatewayDiscoveryServiceIds?: string[];
+  commands?: unknown[];
+  httpRoutes?: number;
+  hookCount?: number;
+  configSchema?: boolean;
+  configUiHints?: unknown;
+  configJsonSchema?: unknown;
+  contracts?: unknown;
+  error?: string;
+  failedAt?: Date;
+  failurePhase?: string | null;
+}
 export type PluginRegistry = PluginRegistryImpl;
 export type PluginHttpRouteRegistration = { [key: string]: unknown };
 

@@ -8,7 +8,7 @@ import { createPluginCliGatewayNodesRuntime } from "./cli-gateway-nodes-runtime.
 import type { PluginLoadOptions } from "./loader.js";
 import { loadOpenClawPluginCliRegistry, loadOpenClawPlugins } from "./loader.js";
 import { createEmptyPluginRegistry } from "./registry-empty.js";
-import type { PluginRegistry } from "./registry.js";
+import type { PluginRegistry } from "./registry-types.js";
 import {
   buildPluginRuntimeLoadOptions,
   createPluginRuntimeLoaderLogger,
@@ -18,6 +18,7 @@ import {
 import type {
   OpenClawPluginCliCommandDescriptor,
   OpenClawPluginCliContext,
+  OpenClawPluginCliRegistrar,
   PluginLogger,
 } from "./types.js";
 
@@ -102,7 +103,7 @@ function listPluginCliRootOwnerIds(registry: PluginRegistry, primaryCommand: str
         const roots =
           parentPath.length > 0
             ? [parentPath[0]]
-            : [...entry.commands, ...entry.descriptors.map((descriptor) => descriptor.name)];
+            : [...entry.commands, ...entry.descriptors.map((descriptor) => (descriptor as OpenClawPluginCliCommandDescriptor).name)];
         return roots.includes(normalizedPrimary);
       })
       .map((entry) => entry.pluginId),
@@ -152,7 +153,7 @@ export async function loadPluginCliMetadataRegistryWithContext(
     ...context,
     registry: await loadOpenClawPluginCliRegistry(
       buildPluginCliLoaderParams(context, params, loaderOptions),
-    ),
+    ) as PluginRegistry,
   };
 }
 
@@ -179,7 +180,7 @@ export async function loadPluginCliCommandRegistryWithContext(params: {
   }
   return {
     ...params.context,
-    registry: loadOpenClawPlugins(
+    registry: await loadOpenClawPlugins(
       buildPluginRuntimeLoadOptions(params.context, {
         ...params.loaderOptions,
         ...(onlyPluginIds && onlyPluginIds.length > 0 ? { onlyPluginIds } : {}),
@@ -190,7 +191,7 @@ export async function loadPluginCliCommandRegistryWithContext(params: {
           nodes: createPluginCliGatewayNodesRuntime(),
         },
       }),
-    ),
+    ) as unknown as PluginRegistry,
   };
 }
 
@@ -203,10 +204,10 @@ function buildPluginCliCommandGroupEntries(params: {
   return params.registry.cliRegistrars.map((entry) => ({
     pluginId: entry.pluginId,
     parentPath: entry.parentPath ?? [],
-    placeholders: entry.descriptors,
+    placeholders: entry.descriptors as readonly OpenClawPluginCliCommandDescriptor[],
     names: entry.commands,
     register: async (program) => {
-      await entry.register({
+      await (entry.register as OpenClawPluginCliRegistrar)({
         program,
         parentPath: entry.parentPath ?? [],
         config: params.config,
@@ -235,7 +236,7 @@ export async function loadPluginCliDescriptors(
     return collectUniqueCommandDescriptors(
       registry.cliRegistrars
         .filter((entry) => (entry.parentPath ?? []).length === 0)
-        .map((entry) => entry.descriptors),
+        .map((entry) => entry.descriptors as readonly OpenClawPluginCliCommandDescriptor[]),
     );
   } catch {
     return [];

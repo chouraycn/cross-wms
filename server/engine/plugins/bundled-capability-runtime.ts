@@ -21,7 +21,7 @@ import {
   type PluginModuleLoaderCache,
 } from "./plugin-module-loader-cache.js";
 import { createEmptyPluginRegistry } from "./registry-empty.js";
-import type { PluginRecord, PluginRegistry } from "./registry.js";
+import type { PluginRecord, PluginRegistry } from "./registry-types.js";
 import {
   buildPluginLoaderAliasMap,
   shouldPreferNativeModuleLoad,

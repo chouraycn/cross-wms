@@ -1,11 +1,13 @@
 import { logger } from '../../logger.js';
 
 export type CallGatewayOptions = {
-  url: string;
+  url?: string;
   method: string;
   params?: Record<string, unknown>;
   timeoutMs?: number;
   token?: string;
+  clientName?: string;
+  mode?: string;
 };
 
 export class GatewayTransportError extends Error {
@@ -52,7 +54,8 @@ export function randomIdempotencyKey(): string {
 
 export async function callGateway<T = unknown>(options: CallGatewayOptions): Promise<T> {
   const { url, method, params, timeoutMs = 30_000, token } = options;
-  logger.info(`[Gateway:Call] ${method} → ${url}`);
+  const resolvedUrl = url ?? "";
+  logger.info(`[Gateway:Call] ${method} → ${resolvedUrl}`);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -61,7 +64,7 @@ export async function callGateway<T = unknown>(options: CallGatewayOptions): Pro
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(url, {
+    const response = await fetch(resolvedUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify({ method, params, idempotencyKey: randomIdempotencyKey() }),
@@ -70,7 +73,7 @@ export async function callGateway<T = unknown>(options: CallGatewayOptions): Pro
 
     if (!response.ok) {
       throw new GatewayTransportError('closed', `HTTP ${response.status}: ${response.statusText}`, {
-        connectionDetails: url,
+        connectionDetails: resolvedUrl,
         code: response.status,
         reason: response.statusText,
       });
@@ -83,7 +86,7 @@ export async function callGateway<T = unknown>(options: CallGatewayOptions): Pro
     if (err instanceof GatewayTransportError) throw err;
     if (err instanceof Error && err.name === 'AbortError') {
       throw new GatewayTransportError('timeout', `Request timeout after ${timeoutMs}ms`, {
-        connectionDetails: url,
+        connectionDetails: resolvedUrl,
         timeoutMs,
       });
     }

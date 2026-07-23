@@ -92,10 +92,23 @@ export function splitSafeRelativePath(
   return rel.split(path.sep).filter(Boolean);
 }
 
-/** 安全 realpathSync，出错返回 null */
-export function safeRealpathSync(targetPath: string): string | null {
+/** 安全 realpathSync，出错返回 null。可选传入 realpathCache 以复用解析结果。 */
+export function safeRealpathSync(
+  targetPath: string,
+  realpathCache?: Map<string, string>,
+): string | null {
   try {
-    return fs.realpathSync(targetPath);
+    if (realpathCache) {
+      const cached = realpathCache.get(targetPath);
+      if (cached !== undefined) {
+        return cached;
+      }
+    }
+    const result = fs.realpathSync(targetPath);
+    if (realpathCache) {
+      realpathCache.set(targetPath, result);
+    }
+    return result;
   } catch {
     return null;
   }
@@ -354,6 +367,7 @@ export function trySafeFileURLToPath(url: string): string | null {
 export type RootFileOpenFailure = {
   kind: "not-found" | "outside-root" | "read-error" | "stat-error";
   message: string;
+  reason?: string;
 };
 
 export type RootFileOpenResult<T> =
@@ -372,28 +386,112 @@ export function canUseRootFileOpen(): boolean {
  * 匹配 root 文件打开失败。
  * 降级实现：返回 null，不进行 Python 模式错误匹配。
  */
-export function matchRootFileOpenFailure(_error: unknown): RootFileOpenFailure | null {
+export function matchRootFileOpenFailure(_error: unknown): RootFileOpenFailure | null;
+export function matchRootFileOpenFailure<T>(
+  failure: RootFileOpenFailure | { ok: false; failure: RootFileOpenFailure },
+  handlers: {
+    path: () => T;
+    io?: () => T;
+    validation?: () => T;
+    fallback: (failure: RootFileOpenFailure) => T;
+  },
+): T;
+export function matchRootFileOpenFailure(
+  error: unknown,
+  handlers?: {
+    path: () => unknown;
+    io?: () => unknown;
+    validation?: () => unknown;
+    fallback: (failure: RootFileOpenFailure) => unknown;
+  },
+): unknown {
+  if (handlers !== undefined) {
+    let failure: RootFileOpenFailure;
+    if (error !== null && typeof error === "object" && "failure" in error) {
+      failure = (error as { failure: RootFileOpenFailure }).failure;
+    } else {
+      failure = error as RootFileOpenFailure;
+    }
+    switch (failure.kind) {
+      case "not-found":
+        return handlers.path();
+      case "read-error":
+      case "stat-error":
+        return handlers.io ? handlers.io() : handlers.fallback(failure);
+      case "outside-root":
+        return handlers.validation
+          ? handlers.validation()
+          : handlers.fallback(failure);
+      default:
+        return handlers.fallback(failure);
+    }
+  }
   return null;
 }
 
 /**
+ * 打开 root 文件（对象参数形式）。
+ */
+export function openRootFile(params: {
+  absolutePath: string;
+  rootPath: string;
+  boundaryLabel?: string;
+  rejectHardlinks?: boolean;
+  skipLexicalRootCheck?: boolean;
+}): Promise<{ ok: true; fd: number; path: string } | { ok: false; failure: RootFileOpenFailure }>;
+/**
  * 打开 root 文件。
  * 降级实现：使用 fsPromises.readFile，在 try/catch 中包装。
  */
-export async function openRootFile<T>(
+export function openRootFile<T>(
   filePath: string,
   rootDir: string,
   reader: (path: string) => Promise<T>,
-): Promise<RootFileOpenResult<T>> {
-  const resolved = path.resolve(rootDir, filePath);
-  if (!isPathInside(resolved, rootDir)) {
+): Promise<RootFileOpenResult<T>>;
+export async function openRootFile(
+  filePathOrParams:
+    | string
+    | {
+        absolutePath: string;
+        rootPath: string;
+        boundaryLabel?: string;
+        rejectHardlinks?: boolean;
+        skipLexicalRootCheck?: boolean;
+      },
+  rootDir?: string,
+  reader?: (path: string) => Promise<unknown>,
+): Promise<unknown> {
+  if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
+    const absolutePath = filePathOrParams.absolutePath;
+    const rootPath = filePathOrParams.rootPath;
+    const resolved = path.resolve(rootPath, absolutePath);
+    if (!isPathInside(resolved, rootPath)) {
+      return {
+        ok: false,
+        failure: { kind: "outside-root", message: `Path ${absolutePath} escapes root ${rootPath}` },
+      };
+    }
+    try {
+      const fd = fs.openSync(absolutePath, "r");
+      return { ok: true, fd, path: absolutePath };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const kind: RootFileOpenFailure["kind"] = isNotFoundPathError(error)
+        ? "not-found"
+        : "read-error";
+      return { ok: false, failure: { kind, message } };
+    }
+  }
+  const filePath = filePathOrParams;
+  const resolved = path.resolve(rootDir!, filePath);
+  if (!isPathInside(resolved, rootDir!)) {
     return {
       ok: false,
       failure: { kind: "outside-root", message: `Path ${filePath} escapes root ${rootDir}` },
     };
   }
   try {
-    const value = await reader(resolved);
+    const value = await reader!(resolved);
     return { ok: true, value };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -404,21 +502,64 @@ export async function openRootFile<T>(
   }
 }
 
+/** 同步打开 root 文件（对象参数形式） */
+export function openRootFileSync(params: {
+  absolutePath: string;
+  rootPath: string;
+  boundaryLabel?: string;
+  rejectHardlinks?: boolean;
+  skipLexicalRootCheck?: boolean;
+}): { ok: true; fd: number; path: string } | { ok: false; failure: RootFileOpenFailure };
 /** 同步打开 root 文件 */
 export function openRootFileSync<T>(
   filePath: string,
   rootDir: string,
   reader: (path: string) => T,
-): RootFileOpenResult<T> {
-  const resolved = path.resolve(rootDir, filePath);
-  if (!isPathInside(resolved, rootDir)) {
+): RootFileOpenResult<T>;
+export function openRootFileSync(
+  filePathOrParams:
+    | string
+    | {
+        absolutePath: string;
+        rootPath: string;
+        boundaryLabel?: string;
+        rejectHardlinks?: boolean;
+        skipLexicalRootCheck?: boolean;
+      },
+  rootDir?: string,
+  reader?: (p: string) => unknown,
+): unknown {
+  if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
+    const absolutePath = filePathOrParams.absolutePath;
+    const rootPath = filePathOrParams.rootPath;
+    const resolved = path.resolve(rootPath, absolutePath);
+    if (!isPathInside(resolved, rootPath)) {
+      return {
+        ok: false,
+        failure: { kind: "outside-root", message: `Path ${absolutePath} escapes root ${rootPath}` },
+      };
+    }
+    try {
+      const fd = fs.openSync(absolutePath, "r");
+      return { ok: true, fd, path: absolutePath };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const kind: RootFileOpenFailure["kind"] = isNotFoundPathError(error)
+        ? "not-found"
+        : "read-error";
+      return { ok: false, failure: { kind, message } };
+    }
+  }
+  const filePath = filePathOrParams;
+  const resolved = path.resolve(rootDir!, filePath);
+  if (!isPathInside(resolved, rootDir!)) {
     return {
       ok: false,
       failure: { kind: "outside-root", message: `Path ${filePath} escapes root ${rootDir}` },
     };
   }
   try {
-    const value = reader(resolved);
+    const value = reader!(resolved);
     return { ok: true, value };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -599,22 +740,23 @@ export async function writeSiblingTempFile(
 
 /**
  * 创建异步锁。
- * 降级实现：使用简单的 Promise 队列，不提供跨进程锁。
+ * 降级实现：使用简单的 Promise 链，不提供跨进程锁。
+ * 返回一个可直接调用的函数。
  */
-export function createAsyncLock<T>() {
-  let pending: Promise<T> | null = null;
-  return {
-    async run<R extends T>(fn: () => Promise<R>): Promise<R> {
-      while (pending !== null) {
-        await pending.catch(() => {});
-      }
-      pending = fn();
-      try {
-        return (await pending) as R;
-      } finally {
-        pending = null;
-      }
-    },
+export function createAsyncLock() {
+  let lock: Promise<void> = Promise.resolve();
+  return async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+    const previous = lock;
+    let release: (() => void) | undefined;
+    lock = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await fn();
+    } finally {
+      release?.();
+    }
   };
 }
 
@@ -689,8 +831,56 @@ export function readRootJsonSync(filePath: string): Record<string, unknown> {
   return readJsonSync<Record<string, unknown>>(filePath);
 }
 
-/** 读取根 JSON 对象（同步，类型守卫） */
-export function readRootJsonObjectSync(filePath: string): Record<string, unknown> {
+/** 读取根 JSON 对象（同步，对象参数形式，带边界守卫） */
+export function readRootJsonObjectSync(params: {
+  rootDir: string;
+  relativePath: string;
+  boundaryLabel?: string;
+  rejectHardlinks?: boolean;
+  rootRealPath?: string;
+}): RootStructuredFileSyncResult<Record<string, unknown>>;
+/** 读取根 JSON 对象（同步，字符串路径形式） */
+export function readRootJsonObjectSync(filePath: string): Record<string, unknown>;
+export function readRootJsonObjectSync(
+  filePathOrParams: string | {
+    rootDir: string;
+    relativePath: string;
+    boundaryLabel?: string;
+    rejectHardlinks?: boolean;
+    rootRealPath?: string;
+  },
+): unknown {
+  if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
+    const resolved = path.resolve(filePathOrParams.rootDir, filePathOrParams.relativePath);
+    if (!isPathInside(resolved, filePathOrParams.rootDir)) {
+      return {
+        ok: false,
+        reason: "open" as const,
+        failure: {
+          kind: "outside-root" as const,
+          message: `Path ${filePathOrParams.relativePath} escapes root ${filePathOrParams.rootDir}`,
+        },
+      };
+    }
+    try {
+      const value = readJsonSync<unknown>(resolved);
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return {
+          ok: false,
+          reason: "invalid" as const,
+          error: `Root JSON value is not an object: ${resolved}`,
+        };
+      }
+      return { ok: true, value: value as Record<string, unknown> };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const kind: RootFileOpenFailure["kind"] = isNotFoundPathError(error)
+        ? "not-found"
+        : "read-error";
+      return { ok: false, reason: "open" as const, failure: { kind, message } };
+    }
+  }
+  const filePath = filePathOrParams;
   const value = readJsonSync<unknown>(filePath);
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new JsonFileReadError(filePath, "parse", new Error("Root JSON value is not an object"));
@@ -698,10 +888,83 @@ export function readRootJsonObjectSync(filePath: string): Record<string, unknown
   return value as Record<string, unknown>;
 }
 
-/** 读取根结构化文件（同步） */
-export function readRootStructuredFileSync(filePath: string): string {
-  return fs.readFileSync(filePath, "utf-8");
+/** 读取根结构化文件（同步，字符串路径形式） */
+export function readRootStructuredFileSync(filePath: string): string;
+/** 读取根结构化文件（同步，对象参数形式，带 parse/validate） */
+export function readRootStructuredFileSync<T = unknown>(params: {
+  rootDir: string;
+  rootRealPath?: string;
+  relativePath: string;
+  boundaryLabel?: string;
+  rejectHardlinks?: boolean;
+  parse: (raw: string) => T;
+  validate?: (value: T) => boolean;
+}): RootStructuredFileSyncResult<T>;
+export function readRootStructuredFileSync(
+  filePathOrParams: string | {
+    rootDir: string;
+    rootRealPath?: string;
+    relativePath: string;
+    boundaryLabel?: string;
+    rejectHardlinks?: boolean;
+    parse: (raw: string) => unknown;
+    validate?: (value: unknown) => boolean;
+  },
+): unknown {
+  if (typeof filePathOrParams === "string") {
+    return fs.readFileSync(filePathOrParams, "utf-8");
+  }
+  const params = filePathOrParams;
+  const resolved = path.resolve(params.rootDir, params.relativePath);
+  if (!isPathInside(resolved, params.rootDir)) {
+    return {
+      ok: false as const,
+      reason: "open" as const,
+      failure: {
+        kind: "outside-root" as const,
+        message: `Path ${params.relativePath} escapes root ${params.rootDir}`,
+      },
+    };
+  }
+  let raw: string;
+  try {
+    raw = fs.readFileSync(resolved, "utf-8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const kind: RootFileOpenFailure["kind"] = isNotFoundPathError(error)
+      ? "not-found"
+      : "read-error";
+    return {
+      ok: false as const,
+      reason: "open" as const,
+      failure: { kind, message },
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = params.parse(raw);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false as const,
+      reason: "invalid" as const,
+      error: message,
+    };
+  }
+  if (params.validate && !params.validate(parsed)) {
+    return {
+      ok: false as const,
+      reason: "invalid" as const,
+      error: "validation failed",
+    };
+  }
+  return { ok: true as const, value: parsed };
 }
+
+export type RootStructuredFileSyncResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; reason: "open"; failure: RootFileOpenFailure }
+  | { ok: false; reason: "invalid"; error: string };
 
 /** 写入 JSON 文件（原子） */
 export async function writeJson(

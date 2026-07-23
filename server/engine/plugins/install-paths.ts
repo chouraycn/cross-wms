@@ -26,6 +26,8 @@ export function validatePluginId(pluginId: string): string | null {
 export function matchesExpectedPluginId(params: {
   pluginId: string;
   expectedPluginId?: string;
+  manifestPluginId?: string;
+  npmPluginId?: string;
 }): boolean {
   if (!params.expectedPluginId) {
     return true;
@@ -67,12 +69,13 @@ export function resolvePluginNpmGenerationProjectDirPrefix(packageName: string):
 
 export function resolvePluginNpmGenerationProjectDir(params: {
   packageName: string;
-  generation: string;
+  generation?: string;
+  generationKey?: string;
   npmDir?: string;
 }): string {
   return path.join(
     resolvePluginNpmProjectsDir(params.npmDir),
-    `${resolvePluginNpmGenerationProjectDirPrefix(params.packageName)}${params.generation}`,
+    `${resolvePluginNpmGenerationProjectDirPrefix(params.packageName)}${params.generationKey ?? params.generation}`,
   );
 }
 

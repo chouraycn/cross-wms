@@ -53,7 +53,7 @@ function resolveDefaultProviderEnvVar(
     ...(config ? { config } : {}),
     includeUntrustedWorkspacePlugins: false,
   });
-  return envVars?.find((candidate) => normalizeOptionalString(candidate) !== undefined);
+  return envVars?.find((candidate: unknown) => normalizeOptionalString(candidate) !== undefined);
 }
 
 function resolveDefaultFilePointerId(provider: string): string {
@@ -71,7 +71,7 @@ export function resolveRefFallbackInput(params: {
     getProviderEnvVars(params.provider, {
       config: params.config,
       includeUntrustedWorkspacePlugins: false,
-    }).find((candidate) => normalizeOptionalString(candidate) !== undefined);
+    }).find((candidate: unknown) => normalizeOptionalString(candidate) !== undefined);
   if (!fallbackEnvVar) {
     throw new Error(
       `No default environment variable mapping found for provider "${params.provider}". Set a provider-specific env var, or re-run setup in an interactive terminal to configure a ref.`,
@@ -161,7 +161,9 @@ async function promptProviderSecretRefForSetup(params: {
   copy?: SecretRefSetupPromptCopy;
   env?: NodeJS.ProcessEnv;
 }): Promise<{ ref: SecretRef; resolvedValue: string }> {
-  const externalProviders = Object.entries(params.config.secrets?.providers ?? {}).filter(
+  const externalProviders = Object.entries(
+    (params.config.secrets?.providers ?? {}) as Record<string, { source?: string }>,
+  ).filter(
     ([, provider]) => provider?.source === "file" || provider?.source === "exec",
   );
   if (externalProviders.length === 0) {
@@ -244,10 +246,13 @@ async function promptProviderSecretRefForSetup(params: {
 
   try {
     const { resolveSecretRefString } = await loadSecretResolve();
-    const resolvedValue = await resolveSecretRefString(ref, {
-      config: params.config,
-      env: params.env ?? process.env,
-    });
+    const resolvedValue = await resolveSecretRefString(
+      ref as { source?: string; provider?: string; id?: string },
+      {
+        config: params.config,
+        env: params.env ?? process.env,
+      },
+    );
     await params.prompter.note(
       params.copy?.providerValidatedMessage?.(selectedProvider, id, providerEntry.source) ??
         `Validated ${providerEntry.source} reference ${selectedProvider}:${id}. OpenClaw will store a reference, not the key value.`,

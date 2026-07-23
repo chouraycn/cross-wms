@@ -7,6 +7,7 @@
 export type EnvApiKeyResult = {
   apiKey: string;
   envKey: string;
+  source?: string;
 } | null;
 
 export type EnvApiKeyLookupOptions = {
@@ -14,6 +15,9 @@ export type EnvApiKeyLookupOptions = {
   prefix?: string;
 };
 
-export function resolveEnvApiKey(_options: EnvApiKeyLookupOptions | string): EnvApiKeyResult {
+export function resolveEnvApiKey(
+  _provider: EnvApiKeyLookupOptions | string,
+  _env?: NodeJS.ProcessEnv,
+): EnvApiKeyResult {
   return null;
 }

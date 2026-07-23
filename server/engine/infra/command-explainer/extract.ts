@@ -1,3 +1,10 @@
 import type { CommandStep } from "./types.js";
 
-export function explainShellCommand(_command: string): CommandStep[] { return []; }
+export type ShellCommandExplanation = {
+  topLevelCommands: CommandStep[];
+  nestedCommands: CommandStep[];
+};
+
+export function explainShellCommand(_command: string): ShellCommandExplanation {
+  return { topLevelCommands: [], nestedCommands: [] };
+}

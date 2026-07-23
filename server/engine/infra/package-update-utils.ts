@@ -41,10 +41,12 @@ export async function readInstalledPackagePeerDependencies(params: {
 }
 
 /** Checks if an installed package needs openclaw peer link repair. */
-export function installedPackageNeedsOpenClawPeerLinkRepair(params: {
-  peerDependencies?: Record<string, string>;
-  openClawPrefix?: string;
-}): boolean {
+export function installedPackageNeedsOpenClawPeerLinkRepair(
+  params: string | { peerDependencies?: Record<string, string>; openClawPrefix?: string },
+): boolean {
+  if (typeof params === "string") {
+    return false;
+  }
   const prefix = params.openClawPrefix ?? "@openclaw/";
   const peers = params.peerDependencies ?? {};
   return Object.keys(peers).some((name) => name.startsWith(prefix));

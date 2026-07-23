@@ -254,7 +254,7 @@ export async function issueDeviceBootstrapToken(
     scopes?: readonly string[];
   } = {},
 ): Promise<{ token: string; expiresAtMs: number }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const token = generatePairingToken();
     const issuedAtMs = asDateTimestampMs(Date.now());
@@ -286,7 +286,7 @@ export async function clearDeviceBootstrapTokens(
     baseDir?: string;
   } = {},
 ): Promise<{ removed: number }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const removed = Object.keys(state).length;
     await persistState({}, params.baseDir);
@@ -299,7 +299,7 @@ export async function revokeDeviceBootstrapToken(params: {
   token: string;
   baseDir?: string;
 }): Promise<{ removed: boolean; record?: DeviceBootstrapTokenRecord }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const providedToken = params.token.trim();
     if (!providedToken) {
       return { removed: false };
@@ -324,7 +324,7 @@ export async function revokeDeviceBootstrapTokensForDevice(params: {
   publicKey: string;
   baseDir?: string;
 }): Promise<{ removed: number }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const deviceId = params.deviceId.trim();
     const publicKey = normalizeBootstrapPublicKey(params.publicKey);
     if (!deviceId || !publicKey) {
@@ -354,7 +354,7 @@ export async function restoreDeviceBootstrapToken(params: {
   record: DeviceBootstrapTokenRecord;
   baseDir?: string;
 }): Promise<void> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     state[params.record.token] = params.record;
     await persistState(state, params.baseDir);
@@ -366,7 +366,7 @@ export async function getDeviceBootstrapTokenProfile(params: {
   token: string;
   baseDir?: string;
 }): Promise<DeviceBootstrapProfile | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const providedToken = params.token.trim();
     if (!providedToken) {
       return null;
@@ -386,7 +386,7 @@ export async function redeemDeviceBootstrapTokenProfile(params: {
   scopes: readonly string[];
   baseDir?: string;
 }): Promise<{ recorded: boolean; fullyRedeemed: boolean }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const providedToken = params.token.trim();
     if (!providedToken) {
       return { recorded: false, fullyRedeemed: false };
@@ -448,7 +448,7 @@ export async function verifyDeviceBootstrapToken(params: {
   scopes: readonly string[];
   baseDir?: string;
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const providedToken = params.token.trim();
     if (!providedToken) {
@@ -535,7 +535,7 @@ export async function getBoundDeviceBootstrapProfile(params: {
   publicKey: string;
   baseDir?: string;
 }): Promise<DeviceBootstrapProfile | null> {
-  return await withLock.run(async () => {
+  return await withLock(async () => {
     const state = await loadState(params.baseDir);
     const providedToken = params.token.trim();
     if (!providedToken) {

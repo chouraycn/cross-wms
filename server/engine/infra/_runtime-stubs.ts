@@ -105,6 +105,22 @@ export type OpenClawConfig = Record<string, unknown>;
 /** 降级的 OpenClawConfig 默认值（空对象） */
 export const DEFAULT_OPENCLAW_CONFIG: OpenClawConfig = {};
 
+/**
+ * 默认运行时 stub。
+ * 降级实现：提供子系统日志器的降级方法。
+ */
+export const defaultRuntime: {
+  debug?: (message: string) => void;
+  info?: (message: string) => void;
+  warn?: (message: string) => void;
+  error?: (message: string) => void;
+} = {
+  debug: (message: string) => rootLogger.debug({ subsystem: "runtime" }, message),
+  info: (message: string) => rootLogger.info({ subsystem: "runtime" }, message),
+  warn: (message: string) => rootLogger.warn({ subsystem: "runtime" }, message),
+  error: (message: string) => rootLogger.error({ subsystem: "runtime" }, message),
+};
+
 // ============================================================================
 // ../utils.js —— resolveConfigDir 占位（与 _openclaw-stubs.ts 中重复，这里保留兼容）
 // ============================================================================

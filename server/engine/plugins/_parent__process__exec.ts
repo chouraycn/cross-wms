@@ -4,18 +4,19 @@ export interface RunCommandResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  code: number;
 }
 
 export async function runCommandWithTimeout(
-  command: string,
-  timeoutMs: number,
-  options?: { cwd?: string; env?: NodeJS.ProcessEnv }
+  args: string[] | string,
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs: number }
 ): Promise<RunCommandResult> {
+  const command = Array.isArray(args) ? args.join(' ') : args;
   return new Promise((resolve, reject) => {
     const child = exec(command, {
-      cwd: options?.cwd,
-      env: options?.env,
-      timeout: timeoutMs,
+      cwd: options.cwd,
+      env: options.env,
+      timeout: options.timeoutMs,
     });
 
     let stdout = '';
@@ -25,7 +26,8 @@ export async function runCommandWithTimeout(
     child.stderr?.on('data', data => { stderr += data; });
 
     child.on('close', (exitCode) => {
-      resolve({ stdout, stderr, exitCode: exitCode ?? 0 });
+      const code = exitCode ?? 0;
+      resolve({ stdout, stderr, exitCode: code, code });
     });
 
     child.on('error', (error) => {

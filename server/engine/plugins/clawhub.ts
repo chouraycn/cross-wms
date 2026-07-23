@@ -42,6 +42,16 @@ import type { ClawHubPluginInstallRecordFields } from "./clawhub-install-records
 import type { InstallSafetyOverrides } from "./install-security-scan.js";
 import { installPluginFromArchive, type InstallPluginResult } from "./install.js";
 
+/** Type used for narrowing unknown errors after instanceof checks on stub classes. */
+type ClawHubRequestErrorInstance = {
+  status: number;
+  requestPath: string;
+  message: string;
+};
+type ArchiveLimitErrorInstance = {
+  code: string;
+};
+
 export { CLAWHUB_INSTALL_ERROR_CODE };
 export type { ClawHubInstallErrorCode };
 
@@ -325,7 +335,7 @@ function mapClawHubRequestError(
   error: unknown,
   context: { stage: "package" | "version"; name: string; version?: string },
 ): ClawHubInstallFailure {
-  if (error instanceof ClawHubRequestError && error.status === 404) {
+  if (error instanceof ClawHubRequestError && (error as ClawHubRequestErrorInstance).status === 404) {
     if (context.stage === "package") {
       return buildClawHubInstallFailure(
         "Package not found on ClawHub.",
@@ -341,10 +351,11 @@ function mapClawHubRequestError(
 }
 
 function isMissingArtifactResolverRoute(error: unknown): boolean {
+  const instance = error as ClawHubRequestErrorInstance;
   return (
     error instanceof ClawHubRequestError &&
-    error.status === 404 &&
-    error.requestPath.endsWith("/artifact")
+    instance.status === 404 &&
+    instance.requestPath.endsWith("/artifact")
   );
 }
 
@@ -692,13 +703,14 @@ function validateClawHubArchiveMetaJson(params: {
 
 function mapClawHubArchiveReadFailure(error: unknown): ClawHubInstallFailure {
   if (error instanceof ArchiveLimitError) {
-    if (error.code === ARCHIVE_LIMIT_ERROR_CODE.ENTRY_COUNT_EXCEEDS_LIMIT) {
+    const instance = error as ArchiveLimitErrorInstance;
+    if (instance.code === ARCHIVE_LIMIT_ERROR_CODE.ENTRY_COUNT_EXCEEDS_LIMIT) {
       return buildClawHubInstallFailure(
         "ClawHub archive fallback verification exceeded the archive entry limit.",
         CLAWHUB_INSTALL_ERROR_CODE.ARCHIVE_INTEGRITY_MISMATCH,
       );
     }
-    if (error.code === ARCHIVE_LIMIT_ERROR_CODE.ARCHIVE_SIZE_EXCEEDS_LIMIT) {
+    if (instance.code === ARCHIVE_LIMIT_ERROR_CODE.ARCHIVE_SIZE_EXCEEDS_LIMIT) {
       return buildClawHubInstallFailure(
         "ClawHub archive fallback verification rejected the downloaded archive because it exceeds the ZIP archive size limit.",
         CLAWHUB_INSTALL_ERROR_CODE.ARCHIVE_INTEGRITY_MISMATCH,
@@ -1142,8 +1154,8 @@ export async function installPluginFromClawHub(
         : formatErrorMessage(error),
       expectedClawPackSha256 &&
         error instanceof ClawHubRequestError &&
-        error.status === 404 &&
-        error.requestPath.endsWith("/artifact/download")
+        (error as ClawHubRequestErrorInstance).status === 404 &&
+        (error as ClawHubRequestErrorInstance).requestPath.endsWith("/artifact/download")
         ? CLAWHUB_INSTALL_ERROR_CODE.ARTIFACT_DOWNLOAD_UNAVAILABLE
         : error instanceof ClawHubRequestError
           ? CLAWHUB_INSTALL_ERROR_CODE.ARTIFACT_UNAVAILABLE

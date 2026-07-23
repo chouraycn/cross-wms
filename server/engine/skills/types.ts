@@ -1,4 +1,4 @@
-export type SkillSource = "bundled" | "workspace" | "unknown";
+export type SkillSource = "bundled" | "workspace" | "managed" | "unknown";
 
 export type SkillInstallSpec = {
   id?: string;
@@ -23,6 +23,8 @@ export type SkillMetadata = {
   emoji?: string;
   homepage?: string;
   os?: string[];
+  disabled?: boolean;
+  disableModelInvocation?: boolean;
   requires?: {
     bins?: string[];
     anyBins?: string[];

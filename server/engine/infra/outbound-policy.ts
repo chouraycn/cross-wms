@@ -14,6 +14,14 @@ import type { MessagePresentation } from "../interactive/payload.js";
 import { normalizeTargetForProvider } from "./target-normalization.js";
 import { formatTargetDisplay, lookupDirectoryDisplay } from "./target-resolver.js";
 
+/** Typed view of the OpenClawConfig slice consumed by outbound policy. */
+type OutboundMessageToolsConfigView = {
+  tools?: { message?: MessageToolsConfig };
+  agents?: {
+    list?: Array<{ id?: string; tools?: { message?: MessageToolsConfig } }>;
+  };
+};
+
 export type CrossContextPresentationBuilder = (message: string) => MessagePresentation;
 
 export type CrossContextDecoration = {
@@ -47,7 +55,7 @@ function resolveContextGuardTarget(
 }
 
 function normalizeTarget(channel: ChannelId, raw: string): string | undefined {
-  return normalizeTargetForProvider(channel, raw) ?? raw.trim();
+  return (normalizeTargetForProvider(channel, raw) as string | null | undefined) ?? raw.trim();
 }
 
 function isCrossContextTarget(params: {
@@ -79,9 +87,10 @@ function resolveAgentMessageToolsConfig(
   agentId?: string | null,
 ): MessageToolsConfig | undefined {
   const trimmedAgentId = agentId?.trim();
-  const globalConfig = cfg.tools?.message;
+  const cfgView = cfg as unknown as OutboundMessageToolsConfigView;
+  const globalConfig = cfgView.tools?.message;
   if (!trimmedAgentId) return globalConfig;
-  const agentConfig = cfg.agents?.list?.find((entry) => entry.id === trimmedAgentId)?.tools?.message;
+  const agentConfig = cfgView.agents?.list?.find((entry) => entry.id === trimmedAgentId)?.tools?.message;
   if (!agentConfig) return globalConfig;
   return {
     ...globalConfig,

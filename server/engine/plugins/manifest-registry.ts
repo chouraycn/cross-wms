@@ -96,6 +96,7 @@ export type PluginManifestRecord = {
   origin: PluginOrigin;
   rootDir: string;
   manifestPath: string;
+  setupSource?: string;
   configSchema?: PluginManifest["configSchema"];
   requiresPlugins?: string[];
   contracts?: PluginManifest["contracts"];
@@ -136,6 +137,8 @@ export function loadPluginManifestRegistry(params: {
   workspaceDir?: string;
   config?: unknown;
   bundledChannelConfigCollector?: BundledChannelConfigCollector;
+  candidates?: unknown;
+  diagnostics?: unknown;
 }): PluginManifestRegistry {
   void params;
   return { plugins: [], diagnostics: [] };

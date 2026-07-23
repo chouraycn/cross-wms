@@ -17,34 +17,8 @@
 // 内联降级类型占位
 // ============================================================================
 
-/**
- * OpenClaw 配置的宽松类型占位。
- *
- * 降级原因：cross-wms 尚未移植 openclaw 的完整配置类型层级。
- * 这里定义结构化子集以满足 bundled-compat 对 plugins 字段的访问。
- */
-type OpenClawConfig = {
-  plugins?: {
-    enabled?: boolean;
-    allow?: string[];
-    bundledDiscovery?: string;
-    entries?: Record<string, PluginEntryConfig>;
-    slots?: Record<string, unknown>;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-};
-
-/**
- * 插件条目配置（降级占位）。
- *
- * 降级原因：cross-wms 尚未移植 openclaw 的 ../config/types.plugins.js。
- * 这里定义与 openclaw PluginEntryConfig 结构兼容的最小类型。
- */
-type PluginEntryConfig = {
-  enabled?: boolean;
-  [key: string]: unknown;
-};
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { PluginEntryConfig } from "../config/types/plugins.js";
 
 // ============================================================================
 // 内联降级函数

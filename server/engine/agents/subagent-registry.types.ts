@@ -1,13 +1,42 @@
 /**
  * 移植自 openclaw/src/agents/subagent-registry.types.ts
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 子代理运行记录类型定义。
  */
 
 export type PendingFinalDeliveryPayload = unknown;
-export type SubagentExecutionState = unknown;
-export type SubagentCompletionState = unknown;
-export type SubagentCompletionDeliveryState = unknown;
-export type SubagentRunRecord = unknown;
+
+export interface SubagentExecutionState {
+  transcriptFile?: string;
+  [key: string]: unknown;
+}
+
+export interface SubagentCompletionState {
+  status: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+export type SubagentCompletionDeliveryState = SubagentCompletionState;
+
+export interface SubagentRunRecord {
+  runId: string;
+  childSessionKey: string;
+  requesterSessionKey: string;
+  requesterOrigin?: unknown;
+  requesterRunId?: string;
+  workspaceDir?: string;
+  agentDir?: string;
+  cleanup?: "delete" | "keep";
+  runTimeoutSeconds?: number;
+  spawnMode?: string;
+  createdAt: number;
+  cleanupHandled: boolean;
+  suppressAnnounceReason?: string;
+  endedAt?: number;
+  outcome?: SubagentCompletionState;
+  cleanupCompletedAt?: number;
+  execution?: SubagentExecutionState;
+  frozenResult?: unknown;
+  [key: string]: unknown;
+}

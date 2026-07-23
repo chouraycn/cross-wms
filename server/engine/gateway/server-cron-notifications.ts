@@ -22,9 +22,12 @@ import {
 } from "../infra/string-coerce.js";
 import type { OpenClawConfig } from "./_openclaw-stubs.js";
 import {
-  resolveFailureDestination,
   sendCronAnnouncePayloadStrict,
   sendFailureNotificationAnnounce,
+} from "../cron/delivery.js";
+import type {
+  CronAnnounceTarget,
+  CronDeliveryAdapter,
 } from "../cron/delivery.js";
 import type { CronJob } from "../cron/types.js";
 import { normalizeHttpWebhookUrl } from "../cron/webhook-url.js";
@@ -107,6 +110,79 @@ function resolveCronDeliveryPlan(job: CronJob | undefined): {
 function resolveCronDeliverySessionKey(job: CronJob): string | undefined {
   void job;
   return undefined;
+}
+
+// 本地降级 stub — 替代 openclaw cron/delivery-plan.js 的 resolveFailureDestination。
+// cross-wms cron/delivery.ts 的 resolveFailureDestination 签名/返回不同（无 mode），
+// 此处返回带 mode 的失败投递计划，对齐 openclaw 调用方语义。
+type CronFailureDeliveryPlan = {
+  mode: "announce" | "webhook";
+  channel?: CronMessageChannel;
+  to?: string;
+  accountId?: string;
+};
+
+function normalizeFailureMode(value: unknown): "announce" | "webhook" | undefined {
+  const trimmed = normalizeOptionalLowercaseString(value);
+  if (trimmed === "announce" || trimmed === "webhook") {
+    return trimmed;
+  }
+  return undefined;
+}
+
+function resolveFailureDestination(
+  job: CronJob,
+  globalConfig?: CronFailureDestinationConfig,
+): CronFailureDeliveryPlan | null {
+  const delivery = job.delivery as
+    | {
+        failureDestination?: {
+          channel?: string | null;
+          to?: string | null;
+          accountId?: string | null;
+          mode?: string | null;
+        };
+      }
+    | undefined;
+  const jobFailureDest = delivery?.failureDestination;
+
+  let channel: CronMessageChannel | undefined;
+  let to: string | undefined;
+  let accountId: string | undefined;
+  let mode: "announce" | "webhook" | undefined;
+
+  if (globalConfig) {
+    channel = normalizeOptionalString(globalConfig.channel) as CronMessageChannel | undefined;
+    to = normalizeOptionalString(globalConfig.to) ?? undefined;
+    accountId = normalizeOptionalString(globalConfig.accountId) ?? undefined;
+    mode = normalizeFailureMode(globalConfig.mode);
+  }
+
+  if (jobFailureDest && typeof jobFailureDest === "object") {
+    if (typeof jobFailureDest.channel === "string") {
+      channel = jobFailureDest.channel as CronMessageChannel;
+    }
+    if (typeof jobFailureDest.to === "string") {
+      to = jobFailureDest.to;
+    }
+    if (typeof jobFailureDest.accountId === "string") {
+      accountId = jobFailureDest.accountId;
+    }
+    if ("mode" in jobFailureDest) {
+      mode = normalizeFailureMode(jobFailureDest.mode);
+    }
+  }
+
+  if (!channel && !to && !accountId && !mode) {
+    return null;
+  }
+
+  const resolvedMode = mode ?? "announce";
+  if (resolvedMode === "webhook" && !to) {
+    return null;
+  }
+
+  return { mode: resolvedMode, channel, to, accountId };
 }
 
 /** 解析直接 webhook 投递与完成目标 webhook。 */
@@ -200,6 +276,7 @@ export async function sendGatewayCronFailureAlert(params: {
   deps: CliDeps;
   logger: CronLogger;
   resolveCronAgent: CronAgentResolver;
+  deliveryAdapter?: CronDeliveryAdapter;
   webhookToken?: unknown;
   job: CronJob;
   text: string;
@@ -208,7 +285,7 @@ export async function sendGatewayCronFailureAlert(params: {
   mode?: "announce" | "webhook";
   accountId?: string;
 }): Promise<void> {
-  const { agentId, cfg: runtimeConfig } = params.resolveCronAgent(params.job.agentId);
+  void params.resolveCronAgent(params.job.agentId);
   const webhookToken = normalizeOptionalString(params.webhookToken);
 
   if (params.mode === "webhook" && !params.to) {
@@ -247,18 +324,24 @@ export async function sendGatewayCronFailureAlert(params: {
     return;
   }
 
+  if (!params.deliveryAdapter) {
+    params.logger.warn(
+      { jobId: params.job.id },
+      "cron: failure alert announce skipped, no delivery adapter available",
+    );
+    return;
+  }
+
   const abortController = new AbortController();
+  const target: CronAnnounceTarget = {
+    channel: params.channel,
+    to: params.to,
+    accountId: params.accountId,
+    sessionKey: resolveCronDeliverySessionKey(params.job),
+  };
   await sendCronAnnouncePayloadStrict({
-    deps: params.deps,
-    cfg: runtimeConfig,
-    agentId,
-    jobId: params.job.id,
-    target: {
-      channel: params.channel,
-      to: params.to,
-      accountId: params.accountId,
-      sessionKey: resolveCronDeliverySessionKey(params.job),
-    },
+    adapter: params.deliveryAdapter,
+    target,
     message: params.text,
     abortSignal: abortController.signal,
   });
@@ -271,6 +354,7 @@ export function dispatchGatewayCronFinishedNotifications(params: {
   deps: CliDeps;
   logger: CronLogger;
   resolveCronAgent: CronAgentResolver;
+  deliveryAdapter?: CronDeliveryAdapter;
   webhookToken?: unknown;
   globalFailureDestination?: CronFailureDestinationConfig;
 }): void {
@@ -335,6 +419,7 @@ export function dispatchGatewayCronFinishedNotifications(params: {
     deps: params.deps,
     logger: params.logger,
     resolveCronAgent: params.resolveCronAgent,
+    deliveryAdapter: params.deliveryAdapter,
     webhookToken,
     globalFailureDestination: params.globalFailureDestination,
   });
@@ -346,6 +431,7 @@ function dispatchCronFailureDestinationNotifications(params: {
   deps: CliDeps;
   logger: CronLogger;
   resolveCronAgent: CronAgentResolver;
+  deliveryAdapter?: CronDeliveryAdapter;
   webhookToken?: string;
   globalFailureDestination?: CronFailureDestinationConfig;
 }): void {
@@ -397,13 +483,14 @@ function dispatchCronFailureDestinationNotifications(params: {
     }
 
     if (failureDest.mode === "announce") {
-      const { agentId, cfg: runtimeConfig } = params.resolveCronAgent(params.job.agentId);
-      void sendFailureNotificationAnnounce(
-        params.deps,
-        runtimeConfig,
-        agentId,
-        params.job.id,
-        {
+      void params.resolveCronAgent(params.job.agentId);
+      if (!params.deliveryAdapter) {
+        params.logger.warn(
+          { jobId: params.evt.jobId },
+          "cron: failure destination announce skipped, no delivery adapter available",
+        );
+      } else {
+        const target: CronAnnounceTarget = {
           channel: failureDest.channel,
           to: failureDest.to,
           accountId: failureDest.accountId,
@@ -411,9 +498,13 @@ function dispatchCronFailureDestinationNotifications(params: {
           // 已配置的失败路由已是显式的；仅保留 cron 运行会话用于上下文，
           // 不重新附加主话题。
           inheritSessionThread: false,
-        },
-        `⚠️ ${failureMessage}`,
-      );
+        };
+        void sendFailureNotificationAnnounce({
+          adapter: params.deliveryAdapter,
+          target,
+          message: `⚠️ ${failureMessage}`,
+        });
+      }
     }
     return;
   }
@@ -423,18 +514,23 @@ function dispatchCronFailureDestinationNotifications(params: {
     return;
   }
 
-  const { agentId, cfg: runtimeConfig } = params.resolveCronAgent(params.job.agentId);
-  void sendFailureNotificationAnnounce(
-    params.deps,
-    runtimeConfig,
-    agentId,
-    params.job.id,
-    {
-      channel: primaryPlan.channel,
-      to: primaryPlan.to,
-      accountId: primaryPlan.accountId,
-      sessionKey: deliverySessionKey,
-    },
-    `⚠️ ${failureMessage}`,
-  );
+  void params.resolveCronAgent(params.job.agentId);
+  if (!params.deliveryAdapter) {
+    params.logger.warn(
+      { jobId: params.evt.jobId },
+      "cron: primary plan announce skipped, no delivery adapter available",
+    );
+    return;
+  }
+  const primaryTarget: CronAnnounceTarget = {
+    channel: primaryPlan.channel,
+    to: primaryPlan.to,
+    accountId: primaryPlan.accountId,
+    sessionKey: deliverySessionKey,
+  };
+  void sendFailureNotificationAnnounce({
+    adapter: params.deliveryAdapter,
+    target: primaryTarget,
+    message: `⚠️ ${failureMessage}`,
+  });
 }

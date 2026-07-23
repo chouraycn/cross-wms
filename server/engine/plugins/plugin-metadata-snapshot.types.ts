@@ -10,26 +10,16 @@
  * 这里以本地占位类型替代，仅保留类型形状供下游引用。
  */
 
+import type { InstalledPluginIndex } from "./installed-plugin-index-types.js";
 import type { PluginDiagnostic } from "./manifest-types.js";
+import type { PluginManifestRecord, PluginManifestRegistry } from "./manifest-registry.js";
 import type { PluginRegistrySnapshotSource } from "./plugin-registry-snapshot.types.js";
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
 export type OpenClawConfig = Record<string, unknown>;
 
-/** 已安装插件索引（降级为 unknown 占位）。 */
-export type InstalledPluginIndex = unknown;
-
 /** 插件发现结果（降级为 unknown 占位）。 */
 export type PluginDiscoveryResult = unknown;
-
-/** 插件 manifest 记录（降级为 unknown 占位）。 */
-export type PluginManifestRecord = {
-  pluginId?: string;
-  [key: string]: unknown;
-};
-
-/** 插件 manifest 注册表（降级为 unknown 占位）。 */
-export type PluginManifestRegistry = unknown;
 
 export type PluginMetadataSnapshotPluginIdScope = {
   key: string;

@@ -6,6 +6,7 @@ export interface SubsystemLogger {
   info(msg: string, ...args: unknown[]): void;
   warn(msg: string, ...args: unknown[]): void;
   error(msg: string, ...args: unknown[]): void;
+  isEnabled(level: string): boolean;
 }
 
 export function createSubsystemLogger(name: string): SubsystemLogger {
@@ -16,5 +17,6 @@ export function createSubsystemLogger(name: string): SubsystemLogger {
     info: (msg, ...args) => logger.info(`${prefix} ${msg}`, ...args),
     warn: (msg, ...args) => logger.warn(`${prefix} ${msg}`, ...args),
     error: (msg, ...args) => logger.error(`${prefix} ${msg}`, ...args),
+    isEnabled: (_level: string) => true,
   };
 }

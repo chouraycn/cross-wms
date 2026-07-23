@@ -16,6 +16,7 @@ import type {
   PluginSessionActionRegistration,
   PluginSessionSchedulerJobRegistration,
   PluginSessionExtensionRegistration,
+  PluginSessionTurnScheduleParams,
   PluginToolMetadataRegistration,
   PluginTrustedToolPolicyRegistration,
 } from "./host-hooks.js";
@@ -175,15 +176,19 @@ export function createCapturedPluginRegistration(params?: {
       logger: noopLogger,
       resolvePath: (input) => input,
       handlers: {
-        registerCli(registrar, opts) {
+        registerCli(registrar: OpenClawPluginCliRegistrar, opts?: {
+          parentPath?: string[];
+          commands?: string[];
+          descriptors?: OpenClawPluginCliCommandDescriptor[];
+        }) {
           const parentPath = normalizeStringEntries(opts?.parentPath ?? []);
           const descriptors = (opts?.descriptors ?? [])
-            .map((descriptor) => ({
+            .map((descriptor: OpenClawPluginCliCommandDescriptor) => ({
               name: descriptor.name.trim(),
               description: descriptor.description.trim(),
               hasSubcommands: descriptor.hasSubcommands,
             }))
-            .filter((descriptor) => descriptor.name && descriptor.description);
+            .filter((descriptor: { name: string; description: string }) => descriptor.name && descriptor.description);
           const commands = normalizeStringEntries([
             ...(opts?.commands ?? []),
             ...descriptors.map((descriptor) => descriptor.name),
@@ -301,7 +306,7 @@ export function createCapturedPluginRegistration(params?: {
           sessionActions.push(action);
         },
         sendSessionAttachment: async () => ({ ok: false, error: "captured registration" }),
-        scheduleSessionTurn: async (schedule) => {
+        scheduleSessionTurn: async (schedule: PluginSessionTurnScheduleParams) => {
           capturedSessionTurnCount += 1;
           return {
             id: `captured-session-turn-${capturedSessionTurnCount}`,
@@ -311,7 +316,7 @@ export function createCapturedPluginRegistration(params?: {
           };
         },
         unscheduleSessionTurnsByTag: async () => ({ removed: 0, failed: 0 }),
-        registerTool(tool) {
+        registerTool(tool: AnyAgentTool) {
           if (typeof tool !== "function") {
             tools.push(tool);
           }

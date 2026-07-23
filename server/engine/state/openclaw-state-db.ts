@@ -382,6 +382,18 @@ export function listAgentDatabases(
 
 export const closeStateDatabaseForTest = closeStateDatabase;
 
-// Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const openOpenClawStateDatabase: any = undefined as any;
-export const runOpenClawStateWriteTransaction: any = undefined as any;
+// OpenClaw-compatible stub exports delegating to existing state database functions.
+// Typed to match openclaw/src/state/openclaw-state-db.ts signatures so callers
+// (e.g. conversation-binding.ts) get proper type inference for the database handle.
+export function openOpenClawStateDatabase(
+  options: StateDatabaseOptions = {},
+): OpenStateDatabase {
+  return openStateDatabase(options);
+}
+
+export function runOpenClawStateWriteTransaction<T>(
+  operation: (database: OpenStateDatabase) => T,
+  options: StateDatabaseOptions = {},
+): T {
+  return runStateWriteTransaction(operation, options);
+}

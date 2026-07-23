@@ -21,6 +21,7 @@ type PluginManifestRecord = {
   enabledByDefault?: boolean;
   enabledByDefaultOnPlatforms?: string[];
   contracts?: Partial<Record<PluginManifestContractListKey, string[]>>;
+  channels?: string[];
 };
 
 /** 占位：PluginMetadataSnapshot。 */

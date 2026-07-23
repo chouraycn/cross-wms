@@ -7,23 +7,24 @@ type PluginApiFacadeFields = Pick<
 >;
 /** Plugin API shape without nested facade namespaces attached. */
 export type OpenClawPluginApiWithoutFacades = Omit<OpenClawPluginApi, keyof PluginApiFacadeFields>;
-type PluginApiFacadeSource = Pick<
-  OpenClawPluginApi,
-  | "clearRunContext"
-  | "emitAgentEvent"
-  | "enqueueNextTurnInjection"
-  | "getRunContext"
-  | "registerAgentEventSubscription"
-  | "registerControlUiDescriptor"
-  | "registerRuntimeLifecycle"
-  | "registerSessionAction"
-  | "registerSessionExtension"
-  | "registerSessionSchedulerJob"
-  | "scheduleSessionTurn"
-  | "sendSessionAttachment"
-  | "setRunContext"
-  | "unscheduleSessionTurnsByTag"
->;
+
+/** Callable method signatures for the flat plugin API methods consumed by facades. */
+type PluginApiFacadeSource = {
+  clearRunContext: (...args: unknown[]) => unknown;
+  emitAgentEvent: (...args: unknown[]) => unknown;
+  enqueueNextTurnInjection: (...args: unknown[]) => unknown;
+  getRunContext: (...args: unknown[]) => unknown;
+  registerAgentEventSubscription: (...args: unknown[]) => unknown;
+  registerControlUiDescriptor: (...args: unknown[]) => unknown;
+  registerRuntimeLifecycle: (...args: unknown[]) => unknown;
+  registerSessionAction: (...args: unknown[]) => unknown;
+  registerSessionExtension: (...args: unknown[]) => unknown;
+  registerSessionSchedulerJob: (...args: unknown[]) => unknown;
+  scheduleSessionTurn: (...args: unknown[]) => unknown;
+  sendSessionAttachment: (...args: unknown[]) => unknown;
+  setRunContext: (...args: unknown[]) => unknown;
+  unscheduleSessionTurnsByTag: (...args: unknown[]) => unknown;
+};
 
 /** Attaches nested facade namespaces to the flat plugin API implementation. */
 export function attachPluginApiFacades<T extends object>(

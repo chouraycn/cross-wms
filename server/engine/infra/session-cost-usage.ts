@@ -667,7 +667,7 @@ const isModelPricingKnown = (cost: ReturnType<typeof resolveModelCostConfig>): b
   if (cost.tieredPricing && cost.tieredPricing.length > 0) {
     return true;
   }
-  return cost.input > 0 || cost.output > 0 || cost.cacheRead > 0 || cost.cacheWrite > 0;
+  return (cost.input ?? 0) > 0 || (cost.output ?? 0) > 0 || (cost.cacheRead ?? 0) > 0 || (cost.cacheWrite ?? 0) > 0;
 };
 
 type UsageCostResolver = (params: {
@@ -680,7 +680,7 @@ function createUsageCostResolver(config?: OpenClawConfig): UsageCostResolver {
   return ({ provider, model }) => {
     const key = `${provider ?? ""}\0${model ?? ""}`;
     if (cache.has(key)) {
-      return cache.get(key);
+      return cache.get(key) ?? null;
     }
     const cost = resolveModelCostConfig({ provider, model, config });
     cache.set(key, cost);

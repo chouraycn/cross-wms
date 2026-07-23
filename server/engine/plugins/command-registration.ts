@@ -6,7 +6,7 @@ import {
 import { isOperatorScope } from "../gateway/operator-scopes.js";
 import { logVerbose } from './_stub_parent__globals.js';
 import { isRecord } from './_parent__utils.js';
-import { normalizeAgentPromptSurfaceKind } from "./agent-prompt-surface-kind.js";
+import { normalizeAgentPromptSurfaceKind, type AgentPromptSurfaceKind } from "./agent-prompt-surface-kind.js";
 import {
   clearPluginCommands,
   clearPluginCommandsForPlugin,
@@ -18,7 +18,6 @@ import {
   AGENT_PROMPT_SURFACE_KINDS,
   type AgentPromptGuidance,
   type AgentPromptGuidanceEntry,
-  type AgentPromptSurfaceKind,
   type OpenClawPluginCommandDefinition,
 } from "./types.js";
 

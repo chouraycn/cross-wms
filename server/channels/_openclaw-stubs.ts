@@ -1,2 +1,5 @@
-export function getChannelPlugin() { return undefined as any; }
-export function normalizeChannelId(id: string): string { return id; }
+export function getChannelPlugin(_channelId?: string | null): unknown { return undefined; }
+export function normalizeChannelId(id: string | null | undefined): string | undefined {
+  if (!id) return undefined;
+  return id;
+}

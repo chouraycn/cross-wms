@@ -4,6 +4,7 @@ import type {
   PluginManifest,
   PluginVersionRange,
 } from './types.js';
+import type { PluginSdkResolutionPreference } from "./sdk-alias.js";
 
 /**
  * 插件加载器 — 插件发现 / 加载 / 依赖解析 / 版本检查
@@ -364,6 +365,11 @@ export const resolveRuntimePluginRegistry: any = undefined as any;
 export type PluginLoadOptions = {
   pluginDir?: string;
   skipDependencies?: boolean;
+  env?: NodeJS.ProcessEnv;
+  config?: unknown;
+  workspaceDir?: string;
+  onlyPluginIds?: readonly string[];
+  pluginSdkResolution?: PluginSdkResolutionPreference;
   [key: string]: unknown;
 };
 

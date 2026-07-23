@@ -1,8 +1,8 @@
-export function uniqueStrings(values: readonly string[]): string[] {
+export function uniqueStrings(values: Iterable<string>): string[] {
   return [...new Set(values)];
 }
 
-export function sortUniqueStrings(values: readonly string[]): string[] {
+export function sortUniqueStrings(values: Iterable<string>): string[] {
   return [...new Set(values)].sort();
 }
 
@@ -23,24 +23,23 @@ export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] 
   return normalizeTrimmedStringList(value);
 }
 
-export function normalizeStringEntries(value: unknown): [string, string][] {
+export function normalizeStringEntries(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter(item => Array.isArray(item) && item.length >= 2)
-    .map(([key, val]) => [String(key).trim(), String(val).trim()])
-    .filter(([key]) => key.length > 0);
+    .map((item) => String(item).trim())
+    .filter((s) => s.length > 0);
 }
 
-export function normalizeSortedUniqueStringEntries(value: unknown): [string, string][] {
+export function normalizeSortedUniqueStringEntries(value: unknown): string[] {
   const entries = normalizeStringEntries(value);
   const seen = new Set<string>();
   return entries
-    .filter(([key]) => {
+    .filter((key) => {
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     })
-    .sort(([a], [b]) => a.localeCompare(b));
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string[] {
@@ -51,10 +50,10 @@ export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string
   return normalizeTrimmedStringList(value);
 }
 
-export function normalizeUniqueStringEntries(value: unknown): [string, string][] {
+export function normalizeUniqueStringEntries(value: unknown): string[] {
   const entries = normalizeStringEntries(value);
   const seen = new Set<string>();
-  return entries.filter(([key]) => {
+  return entries.filter((key) => {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

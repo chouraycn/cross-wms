@@ -221,16 +221,16 @@ export async function discoverOpenAICompatibleLocalModels(params: {
           name: model.id,
           reasoning: isReasoningModelHeuristic(model.id),
           input: ["text"],
-          cost: SELF_HOSTED_DEFAULT_COST,
+          cost: SELF_HOSTED_DEFAULT_COST as { input: number; output: number; cacheRead: number; cacheWrite: number },
           contextWindow:
             params.contextWindow ??
             readPositiveInteger(model.meta?.n_ctx_train) ??
-            SELF_HOSTED_DEFAULT_CONTEXT_WINDOW,
-          maxTokens: params.maxTokens ?? SELF_HOSTED_DEFAULT_MAX_TOKENS,
+            (SELF_HOSTED_DEFAULT_CONTEXT_WINDOW as number),
+          maxTokens: params.maxTokens ?? (SELF_HOSTED_DEFAULT_MAX_TOKENS as number),
         };
         const runtimeContextTokens = runtimeContextTokensByModelId.get(model.id);
         if (runtimeContextTokens) {
-          modelConfig.contextTokens = runtimeContextTokens;
+          (modelConfig as { contextTokens?: number }).contextTokens = runtimeContextTokens;
         }
         return modelConfig;
       });
@@ -296,9 +296,9 @@ function buildOpenAICompatibleSelfHostedProviderConfig(params: {
                 name: params.modelId,
                 reasoning: params.reasoning ?? false,
                 input: params.input ?? ["text"],
-                cost: SELF_HOSTED_DEFAULT_COST,
-                contextWindow: params.contextWindow ?? SELF_HOSTED_DEFAULT_CONTEXT_WINDOW,
-                maxTokens: params.maxTokens ?? SELF_HOSTED_DEFAULT_MAX_TOKENS,
+                cost: SELF_HOSTED_DEFAULT_COST as { input: number; output: number; cacheRead: number; cacheWrite: number },
+                contextWindow: params.contextWindow ?? (SELF_HOSTED_DEFAULT_CONTEXT_WINDOW as number),
+                maxTokens: params.maxTokens ?? (SELF_HOSTED_DEFAULT_MAX_TOKENS as number),
               },
             ],
           },

@@ -33,8 +33,12 @@ export async function runPluginHostCleanup(params: {
 }
 
 export async function cleanupReplacedPluginHostRegistry(params: {
-  replacedPluginIds: string[];
+  replacedPluginIds?: string[];
   sessionId?: string;
+  cfg?: unknown;
+  previousRegistry?: unknown;
+  nextRegistry?: unknown;
+  shouldCleanup?: () => boolean;
 }): Promise<void> {
   void params;
 }

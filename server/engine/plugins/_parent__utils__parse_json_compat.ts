@@ -1,13 +1,4 @@
-import JSON5 from "json5";
-
-export function parseJsonWithJson5Fallback(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    try {
-      return JSON5.parse(text);
-    } catch (e) {
-      throw new Error(`Failed to parse JSON: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-}
+// Re-export from canonical implementation at server/engine/infra/parse-json-compat.ts
+// 收敛重复实现（原文件有独立实现，与 infra/parse-json-compat.ts 行为一致）
+// 参考 openclaw/src/utils/parse-json-compat.ts
+export { parseJsonWithJson5Fallback } from "../infra/parse-json-compat.js";

@@ -25,6 +25,11 @@ import type {
   PluginFormat,
 } from "./manifest-types.js";
 import type { PluginKind } from "./plugin-kind.types.js";
+import type {
+  OpenClawPluginHttpRouteAuth,
+  OpenClawPluginHttpRouteMatch,
+  UnifiedModelCatalogProviderPlugin,
+} from "./types.js";
 
 // ============================================================================
 // 内联降级类型占位：未移植模块
@@ -67,7 +72,7 @@ type PluginSessionSchedulerJobRegistration = {
 };
 type PluginSessionExtensionRegistration = unknown;
 type PluginToolMetadataRegistration = unknown;
-type PluginTrustedToolPolicyRegistration = unknown;
+import type { PluginTrustedToolPolicyRegistration } from "./host-hooks.js";
 
 /** 降级占位：./manifest.js —— PluginManifestContracts */
 type PluginManifestContracts = Record<string, unknown>;
@@ -90,10 +95,8 @@ type OpenClawPluginCliRegistrar = unknown;
 type OpenClawPluginCommandDefinition = unknown;
 type OpenClawPluginGatewayRuntimeScopeSurface = unknown;
 type OpenClawGatewayDiscoveryService = unknown;
-type OpenClawPluginHttpRouteAuth = unknown;
 type OpenClawPluginHttpRouteHandler = unknown;
 type OpenClawPluginHttpRouteUpgradeHandler = unknown;
-type OpenClawPluginHttpRouteMatch = unknown;
 type OpenClawPluginHostedMediaResolver = unknown;
 type OpenClawPluginReloadRegistration = unknown;
 type OpenClawPluginSecurityAuditCollector = unknown;
@@ -103,7 +106,7 @@ type PluginConversationBindingResolvedEvent = unknown;
 type PluginLogger = (...args: unknown[]) => void;
 type PluginOrigin = string;
 type PluginTextTransformRegistration = unknown;
-type CliBackendPlugin = unknown;
+type CliBackendPlugin = { id: string; [key: string]: unknown };
 type ImageGenerationProviderPlugin = { id: string };
 type MediaUnderstandingProviderPlugin = { id: string };
 type TranscriptSourceProvider = { id: string };
@@ -116,7 +119,6 @@ type SpeechProviderPlugin = { id: string };
 type VideoGenerationProviderPlugin = { id: string };
 type WebFetchProviderPlugin = { id: string };
 type WebSearchProviderPlugin = { id: string };
-type UnifiedModelCatalogProviderPlugin = { id: string };
 /** 降级占位：./types.js —— OpenClawPluginNodeInvokePolicy */
 type OpenClawPluginNodeInvokePolicy = unknown;
 

@@ -17,14 +17,37 @@ export type CompiledSqliteQuery = {
   parameters: ReadonlyArray<SQLInputValue>;
 };
 
+/** Kysely 表达式构建器占位类型 */
+export type KyselyExpressionBuilder = {
+  ref: (column: string) => unknown;
+};
+
+/** Kysely ON CONFLICT 构建器占位类型 */
+export type KyselyOnConflictBuilder = {
+  columns: (columns: readonly string[]) => {
+    doUpdateSet: (
+      set: Record<string, unknown | ((eb: KyselyExpressionBuilder) => unknown)>,
+    ) => KyselyQueryBuilder;
+  };
+};
+
 /** Kysely 查询构建器占位类型 */
 export type KyselyQueryBuilder = {
   compile(): CompiledSqliteQuery;
+  select: (columns: readonly string[]) => KyselyQueryBuilder;
+  orderBy: (column: string, order?: string) => KyselyQueryBuilder;
+  values: (row: Record<string, unknown>) => KyselyQueryBuilder;
+  onConflict: (cb: (conflict: KyselyOnConflictBuilder) => KyselyQueryBuilder) => KyselyQueryBuilder;
+  where: (...args: unknown[]) => KyselyQueryBuilder;
 };
 
 /** Kysely 数据库占位类型 */
 export interface KyselyDatabase<DB = Record<string, unknown>> {
   readonly __DB: DB;
+  selectFrom: (table: string) => KyselyQueryBuilder;
+  insertInto: (table: string) => KyselyQueryBuilder;
+  deleteFrom: (table: string) => KyselyQueryBuilder;
+  updateTable: (table: string) => KyselyQueryBuilder;
 }
 
 /** SQLite 查询执行结果 */

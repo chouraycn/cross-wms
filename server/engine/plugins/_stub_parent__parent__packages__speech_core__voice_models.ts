@@ -10,3 +10,7 @@ export const resolveVoiceModelRefs: any = undefined as any;
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const synthesizeVoiceModelCatalogEntries: any = undefined as any;
+
+// Type exports for voice model contracts.
+export type VoiceModelCapabilities = { [key: string]: unknown };
+export type VoiceModelProvider = { id: string; [key: string]: unknown };

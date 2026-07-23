@@ -191,3 +191,8 @@ export {
 export const getLoadedChannelPlugin: any = undefined as any;
 export const getChannelPlugin: any = undefined as any;
 export const normalizeChannelId: any = undefined as any;
+
+/** Lists currently loaded channel plugins (stub — returns empty array). */
+export function listChannelPlugins(): import("../types.public.js").ChannelPlugin[] {
+  return [];
+}

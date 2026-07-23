@@ -3,14 +3,16 @@
  * 移植自 openclaw/src/plugins/runtime-state.ts。
  * 降级策略：返回 undefined/null。
  */
-export const PLUGIN_REGISTRY_STATE = Symbol.for("openclaw.pluginRegistryState");
+import type { PluginRegistry } from "./registry-types.js";
 
-/** 占位：PluginRegistry。 */
-type PluginRegistry = unknown;
+export const PLUGIN_REGISTRY_STATE = Symbol.for("openclaw.pluginRegistryState");
 
 export type RuntimeTrackedPluginRegistry = PluginRegistry;
 
 export type RegistrySurfaceState = {
+  registry: RuntimeTrackedPluginRegistry | null;
+  pinned: boolean;
+  version: number;
   activeRegistry?: RuntimeTrackedPluginRegistry;
   workspaceDir?: string;
 };
@@ -19,6 +21,16 @@ export type RegistryState = {
   active?: RegistrySurfaceState;
   pinnedHttpRouteRegistry?: RuntimeTrackedPluginRegistry;
   pinnedChannelRegistry?: RuntimeTrackedPluginRegistry;
+  activeRegistry: RuntimeTrackedPluginRegistry | null;
+  activeVersion: number;
+  httpRoute: RegistrySurfaceState;
+  channel: RegistrySurfaceState;
+  sessionExtension: RegistrySurfaceState;
+  agentEventBridgeUnsubscribe?: () => void;
+  key: string | null;
+  workspaceDir: string | null;
+  runtimeSubagentMode: "default" | "explicit" | "gateway-bindable";
+  importedPluginIds: Set<string>;
 };
 
 export function getPluginRegistryState(): RegistryState | undefined {

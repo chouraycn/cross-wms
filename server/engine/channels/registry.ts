@@ -73,3 +73,10 @@ export function clearRegistry(): void {
 export function getRegistryCount(): number {
   return channelRegistry.size;
 }
+
+/** Normalizes a raw channel/provider id to a canonical string. */
+export function normalizeAnyChannelId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}

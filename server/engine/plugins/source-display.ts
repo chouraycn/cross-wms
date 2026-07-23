@@ -24,7 +24,7 @@ export function formatPluginSourceForTable(
   plugin: Pick<PluginRecord, "source" | "origin">,
   roots: PluginSourceRoots,
 ): { value: string; rootKey?: keyof PluginSourceRoots } {
-  const raw = plugin.source;
+  const raw = plugin.source ?? "";
 
   if (plugin.origin === "bundled" && roots.stock) {
     const rel = tryRelative(roots.stock, raw);
