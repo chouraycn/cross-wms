@@ -13,10 +13,7 @@ import {
   resolveEffectiveMediaEntryCapabilities,
   matchesMediaEntryCapability,
 } from "../entry-capabilities.js";
-import type {
-  MediaUnderstandingCapabilityRegistry,
-  MediaUnderstandingModelConfig,
-} from "../types.js";
+import type { MediaUnderstandingCapabilityRegistry } from "../types.js";
 import type { MediaUnderstandingModelConfig as ModelConfig } from "../../config/types.tools.js";
 
 describe("resolveConfiguredMediaEntryCapabilities", () => {
