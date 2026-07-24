@@ -1,7 +1,7 @@
-// === PENDING MIGRATION STUB ===
-// Source: openclaw/src/infra/outbound/session-binding-service.ts (待迁移)
-// Status: 纯类型占位 stub — 类型为 any
+// === RE-EXPORT — 已收敛 ===
+// Source: openclaw/src/infra/outbound/session-binding-service.ts
 // Used by: server/engine/plugins/conversation-binding.ts
-// 注：openclaw ConversationRef 描述一个绑定到 session 的对话引用
+//
+// ConversationRef 真实定义位于 ../infra/session-binding.types.ts，此 stub 已替换为重导出。
 
-export type ConversationRef = any;
+export type { ConversationRef } from "../infra/session-binding.types.js";

@@ -297,7 +297,10 @@ export type PluginHookReplyDispatchResult = {
   queuedFinal: boolean;
   counts: Record<string, number>;
 };
-export type PluginHookReplyPayloadSendingEvent = { [key: string]: unknown };
+export type PluginHookReplyPayloadSendingEvent = {
+  payload: ReplyPayload;
+  [key: string]: unknown;
+};
 export type PluginHookReplyPayloadSendingResult = {
   payload?: PluginHookReplyPayload;
   cancel?: boolean;

@@ -1,5 +1,23 @@
-export { validateConfig, resolveConfigSchema } from './schema.js';
-export type { ConfigSchema, ConfigValidationError } from './schema.js';
+export {
+  validateConfig,
+  resolveConfigSchema,
+  mergeObjectSchema,
+  lookupConfigSchema,
+  buildConfigSchema,
+  resetConfigSchemaCache,
+} from './schema.js';
+export type {
+  ConfigSchema,
+  ConfigValidationError,
+  ConfigUiHint,
+  ConfigUiHints,
+  ConfigSchemaResponse,
+  ConfigSchemaReloadKind,
+  ConfigSchemaLookupChild,
+  ConfigSchemaLookupResult,
+  PluginUiMetadata,
+  ChannelUiMetadata,
+} from './schema.js';
 export { resolveEnvVar, resolveEnvVars } from './env-vars.js';
 export type { EnvVarBinding } from './env-vars.js';
 export { resolveConfigPath, resolveDataDir, resolveConfigDir } from './paths.js';
