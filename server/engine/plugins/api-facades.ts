@@ -1,7 +1,7 @@
 // Builds plugin API facades exposed to bundled and external plugins.
 import type { OpenClawPluginApi } from "./types.js";
 
-type PluginApiFacadeFields = Pick<
+export type PluginApiFacadeFields = Pick<
   OpenClawPluginApi,
   "agent" | "lifecycle" | "runContext" | "session"
 >;
@@ -9,7 +9,7 @@ type PluginApiFacadeFields = Pick<
 export type OpenClawPluginApiWithoutFacades = Omit<OpenClawPluginApi, keyof PluginApiFacadeFields>;
 
 /** Callable method signatures for the flat plugin API methods consumed by facades. */
-type PluginApiFacadeSource = {
+export type PluginApiFacadeSource = {
   clearRunContext: (...args: unknown[]) => unknown;
   emitAgentEvent: (...args: unknown[]) => unknown;
   enqueueNextTurnInjection: (...args: unknown[]) => unknown;

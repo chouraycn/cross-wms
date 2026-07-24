@@ -124,7 +124,7 @@ export class AgentLifecycleManager {
   }
 
   getStateSnapshot(): Map<string, AgentLifecycleState> {
-    return new Map(this.entries.entries().map(([agentId, entry]) => [agentId, entry.state]));
+    return new Map(Array.from(this.entries.entries()).map(([agentId, entry]) => [agentId, entry.state]));
   }
 }
 

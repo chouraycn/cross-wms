@@ -66,7 +66,7 @@ export function createDiscordChannelPlugin(): ChannelPlugin {
       const discordConfig = config.discord as Record<string, unknown>;
       if (discordConfig && (discordConfig.webhookUrl || discordConfig.token)) {
         return {
-          webhookUrl: discordConfig.webhookUrl as string | undefined,
+          webhookUrl: discordConfig.webhookUrl as string,
           token: discordConfig.token as string | undefined,
         };
       }

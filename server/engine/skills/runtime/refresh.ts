@@ -2,8 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
-import type { OpenClawConfig } from "../../config/types.skills.js";
+import type { OpenClawConfig } from "../../config/types/openclaw.js";
 import { getChildLogger } from "../../logging/logger.js";
+import type { SkillEntry } from "../types.js";
 
 import {
   bumpSkillsSnapshotVersion,
@@ -19,7 +20,7 @@ export {
   type SkillsChangeEvent,
 } from "./refresh-state.js";
 
-const logger = getChildLogger("skills");
+const logger = getChildLogger({ module: "skills" });
 
 type SkillsPathWatchState = {
   watcher: FSWatcher;
@@ -179,7 +180,8 @@ function resolveWatchDebounceMs(config?: OpenClawConfig): number {
 function resolveSkillsWatcherUsePolling(): boolean {
   const envPolling = process.env.CHOKIDAR_USEPOLLING;
   if (envPolling === undefined) {
-    return process.platform === "os400";
+    // os400 is not a valid Node.js platform; use 'aix' for IBM i systems
+    return process.platform === "aix";
   }
   const normalized = envPolling.toLowerCase();
   if (normalized === "false" || normalized === "0") {
@@ -214,7 +216,8 @@ function createSkillsPathWatcher(target: WatchTarget, debounceMs: number): Skill
       stabilityThreshold: debounceMs,
       pollInterval: 100,
     },
-    ignored: (watchPath, stats) => shouldIgnoreSkillsWatchPath(watchPath, stats, { usePolling }),
+    ignored: (watchPath: string, stats?: { isDirectory?: () => boolean; isSymbolicLink?: () => boolean }) =>
+      shouldIgnoreSkillsWatchPath(watchPath, stats, { usePolling }),
   });
 
   const state: SkillsPathWatchState = {
@@ -407,7 +410,7 @@ export async function resetSkillsRefreshForTest(): Promise<void> {
 // 兼容层：旧版 API 支持
 // ============================================================================
 
-let cachedSkills: Array<{ skill: { name: string; [key: string]: unknown }; [key: string]: unknown }> = [];
+let cachedSkills: SkillEntry[] = [];
 
 export type RefreshResult = {
   success: boolean;
@@ -463,7 +466,7 @@ export async function refreshSkills(workspaceDir: string): Promise<RefreshResult
   }
 }
 
-export function getCachedSkills(): Array<{ skill: { name: string; [key: string]: unknown }; [key: string]: unknown }> {
+export function getCachedSkills(): SkillEntry[] {
   return cachedSkills;
 }
 
@@ -484,7 +487,7 @@ export function needsRefresh(): boolean {
   return Date.now() - lastRefreshTime > refreshIntervalMs;
 }
 
-export async function getSkills(workspaceDir?: string): Promise<Array<{ skill: { name: string; [key: string]: unknown }; [key: string]: unknown }>> {
+export async function getSkills(workspaceDir?: string): Promise<SkillEntry[]> {
   if (cachedSkills.length > 0 && !needsRefresh()) {
     return cachedSkills;
   }

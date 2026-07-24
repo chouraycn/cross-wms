@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach } from "vitest";
 
-export const pluginTestRepoRoot = path.resolve(import.meta.dirname, "../..");
+export const pluginTestRepoRoot = path.resolve(__dirname, "../..");
 
 const tempDirs: string[] = [];
 

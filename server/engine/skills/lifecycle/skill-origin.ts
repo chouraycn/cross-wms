@@ -12,7 +12,7 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("skill-origin");
+const logger = getChildLogger({ module: "skill-origin" } as any);
 
 // ============================================================================
 // 类型定义

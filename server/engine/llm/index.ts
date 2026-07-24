@@ -3,8 +3,8 @@ export type { Api, Model, Usage, ModelThinkingLevel, ModelCost, StreamEvent, Com
 export { complete, completeSimple, stream, streamSimple } from './stream.js';
 export { getEnvApiKey, hasEnvApiKey, listProvidersWithEnvKeys } from './env-api-keys.js';
 export { calculateCost, getSupportedThinkingLevels, clampThinkingLevel, modelsAreEqual } from './model-utils.js';
-export type { ModelRegistry, ModelRegistryEntry } from './model-registry.js';
-export { registerModel, getModel, listRegisteredModels, findModel, findModelsByProvider, clearModelRegistry } from './model-registry.js';
+export type { ModelRegistry } from './model-registry.js';
+export { registerModel, getModel, listRegisteredModels, findModel, findModelsByProvider } from './model-registry.js';
 export type { ApiProvider, ApiProviderContext } from './api-registry.js';
 export { registerApiProvider, getApiProvider, listApiProviders, clearApiProviderRegistry } from './api-registry.js';
 export type { OAuthFlowResult, OAuthProvider } from './oauth.js';

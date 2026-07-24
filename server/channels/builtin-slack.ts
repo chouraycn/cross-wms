@@ -67,7 +67,7 @@ export function createSlackChannelPlugin(): ChannelPlugin {
       const slackConfig = config.slack as Record<string, unknown>;
       if (slackConfig && (slackConfig.webhookUrl || slackConfig.token)) {
         return {
-          webhookUrl: slackConfig.webhookUrl as string | undefined,
+          webhookUrl: slackConfig.webhookUrl as string,
           token: slackConfig.token as string | undefined,
           signingSecret: slackConfig.signingSecret as string | undefined,
         };

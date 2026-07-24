@@ -36,7 +36,7 @@ export function buildChannelUiCatalog(entries?: ChannelPluginCatalogEntry[]): Ch
       provider: entry.provider,
       label: entry.label,
       description: entry.description,
-      iconUrl: entry.iconUrl,
+      iconUrl: entry.iconUrl as string | undefined,
     })),
   };
 }

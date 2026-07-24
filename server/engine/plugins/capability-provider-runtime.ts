@@ -463,8 +463,8 @@ function resolveRequestedCapabilityPluginIds(params: {
   }
   return runtimePluginIds.size > 0
     ? {
-        runtimePluginIds: uniqueSorted(runtimePluginIds),
-        bundledCompatPluginIds: uniqueSorted(bundledCompatPluginIds),
+        runtimePluginIds: uniqueSorted(Array.from(runtimePluginIds)),
+        bundledCompatPluginIds: uniqueSorted(Array.from(bundledCompatPluginIds)),
       }
     : undefined;
 }

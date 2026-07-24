@@ -77,7 +77,7 @@ function resolveNativeExecApprovalClientList(params?: { excludeChannel?: string 
   return formatHumanList(
     listNativeExecApprovalClientLabels({
       excludeChannel: params?.excludeChannel,
-    }),
+    }) as readonly string[],
   );
 }
 
@@ -444,7 +444,7 @@ export function buildExecApprovalUnavailableReplyPayload(
             channel,
             channelLabel: params.channelLabel,
             accountId: params.accountId,
-          })
+          }) as string | null
         : null;
     if (setupText) {
       lines.push(setupText);

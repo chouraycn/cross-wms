@@ -1,4 +1,4 @@
-import type { Skill } from "./skill-contract.js";
+import type { Skill } from "../types.js";
 
 export type SkillTelemetrySource = "bundled" | "workspace" | "unknown";
 

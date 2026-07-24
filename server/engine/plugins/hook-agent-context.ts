@@ -130,7 +130,7 @@ export function buildAgentHookContextIdentityFields(params: {
 }): Pick<PluginHookAgentContext, "senderId" | "chatId" | "channelContext"> {
   const trigger = normalizeOptionalString(params.trigger);
   if (trigger && trigger !== "user") {
-    return {};
+    return {} as Pick<PluginHookAgentContext, "senderId" | "chatId" | "channelContext">;
   }
 
   const senderId = normalizeOptionalString(params.senderId);
@@ -154,5 +154,5 @@ export function buildAgentHookContextIdentityFields(params: {
     ...(senderId ? { senderId } : {}),
     ...(chatId ? { chatId } : {}),
     ...(channelContext ? { channelContext } : {}),
-  };
+  } as Pick<PluginHookAgentContext, "senderId" | "chatId" | "channelContext">;
 }

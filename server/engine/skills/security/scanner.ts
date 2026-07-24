@@ -382,10 +382,10 @@ export async function scanDirectoryWithSummary(
     dependencySecurityScan = await checkDependencySecurity(dirPath);
 
     for (const vulnerability of dependencySecurityScan.vulnerabilities) {
-      const severity = vulnerability.severity === "high" ? "critical" : vulnerability.severity;
+      const severity: SkillScanSeverity = vulnerability.severity === "high" ? "critical" : vulnerability.severity as SkillScanSeverity;
       allFindings.push({
         ruleId: `dep-vuln-${vulnerability.name}`,
-        severity: severity as SkillScanSeverity,
+        severity,
         file: path.join(dirPath, "package.json"),
         line: 0,
         message: `${vulnerability.name}@${vulnerability.version} has ${vulnerability.severity} vulnerability${vulnerability.cve ? ` (${vulnerability.cve})` : ""}: ${vulnerability.description}`,

@@ -19,7 +19,15 @@ export type GetReplyOptions = {
 };
 
 export type ReplyPayload = {
-  text: string;
+  text?: string;
+  mediaUrl?: string;
+  mediaUrls?: string[];
+  trustedLocalMedia?: boolean;
+  sensitiveMedia?: boolean;
+  presentation?: unknown;
+  delivery?: unknown;
+  interactive?: unknown;
+  channelData?: Record<string, unknown>;
   sessionId?: string;
   modelUsed?: string;
   usage?: {

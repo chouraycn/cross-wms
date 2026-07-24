@@ -55,14 +55,14 @@ function resolvePluginTargetPrefix(prefix: string): string | undefined {
   const normalizedPrefix = normalizeOptionalLowercaseString(prefix);
   if (!normalizedPrefix) return undefined;
   const registry = getActivePluginChannelRegistryFromState();
-  for (const entry of registry?.channels ?? []) {
+  for (const entry of (registry as any)?.channels ?? []) {
     const plugin = entry.plugin;
     const channelId = normalizeOptionalLowercaseString(plugin.id);
     const candidates = plugin.messaging?.targetPrefixes ?? [];
     if (
       channelId &&
       candidates.some(
-        (candidate) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
+        (candidate: any) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
       )
     ) {
       return channelId;

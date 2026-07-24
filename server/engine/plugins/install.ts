@@ -2308,7 +2308,7 @@ async function installBundleFromSourceDir(
     sourceFamily: sourceFamilyForInstallPolicyKind(params.installPolicyRequest?.kind, "archive"),
     scan: async () =>
       await runtime.scanBundleInstallSource({
-        dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
+        archivePath: params.sourceDir,
         config: params.config,
         sourceDir: params.sourceDir,
         pluginId,
@@ -2318,7 +2318,7 @@ async function installBundleFromSourceDir(
         source: params.installPolicyRequest?.source,
         mode: targetResult.target.effectiveMode,
         version: manifestRes.manifest.version,
-      }),
+      } as any),
   });
   if (scanResult) {
     return scanResult;
@@ -2581,8 +2581,6 @@ async function scanAndLinkInstalledPackage(params: {
         allowManagedNpmRootPackagePeerSymlinks:
           params.dependencyScanRootDir !== undefined &&
           path.resolve(params.dependencyScanRootDir) !== path.resolve(params.installedDir),
-        dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
-        dependencyScanRootDir: params.dependencyScanRootDir,
         logger: params.logger,
         mode: params.mode,
         packageDir: params.installedDir,
@@ -2592,7 +2590,7 @@ async function scanAndLinkInstalledPackage(params: {
         requestedSpecifier: params.requestedSpecifier,
         source: params.source,
         trustedSourceLinkedOfficialInstall: params.trustedSourceLinkedOfficialInstall,
-      }),
+      } as any),
   });
   if (scanResult) {
     return scanResult;

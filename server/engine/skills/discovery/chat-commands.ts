@@ -16,7 +16,7 @@ import type { SkillCommandSpec } from "./command-specs.js";
 import { getAllCommandSpecs } from "./command-specs.js";
 import { listAvailableCommands } from "./command-dispatch.js";
 
-const logger = getChildLogger("chat-commands");
+const logger = getChildLogger({ module: "chat-commands" });
 
 // ============================================================================
 // 类型定义
@@ -102,9 +102,12 @@ export class ChatCommandParser {
     const [typeStr, actionStr, ...args] = parts;
 
     const type = this.parseType(typeStr);
-    const action = this.parseAction(type, actionStr);
+    if (!type) {
+      return null;
+    }
 
-    if (!type || !action) {
+    const action = this.parseAction(type, actionStr);
+    if (!action) {
       return null;
     }
 
@@ -438,7 +441,7 @@ export function buildCommandIndex(): Map<string, SkillCommandSpec> {
   const specs = getAllCommandSpecs();
   for (const spec of specs) {
     for (const cmd of spec.commands) {
-      index.set(`${spec.skillName}:${cmd.name}`, cmd);
+      index.set(`${spec.skillName}:${cmd.command}`, cmd);
     }
   }
   return index;
@@ -449,7 +452,7 @@ export function findCommandByName(name: string): SkillCommandSpec | undefined {
   const specs = getAllCommandSpecs();
   for (const spec of specs) {
     for (const cmd of spec.commands) {
-      if (cmd.name === name) {
+      if (cmd.command === name) {
         return cmd;
       }
     }

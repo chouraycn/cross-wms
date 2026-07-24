@@ -15,6 +15,7 @@ import {
   buildCommandGroupEntries,
   defineImportedCommandGroupSpec,
   defineImportedProgramCommandGroupSpecs,
+  type CommandGroupDescriptorSpec,
 } from "./program/command-group-descriptors.js";
 import type { ProgramContext } from "./context.js";
 import {
@@ -43,7 +44,7 @@ export type CommandRegistration = {
 
 function withProgramOnlySpecs(
   specs: readonly CommandGroupDescriptorSpec<(program: Command) => Promise<void> | void>[],
-): CommandGroupDescriptorSpec<(params: CommandRegisterParams) => Promise<void>>[] {
+): readonly CommandGroupDescriptorSpec<(params: CommandRegisterParams) => Promise<void> | void>[] {
   return specs.map((spec) => ({
     commandNames: spec.commandNames,
     register: async ({ program }) => {
@@ -51,11 +52,6 @@ function withProgramOnlySpecs(
     },
   }));
 }
-
-type CommandGroupDescriptorSpec<T> = {
-  commandNames: string[];
-  register: T;
-};
 
 const coreEntrySpecs: readonly CommandGroupDescriptorSpec<
   (params: CommandRegisterParams) => Promise<void> | void
@@ -129,9 +125,7 @@ const coreEntrySpecs: readonly CommandGroupDescriptorSpec<
     ["agent"],
     () => import("./register.agent-turn.js"),
     (mod, { program, ctx }) => {
-      mod.registerAgentTurnCommand(program, {
-        agentChannelOptions: ctx.agentChannelOptions,
-      });
+      mod.registerAgentTurnCommand(program);
     },
   ),
   defineImportedCommandGroupSpec(

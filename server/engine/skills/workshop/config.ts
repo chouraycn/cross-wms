@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.skills.js";
+import type { OpenClawConfig } from "../../config/types/openclaw.js";
 
 export type SkillWorkshopConfig = {
   autonomous: {

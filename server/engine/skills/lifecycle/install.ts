@@ -244,18 +244,25 @@ export async function installFromDownload(
     const content = await fs.readFile(downloadPath, "utf-8");
 
     onProgress?.("Installing skill...");
-    const result = await writeWorkspaceSkill(workspaceDir, finalSkillName, content);
+    const skillsDir = await ensureWorkspaceSkillsDir(workspaceDir);
+    const skillDir = path.join(skillsDir, finalSkillName);
+    const skillFile = path.join(skillDir, "SKILL.md");
 
-    if (!result.success) {
-      return { success: false, error: result.error };
-    }
+    await writeWorkspaceSkill({
+      workspaceDir,
+      skillDir,
+      skillFile,
+      content,
+      mode: "create",
+      symlinkPolicy: { allowWrites: false, allowedTargetRealPaths: [] },
+    });
 
     onProgress?.(`Skill '${finalSkillName}' installed successfully`);
 
     return {
       success: true,
       skillName: finalSkillName,
-      installedPath: result.skillDir,
+      installedPath: skillDir,
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);

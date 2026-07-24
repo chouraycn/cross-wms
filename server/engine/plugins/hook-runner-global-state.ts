@@ -40,7 +40,7 @@ function collectHookRegistrySources(
     // their hooks would resurrect stale config closures. Only lastInitialized
     // can be retired here (the live registries below are active/pinned, never
     // retired); SDK-supplied registries are not PluginRegistry and never match.
-    if (isPluginRegistryRetired(registry as PluginRegistry)) {
+    if (isPluginRegistryRetired(registry as unknown as PluginRegistry)) {
       return;
     }
     seen.add(registry);
@@ -49,9 +49,9 @@ function collectHookRegistrySources(
   // Precedence: the explicitly initialized registry wins so an SDK caller that
   // initializes an isolated registry stays authoritative; in the gateway it is
   // the same object as the active registry, so this just dedupes.
-  add(lastInitialized);
+  add(lastInitialized as any);
   for (const registry of collectLivePluginRegistries()) {
-    add(registry);
+    add(registry as any);
   }
   return ordered;
 }

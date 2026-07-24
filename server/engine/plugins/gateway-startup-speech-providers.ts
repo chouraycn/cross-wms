@@ -153,7 +153,7 @@ export function collectConfiguredSpeechProviderIds(config: OpenClawConfig): Read
         if (typeof agent.id === "string") {
           addConfiguredTtsProviderIds(
             configured,
-            resolveEffectiveTtsConfig(config, { agentId: agent.id }),
+            resolveEffectiveTtsConfig(config),
           );
         } else {
           addConfiguredTtsProviderIds(configured, agent.tts);
@@ -168,7 +168,7 @@ export function collectConfiguredSpeechProviderIds(config: OpenClawConfig): Read
       if (!isRecord(channelConfig)) {
         continue;
       }
-      addConfiguredTtsProviderIds(configured, resolveEffectiveTtsConfig(config, { channelId }));
+      addConfiguredTtsProviderIds(configured, resolveEffectiveTtsConfig(config));
       if (isRecord(channelConfig.voice)) {
         addConfiguredTtsProviderIds(configured, channelConfig.voice.tts);
       }
@@ -179,7 +179,7 @@ export function collectConfiguredSpeechProviderIds(config: OpenClawConfig): Read
           }
           addConfiguredTtsProviderIds(
             configured,
-            resolveEffectiveTtsConfig(config, { channelId, accountId }),
+            resolveEffectiveTtsConfig(config),
           );
           if (isRecord(accountConfig.voice)) {
             addConfiguredTtsProviderIds(configured, accountConfig.voice.tts);

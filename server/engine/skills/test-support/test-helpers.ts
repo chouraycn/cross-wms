@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { Skill } from "../loading/skill-contract.js";
+import type { Skill } from "../types.js";
 import type { SkillEntry } from "../types.js";
 
 export async function writeSkill(params: {
@@ -33,14 +33,7 @@ export function createCanonicalFixtureSkill(params: {
     filePath: params.filePath,
     baseDir: params.baseDir,
     promptVersion: params.promptVersion,
-    source: params.source,
-    sourceInfo: {
-      scope: "project",
-      origin: "top-level",
-      baseDir: params.baseDir,
-      filePath: params.filePath,
-      source: params.source,
-    },
+    source: params.source as any,
     disableModelInvocation: params.disableModelInvocation ?? false,
   };
 }

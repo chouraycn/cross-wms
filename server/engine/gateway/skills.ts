@@ -95,7 +95,7 @@ export const skillsHandlers = {
     logger.debug("[Gateway:Skills] skills.search called", { query, limit });
 
     const entries = getSkills() as unknown as SkillIndexEntry[];
-    const results = searchSkills(entries, query || "", limit) as unknown as Array<{ skill: { name: string; description?: string; version?: string }; source: string }>;
+    const results = searchSkills(entries, query || "") as unknown as Array<{ skill: { name: string; description?: string; version?: string }; source: string }>;
 
     const mappedResults = results.map((entry) => ({
       id: entry.skill.name,

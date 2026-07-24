@@ -14,7 +14,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("skill-gating");
+const logger = getChildLogger({ module: "skill-gating" } as any);
 
 const execAsync = promisify(exec);
 
@@ -300,9 +300,9 @@ export function getSkillGatingManager(): SkillGatingManager {
 
 /** 初始化全局门控管理器 */
 export function initSkillGatingManager(
-  options?: Parameters<typeof SkillGatingManager>[0],
+  options?: { configChecker?: ConfigChecker; cacheTimeout?: number },
 ): SkillGatingManager {
-  globalGatingManager = new SkillGatingManager(options);
+  globalGatingManager = new SkillGatingManager(options as any);
   return globalGatingManager;
 }
 

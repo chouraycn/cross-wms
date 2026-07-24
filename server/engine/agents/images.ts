@@ -79,7 +79,7 @@ export async function detectAndLoadPromptImages(params: {
   const images = mergePromptAttachmentImages({
     existingImages: params.existingImages,
     promptRefImages,
-  });
+  }) as ImageContent[];
 
   return { images, detectedRefs: allRefs, loadedCount, skippedCount };
 }

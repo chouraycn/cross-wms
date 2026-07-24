@@ -232,8 +232,8 @@ function migrateLegacySessionEntries(entries: FileEntry[]): void {
   const header = entries.find((entry): entry is SessionHeader =>
     isRecord(entry) && (entry as Record<string, unknown>).type === "session",
   );
-  const version =
-    (isRecord(header) ? (header as Record<string, unknown>).version : undefined) ?? 1;
+  const version: number =
+    (isRecord(header) ? ((header as Record<string, unknown>).version as number | undefined) : undefined) ?? 1;
   if (version < 2) {
     // Older session logs predate entry ids. Synthetic ids preserve branch order
     // long enough to export the reachable suffix without mutating source files.

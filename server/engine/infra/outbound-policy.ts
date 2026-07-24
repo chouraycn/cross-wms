@@ -181,10 +181,10 @@ export async function buildCrossContextDecoration(params: {
   if (markerConfig?.enabled === false) return null;
   const currentName = (await lookupDirectoryDisplay({ cfg: params.cfg, channel: params.channel, targetId: currentTarget, accountId: params.accountId ?? undefined })) ?? currentTarget;
   const originLabel = formatTargetDisplay({ channel: params.channel, target: currentTarget, display: currentName });
-  const prefixTemplate = markerConfig?.prefix ?? "[from {channel}] ";
-  const suffixTemplate = markerConfig?.suffix ?? "";
-  const prefix = prefixTemplate.replaceAll("{channel}", originLabel);
-  const suffix = suffixTemplate.replaceAll("{channel}", originLabel);
+  const prefixTemplate: string = markerConfig?.prefix ?? "[from {channel}] ";
+  const suffixTemplate: string = markerConfig?.suffix ?? "";
+  const prefix = prefixTemplate.replaceAll("{channel}", originLabel as string);
+  const suffix = suffixTemplate.replaceAll("{channel}", originLabel as string);
   const buildPresentation = getChannelPlugin(params.channel)?.messaging?.buildCrossContextPresentation;
   const presentationBuilder = buildPresentation
     ? (message: string) => buildPresentation({ originLabel, message, cfg: params.cfg, accountId: params.accountId ?? undefined })

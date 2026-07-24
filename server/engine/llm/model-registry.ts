@@ -67,7 +67,7 @@ export class LlmModelRegistry implements ModelRegistry {
     ];
 
     for (const model of builtins) {
-      this.register(model);
+      this.register(model as Model);
     }
 
     logger.info(`[LlmModelRegistry] Registered ${builtins.length} builtin models`);
@@ -92,7 +92,7 @@ export class LlmModelRegistry implements ModelRegistry {
   }
 
   private getApiKeyEnvVar(apiType: ModelApiType): string | undefined {
-    const envMap: Record<ModelApiType, string> = {
+    const envMap: Partial<Record<ModelApiType, string>> = {
       'openai-chat': 'OPENAI_API_KEY',
       'openai-responses': 'OPENAI_API_KEY',
       'openai-completions': 'OPENAI_API_KEY',
@@ -122,8 +122,37 @@ export class LlmModelRegistry implements ModelRegistry {
       'byteplus-chat': 'BYTEPLUS_API_KEY',
       'kimi-coding-chat': 'KIMI_CODING_API_KEY',
       'llama-cpp-chat': 'LLAMA_CPP_API_KEY',
+      'nvidia-chat': 'NVIDIA_API_KEY',
+      'brave-chat': 'BRAVE_API_KEY',
+      'exa-chat': 'EXA_API_KEY',
+      'firecrawl-chat': 'FIRECRAWL_API_KEY',
       'deepgram-stt': 'DEEPGRAM_API_KEY',
       'fal-generate': 'FAL_KEY',
+      'together-chat': 'TOGETHER_API_KEY',
+      'fireworks-chat': 'FIREWORKS_API_KEY',
+      'volcengine-chat': 'VOLCENGINE_API_KEY',
+      'tencent-chat': 'TENCENT_API_KEY',
+      'stepfun-chat': 'STEPFUN_API_KEY',
+      'venice-chat': 'VENICE_API_KEY',
+      'sglang-chat': 'SGLANG_API_KEY',
+      'opencode-chat': 'OPENCODE_API_KEY',
+      'minimax-chat': 'MINIMAX_API_KEY',
+      'codex-chat': 'CODEX_API_KEY',
+      'clickclack-chat': 'CLICKCLACK_API_KEY',
+      'gradium-chat': 'GRADIUM_API_KEY',
+      'gmi-chat': 'GMI_API_KEY',
+      'parallel-chat': 'PARALLEL_API_KEY',
+      'kilocode-chat': 'KILOCODE_API_KEY',
+      'opencode-go-chat': 'OPENCODE_GO_API_KEY',
+      'zalouser-chat': 'ZALOUSER_API_KEY',
+      'copilot-chat': 'COPILOT_API_KEY',
+      'copilot-proxy-chat': 'COPILOT_PROXY_API_KEY',
+      'github-models-chat': 'GITHUB_MODELS_API_KEY',
+      'deepinfra-chat': 'DEEPINFRA_API_KEY',
+      'bedrock-chat': 'AWS_ACCESS_KEY_ID',
+      'cloudflare-chat': 'CLOUDFLARE_API_KEY',
+      'vercel-gateway-chat': 'VERCEL_API_KEY',
+      'cf-ai-gateway-chat': 'CF_AI_GATEWAY_API_KEY',
     };
     return envMap[apiType];
   }
@@ -161,7 +190,7 @@ export class LlmModelRegistry implements ModelRegistry {
     }
 
     if (criteria.minContextWindow) {
-      candidates = candidates.filter((m) => m.contextWindow >= criteria.minContextWindow);
+      candidates = candidates.filter((m) => m.contextWindow >= criteria.minContextWindow!);
     }
 
     if (criteria.requiredCapabilities) {

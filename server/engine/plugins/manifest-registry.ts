@@ -98,6 +98,7 @@ export type PluginManifestRecord = {
   manifestPath: string;
   setupSource?: string;
   configSchema?: PluginManifest["configSchema"];
+  configUiHints?: Record<string, unknown>;
   requiresPlugins?: string[];
   contracts?: PluginManifest["contracts"];
   configContracts?: PluginManifest["configContracts"];
@@ -110,6 +111,7 @@ export type PluginManifestRecord = {
   imageGenerationProviderMetadata?: PluginManifest["imageGenerationProviderMetadata"];
   videoGenerationProviderMetadata?: PluginManifest["videoGenerationProviderMetadata"];
   musicGenerationProviderMetadata?: PluginManifest["musicGenerationProviderMetadata"];
+  trustedOfficialInstall?: boolean;
 };
 
 export type PluginManifestRegistry = {

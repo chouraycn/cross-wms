@@ -367,7 +367,7 @@ export class UnifiedProviderRegistry {
         'qwen-chat': 0,
         'moonshot-chat': 0,
         'azure-openai': 0,
-      },
+      } as Record<ModelApiType, number>,
       byCategory: {},
       totalInvokes: 0,
     };

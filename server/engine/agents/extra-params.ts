@@ -69,11 +69,14 @@ export function resolvePreparedExtraParams(params: {
   }
 
   const merged = { ...resolvedExtraParams, ...override };
-  // Strip prototype keys
-  delete merged.__proto__;
-  delete merged.prototype;
-  delete merged.constructor;
-  return merged;
+  // Strip prototype keys - use type assertion to avoid TS2790
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(merged)) {
+    if (key !== '__proto__' && key !== 'prototype' && key !== 'constructor') {
+      result[key] = merged[key];
+    }
+  }
+  return result;
 }
 
 /** Resolve transport override from extra params. */

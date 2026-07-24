@@ -323,7 +323,7 @@ export function buildTrajectoryRunMetadata(
       name: "OpenClaw",
       version: VERSION,
       gitSha:
-        resolveCommitHash({ cwd: params.workspaceDir, env, moduleUrl: import.meta.url }) ??
+        resolveCommitHash({ cwd: params.workspaceDir, env }) ??
         undefined,
       os,
       runtime: {

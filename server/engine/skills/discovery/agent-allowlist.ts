@@ -10,7 +10,7 @@
 
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("agent-allowlist");
+const logger = getChildLogger({ module: "agent-allowlist" } as any);
 
 // ============================================================================
 // 类型定义

@@ -188,7 +188,7 @@ export async function buildSkillStatusReport(params: {
 
   const workspaceSkills = await loadWorkspaceSkills(workspaceDir);
 
-  const bundledContext = resolveBundledSkillsContext();
+  const bundledContext = await resolveBundledSkillsContext();
   const bundledSkills: SkillEntry[] = [];
   if (bundledContext.dir) {
     try {

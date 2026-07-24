@@ -79,7 +79,7 @@ function queuedDeliveryMetadata(entry: QueuedDelivery): DeliveryQueueRowMetadata
   return {
     entryKind: "outbound",
     sessionKey: entry.session?.key,
-    channel: entry.channel,
+    channel: entry.channel as any,
     target: entry.to,
     accountId: entry.accountId,
   };

@@ -1001,8 +1001,10 @@ export {
 } from "./loading/session.js";
 
 export type {
-  SkillFrontmatter,
-  Skill,
+  ParsedSkillFrontmatter as SkillFrontmatter,
+  Skill as SkillType,
+} from "./types.js";
+export type {
   LoadSkillsResult as SessionLoadSkillsResult,
   LoadSkillsFromDirOptions,
   LoadSkillsOptions,

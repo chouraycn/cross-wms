@@ -7,7 +7,7 @@ export type DispatcherAwareRequestInit = RequestInit & {
 
 /** Checks if the global fetch has been mocked. */
 export function isMockedFetch(): boolean {
-  return typeof globalThis.fetch !== "undefined" && !(globalThis.fetch as Record<string, unknown>)?.__original;
+  return typeof globalThis.fetch !== "undefined" && !((globalThis.fetch as any)?.__original);
 }
 
 /** Performs a fetch with the runtime dispatcher (if configured). */

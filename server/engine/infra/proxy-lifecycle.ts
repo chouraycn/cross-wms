@@ -130,7 +130,7 @@ export async function startProxy(config: ProxyConfig | undefined): Promise<Proxy
   const activeUrl = getActiveManagedProxyUrl();
 
   if (activeUrl) {
-    const registration = registerActiveManagedProxyUrl(new URL(proxyUrl), { loopbackMode });
+    const registration = registerActiveManagedProxyUrl(new URL(proxyUrl), { loopbackMode: loopbackMode as any });
     return {
       proxyUrl,
       stop: async () => { stopActiveProxyRegistration(registration); },
@@ -143,8 +143,8 @@ export async function startProxy(config: ProxyConfig | undefined): Promise<Proxy
   let registration: ActiveManagedProxyRegistration | null = null;
 
   try {
-    injectProxyEnv(proxyUrl, loopbackMode, proxyCaFile);
-    registration = registerActiveManagedProxyUrl(new URL(proxyUrl), { loopbackMode });
+    injectProxyEnv(proxyUrl, loopbackMode as any, proxyCaFile);
+    registration = registerActiveManagedProxyUrl(new URL(proxyUrl), { loopbackMode: loopbackMode as any });
   } catch (err) {
     if (registration) stopActiveManagedProxyRegistration(registration);
     restoreInactiveProxyRuntime(lifecycleBaseEnvSnapshot);

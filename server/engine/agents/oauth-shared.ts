@@ -124,10 +124,13 @@ function isSafeOAuthIdentityTransition(
   if (areOAuthCredentialsEquivalent(existing, incoming)) {
     return true;
   }
-  if (!hasOAuthIdentity(existing)) {
+  if (!hasOAuthIdentity(existing as Pick<Record<string, unknown>, "accountId" | "email">)) {
     return policy.whenExistingIdentityMissing;
   }
-  return hasMatchingOAuthIdentity(existing, incoming);
+  return hasMatchingOAuthIdentity(
+    existing as Pick<Record<string, unknown>, "accountId" | "email">,
+    incoming as Pick<Record<string, unknown>, "accountId" | "email">,
+  );
 }
 
 export function isSafeToOverwriteStoredOAuthIdentity(

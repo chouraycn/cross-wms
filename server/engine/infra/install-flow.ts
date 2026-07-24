@@ -4,15 +4,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import type { Stats } from "node:fs";
 
 type ExistingInstallPathResult =
-  | { ok: true; resolvedPath: string; stat: fs.Stats }
+  | { ok: true; resolvedPath: string; stat: Stats }
   | { ok: false; error: string };
 
 /** Resolve and stat a user-provided install path. */
 export async function resolveExistingInstallPath(
   inputPath: string,
-): Promise<{ ok: true; resolvedPath: string } | { ok: false; error: string }> {
+): Promise<ExistingInstallPathResult> {
   const resolvedPath = path.resolve(inputPath);
   try {
     await fs.access(resolvedPath);

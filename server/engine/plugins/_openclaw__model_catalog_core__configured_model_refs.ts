@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from './_openclaw__model_catalog_core__model_catalog_types.js';
+import type { OpenClawConfig } from '../config/types/openclaw.js';
 
 export interface ConfiguredModelRef {
   path: string;

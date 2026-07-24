@@ -279,6 +279,8 @@ export const resolveLatestVersionFromPackage: any = undefined as any;
 export const satisfiesGatewayMinimum: any = undefined as any;
 
 // Type stubs for ClawHub package types (degraded placeholders)
+export type ClawHubPackageChannel = "stable" | "beta" | "dev";
+export type ClawHubPackageFamily = "plugin" | "skill" | "agent" | "channel";
 export type ClawHubPackageCompatibility = {
   pluginApiRange?: string;
   builtWithOpenClawVersion?: string;

@@ -10,7 +10,7 @@
 import crypto from "node:crypto";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("signature-verifier");
+const logger = getChildLogger({ module: "signature-verifier" });
 
 // ============================================================================
 // 类型定义
@@ -272,8 +272,9 @@ export class SignatureVerifier {
     try {
       const signature = Buffer.from(signatureB64, "base64");
       const algorithmName = this.getAlgorithmName(algorithm);
+      const dataBuffer = typeof data === "string" ? Buffer.from(data, "utf-8") : data;
 
-      crypto.verify(algorithmName, data, keyObject, signature);
+      crypto.verify(algorithmName, dataBuffer, keyObject, signature);
       return true;
     } catch {
       return false;
@@ -287,7 +288,8 @@ export class SignatureVerifier {
     algorithm: SignatureAlgorithm
   ): string {
     const algorithmName = this.getAlgorithmName(algorithm);
-    const signature = crypto.sign(algorithmName, data, privateKey);
+    const dataBuffer = typeof data === "string" ? Buffer.from(data, "utf-8") : data;
+    const signature = crypto.sign(algorithmName, dataBuffer, privateKey);
     return signature.toString("base64");
   }
 
@@ -472,7 +474,7 @@ export function getSourceVerifier(): SourceVerifier {
 
 /** 初始化全局来源验证器 */
 export function initSourceVerifier(
-  options?: Parameters<typeof SourceVerifier>[0]
+  options?: ConstructorParameters<typeof SourceVerifier>[0]
 ): SourceVerifier {
   globalSourceVerifier = new SourceVerifier(options);
   return globalSourceVerifier;

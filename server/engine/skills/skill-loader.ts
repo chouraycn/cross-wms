@@ -267,6 +267,7 @@ export class SkillLoader {
       bySource: {
         bundled: skills.filter((entry) => entry.skill.source === 'bundled').length,
         workspace: skills.filter((entry) => entry.skill.source === 'workspace').length,
+        managed: skills.filter((entry) => entry.skill.source === 'managed').length,
         unknown: skills.filter((entry) => entry.skill.source === 'unknown').length,
       },
     };

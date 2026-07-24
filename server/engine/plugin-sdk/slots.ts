@@ -16,6 +16,9 @@ const SLOT_BY_KIND: Record<PluginCapabilityKind, PluginSlotKey> = {
   hook: 'contextEngine',
   command: 'contextEngine',
   service: 'contextEngine',
+  search: 'contextEngine',
+  media: 'contextEngine',
+  skill: 'contextEngine',
 };
 
 const DEFAULT_SLOT_BY_KEY: Record<PluginSlotKey, string> = {

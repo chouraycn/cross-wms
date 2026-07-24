@@ -12,7 +12,7 @@ import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 import { getSkillOriginTracker } from "../lifecycle/skill-origin.js";
 
-const logger = getChildLogger("skill-workshop");
+const logger = getChildLogger({ module: "skill-workshop" } as any);
 
 // ============================================================================
 // 类型定义

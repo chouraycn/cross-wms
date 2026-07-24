@@ -1,5 +1,6 @@
 // Shares web-provider plugin resolution helpers without eager runtime imports.
 import { resolveBundledPluginCompatibleLoadValues } from "./activation-context.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginLoadOptions } from "./loader.js";
 import { loadManifestMetadataSnapshot } from "./manifest-contract-eligibility.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
@@ -73,7 +74,7 @@ function loadInstalledWebProviderManifestRecords(params: {
     config: params.config ?? {},
     workspaceDir: params.workspaceDir,
     env: params.env ?? process.env,
-  }).plugins;
+  }).plugins as unknown as readonly PluginManifestRecord[];
   const pluginIdSet = createPluginIdScopeSet(params.pluginIds);
   return pluginIdSet ? records.filter((plugin) => pluginIdSet.has(plugin.id)) : records;
 }
@@ -169,7 +170,7 @@ export function resolveBundledWebProviderResolutionConfig(params: {
   autoEnabledReasons: Record<string, string[]>;
 } {
   const activation = resolveBundledPluginCompatibleLoadValues({
-    rawConfig: params.config,
+    rawConfig: params.config as unknown as OpenClawConfig,
     env: params.env,
     workspaceDir: params.workspaceDir,
     applyAutoEnable: true,
@@ -185,8 +186,8 @@ export function resolveBundledWebProviderResolutionConfig(params: {
   });
 
   return {
-    config: activation.config,
-    activationSourceConfig: activation.activationSourceConfig,
+    config: activation.config as unknown as PluginLoadOptions["config"],
+    activationSourceConfig: activation.activationSourceConfig as unknown as PluginLoadOptions["config"] | undefined,
     autoEnabledReasons: activation.autoEnabledReasons,
   };
 }

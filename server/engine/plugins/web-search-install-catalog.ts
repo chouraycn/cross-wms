@@ -122,6 +122,7 @@ function buildProviderEntry(params: {
     placeholder,
     signupUrl,
     credentialPath,
+    search: (params.provider as any).search,
     ...(normalizeOnboardingScopes(params.provider.onboardingScopes)
       ? { onboardingScopes: normalizeOnboardingScopes(params.provider.onboardingScopes) }
       : {}),

@@ -398,7 +398,14 @@ export type PluginConfigMigration = (config: unknown) =>
   | { config: unknown; changes: string[] }
   | null;
 export type PluginConversationBindingRequestParams = { [key: string]: unknown };
-export type PluginInteractiveHandlerRegistration = { [key: string]: unknown };
+export type PluginInteractiveHandlerResult = {
+  handled?: boolean;
+} | void;
+export type PluginInteractiveHandlerRegistration = {
+  channel: string;
+  namespace: string;
+  handler: (ctx: unknown) => Promise<PluginInteractiveHandlerResult> | PluginInteractiveHandlerResult;
+};
 export type PluginSetupAutoEnableProbe = (
   ctx: { config: unknown; env: NodeJS.ProcessEnv },
 ) => string | string[] | null | undefined;
@@ -407,7 +414,11 @@ export type PluginTextTransforms = { [key: string]: unknown };
 export type PluginWebFetchProviderEntry = { [key: string]: unknown };
 export type PluginWebSearchProviderEntry = { [key: string]: unknown };
 export type ProviderAuthContext = { [key: string]: unknown };
-export type ProviderAuthMethod = { [key: string]: unknown };
+export type ProviderAuthMethod = {
+  id: string;
+  run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
+  [key: string]: unknown;
+};
 export type ProviderAuthMethodNonInteractiveContext = {
   authChoice: string;
   config: OpenClawConfig;

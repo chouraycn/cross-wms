@@ -61,7 +61,7 @@ export class NodeSqliteKyselyDialect implements Dialect {
   }
 
   createDriver(): Driver {
-    return undefined;
+    return undefined as any;
   }
 
   createQueryAdapter(): unknown {
