@@ -193,6 +193,24 @@ export const DEFAULT_ANALYZE_OPTIONS: Required<Pick<AnalyzeOptions, 'ocr' | 'fac
   skipCache: false,
 };
 
+/**
+ * Media Understanding Capability Registry — provider capability metadata used
+ * to filter shared media model entries. Ported from openclaw.
+ */
+export type MediaUnderstandingCapability = 'image' | 'audio' | 'video';
+
+export type MediaUnderstandingCapabilityRegistry = Map<
+  string,
+  {
+    capabilities?: MediaUnderstandingCapability[];
+  }
+>;
+
+export type MediaUnderstandingProvider = {
+  id: string;
+  capabilities?: MediaUnderstandingCapability[];
+};
+
 /** 默认最大缓存条目数 */
 export const DEFAULT_CACHE_MAX_ENTRIES = 200;
 
