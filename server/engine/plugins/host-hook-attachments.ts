@@ -327,7 +327,7 @@ export async function sendPluginSessionAttachment(
   }
   return {
     ok: true,
-    channel: result.channel,
+    channel: result.channel ?? deliveryContext.channel,
     deliveredTo: deliveryContext.to,
     count: validated.length,
   };

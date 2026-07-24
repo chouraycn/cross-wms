@@ -1,63 +1,41 @@
-// 移植自 openclaw/src/config/types.tools.ts
+/**
+ * 兼容性重导出 — 所有类型定义已迁移到 ./types/tools.ts
+ *
+ * 此文件保留是为了向后兼容旧的 `from "./types.tools.js"` 导入路径。
+ * 新代码应直接从 `./types/tools.js` 导入。
+ */
+export type {
+  MediaUnderstandingScopeMatch,
+  MediaUnderstandingScopeRule,
+  MediaUnderstandingScopeConfig,
+  MediaUnderstandingCapability,
+  MediaUnderstandingAttachmentsConfig,
+  MediaUnderstandingModelConfig,
+  MediaUnderstandingConfig,
+  LinkModelConfig,
+  LinkToolsConfig,
+  MediaToolsConfig,
+  ToolProfileId,
+  ToolLoopDetectionDetectorConfig,
+  ToolLoopPostCompactionGuardConfig,
+  ToolLoopDetectionConfig,
+  ToolSearchConfig,
+  CodeModeConfig,
+  SessionsToolsVisibility,
+  ToolPolicyConfig,
+  GroupToolPolicyConfig,
+  ToolsBySenderKeyType,
+  GroupToolPolicyBySenderConfig,
+  ExecToolConfig,
+  FsToolsConfig,
+  SessionsSpawnToolsConfig,
+  AgentToolsConfig,
+  MemorySearchConfig,
+  ToolsConfig,
+  MessageToolsConfig,
+} from "./types/tools.js";
 
-export type MediaUnderstandingCapability = "image" | "audio" | "video";
-
-export type MediaUnderstandingScopeMatch = unknown;
-export type MediaUnderstandingScopeRule = unknown;
-export type MediaUnderstandingScopeConfig = unknown;
-export type MediaUnderstandingAttachmentsConfig = unknown;
-
-/** Minimal media-understanding model entry shape used by config collectors. */
-export type MediaUnderstandingModelConfig = {
-  type?: "provider" | "cli";
-  provider?: string;
-  command?: string;
-  capabilities?: MediaUnderstandingCapability[];
-  request?: Record<string, unknown>;
-  enabled?: boolean;
-};
-
-export type MediaUnderstandingConfig = unknown;
-export type LinkModelConfig = unknown;
-export type LinkToolsConfig = unknown;
-export type MediaToolsConfig = unknown;
-export type ToolProfileId = unknown;
-export type ToolLoopDetectionDetectorConfig = unknown;
-export type ToolLoopPostCompactionGuardConfig = unknown;
-export type ToolLoopDetectionConfig = unknown;
-export type ToolSearchConfig = unknown;
-export type CodeModeConfig = unknown;
-export type SessionsToolsVisibility = unknown;
-export type ToolPolicyConfig = unknown;
-export type GroupToolPolicyConfig = unknown;
-export type ToolsBySenderKeyType = unknown;
-export type GroupToolPolicyBySenderConfig = unknown;
-export type ExecToolConfig = unknown;
-export type FsToolsConfig = unknown;
-export type SessionsSpawnToolsConfig = unknown;
-export type AgentToolsConfig = unknown;
-export type MemorySearchConfig = unknown;
-export type ToolsConfig = unknown;
-export type MessageToolsConfig = {
-  /** @deprecated Use tools.message.crossContext settings. */
-  allowCrossContextSend?: boolean;
-  crossContext?: {
-    allowWithinProvider?: boolean;
-    allowAcrossProviders?: boolean;
-    marker?: {
-      enabled?: boolean;
-      prefix?: string;
-      suffix?: string;
-    };
-  };
-  actions?: {
-    allow?: string[];
-  };
-  broadcast?: {
-    enabled?: boolean;
-  };
-};
-export function parseToolsBySenderTypedKey(...args: unknown[]): unknown {
-  return undefined;
-}
-export const TOOLS_BY_SENDER_KEY_TYPES: unknown = undefined;
+export {
+  parseToolsBySenderTypedKey,
+  TOOLS_BY_SENDER_KEY_TYPES,
+} from "./types/tools.js";
