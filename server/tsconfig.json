@@ -16,6 +16,7 @@
     "paths": {
       "@src/*": ["../src/*"],
       "@openclaw/media-core/*": ["../packages/media-core/src/*"],
+      "@openclaw/normalization-core/*": ["../packages/normalization-core/src/*"],
       "@cdf-know/memory-host-sdk": ["../packages/memory-host-sdk/src/index.ts"],
       "@cdf-know/memory-host-sdk/*": ["../packages/memory-host-sdk/src/*"],
       "@cdf-know/media-generation-core/*": ["../packages/media-generation-core/src/*"],

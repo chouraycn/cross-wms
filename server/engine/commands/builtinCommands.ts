@@ -1,6 +1,14 @@
 /**
  * Built-in Slash Commands
  * 内置 Slash 命令 - 20+ 常用命令
+ *
+ * 命令族来源：
+ *  - 本文件：model / session / agent / utility 等高频 chat 侧命令
+ *  - ./doctor      移植自 openclaw/src/commands/doctor/*
+ *  - ./status      移植自 openclaw/src/commands/status.ts / status-all/
+ *  - ./onboard     移植自 openclaw/src/commands/onboard*.ts
+ *  - ./sessions    移植自 openclaw/src/commands/sessions*.ts
+ *  - ./configure   移植自 openclaw/src/commands/configure*.ts
  */
 
 import type {
@@ -9,6 +17,11 @@ import type {
   CommandExecutionResult,
 } from "./commandRegistry.js";
 import { registerCommand } from "./commandRegistry.js";
+import { registerDoctorCommands, doctorCommands } from "./doctor/doctorCommand.js";
+import { registerStatusCommands, statusCommands } from "./status/statusCommand.js";
+import { registerOnboardCommands, onboardCommands } from "./onboard/onboardCommand.js";
+import { registerSessionsCommands, sessionsCommands } from "./sessions/sessionsCommands.js";
+import { registerConfigureCommands, configureCommands } from "./configure/configureCommand.js";
 
 const commands: Array<{
   definition: ChatCommandDefinition;
@@ -354,24 +367,8 @@ const commands: Array<{
   },
 
   // ===== Admin Commands =====
-  {
-    definition: {
-      name: "status",
-      description: "显示系统状态",
-      category: "debug",
-      scope: "global",
-      examples: ["/status"],
-    },
-    handler: () => ({
-      ok: true,
-      data: {
-        status: "healthy",
-        activeSessions: 0,
-        totalSessions: 0,
-        uptimeMs: 0,
-      },
-    }),
-  },
+  // 注：/status、/doctor、/onboard、/sessions、/configure 已在下方
+  // registerBuiltinCommands() 中由独立的命令族文件注册。
   {
     definition: {
       name: "reload",
@@ -395,7 +392,29 @@ export function registerBuiltinCommands(): void {
   for (const { definition, handler } of commands) {
     registerCommand(definition, handler);
   }
-  console.log(`[commands] Registered ${commands.length} built-in commands`);
+
+  // 移植自 openclaw 的命令族（按子目录聚合）
+  registerDoctorCommands();
+  registerStatusCommands();
+  registerOnboardCommands();
+  registerSessionsCommands();
+  registerConfigureCommands();
+
+  const total =
+    commands.length +
+    doctorCommands.length +
+    statusCommands.length +
+    onboardCommands.length +
+    sessionsCommands.length +
+    configureCommands.length;
+  console.log(`[commands] Registered ${total} built-in commands`);
 }
 
-export { commands as builtinCommands };
+export {
+  commands as builtinCommands,
+  doctorCommands,
+  statusCommands,
+  onboardCommands,
+  sessionsCommands,
+  configureCommands,
+};

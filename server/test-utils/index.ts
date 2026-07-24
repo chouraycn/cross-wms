@@ -3,3 +3,7 @@ export * from './frozen-time';
 export * from './temp-dir';
 export * from './ports';
 export * from './env';
+export * from './secret-file-fixture';
+export * from './temp-home';
+export * from './command-runner';
+export * from './plugin-runtime-env';
