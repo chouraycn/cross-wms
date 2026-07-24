@@ -17,7 +17,7 @@
     "@cdf-know/normalization-core": "1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.9.4",
+    "@types/node": "^26.1.1",
     "typescript": "^5.9.3",
     "vite": "^7",
     "vitest": "^3.2.7"
