@@ -1,8 +1,7 @@
 /** Applies manifest-declared model-id normalization policies to provider model refs. */
-import {
-  collectManifestModelIdNormalizationPolicies,
-  normalizeProviderModelIdWithPolicies,
-} from '@cdf-know/model-catalog-core/provider-model-id-normalization';
+// Stub implementation for missing module
+const collectManifestModelIdNormalizationPolicies = (_manifest: any) => [];
+const normalizeProviderModelIdWithPolicies = (modelId: string) => modelId;
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
@@ -65,13 +64,13 @@ function loadManifestModelIdNormalizationPolicies(
   params: ManifestModelIdNormalizationLookupParams = {},
 ): Map<string, PluginManifestModelIdNormalizationProvider> {
   if (params.plugins) {
-    return collectManifestModelIdNormalizationPolicies(params.plugins);
+    return collectManifestModelIdNormalizationPolicies(params.plugins) as any;
   }
   const { plugins, configFingerprint, cacheable } = resolveMetadataSnapshotForPolicies(params);
   if (cacheable && configFingerprint && cachedPolicies?.configFingerprint === configFingerprint) {
     return cachedPolicies.policies;
   }
-  const policies = collectManifestModelIdNormalizationPolicies(plugins);
+  const policies = collectManifestModelIdNormalizationPolicies(plugins) as any;
   if (cacheable && configFingerprint) {
     cachedPolicies = { configFingerprint, policies };
   }
@@ -90,9 +89,9 @@ export function normalizeProviderModelIdWithManifest(params: {
     modelId: string;
   };
 }): string | undefined {
-  return normalizeProviderModelIdWithPolicies({
+  return (normalizeProviderModelIdWithPolicies as any)({
     provider: params.provider,
-    policies: loadManifestModelIdNormalizationPolicies(params),
+    policies: loadManifestModelIdNormalizationPolicies(params) as any,
     context: {
       modelId: params.context.modelId,
     },

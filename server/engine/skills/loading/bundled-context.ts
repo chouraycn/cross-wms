@@ -1,7 +1,7 @@
 import { getChildLogger } from "../../logging/logger.js";
 import { loadSkillsFromDirectory } from "./local-loader.js";
 
-const logger = getChildLogger("skills");
+const logger = getChildLogger({ module: "skills" } as any);
 
 let hasWarnedMissingBundledDir = false;
 let cachedBundledContext: { dir: string; names: Set<string> } | null = null;
@@ -18,9 +18,9 @@ export interface BundledSkillsContext {
   names: Set<string>;
 }
 
-export function resolveBundledSkillsContext(
+export async function resolveBundledSkillsContext(
   opts: BundledSkillsResolveOptions = {},
-): BundledSkillsContext {
+): Promise<BundledSkillsContext> {
   const dir = resolveBundledSkillsDir(opts);
   const names = new Set<string>();
 
@@ -38,7 +38,7 @@ export function resolveBundledSkillsContext(
     return { dir, names: new Set(cachedBundledContext.names) };
   }
 
-  const result = loadSkillsFromDirectory(dir, "bundled");
+  const result = await loadSkillsFromDirectory(dir, "bundled");
   for (const entry of result) {
     if (entry.skill.name.trim()) {
       names.add(entry.skill.name);
@@ -69,13 +69,15 @@ function resolveBundledSkillsDir(
   }
 
   try {
-    const moduleUrl = opts.moduleUrl ?? import.meta.url;
-    const moduleDir = require("path").dirname(require("url").fileURLToPath(moduleUrl));
-    const packageRoot = require("path").resolve(moduleDir, "../../..");
-    const skillsDir = require("path").join(packageRoot, "server", "engine", "skills", "builtin");
+    const moduleUrl = opts.moduleUrl;
+    if (moduleUrl) {
+      const moduleDir = require("path").dirname(require("url").fileURLToPath(moduleUrl));
+      const packageRoot = require("path").resolve(moduleDir, "../../..");
+      const skillsDir = require("path").join(packageRoot, "server", "engine", "skills", "builtin");
 
-    if (require("fs").existsSync(skillsDir)) {
-      return skillsDir;
+      if (require("fs").existsSync(skillsDir)) {
+        return skillsDir;
+      }
     }
   } catch {
     // ignore

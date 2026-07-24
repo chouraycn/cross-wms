@@ -14,7 +14,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("install-policy");
+const logger = getChildLogger({ module: "install-policy" } as any);
 
 // ============================================================================
 // 类型定义

@@ -88,7 +88,7 @@ async function refreshSnapshot(workspaceDir: string, agentId?: string): Promise<
 
     const entries = getCachedSkills();
     const status = computeSkillStatus(entries);
-    const snapshot = buildSessionSkillSnapshot(entries);
+    const snapshot = buildSessionSkillSnapshot(entries as any);
 
     state.lastSnapshot = snapshot;
     state.lastStatus = status;

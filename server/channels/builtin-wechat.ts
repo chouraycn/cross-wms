@@ -180,7 +180,7 @@ export function parseWeChatWebhook(body: unknown, _account: WeChatAccountConfig)
   const msgType = String(data.MsgType || "");
 
   if (msgType === "text") {
-    const isGroup = !!data.ToUserName && !data.ToUserName.startsWith("gh_");
+    const isGroup = !!data.ToUserName && !(data.ToUserName as string).startsWith("gh_");
 
     return {
       success: true,

@@ -6,6 +6,7 @@ import type { ConversationRef } from "../infra/session-binding-service.js";
 import type {
   ConfiguredBindingRecordResolution,
   ConfiguredBindingResolution,
+  CompiledConfiguredBinding,
 } from "./binding-types.js";
 import {
   countCompiledBindingRegistry,
@@ -25,7 +26,9 @@ function resolveMaterializedConfiguredBinding(params: {
 }) {
   const conversation = toConfiguredBindingConversationRef(params.conversation);
   if (!conversation) return null;
-  const rules = resolveCompiledBindingRegistry(params.cfg).rulesByChannel.get(conversation.channel);
+  const registry = resolveCompiledBindingRegistry(params.cfg) as { rulesByChannel: Map<string, CompiledConfiguredBinding[]> } | null;
+  if (!registry) return null;
+  const rules = registry.rulesByChannel.get(conversation.channel);
   if (!rules || rules.length === 0) return null;
   const resolved = resolveMatchingConfiguredBinding({ rules, conversation });
   if (!resolved) return null;
@@ -44,7 +47,7 @@ export function primeConfiguredBindingRegistry(params: { cfg: OpenClawConfig }):
   bindingCount: number;
   channelCount: number;
 } {
-  return countCompiledBindingRegistry(primeCompiledBindingRegistry(params.cfg));
+  return countCompiledBindingRegistry(primeCompiledBindingRegistry(params.cfg)) as { bindingCount: number; channelCount: number };
 }
 
 export function resolveConfiguredBindingRecord(params: {
@@ -79,11 +82,12 @@ export function resolveConfiguredBinding(params: {
 }): ConfiguredBindingResolution | null {
   const resolved = resolveMaterializedConfiguredBinding(params);
   if (!resolved) return null;
+  const materializedTarget = resolved.materializedTarget as Record<string, unknown>;
   return {
     conversation: resolved.conversation,
     compiledBinding: resolved.resolved.rule,
     match: resolved.resolved.match,
-    ...resolved.materializedTarget,
+    ...materializedTarget,
   };
 }
 

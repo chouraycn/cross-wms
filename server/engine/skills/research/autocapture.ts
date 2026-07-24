@@ -10,7 +10,7 @@
 import { getChildLogger } from "../../logging/logger.js";
 import { getSessionSnapshotManager } from "../runtime/session-snapshot.js";
 
-const logger = getChildLogger("skill-research");
+const logger = getChildLogger({ module: "skill-research" } as any);
 
 // ============================================================================
 // 类型定义
@@ -202,11 +202,13 @@ export class SkillSignalTracker {
     }
 
     if (filter?.startTime) {
-      signals = signals.filter((s) => s.timestamp >= filter.startTime);
+      const startTime = filter.startTime;
+      signals = signals.filter((s) => s.timestamp >= startTime);
     }
 
     if (filter?.endTime) {
-      signals = signals.filter((s) => s.timestamp <= filter.endTime);
+      const endTime = filter.endTime;
+      signals = signals.filter((s) => s.timestamp <= endTime);
     }
 
     return signals;

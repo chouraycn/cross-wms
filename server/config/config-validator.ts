@@ -80,7 +80,7 @@ export class ConfigValidator {
   }
 
   private walkSchema(
-    schema: ConfigSchemaField,
+    schema: ConfigSchema | ConfigSchemaField,
     currentPath: string,
     callback: (path: string, field: ConfigSchemaField) => void,
   ): void {
@@ -91,14 +91,14 @@ export class ConfigValidator {
         this.walkSchema(value, path, callback);
       }
     }
-    if (schema.items) {
+    if ('items' in schema && schema.items) {
       this.walkSchema(schema.items, `${currentPath}[]`, callback);
     }
   }
 
   validate(config: Record<string, unknown>): ConfigValidationResult {
     const issues: ConfigValidationIssue[] = [];
-    this.validateSchema(this.schema, config, '', issues);
+    this.validateSchema({ type: 'object', properties: this.schema.properties } as ConfigSchemaField, config, '', issues);
 
     const errorCount = issues.filter((i) => i.severity === 'error').length;
     const warningCount = issues.filter((i) => i.severity === 'warning').length;

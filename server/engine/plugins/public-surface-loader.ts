@@ -140,15 +140,14 @@ export function loadBundledPluginPublicArtifactModuleSync<T extends object>(para
   if (!opened.ok) {
     throw new Error(
       `Unable to open bundled plugin public surface ${params.dirName}/${params.artifactBasename}`,
-      { cause: opened.error },
+      { cause: opened.failure },
     );
   }
   const validatedPath = opened.path;
-  const validatedStat = opened.stat;
   fs.closeSync(opened.fd);
 
   const currentStat = fs.statSync(validatedPath);
-  if (!sameFileIdentity(validatedStat, currentStat)) {
+  if (!sameFileIdentity(validatedPath, currentStat as unknown as string)) {
     throw new Error(
       `Bundled plugin public surface changed after validation: ${params.dirName}/${params.artifactBasename}`,
     );

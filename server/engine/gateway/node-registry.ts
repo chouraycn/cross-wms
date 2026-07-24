@@ -271,7 +271,7 @@ export class NodeRegistry {
   /** 将 websocket 客户端注册为其 node id 的当前连接。 */
   register(client: GatewayWsClient, opts: { remoteIp?: string | undefined }) {
     const connect = client.connect;
-    const nodeId = connect.device?.id ?? connect.client.id;
+    const nodeId = connect.device?.id ?? connect.client.id ?? "";
     const caps = Array.isArray(connect.caps) ? connect.caps : [];
     const declaredCaps = Array.isArray(connect.declaredCaps)
       ? (connect.declaredCaps ?? [])
@@ -816,12 +816,12 @@ export class NodeRegistry {
   }
 
   private rejectSlowNodeSocket(node: NodeSession): boolean {
-    if (!(node.client.socket.bufferedAmount > MAX_BUFFERED_BYTES)) {
+    if (!((node.client.socket.bufferedAmount ?? 0) > MAX_BUFFERED_BYTES)) {
       return false;
     }
     logRejectedLargePayload({
       surface: "gateway.ws.outbound_buffer",
-      bytes: node.client.socket.bufferedAmount,
+      bytes: node.client.socket.bufferedAmount ?? 0,
       limitBytes: MAX_BUFFERED_BYTES,
       reason: "ws_send_buffer_close",
     });

@@ -514,6 +514,9 @@ export class UnifiedPluginRegistry {
         hook: 0,
         command: 0,
         service: 0,
+        search: 0,
+        media: 0,
+        skill: 0,
       },
     };
 

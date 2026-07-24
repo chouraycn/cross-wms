@@ -10,9 +10,9 @@ export function resolveApprovalInitiatingSurfaceState(...args: unknown[]): unkno
 export function supportsNativeExecApprovalClient(...args: unknown[]): unknown {
   return undefined;
 }
-export function listNativeExecApprovalClientLabels(...args: unknown[]): unknown {
+export function listNativeExecApprovalClientLabels(...args: unknown[]): readonly string[] {
   return [];
 }
-export function describeNativeExecApprovalClientSetup(...args: unknown[]): unknown {
-  return "";
+export function describeNativeExecApprovalClientSetup(...args: unknown[]): string | null {
+  return null;
 }

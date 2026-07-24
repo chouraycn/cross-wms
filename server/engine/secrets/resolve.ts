@@ -38,7 +38,7 @@ export async function resolveSecretRefString(
     key,
   };
 
-  const registry = createDefaultProviderRegistry({ env: options.env ?? process.env });
+  const registry = createDefaultProviderRegistry(options.env ? (key: string) => options.env![key] ?? null : undefined);
   const resolved = await resolveSecretRefAsync(secretRef, registry, 'resolveSecretRefString');
 
   if (!resolved || !resolved.value) {

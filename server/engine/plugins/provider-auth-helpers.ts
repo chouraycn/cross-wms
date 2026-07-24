@@ -46,7 +46,7 @@ function resolveProviderDefaultEnvSecretRef(provider: string, config?: OpenClawC
     ...(config ? { config } : {}),
     includeUntrustedWorkspacePlugins: false,
   });
-  const envVar = envVars?.find((candidate) => candidate.trim().length > 0);
+  const envVar = envVars?.find((candidate: string) => candidate.trim().length > 0);
   if (!envVar) {
     throw new Error(
       `Provider "${provider}" does not have a default env var mapping for secret-input-mode=ref.`,
@@ -300,8 +300,6 @@ export async function writeOAuthCredentials(
     : [resolvedAgentDir];
 
   const credential = {
-    type: "oauth" as const,
-    provider,
     ...creds,
     ...(options?.displayName ? { displayName: options.displayName } : {}),
   };

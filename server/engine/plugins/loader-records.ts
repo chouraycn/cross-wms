@@ -153,10 +153,10 @@ export function formatPluginFailureSummary(failedPlugins: PluginRecord[]): strin
     const phase = plugin.failurePhase ?? "load";
     const ids = grouped.get(phase);
     if (ids) {
-      ids.push(plugin.id);
+      ids.push(plugin.id!);
       continue;
     }
-    grouped.set(phase, [plugin.id]);
+    grouped.set(phase, [plugin.id!]);
   }
   return [...grouped.entries()].map(([phase, ids]) => `${phase}: ${ids.join(", ")}`).join("; ");
 }

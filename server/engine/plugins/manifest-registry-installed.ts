@@ -556,7 +556,7 @@ function toPluginCandidate(
     ...(record.setupSource ? { setupSource: record.setupSource } : {}),
     rootDir,
     origin: record.origin,
-    ...(record.format ? { format: record.format } : {}),
+    ...(record.format ? { format: record.format as any } : {}),
     ...(record.bundleFormat ? { bundleFormat: record.bundleFormat } : {}),
     ...(record.packageName ? { packageName: record.packageName } : {}),
     ...(record.packageVersion ? { packageVersion: record.packageVersion } : {}),
@@ -570,7 +570,7 @@ function toPluginCandidate(
       ? { packageOptionalDependencies: packageMetadata.packageOptionalDependencies }
       : {}),
     packageDir: rootDir,
-  };
+  } as any;
 }
 
 export function loadPluginManifestRegistryForInstalledIndex(params: {
@@ -605,13 +605,13 @@ export function loadPluginManifestRegistryForInstalledIndex(params: {
         config: params.config,
         workspaceDir: params.workspaceDir,
         env,
-        candidates,
-        diagnostics: [...diagnostics],
+        candidates: candidates as any,
+        diagnostics: [...diagnostics] as any,
         installRecords: extractPluginInstallRecordsFromInstalledPluginIndex(params.index),
         ...(params.bundledChannelConfigCollector
           ? { bundledChannelConfigCollector: params.bundledChannelConfigCollector }
           : {}),
-      });
+      } as any);
     },
     {
       includeDisabled: params.includeDisabled === true,

@@ -15,9 +15,20 @@ import path from "node:path";
 
 import { logger as rootLogger } from "../../logger.js";
 
+// 创建一个子系统日志器
+const logger = rootLogger.child({ module: "runtime-stubs" });
+
 // ============================================================================
 // ../logging/subsystem.js —— 子系统日志器降级
 // ============================================================================
+
+// ProxyConfig type stub
+export type ProxyConfig = {
+  enabled?: boolean;
+  url?: string;
+  proxyUrl?: string;
+  loopbackMode?: boolean;
+};
 
 export type SubsystemLogger = {
   debug: (message: string, meta?: Record<string, unknown>) => void;

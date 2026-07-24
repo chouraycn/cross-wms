@@ -250,11 +250,7 @@ async function replaceManagedGitRepo(params: {
   persistentRepoDir: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await replaceDirectoryAtomic({
-      stagedDir: params.stagedRepoDir,
-      targetDir: params.persistentRepoDir,
-      backupPrefix: ".repo-backup-",
-    });
+    await replaceDirectoryAtomic(params.stagedRepoDir, params.persistentRepoDir);
     return { ok: true };
   } catch (err) {
     return {
@@ -392,13 +388,7 @@ export async function installPluginFromGitSpec(
       },
     };
     const preflight = await preflightPluginGitInstallPolicy({
-      config: params.config,
-      logger: params.logger ?? {},
-      mode: effectiveMode,
-      pluginId: params.expectedPluginId ?? parsed.label,
-      requestedSpecifier: parsed.input,
-      source: installPolicyRequest.source,
-      sourcePath: repoDir,
+      gitUrl: parsed.input,
     });
     if (preflight?.blocked) {
       const reason =

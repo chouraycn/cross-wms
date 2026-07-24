@@ -10,7 +10,7 @@ import { spawn, ChildProcess } from "child_process";
 import { promisify } from "util";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger("remote-prober");
+const logger = getChildLogger({ module: "remote-prober" } as any);
 
 // ============================================================================
 // 类型定义
@@ -139,7 +139,7 @@ export class RemoteNodeProber {
 
     try {
       // 构建检查命令
-      const command = this.platform === "win32"
+      const command = node.platform === "win32"
         ? `where ${bin}`
         : `which ${bin}`;
 

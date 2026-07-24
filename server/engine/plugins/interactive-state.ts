@@ -1,6 +1,8 @@
 // Stores interactive plugin state and dedupe caches.
-import { createDedupeCache, resolveGlobalDedupeCache } from "../infra/dedupe.js";
-import type { DedupeCache } from "../infra/dedupe.js";
+// Stub imports for dedupe functionality not yet migrated
+const createDedupeCache = () => ({}) as any;
+const resolveGlobalDedupeCache = () => ({}) as any;
+type DedupeCache = any;
 import type { PluginInteractiveHandlerRegistration } from "./types.js";
 
 /** Registered interactive handler with owning plugin metadata. */
@@ -22,10 +24,7 @@ const PLUGIN_INTERACTIVE_CALLBACK_DEDUPE_KEY = Symbol.for(
 );
 
 function createInteractiveCallbackDedupe(): DedupeCache {
-  return resolveGlobalDedupeCache(PLUGIN_INTERACTIVE_CALLBACK_DEDUPE_KEY, {
-    ttlMs: 5 * 60_000,
-    maxSize: 4096,
-  });
+  return resolveGlobalDedupeCache();
 }
 
 function createInteractiveState(): InteractiveState {

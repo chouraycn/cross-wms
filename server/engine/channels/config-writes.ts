@@ -13,6 +13,7 @@ import {
   type ConfigWriteAuthorizationResultLike,
   type ConfigWriteScopeLike,
   type ConfigWriteTargetLike,
+  type ConfigWritePolicyConfig,
 } from "./config-write-policy-shared.js";
 import type { ChannelId } from "./types.core.js";
 
@@ -29,7 +30,11 @@ export function resolveChannelConfigWrites(params: {
   channelId?: ChannelId | null;
   accountId?: string | null;
 }): boolean {
-  return resolveChannelConfigWritesShared(params);
+  return resolveChannelConfigWritesShared({
+    cfg: params.cfg as ConfigWritePolicyConfig,
+    channelId: params.channelId as string | null | undefined,
+    accountId: params.accountId,
+  });
 }
 
 export function authorizeConfigWrite(params: {
@@ -48,7 +53,7 @@ export function resolveExplicitConfigWriteTarget(scope: ConfigWriteScope): Confi
 export function resolveConfigWriteTargetFromPath(path: string[]): ConfigWriteTarget {
   return resolveConfigWriteTargetFromPathShared({
     path,
-    normalizeChannelId: (raw) => normalizeLowercaseStringOrEmpty(raw) as ChannelId,
+    normalizeChannelId: (raw) => normalizeLowercaseStringOrEmpty(raw) as string | null | undefined,
   });
 }
 
@@ -66,5 +71,8 @@ export function formatConfigWriteDeniedMessage(params: {
   result: Exclude<ConfigWriteAuthorizationResult, { allowed: true }>;
   fallbackChannelId?: ChannelId | null;
 }): string {
-  return formatConfigWriteDeniedMessageShared(params);
+  return formatConfigWriteDeniedMessageShared({
+    result: params.result,
+    fallbackChannelId: params.fallbackChannelId as string | null | undefined,
+  });
 }

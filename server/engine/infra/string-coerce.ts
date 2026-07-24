@@ -17,6 +17,17 @@ export function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+/** Stringifies primitive ids/flags before applying optional string normalization. */
+export function normalizeStringifiedOptionalString(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return normalizeOptionalString(value);
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return normalizeOptionalString(String(value));
+  }
+  return undefined;
+}
+
 /** 将任意输入规范化为非空小写字符串，输入无效时返回 undefined */
 export function normalizeOptionalLowercaseString(value: unknown): string | undefined {
   const normalized = normalizeOptionalString(value);

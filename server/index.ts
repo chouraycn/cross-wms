@@ -787,7 +787,11 @@ server.listen(PORT, () => {
       }
     }, 15_000).unref();
 
-    const { stop } = startEngine(30_000);
+    startEngine(30_000).then(({ stop }) => {
+      logger.info('[Engine] 引擎已启动');
+    }).catch(err => {
+      logger.error('[Engine] 引擎启动失败:', err);
+    });
 
     startTriggerEngine();
     initTriggerManager();

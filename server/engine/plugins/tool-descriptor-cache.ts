@@ -81,9 +81,9 @@ function getDescriptorConfigCacheKey(
   }
   let resolved: string | number | null;
   try {
-    resolved = resolveRuntimeConfigCacheKey(stripDescriptorVolatileConfigFields(value));
+    resolved = resolveRuntimeConfigCacheKey(stripDescriptorVolatileConfigFields(value)) as string | number | null;
   } catch {
-    resolved = getDescriptorCacheObjectId(value);
+    resolved = getDescriptorCacheObjectId(value) as string | number | null;
   }
   memo?.set(value, resolved);
   return resolved;

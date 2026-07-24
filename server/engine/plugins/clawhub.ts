@@ -1262,7 +1262,7 @@ export async function installPluginFromClawHub(
           } satisfies Partial<ClawHubPluginInstallRecordFields>);
     const expectedTarballName = resolveClawHubNpmTarballName(versionState.clawpack);
     const clawhubFamily =
-      pkg.family === "code-plugin" || pkg.family === "bundle-plugin" ? pkg.family : null;
+      pkg.family === "code-plugin" || pkg.family === "bundle-plugin" ? "plugin" as const : null;
     if (!clawhubFamily) {
       return buildClawHubInstallFailure(
         `Unsupported ClawHub package family: ${pkg.family}`,
@@ -1277,7 +1277,7 @@ export async function installPluginFromClawHub(
         clawhubUrl: clawhubRegistry,
         clawhubPackage: parsed.name,
         clawhubFamily,
-        clawhubChannel: pkg.channel,
+        clawhubChannel: (pkg.channel === 'stable' ? 'stable' : pkg.channel === 'beta' ? 'beta' : 'dev') as any,
         version: installResult.version ?? versionState.version,
         // For fallback installs this is the observed download digest, not a
         // server-attested sha256hash from ClawHub version metadata.

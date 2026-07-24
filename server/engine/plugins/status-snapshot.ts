@@ -118,11 +118,13 @@ function buildPluginRecordFromInstalledIndex(
     hookCount: 0,
     configSchema: false,
     contracts: manifest?.contracts,
-    dependencyStatus: buildPluginDependencyStatus({
-      rootDir: plugin.rootDir,
-      dependencies: manifest?.packageDependencies,
-      optionalDependencies: manifest?.packageOptionalDependencies,
-    }),
+    ...({
+      dependencyStatus: buildPluginDependencyStatus({
+        rootDir: plugin.rootDir,
+        dependencies: manifest?.packageDependencies,
+        optionalDependencies: manifest?.packageOptionalDependencies,
+      }),
+    } as any),
   };
 }
 
@@ -130,7 +132,7 @@ function buildPluginRecordFromInstalledIndex(
 export function buildPluginRegistrySnapshotReport(
   params?: PluginRegistrySnapshotReportParams,
 ): PluginRegistryStatusReport {
-  const config = params?.config ?? getRuntimeConfig();
+  const config = params?.config ?? (getRuntimeConfig as any)() as any;
   const result = tracePluginLifecyclePhase(
     "plugin registry snapshot",
     () =>

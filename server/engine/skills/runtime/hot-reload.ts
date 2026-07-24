@@ -248,7 +248,7 @@ async function startWatcher(dir: string): Promise<WatcherHandle | null> {
     watcher.dir = dir;
 
     watcher.on('change', (eventType, filename) => {
-      handleFileChange(eventType, filename, dir);
+      handleFileChange(eventType as any, filename as any, dir);
     });
 
     watcher.on('error', (err) => {

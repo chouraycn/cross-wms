@@ -29,7 +29,7 @@ type ChannelConfigWithAccounts = {
   accounts?: Record<string, AccountConfigWithWrites>;
 };
 
-type ConfigWritePolicyConfig = {
+export type ConfigWritePolicyConfig = {
   channels?: Record<string, unknown>;
 };
 

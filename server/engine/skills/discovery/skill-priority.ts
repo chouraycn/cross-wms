@@ -17,7 +17,7 @@ import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 import { AppPaths } from "../../../config/appPaths.js";
 
-const logger = getChildLogger("skill-priority");
+const logger = getChildLogger({ module: "skill-priority" } as any);
 
 // ============================================================================
 // 类型定义

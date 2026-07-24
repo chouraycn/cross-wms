@@ -4,9 +4,10 @@ import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { normalizeAgentPromptSurfaceKind } from "./agent-prompt-surface-kind.js";
 import type {
   AgentPromptGuidance,
-  AgentPromptSurfaceKind,
   OpenClawPluginCommandDefinition,
 } from "./types.js";
+
+type AgentPromptSurfaceKind = typeof import("./types.js").AGENT_PROMPT_SURFACE_KINDS[number];
 
 export type RegisteredPluginCommand = OpenClawPluginCommandDefinition & {
   pluginId: string;

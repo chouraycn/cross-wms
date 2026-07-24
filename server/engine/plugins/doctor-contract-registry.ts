@@ -9,7 +9,7 @@ import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "../plugin-state/plugin-state-store.js";
+} from "./_stub__plugin-state-store.js";
 import type { DoctorSessionRouteStateOwner } from "./doctor-session-route-state-owner-types.js";
 import type { PluginManifestRegistry } from "./manifest-registry.js";
 import {

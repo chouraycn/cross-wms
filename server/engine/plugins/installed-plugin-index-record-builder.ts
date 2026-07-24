@@ -536,7 +536,7 @@ export function buildInstalledPluginIndexRecords(params: {
       ...(manifestFile ? { manifestFile } : {}),
       source: record.source,
       rootDir: record.rootDir,
-      origin: record.origin,
+      origin: record.origin as any,
       enabled,
       startup: buildStartupInfo(record),
       contributions: buildContributionInfo(record),

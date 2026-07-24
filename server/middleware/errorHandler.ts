@@ -3,7 +3,7 @@
  * 确保所有错误响应格式一致
  */
 
-import type { Context, Next } from 'koa';
+import type { Request, Response, NextFunction } from 'express';
 
 export interface ErrorResponse {
   error: string;
@@ -12,24 +12,19 @@ export interface ErrorResponse {
   timestamp: string;
 }
 
-export async function errorHandler(ctx: Context, next: Next): Promise<void> {
-  try {
-    await next();
-  } catch (err) {
-    const status = ctx.status || (err as any)?.status || 500;
-    const message = (err as any)?.message || 'Internal Server Error';
-    
-    ctx.status = status;
-    ctx.body = {
-      error: status >= 500 ? 'server_error' : 'client_error',
-      message,
-      code: status,
-      timestamp: new Date().toISOString(),
-    };
+export function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
+  const status = err?.status || 500;
+  const message = err?.message || 'Internal Server Error';
+  
+  res.status(status).json({
+    error: status >= 500 ? 'server_error' : 'client_error',
+    message,
+    code: status,
+    timestamp: new Date().toISOString(),
+  });
 
-    if (status >= 500) {
-      console.error(`[Error] ${status} ${ctx.path}:`, err);
-    }
+  if (status >= 500) {
+    console.error(`[Error] ${status} ${req.path}:`, err);
   }
 }
 
@@ -39,12 +34,11 @@ export function throwHttpError(status: number, message: string): never {
   throw error;
 }
 
-export function errorResponse(ctx: Context, status: number, message: string): void {
-  ctx.status = status;
-  ctx.body = {
+export function errorResponse(res: Response, status: number, message: string): void {
+  res.status(status).json({
     error: status >= 500 ? 'server_error' : 'client_error',
     message,
     code: status,
     timestamp: new Date().toISOString(),
-  };
+  });
 }

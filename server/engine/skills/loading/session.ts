@@ -4,36 +4,13 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { parseFrontmatter } from "../loading/frontmatter.js";
 import { formatSkillsForPrompt as formatSkillContractForPrompt } from "./skill-contract.js";
 import { computeSkillPromptVersion } from "./skill-version.js";
+import type { ParsedSkillFrontmatter, Skill as SkillType } from "../types.js";
 
 const MAX_NAME_LENGTH = 64;
 const MAX_DESCRIPTION_LENGTH = 1024;
 
-export interface SkillFrontmatter {
-  name?: string;
-  description?: string;
-  "disable-model-invocation"?: boolean;
-  [key: string]: unknown;
-}
-
-export interface Skill {
-  name: string;
-  description: string;
-  filePath: string;
-  baseDir: string;
-  promptVersion?: string;
-  source: string;
-  sourceInfo: {
-    scope: string;
-    origin: string;
-    baseDir: string;
-    filePath: string;
-    source: string;
-  };
-  disableModelInvocation: boolean;
-}
-
 export interface LoadSkillsResult {
-  skills: Skill[];
+  skills: SkillType[];
   diagnostics: Array<{ type: string; message: string; path: string }>;
 }
 
@@ -81,16 +58,16 @@ function createSkillSourceInfo(filePath: string, baseDir: string, source: string
 
 export function loadSkillsFromDir(options: LoadSkillsFromDirOptions): LoadSkillsResult {
   const { dir, source } = options;
-  return loadSkillsFromDirInternal(dir, source, true);
+  return loadSkillsFromDirInternal(dir, source as SkillType["source"], true);
 }
 
 function loadSkillsFromDirInternal(
   dir: string,
-  source: string,
+  source: SkillType["source"],
   includeRootFiles: boolean,
   rootDir?: string,
 ): LoadSkillsResult {
-  const skills: Skill[] = [];
+  const skills: SkillType[] = [];
   const diagnostics: Array<{ type: string; message: string; path: string }> = [];
 
   if (!existsSync(dir)) {
@@ -173,42 +150,45 @@ function loadSkillsFromDirInternal(
 
 function loadSkillFromFile(
   filePath: string,
-  source: string,
-): { skill: Skill | null; diagnostics: Array<{ type: string; message: string; path: string }> } {
+  source: SkillType["source"],
+): { skill: SkillType | null; diagnostics: Array<{ type: string; message: string; path: string }> } {
   const diagnostics: Array<{ type: string; message: string; path: string }> = [];
 
   try {
     const rawContent = readFileSync(filePath, "utf-8");
-    const { frontmatter } = parseFrontmatter<SkillFrontmatter>(rawContent);
+    const frontmatter = parseFrontmatter(rawContent);
     const skillDir = dirname(filePath);
     const parentDirName = basename(skillDir);
 
-    const descErrors = validateDescription(frontmatter.description);
+    const description = frontmatter["description"];
+    const name = frontmatter["name"] || parentDirName;
+
+    const descErrors = validateDescription(description);
     for (const error of descErrors) {
       diagnostics.push({ type: "warning", message: error, path: filePath });
     }
-
-    const name = frontmatter.name || parentDirName;
 
     const nameErrors = validateName(name);
     for (const error of nameErrors) {
       diagnostics.push({ type: "warning", message: error, path: filePath });
     }
 
-    if (!frontmatter.description || frontmatter.description.trim() === "") {
+    if (!description || description.trim() === "") {
       return { skill: null, diagnostics };
     }
+
+    const disableModelInvocationStr = frontmatter["disable-model-invocation"];
+    const disableModelInvocation = disableModelInvocationStr === "true" || disableModelInvocationStr === "yes" || disableModelInvocationStr === "1";
 
     return {
       skill: {
         name,
-        description: frontmatter.description,
+        description,
         filePath,
         baseDir: skillDir,
         promptVersion: computeSkillPromptVersion(rawContent),
         source,
-        sourceInfo: createSkillSourceInfo(filePath, skillDir, source),
-        disableModelInvocation: frontmatter["disable-model-invocation"] === true,
+        disableModelInvocation,
       },
       diagnostics,
     };
@@ -219,7 +199,7 @@ function loadSkillFromFile(
   }
 }
 
-export function formatSkillsForPrompt(skills: Skill[]): string {
+export function formatSkillsForPrompt(skills: SkillType[]): string {
   const visibleSkills = skills.filter((s) => !s.disableModelInvocation);
   return formatSkillContractForPrompt(visibleSkills);
 }
@@ -253,7 +233,7 @@ function resolveSkillPath(p: string, cwd: string): string {
 export function loadSkills(options: LoadSkillsOptions): LoadSkillsResult {
   const { cwd, skillPaths, includeDefaults } = options;
 
-  const skillMap = new Map<string, Skill>();
+  const skillMap = new Map<string, SkillType>();
   const realPathSet = new Set<string>();
   const allDiagnostics: Array<{ type: string; message: string; path: string }> = [];
   const collisionDiagnostics: Array<{ type: string; message: string; path: string }> = [];
@@ -282,7 +262,7 @@ export function loadSkills(options: LoadSkillsOptions): LoadSkillsResult {
   }
 
   if (includeDefaults) {
-    addSkills(loadSkillsFromDirInternal(join(cwd, ".cross-wms", "skills"), "project", true));
+    addSkills(loadSkillsFromDirInternal(join(cwd, ".cross-wms", "skills"), "workspace", true));
   }
 
   for (const rawPath of skillPaths) {
@@ -299,9 +279,9 @@ export function loadSkills(options: LoadSkillsOptions): LoadSkillsResult {
     try {
       const stats = statSync(resolvedPath);
       if (stats.isDirectory()) {
-        addSkills(loadSkillsFromDirInternal(resolvedPath, "path", true));
+        addSkills(loadSkillsFromDirInternal(resolvedPath, "workspace", true));
       } else if (stats.isFile() && resolvedPath.endsWith(".md")) {
-        const result = loadSkillFromFile(resolvedPath, "path");
+        const result = loadSkillFromFile(resolvedPath, "workspace");
         if (result.skill) {
           addSkills({ skills: [result.skill], diagnostics: result.diagnostics });
         } else {

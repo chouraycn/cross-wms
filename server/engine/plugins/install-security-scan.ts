@@ -29,24 +29,63 @@ export type PackageExecutableScanMetadata = {
 
 export async function scanBundleInstallSource(_params: {
   archivePath: string;
+  dangerouslyForceUnsafeInstall?: boolean;
+  config?: unknown;
+  sourceDir?: string;
+  pluginId?: string;
+  logger?: unknown;
+  requestKind?: string;
+  requestedSpecifier?: string;
+  source?: unknown;
+  mode?: string;
+  version?: string;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }
 
 export async function scanPackageInstallSource(_params: {
   packageDir: string;
+  requestKind?: string;
+  requestedSpecifier?: string;
+  source?: unknown;
+  mode?: string;
+  packageName?: string;
+  manifestId?: string;
+  version?: string;
+  config?: unknown;
+  pluginId?: string;
+  logger?: unknown;
+  extensions?: string[];
+  packageMetadata?: unknown;
+  trustedSourceLinkedOfficialInstall?: boolean;
+  dangerouslyForceUnsafeInstall?: boolean;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }
 
 export async function scanInstalledPackageDependencyTree(_params: {
   packageDir: string;
+  requestedSpecifier?: string;
+  source?: unknown;
+  mode?: string;
+  config?: unknown;
+  pluginId?: string;
+  logger?: unknown;
+  trustedSourceLinkedOfficialInstall?: boolean;
+  requestKind?: string;
+  allowManagedNpmRootPackagePeerSymlinks?: boolean;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }
 
 export async function scanFileInstallSource(_params: {
   filePath: string;
+  config?: unknown;
+  dangerouslyForceUnsafeInstall?: boolean;
+  logger?: unknown;
+  mode?: string;
+  pluginId?: string;
+  requestedSpecifier?: string;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }

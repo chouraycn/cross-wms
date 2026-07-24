@@ -257,7 +257,7 @@ export function patchSkillConfigEntry(
     recordMutation(skillName, {
       type: 'update',
       changes: diff,
-    });
+    } as any);
   }
 }
 

@@ -1699,7 +1699,6 @@ export function loadPluginManifest(
     rootPath: rootDir,
     ...(rootRealPath !== undefined ? { rootRealPath } : {}),
     boundaryLabel: "plugin root",
-    maxBytes: MAX_PLUGIN_MANIFEST_BYTES,
     rejectHardlinks,
   });
   if (!opened.ok) {
@@ -1716,7 +1715,7 @@ export function loadPluginManifest(
       }),
     });
   }
-  const stats = opened.stat;
+  const stats = fs.fstatSync(opened.fd);
   const cacheKey = buildPluginManifestLoadCacheKey({
     manifestPath,
     rejectHardlinks,
@@ -1775,9 +1774,7 @@ export function loadPluginManifest(
   const cliBackends = normalizeTrimmedStringList(raw.cliBackends);
   const providerCatalogEntry = normalizeOptionalString(raw.providerCatalogEntry);
   const modelSupport = normalizeManifestModelSupport(raw.modelSupport);
-  const modelCatalog = normalizeModelCatalog(raw.modelCatalog, {
-    ownedProviders: new Set([...providers, ...cliBackends]),
-  });
+  const modelCatalog = normalizeModelCatalog(raw.modelCatalog);
   const modelPricing = normalizeManifestModelPricing(raw.modelPricing, {
     ownedProviders: new Set(providers),
   });

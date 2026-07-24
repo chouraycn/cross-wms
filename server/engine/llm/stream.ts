@@ -29,9 +29,9 @@ export async function stream(options: StreamOptions & { agentId?: string; sessio
     throw new Error(`Model not found: ${modelRef}`);
   }
 
-  const apiProvider = getApiProvider(model.api);
+  const apiProvider = getApiProvider(model.apiType as any);
   if (!apiProvider) {
-    throw new Error(`No API provider registered for: ${model.api}`);
+    throw new Error(`No API provider registered for: ${model.apiType}`);
   }
 
   const apiKey = getEnvApiKey(provider);
@@ -98,9 +98,9 @@ export async function complete(options: CompleteOptions & { agentId?: string; se
     throw new Error(`Model not found: ${modelRef}`);
   }
 
-  const apiProvider = getApiProvider(model.api);
+  const apiProvider = getApiProvider(model.apiType as any);
   if (!apiProvider) {
-    throw new Error(`No API provider registered for: ${model.api}`);
+    throw new Error(`No API provider registered for: ${model.apiType}`);
   }
 
   const apiKey = getEnvApiKey(provider);

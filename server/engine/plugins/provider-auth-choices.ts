@@ -192,9 +192,9 @@ function resolveManifestProviderAuthChoiceCandidates(params?: {
     workspaceDir: params?.workspaceDir,
     env: params?.env ?? process.env,
   });
-  const registry = metadataSnapshot.manifestRegistry;
+  const registry = metadataSnapshot.manifestRegistry as any;
   const normalizedConfig = normalizePluginsConfig(params?.config?.plugins);
-  return registry.plugins.flatMap((plugin) => {
+  return registry.plugins.flatMap((plugin: any) => {
     if (
       plugin.origin === "workspace" &&
       params?.includeUntrustedWorkspacePlugins === false &&

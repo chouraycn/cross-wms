@@ -1,3 +1,4 @@
+import path from 'path';
 import { z } from 'zod';
 import { logger } from '../../logger.js';
 

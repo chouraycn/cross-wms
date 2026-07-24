@@ -1168,7 +1168,7 @@ export type FileStore = {
 export const fileStore: FileStore = {
   async read(filePath: string): Promise<Buffer | null> {
     try {
-      return await fs.readFile(filePath);
+      return await fsPromises.readFile(filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
@@ -1178,12 +1178,12 @@ export const fileStore: FileStore = {
   },
   async write(filePath: string, data: Buffer): Promise<void> {
     const dir = path.dirname(filePath);
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(filePath, data);
+    await fsPromises.mkdir(dir, { recursive: true });
+    await fsPromises.writeFile(filePath, data);
   },
   async delete(filePath: string): Promise<void> {
     try {
-      await fs.unlink(filePath);
+      await fsPromises.unlink(filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return;

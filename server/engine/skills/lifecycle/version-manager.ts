@@ -149,13 +149,13 @@ async function computeDirectorySha256(dirPath: string): Promise<string> {
   const fileEntries = entries.filter((e) => e.isFile());
 
   fileEntries.sort((a, b) => {
-    const pathA = a.fullPath || path.join(dirPath, a.name);
-    const pathB = b.fullPath || path.join(dirPath, b.name);
+    const pathA = path.join(dirPath, a.name);
+    const pathB = path.join(dirPath, b.name);
     return pathA.localeCompare(pathB);
   });
 
   for (const entry of fileEntries) {
-    const filePath = entry.fullPath || path.join(dirPath, entry.name);
+    const filePath = path.join(dirPath, entry.name);
     const content = await fs.readFile(filePath);
     hash.update(filePath);
     hash.update(content);

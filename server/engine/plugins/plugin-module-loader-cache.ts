@@ -2,7 +2,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { createJiti } from "jiti";
+import createJiti from "jiti";
 import { toSafeImportPath } from "../shared/import-specifier.js";
 import { tryNativeRequireJavaScriptModule } from "./native-module-require.js";
 import { PluginLruCache } from "./plugin-cache-primitives.js";
@@ -194,7 +194,7 @@ function createLazySourceTransformLoader(params: {
           modulePath: params.loaderFilename,
         }),
         tryNative: params.sourceTransformTryNative,
-      },
+      } as any,
     );
     loadWithSourceTransform = new Proxy(jitiLoader, {
       apply(target, thisArg, argArray) {

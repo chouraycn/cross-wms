@@ -17,6 +17,16 @@ export type OAuthProvider = {
   scopes: string[];
 };
 
+export type OAuthCredentials = {
+  type: "oauth";
+  provider: string;
+  access: string;
+  refresh: string;
+  expires: number;
+  scopes?: string[];
+  email?: string;
+};
+
 const tokenStore = new Map<string, OAuthFlowResult>();
 
 export function isOAuthTokenExpired(token: OAuthFlowResult, marginMs = 60_000): boolean {

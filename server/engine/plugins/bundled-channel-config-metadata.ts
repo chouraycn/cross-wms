@@ -80,13 +80,13 @@ function resolveConfigSchemaExport(imported: Record<string, unknown>): ChannelCo
       continue;
     }
     if (isBuiltChannelConfigSchema(value)) {
-      return value;
+      return value as any;
     }
     if (isJsonSchemaConfigSurface(value)) {
-      return buildJsonChannelConfigSchema(value);
+      return buildJsonChannelConfigSchema(value) as any;
     }
     if (value && typeof value === "object") {
-      return buildChannelConfigSchema(value as never);
+      return buildChannelConfigSchema(value as never) as any;
     }
   }
 

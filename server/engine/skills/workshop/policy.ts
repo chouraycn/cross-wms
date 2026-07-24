@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.skills.js";
+import type { OpenClawConfig } from "../../config/types/openclaw.js";
 import { resolveSkillWorkshopConfig } from "./config.js";
 
 const SKILL_WORKSHOP_LIFECYCLE_ACTIONS = new Set(["apply", "reject", "quarantine"]);

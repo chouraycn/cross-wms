@@ -189,7 +189,7 @@ export function parseQQWebhook(body: unknown, _account: QQAccountConfig): QQWebh
       type: "message",
       message: {
         chatId: String(data.group_id || data.guild_id || data.channel_id || ""),
-        userId: String(data.author?.id || data.user_id || ""),
+        userId: String((data.author as Record<string, unknown>)?.id || data.user_id || ""),
         messageId: String(data.id || data.msg_id || ""),
         text: String(data.content || ""),
         timestamp: Number(data.timestamp || Date.now()),

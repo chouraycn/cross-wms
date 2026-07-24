@@ -8,7 +8,8 @@ import type { PluginCandidate } from "./discovery.js";
 import { loadInstalledPluginIndexInstallRecordsSync } from "./installed-plugin-index-records.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 import { isPathInside, safeRealpathSync, safeStatSync } from "./path-safety.js";
-import type { PluginRecord, PluginRegistry } from "./registry.js";
+import type { PluginRegistry } from "./registry.js";
+import type { PluginRecord } from "./registry-types.js";
 import type { PluginLogger } from "./types.js";
 
 type PathMatcher = {
@@ -295,13 +296,17 @@ export function warnAboutUntrackedLoadedPlugins(params: {
     if (plugin.status !== "loaded" || plugin.origin === "bundled") {
       continue;
     }
-    if (allowSet.has(plugin.id)) {
+    if (!plugin.id || allowSet.has(plugin.id)) {
       continue;
     }
+    if (!plugin.source) {
+      continue;
+    }
+    const pluginSource = plugin.source as string;
     if (
       isTrackedByProvenance({
         pluginId: plugin.id,
-        source: plugin.source,
+        source: pluginSource,
         index: params.provenance,
         env: params.env,
       })
@@ -312,11 +317,11 @@ export function warnAboutUntrackedLoadedPlugins(params: {
     params.registry.diagnostics.push({
       level: "warn",
       pluginId: plugin.id,
-      source: plugin.source,
+      source: pluginSource,
       message,
     });
     if (params.emitWarning) {
-      params.logger.warn(`[plugins] ${plugin.id}: ${message} (${plugin.source})`);
+      params.logger.warn(`[plugins] ${plugin.id}: ${message} (${pluginSource})`);
     }
   }
 }

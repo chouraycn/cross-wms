@@ -54,10 +54,10 @@ function hasManifestWebSearchEnvCredentialCandidate(params: {
       return false;
     }
     const envVars = [
-      ...(plugin.setup?.providers ?? []).flatMap((provider) => provider.envVars ?? []),
-      ...Object.values(plugin.providerAuthEnvVars ?? {}).flat(),
+      ...(plugin.contracts?.webSearchProviders ?? []).flatMap((provider: any) => provider.envVars ?? []),
+      ...Object.values((plugin as any).providerAuthEnvVars ?? {}).flat(),
     ];
-    return envVars.some((envVar) => hasConfiguredCredentialValue(env[envVar]));
+    return envVars.some((envVar: string) => hasConfiguredCredentialValue(env[envVar]));
   });
 }
 
