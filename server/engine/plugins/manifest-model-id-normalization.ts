@@ -1,7 +1,7 @@
 /** Applies manifest-declared model-id normalization policies to provider model refs. */
 // Stub implementation for missing module
-const collectManifestModelIdNormalizationPolicies = (_manifest: any) => [];
-const normalizeProviderModelIdWithPolicies = (modelId: string) => modelId;
+const collectManifestModelIdNormalizationPolicies = (_manifest: unknown): Map<string, PluginManifestModelIdNormalizationProvider> => new Map();
+const normalizeProviderModelIdWithPolicies = (..._args: unknown[]): unknown => undefined;
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
@@ -64,13 +64,13 @@ function loadManifestModelIdNormalizationPolicies(
   params: ManifestModelIdNormalizationLookupParams = {},
 ): Map<string, PluginManifestModelIdNormalizationProvider> {
   if (params.plugins) {
-    return collectManifestModelIdNormalizationPolicies(params.plugins) as any;
+    return collectManifestModelIdNormalizationPolicies(params.plugins);
   }
   const { plugins, configFingerprint, cacheable } = resolveMetadataSnapshotForPolicies(params);
   if (cacheable && configFingerprint && cachedPolicies?.configFingerprint === configFingerprint) {
     return cachedPolicies.policies;
   }
-  const policies = collectManifestModelIdNormalizationPolicies(plugins) as any;
+  const policies = collectManifestModelIdNormalizationPolicies(plugins);
   if (cacheable && configFingerprint) {
     cachedPolicies = { configFingerprint, policies };
   }
@@ -89,11 +89,11 @@ export function normalizeProviderModelIdWithManifest(params: {
     modelId: string;
   };
 }): string | undefined {
-  return (normalizeProviderModelIdWithPolicies as any)({
+  return (normalizeProviderModelIdWithPolicies({
     provider: params.provider,
-    policies: loadManifestModelIdNormalizationPolicies(params) as any,
+    policies: loadManifestModelIdNormalizationPolicies(params),
     context: {
       modelId: params.context.modelId,
     },
-  });
+  }) as string | undefined);
 }

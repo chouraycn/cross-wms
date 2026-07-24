@@ -2318,7 +2318,7 @@ async function installBundleFromSourceDir(
         source: params.installPolicyRequest?.source,
         mode: targetResult.target.effectiveMode,
         version: manifestRes.manifest.version,
-      } as any),
+      }),
   });
   if (scanResult) {
     return scanResult;
@@ -2590,7 +2590,7 @@ async function scanAndLinkInstalledPackage(params: {
         requestedSpecifier: params.requestedSpecifier,
         source: params.source,
         trustedSourceLinkedOfficialInstall: params.trustedSourceLinkedOfficialInstall,
-      } as any),
+      }),
   });
   if (scanResult) {
     return scanResult;

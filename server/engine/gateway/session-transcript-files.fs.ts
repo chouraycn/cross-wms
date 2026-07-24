@@ -15,30 +15,30 @@ export type ArchivedSessionTranscript = unknown;
 
 export type SessionArchiveCleanupRule = unknown;
 
-export function resolveSessionTranscriptCandidates(..._args: unknown[]): any {
+export function resolveSessionTranscriptCandidates(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function resolveSessionTranscriptResetArchiveCandidatesAsync(..._args: unknown[]): Promise<any> {
+export async function resolveSessionTranscriptResetArchiveCandidatesAsync(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function archiveFileOnDisk(..._args: unknown[]): any {
+export function archiveFileOnDisk(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function archiveSessionTranscripts(..._args: unknown[]): any {
+export function archiveSessionTranscripts(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function archiveSessionTranscriptsDetailed(..._args: unknown[]): any {
+export function archiveSessionTranscriptsDetailed(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveStableSessionEndTranscript(..._args: unknown[]): any {
+export function resolveStableSessionEndTranscript(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function cleanupArchivedSessionTranscripts(..._args: unknown[]): Promise<any> {
+export async function cleanupArchivedSessionTranscripts(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

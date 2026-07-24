@@ -299,7 +299,7 @@ export class ToolSearchCatalog {
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: tool.parameters as any,
+          parameters: tool.parameters,
         },
       });
     }

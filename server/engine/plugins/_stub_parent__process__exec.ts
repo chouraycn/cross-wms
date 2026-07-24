@@ -1,14 +1,17 @@
-// === PENDING MIGRATION STUB ===
-// Source: openclaw/src/process/exec.ts (待迁移)
-// Status: 类型安全 no-op 实现 — 返回失败结果 (exitCode 1)
-// 注：openclaw 同源实现需要子进程包装、超时控制、信号管理
+// === MIGRATED — 已移植到真实实现 ===
+// Source: openclaw/src/process/exec.ts
+// Real implementation: server/engine/process/exec.ts
+//
+// 移植了核心的 runCommandWithTimeout 和 runExec 函数（超时、AbortSignal、输出截断、进程树终止）。
+// 移除了 Windows 特定逻辑（cross-wms 运行在 macOS/Linux）。
 
-export const runCommandWithTimeout = async (
-  _cmd: string,
-  _args: string[],
-  _opts?: unknown,
-): Promise<{ stdout: string; stderr: string; exitCode: number }> => ({
-  stdout: "",
-  stderr: "",
-  exitCode: 1,
-});
+export type {
+  SpawnResult,
+  CommandOptions,
+} from "../process/exec.js";
+
+export {
+  runCommandWithTimeout,
+  runExec,
+  resolveProcessExitCode,
+} from "../process/exec.js";

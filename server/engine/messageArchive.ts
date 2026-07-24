@@ -8,6 +8,7 @@
  * - 归档摘要可被记忆搜索系统索引
  */
 
+import Database from 'better-sqlite3';
 import { logger } from '../logger.js';
 
 // ===================== 配置 =====================
@@ -44,7 +45,7 @@ export interface ArchiveResult {
 /**
  * 初始化归档相关表结构
  */
-export function initArchiveTables(db: any): void {
+export function initArchiveTables(db: Database.Database): void {
   // 添加 archived 列（如果不存在）
   try {
     const columns = db.prepare("PRAGMA table_info(messages)").all() as Array<{ name: string }>;
@@ -78,7 +79,7 @@ export function initArchiveTables(db: any): void {
 /**
  * 执行一次归档扫描
  */
-export function runArchive(db: any, config: ArchiveConfig = DEFAULT_ARCHIVE_CONFIG): ArchiveResult {
+export function runArchive(db: Database.Database, config: ArchiveConfig = DEFAULT_ARCHIVE_CONFIG): ArchiveResult {
   const result: ArchiveResult = {
     sessionsArchived: 0,
     messagesArchived: 0,

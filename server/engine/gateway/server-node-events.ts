@@ -13,12 +13,12 @@
 
 export type NodeEventHandleResult = unknown;
 
-export function resetNodeEventDeduplicationForTests(..._args: unknown[]): any {
+export function resetNodeEventDeduplicationForTests(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function getRecentNodePresencePersistCountForTests(..._args: unknown[]): any {
+export function getRecentNodePresencePersistCountForTests(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export const handleNodeEvent: any = undefined;
+export const handleNodeEvent: unknown = undefined;

@@ -10,7 +10,7 @@ import { spawn, ChildProcess } from "child_process";
 import { promisify } from "util";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "remote-prober" } as any);
+const logger = getChildLogger({ module: "remote-prober" });
 
 // ============================================================================
 // 类型定义

@@ -17,42 +17,42 @@ export type RestartRecoveryCandidate = unknown;
 
 export type ChatAbortOps = unknown;
 
-export function isChatStopCommandText(..._args: unknown[]): any {
+export function isChatStopCommandText(..._args: unknown[]): unknown {
   return false;
 }
 
-export function resolveChatRunExpiresAtMs(..._args: unknown[]): any {
+export function resolveChatRunExpiresAtMs(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveAgentRunExpiresAtMs(..._args: unknown[]): any {
+export function resolveAgentRunExpiresAtMs(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function registerChatAbortController(..._args: unknown[]): any {
+export function registerChatAbortController(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveInFlightRunSnapshot(..._args: unknown[]): any {
+export function resolveInFlightRunSnapshot(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function boundInFlightRunSnapshotForChatHistory(..._args: unknown[]): any {
+export function boundInFlightRunSnapshotForChatHistory(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function abortTrackedChatRunById(..._args: unknown[]): any {
+export function abortTrackedChatRunById(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function abortChatRunById(..._args: unknown[]): any {
+export function abortChatRunById(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function updateChatRunProvider(..._args: unknown[]): any {
+export function updateChatRunProvider(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function abortChatRunsForProvider(..._args: unknown[]): any {
+export function abortChatRunsForProvider(..._args: unknown[]): unknown {
   return undefined;
 }

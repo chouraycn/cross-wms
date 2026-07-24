@@ -124,7 +124,7 @@ function buildPluginRecordFromInstalledIndex(
         dependencies: manifest?.packageDependencies,
         optionalDependencies: manifest?.packageOptionalDependencies,
       }),
-    } as any),
+    } as { dependencyStatus: ReturnType<typeof buildPluginDependencyStatus> }),
   };
 }
 
@@ -132,7 +132,7 @@ function buildPluginRecordFromInstalledIndex(
 export function buildPluginRegistrySnapshotReport(
   params?: PluginRegistrySnapshotReportParams,
 ): PluginRegistryStatusReport {
-  const config = params?.config ?? (getRuntimeConfig as any)() as any;
+  const config = params?.config ?? (getRuntimeConfig as () => OpenClawConfig | undefined)();
   const result = tracePluginLifecyclePhase(
     "plugin registry snapshot",
     () =>

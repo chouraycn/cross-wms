@@ -3,4 +3,4 @@ export async function recoverInstalledLaunchAgent(..._args: unknown[]): Promise<
   console.warn('recoverInstalledLaunchAgent is not available in cross-wms');
 }
 
-export const LAUNCH_AGENT_RECOVERY_MESSAGE: unknown = undefined;
+export const LAUNCH_AGENT_RECOVERY_MESSAGE: unknown = undefined as unknown;

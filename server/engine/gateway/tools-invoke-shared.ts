@@ -13,6 +13,6 @@
 
 export type ToolsInvokeInput = unknown;
 
-export async function invokeGatewayTool(..._args: unknown[]): Promise<any> {
+export async function invokeGatewayTool(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

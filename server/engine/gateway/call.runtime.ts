@@ -7,4 +7,4 @@
  */
 
 // 原 re-export from ./call.js
-export const callGateway: any = undefined;
+export const callGateway: unknown = undefined;

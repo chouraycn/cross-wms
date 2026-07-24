@@ -11,6 +11,7 @@ import {
   buildMediaGenerationTaskStatusDetails,
   buildMediaGenerationTaskStatusText,
   buildActiveMediaGenerationTaskPromptContextForSession,
+  type TaskRecord,
 } from "./media-generation-task-status-shared.js";
 
 export const VIDEO_GENERATION_TASK_KIND = "video-generation";
@@ -53,7 +54,7 @@ export function buildVideoGenerationTaskStatusDetails(params: {
   sourcePrefix?: string;
 }) {
   return buildMediaGenerationTaskStatusDetails({
-    task: params.task as any,
+    task: params.task as TaskRecord,
     sourcePrefix: params.sourcePrefix ?? "video",
   });
 }
@@ -65,7 +66,7 @@ export function buildVideoGenerationTaskStatusText(params: {
   duplicateGuard?: boolean;
 }) {
   return buildMediaGenerationTaskStatusText({
-    task: params.task as any,
+    task: params.task as TaskRecord,
     sourcePrefix: params.sourcePrefix ?? "video",
     nounLabel: "Video",
     toolName: "video-generate",

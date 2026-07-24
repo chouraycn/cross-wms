@@ -11,36 +11,36 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveEffectiveChatHistoryMaxChars(..._args: unknown[]): any {
+export function resolveEffectiveChatHistoryMaxChars(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function isToolHistoryBlockType(..._args: unknown[]): any {
+export function isToolHistoryBlockType(..._args: unknown[]): unknown {
   return false;
 }
 
-export function augmentChatHistoryWithCanvasBlocks(..._args: unknown[]): any {
+export function augmentChatHistoryWithCanvasBlocks(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function sanitizeChatHistoryMessages(..._args: unknown[]): any {
+export function sanitizeChatHistoryMessages(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function dropPreSessionStartAnnouncePairs(..._args: unknown[]): any {
+export function dropPreSessionStartAnnouncePairs(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function projectChatDisplayMessages(..._args: unknown[]): any {
+export function projectChatDisplayMessages(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function projectRecentChatDisplayMessages(..._args: unknown[]): any {
+export function projectRecentChatDisplayMessages(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function projectChatDisplayMessage(..._args: unknown[]): any {
+export function projectChatDisplayMessage(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS: any = undefined;
+export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS: unknown = undefined;

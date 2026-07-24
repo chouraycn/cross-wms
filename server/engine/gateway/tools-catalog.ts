@@ -4,4 +4,4 @@ export function buildToolsCatalogResult(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const toolsCatalogHandlers: unknown = undefined;
+export const toolsCatalogHandlers: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

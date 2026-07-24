@@ -100,9 +100,9 @@ export interface ToolExecutorOptions {
   /** v8.2: 子任务完成 */
   onSubtaskComplete?: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => void;
   /** 反思评估结果 */
-  onReflect?: (reflection: any) => void;
+  onReflect?: (reflection: unknown) => void;
   /** 执行计划生成 */
-  onPlan?: (plan: any) => void;
+  onPlan?: (plan: unknown) => void;
   /** v2.2.0: 模型能力标签，透传到 callAIModelStream */
   modelCapabilities?: string[];
   circuitBreaker?: CircuitBreaker;

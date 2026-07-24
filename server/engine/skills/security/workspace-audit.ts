@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "skills" } as any);
+const logger = getChildLogger({ module: "skills" });
 
 const MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE = 2000;
 

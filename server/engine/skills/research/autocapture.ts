@@ -10,7 +10,7 @@
 import { getChildLogger } from "../../logging/logger.js";
 import { getSessionSnapshotManager } from "../runtime/session-snapshot.js";
 
-const logger = getChildLogger({ module: "skill-research" } as any);
+const logger = getChildLogger({ module: "skill-research" });
 
 // ============================================================================
 // 类型定义

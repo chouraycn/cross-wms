@@ -31,68 +31,68 @@ export type ResponseResource = unknown;
 
 export type StreamingEvent = unknown;
 
-export const InputTextContentPartSchema: any = undefined;
+export const InputTextContentPartSchema: unknown = undefined;
 
-export const OutputTextContentPartSchema: any = undefined;
+export const OutputTextContentPartSchema: unknown = undefined;
 
-export const InputImageSourceSchema: any = undefined;
+export const InputImageSourceSchema: unknown = undefined;
 
-export const InputImageContentPartSchema: any = undefined;
+export const InputImageContentPartSchema: unknown = undefined;
 
-export const InputFileSourceSchema: any = undefined;
+export const InputFileSourceSchema: unknown = undefined;
 
-export const InputFileContentPartSchema: any = undefined;
+export const InputFileContentPartSchema: unknown = undefined;
 
-export const ContentPartSchema: any = undefined;
+export const ContentPartSchema: unknown = undefined;
 
-export const MessageItemRoleSchema: any = undefined;
+export const MessageItemRoleSchema: unknown = undefined;
 
-export const AssistantPhaseSchema: any = undefined;
+export const AssistantPhaseSchema: unknown = undefined;
 
-export const MessageItemSchema: any = undefined;
+export const MessageItemSchema: unknown = undefined;
 
-export const FunctionCallItemSchema: any = undefined;
+export const FunctionCallItemSchema: unknown = undefined;
 
-export const FunctionCallOutputItemSchema: any = undefined;
+export const FunctionCallOutputItemSchema: unknown = undefined;
 
-export const ReasoningItemSchema: any = undefined;
+export const ReasoningItemSchema: unknown = undefined;
 
-export const ItemReferenceItemSchema: any = undefined;
+export const ItemReferenceItemSchema: unknown = undefined;
 
-export const ItemParamSchema: any = undefined;
+export const ItemParamSchema: unknown = undefined;
 
-export const FunctionToolDefinitionSchema: any = undefined;
+export const FunctionToolDefinitionSchema: unknown = undefined;
 
-export const ToolDefinitionSchema: any = undefined;
+export const ToolDefinitionSchema: unknown = undefined;
 
-export const ToolChoiceSchema: any = undefined;
+export const ToolChoiceSchema: unknown = undefined;
 
-export const CreateResponseBodySchema: any = undefined;
+export const CreateResponseBodySchema: unknown = undefined;
 
-export const ResponseStatusSchema: any = undefined;
+export const ResponseStatusSchema: unknown = undefined;
 
-export const OutputItemSchema: any = undefined;
+export const OutputItemSchema: unknown = undefined;
 
-export const UsageSchema: any = undefined;
+export const UsageSchema: unknown = undefined;
 
-export const ResponseResourceSchema: any = undefined;
+export const ResponseResourceSchema: unknown = undefined;
 
-export const ResponseCreatedEventSchema: any = undefined;
+export const ResponseCreatedEventSchema: unknown = undefined;
 
-export const ResponseInProgressEventSchema: any = undefined;
+export const ResponseInProgressEventSchema: unknown = undefined;
 
-export const ResponseCompletedEventSchema: any = undefined;
+export const ResponseCompletedEventSchema: unknown = undefined;
 
-export const ResponseFailedEventSchema: any = undefined;
+export const ResponseFailedEventSchema: unknown = undefined;
 
-export const OutputItemAddedEventSchema: any = undefined;
+export const OutputItemAddedEventSchema: unknown = undefined;
 
-export const OutputItemDoneEventSchema: any = undefined;
+export const OutputItemDoneEventSchema: unknown = undefined;
 
-export const ContentPartAddedEventSchema: any = undefined;
+export const ContentPartAddedEventSchema: unknown = undefined;
 
-export const ContentPartDoneEventSchema: any = undefined;
+export const ContentPartDoneEventSchema: unknown = undefined;
 
-export const OutputTextDeltaEventSchema: any = undefined;
+export const OutputTextDeltaEventSchema: unknown = undefined;
 
-export const OutputTextDoneEventSchema: any = undefined;
+export const OutputTextDoneEventSchema: unknown = undefined;

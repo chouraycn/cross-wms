@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function shouldRequireGatewayTokenForInstall(..._args: unknown[]): any {
+export function shouldRequireGatewayTokenForInstall(..._args: unknown[]): unknown {
   return false;
 }

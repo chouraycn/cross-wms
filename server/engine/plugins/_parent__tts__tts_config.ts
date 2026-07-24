@@ -8,9 +8,10 @@ export function resolveEffectiveTtsConfig(config?: unknown): TtsConfig {
   if (!config || typeof config !== 'object') {
     return {};
   }
+  const cfg = config as Record<string, unknown>;
   return {
-    defaultProvider: (config as any).defaultProvider,
-    voice: (config as any).voice,
-    rate: (config as any).rate,
+    defaultProvider: cfg.defaultProvider as string | undefined,
+    voice: cfg.voice as string | undefined,
+    rate: cfg.rate as number | undefined,
   };
 }

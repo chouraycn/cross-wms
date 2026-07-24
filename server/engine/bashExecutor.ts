@@ -675,7 +675,7 @@ function handleProcessWrite(
   }
 
   const stdin = session.stdin;
-  if (!stdin || (stdin as any).destroyed) {
+  if (!stdin || (stdin as { destroyed?: boolean }).destroyed) {
     return Promise.resolve(JSON.stringify({ error: 'stdin 不可用' }));
   }
 
@@ -715,7 +715,7 @@ function handleProcessSendKeys(
   }
 
   const stdin = session.stdin;
-  if (!stdin || (stdin as any).destroyed) {
+  if (!stdin || (stdin as { destroyed?: boolean }).destroyed) {
     return Promise.resolve(JSON.stringify({ error: 'stdin 不可用' }));
   }
 
@@ -827,7 +827,7 @@ function handleProcessPaste(
   }
 
   const stdin = session.stdin;
-  if (!stdin || (stdin as any).destroyed) {
+  if (!stdin || (stdin as { destroyed?: boolean }).destroyed) {
     return Promise.resolve(JSON.stringify({ error: 'stdin 不可用' }));
   }
 

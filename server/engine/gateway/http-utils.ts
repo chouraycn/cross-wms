@@ -11,57 +11,57 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const authorizeOpenAiCompatibleHttpModelOverride: any = undefined;
+export const authorizeOpenAiCompatibleHttpModelOverride: unknown = undefined;
 
-export const authorizeGatewayHttpRequestOrReply: any = undefined;
+export const authorizeGatewayHttpRequestOrReply: unknown = undefined;
 
-export const authorizeScopedGatewayHttpRequestOrReply: any = undefined;
+export const authorizeScopedGatewayHttpRequestOrReply: unknown = undefined;
 
-export const checkGatewayHttpRequestAuth: any = undefined;
+export const checkGatewayHttpRequestAuth: unknown = undefined;
 
-export const getBearerToken: any = undefined;
+export const getBearerToken: unknown = undefined;
 
-export const getHeader: any = undefined;
+export const getHeader: unknown = undefined;
 
-export const isGatewayBearerHttpRequest: any = undefined;
+export const isGatewayBearerHttpRequest: unknown = undefined;
 
-export const resolveHttpBrowserOriginPolicy: any = undefined;
+export const resolveHttpBrowserOriginPolicy: unknown = undefined;
 
-export const resolveHttpSenderIsOwner: any = undefined;
+export const resolveHttpSenderIsOwner: unknown = undefined;
 
-export const resolveOpenAiCompatibleHttpOperatorScopes: any = undefined;
+export const resolveOpenAiCompatibleHttpOperatorScopes: unknown = undefined;
 
-export const resolveOpenAiCompatibleHttpSenderIsOwner: any = undefined;
+export const resolveOpenAiCompatibleHttpSenderIsOwner: unknown = undefined;
 
-export const resolveSharedSecretHttpOperatorScopes: any = undefined;
+export const resolveSharedSecretHttpOperatorScopes: unknown = undefined;
 
-export const resolveTrustedHttpOperatorScopes: any = undefined;
+export const resolveTrustedHttpOperatorScopes: unknown = undefined;
 
-export const AuthorizedGatewayHttpRequest: any = undefined;
+export const AuthorizedGatewayHttpRequest: unknown = undefined;
 
-export const GatewayHttpRequestAuthCheckResult: any = undefined;
+export const GatewayHttpRequestAuthCheckResult: unknown = undefined;
 
-export function isUnknownGatewayAgentError(..._args: unknown[]): any {
+export function isUnknownGatewayAgentError(..._args: unknown[]): unknown {
   return false;
 }
 
-export function isGatewaySessionKeyOverrideError(..._args: unknown[]): any {
+export function isGatewaySessionKeyOverrideError(..._args: unknown[]): unknown {
   return false;
 }
 
-export function resolveAgentIdFromModel(..._args: unknown[]): any {
+export function resolveAgentIdFromModel(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function resolveOpenAiCompatModelOverride(..._args: unknown[]): Promise<any> {
+export async function resolveOpenAiCompatModelOverride(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function resolveAgentIdForRequest(..._args: unknown[]): any {
+export function resolveAgentIdForRequest(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveGatewayRequestContext(..._args: unknown[]): any {
+export function resolveGatewayRequestContext(..._args: unknown[]): unknown {
   return undefined;
 }
 
@@ -77,6 +77,6 @@ export class GatewaySessionKeyOverrideError {
   }
 }
 
-export const OPENCLAW_MODEL_ID: any = undefined;
+export const OPENCLAW_MODEL_ID: unknown = undefined;
 
-export const OPENCLAW_DEFAULT_MODEL_ID: any = undefined;
+export const OPENCLAW_DEFAULT_MODEL_ID: unknown = undefined;

@@ -15,18 +15,18 @@ export type ActivateRuntimeSecrets = unknown;
 
 export type GatewayStartupConfigSnapshotLoadResult = unknown;
 
-export async function loadGatewayStartupConfigSnapshot(..._args: unknown[]): Promise<any> {
+export async function loadGatewayStartupConfigSnapshot(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function createRuntimeSecretsActivator(..._args: unknown[]): any {
+export function createRuntimeSecretsActivator(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function assertValidGatewayStartupConfigSnapshot(..._args: unknown[]): any {
+export function assertValidGatewayStartupConfigSnapshot(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function prepareGatewayStartupConfig(..._args: unknown[]): Promise<any> {
+export async function prepareGatewayStartupConfig(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

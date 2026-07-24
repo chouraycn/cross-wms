@@ -602,7 +602,40 @@ export async function expireStaleCommitments(
  *
  * @returns { added: number; duplicates: number }
  */
-export async function addCommitment(params: any): Promise<{ added: number; duplicates: number }> {
+type AddCommitmentParams =
+  | {
+      storePath?: string;
+      item: CommitmentExtractionItem;
+      candidates: Array<{
+        candidate: CommitmentCandidate;
+        earliestMs: number;
+        latestMs: number;
+        timezone: string;
+      }>;
+      nowMs?: number;
+    }
+  | {
+      id?: string;
+      scope: CommitmentScope;
+      kind: CommitmentKind;
+      sensitivity: CommitmentSensitivity;
+      source: string;
+      priority?: CommitmentPriority;
+      reason: string;
+      suggestedText: string;
+      dedupeKey: string;
+      confidence: number;
+      dueWindow: { earliestMs: number; latestMs: number; timezone: string };
+      status?: CommitmentStatus;
+      createdAtMs?: number;
+      updatedAtMs?: number;
+      attempts?: number;
+      storePath?: string;
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+    };
+
+export async function addCommitment(params: AddCommitmentParams): Promise<{ added: number; duplicates: number }> {
   if (params && 'candidates' in params) {
     return addCommitmentFromCandidates(params);
   }

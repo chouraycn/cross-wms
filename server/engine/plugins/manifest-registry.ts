@@ -141,6 +141,7 @@ export function loadPluginManifestRegistry(params: {
   bundledChannelConfigCollector?: BundledChannelConfigCollector;
   candidates?: unknown;
   diagnostics?: unknown;
+  installRecords?: unknown;
 }): PluginManifestRegistry {
   void params;
   return { plugins: [], diagnostics: [] };

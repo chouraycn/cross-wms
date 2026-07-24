@@ -197,7 +197,7 @@ async function executeAgentRun(
       phase: 'error',
       data: {
         error: err.message,
-        code: (err as any).code,
+        code: (err as { code?: unknown }).code,
         durationMs: Date.now() - startTime,
       },
       sessionKey: params.sessionKey,
@@ -433,6 +433,7 @@ export function bridgeAgentEventsToSSE(runId: string, res: Response): () => void
  * 将 AgentEvent 转换为 SSE 事件格式（向后兼容）
  */
 function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unknown> }): Record<string, unknown> | null {
+  const data = evt.data;
   switch (evt.stream) {
     case 'lifecycle': {
       const phase = evt.data.phase;
@@ -440,7 +441,7 @@ function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unkn
         // 契约对齐：init 事件转发 lifecycle.start 携带的全部字段（含语义路由透传的
         // autoReason / autoReasonType / autoSemanticMethod / autoSemanticConfidence 等），
         // 与活跃路径 agent-chat → runChatSession 的 init 契约保持一致，避免遗留桥接字段缺失。
-        const { phase: _phase, ...rest } = evt.data as Record<string, unknown>;
+        const { phase: _phase, ...rest } = evt.data;
         return {
           type: 'init',
           ...rest,
@@ -456,18 +457,18 @@ function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unkn
       if (phase === 'error') {
         return {
           type: 'error',
-          code: (evt.data as any).code || 'UNKNOWN_ERROR',
-          message: (evt.data as any).error || '执行失败',
+          code: (data.code as string | undefined) || 'UNKNOWN_ERROR',
+          message: (data.error as string | undefined) || '执行失败',
         };
       }
       return null;
     }
 
     case 'assistant':
-      if ((evt.data as any).type === 'text') {
+      if (data.type === 'text') {
         return {
           type: 'text',
-          content: (evt.data as any).content,
+          content: data.content,
         };
       }
       return null;
@@ -475,16 +476,16 @@ function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unkn
     case 'thinking':
       return {
         type: 'thinking',
-        content: (evt.data as any).content,
+        content: data.content,
       };
 
     case 'tool':
       return {
         type: 'tool_call',
-        toolCallId: (evt.data as any).toolCallId,
-        toolName: (evt.data as any).toolName,
-        toolArgs: JSON.stringify((evt.data as any).toolArgs || {}),
-        result: (evt.data as any).result,
+        toolCallId: data.toolCallId,
+        toolName: data.toolName,
+        toolArgs: JSON.stringify(data.toolArgs ?? {}),
+        result: data.result,
       };
 
     case 'item':
@@ -498,8 +499,8 @@ function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unkn
     case 'error':
       return {
         type: 'error',
-        code: (evt.data as any).code || 'UNKNOWN_ERROR',
-        message: (evt.data as any).message || '发生错误',
+        code: (data.code as string | undefined) || 'UNKNOWN_ERROR',
+        message: (data.message as string | undefined) || '发生错误',
       };
 
     default:

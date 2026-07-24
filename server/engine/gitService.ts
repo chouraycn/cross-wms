@@ -11,7 +11,7 @@
  * - Code Review 建议
  */
 
-import simpleGit, { type SimpleGit, type StatusResult, type DiffResult, type LogResult, type BranchSummary } from 'simple-git';
+import simpleGit, { type SimpleGit, type StatusResult, type DiffResult, type LogResult, type BranchSummary, type DiffResultTextFile, type DiffResultBinaryFile } from 'simple-git';
 import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
@@ -166,22 +166,25 @@ export class GitService {
       }
 
       // 获取差异摘要
-      const diffSummary = await git.diffSummary((diffOptions.length > 0 ? diffOptions : undefined) as any);
+      const diffSummary = await git.diffSummary(diffOptions.length > 0 ? diffOptions : []);
 
       // 获取详细差异
-      const diffText = await git.diff(diffOptions.length > 0 ? diffOptions : undefined);
+      const diffText = await git.diff(diffOptions.length > 0 ? diffOptions : []);
 
       // 解析差异内容
       const diffs = this.parseDiffText(diffText);
 
       return {
-        files: diffSummary.files.map((f: any) => ({
-          file: f.file,
-          changes: f.changes,
-          insertions: f.insertions ?? 0,
-          deletions: f.deletions ?? 0,
-          binary: f.binary ?? false,
-        })),
+        files: diffSummary.files.map((f: DiffResultTextFile | DiffResultBinaryFile) => {
+          const textFile = f as unknown as DiffResultTextFile;
+          return {
+            file: f.file,
+            changes: textFile.changes ?? 0,
+            insertions: textFile.insertions ?? 0,
+            deletions: textFile.deletions ?? 0,
+            binary: f.binary ?? false,
+          };
+        }),
         diffs,
         stats: {
           files: diffSummary.files.length,
@@ -350,7 +353,7 @@ export class GitService {
         success: true,
         commit: result.commit || undefined,
         message: message,
-        files: (result as any).files?.length ?? 0,
+        files: (result as { files?: unknown[] }).files?.length ?? 0,
       };
     } catch (err) {
       logger.error('[GitService] 提交失败:', err);
@@ -373,7 +376,7 @@ export class GitService {
         if (options.checkout) {
           await git.checkoutLocalBranch(options.create);
         } else {
-          await git.branch(options.create as any);
+          await git.branch([options.create]);
         }
       }
 
@@ -422,13 +425,16 @@ export class GitService {
       let message = '';
 
       // 检查是否有新文件
-      const newFiles = files.filter((f: any) => f.binary && f.insertions && f.insertions > 0);
+      const newFiles = files.filter((f: DiffResultTextFile | DiffResultBinaryFile) => {
+        const textFile = f as unknown as DiffResultTextFile;
+        return f.binary && textFile.insertions && textFile.insertions > 0;
+      });
       if (newFiles.length > 0) {
         message += `新增 ${newFiles.length} 个文件\n`;
       }
 
       // 检查是否有删除文件
-      const deletedFiles = files.filter(f => f.binary && (f as any).deletions && (f as any).deletions > 0);
+      const deletedFiles = files.filter(f => f.binary && (f as { deletions?: number }).deletions && (f as { deletions?: number }).deletions! > 0);
       if (deletedFiles.length > 0) {
         message += `删除 ${deletedFiles.length} 个文件\n`;
       }

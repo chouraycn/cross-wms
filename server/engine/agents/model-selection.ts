@@ -22,5 +22,6 @@ export function buildAllowedModelSet(): Set<string> { return new Set(); }
 export function getModelRefStatus(): undefined { return undefined; }
 export function resolveAllowedModelRef(modelRef: unknown): unknown { return modelRef; }
 export function resolveReasoningDefault(): undefined { return undefined; }
-export const normalizeProviderId: any = ((provider: unknown) =>
-  typeof provider === "string" ? provider.trim().toLowerCase() : "") as any;
+export function normalizeProviderId(provider: unknown): string {
+  return typeof provider === "string" ? provider.trim().toLowerCase() : "";
+}

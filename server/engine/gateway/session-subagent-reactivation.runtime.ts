@@ -7,4 +7,4 @@
  */
 
 // 原 re-export from ../agents/subagent-registry.js
-export const replaceSubagentRunAfterSteer: any = undefined;
+export const replaceSubagentRunAfterSteer: unknown = undefined;

@@ -7,7 +7,7 @@ import { validateJsonSchemaValue } from "./schema-validator.js";
 
 // Use PluginConfigSchema instead of OpenClawPluginConfigSchema
 type OpenClawPluginConfigSchema = {
-  safeParse: (value: unknown) => { success: boolean; data?: unknown; error?: { issues: any[] } };
+  safeParse: (value: unknown) => { success: boolean; data?: unknown; error?: { issues: unknown[] } };
   jsonSchema?: JsonSchemaObject;
   uiHint?: PluginConfigUiHint;
 };

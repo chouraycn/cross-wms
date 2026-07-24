@@ -51,18 +51,24 @@ export type ChannelTargetProviderPrefix = {
   channel: string;
 };
 
+type PluginChannelRegistryLike = {
+  channels?: Array<{
+    plugin: { id?: unknown; messaging?: { targetPrefixes?: unknown[] } };
+  }>;
+};
+
 function resolvePluginTargetPrefix(prefix: string): string | undefined {
   const normalizedPrefix = normalizeOptionalLowercaseString(prefix);
   if (!normalizedPrefix) return undefined;
   const registry = getActivePluginChannelRegistryFromState();
-  for (const entry of (registry as any)?.channels ?? []) {
+  for (const entry of (registry as PluginChannelRegistryLike)?.channels ?? []) {
     const plugin = entry.plugin;
     const channelId = normalizeOptionalLowercaseString(plugin.id);
     const candidates = plugin.messaging?.targetPrefixes ?? [];
     if (
       channelId &&
       candidates.some(
-        (candidate: any) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
+        (candidate: unknown) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
       )
     ) {
       return channelId;

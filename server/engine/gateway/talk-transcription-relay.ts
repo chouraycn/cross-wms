@@ -11,22 +11,22 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createTalkTranscriptionRelaySession(..._args: unknown[]): any {
+export function createTalkTranscriptionRelaySession(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function sendTalkTranscriptionRelayAudio(..._args: unknown[]): any {
+export function sendTalkTranscriptionRelayAudio(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function stopTalkTranscriptionRelaySession(..._args: unknown[]): any {
+export function stopTalkTranscriptionRelaySession(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function cancelTalkTranscriptionRelayTurn(..._args: unknown[]): any {
+export function cancelTalkTranscriptionRelayTurn(..._args: unknown[]): unknown {
   return false;
 }
 
-export function clearTalkTranscriptionRelaySessionsForTest(..._args: unknown[]): any {
+export function clearTalkTranscriptionRelaySessionsForTest(..._args: unknown[]): unknown {
   return undefined;
 }

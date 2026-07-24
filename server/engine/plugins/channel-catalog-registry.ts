@@ -92,7 +92,9 @@ function resolveInstallRecords(params: {
     return undefined;
   }
   try {
-    return loadInstalledPluginIndexInstallRecordsSync(params.env ? { env: params.env } : {}) as any;
+    return loadInstalledPluginIndexInstallRecordsSync(
+      params.env ? { env: params.env } : {},
+    ) as Record<string, PluginInstallRecord>;
   } catch {
     return undefined;
   }

@@ -13,4 +13,4 @@ export function writeGatewayRestartHandoffSync(...args: unknown[]): unknown {
 export function readGatewayRestartHandoffSync(...args: unknown[]): unknown {
   return undefined;
 }
-export const GATEWAY_SUPERVISOR_RESTART_HANDOFF_KIND: unknown = undefined;
+export const GATEWAY_SUPERVISOR_RESTART_HANDOFF_KIND: unknown = undefined as unknown;

@@ -171,7 +171,7 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     const stmt = this.db.prepare('SELECT * FROM workflow WHERE id = ?');
-    const row = stmt.get(id) as any;
+    const row = stmt.get(id) as Record<string, unknown> | undefined;
 
     if (!row) return null;
 
@@ -192,7 +192,7 @@ export class WorkflowStore {
 
     let sql = 'SELECT * FROM workflow';
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (filters?.status) {
       conditions.push('status = ?');
@@ -211,7 +211,7 @@ export class WorkflowStore {
     sql += ' ORDER BY updated_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as Record<string, unknown>[];
 
     return rows.map(row => this.rowToWorkflow(row));
   }
@@ -346,15 +346,15 @@ export class WorkflowStore {
       ORDER BY version DESC
     `);
 
-    const rows = stmt.all(workflowId) as any[];
+    const rows = stmt.all(workflowId) as Record<string, unknown>[];
 
-    return rows.map(row => ({
-      workflowId: row.workflow_id,
-      version: row.version,
-      createdAt: row.created_at,
-      createdBy: row.created_by,
-      changes: row.changes,
-      snapshot: JSON.parse(row.snapshot) as Workflow,
+    return rows.map((row): WorkflowVersion & { workflowId: string } => ({
+      workflowId: row.workflow_id as string,
+      version: row.version as number,
+      createdAt: row.created_at as number,
+      createdBy: (row.created_by as string | null) ?? undefined,
+      changes: (row.changes as string | null) ?? undefined,
+      snapshot: JSON.parse(row.snapshot as string) as Workflow,
     }));
   }
 
@@ -372,10 +372,10 @@ export class WorkflowStore {
       WHERE workflow_id = ? AND version = ?
     `);
 
-    const row = stmt.get(workflowId, version) as any;
+    const row = stmt.get(workflowId, version) as Record<string, unknown> | undefined;
     if (!row) return null;
 
-    const snapshot = JSON.parse(row.snapshot) as Workflow;
+    const snapshot = JSON.parse(row.snapshot as string) as Workflow;
     const now = Date.now();
 
     const rollbackWorkflow: Workflow = {
@@ -444,7 +444,7 @@ export class WorkflowStore {
       LIMIT ? OFFSET ?
     `);
 
-    const rows = stmt.all(workflowId, limit, offset) as any[];
+    const rows = stmt.all(workflowId, limit, offset) as Record<string, unknown>[];
 
     return rows.map(row => this.rowToExecution(row));
   }
@@ -464,7 +464,7 @@ export class WorkflowStore {
       LIMIT ? OFFSET ?
     `);
 
-    const rows = stmt.all(limit, offset) as any[];
+    const rows = stmt.all(limit, offset) as Record<string, unknown>[];
 
     return rows.map(row => this.rowToExecution(row));
   }
@@ -523,7 +523,7 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     let sql = 'SELECT * FROM workflow_template';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (category) {
       sql += ' WHERE category = ?';
@@ -533,18 +533,18 @@ export class WorkflowStore {
     sql += ' ORDER BY usage_count DESC, rating DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as Record<string, unknown>[];
 
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      category: row.category,
-      icon: row.icon,
-      tags: JSON.parse(row.tags),
-      workflow: JSON.parse(row.workflow),
-      usageCount: row.usage_count,
-      rating: row.rating,
+    return rows.map((row): WorkflowTemplate => ({
+      id: row.id as string,
+      name: row.name as string,
+      description: row.description as string,
+      category: row.category as string,
+      icon: row.icon as string | undefined,
+      tags: JSON.parse(row.tags as string),
+      workflow: JSON.parse(row.workflow as string),
+      usageCount: row.usage_count as number | undefined,
+      rating: row.rating as number | undefined,
     }));
   }
 
@@ -559,11 +559,11 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     const stmt = this.db.prepare('SELECT * FROM workflow_template WHERE id = ?');
-    const row = stmt.get(templateId) as any;
+    const row = stmt.get(templateId) as Record<string, unknown> | undefined;
 
     if (!row) return null;
 
-    const templateWorkflow = JSON.parse(row.workflow);
+    const templateWorkflow = JSON.parse(row.workflow as string);
     const workflow = this.create({
       ...templateWorkflow,
       name,
@@ -635,42 +635,42 @@ export class WorkflowStore {
   /**
    * 将数据库行转换为 Workflow 对象
    */
-  private rowToWorkflow(row: any): Workflow {
+  private rowToWorkflow(row: Record<string, unknown>): Workflow {
     return {
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      nodes: JSON.parse(row.nodes),
-      triggers: JSON.parse(row.triggers),
-      variables: JSON.parse(row.variables),
-      metadata: JSON.parse(row.metadata),
-      version: row.version,
-      status: row.status,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      createdBy: row.created_by,
-      updatedBy: row.updated_by,
+      id: row.id as string,
+      name: row.name as string,
+      description: row.description as string,
+      nodes: JSON.parse(row.nodes as string),
+      triggers: JSON.parse(row.triggers as string),
+      variables: JSON.parse(row.variables as string),
+      metadata: JSON.parse(row.metadata as string),
+      version: row.version as number,
+      status: row.status as Workflow['status'],
+      createdAt: row.created_at as number,
+      updatedAt: row.updated_at as number,
+      createdBy: row.created_by as string | undefined,
+      updatedBy: row.updated_by as string | undefined,
     };
   }
 
   /**
    * 将数据库行转换为 WorkflowExecution 对象
    */
-  private rowToExecution(row: any): WorkflowExecution {
+  private rowToExecution(row: Record<string, unknown>): WorkflowExecution {
     return {
-      id: row.id,
-      workflowId: row.workflow_id,
-      workflowName: row.workflow_name,
-      status: row.status,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      duration: row.duration,
-      triggerType: row.trigger_type,
-      triggeredBy: row.triggered_by,
-      nodeExecutions: JSON.parse(row.node_executions),
-      variables: JSON.parse(row.variables),
-      error: row.error,
-      logs: JSON.parse(row.logs),
+      id: row.id as string,
+      workflowId: row.workflow_id as string,
+      workflowName: row.workflow_name as string,
+      status: row.status as WorkflowExecution['status'],
+      startTime: row.start_time as number,
+      endTime: (row.end_time as number | null) ?? undefined,
+      duration: (row.duration as number | null) ?? undefined,
+      triggerType: row.trigger_type as WorkflowExecution['triggerType'],
+      triggeredBy: (row.triggered_by as string | null) ?? undefined,
+      nodeExecutions: JSON.parse(row.node_executions as string),
+      variables: JSON.parse(row.variables as string),
+      error: (row.error as string | null) ?? undefined,
+      logs: JSON.parse(row.logs as string),
     };
   }
 }

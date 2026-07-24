@@ -265,7 +265,7 @@ class PluginHookManager {
     }
 
     let currentContext = { ...context };
-    let lastModified: unknown = undefined;
+    let lastModified: unknown = undefined as unknown;
     let stopped = false;
 
     for (const hook of hookList) {

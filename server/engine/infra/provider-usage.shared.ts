@@ -6,9 +6,9 @@ export function isOAuthOnlyUsageProvider(...args: unknown[]): unknown {
 export function resolveUsageProviderId(...args: unknown[]): unknown {
   return undefined;
 }
-export const DEFAULT_TIMEOUT_MS: unknown = undefined;
-export const PROVIDER_LABELS: unknown = undefined;
-export const usageProviders: unknown = undefined;
-export const ignoredErrors: unknown = undefined;
-export const clampPercent: unknown = undefined;
-export const withTimeout: unknown = undefined;
+export const DEFAULT_TIMEOUT_MS: unknown = undefined as unknown;
+export const PROVIDER_LABELS: unknown = undefined as unknown;
+export const usageProviders: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const ignoredErrors: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const clampPercent: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const withTimeout: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

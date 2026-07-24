@@ -11,8 +11,8 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function handleGatewayRequest(..._args: unknown[]): Promise<any> {
+export async function handleGatewayRequest(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const coreGatewayHandlers: any = undefined;
+export const coreGatewayHandlers: unknown = undefined;

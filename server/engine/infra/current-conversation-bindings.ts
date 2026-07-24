@@ -18,5 +18,5 @@ export function touchGenericCurrentConversationBinding(...args: unknown[]): unkn
 export function unbindGenericCurrentConversationBindings(...args: unknown[]): unknown {
   return undefined;
 }
-export const testing_current_conversation_bindings: unknown = undefined;
+export const testing_current_conversation_bindings: unknown = undefined as unknown;
 export type __testing_current_conversation_bindings = unknown;

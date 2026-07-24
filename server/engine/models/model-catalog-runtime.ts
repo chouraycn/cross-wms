@@ -224,19 +224,19 @@ export function initializeRuntimeCatalogFromRegistry(): RuntimeCatalog {
     const providers = getAllRegistryProviders();
 
     for (const provider of providers) {
-      const models: RuntimeCatalogModel[] = provider.models.map((m: any) => ({
-        id: m.id,
-        name: m.name,
+      const models: RuntimeCatalogModel[] = provider.models.map((m: Record<string, unknown>) => ({
+        id: String(m.id ?? ''),
+        name: String(m.name ?? ''),
         provider: provider.id,
-        description: m.description,
-        capabilities: m.capabilities,
-        contextWindow: m.contextWindow,
-        maxTokens: m.maxTokens,
-        isRecommended: m.isRecommended,
-        aliases: m.aliases,
-        pricing: m.pricing,
+        description: m.description as string | undefined,
+        capabilities: m.capabilities as string[] | undefined,
+        contextWindow: m.contextWindow as number | undefined,
+        maxTokens: m.maxTokens as number | undefined,
+        isRecommended: m.isRecommended as boolean | undefined,
+        aliases: m.aliases as string[] | undefined,
+        pricing: m.pricing as { inputPerMillion?: number; outputPerMillion?: number } | undefined,
         source: 'builtin' as const,
-        authStatus: m.authStatus ?? 'pending',
+        authStatus: (m.authStatus as 'authenticated' | 'unauthenticated' | 'pending' | undefined) ?? 'pending',
       }));
 
       catalog.addProvider({

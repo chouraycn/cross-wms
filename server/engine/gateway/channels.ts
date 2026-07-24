@@ -12,4 +12,4 @@ export async function stopChannelAccount(...args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const channelsHandlers: unknown = undefined;
+export const channelsHandlers: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

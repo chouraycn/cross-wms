@@ -13,6 +13,6 @@
 
 export type GatewayCronState = unknown;
 
-export function buildGatewayCronService(..._args: unknown[]): any {
+export function buildGatewayCronService(..._args: unknown[]): unknown {
   return undefined;
 }

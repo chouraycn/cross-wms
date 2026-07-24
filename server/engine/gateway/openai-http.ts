@@ -11,8 +11,8 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function handleOpenAiHttpRequest(..._args: unknown[]): Promise<any> {
+export async function handleOpenAiHttpRequest(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const testOnlyOpenAiHttp: any = undefined;
+export const testOnlyOpenAiHttp: unknown = undefined;

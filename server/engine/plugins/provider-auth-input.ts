@@ -227,6 +227,6 @@ export async function ensureApiKeyFromEnvOrPrompt(params: {
     sensitive: true,
   });
   const apiKey = params.normalize(key ?? "");
-  await params.setCredential(apiKey, selectedMode);
+  await params.setCredential(apiKey, selectedMode as SecretInputMode | undefined);
   return apiKey;
 }

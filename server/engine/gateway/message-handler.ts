@@ -8,6 +8,6 @@ export function attachGatewayWsMessageHandler(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const testing_message_handler: unknown = undefined;
+export const testing_message_handler: unknown = undefined as unknown;
 
-export const __testing: unknown = undefined;
+export const __testing: unknown = undefined as unknown;

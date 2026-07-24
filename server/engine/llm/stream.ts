@@ -1,5 +1,5 @@
 import { logger } from '../../logger.js';
-import type { CompleteOptions, StreamEvent, StreamOptions, Usage } from './types.js';
+import type { Api, CompleteOptions, StreamEvent, StreamOptions, Usage } from './types.js';
 import { getApiProvider } from './api-registry.js';
 import { getEnvApiKey } from './env-api-keys.js';
 import { getModel } from './model-registry.js';
@@ -29,7 +29,7 @@ export async function stream(options: StreamOptions & { agentId?: string; sessio
     throw new Error(`Model not found: ${modelRef}`);
   }
 
-  const apiProvider = getApiProvider(model.apiType as any);
+  const apiProvider = getApiProvider(model.apiType as Api);
   if (!apiProvider) {
     throw new Error(`No API provider registered for: ${model.apiType}`);
   }
@@ -98,7 +98,7 @@ export async function complete(options: CompleteOptions & { agentId?: string; se
     throw new Error(`Model not found: ${modelRef}`);
   }
 
-  const apiProvider = getApiProvider(model.apiType as any);
+  const apiProvider = getApiProvider(model.apiType as Api);
   if (!apiProvider) {
     throw new Error(`No API provider registered for: ${model.apiType}`);
   }

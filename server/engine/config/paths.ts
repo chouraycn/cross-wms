@@ -45,7 +45,7 @@ export function resolvePaths(): ConfigPaths {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveIsNixMode: any = undefined as any;
+export const resolveIsNixMode: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 /**
  * 解析 OpenClaw 状态目录。

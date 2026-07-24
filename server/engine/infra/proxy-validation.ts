@@ -19,5 +19,5 @@ export function resolveProxyValidationConfig(...args: unknown[]): unknown {
 export function runProxyValidation(...args: unknown[]): unknown {
   return undefined;
 }
-export const DEFAULT_PROXY_VALIDATION_ALLOWED_URLS: unknown = undefined;
-export const DEFAULT_PROXY_VALIDATION_APNS_AUTHORITY: unknown = undefined;
+export const DEFAULT_PROXY_VALIDATION_ALLOWED_URLS: unknown = undefined as unknown;
+export const DEFAULT_PROXY_VALIDATION_APNS_AUTHORITY: unknown = undefined as unknown;

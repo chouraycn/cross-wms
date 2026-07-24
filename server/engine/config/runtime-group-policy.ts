@@ -18,4 +18,4 @@ export function warnMissingProviderGroupPolicyFallbackOnce(...args: unknown[]): 
 export function resetMissingProviderGroupPolicyFallbackWarningsForTesting(...args: unknown[]): unknown {
   return undefined;
 }
-export const GROUP_POLICY_BLOCKED_LABEL: unknown = undefined;
+export const GROUP_POLICY_BLOCKED_LABEL: unknown = undefined as unknown;

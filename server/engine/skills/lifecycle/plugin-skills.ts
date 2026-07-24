@@ -10,7 +10,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "plugin-skills" } as any);
+const logger = getChildLogger({ module: "plugin-skills" });
 import { SkillPriority, getSkillPriorityResolver } from "../discovery/skill-priority.js";
 
 // ============================================================================

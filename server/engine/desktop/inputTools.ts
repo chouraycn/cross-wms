@@ -127,8 +127,8 @@ except Exception as e:
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || 'Click failed' });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: (e as Error).message || 'Click failed' });
   }
 }
 
@@ -216,8 +216,8 @@ export async function handleDesktopType(args: Record<string, unknown>): Promise<
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || 'Type failed' });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: (e as Error).message || 'Type failed' });
   }
 }
 
@@ -316,8 +316,8 @@ export async function handleDesktopKeyPress(args: Record<string, unknown>): Prom
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || 'Key press failed' });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: (e as Error).message || 'Key press failed' });
   }
 }
 
@@ -379,10 +379,10 @@ export async function handleDesktopScroll(args: Record<string, unknown>): Promis
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     return JSON.stringify({
       success: false,
-      error: e.message || 'Scroll failed',
+      error: e instanceof Error ? e.message : 'Scroll failed',
       help: 'For better scrolling control, install cliclick: brew install cliclick',
     });
   }

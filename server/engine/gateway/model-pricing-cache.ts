@@ -11,18 +11,18 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function collectConfiguredModelPricingRefs(..._args: unknown[]): any {
+export function collectConfiguredModelPricingRefs(..._args: unknown[]): unknown {
   return [];
 }
 
-export async function refreshGatewayModelPricingCache(..._args: unknown[]): Promise<any> {
+export async function refreshGatewayModelPricingCache(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function startGatewayModelPricingRefresh(..._args: unknown[]): any {
+export function startGatewayModelPricingRefresh(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resetGatewayModelPricingCacheForTest(..._args: unknown[]): any {
+export function resetGatewayModelPricingCacheForTest(..._args: unknown[]): unknown {
   return undefined;
 }

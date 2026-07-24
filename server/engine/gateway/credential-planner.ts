@@ -11,22 +11,41 @@
  * 完整实现见 openclaw 源码。
  */
 
-export type GatewayCredentialPlan = unknown;
+export type GatewayCredentialPlan = {
+  passwordCanWin: boolean;
+  authMode: 'password' | 'token' | 'none' | 'trusted-proxy' | string;
+  envToken: boolean;
+  envPassword: boolean;
+  localToken: { configured: boolean; hasSecretRef: boolean };
+  remoteToken: { configured: boolean; hasSecretRef: boolean };
+  localPassword: { configured: boolean; hasSecretRef: boolean };
+  remotePassword: { configured: boolean; hasSecretRef: boolean };
+  remoteMode: boolean;
+  remoteUrlConfigured: boolean;
+  tailscaleRemoteExposure: boolean;
+  remoteConfiguredSurface: boolean;
+  remoteTokenFallbackActive: boolean;
+  remotePasswordFallbackActive: boolean;
+  localTokenCanWin: boolean;
+  localTokenSurfaceActive: boolean;
+  remoteTokenActive: boolean;
+  remotePasswordActive: boolean;
+};
 
-export function trimCredentialToUndefined(..._args: unknown[]): any {
+export function trimCredentialToUndefined(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function hasGatewayTokenEnvCandidate(..._args: unknown[]): any {
+export function hasGatewayTokenEnvCandidate(..._args: unknown[]): unknown {
   return false;
 }
 
-export function hasGatewayPasswordEnvCandidate(..._args: unknown[]): any {
+export function hasGatewayPasswordEnvCandidate(..._args: unknown[]): unknown {
   return false;
 }
 
-export function createGatewayCredentialPlan(..._args: unknown[]): any {
-  return undefined;
+export function createGatewayCredentialPlan(..._args: unknown[]): GatewayCredentialPlan {
+  return undefined as unknown as GatewayCredentialPlan;
 }
 
-export const trimToUndefined: any = undefined;
+export const trimToUndefined: unknown = undefined;

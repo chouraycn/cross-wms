@@ -40,5 +40,5 @@ export type ModelsConfigInput = ModelsConfig;
 export function isModelThinkingFormat(...args: unknown[]): unknown {
   return false;
 }
-export const MODEL_APIS: unknown = undefined;
-export const MODEL_THINKING_FORMATS: unknown = undefined;
+export const MODEL_APIS: unknown = undefined as unknown;
+export const MODEL_THINKING_FORMATS: unknown = undefined as unknown;

@@ -1,18 +1,18 @@
 // 移植自 openclaw/src/gateway/server-methods/chat.ts
 
-export const augmentChatHistoryWithCanvasBlocks: unknown = undefined;
+export const augmentChatHistoryWithCanvasBlocks: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS: unknown = undefined;
+export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS: unknown = undefined as unknown;
 
-export const dropPreSessionStartAnnouncePairs: unknown = undefined;
+export const dropPreSessionStartAnnouncePairs: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const resolveEffectiveChatHistoryMaxChars: unknown = undefined;
+export const resolveEffectiveChatHistoryMaxChars: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sanitizeChatHistoryMessages: unknown = undefined;
+export const sanitizeChatHistoryMessages: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sanitizeChatSendMessageInput: unknown = undefined;
+export const sanitizeChatSendMessageInput: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES: unknown = undefined;
+export const CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES: unknown = undefined as unknown;
 
 export function buildOversizedHistoryPlaceholder(...args: unknown[]): unknown {
   return undefined;
@@ -26,4 +26,4 @@ export function enforceChatHistoryFinalBudget(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const chatHandlers: unknown = undefined;
+export const chatHandlers: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

@@ -187,14 +187,15 @@ async function handleCodeExecute(args: Record<string, unknown>): Promise<string>
       exitCode: 0,
       durationMs: 0, // execAsync 不返回时间，简化
     });
-  } catch (e: any) {
-    const isTimeout = e.killed || e.signal === 'SIGTERM';
+  } catch (e: unknown) {
+    const err = e as { killed?: boolean; signal?: string; message?: string; stdout?: string; stderr?: string; code?: number };
+    const isTimeout = err.killed || err.signal === 'SIGTERM';
     return JSON.stringify({
       success: false,
-      error: isTimeout ? `执行超时（${timeout}ms）` : (e.message || String(e)),
-      stdout: (e.stdout || '').slice(0, 10000),
-      stderr: (e.stderr || '').slice(0, 5000),
-      exitCode: e.code,
+      error: isTimeout ? `执行超时（${timeout}ms）` : (err.message || String(e)),
+      stdout: (err.stdout || '').slice(0, 10000),
+      stderr: (err.stderr || '').slice(0, 5000),
+      exitCode: err.code,
       timedOut: isTimeout,
     });
   }
@@ -238,7 +239,7 @@ async function handleProcessManage(args: Record<string, unknown>): Promise<strin
 
       case 'kill': {
         if (!pid) return JSON.stringify({ success: false, error: 'pid 必填' });
-        process.kill(pid, signal as any);
+        process.kill(pid, signal as NodeJS.Signals);
         return JSON.stringify({ success: true, message: `已发送 ${signal} 到进程 ${pid}` });
       }
 
@@ -267,8 +268,8 @@ async function handleProcessManage(args: Record<string, unknown>): Promise<strin
       default:
         return JSON.stringify({ success: false, error: `未知操作: ${action}` });
     }
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || String(e) });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -319,8 +320,8 @@ async function handleFileSearch(args: Record<string, unknown>): Promise<string> 
       default:
         return JSON.stringify({ success: false, error: `未知搜索类型: ${action}` });
     }
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || String(e) });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) });
   }
 }
 

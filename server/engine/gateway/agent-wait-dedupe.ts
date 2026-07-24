@@ -14,6 +14,6 @@ export function setGatewayDedupeEntry(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const testing_agent_wait_dedupe: unknown = undefined;
+export const testing_agent_wait_dedupe: unknown = undefined as unknown;
 
-export const __testing: unknown = undefined;
+export const __testing: unknown = undefined as unknown;

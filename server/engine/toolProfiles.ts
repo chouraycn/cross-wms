@@ -76,7 +76,7 @@ type ToolLike = {
   function: {
     name: string;
     description: string;
-    parameters: any;
+    parameters: Record<string, unknown>;
   };
 };
 

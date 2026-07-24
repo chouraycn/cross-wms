@@ -13,6 +13,6 @@
 
 export type GatewayProbeTargetResolution = unknown;
 
-export function resolveGatewayProbeTarget(..._args: unknown[]): any {
+export function resolveGatewayProbeTarget(..._args: unknown[]): unknown {
   return undefined;
 }

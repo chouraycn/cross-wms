@@ -10,4 +10,4 @@ export function drainSessionStoreWriterQueuesForTest(...args: unknown[]): unknow
 export function getSessionStoreWriterQueueSizeForTest(...args: unknown[]): unknown {
   return undefined;
 }
-export const WRITER_QUEUES: unknown = undefined;
+export const WRITER_QUEUES: unknown = undefined as unknown;

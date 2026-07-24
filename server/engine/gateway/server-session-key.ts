@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveSessionKeyForRun(..._args: unknown[]): any {
+export function resolveSessionKeyForRun(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resetResolvedSessionKeyForRunCacheForTest(..._args: unknown[]): any {
+export function resetResolvedSessionKeyForRunCacheForTest(..._args: unknown[]): unknown {
   return undefined;
 }

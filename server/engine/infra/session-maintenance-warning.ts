@@ -3,5 +3,5 @@
 export function deliverSessionMaintenanceWarning(...args: unknown[]): unknown {
   return undefined;
 }
-export const testing_session_maintenance_warning: unknown = undefined;
+export const testing_session_maintenance_warning: unknown = undefined as unknown;
 export type __testing_session_maintenance_warning = unknown;

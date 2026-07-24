@@ -18,6 +18,6 @@ export function writePackageDistInventory(...args: unknown[]): unknown {
 export function readPackageDistInventoryIfPresent(...args: unknown[]): unknown {
   return undefined;
 }
-export const PACKAGE_DIST_INVENTORY_RELATIVE_PATH: unknown = undefined;
+export const PACKAGE_DIST_INVENTORY_RELATIVE_PATH: unknown = undefined as unknown;
 export type LOCAL_BUILD_METADATA_DIST_PATHS = unknown;
-export const LOCAL_BUILD_METADATA_DIST_PATHS: unknown = undefined;
+export const LOCAL_BUILD_METADATA_DIST_PATHS: unknown = undefined as unknown;

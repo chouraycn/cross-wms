@@ -4,5 +4,5 @@
 // Used by: server/engine/plugins/official-external-plugin-catalog.ts
 // 注：openclaw 同源数据为外部 channel 官方目录 JSON；cross-wms 暂未维护该目录
 
-const data: any = {};
+const data: Record<string, unknown> = {};
 export default data;

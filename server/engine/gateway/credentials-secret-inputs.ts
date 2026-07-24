@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function gatewaySecretInputPathCanWin(..._args: unknown[]): any {
+export function gatewaySecretInputPathCanWin(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function resolveGatewayCredentialsWithSecretInputs(..._args: unknown[]): Promise<any> {
+export async function resolveGatewayCredentialsWithSecretInputs(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

@@ -11,8 +11,8 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const buildDeviceAuthPayload: any = undefined;
+export const buildDeviceAuthPayload: unknown = undefined;
 
-export const buildDeviceAuthPayloadV3: any = undefined;
+export const buildDeviceAuthPayloadV3: unknown = undefined;
 
-export const normalizeDeviceMetadataForAuth: any = undefined;
+export const normalizeDeviceMetadataForAuth: unknown = undefined;

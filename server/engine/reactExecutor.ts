@@ -611,7 +611,7 @@ ${stepsText}`;
           );
           // v7.1-fix: 智能压缩失败时降级为硬截断，确保不超限
           const hardTruncated = truncateContextForModel(
-            currentMessages as any,
+            currentMessages,
             ctxWindow,
             ctxMaxTokens,
             tools.length,

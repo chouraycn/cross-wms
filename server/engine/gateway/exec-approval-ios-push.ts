@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createExecApprovalIosPushDelivery(..._args: unknown[]): any {
+export function createExecApprovalIosPushDelivery(..._args: unknown[]): unknown {
   return undefined;
 }

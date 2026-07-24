@@ -128,11 +128,13 @@ export function clearNodeSqliteKyselyCacheForDatabase(db: unknown): void {
 // CompileOnly facade 内部实现
 // ============================================================================
 
+type NoopChainFn = (() => NoopChainFn) & { compile: () => CompiledSqliteQuery };
+
 function createCompileOnlyKyselyFacade<DB>(_db: unknown): KyselyDatabase<DB> {
   // 返回一个链式代理对象，任何属性访问都返回可链式调用的 no-op 函数。
   // 最终调用 .compile() 时返回空查询。这允许调用方链式构建查询而不崩溃。
-  const noopChain = (): any => {
-    const fn = (): any => noopChain();
+  const noopChain = (): NoopChainFn => {
+    const fn = (() => noopChain()) as NoopChainFn;
     fn.compile = (): CompiledSqliteQuery => ({ sql: "", parameters: [] });
     return fn;
   };

@@ -282,15 +282,16 @@ class TriggerManager {
     };
 
     const updateData: Record<string, unknown> = { updated_at: Date.now() };
+    const updatesRecord = updates as Record<string, unknown>;
 
     for (const [key, column] of Object.entries(allowedFields)) {
-      if (key in updates && (updates as any)[key] !== undefined) {
+      if (key in updates && updatesRecord[key] !== undefined) {
         if (key === 'automationIds' || key === 'config') {
-          updateData[column] = JSON.stringify((updates as any)[key]);
+          updateData[column] = JSON.stringify(updatesRecord[key]);
         } else if (key === 'enabled') {
-          updateData[column] = (updates as any)[key] ? 1 : 0;
+          updateData[column] = updatesRecord[key] ? 1 : 0;
         } else {
-          updateData[column] = (updates as any)[key];
+          updateData[column] = updatesRecord[key];
         }
       }
     }

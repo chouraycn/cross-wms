@@ -31,7 +31,7 @@ export async function resolveNode(..._args: unknown[]): Promise<void> {
   console.warn('resolveNode is not available in cross-wms');
 }
 
-export const nodesCallOpts: unknown = undefined;
-export const callGatewayCli: unknown = undefined;
-export const callNodeDiagnosticsGatewayCli: unknown = undefined;
-export const callNodePairApprovalGatewayCli: unknown = undefined;
+export const nodesCallOpts: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const callGatewayCli: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const callNodeDiagnosticsGatewayCli: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const callNodePairApprovalGatewayCli: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

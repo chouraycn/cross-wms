@@ -7,7 +7,7 @@ import type { PluginTextTransforms } from "./types.js";
 export function resolveRuntimeTextTransforms(): PluginTextTransforms | undefined {
   const registry = getActiveRuntimePluginRegistry();
   const pluginTextTransforms = Array.isArray(registry?.textTransforms)
-    ? registry.textTransforms.map((entry: any) => entry.transforms)
+    ? registry.textTransforms.map((entry) => entry.transforms)
     : [];
-  return (mergePluginTextTransforms as any)(...pluginTextTransforms) as PluginTextTransforms | undefined;
+  return (mergePluginTextTransforms as (...args: unknown[]) => unknown)(...pluginTextTransforms) as PluginTextTransforms | undefined;
 }

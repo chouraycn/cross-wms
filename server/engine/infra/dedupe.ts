@@ -82,4 +82,4 @@ export function createDedupeFilter<T>(
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveGlobalDedupeCache: any = undefined as any;
+export const resolveGlobalDedupeCache: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

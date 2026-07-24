@@ -34,7 +34,7 @@ export async function resolvePreferredProviderForAuthChoice(params: {
     choice,
   });
   if (pluginResolved) {
-    return (pluginResolved as any).provider?.id;
+    return (pluginResolved as unknown as { provider?: { id?: string } }).provider?.id;
   }
 
   if (choice === "custom-api-key") {

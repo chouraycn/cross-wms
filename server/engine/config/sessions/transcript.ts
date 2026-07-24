@@ -12,6 +12,7 @@ import {
 import { TranscriptStream, createTranscriptStream } from './transcript-stream.js';
 import { appendMessage, appendMessages, AppendBuffer, createAppendBuffer } from './transcript-append.js';
 import type { TranscriptMessage, TranscriptMessageRole, TranscriptFormat, TranscriptWriteMode } from './types.js';
+import type { TranscriptHeader } from './transcript-header.js';
 import type { TranscriptReadResult } from './transcript-jsonl.js';
 import type { AppendResult } from './transcript-append.js';
 import type { TranscriptWriteOptions } from './transcript-write-context.js';

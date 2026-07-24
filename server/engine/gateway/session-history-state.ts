@@ -11,11 +11,11 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveSessionHistoryTailReadOptions(..._args: unknown[]): any {
+export function resolveSessionHistoryTailReadOptions(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function buildSessionHistorySnapshot(..._args: unknown[]): any {
+export function buildSessionHistorySnapshot(..._args: unknown[]): unknown {
   return undefined;
 }
 

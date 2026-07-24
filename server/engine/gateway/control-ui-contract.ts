@@ -15,4 +15,4 @@ export type ControlUiEmbedSandboxMode = unknown;
 
 export type ControlUiBootstrapConfig = unknown;
 
-export const CONTROL_UI_BOOTSTRAP_CONFIG_PATH: any = undefined;
+export const CONTROL_UI_BOOTSTRAP_CONFIG_PATH: unknown = undefined;

@@ -13,8 +13,8 @@
 
 export type ConversationEntry = unknown;
 
-export function buildAgentMessageFromConversationEntries(..._args: unknown[]): any {
+export function buildAgentMessageFromConversationEntries(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export const IMAGE_ONLY_USER_MESSAGE: any = undefined;
+export const IMAGE_ONLY_USER_MESSAGE: unknown = undefined;

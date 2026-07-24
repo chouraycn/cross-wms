@@ -7,7 +7,7 @@ export const SKILL_WORKSHOP_MANIFEST_SCHEMA =
 type SkillProposalKind = "create" | "update";
 export type SkillProposalStatus = "pending" | "applied" | "rejected" | "quarantined" | "stale";
 type SkillProposalScannerState = "pending" | "clean" | "failed" | "quarantined";
-type SkillProposalSource = "skill-workshop" | "cli" | "api";
+export type SkillProposalSource = "skill-workshop" | "cli" | "api";
 
 export type SkillProposalOrigin = {
   agentId?: string;

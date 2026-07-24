@@ -387,7 +387,7 @@ export function createWikiSearchToolHandler(): ToolHandler {
         query,
         topK,
         tags,
-        source: source as any,
+        source: source as 'markdown' | 'manual' | 'json' | 'sync',
         useVectorSearch,
         useFtsSearch,
       });
@@ -539,7 +539,7 @@ export function createWikiLinkToolHandler(): ToolHandler {
         const link = createLink({
           sourceId,
           targetId,
-          linkType: linkType as any,
+          linkType: linkType as 'reference' | 'related' | 'parent' | 'child' | 'see_also',
           weight,
         });
 

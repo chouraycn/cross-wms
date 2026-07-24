@@ -76,7 +76,7 @@ export function estimateMessagesTokens(
     } else if (Array.isArray(msg.content)) {
       for (const part of msg.content as Array<{ type?: string; text?: string }>) {
         if (part.text) total += estimateTokens(part.text);
-        if ((part as any).type === 'image_url') total += 85; // ~85 tokens per image
+        if (part.type === 'image_url') total += 85; // ~85 tokens per image
       }
     }
     if (msg.tool_calls) {

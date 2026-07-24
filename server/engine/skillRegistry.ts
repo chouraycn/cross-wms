@@ -252,7 +252,7 @@ function parseSkillMdToDefinition(
       tags: fm.tags,
       trigger: fm.trigger,
       triggers: fm.triggers,
-      triggerWeight: (fm as any).triggerWeight,
+      triggerWeight: (fm as { triggerWeight?: number }).triggerWeight,
       source,
       sourcePath: dirPath,
       skillMdContent: content,

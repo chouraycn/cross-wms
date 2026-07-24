@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function createOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<any> {
+export async function createOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function withOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<any> {
+export async function withOperatorApprovalsGatewayClient(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

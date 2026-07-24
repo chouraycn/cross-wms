@@ -14,7 +14,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "skill-gating" } as any);
+const logger = getChildLogger({ module: "skill-gating" });
 
 const execAsync = promisify(exec);
 

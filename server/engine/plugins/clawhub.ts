@@ -1277,7 +1277,7 @@ export async function installPluginFromClawHub(
         clawhubUrl: clawhubRegistry,
         clawhubPackage: parsed.name,
         clawhubFamily,
-        clawhubChannel: (pkg.channel === 'stable' ? 'stable' : pkg.channel === 'beta' ? 'beta' : 'dev') as any,
+        clawhubChannel: pkg.channel === 'stable' ? 'stable' : pkg.channel === 'beta' ? 'beta' : 'dev',
         version: installResult.version ?? versionState.version,
         // For fallback installs this is the observed download digest, not a
         // server-attested sha256hash from ClawHub version metadata.

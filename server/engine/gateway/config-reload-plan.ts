@@ -15,18 +15,18 @@ export type ChannelKind = unknown;
 
 export type GatewayReloadPlan = unknown;
 
-export function resolveConfigReloadMetadata(..._args: unknown[]): any {
+export function resolveConfigReloadMetadata(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function listPluginInstallTimestampMetadataPaths(..._args: unknown[]): any {
+export function listPluginInstallTimestampMetadataPaths(..._args: unknown[]): unknown {
   return [];
 }
 
-export function listPluginInstallWholeRecordPaths(..._args: unknown[]): any {
+export function listPluginInstallWholeRecordPaths(..._args: unknown[]): unknown {
   return [];
 }
 
-export function buildGatewayReloadPlan(..._args: unknown[]): any {
+export function buildGatewayReloadPlan(..._args: unknown[]): unknown {
   return undefined;
 }

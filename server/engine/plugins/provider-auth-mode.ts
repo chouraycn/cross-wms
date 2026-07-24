@@ -8,4 +8,4 @@
 export type SecretInputModePromptCopy = unknown;
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveSecretInputModeForEnvSelection: any = undefined as any;
+export const resolveSecretInputModeForEnvSelection: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

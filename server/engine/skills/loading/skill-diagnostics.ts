@@ -9,7 +9,7 @@
 
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "skill-diagnostics" } as any);
+const logger = getChildLogger({ module: "skill-diagnostics" });
 
 // ============================================================================
 // 类型定义

@@ -87,7 +87,7 @@ function getSkillTags(entry: SkillEntry): string[] {
     const parsed = typeof frontmatter.tags === 'string'
       ? frontmatter.tags.split(',').map((t: string) => t.trim())
       : Array.isArray(frontmatter.tags)
-        ? (frontmatter.tags as any[]).map((t: unknown) => String(t).trim())
+        ? (frontmatter.tags as unknown[]).map((t: unknown) => String(t).trim())
         : [];
     tags.push(...parsed.map((t: string) => t.toLowerCase()));
   }

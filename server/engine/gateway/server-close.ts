@@ -13,10 +13,10 @@
 
 export type ShutdownResult = unknown;
 
-export async function runGatewayClosePrelude(..._args: unknown[]): Promise<any> {
+export async function runGatewayClosePrelude(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function createGatewayCloseHandler(..._args: unknown[]): any {
+export function createGatewayCloseHandler(..._args: unknown[]): unknown {
   return undefined;
 }

@@ -50,8 +50,8 @@ export async function handleDesktopScreenshot(args: Record<string, unknown>): Pr
       image: dataUrl,
       message: 'Screenshot captured using native screencapture. Use this image to identify UI elements and click targets visually.',
     });
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || 'Screenshot failed' });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: (e as Error).message || 'Screenshot failed' });
   }
 }
 
@@ -125,8 +125,8 @@ export async function handleDesktopSee(args: Record<string, unknown>): Promise<s
       message: 'Screenshot captured. Use this image to visually identify UI elements. You can provide normalized coordinates (nx, ny in 0.0~1.0 range) to desktop_click for resolution-independent clicking. Example: nx=0.5, ny=0.5 clicks the center of the screen.',
       instructions: `Analyze the screenshot and identify: 1) Clickable buttons, 2) Text input fields, 3) Menu items, 4) Any labels or text content. Screen resolution: ${screenWidth}x${screenHeight}. When clicking, use normalized coordinates (nx, ny in 0~1 range) for resolution independence, or call desktop_click_smart with a semantic description.`,
     });
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: e.message || 'See analysis failed' });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: (e as Error).message || 'See analysis failed' });
   }
 }
 
@@ -251,10 +251,10 @@ export async function handleDesktopSnapshot(): Promise<string> {
         ? `获取到 ${elements.length} 个 UI 元素（已达上限，部分元素被截断）。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`
         : `获取到 ${elements.length} 个 UI 元素。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return JSON.stringify({
       success: false,
-      error: `快照获取失败: ${e.message || e}。请确保已在「系统设置 → 隐私与安全 → 辅助功能」中授权相关应用。`,
+      error: `快照获取失败: ${(e as Error).message || e}。请确保已在「系统设置 → 隐私与安全 → 辅助功能」中授权相关应用。`,
     });
   }
 }
@@ -460,7 +460,7 @@ export async function handleDesktopClickSmart(args: Record<string, unknown>): Pr
       clickY,
       clickResult: JSON.parse(clickResult),
     });
-  } catch (e: any) {
-    return JSON.stringify({ success: false, error: `语义点击失败: ${e.message || e}` });
+  } catch (e: unknown) {
+    return JSON.stringify({ success: false, error: `语义点击失败: ${e instanceof Error ? e.message : String(e)}` });
   }
 }

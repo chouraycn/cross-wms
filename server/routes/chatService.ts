@@ -20,7 +20,7 @@ import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import type { ToolExecutionResult } from '../engine/toolExecutor.js';
 import { resetDefaultCircuitBreaker } from '../engine/toolExecutor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
-import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
+import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages, type ApiMessage } from '../engine/contextTruncate.js';
 import { sanitizeHistoryMessages } from '../engine/historySanitizer.js';
 import { resolveImageSanitizationLimits } from '../engine/imageSanitization.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
@@ -373,7 +373,7 @@ async function executeQueuedMessage(
   const timerManager = new TimerManager();
   const stream = createAssistantMessageEventStream();
 
-  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
+  let apiMessages: ApiMessage[] = [];
 
   try {
     const runId = `run-${Date.now()}`;

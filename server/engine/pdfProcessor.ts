@@ -27,13 +27,29 @@ import type {
 
 import { logger } from '../logger.js';
 
+/** pdf-lib 动态加载模块类型（pdf-lib 类型声明不可用时使用） */
+interface PdfLibModule {
+  PDFDocument: {
+    create(): Promise<PdfLibDocument>;
+    load(data: Buffer | Uint8Array): Promise<PdfLibDocument>;
+  };
+}
+interface PdfLibDocument {
+  setTitle(title: string): void;
+  copyPages(src: PdfLibDocument, indices: number[]): Promise<unknown[]>;
+  addPage(page?: unknown): unknown;
+  getPageIndices(): number[];
+  getPageCount(): number;
+  save(): Promise<Uint8Array>;
+}
+
 // ===================== 工具库动态加载 =====================
 
 /**
  * 动态加载 pdf-parse 库
  * pdf-parse 用于提取 PDF 文本内容和元数据
  */
-async function loadPdfParse(): Promise<any> {
+async function loadPdfParse(): Promise<((data: Buffer) => Promise<{ numpages: number; text: string; info?: Record<string, unknown>; [key: string]: unknown }>) | null> {
   try {
     return require('pdf-parse');
   } catch (err) {
@@ -47,7 +63,7 @@ async function loadPdfParse(): Promise<any> {
  * pdf-lib 用于 PDF 操作（合并、拆分、修改）
  * 注意：pdf-lib 是 ESM 模块，需要特殊处理
  */
-async function loadPdfLib(): Promise<any> {
+async function loadPdfLib(): Promise<unknown> {
   try {
     // pdf-lib 是 ESM 模块，使用动态 import
     // @ts-expect-error pdf-lib 类型声明不可用
@@ -106,14 +122,15 @@ export async function extractPdfText(
     const data = await pdfParse(dataBuffer);
 
     // 构建元数据
+    const info = data.info as Record<string, string | undefined> | undefined;
     const metadata: PdfMetadata = {
-      title: data.info?.Title || undefined,
-      author: data.info?.Author || undefined,
-      subject: data.info?.Subject || undefined,
-      creator: data.info?.Creator || undefined,
-      producer: data.info?.Producer || undefined,
-      creationDate: data.info?.CreationDate || undefined,
-      modificationDate: data.info?.ModDate || undefined,
+      title: info?.Title || undefined,
+      author: info?.Author || undefined,
+      subject: info?.Subject || undefined,
+      creator: info?.Creator || undefined,
+      producer: info?.Producer || undefined,
+      creationDate: info?.CreationDate || undefined,
+      modificationDate: info?.ModDate || undefined,
       pageCount: data.numpages,
       fileSize,
     };
@@ -219,7 +236,7 @@ export async function mergePdfFiles(
   }
 
   try {
-    const { PDFDocument } = pdfLib;
+    const { PDFDocument } = pdfLib as PdfLibModule;
 
     // 创建新的 PDF 文档
     const mergedPdf = await PDFDocument.create();
@@ -314,7 +331,7 @@ export async function splitPdfFile(
   }
 
   try {
-    const { PDFDocument } = pdfLib;
+    const { PDFDocument } = pdfLib as PdfLibModule;
 
     // 加载源 PDF
     const dataBuffer = fs.readFileSync(options.path);
@@ -351,7 +368,7 @@ export async function splitPdfFile(
           sourcePdf,
           Array.from({ length: endPage - startPage }, (_, j) => startPage + j)
         );
-        pages.forEach((page: any) => newPdf.addPage(page));
+        pages.forEach((page: unknown) => newPdf.addPage(page as never));
 
         const pdfBytes = await newPdf.save();
         const fileName = namingPattern
@@ -379,7 +396,7 @@ export async function splitPdfFile(
           sourcePdf,
           Array.from({ length: end - start + 1 }, (_, j) => start - 1 + j)
         );
-        pages.forEach((page: any) => newPdf.addPage(page));
+        pages.forEach((page: unknown) => newPdf.addPage(page as never));
 
         const pdfBytes = await newPdf.save();
         const fileName = namingPattern

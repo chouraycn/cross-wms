@@ -7,52 +7,52 @@
  */
 
 // 原 re-export from ../agents/agent-scope.js
-export const resolveSessionAgentId: any = undefined;
+export const resolveSessionAgentId: unknown = undefined;
 // 原 re-export from ../auto-reply/reply/inbound-text.js
-export const sanitizeInboundSystemTags: any = undefined;
+export const sanitizeInboundSystemTags: unknown = undefined;
 // 原 re-export from ../channels/plugins/index.js
-export const normalizeChannelId: any = undefined;
+export const normalizeChannelId: unknown = undefined;
 // 原 re-export from ../channels/message/runtime.js
-export const sendDurableMessageBatch: any = undefined;
+export const sendDurableMessageBatch: unknown = undefined;
 // 原 re-export from ../cli/outbound-send-deps.js
-export const createOutboundSendDeps: any = undefined;
+export const createOutboundSendDeps: unknown = undefined;
 // 原 re-export from ../commands/agent.js
-export const agentCommandFromIngress: any = undefined;
+export const agentCommandFromIngress: unknown = undefined;
 // 原 re-export from ../config/io.js
-export const getRuntimeConfig: any = undefined;
+export const getRuntimeConfig: unknown = undefined;
 // 原 re-export from ../config/sessions.js
-export const canonicalizeSessionEntryAliases: any = undefined;
+export const canonicalizeSessionEntryAliases: unknown = undefined;
 // 原 re-export from ../infra/device-identity.js
-export const loadOrCreateDeviceIdentity: any = undefined;
+export const loadOrCreateDeviceIdentity: unknown = undefined;
 // 原 re-export from ../infra/heartbeat-wake.js
-export const requestHeartbeat: any = undefined;
+export const requestHeartbeat: unknown = undefined;
 // 原 re-export from ../infra/outbound/session-context.js
-export const buildOutboundSessionContext: any = undefined;
+export const buildOutboundSessionContext: unknown = undefined;
 // 原 re-export from ../infra/outbound/targets.js
-export const resolveOutboundTarget: any = undefined;
+export const resolveOutboundTarget: unknown = undefined;
 // 原 re-export from ../infra/push-apns.js
-export const registerApnsRegistration: any = undefined;
+export const registerApnsRegistration: unknown = undefined;
 // 原 re-export from ../infra/system-events.js
-export const enqueueSystemEvent: any = undefined;
+export const enqueueSystemEvent: unknown = undefined;
 // 原 re-export from ../media/store.js
-export const deleteMediaBuffer: any = undefined;
+export const deleteMediaBuffer: unknown = undefined;
 // 原 re-export from ../routing/session-key.js
-export const normalizeMainKey: any = undefined;
+export const normalizeMainKey: unknown = undefined;
 // 原 re-export from ../routing/session-key.js
-export const scopedHeartbeatWakeOptions: any = undefined;
+export const scopedHeartbeatWakeOptions: unknown = undefined;
 // 原 re-export from ../runtime.js
-export const defaultRuntime: any = undefined;
+export const defaultRuntime: unknown = undefined;
 // 原 re-export from ./chat-attachments.js
-export const parseMessageWithAttachments: any = undefined;
+export const parseMessageWithAttachments: unknown = undefined;
 // 原 re-export from ./chat-attachments.js
-export const resolveChatAttachmentMaxBytes: any = undefined;
+export const resolveChatAttachmentMaxBytes: unknown = undefined;
 // 原 re-export from ./server-methods/attachment-normalize.js
-export const normalizeRpcAttachmentsToChatAttachments: any = undefined;
+export const normalizeRpcAttachmentsToChatAttachments: unknown = undefined;
 // 原 re-export from ./session-utils.js
-export const loadSessionEntry: any = undefined;
+export const loadSessionEntry: unknown = undefined;
 // 原 re-export from ./session-utils.js
-export const resolveGatewayModelSupportsImages: any = undefined;
+export const resolveGatewayModelSupportsImages: unknown = undefined;
 // 原 re-export from ./session-utils.js
-export const resolveSessionModelRef: any = undefined;
+export const resolveSessionModelRef: unknown = undefined;
 // 原 re-export from ./ws-log.js
-export const formatForLog: any = undefined;
+export const formatForLog: unknown = undefined;

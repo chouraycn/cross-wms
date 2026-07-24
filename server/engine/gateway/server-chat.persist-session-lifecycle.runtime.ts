@@ -7,4 +7,4 @@
  */
 
 // 原 re-export from ./session-lifecycle-state.js
-export const persistGatewaySessionLifecycleEvent: any = undefined;
+export const persistGatewaySessionLifecycleEvent: unknown = undefined;

@@ -12,5 +12,5 @@ export function buildExtensionsNodeModulesFilter(...args: unknown[]): unknown {
 export function createBackupArchive(...args: unknown[]): unknown {
   return undefined;
 }
-export const testApi: unknown = undefined;
+export const testApi: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 export type __test = unknown;

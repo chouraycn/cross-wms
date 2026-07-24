@@ -17,6 +17,7 @@ import {
 } from '../dao/warehouse.js';
 import { checkAllPredictions } from '../services/predictionService.js';
 import { generateSuggestions } from '../services/replenishmentService.js';
+import type { AutomationData } from '../dao/automationDao.js';
 
 // ===================== 类型定义 =====================
 
@@ -54,7 +55,7 @@ function recordStep(
 }
 
 /** 检查是否超时 */
-function checkTimeout(startTime: number, automation: any): void {
+function checkTimeout(startTime: number, automation: AutomationData): void {
   const executionPolicy = automation.executionPolicy;
   const timeoutMs =
     typeof executionPolicy?.timeoutMs === 'number'
@@ -67,7 +68,7 @@ function checkTimeout(startTime: number, automation: any): void {
 
 /** 判断是否需要发送通知 */
 function resolveShouldNotify(
-  automation: any,
+  automation: AutomationData,
   hasFailure: boolean,
 ): boolean {
   const cfg = automation.notificationConfig;
@@ -81,7 +82,7 @@ function resolveShouldNotify(
 
 /** data-sync：从数据库读取数据，返回同步结果 */
 async function executeDataSync(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -160,7 +161,7 @@ async function executeDataSync(
 
 /** inventory-snapshot：读取当前库存，返回快照 */
 async function executeInventorySnapshot(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -216,7 +217,7 @@ async function executeInventorySnapshot(
 
 /** report-gen：生成运营报表数据 */
 async function executeReportGen(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -314,7 +315,7 @@ async function executeReportGen(
 
 /** volume-alert：检查所有仓库容积率，返回预警信息 */
 async function executeVolumeAlert(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -378,7 +379,7 @@ async function executeVolumeAlert(
 
 /** inventory-prediction：智能库存预测扫描 */
 async function executeInventoryPrediction(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -422,7 +423,7 @@ async function executeInventoryPrediction(
 
 /** replenishment-suggestion：智能补货建议生成 */
 async function executeReplenishmentSuggestion(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -455,7 +456,7 @@ async function executeReplenishmentSuggestion(
 
 /** skill-chain：调用技能链执行端点 */
 async function executeSkillChain(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -495,7 +496,7 @@ async function executeSkillChain(
 
 /** custom：执行自定义 action chain */
 async function executeCustom(
-  automation: any,
+  automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
 ): Promise<unknown> {
@@ -615,7 +616,7 @@ function computeBackoffDelay(
 /**
  * 执行一次自动化任务（内部实现，不含重试）
  */
-async function executeOnce(automation: any, startTime: number): Promise<{
+async function executeOnce(automation: AutomationData, startTime: number): Promise<{
   data: unknown;
   steps: ExecutionStep[];
 }> {
@@ -678,7 +679,7 @@ async function executeOnce(automation: any, startTime: number): Promise<{
  * @param automation - 自动化数据对象（AutomationData），包含 executionPolicy
  * @returns 执行结果，包含成功/失败状态、步骤详情、数据、通知标志
  */
-export async function executeAutomation(automation: any): Promise<ExecutionResult> {
+export async function executeAutomation(automation: AutomationData): Promise<ExecutionResult> {
   const startTime = Date.now();
 
   // 读取执行策略

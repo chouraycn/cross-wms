@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function listGatewayAgentIds(..._args: unknown[]): any {
+export function listGatewayAgentIds(..._args: unknown[]): unknown {
   return [];
 }
 
-export function listGatewayAgentsBasic(..._args: unknown[]): any {
+export function listGatewayAgentsBasic(..._args: unknown[]): unknown {
   return [];
 }

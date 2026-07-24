@@ -7,6 +7,7 @@ import { normalizeOptionalTrimmedStringList } from './_openclaw__normalization_c
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
 import type { PluginCandidate } from "./discovery.js";
+import type { PluginFormat, PluginBundleFormat } from "./manifest-types.js";
 import { hashJson } from "./installed-plugin-index-hash.js";
 import type { InstalledPluginFileSignature } from "./installed-plugin-index-hash.js";
 import type { InstalledPluginIndex, InstalledPluginIndexRecord } from "./installed-plugin-index.js";
@@ -556,8 +557,8 @@ function toPluginCandidate(
     ...(record.setupSource ? { setupSource: record.setupSource } : {}),
     rootDir,
     origin: record.origin,
-    ...(record.format ? { format: record.format as any } : {}),
-    ...(record.bundleFormat ? { bundleFormat: record.bundleFormat } : {}),
+    ...(record.format ? { format: record.format as PluginFormat } : {}),
+    ...(record.bundleFormat ? { bundleFormat: record.bundleFormat as PluginBundleFormat } : {}),
     ...(record.packageName ? { packageName: record.packageName } : {}),
     ...(record.packageVersion ? { packageVersion: record.packageVersion } : {}),
     ...(packageMetadata.packageManifest
@@ -570,7 +571,7 @@ function toPluginCandidate(
       ? { packageOptionalDependencies: packageMetadata.packageOptionalDependencies }
       : {}),
     packageDir: rootDir,
-  } as any;
+  };
 }
 
 export function loadPluginManifestRegistryForInstalledIndex(params: {
@@ -605,13 +606,13 @@ export function loadPluginManifestRegistryForInstalledIndex(params: {
         config: params.config,
         workspaceDir: params.workspaceDir,
         env,
-        candidates: candidates as any,
-        diagnostics: [...diagnostics] as any,
+        candidates: candidates as PluginCandidate[],
+        diagnostics: [...diagnostics],
         installRecords: extractPluginInstallRecordsFromInstalledPluginIndex(params.index),
         ...(params.bundledChannelConfigCollector
           ? { bundledChannelConfigCollector: params.bundledChannelConfigCollector }
           : {}),
-      } as any);
+      });
     },
     {
       includeDisabled: params.includeDisabled === true,

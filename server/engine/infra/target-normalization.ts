@@ -20,5 +20,5 @@ export function maybeResolvePluginMessagingTarget(...args: unknown[]): unknown {
 export function buildTargetResolverSignature(...args: unknown[]): unknown {
   return undefined;
 }
-export const testing_target_normalization: unknown = undefined;
+export const testing_target_normalization: unknown = undefined as unknown;
 export type __testing_target_normalization = unknown;

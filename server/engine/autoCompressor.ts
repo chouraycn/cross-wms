@@ -670,10 +670,10 @@ export function extractMessagesForCompression(
         content = JSON.stringify(msg.content);
       }
       if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
-        content += `\n[工具调用: ${msg.tool_calls.map((tc: any) => tc.function?.name || 'unknown').join(', ')}]`;
+        content += `\n[工具调用: ${msg.tool_calls.map((tc) => (tc as { function?: { name?: string } }).function?.name || 'unknown').join(', ')}]`;
       }
-      if (msg.role === 'tool' && (msg as any).tool_call_id) {
-        content = `[工具结果 ${(msg as any).tool_call_id}]: ${content}`;
+      if (msg.role === 'tool' && msg.tool_call_id) {
+        content = `[工具结果 ${msg.tool_call_id}]: ${content}`;
       }
       result.push({ role: msg.role, content });
     }

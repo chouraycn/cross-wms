@@ -136,7 +136,7 @@ export function removeSessionSyncer(sessionId: string): void {
 function loadSyncableMessages(sessionId: string): SyncableMessage[] {
   try {
     const dbMessages = getSessionMessages(sessionId);
-    return dbMessages.map((m: any) => ({
+    return dbMessages.map((m) => ({
       id: m.id,
       role: m.role,
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),

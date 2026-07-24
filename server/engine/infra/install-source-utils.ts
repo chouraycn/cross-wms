@@ -102,8 +102,10 @@ export type NpmIntegrityDrift = {
 };
 
 export async function withTempDir<T>(prefix: string, fn: (tmpDir: string) => Promise<T>): Promise<T> {
-  const result = await withTempWorkspace({ rootDir: os.tmpdir(), prefix } as any);
-  return await (result as any)(async (tmp: any) => fn(tmp.dir));
+  return await withTempWorkspace(
+    async (ws) => fn(ws.dir),
+    { rootDir: os.tmpdir(), prefix },
+  );
 }
 
 export async function resolveArchiveSourcePath(archivePath: string): Promise<
