@@ -18,7 +18,17 @@ export interface ChatCommandDefinition {
   name: string;
   description: string;
   aliases?: string[];
-  category: "model" | "session" | "utility" | "debug" | "agent" | "thinking";
+  category:
+    | "model"
+    | "session"
+    | "utility"
+    | "debug"
+    | "agent"
+    | "thinking"
+    | "doctor"
+    | "status"
+    | "onboard"
+    | "configure";
   scope: CommandScope | CommandScope[];
   args?: CommandArgDefinition[];
   enabledByDefault?: boolean;

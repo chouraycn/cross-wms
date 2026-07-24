@@ -7,10 +7,12 @@
  *  - 复杂运行时（如 failover 错误分类）提供降级实现并加注释说明
  *
  * 缺失模块来源：
- *  - ../config/types.openclaw.js、../config/types.gateway.js（cross-wms 配置类型尚未移植）
  *  - ../auto-reply/tokens.js、../agents/failover-error.js 等 openclaw 内部模块
  *  - ../../packages/gateway-client/* （gateway-client 包未移植）
  *  - ./credentials.js、./auth-rate-limit.js、./control-ui-shared.js 等目标侧实现与 openclaw 不一致的模块
+ *
+ * 说明：../config/types.openclaw.js 与 ../config/types.gateway.js 已移植完整类型层级，
+ *      本文件保留宽松占位以避免与完整 OpenClawConfig 强耦合。
  */
 
 import type { OperatorScope } from "./operator-scopes.js";
@@ -22,9 +24,10 @@ import type { OperatorScope } from "./operator-scopes.js";
 /**
  * OpenClaw 配置的宽松类型占位。
  *
- * 降级原因：cross-wms 尚未移植 openclaw 的完整配置类型层级。
- * 这里定义结构化子集以满足移植文件中对 gateway/auth/remote 等字段的访问，
- * 同时保留索引签名以兼容其他字段访问。
+ * 降级原因：cross-wms 已移植 ../config/types.openclaw.js 与 ../config/types.gateway.js
+ * 的完整类型层级，但 gateway 本地 stub 仍使用结构化子集与索引签名，便于
+ * 移植文件中对 gateway/auth/remote 等字段的访问，且与 types.openclaw 中
+ * 的完整 OpenClawConfig 兼容。
  */
 export type OpenClawConfig = {
   gateway?: {

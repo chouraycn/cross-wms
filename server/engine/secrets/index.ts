@@ -258,3 +258,94 @@ export type {
 // ============== 兼容性导出（保留旧 API 入口） ==============
 // 注意：以下导出保留向后兼容，新代码建议直接使用本模块的细分 API。
 // 为避免与子模块导出冲突，此处不再 re-export 旧 secretsManager.ts 的 API。
+
+// ============== 渠道密钥面运行时 ==============
+// 来自 openclaw/src/secrets/ 的渠道密钥面运行时：
+//   - basic / tts / collector 三个渠道密钥收集器
+//   - core / channels / plugins / tts 四个运行时配置收集器
+//   - 以及总入口 collectConfigAssignments
+// ============== 渠道密钥收集器 ==============
+export {
+  collectConditionalChannelFieldAssignments,
+  collectNestedChannelFieldAssignments,
+  collectSimpleChannelFieldAssignments,
+  getChannelRecord,
+  getChannelSurface,
+  hasConfiguredSecretInputValue,
+  isBaseFieldActiveForChannelSurface,
+  normalizeSecretStringValue,
+  resolveChannelAccountSurface,
+} from './channel-secret-basic-runtime.js';
+export type {
+  ChannelAccountEntry,
+  ChannelAccountPredicate,
+  ChannelAccountSurface,
+} from './channel-secret-basic-runtime.js';
+
+export { collectNestedChannelTtsAssignments } from './channel-secret-tts-runtime.js';
+
+// 渠道密钥收集器 barrel（channel-secret-collector-runtime.ts）
+// 内部已从 channel-secret-basic-runtime / channel-secret-tts-runtime 聚合导出，
+// 上方已经直接 re-export 了具体符号，避免重复声明。
+
+// ============== 运行时配置收集器 ==============
+export { collectTtsApiKeyAssignments } from './runtime-config-collectors-tts.js';
+export { collectCoreConfigAssignments } from './runtime-config-collectors-core.js';
+export { collectChannelConfigAssignments } from './runtime-config-collectors-channels.js';
+export { collectPluginConfigAssignments } from './runtime-config-collectors-plugins.js';
+export { collectConfigAssignments } from './runtime-config-collectors.js';
+
+// ============== 运行时共享类型与工具 ==============
+// 来自 openclaw/src/secrets/runtime-shared.ts：解析器上下文 / 分配 / 警告 helpers
+export {
+  createResolverContext,
+  pushAssignment,
+  pushWarning,
+  pushInactiveSurfaceWarning,
+  collectSecretInputAssignment,
+  applyResolvedAssignments,
+  hasOwnProperty,
+  isEnabledFlag,
+  isChannelAccountEffectivelyEnabled,
+} from './runtime-shared.js';
+export type {
+  SecretResolverWarningCode,
+  SecretResolverWarning,
+  SecretAssignment,
+  ResolverContext,
+  SecretDefaults,
+} from './runtime-shared.js';
+
+// ============== Gateway 认证面状态评估 ==============
+// 来自 openclaw/src/secrets/runtime-gateway-auth-surfaces.ts：评估 gateway 凭据 SecretRef 面
+export {
+  GATEWAY_AUTH_SURFACE_PATHS,
+  evaluateGatewayAuthSurfaceStates,
+} from './runtime-gateway-auth-surfaces.js';
+export type {
+  GatewayAuthSurfacePath,
+  GatewayAuthSurfaceState,
+  GatewayAuthSurfaceStateMap,
+} from './runtime-gateway-auth-surfaces.js';
+
+// ============== 渠道密钥契约 API ==============
+// 来自 openclaw/src/secrets/channel-contract-api.ts：从 bundled/external plugin artifacts 加载合约
+export {
+  loadBundledChannelSecretContractApi,
+  loadChannelSecretContractApi,
+  loadChannelSecretContractApiForRecord,
+  loadBundledChannelSecurityContractApi,
+} from './channel-contract-api.js';
+export type {
+  BundledChannelSecretContractApi,
+  BundledChannelSecurityContractApi,
+} from './channel-contract-api.js';
+
+// ============== 解析后值校验 ==============
+// 来自 openclaw/src/secrets/secret-value.ts：解析后 SecretRef 值的形状校验
+export {
+  isExpectedResolvedSecretValue,
+  hasConfiguredPlaintextSecretValue,
+  assertExpectedResolvedSecretValue,
+} from './secret-value.js';
+export type { SecretExpectedResolvedValue } from './secret-value.js';

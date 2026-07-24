@@ -91,3 +91,18 @@ export function advanceTime(ms: number): void {
     frozenDate._frozenMs = newDate.getTime();
   }
 }
+
+// ---------------------------------------------------------------------------
+// OpenClaw-style vitest fake-timer helpers (additive; do not break freezeTime).
+// ---------------------------------------------------------------------------
+import { vi } from "vitest";
+
+/** Freezes Vitest's fake clock for tests that assert timestamps or timers. */
+export function useFrozenTime(at: string | number | Date): void {
+  vi.useFakeTimers();
+  vi.setSystemTime(at);
+}
+
+export function useRealTime(): void {
+  vi.useRealTimers();
+}

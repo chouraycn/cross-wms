@@ -189,13 +189,33 @@ export type { SlugGeneratorOptions } from './llm-slug-generator.js';
 
 // 消息钩子映射器
 export {
+  // 现有 MessageHookMapper API
   DEFAULT_MESSAGE_MAPPERS,
   MessageHookMapperManager,
   messageHookMapperManager,
   createMessageToEmailMapper,
   createEmailToMessageMapper,
+  // openclaw Canonical Context API
+  deriveInboundMessageHookContext,
+  buildCanonicalSentMessageHookContext,
+  toPluginMessageContext,
+  toPluginInboundClaimContext,
+  toPluginInboundClaimEvent,
+  toPluginMessageReceivedEvent,
+  toPluginMessageSentEvent,
+  toInternalMessageReceivedContext,
+  toInternalMessageTranscribedContext,
+  toInternalMessagePreprocessedContext,
+  toInternalMessageSentContext,
+  registerMessageHookChannelPlugin,
+  clearMessageHookChannelPlugins,
 } from './message-hook-mappers.js';
-export type { MessageHookMapper } from './message-hook-mappers.js';
+export type {
+  MessageHookMapper,
+  FinalizedMsgContext,
+  CanonicalInboundMessageHookContext,
+  CanonicalSentMessageHookContext,
+} from './message-hook-mappers.js';
 
 // 插件钩子集成
 export {
