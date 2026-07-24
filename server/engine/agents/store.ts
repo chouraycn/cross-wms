@@ -66,6 +66,14 @@ function mergeStores(base: AuthProfileStore, overlay: AuthProfileStore): AuthPro
 /** Apply an auth store update with a callback. */
 export async function updateAuthProfileStoreWithLock(params: {
   agentDir?: string;
+  /**
+   * Save options. cross-wms is an in-memory store and ignores these flags,
+   * but accepts them for API parity with openclaw.
+   */
+  saveOptions?: {
+    filterExternalAuthProfiles?: boolean;
+    syncExternalCli?: boolean;
+  };
   updater: (store: AuthProfileStore) => boolean;
 }): Promise<AuthProfileStore | null> {
   try {

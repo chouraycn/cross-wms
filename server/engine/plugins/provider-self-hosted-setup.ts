@@ -9,7 +9,7 @@ import {
 } from './_openclaw__normalization_core__string_coerce.js';
 import { uniqueStrings } from './_openclaw__normalization_core__string_normalization.js';
 import type { ApiKeyCredential, AuthProfileCredential } from "../agents/auth-profiles/types.js";
-import { upsertAuthProfileWithLock } from './_stub_parent__agents__auth_profiles__upsert_with_lock.js';
+import { upsertAuthProfileWithLock } from "../agents/auth-profiles/upsert-with-lock.js";
 import { parseConfiguredModelVisibilityEntries } from "../agents/model-selection-shared.js";
 import {
   SELF_HOSTED_DEFAULT_CONTEXT_WINDOW,

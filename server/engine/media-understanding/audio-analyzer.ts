@@ -48,7 +48,7 @@ export function inferEmotionFromText(text: string): AudioAnalysis['emotion'] {
     return { primary: 'neutral', distribution: { neutral: 1 } };
   }
   entries.sort((a, b) => b[1] - a[1]);
-  const [primary, count] = entries[0];
+  const [primary] = entries[0];
   const total = entries.reduce((sum, [, c]) => sum + c, 0);
   const normalized: Record<string, number> = {};
   for (const [emotion, c] of entries) {
