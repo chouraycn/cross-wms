@@ -55,4 +55,4 @@ export function printCronShow(..._args: unknown[]): unknown {
   console.warn('printCronShow is not available in cross-wms'); return undefined;
 }
 
-export const getCronChannelOptions: unknown = undefined;
+export const getCronChannelOptions: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

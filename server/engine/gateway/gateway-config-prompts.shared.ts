@@ -11,12 +11,12 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function maybeAddTailnetOriginToControlUiAllowedOrigins(..._args: unknown[]): Promise<any> {
+export async function maybeAddTailnetOriginToControlUiAllowedOrigins(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const TAILSCALE_EXPOSURE_OPTIONS: any = undefined;
+export const TAILSCALE_EXPOSURE_OPTIONS: unknown = undefined;
 
-export const TAILSCALE_MISSING_BIN_NOTE_LINES: any = undefined;
+export const TAILSCALE_MISSING_BIN_NOTE_LINES: unknown = undefined;
 
-export const TAILSCALE_DOCS_LINES: any = undefined;
+export const TAILSCALE_DOCS_LINES: unknown = undefined;

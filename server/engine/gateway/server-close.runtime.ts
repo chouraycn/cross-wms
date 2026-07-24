@@ -8,4 +8,4 @@
 
 export * from "./server-close.js";
 // 原 re-export from ./session-reset-service.js
-export const drainActiveSessionsForShutdown: any = undefined;
+export const drainActiveSessionsForShutdown: unknown = undefined;

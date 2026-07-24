@@ -113,10 +113,10 @@ export function getTopUsedSkills(limit: number = 10, signals?: SkillUsageSignal[
     _count: (s as SkillUsageSignal & { count: number }).count,
   }));
 
-  aggregated.sort((a, b) => (b as any)._count - (a as any)._count);
+  aggregated.sort((a, b) => b._count - a._count);
 
   return aggregated.slice(0, limit).map((s) => {
-    const { _count, ...rest } = s as any;
+    const { _count, ...rest } = s;
     return rest;
   });
 }

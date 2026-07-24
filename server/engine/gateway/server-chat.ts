@@ -11,33 +11,33 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const createChatAbortMarker: any = undefined;
+export const createChatAbortMarker: unknown = undefined;
 
-export const createChatRunRegistry: any = undefined;
+export const createChatRunRegistry: unknown = undefined;
 
-export const createChatRunState: any = undefined;
+export const createChatRunState: unknown = undefined;
 
-export const createSessionEventSubscriberRegistry: any = undefined;
+export const createSessionEventSubscriberRegistry: unknown = undefined;
 
-export const createSessionMessageSubscriberRegistry: any = undefined;
+export const createSessionMessageSubscriberRegistry: unknown = undefined;
 
-export const createToolEventRecipientRegistry: any = undefined;
+export const createToolEventRecipientRegistry: unknown = undefined;
 
-export const ChatAbortMarker: any = undefined;
+export const ChatAbortMarker: unknown = undefined;
 
-export const ChatRunEntry: any = undefined;
+export const ChatRunEntry: unknown = undefined;
 
-export const ChatRunRegistry: any = undefined;
+export const ChatRunRegistry: unknown = undefined;
 
-export const ChatRunRegistration: any = undefined;
+export const ChatRunRegistration: unknown = undefined;
 
-export const ChatRunState: any = undefined;
+export const ChatRunState: unknown = undefined;
 
-export const SessionEventSubscriberRegistry: any = undefined;
+export const SessionEventSubscriberRegistry: unknown = undefined;
 
-export const SessionMessageSubscriberRegistry: any = undefined;
+export const SessionMessageSubscriberRegistry: unknown = undefined;
 
-export const ToolEventRecipientRegistry: any = undefined;
+export const ToolEventRecipientRegistry: unknown = undefined;
 
 export type ChatEventBroadcast = unknown;
 
@@ -45,6 +45,6 @@ export type NodeSendToSession = unknown;
 
 export type AgentEventHandlerOptions = unknown;
 
-export function createAgentEventHandler(..._args: unknown[]): any {
+export function createAgentEventHandler(..._args: unknown[]): unknown {
   return undefined;
 }

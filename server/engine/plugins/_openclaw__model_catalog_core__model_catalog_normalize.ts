@@ -7,16 +7,19 @@ export function normalizeModelCatalog(catalog: unknown): ModelCatalog {
   const seen = new Set<string>();
   return catalog
     .filter(item => item && typeof item === 'object')
-    .map(item => ({
-      providerId: normalizeProviderId((item as any).providerId ?? ''),
-      modelId: String((item as any).modelId ?? '').trim(),
-      modelName: String((item as any).modelName ?? '').trim(),
-      aliases: (item as any).aliases
-        ? Array.isArray((item as any).aliases)
-          ? (item as any).aliases.map(String).filter(Boolean)
-          : undefined
-        : undefined,
-    }))
+    .map(item => {
+      const entry = item as Record<string, unknown>;
+      return {
+        providerId: normalizeProviderId(entry.providerId ?? ''),
+        modelId: String(entry.modelId ?? '').trim(),
+        modelName: String(entry.modelName ?? '').trim(),
+        aliases: entry.aliases
+          ? Array.isArray(entry.aliases)
+            ? (entry.aliases as unknown[]).map(String).filter(Boolean)
+            : undefined
+          : undefined,
+      };
+    })
     .filter(entry => entry.providerId && entry.modelId)
     .filter(entry => {
       const key = buildModelCatalogMergeKey(entry.providerId, entry.modelId);

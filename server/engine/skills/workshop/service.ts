@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { logger } from "../../../logger.js";
 import { scanSkillContent, hasCriticalFindings } from "../security/scanner.js";
+import type { SkillScanFinding } from "../security/scanner.js";
 import {
   createNewProposalRecord,
   saveProposal,
@@ -24,6 +25,7 @@ import type {
   SkillProposalSearchInput,
   SkillProposalRollbackInput,
   SkillProposalSearchResult,
+  SkillProposalStatus,
 } from "./types.js";
 import { ensureWorkspaceSkillsDir } from "../loading/workspace.js";
 import { emitProposalEvent } from "./event-bus.js";
@@ -310,7 +312,7 @@ export async function listSkillProposals(
   workspaceDir: string,
   status?: string,
 ): Promise<Array<{ id: string; title: string; status: string; skillName: string; createdAt: string }>> {
-  const proposals = await listProposals(workspaceDir, status as any);
+  const proposals = await listProposals(workspaceDir, status as SkillProposalStatus | undefined);
   return proposals.map((p) => ({
     id: p.id,
     title: p.title,
@@ -690,7 +692,7 @@ async function scanProposalContent(content: string): Promise<{
   critical: number;
   warn: number;
   info: number;
-  findings: any[];
+  findings: SkillScanFinding[];
 }> {
   const scannedAt = new Date().toISOString();
 

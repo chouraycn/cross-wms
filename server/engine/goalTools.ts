@@ -13,7 +13,7 @@ import {
   updateGoalStatus,
   formatGoalStatus,
 } from './goalStore.js';
-import { MODEL_UPDATABLE_GOAL_STATUSES } from './goalTypes.js';
+import { MODEL_UPDATABLE_GOAL_STATUSES, type GoalStatus } from './goalTypes.js';
 
 /**
  * 工具选项（用于传入 sessionKey）
@@ -168,7 +168,7 @@ export function createUpdateGoalToolHandler(options: GoalToolOptions): ToolHandl
       const note = args.note as string | undefined;
 
       // 验证 status 为模型可更新的状态
-      if (!MODEL_UPDATABLE_GOAL_STATUSES.includes(status as any)) {
+      if (!MODEL_UPDATABLE_GOAL_STATUSES.includes(status as GoalStatus)) {
         return jsonResult({
           error: `status 必须为 ${MODEL_UPDATABLE_GOAL_STATUSES.join(', ')}`,
         });

@@ -60,7 +60,7 @@ export function scheduleGatewaySigusr1Restart(...args: unknown[]): unknown {
 export function scheduleGatewayRestart(...args: unknown[]): unknown {
   return undefined;
 }
-export const DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS: unknown = undefined;
-export const testing_restart: unknown = undefined;
+export const DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS: unknown = undefined as unknown;
+export const testing_restart: unknown = undefined as unknown;
 export type findGatewayPidsOnPortSync = unknown;
 export type __testing_restart = unknown;

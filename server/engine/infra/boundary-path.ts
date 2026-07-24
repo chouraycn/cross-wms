@@ -93,5 +93,5 @@ export function getRelativePathWithinBoundary(
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveRootPath: any = undefined as any;
-export const resolveRootPathSync: any = undefined as any;
+export const resolveRootPath: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const resolveRootPathSync: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

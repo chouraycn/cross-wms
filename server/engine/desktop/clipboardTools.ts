@@ -47,19 +47,20 @@ export async function handleDesktopClipboard(args: Record<string, unknown>): Pro
         const child = spawn('pbcopy', [], { stdio: ['pipe', 'ignore', 'pipe'] });
 
         // Write content to stdin
-        (child.stdin as any).write(content);
-        (child.stdin as any).end();
+        if (!child.stdin) throw new Error('child.stdin not available');
+        child.stdin.write(content);
+        child.stdin.end();
 
         // Wait for completion
         await new Promise<void>((resolve, reject) => {
-          (child as any).on('close', (code: number) => {
+          child.on('close', (code: number) => {
             if (code === 0) {
               resolve();
             } else {
               reject(new Error(`pbcopy exited with code ${code}`));
             }
           });
-          (child as any).on('error', reject);
+          child.on('error', reject);
         });
 
         return JSON.stringify({
@@ -71,11 +72,12 @@ export async function handleDesktopClipboard(args: Record<string, unknown>): Pro
         try {
           const { spawn } = await import('child_process');
           const child = spawn('xclip', ['-selection', 'clipboard'], { stdio: ['pipe', 'ignore', 'pipe'] });
-          (child.stdin as any).write(content);
-          (child.stdin as any).end();
+          if (!child.stdin) throw new Error('child.stdin not available');
+          child.stdin.write(content);
+          child.stdin.end();
           await new Promise<void>((resolve, reject) => {
-            (child as any).on('close', (code: number) => code === 0 ? resolve() : reject(new Error(`xclip exited with code ${code}`)));
-            (child as any).on('error', reject);
+            child.on('close', (code: number) => code === 0 ? resolve() : reject(new Error(`xclip exited with code ${code}`)));
+            child.on('error', reject);
           });
           return JSON.stringify({ success: true, action: 'set', contentLength: content.length });
         } catch {
@@ -92,10 +94,10 @@ export async function handleDesktopClipboard(args: Record<string, unknown>): Pro
         error: `Invalid action: ${action}. Use 'get' or 'set'`,
       });
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     return JSON.stringify({
       success: false,
-      error: e.message || 'Clipboard operation failed',
+      error: e instanceof Error ? e.message : 'Clipboard operation failed',
     });
   }
 }

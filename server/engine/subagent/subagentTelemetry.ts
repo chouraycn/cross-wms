@@ -25,7 +25,7 @@ export interface SubagentStats {
   /** subagent ID */
   subagentId: string;
   /** 启动时元数据 */
-  metadata: any;
+  metadata: unknown;
   /** 启动时间戳 */
   startedAt: number;
   /** 结束时间戳（未结束时为空） */
@@ -69,7 +69,7 @@ export class SubagentTelemetry {
    * @param subagentId - subagent 唯一标识
    * @param metadata - 启动元数据
    */
-  recordStart(subagentId: string, metadata: any = null): void {
+  recordStart(subagentId: string, metadata: unknown = null): void {
     this.stats.set(subagentId, {
       subagentId,
       metadata,

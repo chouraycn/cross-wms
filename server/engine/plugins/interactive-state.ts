@@ -1,8 +1,13 @@
 // Stores interactive plugin state and dedupe caches.
 // Stub imports for dedupe functionality not yet migrated
-const createDedupeCache = () => ({}) as any;
-const resolveGlobalDedupeCache = () => ({}) as any;
-type DedupeCache = any;
+interface DedupeCache {
+  peek(key: string, now: number): boolean;
+  check(key: string, now: number): void;
+  clear(): void;
+}
+
+const createDedupeCache = (): DedupeCache => ({}) as unknown as DedupeCache;
+const resolveGlobalDedupeCache = (): DedupeCache => ({}) as unknown as DedupeCache;
 import type { PluginInteractiveHandlerRegistration } from "./types.js";
 
 /** Registered interactive handler with owning plugin metadata. */

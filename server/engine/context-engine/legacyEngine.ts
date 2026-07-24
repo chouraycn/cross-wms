@@ -226,7 +226,7 @@ export class LegacyContextEngine implements ContextEngine {
       allMessages.map(m => ({
         role: m.role,
         content: m.content || '',
-        tool_calls: m.toolCalls as any,
+        tool_calls: m.toolCalls as unknown as Array<{ id: string; type: "function"; function: { arguments: string; name: string } }> | undefined,
         tool_call_id: m.toolCallId,
       })),
       contextWindow,

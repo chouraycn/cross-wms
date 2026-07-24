@@ -12,4 +12,4 @@ export function loadConfigSchemaResponseForTests(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const configHandlers: unknown = undefined;
+export const configHandlers: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

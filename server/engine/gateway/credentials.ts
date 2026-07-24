@@ -11,11 +11,11 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const hasGatewayPasswordEnvCandidate: any = undefined;
+export const hasGatewayPasswordEnvCandidate: unknown = undefined;
 
-export const hasGatewayTokenEnvCandidate: any = undefined;
+export const hasGatewayTokenEnvCandidate: unknown = undefined;
 
-export const trimToUndefined: any = undefined;
+export const trimToUndefined: unknown = undefined;
 
 export type ExplicitGatewayAuth = unknown;
 
@@ -27,19 +27,19 @@ export type GatewayRemoteCredentialPrecedence = unknown;
 
 export type GatewayRemoteCredentialFallback = unknown;
 
-export function isGatewaySecretRefUnavailableError(..._args: unknown[]): any {
+export function isGatewaySecretRefUnavailableError(..._args: unknown[]): unknown {
   return false;
 }
 
-export function resolveGatewayCredentialsFromValues(..._args: unknown[]): any {
+export function resolveGatewayCredentialsFromValues(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveGatewayCredentialsFromConfig(..._args: unknown[]): any {
+export function resolveGatewayCredentialsFromConfig(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveGatewayProbeCredentialsFromConfig(..._args: unknown[]): any {
+export function resolveGatewayProbeCredentialsFromConfig(..._args: unknown[]): unknown {
   return undefined;
 }
 

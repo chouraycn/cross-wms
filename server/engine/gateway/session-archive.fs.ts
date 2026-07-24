@@ -11,12 +11,12 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const archiveFileOnDisk: any = undefined;
+export const archiveFileOnDisk: unknown = undefined;
 
-export const archiveSessionTranscriptsDetailed: any = undefined;
+export const archiveSessionTranscriptsDetailed: unknown = undefined;
 
-export const archiveSessionTranscripts: any = undefined;
+export const archiveSessionTranscripts: unknown = undefined;
 
-export const cleanupArchivedSessionTranscripts: any = undefined;
+export const cleanupArchivedSessionTranscripts: unknown = undefined;
 
-export const resolveStableSessionEndTranscript: any = undefined;
+export const resolveStableSessionEndTranscript: unknown = undefined;

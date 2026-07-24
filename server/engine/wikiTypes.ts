@@ -186,6 +186,8 @@ export interface WikiSearchOptions {
   useMMR?: boolean;
   /** MMR lambda 参数 */
   mmrLambda?: number;
+  /** 候选倍数（用于扩大搜索范围后再过滤） */
+  candidateMultiplier?: number;
 }
 
 /**

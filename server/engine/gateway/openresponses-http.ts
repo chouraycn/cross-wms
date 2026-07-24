@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const buildAgentPrompt: any = undefined;
+export const buildAgentPrompt: unknown = undefined;
 
-export async function handleOpenResponsesHttpRequest(..._args: unknown[]): Promise<any> {
+export async function handleOpenResponsesHttpRequest(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const testing: any = undefined;
+export const testing: unknown = undefined;

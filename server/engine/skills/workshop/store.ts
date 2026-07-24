@@ -9,6 +9,7 @@ import {
   type SkillProposalManifest,
   type SkillProposalStatus,
   type SkillProposalScan,
+  type SkillProposalSource,
 } from "./types.js";
 
 const WORKSHOP_DIR = ".cross-wms/skill-workshop";
@@ -201,7 +202,7 @@ export function createNewProposalRecord(params: {
   skillDir: string;
   skillFile: string;
   kind: "create" | "update";
-  createdBy?: string;
+  createdBy?: SkillProposalSource;
 }): SkillProposalRecord {
   const now = new Date().toISOString();
   const id = generateProposalId();
@@ -216,7 +217,7 @@ export function createNewProposalRecord(params: {
     description: params.description,
     createdAt: now,
     updatedAt: now,
-    createdBy: (params.createdBy as any) || "skill-workshop",
+    createdBy: params.createdBy || "skill-workshop",
     proposedVersion: "1.0.0",
     draftFile: "PROPOSAL.md",
     draftHash,

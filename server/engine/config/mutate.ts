@@ -27,4 +27,4 @@ export function mutateConfigFileWithRetry(...args: unknown[]): unknown {
   return undefined;
 }
 export type ConfigMutationConflictError = unknown;
-export const ConfigMutationConflictError: unknown = undefined;
+export const ConfigMutationConflictError: new (...args: unknown[]) => any = undefined as unknown as new (...args: unknown[]) => any;

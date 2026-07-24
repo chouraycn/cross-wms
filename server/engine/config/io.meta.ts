@@ -3,4 +3,4 @@
 export function stampConfigWriteMetadata(...args: unknown[]): unknown {
   return undefined;
 }
-export const AUTO_MANAGED_CONFIG_META_PATHS: unknown = undefined;
+export const AUTO_MANAGED_CONFIG_META_PATHS: unknown = undefined as unknown;

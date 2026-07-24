@@ -49,9 +49,9 @@ function collectHookRegistrySources(
   // Precedence: the explicitly initialized registry wins so an SDK caller that
   // initializes an isolated registry stays authoritative; in the gateway it is
   // the same object as the active registry, so this just dedupes.
-  add(lastInitialized as any);
+  add(lastInitialized);
   for (const registry of collectLivePluginRegistries()) {
-    add(registry as any);
+    add(registry as unknown as TrustedPolicyHookRunnerRegistry);
   }
   return ordered;
 }

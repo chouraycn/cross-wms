@@ -7,4 +7,4 @@ export function resolveFutureConfigActionBlock(...args: unknown[]): unknown {
 export function formatFutureConfigActionBlock(...args: unknown[]): unknown {
   return "";
 }
-export const ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV: unknown = undefined;
+export const ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV: unknown = undefined as unknown;

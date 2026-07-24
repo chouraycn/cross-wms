@@ -52,6 +52,7 @@ import type {
   InstalledPluginStartupInfo,
 } from "./installed-plugin-index-types.js";
 import type { PluginDiagnostic } from "./manifest-types.js";
+import type { PluginOrigin } from "./plugin-origin.types.js";
 import { isPathInside } from "./path-safety.js";
 
 // ============================================================================
@@ -536,7 +537,7 @@ export function buildInstalledPluginIndexRecords(params: {
       ...(manifestFile ? { manifestFile } : {}),
       source: record.source,
       rootDir: record.rootDir,
-      origin: record.origin as any,
+      origin: record.origin as PluginOrigin,
       enabled,
       startup: buildStartupInfo(record),
       contributions: buildContributionInfo(record),

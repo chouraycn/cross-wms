@@ -1,8 +1,8 @@
 // 移植自 openclaw/src/channels/plugins/config-schema.ts
 
-export const AllowFromEntrySchema: unknown = undefined;
+export const AllowFromEntrySchema: new (...args: unknown[]) => any = undefined as unknown as new (...args: unknown[]) => any;
 
-export const AllowFromListSchema: unknown = undefined;
+export const AllowFromListSchema: new (...args: unknown[]) => any = undefined as unknown as new (...args: unknown[]) => any;
 
 export function buildNestedDmConfigSchema(..._args: unknown[]): unknown {
   return undefined;

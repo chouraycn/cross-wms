@@ -283,7 +283,7 @@ function listCapabilityTriggerReasons(
         plugin.activation?.onCapabilities?.includes(capability)
           ? "activation-capability-hint"
           : null,
-        hasValues((plugin as any).hooks) ? "manifest-hook-owner" : null,
+        hasValues((plugin as typeof plugin & { hooks?: readonly unknown[] }).hooks) ? "manifest-hook-owner" : null,
       ]);
   }
   const unreachableCapability: never = capability;

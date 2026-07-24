@@ -13,10 +13,10 @@
 
 export type GatewayChannelManager = unknown;
 
-export function startGatewayChannelHealthMonitor(..._args: unknown[]): any {
+export function startGatewayChannelHealthMonitor(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function startGatewayRuntimeServices(..._args: unknown[]): any {
+export function startGatewayRuntimeServices(..._args: unknown[]): unknown {
   return undefined;
 }

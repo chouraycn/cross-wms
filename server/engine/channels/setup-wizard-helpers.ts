@@ -1,6 +1,6 @@
 // 移植自 openclaw/src/channels/plugins/setup-wizard-helpers.ts
 
-export const promptAccountId: unknown = undefined;
+export const promptAccountId: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 export function addWildcardAllowFrom(..._args: unknown[]): unknown {
   return undefined;
@@ -224,10 +224,10 @@ export async function promptLegacyChannelAllowFromForAccount(..._args: unknown[]
   return Promise.resolve(undefined);
 }
 
-export const patchLegacyDmChannelConfig: unknown = undefined;
+export const patchLegacyDmChannelConfig: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const setLegacyChannelDmPolicyWithAllowFrom: unknown = undefined;
+export const setLegacyChannelDmPolicyWithAllowFrom: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const setLegacyChannelAllowFrom: unknown = undefined;
+export const setLegacyChannelAllowFrom: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const createLegacyCompatChannelDmPolicy: unknown = undefined;
+export const createLegacyCompatChannelDmPolicy: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

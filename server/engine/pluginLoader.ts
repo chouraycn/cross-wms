@@ -32,7 +32,7 @@ export interface PluginManifest {
   icon?: string;
   riskLevel?: string;
   apiVersion?: string;
-  tools?: any[];
+  tools?: Record<string, unknown>[];
   metadata?: Record<string, unknown>;
   entry?: string;
 }

@@ -11,7 +11,7 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveMcpLoopbackScopedTools(..._args: unknown[]): any {
+export function resolveMcpLoopbackScopedTools(..._args: unknown[]): unknown {
   return undefined;
 }
 

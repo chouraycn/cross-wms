@@ -165,7 +165,7 @@ export function createPluginRegistry(): PluginRegistryImpl {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const createEmptyPluginRegistry: any = undefined as any;
+export const createEmptyPluginRegistry: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 // 降级类型桩：对应 openclaw 中 registry.ts 的完整类型/函数
 export interface PluginRecord {

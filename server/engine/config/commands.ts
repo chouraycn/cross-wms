@@ -10,6 +10,6 @@ export function isNativeCommandsExplicitlyDisabled(...args: unknown[]): unknown 
   return false;
 }
 export type isCommandFlagEnabled = unknown;
-export const isCommandFlagEnabled: unknown = undefined;
+export const isCommandFlagEnabled: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 export type isRestartEnabled = unknown;
-export const isRestartEnabled: unknown = undefined;
+export const isRestartEnabled: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

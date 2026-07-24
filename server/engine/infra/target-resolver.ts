@@ -20,4 +20,4 @@ export function lookupDirectoryDisplay(...args: unknown[]): unknown {
   return undefined;
 }
 export type maybeResolveIdLikeTarget = unknown;
-export const maybeResolveIdLikeTarget: unknown = undefined;
+export const maybeResolveIdLikeTarget: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

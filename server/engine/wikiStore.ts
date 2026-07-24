@@ -26,6 +26,7 @@ import type {
   WikiVersion,
   WikiLink,
   WikiLinkCreateParams,
+  WikiLinkType,
   WikiTag,
   WikiSearchResult,
   WikiStats,
@@ -235,7 +236,7 @@ export function getEntry(id: number): WikiEntry | null {
       title: row.title,
       content: row.content,
       summary: row.summary ?? undefined,
-      source: row.source as any,
+      source: row.source as WikiEntry['source'],
       sourcePath: row.source_path ?? undefined,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       createdAt: row.created_at,
@@ -393,7 +394,7 @@ export function getLink(id: number): WikiLink | null {
       id: row.id,
       sourceId: row.source_id,
       targetId: row.target_id,
-      linkType: row.link_type as any,
+      linkType: row.link_type as WikiLinkType,
       weight: row.weight,
       createdAt: row.created_at,
     };
@@ -438,7 +439,7 @@ export function getEntryLinks(entryId: number): WikiLink[] {
       id: row.id,
       sourceId: row.source_id,
       targetId: row.target_id,
-      linkType: row.link_type as any,
+      linkType: row.link_type as WikiLinkType,
       weight: row.weight,
       createdAt: row.created_at,
     }));
@@ -469,7 +470,7 @@ export function getEntryBacklinks(entryId: number): WikiLink[] {
       id: row.id,
       sourceId: row.source_id,
       targetId: row.target_id,
-      linkType: row.link_type as any,
+      linkType: row.link_type as WikiLinkType,
       weight: row.weight,
       createdAt: row.created_at,
     }));
@@ -742,7 +743,7 @@ export async function hybridSearch(options: WikiSearchOptions): Promise<WikiSear
     vectorWeight = DEFAULT_HYBRID_SEARCH.vectorWeight,
     ftsWeight = DEFAULT_HYBRID_SEARCH.ftsWeight,
   } = options;
-  const candidateMultiplier = (options as any).candidateMultiplier ?? DEFAULT_HYBRID_SEARCH.candidateMultiplier;
+  const candidateMultiplier = options.candidateMultiplier ?? DEFAULT_HYBRID_SEARCH.candidateMultiplier;
 
   const candidateCount = topK * candidateMultiplier;
 
@@ -943,7 +944,7 @@ export function getRecentEntries(limit: number = 10): WikiEntry[] {
       title: row.title,
       content: row.content,
       summary: row.summary ?? undefined,
-      source: row.source as any,
+      source: row.source as WikiEntry['source'],
       sourcePath: row.source_path ?? undefined,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       createdAt: row.created_at,

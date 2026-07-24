@@ -223,27 +223,31 @@ export function describeFailoverError(err: unknown): DescribedFailoverError {
   let code: string | undefined;
   let reason: FailoverReason | undefined;
 
+  const errRecord = (err instanceof Error || (typeof err === "object" && err !== null))
+    ? (err as Record<string, unknown>)
+    : undefined;
+
   if (err instanceof Error) {
     message = err.message;
     code = err.name;
 
-    if ("status" in err && typeof (err as any).status === "number") {
-      status = (err as any).status;
+    if (errRecord && typeof errRecord.status === "number") {
+      status = errRecord.status;
     }
-    if ("code" in err && typeof (err as any).code === "string") {
-      code = (err as any).code;
+    if (errRecord && typeof errRecord.code === "string") {
+      code = errRecord.code;
     }
   } else if (typeof err === "string") {
     message = err;
   } else if (typeof err === "object" && err !== null) {
-    if ("message" in err && typeof (err as any).message === "string") {
-      message = (err as any).message;
+    if (errRecord && typeof errRecord.message === "string") {
+      message = errRecord.message;
     }
-    if ("status" in err && typeof (err as any).status === "number") {
-      status = (err as any).status;
+    if (errRecord && typeof errRecord.status === "number") {
+      status = errRecord.status;
     }
-    if ("code" in err && typeof (err as any).code === "string") {
-      code = (err as any).code;
+    if (errRecord && typeof errRecord.code === "string") {
+      code = errRecord.code;
     }
   }
 

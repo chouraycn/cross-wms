@@ -230,7 +230,7 @@ export class SkillDiscovery {
         promptVisible,
         userInvocable,
       },
-      disableModelInvocation: (definition as any).disableModelInvocation ?? false,
+      disableModelInvocation: (definition as { disableModelInvocation?: boolean }).disableModelInvocation ?? false,
       source: definition.source,
       sourcePath: definition.sourcePath,
       version: definition.version,

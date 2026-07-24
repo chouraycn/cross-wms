@@ -316,7 +316,7 @@ function applyItem(item: SecretPlanItem, backup: ApplyBackup): {
         action: 'update',
         existedBefore: true,
         previousRecord: existing,
-        previousEncrypted: (getSecret(existing.id) as any)?.valueEncrypted,
+        previousEncrypted: getSecret(existing.id)?.valueEncrypted,
       });
 
       if (!item.newValue) {
@@ -356,7 +356,7 @@ function applyItem(item: SecretPlanItem, backup: ApplyBackup): {
         action: 'delete',
         existedBefore: true,
         previousRecord: existing,
-        previousEncrypted: (getSecret(existing.id) as any)?.valueEncrypted,
+        previousEncrypted: getSecret(existing.id)?.valueEncrypted,
       });
 
       const ok = deleteSecret(existing.id);

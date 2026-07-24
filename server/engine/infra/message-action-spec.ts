@@ -7,4 +7,4 @@ export function actionRequiresTarget(...args: unknown[]): unknown {
 export function actionHasTarget(...args: unknown[]): unknown {
   return undefined;
 }
-export const MESSAGE_ACTION_TARGET_MODE: unknown = undefined;
+export const MESSAGE_ACTION_TARGET_MODE: unknown = undefined as unknown;

@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function stripEnvelopeFromMessage(..._args: unknown[]): any {
+export function stripEnvelopeFromMessage(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function stripEnvelopeFromMessages(..._args: unknown[]): any {
+export function stripEnvelopeFromMessages(..._args: unknown[]): unknown {
   return undefined;
 }

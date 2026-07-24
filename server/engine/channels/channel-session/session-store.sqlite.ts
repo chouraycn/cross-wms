@@ -3,6 +3,17 @@ import { logger } from "../../../logger.js";
 import type { ChannelSession } from "../session.js";
 import type { SessionStore } from "./session-store.js";
 
+interface ChannelSessionRow {
+  session_id: string;
+  channel_id: string;
+  channel_type: string;
+  target_id: string | null;
+  user_id: string | null;
+  start_time: number;
+  last_activity_time: number;
+  metadata: string | null;
+}
+
 export class SqliteSessionStore implements SessionStore {
   private db: Database.Database;
 
@@ -75,7 +86,7 @@ export class SqliteSessionStore implements SessionStore {
 
   async list(): Promise<ChannelSession[]> {
     const stmt = this.db.prepare("SELECT * FROM channel_sessions");
-    const rows = stmt.all() as any[];
+    const rows = stmt.all() as ChannelSessionRow[];
     return rows.map((row) => this.rowToSession(row));
   }
 
@@ -83,7 +94,7 @@ export class SqliteSessionStore implements SessionStore {
     const stmt = this.db.prepare(
       "SELECT * FROM channel_sessions WHERE channel_id = ?"
     );
-    const rows = stmt.all(channelId) as any[];
+    const rows = stmt.all(channelId) as ChannelSessionRow[];
     return rows.map((row) => this.rowToSession(row));
   }
 
@@ -91,7 +102,7 @@ export class SqliteSessionStore implements SessionStore {
     const stmt = this.db.prepare(
       "SELECT * FROM channel_sessions WHERE user_id = ?"
     );
-    const rows = stmt.all(userId) as any[];
+    const rows = stmt.all(userId) as ChannelSessionRow[];
     return rows.map((row) => this.rowToSession(row));
   }
 
@@ -119,13 +130,13 @@ export class SqliteSessionStore implements SessionStore {
     this.db.close();
   }
 
-  private rowToSession(row: any): ChannelSession {
+  private rowToSession(row: ChannelSessionRow): ChannelSession {
     return {
       sessionId: row.session_id,
       channelId: row.channel_id,
       channelType: row.channel_type,
-      targetId: row.target_id,
-      userId: row.user_id,
+      targetId: row.target_id ?? undefined,
+      userId: row.user_id ?? undefined,
       startTime: row.start_time,
       lastActivityTime: row.last_activity_time,
       metadata: row.metadata ? JSON.parse(row.metadata) : {},

@@ -194,7 +194,8 @@ function checkAllowedValues(
 
 /** 从 zod schema 中提取允许值列表（枚举值） */
 function extractAllowedValues(schema: z.ZodType): unknown[] | undefined {
-  const def = (schema as any)?._zod?.def ?? (schema as any)?._def;
+  const internal = schema as unknown as { _zod?: { def: Record<string, unknown> }; _def?: Record<string, unknown> };
+  const def = internal?._zod?.def ?? internal?._def;
   if (!def) return undefined;
 
   // zod v4 枚举
@@ -353,19 +354,20 @@ function walkConfigWithPath(
 
 /** 从 zod schema 中获取对象 shape（如果 schema 是对象类型） */
 function getObjectSchemaShape(schema: z.ZodType): Record<string, unknown> | null {
-  const def = (schema as any)?._zod?.def ?? (schema as any)?._def;
+  const internal = schema as unknown as { _zod?: { def: Record<string, unknown> }; _def?: Record<string, unknown>; shape?: Record<string, unknown> };
+  const def = internal?._zod?.def ?? internal?._def;
   if (!def) return null;
 
   // zod v4 对象类型
   if (def.type === 'object') {
-    const shape = def.shape ?? (schema as any).shape;
+    const shape = def.shape ?? internal.shape;
     if (shape && typeof shape === 'object') {
       return shape as Record<string, unknown>;
     }
   }
 
   // 解包 optional / default / nullable 等 wrapper
-  if (['optional', 'default', 'nullable', 'catch', 'readonly', 'nonoptional', 'exactOptional'].includes(def.type)) {
+  if (['optional', 'default', 'nullable', 'catch', 'readonly', 'nonoptional', 'exactOptional'].includes(def.type as string)) {
     const innerType = def.innerType;
     if (innerType) {
       return getObjectSchemaShape(innerType as z.ZodType);

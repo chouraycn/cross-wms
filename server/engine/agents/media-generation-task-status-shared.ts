@@ -7,7 +7,7 @@
 
 import { stableStringify } from "./stable-stringify.js";
 
-type TaskRecord = {
+export type TaskRecord = {
   taskId: string;
   runtime?: string;
   taskKind?: string;

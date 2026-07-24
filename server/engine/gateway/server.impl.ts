@@ -17,10 +17,10 @@ export type GatewayServer = unknown;
 
 export type GatewayServerOptions = unknown;
 
-export async function resetModelCatalogCacheForTest(..._args: unknown[]): Promise<any> {
+export async function resetModelCatalogCacheForTest(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function startGatewayServer(..._args: unknown[]): Promise<any> {
+export async function startGatewayServer(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

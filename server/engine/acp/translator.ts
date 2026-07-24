@@ -159,7 +159,7 @@ export class AcpTranslator {
     };
 
     if (toolCalls.length > 0) {
-      (message as any).tool_calls = toolCalls;
+      (message as OpenAiChatMessage & { tool_calls?: unknown }).tool_calls = toolCalls;
     }
 
     return {

@@ -9,4 +9,4 @@ export function redactConfigSnapshot(...args: unknown[]): unknown {
 export function restoreRedactedValues(...args: unknown[]): unknown {
   return undefined;
 }
-export const REDACTED_SENTINEL: unknown = undefined;
+export const REDACTED_SENTINEL: unknown = undefined as unknown;

@@ -24,6 +24,7 @@ import {
   createRun,
   updateRun,
   updateAutomation,
+  type AutomationData,
 } from '../dao/automationDao.js';
 import {
   startSkillSnapshotCron,
@@ -102,14 +103,7 @@ function isAutomationDue(automation: {
  * @returns 执行结果，如果跳过（并发中）则返回 null
  */
 export async function executeAndRecord(
-  automation: {
-    id: string;
-    taskType: string;
-    name?: string;
-    executionPolicy?: Record<string, unknown> | null;
-    notificationConfig?: Record<string, unknown> | null;
-    runCount?: number;
-  },
+  automation: AutomationData,
   triggerSource: string,
 ): Promise<ExecutionResult | null> {
   const automationId = automation.id;

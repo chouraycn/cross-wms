@@ -11,6 +11,6 @@ export function hasBundledPluginContractSnapshotCapabilities(...args: unknown[])
 export function resolveBundledContractSnapshotPluginIds(...args: unknown[]): unknown {
   return undefined;
 }
-export const BUNDLED_PLUGIN_CONTRACT_SNAPSHOTS: unknown = undefined;
-export const BUNDLED_LEGACY_PLUGIN_ID_ALIASES: unknown = undefined;
-export const BUNDLED_AUTO_ENABLE_PROVIDER_PLUGIN_IDS: unknown = undefined;
+export const BUNDLED_PLUGIN_CONTRACT_SNAPSHOTS: unknown = undefined as unknown;
+export const BUNDLED_LEGACY_PLUGIN_ID_ALIASES: unknown = undefined as unknown;
+export const BUNDLED_AUTO_ENABLE_PROVIDER_PLUGIN_IDS: unknown = undefined as unknown;

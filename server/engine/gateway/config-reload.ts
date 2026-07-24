@@ -11,12 +11,12 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const ChannelKind: any = undefined;
+export const ChannelKind: unknown = undefined;
 
-export const GatewayReloadPlan: any = undefined;
+export const GatewayReloadPlan: unknown = undefined;
 
 export type GatewayHotReloadStatus = unknown;
 
-export function startGatewayConfigReloader(..._args: unknown[]): any {
+export function startGatewayConfigReloader(..._args: unknown[]): unknown {
   return undefined;
 }

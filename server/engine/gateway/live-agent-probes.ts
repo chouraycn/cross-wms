@@ -13,34 +13,34 @@
 
 export type CronListJob = unknown;
 
-export function isClaudeLikeLiveAgent(..._args: unknown[]): any {
+export function isClaudeLikeLiveAgent(..._args: unknown[]): unknown {
   return false;
 }
 
-export function assertLiveImageProbeReply(..._args: unknown[]): any {
+export function assertLiveImageProbeReply(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function shouldRunLiveImageProbe(..._args: unknown[]): any {
+export function shouldRunLiveImageProbe(..._args: unknown[]): unknown {
   return false;
 }
 
-export function createLiveCronProbeSpec(..._args: unknown[]): any {
+export function createLiveCronProbeSpec(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function buildLiveCronProbeMessage(..._args: unknown[]): any {
+export function buildLiveCronProbeMessage(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function runOpenClawCliJson(..._args: unknown[]): Promise<any> {
+export async function runOpenClawCliJson(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function assertCronJobVisibleViaCli(..._args: unknown[]): Promise<any> {
+export async function assertCronJobVisibleViaCli(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function assertCronJobMatches(..._args: unknown[]): any {
+export function assertCronJobMatches(..._args: unknown[]): unknown {
   return undefined;
 }

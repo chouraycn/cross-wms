@@ -11,14 +11,14 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function formatBonjourInstanceName(..._args: unknown[]): any {
+export function formatBonjourInstanceName(..._args: unknown[]): unknown {
   return "";
 }
 
-export function resolveBonjourCliPath(..._args: unknown[]): any {
+export function resolveBonjourCliPath(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function resolveTailnetDnsHint(..._args: unknown[]): Promise<any> {
+export async function resolveTailnetDnsHint(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

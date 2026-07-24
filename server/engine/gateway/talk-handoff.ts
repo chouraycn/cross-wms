@@ -25,38 +25,38 @@ export type TalkHandoffRevokeResult = unknown;
 
 export type TalkHandoffTurnResult = unknown;
 
-export function createTalkHandoff(..._args: unknown[]): any {
+export function createTalkHandoff(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function getTalkHandoff(..._args: unknown[]): any {
+export function getTalkHandoff(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function joinTalkHandoff(..._args: unknown[]): any {
+export function joinTalkHandoff(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function startTalkHandoffTurn(..._args: unknown[]): any {
+export function startTalkHandoffTurn(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function endTalkHandoffTurn(..._args: unknown[]): any {
+export function endTalkHandoffTurn(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function cancelTalkHandoffTurn(..._args: unknown[]): any {
+export function cancelTalkHandoffTurn(..._args: unknown[]): unknown {
   return false;
 }
 
-export function revokeTalkHandoff(..._args: unknown[]): any {
+export function revokeTalkHandoff(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function verifyTalkHandoffToken(..._args: unknown[]): any {
+export function verifyTalkHandoffToken(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function clearTalkHandoffsForTest(..._args: unknown[]): any {
+export function clearTalkHandoffsForTest(..._args: unknown[]): unknown {
   return undefined;
 }

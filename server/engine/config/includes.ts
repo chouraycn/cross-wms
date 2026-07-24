@@ -16,10 +16,10 @@ export function readConfigIncludeFileWithGuards(...args: unknown[]): unknown {
 export function resolveConfigIncludes(...args: unknown[]): unknown {
   return undefined;
 }
-export const INCLUDE_KEY: unknown = undefined;
-export const MAX_INCLUDE_DEPTH: unknown = undefined;
-export const MAX_INCLUDE_FILE_BYTES: unknown = undefined;
-export const MAX_INCLUDE_PATH_LENGTH: unknown = undefined;
+export const INCLUDE_KEY: unknown = undefined as unknown;
+export const MAX_INCLUDE_DEPTH: unknown = undefined as unknown;
+export const MAX_INCLUDE_FILE_BYTES: unknown = undefined as unknown;
+export const MAX_INCLUDE_PATH_LENGTH: unknown = undefined as unknown;
 export class ConfigIncludeError {
   // Stub: not fully ported
 }

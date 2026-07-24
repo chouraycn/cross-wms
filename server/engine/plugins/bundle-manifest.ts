@@ -127,7 +127,7 @@ function loadBundleManifestFile(params: {
       error:
         result.reason === "invalid"
           ? "plugin manifest must be an object"
-          : `failed to parse plugin manifest: ${(result as any).error}`,
+          : `failed to parse plugin manifest: ${(result as { error?: string }).error ?? ""}`,
       manifestPath,
     };
   }

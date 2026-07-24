@@ -25,4 +25,4 @@ export function parseJsonMessageParam(...args: unknown[]): unknown {
 export function parseInteractiveParam(...args: unknown[]): unknown {
   return undefined;
 }
-export const readBooleanParam: unknown = undefined;
+export const readBooleanParam: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

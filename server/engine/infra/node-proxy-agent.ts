@@ -10,4 +10,4 @@ export function createNodeProxyAgent(...args: unknown[]): unknown {
 export function createFixedNodeProxyAgentPair(...args: unknown[]): unknown {
   return undefined;
 }
-export const UNSUPPORTED_PROXY_PROTOCOL_MESSAGE: unknown = undefined;
+export const UNSUPPORTED_PROXY_PROTOCOL_MESSAGE: unknown = undefined as unknown;

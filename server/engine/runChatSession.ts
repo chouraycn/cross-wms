@@ -21,10 +21,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { executeChat as streamExecuteChat } from './streamExecutor.js';
-import type { ExecuteChatCallbacks, ExecuteChatResult } from './streamExecutor.js';
+import type { ExecuteChatCallbacks, ExecuteChatParams, ExecuteChatResult } from './streamExecutor.js';
 import { buildApiMessages, hasImageAttachment } from './buildApiMessages.js';
 import { resolveSkillContext, extractContextTexts } from './skillRouter.js';
-import type { ModelCallConfig } from '../aiClient.js';
+import type { ModelCallConfig, MessageContent, ToolCall as AiToolCall } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import type { ModelCapability, ModelConfig, ModelsFile } from '../modelsStore.js';
 import { autoSelectModelAsync, generateMockResponse } from '../routes/modelSelector.js';
@@ -133,7 +133,7 @@ function emitToolGeneratedFiles(
     let markerPaths: string[] = [];
     if (toolName.startsWith('skill_')) {
       try {
-        const parsed: any = JSON.parse(result);
+        const parsed = JSON.parse(result) as { data?: { generatedFilePaths?: unknown } };
         const gf = parsed?.data?.generatedFilePaths;
         if (Array.isArray(gf)) markerPaths = gf.filter((x: unknown) => typeof x === 'string');
       } catch {
@@ -298,7 +298,7 @@ export async function runChatSessionStream(
           api: '',
           provider: '',
           model: '',
-          usage: event.usage as any,
+          usage: event.usage as unknown as AssistantMessage['usage'],
           stopReason: 'stop',
           timestamp: Date.now(),
         };
@@ -367,7 +367,7 @@ export async function runChatSessionStream(
         api: result.model || '',
         provider: '',
         model: result.model || '',
-        usage: result.usage as any,
+        usage: result.usage as unknown as AssistantMessage['usage'],
         stopReason: result.errorCode ? 'error' : 'stop',
         errorMessage: result.errorMessage,
         timestamp: Date.now(),
@@ -766,7 +766,7 @@ export async function runChatSession(
   } else if (guardDecision.suggestedAction === 'truncate') {
     try {
       const guardTruncated = truncateContextForModel(
-        built.apiMessages as any,
+        built.apiMessages as unknown as Parameters<typeof truncateContextForModel>[0],
         ctxWindow,
         ctxMaxTokens,
         contractMaxToolCalls,
@@ -803,8 +803,8 @@ export async function runChatSession(
       ctxMaxTokens,
       estimatedToolsCount: contractMaxToolCalls,
       callbacks: executeCallbacks,
-      toolProfile: input.toolProfile as any,
-      compaction: input.compaction as any,
+      toolProfile: input.toolProfile as unknown as ExecuteChatParams['toolProfile'],
+      compaction: input.compaction as unknown as ExecuteChatParams['compaction'],
     });
 
     clearTimeout(timeoutHandle);
@@ -864,11 +864,11 @@ export async function runChatSession(
 
     // Token 预算管理 + 响应后压缩（三重安全防护）
     if (result.usage) {
-      tokenBudget.updateUsage(result.usage as any);
+      tokenBudget.updateUsage(result.usage);
     }
     if (tokenBudget.shouldCompact() && compactionRecovery.canProceed(0)) {
       // --- 压缩 Hook（before-compact，支持中止）---
-      const tokensBefore = (result.usage as any)?.totalTokens || 0;
+      const tokensBefore = result.usage?.totalTokens || 0;
       const beforeSignal = await COMPACTION_HOOKS.runBeforeCompact({
         sessionKey: sessionId,
         trigger: 'budget',
@@ -919,7 +919,7 @@ export async function runChatSession(
               tokensBefore,
               tokensAfter,
               reductionRatio,
-              summary: (compactionResult as any).summary,
+              summary: (compactionResult as unknown as { summary?: string }).summary,
               trigger: 'budget',
             },
           });
@@ -943,7 +943,7 @@ export async function runChatSession(
             ? Math.ceil(built.apiMessages.length * 0.5)
             : built.apiMessages.length,
           compactedTokenCount: tokensAfter,
-          summary: (compactionResult as any).summary,
+          summary: (compactionResult as unknown as { summary?: string }).summary,
           tokenReduction: Math.max(0, tokensBefore - tokensAfter),
           durationMs: compactionRecovery.getStats().timeout.elapsedMs,
         });
@@ -1056,7 +1056,7 @@ export async function runChatSession(
       model: effectiveModel,
       toolCallsCount: result.toolCalls?.length || 0,
       thinkingDuration: result.thinkingDuration,
-      usage: result.usage as any,
+      usage: result.usage,
     }).catch(() => {});
 
     callbacks.onEvent?.({
@@ -1143,7 +1143,7 @@ export async function runChatSession(
  */
 async function tryFallback(
   error: Error,
-  apiMessages: Array<{ role: string; content: any; tool_calls?: any; tool_call_id?: string }>,
+  apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: AiToolCall[]; tool_call_id?: string }>,
   modelsConfig: ModelsFile,
   currentModel: string,
   currentModelConfig: ModelConfig,
@@ -1298,8 +1298,8 @@ async function tryFallback(
           return null;
         },
       },
-      toolProfile: toolProfile as any,
-      compaction: compaction as any,
+      toolProfile: toolProfile as unknown as ExecuteChatParams['toolProfile'],
+      compaction: compaction as unknown as ExecuteChatParams['compaction'],
     });
 
     const toolCallsJson = result.toolCalls && result.toolCalls.length > 0

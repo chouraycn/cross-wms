@@ -60,5 +60,5 @@ export function waitForWebLogin(...args: unknown[]): unknown {
 export function getDefaultLocalRoots(...args: unknown[]): unknown {
   return undefined;
 }
-export const extractMediaPlaceholder: unknown = undefined;
-export const extractText: unknown = undefined;
+export const extractMediaPlaceholder: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const extractText: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

@@ -27,6 +27,6 @@ export type GatewayRestartWaitOutcome = unknown;
 export type GatewayRestartSnapshot = unknown;
 export type GatewayPortHealthSnapshot = unknown;
 
-export const DEFAULT_RESTART_HEALTH_TIMEOUT_MS: unknown = undefined;
-export const DEFAULT_RESTART_HEALTH_DELAY_MS: unknown = undefined;
-export const DEFAULT_RESTART_HEALTH_ATTEMPTS: unknown = undefined;
+export const DEFAULT_RESTART_HEALTH_TIMEOUT_MS: unknown = undefined as unknown;
+export const DEFAULT_RESTART_HEALTH_DELAY_MS: unknown = undefined as unknown;
+export const DEFAULT_RESTART_HEALTH_ATTEMPTS: unknown = undefined as unknown;

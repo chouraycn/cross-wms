@@ -243,15 +243,15 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const results = Array.isArray(data) ? data : data.results ?? data.skills ?? [];
 
-    return results.map((item: any) => ({
+    return results.map((item: Record<string, unknown>) => ({
       id: item.id,
       name: item.name,
-      description: item.description || '',
-      version: item.version || 'latest',
+      description: (item.description as string) || '',
+      version: (item.version as string) || 'latest',
       author: item.author,
       tags: item.tags,
       source: source.url,
-      downloadUrl: item.downloadUrl || item.url || '',
+      downloadUrl: (item.downloadUrl as string) || (item.url as string) || '',
       size: item.size,
     }));
   }
@@ -356,15 +356,15 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const items = Array.isArray(data) ? data : data.results ?? data.skills ?? data.data ?? [];
 
-    return items.map((item: any) => ({
+    return items.map((item: Record<string, unknown>) => ({
       id: item.id,
       name: item.name,
-      description: item.description || '',
-      version: item.version || 'latest',
+      description: (item.description as string) || '',
+      version: (item.version as string) || 'latest',
       author: item.author,
       tags: item.tags,
       source: source.url,
-      downloadUrl: item.downloadUrl || item.url || item.archiveUrl || '',
+      downloadUrl: (item.downloadUrl as string) || (item.url as string) || (item.archiveUrl as string) || '',
       size: item.size,
     }));
   }
@@ -393,8 +393,15 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const objects = data.objects ?? [];
 
-    return objects.map((obj: any) => {
-      const pkg = obj.package;
+    return objects.map((obj: Record<string, unknown>) => {
+      const pkg = obj.package as {
+        name: string;
+        description?: string;
+        version: string;
+        author?: { name?: string };
+        keywords?: unknown;
+        links?: { tarball?: string };
+      };
       return {
         id: pkg.name,
         name: pkg.name,
@@ -602,7 +609,13 @@ export class RemoteSkillLoader {
       current: boolean;
     }>
   > {
-    const history: Record<string, Array<any>> = {};
+    const history: Record<string, Array<{
+      version: string;
+      installedAt: number;
+      source: string;
+      sourceType: RemoteSkillSourceType;
+      current: boolean;
+    }>> = {};
     for (const skillId of this.installed.keys()) {
       history[skillId] = this.listVersions(skillId);
     }
@@ -1238,7 +1251,7 @@ export class RemoteSkillLoader {
     try {
       const response = await fetch(url, {
         ...options,
-        signal: controller.signal as any,
+        signal: controller.signal,
       });
       return response;
     } finally {
@@ -1277,7 +1290,7 @@ export class RemoteSkillLoader {
     author?: string;
     tags?: string[];
   } {
-    const result: any = {};
+    const result: { id?: string; name?: string; description?: string; version?: string; author?: string; tags?: string[] } = {};
 
     const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
     if (frontmatterMatch) {

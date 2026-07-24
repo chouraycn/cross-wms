@@ -9,10 +9,10 @@
 
 import path from 'path';
 import { promises as fsp } from 'fs';
-import type { MessageContent, ModelCallConfig, ToolCall } from '../aiClient.js';
+import type { ModelCallConfig } from '../aiClient.js';
 import { AppPaths } from '../config/appPaths.js';
 import { buildSoulSystemMessage } from './soulLoader.js';
-import { truncateContextForModel, sanitizeToolMessages } from './contextTruncate.js';
+import { truncateContextForModel, type ApiMessage } from './contextTruncate.js';
 import { sanitizeHistoryMessages } from './historySanitizer.js';
 import { resolveImageSanitizationLimits } from './imageSanitization.js';
 import { compressContextWithSummary } from './contextCompress.js';
@@ -73,7 +73,7 @@ function detectVisionModel(modelConfig: { id: string; capabilities?: string[] })
 
 function rebuildToolCallsFromMessage(
   msg: { role: string; content: string; toolCalls?: string | Array<{ name: string; arguments: string; result?: string }> },
-  apiMessages: Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string; reasoning_content?: string }>,
+  apiMessages: ApiMessage[],
   reasoningContent?: string,
 ): boolean {
   if (msg.role !== 'assistant' || !msg.toolCalls) return false;
@@ -83,9 +83,9 @@ function rebuildToolCallsFromMessage(
     if (!Array.isArray(toolCalls) || toolCalls.length === 0) return false;
 
     const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-    const assistantMsg: { role: string; content: MessageContent | null; tool_calls: unknown[]; reasoning_content?: string } = {
+    const assistantMsg: ApiMessage = {
       role: 'assistant',
-      content: msg.content || null,
+      content: msg.content,
       tool_calls: toolCalls.map((tc: { name: string; arguments: string }, i: number) => ({
         id: callIds[i],
         type: 'function',
@@ -186,12 +186,12 @@ export interface BuildApiMessagesParams {
 }
 
 export interface BuildApiMessagesResult {
-  apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }>;
+  apiMessages: ApiMessage[];
 }
 
 export async function buildApiMessages(params: BuildApiMessagesParams): Promise<BuildApiMessagesResult> {
   const { sessionId, message, modelConfig, finalModelConfig, dbMessages, hasImage } = params;
-  const apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
+  const apiMessages: ApiMessage[] = [];
 
   // 1. 图片系统消息
   if (hasImage) {
@@ -263,8 +263,8 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
               type: 'image_url',
               image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
             });
-          } catch (err: any) {
-            if (err.code !== 'ENOENT') {
+          } catch (err: unknown) {
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
             }
           }
@@ -313,8 +313,8 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
               type: 'image_url',
               image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
             });
-          } catch (err: any) {
-            if (err.code !== 'ENOENT') {
+          } catch (err: unknown) {
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               logger.error(`[Chat API] 读取图片附件失败: ${attRecord.fileName}`, err);
             }
           }
@@ -325,8 +325,8 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
           const ext = path.extname(attRecord.fileName || '').toLowerCase().replace('.', '');
           const fileContent = await extractFileContent(filePath, ext, attRecord.fileName || '');
           contentParts.push({ type: 'text', text: fileContent });
-        } catch (err: any) {
-          if (err.code !== 'ENOENT') {
+        } catch (err: unknown) {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
             logger.error(`[Chat API] 读取文件附件失败: ${attRecord.fileName}`, err);
             contentParts.push({ type: 'text', text: `\n---\n[附件: ${attRecord.fileName} - 读取失败]\n---\n` });
           }
@@ -356,30 +356,30 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
       }
     }
   } catch { /* ignore */ }
-  const sanitized = sanitizeHistoryMessages(apiMessages as any, {
+  const sanitized = sanitizeHistoryMessages(apiMessages, {
     maxTurns: maxHistoryTurns,
     imageLimits,
     dropReasoning,
-  }) as typeof apiMessages;
+  });
 
   // 9. 上下文压缩
   const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
   const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
-  let truncated: { messages: typeof sanitized; truncated: boolean };
+  let truncated: { messages: ApiMessage[]; truncated: boolean };
   try {
     const compressResult = await compressContextWithSummary(
-      sanitized as any, ctxWindow, ctxMaxTokens, 30, finalModelConfig,
+      sanitized, ctxWindow, ctxMaxTokens, 30, finalModelConfig,
     );
-    truncated = { messages: compressResult.messages as any, truncated: compressResult.truncated || compressResult.compressed };
+    truncated = { messages: compressResult.messages, truncated: compressResult.truncated || compressResult.compressed };
     if (compressResult.compressed) {
       logger.debug('[Chat API] 上下文已智能压缩');
     }
   } catch {
-    truncated = truncateContextForModel(sanitized as any, ctxWindow, ctxMaxTokens, 30) as { messages: typeof sanitized; truncated: boolean };
+    truncated = truncateContextForModel(sanitized, ctxWindow, ctxMaxTokens, 30);
   }
 
   // 10. tool_calls 配对校验
-  truncated.messages = validateToolCallsPairing(truncated.messages as any) as typeof truncated.messages;
+  truncated.messages = validateToolCallsPairing(truncated.messages);
 
   return {
     apiMessages: truncated.messages,

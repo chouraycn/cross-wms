@@ -106,5 +106,5 @@ export function matchAgentPattern(agentId: string, pattern: string): boolean {
 logger.debug('[Agents:ToolPolicy] Module loaded');
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY: any = undefined as any;
-export const normalizeToolName: any = undefined as any;
+export const DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY: string = undefined as unknown as string;
+export const normalizeToolName: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

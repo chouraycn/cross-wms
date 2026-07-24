@@ -1,6 +1,6 @@
 // 移植自 openclaw/src/channels/plugins/native-approval-prompt.ts
 
-export const NATIVE_APPROVAL_PROMPT_RUNTIME_CAPABILITY: unknown = undefined;
+export const NATIVE_APPROVAL_PROMPT_RUNTIME_CAPABILITY: unknown = undefined as unknown;
 
 export function channelPluginHasNativeApprovalPromptUi(..._args: unknown[]): unknown {
   return undefined;

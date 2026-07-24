@@ -11,20 +11,20 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const createMcpLoopbackServerConfig: any = undefined;
+export const createMcpLoopbackServerConfig: unknown = undefined;
 
-export const getActiveMcpLoopbackRuntime: any = undefined;
+export const getActiveMcpLoopbackRuntime: unknown = undefined;
 
-export const resolveMcpLoopbackBearerToken: any = undefined;
+export const resolveMcpLoopbackBearerToken: unknown = undefined;
 
-export async function startMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+export async function startMcpLoopbackServer(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function ensureMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+export async function ensureMcpLoopbackServer(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function closeMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+export async function closeMcpLoopbackServer(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

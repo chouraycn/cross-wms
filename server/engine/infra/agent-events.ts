@@ -101,4 +101,4 @@ export class AgentEventBus {
 export const agentEventBus = new AgentEventBus();
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const emitAgentEvent: any = undefined as any;
+export const emitAgentEvent: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

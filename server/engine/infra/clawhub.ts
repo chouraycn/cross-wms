@@ -264,19 +264,19 @@ export function createClawhubRegistry(): ClawhubRegistry {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const satisfiesPluginApiRange: any = undefined as any;
-export const ClawHubRequestError: any = undefined as any;
-export const downloadClawHubPackageArchive: any = undefined as any;
-export const fetchClawHubPackageArtifact: any = undefined as any;
-export const fetchClawHubPackageDetail: any = undefined as any;
-export const fetchClawHubPackageVersion: any = undefined as any;
-export const isDefaultClawHubBaseUrl: any = undefined as any;
-export const normalizeClawHubSha256Integrity: any = undefined as any;
-export const normalizeClawHubSha256Hex: any = undefined as any;
-export const parseClawHubPluginSpec: any = undefined as any;
-export const resolveClawHubBaseUrl: any = undefined as any;
-export const resolveLatestVersionFromPackage: any = undefined as any;
-export const satisfiesGatewayMinimum: any = undefined as any;
+export const satisfiesPluginApiRange: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const ClawHubRequestError: new (...args: unknown[]) => any = undefined as unknown as new (...args: unknown[]) => any;
+export const downloadClawHubPackageArchive: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const fetchClawHubPackageArtifact: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const fetchClawHubPackageDetail: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const fetchClawHubPackageVersion: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const isDefaultClawHubBaseUrl: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const normalizeClawHubSha256Integrity: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const normalizeClawHubSha256Hex: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const parseClawHubPluginSpec: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const resolveClawHubBaseUrl: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const resolveLatestVersionFromPackage: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const satisfiesGatewayMinimum: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 // Type stubs for ClawHub package types (degraded placeholders)
 export type ClawHubPackageChannel = "stable" | "beta" | "dev";

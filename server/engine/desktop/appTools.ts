@@ -57,16 +57,17 @@ export async function handleDesktopAppLaunch(args: Record<string, unknown>): Pro
       app,
       url: url || undefined,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
     // Check if it's a "command failed" error
-    if (e.message && e.message.includes('Command failed')) {
+    if (message.includes('Command failed')) {
       return JSON.stringify({
         success: false,
         error: `Failed to launch "${args.app}". Make sure the app name is correct.`,
         help: 'Check app name in /Applications or use "open -a <AppName>" in terminal to test',
       });
     }
-    return JSON.stringify({ success: false, error: e.message || 'App launch failed' });
+    return JSON.stringify({ success: false, error: message || 'App launch failed' });
   }
 }
 
@@ -112,7 +113,7 @@ export async function handleDesktopAppQuit(args: Record<string, unknown>): Promi
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     // If osascript/pkill fails, try pkill as fallback
     try {
       execSync(`pkill -x "${args.app}"`, { encoding: 'utf8', timeout: 3000 });
@@ -124,7 +125,7 @@ export async function handleDesktopAppQuit(args: Record<string, unknown>): Promi
     } catch {
       return JSON.stringify({
         success: false,
-        error: e.message || 'App quit failed',
+        error: (e as Error).message || 'App quit failed',
         help: 'Make sure the app name is correct and the app is running',
       });
     }
@@ -210,10 +211,10 @@ end tell
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     return JSON.stringify({
       success: false,
-      error: e.message || 'Window focus failed',
+      error: e instanceof Error ? e.message : 'Window focus failed',
       help: 'Make sure the app is running and the name is correct',
     });
   }

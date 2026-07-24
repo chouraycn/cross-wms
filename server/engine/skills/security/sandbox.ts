@@ -16,7 +16,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getChildLogger } from "../../logging/logger.js";
 
-const logger = getChildLogger({ module: "skill-sandbox" } as any);
+const logger = getChildLogger({ module: "skill-sandbox" });
 
 // ============================================================================
 // 危险环境变量黑名单

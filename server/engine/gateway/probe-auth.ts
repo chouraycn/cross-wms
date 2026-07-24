@@ -11,26 +11,26 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const resolveGatewayProbeTarget: any = undefined;
+export const resolveGatewayProbeTarget: unknown = undefined;
 
-export const GatewayProbeTargetResolution: any = undefined;
+export const GatewayProbeTargetResolution: unknown = undefined;
 
-export function resolveGatewayProbeCredentialConfig(..._args: unknown[]): any {
+export function resolveGatewayProbeCredentialConfig(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function resolveGatewayProbeAuth(..._args: unknown[]): any {
+export function resolveGatewayProbeAuth(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function resolveGatewayProbeAuthWithSecretInputs(..._args: unknown[]): Promise<any> {
+export async function resolveGatewayProbeAuthWithSecretInputs(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveGatewayProbeAuthSafeWithSecretInputs(..._args: unknown[]): Promise<any> {
+export async function resolveGatewayProbeAuthSafeWithSecretInputs(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function resolveGatewayProbeAuthSafe(..._args: unknown[]): any {
+export function resolveGatewayProbeAuthSafe(..._args: unknown[]): unknown {
   return undefined;
 }

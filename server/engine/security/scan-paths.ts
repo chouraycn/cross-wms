@@ -174,4 +174,4 @@ export function safeJoinPath(...parts: string[]): string {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const isPathInsideWithRealpath: any = undefined as any;
+export const isPathInsideWithRealpath: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

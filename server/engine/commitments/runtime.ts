@@ -468,7 +468,7 @@ export function createCommitmentRuntime(
     status: CommitmentStatus,
     options?: { storePath?: string; failureReason?: string; nowMs?: number },
   ): Promise<boolean> {
-    return updateCommitmentStatus(id, status as any, {
+    return updateCommitmentStatus(id, status as Extract<CommitmentStatus, "sent" | "dismissed" | "expired" | "completed" | "failed">, {
       storePath: options?.storePath ?? storePath,
       failureReason: options?.failureReason,
       nowMs: options?.nowMs,

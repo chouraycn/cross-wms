@@ -13,6 +13,6 @@
 
 export type GatewayConnectionDetails = unknown;
 
-export function buildGatewayConnectionDetailsWithResolvers(..._args: unknown[]): any {
+export function buildGatewayConnectionDetailsWithResolvers(..._args: unknown[]): unknown {
   return undefined;
 }

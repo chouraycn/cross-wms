@@ -13,6 +13,6 @@
 
 export type GatewayRequestContextParams = unknown;
 
-export function createGatewayRequestContext(..._args: unknown[]): any {
+export function createGatewayRequestContext(..._args: unknown[]): unknown {
   return undefined;
 }

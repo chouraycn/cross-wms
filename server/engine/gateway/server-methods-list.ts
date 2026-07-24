@@ -11,12 +11,12 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function listCoreGatewayMethods(..._args: unknown[]): any {
+export function listCoreGatewayMethods(..._args: unknown[]): unknown {
   return [];
 }
 
-export function listGatewayMethods(..._args: unknown[]): any {
+export function listGatewayMethods(..._args: unknown[]): unknown {
   return [];
 }
 
-export const GATEWAY_EVENTS: any = undefined;
+export const GATEWAY_EVENTS: unknown = undefined;

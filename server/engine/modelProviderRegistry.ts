@@ -259,7 +259,7 @@ export function getRecommendedModels(): ModelInfo[] {
  */
 export function getModelsByCapability(capabilities: string[]): ModelInfo[] {
   return getAllModels().filter(m =>
-    capabilities.every(cap => m.capabilities?.includes(cap as any))
+    capabilities.every(cap => m.capabilities?.includes(cap))
   );
 }
 

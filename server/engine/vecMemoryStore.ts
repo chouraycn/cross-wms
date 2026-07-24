@@ -321,7 +321,7 @@ function mmrReRank(
         const candEmb = getEmbedding(candidate);
         if (candEmb) {
           for (const sel of selected) {
-            const selEmb = (sel as any).embedding;
+            const selEmb = (sel as { embedding?: Float32Array }).embedding;
             if (selEmb) {
               const sim = cosineSimilarity(candEmb, selEmb);
               maxDiversity = Math.max(maxDiversity, sim);

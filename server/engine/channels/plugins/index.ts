@@ -188,9 +188,9 @@ export {
 } from "./exposure.js";
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const getLoadedChannelPlugin: any = undefined as any;
-export const getChannelPlugin: any = undefined as any;
-export const normalizeChannelId: any = undefined as any;
+export const getLoadedChannelPlugin: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const getChannelPlugin: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const normalizeChannelId: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 /** Lists currently loaded channel plugins (stub — returns empty array). */
 export function listChannelPlugins(): import("../types.public.js").ChannelPlugin[] {

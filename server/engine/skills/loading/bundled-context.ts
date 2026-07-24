@@ -1,7 +1,7 @@
 import { getChildLogger } from "../../logging/logger.js";
 import { loadSkillsFromDirectory } from "./local-loader.js";
 
-const logger = getChildLogger({ module: "skills" } as any);
+const logger = getChildLogger({ module: "skills" });
 
 let hasWarnedMissingBundledDir = false;
 let cachedBundledContext: { dir: string; names: Set<string> } | null = null;

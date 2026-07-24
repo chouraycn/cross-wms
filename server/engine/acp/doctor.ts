@@ -1,7 +1,18 @@
 import type { PolicyRule, PolicyCondition } from "./policy.js";
 import { getToolGroups, getGroupsForTool } from "./toolPolicyConformance.js";
 
-let getGlobalChannelRegistry: () => any;
+type DoctorChannelEntry = {
+  id: string;
+  message?: { send?: unknown; receive?: unknown };
+  capabilities?: object;
+  auth?: unknown;
+};
+
+type DoctorChannelRegistry = {
+  listAll(): DoctorChannelEntry[];
+};
+
+let getGlobalChannelRegistry: (() => DoctorChannelRegistry) | null = null;
 
 export type HealthFinding = {
   readonly id: string;
@@ -254,7 +265,7 @@ export function checkChannels(params: {
   }
 
   const enabledChannels = params.enabledChannels ?? [];
-  const registeredChannelIds = new Set(registeredChannels.map((c: any) => c.id));
+  const registeredChannelIds = new Set(registeredChannels.map((c) => c.id));
 
   for (const channelId of enabledChannels) {
     if (!registeredChannelIds.has(channelId as never)) {
@@ -281,7 +292,8 @@ export function checkChannels(params: {
       });
     }
 
-    if (channel.capabilities.authRequired && !channel.auth) {
+    const authRequired = (channel.capabilities as { authRequired?: unknown } | undefined)?.authRequired;
+    if (authRequired && !channel.auth) {
       findings.push({
         id: DOCTOR_CHECK_IDS.channels.channelAuthMissing,
         severity: "error",
@@ -603,6 +615,6 @@ export async function runDoctorChecks(params: {
   };
 }
 
-export function initDoctorChannelRegistry(registryFn: () => any): void {
+export function initDoctorChannelRegistry(registryFn: () => DoctorChannelRegistry): void {
   getGlobalChannelRegistry = registryFn;
 }

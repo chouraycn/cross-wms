@@ -17,4 +17,4 @@ export function createHttp1EnvHttpProxyAgent(...args: unknown[]): unknown {
 export function createHttp1ProxyAgent(...args: unknown[]): unknown {
   return undefined;
 }
-export const TEST_UNDICI_RUNTIME_DEPS_KEY: unknown = undefined;
+export const TEST_UNDICI_RUNTIME_DEPS_KEY: unknown = undefined as unknown;

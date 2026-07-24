@@ -30,7 +30,7 @@ export async function runTasksWithConcurrency<T>(
   const resolvedLimit = Math.max(1, Math.min(limit, tasks.length));
   const results: T[] = Array.from({ length: tasks.length });
   let next = 0;
-  let firstError: unknown = undefined;
+  let firstError: unknown = undefined as unknown;
   let hasError = false;
 
   const workers = Array.from({ length: resolvedLimit }, async () => {

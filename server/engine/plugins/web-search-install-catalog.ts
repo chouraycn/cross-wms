@@ -122,7 +122,7 @@ function buildProviderEntry(params: {
     placeholder,
     signupUrl,
     credentialPath,
-    search: (params.provider as any).search,
+    search: (params.provider as OfficialExternalWebSearchProvider & { search: CatalogWebSearchProviderEntry["search"] }).search,
     ...(normalizeOnboardingScopes(params.provider.onboardingScopes)
       ? { onboardingScopes: normalizeOnboardingScopes(params.provider.onboardingScopes) }
       : {}),

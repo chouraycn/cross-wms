@@ -12,5 +12,5 @@ export function resolveApnsRelayConfigFromEnv(...args: unknown[]): unknown {
 export function sendApnsRelayPush(...args: unknown[]): unknown {
   return undefined;
 }
-export const DEFAULT_APNS_RELAY_BASE_URL: unknown = undefined;
-export const DEFAULT_APNS_SANDBOX_RELAY_BASE_URL: unknown = undefined;
+export const DEFAULT_APNS_RELAY_BASE_URL: unknown = undefined as unknown;
+export const DEFAULT_APNS_SANDBOX_RELAY_BASE_URL: unknown = undefined as unknown;

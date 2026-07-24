@@ -398,14 +398,18 @@ export class KeywordTriggerEngine {
       keywords.push(definition.name);
     }
 
-    const defAny = definition as any;
+    const defAny = definition as typeof definition & {
+      toolNames?: unknown[];
+      synonyms?: unknown[];
+      weight?: number;
+    };
 
     if (defAny.toolNames && Array.isArray(defAny.toolNames)) {
-      toolNames = [...toolNames, ...defAny.toolNames];
+      toolNames = [...toolNames, ...defAny.toolNames.filter((t): t is string => typeof t === 'string')];
     }
 
     if (defAny.synonyms && Array.isArray(defAny.synonyms)) {
-      synonyms = [...synonyms, ...defAny.synonyms];
+      synonyms = [...synonyms, ...defAny.synonyms.filter((s): s is string => typeof s === 'string')];
     }
 
     keywords = keywords.filter(k => k && k.trim().length >= 2);

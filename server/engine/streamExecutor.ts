@@ -62,8 +62,8 @@ export interface ExecuteChatCallbacks {
   onSubtaskCreate?: (subTaskId: string, description: string, dependsOn?: string[], priority?: number) => void;
   onSubtaskAssign?: (subTaskId: string, agentId: string, agentRole: string) => void;
   onSubtaskComplete?: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => void;
-  onReflect?: (reflection: Record<string, unknown>) => void;
-  onPlan?: (plan: Record<string, unknown>) => void;
+  onReflect?: (reflection: unknown) => void;
+  onPlan?: (plan: unknown) => void;
   /** 通用事件回调（由策略内部触发的各类事件） */
   onEvent?: (event: Record<string, unknown>) => void;
   /** 速率限制回调 */
@@ -172,7 +172,7 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>):
           api: '',
           provider: '',
           model: '',
-          usage: event.usage as any,
+          usage: event.usage as unknown as AssistantMessage['usage'],
           stopReason: 'stop',
           timestamp: Date.now(),
         };

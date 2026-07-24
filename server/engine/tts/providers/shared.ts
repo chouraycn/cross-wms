@@ -43,7 +43,7 @@ export async function httpRequest(opts: HttpRequestOptions): Promise<HttpRespons
     const contentType = res.headers?.get?.('content-type') ?? undefined;
     const arrayBuf = await res.arrayBuffer();
     const data = Buffer.from(arrayBuf);
-    let json: unknown = undefined;
+    let json: unknown = undefined as unknown;
     if (contentType?.includes('json')) {
       try {
         json = JSON.parse(data.toString('utf8'));

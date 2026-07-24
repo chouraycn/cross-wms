@@ -16,14 +16,18 @@ import type { ToolHandler } from './toolTypes.js';
 import type {
   PdfExtractOptions,
   PdfExtractResult,
+  PdfExtractMode,
   PdfSummarizeOptions,
   PdfSummarizeResult,
   PdfMergeOptions,
   PdfMergeResult,
   PdfSplitOptions,
   PdfSplitResult,
+  PdfSplitMode,
   PdfConvertOptions,
   PdfConvertResult,
+  PdfConvertFormat,
+  AiProviderType,
 } from './pdfTypes.js';
 
 import {
@@ -369,7 +373,7 @@ const handlePdfExtract: ToolHandler = async (
   try {
     const options: PdfExtractOptions = {
       path: resolvedPath,
-      mode: mode as any,
+      mode: mode as PdfExtractMode,
       pages,
       maxChars,
       useOcr,
@@ -491,7 +495,7 @@ const handlePdfSummarize: ToolHandler = async (
         metadata: extractResult.metadata,
       },
       {
-        type: aiProvider as any,
+        type: aiProvider as AiProviderType,
         maxTokens,
       }
     );
@@ -604,7 +608,7 @@ const handlePdfSplit: ToolHandler = async (
     const options: PdfSplitOptions = {
       path: resolvedPath,
       outputDir: resolvedOutputDir,
-      mode: mode as any,
+      mode: mode as PdfSplitMode,
       pagesPerFile,
       ranges,
       namingPattern,
@@ -655,8 +659,8 @@ const handlePdfConvert: ToolHandler = async (
     const options: PdfConvertOptions = {
       path: resolvedPath,
       outputDir: resolvedOutputDir,
-      format: format as any,
-      imageFormat: imageFormat as any,
+      format: format as PdfConvertFormat,
+      imageFormat: imageFormat as 'png' | 'jpg' | 'webp',
       imageQuality,
       imageDpi,
       pages,
@@ -720,7 +724,7 @@ const handlePdfConvert: ToolHandler = async (
       const result: PdfConvertResult = {
         success: true,
         outputDir: resolvedOutputDir,
-        format: format as any,
+        format: format as PdfConvertFormat,
         outputFiles: [
           {
             path: outputFile,

@@ -11,14 +11,14 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function verifyCliCronMcpLoopbackPreflight(..._args: unknown[]): Promise<any> {
+export async function verifyCliCronMcpLoopbackPreflight(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function verifyCliBackendImageProbe(..._args: unknown[]): Promise<any> {
+export async function verifyCliBackendImageProbe(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export async function verifyCliCronMcpProbe(..._args: unknown[]): Promise<any> {
+export async function verifyCliCronMcpProbe(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createTranscriptUpdateBroadcastHandler(..._args: unknown[]): any {
+export function createTranscriptUpdateBroadcastHandler(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function createLifecycleEventBroadcastHandler(..._args: unknown[]): any {
+export function createLifecycleEventBroadcastHandler(..._args: unknown[]): unknown {
   return undefined;
 }

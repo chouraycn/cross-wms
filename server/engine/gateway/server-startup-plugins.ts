@@ -11,18 +11,18 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveGatewayStartupMaintenanceConfig(..._args: unknown[]): any {
+export function resolveGatewayStartupMaintenanceConfig(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function prepareGatewayPluginBootstrap(..._args: unknown[]): Promise<any> {
+export async function prepareGatewayPluginBootstrap(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export function warnUnregisteredConfiguredMemoryEmbeddingProviders(..._args: unknown[]): any {
+export function warnUnregisteredConfiguredMemoryEmbeddingProviders(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export async function loadGatewayStartupPluginRuntime(..._args: unknown[]): Promise<any> {
+export async function loadGatewayStartupPluginRuntime(..._args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }

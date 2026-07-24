@@ -113,7 +113,7 @@ export class FeishuChannelAdapter implements ChannelAdapter {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await resp.json() as any;
+      const data = await resp.json() as { code?: number; errcode?: number };
       return data.code === 0 || resp.ok;
     } catch (e) {
       logger.error('[FeishuChannel] 发送失败', e);
@@ -154,7 +154,7 @@ export class DingtalkChannelAdapter implements ChannelAdapter {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await resp.json() as any;
+      const data = await resp.json() as { code?: number; errcode?: number };
       return data.errcode === 0 || resp.ok;
     } catch (e) {
       logger.error('[DingtalkChannel] 发送失败', e);
@@ -270,7 +270,7 @@ export class WechatWorkChannelAdapter implements ChannelAdapter {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await resp.json() as any;
+      const data = await resp.json() as { code?: number; errcode?: number };
       return data.errcode === 0 || resp.ok;
     } catch (e) {
       logger.error('[WechatWorkChannel] 发送失败', e);

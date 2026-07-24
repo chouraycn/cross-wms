@@ -124,7 +124,7 @@ export class TesseractOcrProvider implements OcrProvider {
 
       const language = config?.language || 'chi_sim+eng';
       const worker = await tesseract.createWorker(language, 1, {
-        logger: (m: any) => logger.debug('[Tesseract]', m.status, m.progress),
+        logger: (m: { status?: string; progress?: number }) => logger.debug('[Tesseract]', m.status, m.progress),
       });
 
       const result = await worker.recognize(filePath);

@@ -408,6 +408,15 @@ async function handleBrowserNavigate(args: Record<string, unknown>): Promise<str
 /**
  * browser_snapshot handler
  */
+interface BrowserSnapshotElement {
+  ref?: string | number;
+  role?: string;
+  name?: string;
+  value?: string;
+  disabled?: boolean;
+  href?: string;
+}
+
 async function handleBrowserSnapshot(_args: Record<string, unknown>): Promise<string> {
   const response = await sendCommand('browser_snapshot');
   if (!response.ok) {
@@ -424,7 +433,7 @@ async function handleBrowserSnapshot(_args: Record<string, unknown>): Promise<st
   // 精简输出: 仅保留关键信息，控制 token 消耗
   const elementsText = snapshot.elements
     .slice(0, 50) // 限制元素数量
-    .map((el: any) => {
+    .map((el: BrowserSnapshotElement) => {
       let desc = `[${el.ref}] ${el.role}`;
       if (el.name) desc += ` "${el.name}"`;
       if (el.value) desc += ` value="${String(el.value).substring(0, 30)}"`;

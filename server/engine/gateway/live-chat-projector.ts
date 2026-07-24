@@ -11,20 +11,20 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveMergedAssistantText(..._args: unknown[]): any {
+export function resolveMergedAssistantText(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function normalizeLiveAssistantEventText(..._args: unknown[]): any {
+export function normalizeLiveAssistantEventText(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function projectLiveAssistantBufferedText(..._args: unknown[]): any {
+export function projectLiveAssistantBufferedText(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function shouldSuppressAssistantEventForLiveChat(..._args: unknown[]): any {
+export function shouldSuppressAssistantEventForLiveChat(..._args: unknown[]): unknown {
   return false;
 }
 
-export const MAX_LIVE_CHAT_BUFFER_CHARS: any = undefined;
+export const MAX_LIVE_CHAT_BUFFER_CHARS: unknown = undefined;

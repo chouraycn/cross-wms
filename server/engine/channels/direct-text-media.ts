@@ -1,14 +1,14 @@
 // 移植自 openclaw/src/channels/plugins/outbound/direct-text-media.ts
 
-export const resolvePayloadMediaUrls: unknown = undefined;
+export const resolvePayloadMediaUrls: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sendPayloadMediaSequence: unknown = undefined;
+export const sendPayloadMediaSequence: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sendPayloadMediaSequenceAndFinalize: unknown = undefined;
+export const sendPayloadMediaSequenceAndFinalize: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sendPayloadMediaSequenceOrFallback: unknown = undefined;
+export const sendPayloadMediaSequenceOrFallback: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
-export const sendTextMediaPayload: unknown = undefined;
+export const sendTextMediaPayload: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 
 export function resolveScopedChannelMediaMaxBytes(..._args: unknown[]): unknown {
   return undefined;

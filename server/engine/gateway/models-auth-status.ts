@@ -18,4 +18,4 @@ export function aggregateOAuthStatus(...args: unknown[]): unknown {
   return undefined;
 }
 
-export const modelsAuthStatusHandlers: unknown = undefined;
+export const modelsAuthStatusHandlers: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

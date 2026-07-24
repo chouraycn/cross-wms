@@ -9,4 +9,4 @@ export function setGatewayNodesRuntime(...args: unknown[]): unknown {
 export function clearGatewaySubagentRuntime(...args: unknown[]): unknown {
   return undefined;
 }
-export const gatewaySubagentState: unknown = undefined;
+export const gatewaySubagentState: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

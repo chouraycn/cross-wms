@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function getOperatorApprovalRuntimeToken(..._args: unknown[]): any {
+export function getOperatorApprovalRuntimeToken(..._args: unknown[]): unknown {
   return undefined;
 }
 
-export function isOperatorApprovalRuntimeToken(..._args: unknown[]): any {
+export function isOperatorApprovalRuntimeToken(..._args: unknown[]): unknown {
   return false;
 }

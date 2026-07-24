@@ -93,7 +93,7 @@ export class BackfillEngine {
       let totalSize = 0;
 
       for (const item of data) {
-        const messages = (item as any).messages || [];
+        const messages = (item as { messages?: unknown[] }).messages || [];
         totalMessages += messages.length;
 
         for (const msg of messages) {

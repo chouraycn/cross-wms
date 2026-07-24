@@ -49,4 +49,4 @@ export function clearPluginRoots(): void {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolvePluginSourceRoots: any = undefined as any;
+export const resolvePluginSourceRoots: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;

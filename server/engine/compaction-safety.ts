@@ -65,7 +65,7 @@ export function createAbortError(reason?: unknown): Error {
   const err = new Error('aborted');
   err.name = 'AbortError';
   if (reason instanceof Error) {
-    (err as any).cause = reason;
+    (err as Error & { cause?: unknown }).cause = reason;
   } else if (reason !== undefined) {
     err.message = `aborted: ${reason}`;
   }

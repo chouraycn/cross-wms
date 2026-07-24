@@ -4,6 +4,6 @@ export async function waitForAgentJob(...args: unknown[]): Promise<unknown> {
   return Promise.resolve(undefined);
 }
 
-export const testing_agent_job: unknown = undefined;
+export const testing_agent_job: unknown = undefined as unknown;
 
-export const __testing: unknown = undefined;
+export const __testing: unknown = undefined as unknown;
