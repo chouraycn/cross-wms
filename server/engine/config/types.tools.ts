@@ -1,11 +1,22 @@
 // 移植自 openclaw/src/config/types.tools.ts
 
+export type MediaUnderstandingCapability = "image" | "audio" | "video";
+
 export type MediaUnderstandingScopeMatch = unknown;
 export type MediaUnderstandingScopeRule = unknown;
 export type MediaUnderstandingScopeConfig = unknown;
-export type MediaUnderstandingCapability = unknown;
 export type MediaUnderstandingAttachmentsConfig = unknown;
-export type MediaUnderstandingModelConfig = unknown;
+
+/** Minimal media-understanding model entry shape used by config collectors. */
+export type MediaUnderstandingModelConfig = {
+  type?: "provider" | "cli";
+  provider?: string;
+  command?: string;
+  capabilities?: MediaUnderstandingCapability[];
+  request?: Record<string, unknown>;
+  enabled?: boolean;
+};
+
 export type MediaUnderstandingConfig = unknown;
 export type LinkModelConfig = unknown;
 export type LinkToolsConfig = unknown;
