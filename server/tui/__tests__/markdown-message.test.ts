@@ -3,6 +3,7 @@ import { renderMarkdown, MarkdownMessage } from '../components/markdown-message.
 import { markdownTheme } from '../theme/theme.js';
 
 function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '').replace(/\x1b\]8;;.*?\x07/g, '').replace(/\x1b\]8;;\x07/g, '');
 }
 

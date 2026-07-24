@@ -42,7 +42,7 @@ export function wrapToolMemoryFlushAppendOnlyWrite(
       const filePath = typeof args.path === "string" ? args.path : undefined;
       const content = typeof args.content === "string" ? args.content : undefined;
       if (!filePath || content === undefined) {
-        return (t.execute as Function)(toolCallId, args, signal);
+        return (t.execute as (...args: unknown[]) => unknown)(toolCallId, args, signal);
       }
       const allowedAbsolutePath = path.resolve(options.root, options.relativePath);
       const resolvedPath = resolveToolPathAgainstWorkspaceRoot({
@@ -96,7 +96,7 @@ export function wrapToolWorkspaceRootGuardWithOptions(
           record[key] = resolvedPath;
         }
       }
-      return (t.execute as Function)(toolCallId, record ?? args, signal);
+      return (t.execute as (...args: unknown[]) => unknown)(toolCallId, record ?? args, signal);
     },
   };
 }

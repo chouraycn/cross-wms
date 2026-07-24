@@ -73,9 +73,11 @@ export function underline(text: string): string {
 }
 
 export function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
 }
 
 export function hasAnsi(text: string): boolean {
+  // eslint-disable-next-line no-control-regex
   return /\x1b\[[0-9;]*[a-zA-Z]/.test(text);
 }

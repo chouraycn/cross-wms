@@ -24,8 +24,8 @@ export function parseSkillMd(content: string): { frontmatter: Record<string, str
     return { frontmatter: {}, body: content };
   }
   const yamlText = content.slice(3, endIdx).replace(/^\n/, "");
-  let body = content.slice(endIdx + 4).replace(/^\n/, "");
-  let frontmatter: Record<string, string> = {};
+  const body = content.slice(endIdx + 4).replace(/^\n/, "");
+  const frontmatter: Record<string, string> = {};
   try {
     const parsed = yaml.load(yamlText) as Record<string, unknown> | null;
     if (parsed && typeof parsed === "object") {

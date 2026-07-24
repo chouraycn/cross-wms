@@ -340,7 +340,7 @@ export function sanitizeUserFacingText(text: unknown, opts?: { errorContext?: bo
   const errorContext = opts?.errorContext ?? false;
 
   // Simplified: skip plugin-dependent stripping (tool call XML, metadata, etc.)
-  let processed = raw.trim();
+  const processed = raw.trim();
   if (!processed) {
     return "";
   }

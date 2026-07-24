@@ -27,8 +27,8 @@ interface WeChatAccountConfig {
   accessTokenExpiresAt?: number;
 }
 
-let cachedAccessToken: Map<string, string> = new Map();
-let tokenExpiresMap: Map<string, number> = new Map();
+const cachedAccessToken: Map<string, string> = new Map();
+const tokenExpiresMap: Map<string, number> = new Map();
 
 async function getAccessToken(account: WeChatAccountConfig): Promise<string> {
   const now = Date.now();

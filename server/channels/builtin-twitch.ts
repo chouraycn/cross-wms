@@ -261,7 +261,7 @@ export function parseTwitchIrcLine(line: string): TwitchWebhookResult {
   }
 
   // 提取 IRCv3 tags（@key=value;key=value 前缀）
-  let tags: Record<string, string> = {};
+  const tags: Record<string, string> = {};
   let workLine = line;
 
   if (workLine.startsWith("@")) {

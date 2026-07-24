@@ -41,6 +41,7 @@ function stripControlChars(text: string): string {
 }
 
 function stripAnsi(input: string): string {
+  // eslint-disable-next-line no-control-regex
   return input.replace(/\x1b\[[0-9;]*m/g, '');
 }
 

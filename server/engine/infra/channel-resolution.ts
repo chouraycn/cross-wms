@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/channel-resolution.ts
 // 降级：channel plugin 依赖简化
 
-let testState = new Map<string, unknown>();
+const testState = new Map<string, unknown>();
 
 /** Resets outbound channel resolution state (for tests). */
 export function resetOutboundChannelResolutionStateForTest(): void {

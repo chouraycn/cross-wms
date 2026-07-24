@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/channel-bootstrap.runtime.ts
 // 降级：channel plugin 运行时依赖简化
 
-let testBootstrapState = new Map<string, unknown>();
+const testBootstrapState = new Map<string, unknown>();
 
 /** Resets outbound channel bootstrap state (for tests). */
 export function resetOutboundChannelBootstrapStateForTests(): void {

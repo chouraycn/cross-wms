@@ -26,8 +26,8 @@ interface QQAccountConfig {
   tokenExpiresAt?: number;
 }
 
-let cachedToken: Map<string, string> = new Map();
-let tokenExpiresMap: Map<string, number> = new Map();
+const cachedToken: Map<string, string> = new Map();
+const tokenExpiresMap: Map<string, number> = new Map();
 
 async function getBotToken(account: QQAccountConfig): Promise<string> {
   const now = Date.now();

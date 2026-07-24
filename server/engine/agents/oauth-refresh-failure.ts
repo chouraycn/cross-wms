@@ -51,7 +51,9 @@ function extractOAuthRefreshFailureProvider(message: string): string | null {
 function sanitizeForLog(input: string): string {
   // Strip ANSI escape sequences and control characters.
   return input
+    // eslint-disable-next-line no-control-regex
     .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "")
     .trim();
 }
