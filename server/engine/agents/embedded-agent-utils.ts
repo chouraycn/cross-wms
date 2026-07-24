@@ -64,6 +64,7 @@ export function stripThinkingTagsFromText(text: string): string {
 function sanitizeAssistantText(text: string): string {
   // Basic sanitization: strip ANSI escape codes and control characters
   return text
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
     .trim();
 }

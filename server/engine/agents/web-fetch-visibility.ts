@@ -25,5 +25,6 @@ export function stripInvisibleUnicode(text: string): string {
   // Remove common invisible unicode categories: control chars, zero-width chars,
   // BOM, and soft hyphens.
   return text
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u0008\u000B\u000E-\u001F\u007F\u00AD\u200B-\u200F\u2028-\u202F\u2060\uFEFF]/g, "");
 }

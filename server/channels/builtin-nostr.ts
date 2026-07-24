@@ -106,7 +106,7 @@ function bigIntTo32Bytes(n: bigint): Buffer {
 function schnorrSign(msgHash: Buffer, privateKey: Buffer): Buffer {
   let d = BigInt("0x" + privateKey.toString("hex"));
   d = mod(d, GROUP_N);
-  let P = scalarMul(d, { x: GX, y: GY });
+  const P = scalarMul(d, { x: GX, y: GY });
   if (!hasEvenY(P)) d = GROUP_N - d;
 
   const auxRand = randomBytes(32);
@@ -114,7 +114,7 @@ function schnorrSign(msgHash: Buffer, privateKey: Buffer): Buffer {
   let t = d ^ BigInt("0x" + tHash.toString("hex"));
   t = mod(t, GROUP_N);
 
-  let R = scalarMul(t, { x: GX, y: GY });
+  const R = scalarMul(t, { x: GX, y: GY });
   if (!hasEvenY(R)) t = GROUP_N - t;
 
   const RxBytes = bigIntTo32Bytes(R!.x);
