@@ -39,17 +39,20 @@ vi.mock('onnxruntime-node', () => {
       const outputData = new Float32Array(batchSize * seqLen * dim);
       const inputData = inputIdsTensor.data as BigInt64Array;
 
+      // 性能优化：mock 只填充 i=0 位置（[CLS] token，attention_mask=1），
+      // 其余位置保持为 0。mean pooling 只累加 attention_mask=1 的位置，
+      // 因此只填充第一个 token 即可保证 L2 归一化结果有意义。
+      // 单次推理操作数从 seqLen*dim (98K) 降至 dim (384)，256 次调用从 25M 降至 98K。
       for (let b = 0; b < batchSize; b++) {
         // Deterministic hash from input_ids for this batch item
         let hash = 0;
         for (let i = 0; i < seqLen; i++) {
           hash = (hash * 31 + Number(inputData[b * seqLen + i])) | 0;
         }
-        // Fill output with hash-based deterministic values
-        for (let i = 0; i < seqLen; i++) {
-          for (let j = 0; j < dim; j++) {
-            outputData[(b * seqLen + i) * dim + j] = Math.sin(hash + i * 0.1 + j * 0.01) * 0.01;
-          }
+        // 只填充 i=0 位置；用 hash + j 生成确定性非零值（避免 L2 norm = 0）
+        const baseOffset = b * seqLen * dim;
+        for (let j = 0; j < dim; j++) {
+          outputData[baseOffset + j] = ((hash + j * 17) & 0xff) / 255 - 0.5;
         }
       }
 
