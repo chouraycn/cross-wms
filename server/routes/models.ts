@@ -23,6 +23,8 @@ import {
 } from '../modelsStore.js';
 import { getUnifiedProviderRegistry } from '../engine/provider-registry/index.js';
 import { inferApiType } from '../adapters/registry.js';
+import type { ModelApiType } from '../adapters/types.js';
+import type { ModelConfig, ProviderConfig } from '../../shared/types/models.js';
 
 const DEFAULT_LOCAL_MODEL_ENDPOINTS = [
   { name: 'Ollama (本地)', url: 'http://localhost:11434', provider: 'ollama' },
@@ -50,24 +52,18 @@ const router = Router();
  * - apiType 由 inferApiType 推导，与注册中心自身的回退逻辑保持一致，避免错误的 apiType 映射污染旧的 modelProviderRegistry。
  */
 function syncProvidersToRegistry(
-  config: { providers?: Array<{ id: string; name?: string; provider?: string; apiEndpoint?: string; authMode?: string }> | undefined },
+  config: { providers?: ProviderConfig[] | undefined },
 ): void {
   const registry = getUnifiedProviderRegistry();
-  const providers = (config?.providers ?? []) as Array<{
-    id: string;
-    name?: string;
-    provider?: string;
-    apiEndpoint?: string;
-    authMode?: string;
-  }>;
+  const providers = config?.providers ?? [];
   for (const p of providers) {
     if (!p?.id || registry.has(p.id)) continue;
     registry.register({
       id: p.id,
       displayName: p.name || p.id,
-      apiType: inferApiType(p.provider, p.apiEndpoint) as any,
+      apiType: inferApiType(p.provider, p.apiEndpoint) as ModelApiType,
       defaultEndpoint: p.apiEndpoint,
-      authMode: (p.authMode as any) || 'api-key',
+      authMode: p.authMode ?? 'api-key',
       builtin: false,
     });
   }
@@ -80,15 +76,15 @@ router.get('/', async (_req: Request, res: Response) => {
     // 此端点返回时本就脱敏移除 apiKey/apiKeys，不需要注入
     const config = await loadModelsConfig({ skipKeyInjection: true });
     // 接入统一 Provider 注册中心：将当前配置中的 providers 同步进注册中心
-    syncProvidersToRegistry(config as any);
+    syncProvidersToRegistry(config);
     // 脱敏：移除明文 apiKey 和 apiKeys，只保留引用信息
     // （skipKeyInjection 路径已不含 key，但保留此脱敏作为安全兜底）
     const sanitizedModels = config.models.map((m) => {
-      const { apiKey, apiKeys, ...rest } = m as any;
+      const { apiKey, apiKeys, ...rest } = m;
       return rest;
     });
     const sanitizedProviders = config.providers?.map((p) => {
-      const { apiKey, apiKeys, ...rest } = p as any;
+      const { apiKey, apiKeys, ...rest } = p;
       return rest;
     });
     const sanitized = {
@@ -110,7 +106,12 @@ router.get('/', async (_req: Request, res: Response) => {
 // 前端 GET 时拿到的数据不含明文 apiKey（已脱敏），直接覆盖会导致 Key 引用丢失
 router.put('/', async (req: Request, res: Response) => {
   try {
-    const { models, defaultModelId, providers } = req.body;
+    // originalId 是前端用来追踪重命名字段（不在 ModelConfig 类型中）
+    const { models, defaultModelId, providers } = req.body as {
+      models: Array<ModelConfig & { originalId?: string }>;
+      defaultModelId?: string;
+      providers?: ProviderConfig[];
+    };
     if (!Array.isArray(models)) {
       res.status(400).json({ error: 'models 必须是数组' });
       return;
@@ -122,7 +123,7 @@ router.put('/', async (req: Request, res: Response) => {
 
     // 合并：前端传来的字段覆盖，但保留已有的 apiKeyRef/apiKeyRefs/keyStrategy
     // RC-3 修复：支持 originalId 做二次匹配，防止前端误改 id 导致 Keychain 引用断裂
-    const mergedModels = models.map((m: any) => {
+    const mergedModels: ModelConfig[] = models.map((m) => {
       // 优先用 m.id 匹配；若前端传了 originalId，则用 originalId 做二次匹配
       let existing = currentMap.get(m.id);
       if (!existing && m.originalId) {
@@ -133,16 +134,16 @@ router.put('/', async (req: Request, res: Response) => {
         ...existing,              // 保留已有字段（含 apiKeyRef/apiKeyRefs）
         ...m,                     // 前端传来的字段覆盖
         // 确保 Key 引用不被覆盖为 undefined
-        apiKeyRef: m.apiKeyRef ?? (existing as any).apiKeyRef,
-        apiKeyRefs: m.apiKeyRefs ?? (existing as any).apiKeyRefs,
-        keyStrategy: m.keyStrategy ?? (existing as any).keyStrategy,
+        apiKeyRef: m.apiKeyRef ?? existing.apiKeyRef,
+        apiKeyRefs: m.apiKeyRefs ?? existing.apiKeyRefs,
+        keyStrategy: m.keyStrategy ?? existing.keyStrategy,
       };
     });
 
     // 检测被删除的模型（物理删除或 hidden），清理 Keychain 中的 API Key
     // RC-3 修复：基于 originalId 集合判断是否被删除，避免 id 变化误触发 Keychain 清理
-    const newIds = new Set(mergedModels.map((m: any) => m.id));
-    const newOriginalIds = new Set(models.map((m: any) => m.originalId).filter(Boolean));
+    const newIds = new Set(mergedModels.map(m => m.id));
+    const newOriginalIds = new Set(models.map(m => m.originalId).filter(Boolean) as string[]);
     for (const oldModel of currentConfig.models) {
       // 仅当旧 id 既不在新 ids 中，也不在 originalIds 中时才视为被删除
       if (!newIds.has(oldModel.id) && !newOriginalIds.has(oldModel.id)) {
@@ -152,18 +153,18 @@ router.put('/', async (req: Request, res: Response) => {
     }
 
     // 处理 Provider 配置的合并（保留 Key 引用）
-    let mergedProviders: any[] | undefined;
+    let mergedProviders: ProviderConfig[] | undefined;
     if (Array.isArray(providers)) {
       const currentProviderMap = new Map((currentConfig.providers || []).map(p => [p.id, p]));
-      mergedProviders = providers.map((p: any) => {
+      mergedProviders = providers.map((p) => {
         const existing = currentProviderMap.get(p.id);
         if (!existing) return p;
         return {
           ...existing,
           ...p,
-          apiKeyRef: p.apiKeyRef ?? (existing as any).apiKeyRef,
-          apiKeyRefs: p.apiKeyRefs ?? (existing as any).apiKeyRefs,
-          keyStrategy: p.keyStrategy ?? (existing as any).keyStrategy,
+          apiKeyRef: p.apiKeyRef ?? existing.apiKeyRef,
+          apiKeyRefs: p.apiKeyRefs ?? existing.apiKeyRefs,
+          keyStrategy: p.keyStrategy ?? existing.keyStrategy,
         };
       });
     }
@@ -171,21 +172,21 @@ router.put('/', async (req: Request, res: Response) => {
     const config = await saveModelsConfig(
       mergedModels,
       defaultModelId || mergedModels[0]?.id || '',
-      { providers: mergedProviders as any },
+      { providers: mergedProviders },
     );
 
     // 保存后同步进统一 Provider 注册中心
-    syncProvidersToRegistry(config as any);
+    syncProvidersToRegistry(config);
 
     // 脱敏返回
     const sanitized = {
       ...config,
       models: config.models.map((m) => {
-        const { apiKey, apiKeys, ...rest } = m as any;
+        const { apiKey, apiKeys, ...rest } = m;
         return rest;
       }),
       providers: config.providers?.map((p) => {
-        const { apiKey, apiKeys, ...rest } = p as any;
+        const { apiKey, apiKeys, ...rest } = p;
         return rest;
       }),
     };
@@ -410,7 +411,7 @@ router.post('/discover-local', async (req: Request, res: Response) => {
 
     // v1.9.4: 优先使用 localhost，IP 地址作为备用（本地应用中 Ollama 直接运行在本机）
     const defaultHostIp = getHostIp();
-    const customOllamaUrl = (req.body as any)?.ollamaUrl?.replace(/\/+$/, '') || 'http://localhost:11434';
+    const customOllamaUrl = (req.body as { ollamaUrl?: string } | undefined)?.ollamaUrl?.replace(/\/+$/, '') || 'http://localhost:11434';
 
     // 要扫描的本地端点列表 — localhost 优先，IP 地址作为备用
     const localEndpoints = [
@@ -540,7 +541,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           message = 'Anthropic API 连接成功';
           modelValid = true;
           // 尝试解析响应中的模型信息
-          try { const j = await resp.json() as any; if (j.model) models = [j.model]; } catch {}
+          try { const j = await resp.json() as { model?: string }; if (j.model) models = [j.model]; } catch {}
         } else {
           const txt = await resp.text().catch(() => '');
           // 检查是否是模型不存在错误
@@ -563,12 +564,12 @@ router.post('/test-connection', async (req: Request, res: Response) => {
         });
 
         if (resp.ok) {
-          const j = await resp.json() as any;
+          const j = await resp.json() as { data?: Array<{ id?: string }>; models?: Array<{ id?: string; name?: string; model?: string }> };
           // OpenAI 格式: { data: [{ id: '...' }] }
           if (Array.isArray(j.data)) {
-            models = j.data.map((m: { id?: string }) => m.id).filter(Boolean).slice(0, 50);
+            models = j.data.map((m) => m.id).filter((s): s is string => Boolean(s)).slice(0, 50);
           } else if (Array.isArray(j.models)) {
-            models = j.models.map((m: { id?: string; name?: string }) => m.id || m.name).filter(Boolean).slice(0, 50);
+            models = j.models.map((m) => m.id || m.name || m.model || '').filter((s): s is string => Boolean(s)).slice(0, 50);
           }
 
           // 验证 modelId 是否在返回的模型列表中
@@ -654,7 +655,7 @@ router.get('/recommended', async (_req: Request, res: Response) => {
   try {
     const recommended = getRecommendedModels();
     const sanitized = recommended.map((m) => {
-      const { apiKey, apiKeys, ...rest } = m as any;
+      const { apiKey, apiKeys, ...rest } = m;
       return rest;
     });
     res.json({ data: sanitized });
@@ -699,7 +700,7 @@ router.post('/recommended/:id', async (req: Request, res: Response) => {
     const sanitized = {
       ...config,
       models: config.models.map((m) => {
-        const { apiKey, apiKeys, ...rest } = m as any;
+        const { apiKey, apiKeys, ...rest } = m;
         return rest;
       }),
     };
@@ -721,7 +722,7 @@ router.post('/add-recommended', async (_req: Request, res: Response) => {
       const sanitized = {
         ...currentConfig,
         models: currentConfig.models.map((m) => {
-          const { apiKey, apiKeys, ...rest } = m as any;
+          const { apiKey, apiKeys, ...rest } = m;
           return rest;
         }),
       };
@@ -736,7 +737,7 @@ router.post('/add-recommended', async (_req: Request, res: Response) => {
     const sanitized = {
       ...config,
       models: config.models.map((m) => {
-        const { apiKey, apiKeys, ...rest } = m as any;
+        const { apiKey, apiKeys, ...rest } = m;
         return rest;
       }),
     };
