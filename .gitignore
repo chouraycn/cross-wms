@@ -86,6 +86,9 @@ test-results/
 e2e-results/
 e2e/e2e-results/
 e2e/e2e-report/
+coverage/
+daemon.pid
+.workbuddy/
 
 # Desktop app build artifacts
 dist-app/
