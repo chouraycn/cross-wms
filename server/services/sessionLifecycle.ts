@@ -45,20 +45,23 @@ const SUMMARY_MAX_MESSAGES = 10;
  * 从 JSONL 文件中解析会话和消息数据。
  * 第 0 行包含 { session, messages }，后续每行为 { message }。
  */
+type SessionFirstLine = { session?: Session; messages?: Array<{ role: string; content: string; timestamp?: string }> };
+type SessionEntryLine = { message?: { role: string; content: string; timestamp?: string } };
+
 function parseSessionFile(sessionId: string): { session: Session | null; messages: Array<{ role: string; content: string; timestamp?: string }> } {
   try {
     const lines = FileStorage.readSessionLines(sessionId);
     if (lines.length === 0) return { session: null, messages: [] };
 
-    const firstLine = lines[0] as any;
-    const session = firstLine.session as Session;
-    const initialMessages = (firstLine.messages || []) as Array<{ role: string; content: string; timestamp?: string }>;
+    const firstLine = lines[0] as SessionFirstLine;
+    const session = firstLine.session ?? null;
+    const initialMessages = firstLine.messages ?? [];
 
     const subsequentMessages: Array<{ role: string; content: string; timestamp?: string }> = [];
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i] as any;
+      const line = lines[i] as SessionEntryLine;
       if (line.message) {
-        subsequentMessages.push(line.message as { role: string; content: string; timestamp?: string });
+        subsequentMessages.push(line.message);
       }
     }
 
@@ -71,11 +74,11 @@ function parseSessionFile(sessionId: string): { session: Session | null; message
 /** 重写会话文件的第一行（修改 session 元数据时调用）
  *  直接使用 FileStorage.rewriteSessionFirstLine，避免全文件读写
  */
-function rewriteSessionFirstLine(sessionId: string, mutate: (firstLine: any) => void): boolean {
+function rewriteSessionFirstLine(sessionId: string, mutate: (firstLine: SessionFirstLine & { session: Session }) => void): boolean {
   try {
-    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as SessionFirstLine | null;
     if (!firstLine || !firstLine.session) return false;
-    mutate(firstLine);
+    mutate(firstLine as SessionFirstLine & { session: Session });
     FileStorage.rewriteSessionFirstLine(sessionId, firstLine);
     return true;
   } catch (e) {
@@ -90,7 +93,7 @@ function* iterateAllSessions(): Generator<{ session: Session; messages: Array<{ 
   for (const id of sessionIds) {
     const { session, messages } = parseSessionFile(id);
     if (session) {
-      (session as any).messageCount = messages.length;
+      session.messageCount = messages.length;
       yield { session, messages, sessionId: id };
     }
   }
@@ -241,7 +244,7 @@ export function getTodaySessions(): Session[] {
 
 /** 永久删除归档会话（从归档目录删除） */
 export function deleteArchivedSession(sessionId: string): boolean {
-  const firstLine = FileStorage.readArchivedSessionFirstLine(sessionId) as any;
+  const firstLine = FileStorage.readArchivedSessionFirstLine(sessionId) as SessionFirstLine | null;
   if (!firstLine || !firstLine.session) return false;
   daoDeleteArchivedSession(sessionId);
   return true;

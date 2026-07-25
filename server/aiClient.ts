@@ -433,18 +433,20 @@ export async function callOpenAICompatibleStream(
     // v1.5.129: 400 错误时记录消息结构，帮助诊断 tool_calls 配对问题
     if (response.status === 400) {
       const toolMsgs = messages.filter(m => m.role === 'tool');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const assistantWithCalls = messages.filter(m => m.role === 'assistant' && (m as any).tool_calls);
+      const assistantWithCalls = messages.filter(
+        m => m.role === 'assistant' && Array.isArray((m as { tool_calls?: unknown[] }).tool_calls),
+      );
       logger.error(`[AIClient] 400 错误诊断: ${toolMsgs.length} 条 tool 消息, ${assistantWithCalls.length} 条 assistant(tool_calls)`);
       for (const m of messages) {
         if (m.role === 'tool') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          logger.error(`  [tool] tool_call_id=${(m as any).tool_call_id || '(missing)'}`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } else if (m.role === 'assistant' && (m as any).tool_calls) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const ids = ((m as any).tool_calls as any[]).map(tc => tc.id || '(no-id)');
-          logger.error(`  [assistant(tool_calls)] ids=[${ids.join(', ')}]`);
+          const toolCallId = (m as { tool_call_id?: string }).tool_call_id;
+          logger.error(`  [tool] tool_call_id=${toolCallId || '(missing)'}`);
+        } else if (m.role === 'assistant') {
+          const toolCalls = (m as { tool_calls?: Array<{ id?: string }> }).tool_calls;
+          if (toolCalls && toolCalls.length > 0) {
+            const ids = toolCalls.map(tc => tc.id || '(no-id)');
+            logger.error(`  [assistant(tool_calls)] ids=[${ids.join(', ')}]`);
+          }
         }
       }
     }
@@ -514,18 +516,19 @@ export async function callOpenAICompatibleStream(
           // 优先级6: parsed.choices[0].delta?.reasoning_content（防御性读取）
           // 优先级7: parsed.reasoning（部分 API 直接在 parsed 层）
           // 使用 ?? 而非 ||，正确区分 null/undefined 与空字符串（空字符串是有效的 thinking delta）
+          const parsedChoice0 = parsed.choices?.[0] as
+            | { delta?: { reasoning_content?: string }; reasoning_content?: string }
+            | undefined;
+          const parsedTop = parsed as { reasoning?: string; thinking?: string };
           const reasoningDelta =
             delta?.reasoning_content ??
             delta?.reasoning ??
             parsed.reasoning_content ??
-            parsed.choices?.[0]?.reasoning_content ??
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (parsed.choices?.[0] as any)?.delta?.reasoning_content ??
+            parsedChoice0?.reasoning_content ??
+            parsedChoice0?.delta?.reasoning_content ??
             delta?.thinking ??
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (parsed as any).reasoning ??
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (parsed as any).thinking;
+            parsedTop.reasoning ??
+            parsedTop.thinking;
           if (reasoningDelta) {
             reasoningContent += reasoningDelta;
             if (onThinking) onThinking(reasoningDelta);
@@ -1315,15 +1318,16 @@ export async function callAIModelStream(
       if (logger.debug) {
         const summary = effectiveMessages.map((m, idx) => {
           const base = `[${idx}]${m.role}`;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (m.role === 'assistant' && (m as any).tool_calls?.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const ids = ((m as any).tool_calls as any[]).map((tc: any) => tc.id || '(no-id)').join(',');
-            return `${base}(tool_calls:[${ids}])`;
+          if (m.role === 'assistant') {
+            const toolCalls = (m as { tool_calls?: Array<{ id?: string }> }).tool_calls;
+            if (toolCalls && toolCalls.length > 0) {
+              const ids = toolCalls.map(tc => tc.id || '(no-id)').join(',');
+              return `${base}(tool_calls:[${ids}])`;
+            }
           }
           if (m.role === 'tool') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return `${base}(tool_call_id=${(m as any).tool_call_id || '(missing)'})`;
+            const toolCallId = (m as { tool_call_id?: string }).tool_call_id;
+            return `${base}(tool_call_id=${toolCallId || '(missing)'})`;
           }
           return base;
         });
@@ -1505,13 +1509,17 @@ export async function callAIModelWithFailover(
       );
       failoverManager.recordSuccess(currentModel.id || '');
       return response;
-    } catch (e: any) {
-      lastError = e;
+    } catch (e: unknown) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      const errMessage = e instanceof Error ? e.message : String(e);
       // 优先从 AIAPIError 获取分类，降级为 unknown
+      // 注意：非 AIAPIError 的 e.category 字段类型未知，保留原行为（透传字符串到 recordFailure）
+      const fallbackCategory = (e as { category?: unknown })?.category;
+      const fallbackStr = typeof fallbackCategory === 'string' ? fallbackCategory : '';
       const errorCategory: AIAPIError['category'] =
         (e instanceof AIAPIError && e.category) ||
-        (e?.category && typeof e.category === 'string' ? e.category : 'unknown');
-      failoverManager.recordFailure(currentModel.id || '', e.message || String(e), errorCategory);
+        (fallbackStr as AIAPIError['category'] || 'unknown');
+      failoverManager.recordFailure(currentModel.id || '', errMessage, errorCategory);
 
       const nextModel = failoverManager.getNextModel(
         currentModel.id || '',

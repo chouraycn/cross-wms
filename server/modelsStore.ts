@@ -506,7 +506,7 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
       return {
         ...cachedModelsFile,
         models: cachedModelsFile.models.map((m) => {
-          const { apiKey, apiKeys, ...rest } = m as any;
+          const { apiKey, apiKeys, ...rest } = m;
           return rest;
         }),
       };
@@ -597,10 +597,10 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
           if (injectedIds.has(m.id)) {
             // env 注入的 model 保留 apiKey，但写盘前移除（磁盘上不应存明文 env key）
             // 下次 loadModelsConfig 会重新从 env 注入
-            const { apiKey, apiKeys, ...rest } = m as any;
+            const { apiKey, apiKeys, ...rest } = m;
             return rest as typeof m;
           }
-          const { apiKey, apiKeys, ...rest } = m as any;
+          const { apiKey, apiKeys, ...rest } = m;
           return rest;
         });
         await writeModelsFile({ ...saved, models: sanitized });
@@ -654,7 +654,7 @@ export async function saveModelsConfig(
   }));
 
   // 处理 Provider 配置的 Keychain 提取
-  const providers = options?.providers?.map(p => extractAndSaveApiKey(p as any) as unknown as ProviderConfig);
+  const providers = options?.providers?.map(p => extractAndSaveApiKey(p));
 
   const data: ModelsFile = {
     version: 1,
@@ -1734,10 +1734,12 @@ async function fetchModelsFromProvider(
 
     // Ollama /api/tags 返回 { models: [...] }，OpenAI /models 返回 { data: [...] }
     let modelIds: string[] = [];
-    if (isOllama && Array.isArray((data as any).models)) {
-      modelIds = (data as any).models.map((m: any) => m.name || m.model || '');
-    } else if (Array.isArray(data.data)) {
-      modelIds = data.data.map((m: any) => m.id || '');
+    const ollamaData = data as { models?: Array<{ name?: string; model?: string }> };
+    const openaiData = data as { data?: Array<{ id?: string }> };
+    if (isOllama && Array.isArray(ollamaData.models)) {
+      modelIds = ollamaData.models.map(m => m.name || m.model || '');
+    } else if (Array.isArray(openaiData.data)) {
+      modelIds = openaiData.data.map(m => m.id || '');
     }
 
     const models: ModelConfig[] = [];
@@ -1777,7 +1779,7 @@ export async function syncModelsFromApi(): Promise<void> {
       // 使用第一个可用的 API Key（本地模型不需要 Key）
       const apiKey = isLocalProvider
         ? ''
-        : (providerModels[0].apiKey?.trim() || providerModels[0].apiKeys?.find((k: any) => k.key?.trim())?.key?.trim() || '');
+        : (providerModels[0].apiKey?.trim() || providerModels[0].apiKeys?.find(k => k.key?.trim())?.key?.trim() || '');
       if (!isLocalProvider && !apiKey) continue;
 
       const discovered = await fetchModelsFromProvider(discovery, apiKey);
@@ -1811,7 +1813,7 @@ export async function syncModelsFromApi(): Promise<void> {
     if (hasUpdates) {
       // 脱敏保存
       const sanitized = config.models.map((m) => {
-        const { apiKey, apiKeys, ...rest } = m as any;
+        const { apiKey, apiKeys, ...rest } = m;
         return rest;
       });
       await writeModelsFile({ ...config, models: sanitized });
