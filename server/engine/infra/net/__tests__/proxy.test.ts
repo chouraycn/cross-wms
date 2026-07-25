@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import {
   parseProxyUrl,
   resolveProxyForUrl,
@@ -7,6 +7,41 @@ import {
   type ProxyConfig,
   type ProxyOptions,
 } from '../proxy.js';
+
+// 防止环境变量泄漏导致脆弱测试：
+// resolveProxyForUrl/createProxyManager 在 options.env 未提供时回退到 readProxyFromEnv()，
+// 读取 HTTP_PROXY/HTTPS_PROXY/ALL_PROXY/NO_PROXY（含小写变体）。
+// 若开发机或 CI 设置了这些变量，"should return undefined when no proxy configured" 等用例会失败。
+const PROXY_ENV_KEYS = [
+  'HTTP_PROXY', 'http_proxy',
+  'HTTPS_PROXY', 'https_proxy',
+  'ALL_PROXY', 'all_proxy',
+  'NO_PROXY', 'no_proxy',
+] as const;
+
+const savedEnv: Record<string, string | undefined> = {};
+
+beforeAll(() => {
+  for (const key of PROXY_ENV_KEYS) {
+    savedEnv[key] = process.env[key];
+  }
+});
+
+afterAll(() => {
+  for (const key of PROXY_ENV_KEYS) {
+    if (savedEnv[key] === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = savedEnv[key];
+    }
+  }
+});
+
+beforeEach(() => {
+  for (const key of PROXY_ENV_KEYS) {
+    delete process.env[key];
+  }
+});
 
 describe('proxy parseProxyUrl', () => {
   it('should parse HTTP proxy URL without auth', () => {
