@@ -245,8 +245,8 @@ function migrateBuiltinSkillsIntoUserSkills(db: Database.Database): void {
         );
         inserted++;
       }
-    } catch (e: any) {
-      const msg = e?.message ?? String(e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
       errors.push({ id: skill.id, message: msg });
       logger.error(`[MigrateBuiltin] 迁入 ${skill.id} 失败:`, msg);
     }
@@ -417,8 +417,8 @@ function migrateOpenclawSkillsIntoUserSkills(db: Database.Database): void {
         );
         inserted++;
       }
-    } catch (e: any) {
-      const msg = e?.message ?? String(e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
       errors.push({ id: skillId, message: msg });
       logger.error(`[MigrateOpenclaw] 迁入 ${skillId} 失败:`, msg);
     }
@@ -535,9 +535,9 @@ function repairSkillMdFrontmatter(): void {
       } else {
         skipped++;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       errors++;
-      logger.warn(`[RepairSkillMd] 修复 ${entry.name} 失败:`, e?.message ?? String(e));
+      logger.warn(`[RepairSkillMd] 修复 ${entry.name} 失败:`, e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -546,26 +546,30 @@ function repairSkillMdFrontmatter(): void {
   }
 }
 
+type FrontmatterValue = string | boolean | number | Array<string | number> | Record<string, unknown>;
+
 /** 轻量 frontmatter 解析（不依赖 js-yaml，简单 key: value + tags JSON） */
 function parseSkillMdLightweight(content: string): {
-  frontmatter: Record<string, any>;
+  frontmatter: Record<string, FrontmatterValue>;
   body: string;
 } {
   const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!m) return { frontmatter: {}, body: content };
   const yamlBlock = m[1];
   const body = m[2];
-  const fm: Record<string, any> = {};
+  const fm: Record<string, FrontmatterValue> = {};
   for (const line of yamlBlock.split('\n')) {
     const idx = line.indexOf(':');
     if (idx <= 0) continue;
     const key = line.slice(0, idx).trim();
-    let value: any = line.slice(idx + 1).trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-    if (value === 'true') value = true;
-    else if (value === 'false') value = false;
-    else if (value.startsWith('[') && value.endsWith(']')) {
-      try { value = JSON.parse(value); } catch { /* ignore */ }
+    let value: FrontmatterValue = line.slice(idx + 1).trim();
+    if (typeof value === 'string') {
+      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+      else if (value === 'true') value = true;
+      else if (value === 'false') value = false;
+      else if (value.startsWith('[') && value.endsWith(']')) {
+        try { value = JSON.parse(value) as Array<string | number>; } catch { /* ignore */ }
+      }
     }
     fm[key] = value;
   }
@@ -692,8 +696,8 @@ export function initDb(): Database.Database {
         try {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
-        } catch (e: any) {
-          logger.error('[DB] 从备份恢复失败:', e?.message ?? String(e));
+        } catch (e: unknown) {
+          logger.error('[DB] 从备份恢复失败:', e instanceof Error ? e.message : String(e));
         }
       }
     }
@@ -704,8 +708,8 @@ export function initDb(): Database.Database {
 
   try {
     db = new Database(DB_PATH);
-  } catch (e: any) {
-    const msg = e?.message ?? String(e);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
     logger.error('[DB] 数据库初始化失败:', msg);
     if (/busy|locked|permission|cannot open/i.test(msg)) {
       logger.error('[DB] 数据库文件可能被其他进程占用或权限不足，请关闭所有可能访问 ~/.cdf-know-clow/chat.db 的程序');
@@ -715,8 +719,8 @@ export function initDb(): Database.Database {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 已从备份恢复数据库，重试初始化...');
           db = new Database(DB_PATH);
-        } catch (e2: any) {
-          logger.error('[DB] 从备份恢复失败:', e2?.message ?? e2);
+        } catch (e2: unknown) {
+          logger.error('[DB] 从备份恢复失败:', e2 instanceof Error ? e2.message : String(e2));
           throw e;
         }
       } else {

@@ -474,6 +474,28 @@ function resolveSingleKey(ref: string, modelId: string, index?: number): string 
 }
 
 /**
+ * 移除 model 中的 apiKey/apiKeys/apiKeyRef 字段（保留 apiKeyRefs 与其他字段）
+ * 用于多 Key 模式：已保存到 Keychain 后，移除明文 Key
+ */
+function omitApiKeyFields<T extends { apiKey?: unknown; apiKeys?: unknown; apiKeyRef?: unknown }>(
+  model: T
+): Omit<T, 'apiKey' | 'apiKeys' | 'apiKeyRef'> {
+  const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model;
+  return rest;
+}
+
+/**
+ * 移除 model 中的 apiKey/apiKeys/apiKeyRefs 字段（保留 apiKeyRef 与其他字段）
+ * 用于单 Key 模式：已保存到 Keychain 后，移除明文 Key
+ */
+function omitApiKeyRefsFields<T extends { apiKey?: unknown; apiKeys?: unknown; apiKeyRefs?: unknown }>(
+  model: T
+): Omit<T, 'apiKey' | 'apiKeys' | 'apiKeyRefs'> {
+  const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model;
+  return rest;
+}
+
+/**
  * 为模型配置注入真实的 API Key
  * 支持多种来源：
  * 1. Keychain（apiKeyRef 以 "keychain:" 开头）
@@ -492,7 +514,7 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
     if (m.apiKeyRef) {
       const key = resolveSingleKey(m.apiKeyRef, m.id);
       if (key) {
-        updates.apiKey = key as any;
+        updates.apiKey = key as T['apiKey'];
       }
     }
 
@@ -507,7 +529,7 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
         }
       }
       if (injectedKeys.length > 0) {
-        updates.apiKeys = injectedKeys as any;
+        updates.apiKeys = injectedKeys as T['apiKeys'];
       }
     }
 
@@ -537,12 +559,12 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
       if (savedIndices.length > 0) {
         // Keychain 成功
         const apiKeyRefs = savedIndices.map(i => `keychain:${model.id}:${i}`);
-        const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model as any;
+        const rest = omitApiKeyFields(model);
         return { ...rest, apiKeyRefs } as T;
       }
       // Keychain 失败，回退到 AES 加密
       const apiKeyRefs = keysToSave.map(k => `${ENCRYPTED_PREFIX}${aesEncrypt(k)}`);
-      const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model as any;
+      const rest = omitApiKeyFields(model);
       return { ...rest, apiKeyRefs } as T;
     }
   }
@@ -552,11 +574,11 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
     const saved = saveApiKey(model.id, model.apiKey.trim());
     if (saved) {
       // Keychain 成功
-      const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model as any;
+      const rest = omitApiKeyRefsFields(model);
       return { ...rest, apiKeyRef: `keychain:${model.id}` } as T;
     }
     // Keychain 失败，回退到 AES 加密
-    const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model as any;
+    const rest = omitApiKeyRefsFields(model);
     return { ...rest, apiKeyRef: `${ENCRYPTED_PREFIX}${aesEncrypt(model.apiKey.trim())}` } as T;
   }
 
