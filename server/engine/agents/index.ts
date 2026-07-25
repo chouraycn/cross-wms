@@ -1645,8 +1645,8 @@ export * from "./prepare.runtime.js";
 export * from "./prepare.js";
 export * from "./private-temp-file.js";
 export * from "./profile-list.js";
+export type { ProfileUsageStats } from "./profiles.js";
 export {
-  ProfileUsageStats,
   setAuthProfileOrder,
   promoteAuthProfileInOrder,
   upsertAuthProfile,
@@ -1702,7 +1702,7 @@ export * from "./session-history.js";
 export * from "./session-manager-cache.js";
 export * from "./session-manager-init.js";
 export * from "./session-manager-runtime-registry.js";
-export {
+export type {
   SessionEntry,
   FileEntry,
   ReadonlySessionManager,
@@ -1722,6 +1722,8 @@ export {
   SessionTreeNode,
   SessionContext,
   SessionInfo,
+} from "./session-manager.js";
+export {
   migrateSessionEntries,
   parseSessionEntries,
   getLatestCompactionEntry,
