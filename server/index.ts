@@ -501,6 +501,18 @@ app.use('/api/link-understanding', lazyRouter(() => import('./routes/linkUnderst
 // 死代码接入：CLI 端点（同步挂载，runCLI 内部已做错误处理，不阻塞主流程）
 app.use('/api/cli', cliRouter);
 
+// ========== StaffDeck P0 核心模块路由（agents/skills/knowledge/chat/general-skills/knowledge-bases） ==========
+// 统一通过 registerStaffRoutes 挂载，使用 lazyRouter 延迟加载
+import { registerStaffRoutes } from './routes/staff/index.js';
+registerStaffRoutes(app);
+
+// ========== StaffDeck P1 扩展模块路由（/api/staffdeck/* 命名空间） ==========
+app.use('/api/staffdeck/tools', lazyRouter(() => import('./routes/staff/tools.js'), undefined, 'staff-tools'));
+app.use('/api/staffdeck/mcp-servers', lazyRouter(() => import('./routes/staff/mcpServers.js'), undefined, 'staff-mcp-servers'));
+app.use('/api/staffdeck/scheduled-tasks', lazyRouter(() => import('./routes/staff/scheduledTasks.js'), undefined, 'staff-scheduled-tasks'));
+app.use('/api/staffdeck/model-configs', lazyRouter(() => import('./routes/staff/modelConfigs.js'), undefined, 'staff-model-configs'));
+app.use('/api/staffdeck/memories', lazyRouter(() => import('./routes/staff/memories.js'), undefined, 'staff-memories'));
+
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys
 const gatewayApiKeys = (process.env.GATEWAY_API_KEYS || '').split(',').filter(Boolean);
@@ -578,6 +590,15 @@ app.use(`${API_PREFIX}/skill-workshop`, lazyRouter(() => import('./routes/skillW
 app.use(`${API_PREFIX}/code-index`, lazyRouter(() => import('./routes/codeIndex.js'), undefined, 'code-index'));
 app.use(`${API_PREFIX}/templates`, lazyRouter(() => import('./routes/templates.js'), undefined, 'templates'));
 app.use(`${API_PREFIX}/execution-history`, lazyRouter(() => import('./routes/executionHistory.js'), undefined, 'execution-history'));
+
+// ========== StaffDeck P2 辅助模块路由（/api/staffdeck/* 前缀，与既有 cross-wms 路由隔离） ==========
+app.use('/api/staffdeck/feedback', lazyRouter(() => import('./routes/staff/feedback.js'), undefined, 'staff-feedback'));
+app.use('/api/staffdeck/traces', lazyRouter(() => import('./routes/staff/traces.js'), undefined, 'staff-traces'));
+app.use('/api/staffdeck/ui-config', lazyRouter(() => import('./routes/staff/uiConfig.js'), undefined, 'staff-ui-config'));
+app.use('/api/staffdeck/persona', lazyRouter(() => import('./routes/staff/persona.js'), undefined, 'staff-persona'));
+app.use('/api/staffdeck/sessions', lazyRouter(() => import('./routes/staff/sessions.js'), undefined, 'staff-sessions'));
+app.use('/api/staffdeck/auth', lazyRouter(() => import('./routes/staff/auth.js'), undefined, 'staff-auth'));
+app.use('/api/staffdeck/mock', lazyRouter(() => import('./routes/staff/mock.js'), undefined, 'staff-mock'));
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载

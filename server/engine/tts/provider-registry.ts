@@ -7,6 +7,7 @@
  */
 
 import type { TTSProviderPlugin } from './types.js';
+import type { SpeechProviderPlugin } from '../plugins/types.js';
 
 /** 将输入 ID 归一化为小写 trimmed 字符串，空值返回 undefined。 */
 export function normalizeProviderId(id: string | undefined | null): string | undefined {
@@ -117,3 +118,8 @@ export function createProviderRegistry(): ProviderRegistry {
 
 /** 进程级默认注册表，由 index.ts 注册内置 Provider。 */
 export const providerRegistry: ProviderRegistry = createProviderRegistry();
+
+/** 列举已注册的 Speech Provider，以 SpeechProviderPlugin 形态返回。 */
+export function listSpeechProviders(_cfg?: unknown): SpeechProviderPlugin[] {
+  return providerRegistry.list() as unknown as SpeechProviderPlugin[];
+}

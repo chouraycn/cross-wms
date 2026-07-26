@@ -1,0 +1,205 @@
+// Gateway log-tail helpers for status diagnostics.
+// Summaries compact repeated auth/runtime failures while preserving enough context for operators.
+// 移植自 openclaw/src/commands/status-all/gateway.ts
+//
+// 降级说明：
+//  - normalizeOptionalString 原来自 @openclaw/normalization-core/string-coerce
+//    → cross-wms 已有同名导出在 ../../infra/string-coerce.js，行为一致。
+//  - classifyOAuthRefreshFailureReason 来自 ../../agents/auth-profiles/oauth-refresh-failure.js
+//    → cross-wms 未移植。此处降级为返回 null 的 stub，summarizeLogTail 仍可正常工作，
+//      只是 OAuth 刷新失败不会被分类为 "re-auth required"，而是显示缩短后的原始消息。
+import fs from "node:fs/promises";
+import { normalizeOptionalString } from "../../infra/string-coerce.js";
+
+// ===== 内联 classifyOAuthRefreshFailureReason stub =====
+/**
+ * 分类 OAuth 刷新失败原因（降级占位）。
+ *
+ * 降级原因：openclaw 的 agents/auth-profiles/oauth-refresh-failure.js 未移植。
+ * 返回 null 使 summarizeLogTail 回退到显示缩短后的原始消息，不影响日志摘要基本功能。
+ */
+function classifyOAuthRefreshFailureReason(_message: string): string | null {
+  return null;
+}
+// ===== stub 结束 =====
+
+/** Reads the last non-empty lines from a gateway log file, returning an empty list on read failure. */
+export async function readFileTailLines(filePath: string, maxLines: number): Promise<string[]> {
+  const raw = await fs.readFile(filePath, "utf8").catch(() => "");
+  if (!raw.trim()) {
+    return [];
+  }
+  const lines = raw.replace(/\r/g, "").split("\n");
+  const out = lines.slice(Math.max(0, lines.length - maxLines));
+  return out.map((line) => line.trimEnd()).filter((line) => line.trim().length > 0);
+}
+
+function countMatches(haystack: string, needle: string): number {
+  if (!haystack || !needle) {
+    return 0;
+  }
+  return haystack.split(needle).length - 1;
+}
+
+function shorten(message: string, maxLen: number): string {
+  const cleaned = message.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= maxLen) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+function normalizeGwsLine(line: string): string {
+  // Remove per-request ids so repeated gateway websocket errors group into one summary.
+  return line
+    .replace(/\s+runId=[^\s]+/g, "")
+    .replace(/\s+conn=[^\s]+/g, "")
+    .replace(/\s+id=[^\s]+/g, "")
+    .replace(/\s+error=Error:.*$/g, "")
+    .trim();
+}
+
+function consumeJsonBlock(
+  lines: string[],
+  startIndex: number,
+): { json: string; endIndex: number } | null {
+  const startLine = lines[startIndex] ?? "";
+  const braceAt = startLine.indexOf("{");
+  if (braceAt < 0) {
+    return null;
+  }
+
+  const parts: string[] = [startLine.slice(braceAt)];
+  let depth = countMatches(parts[0] ?? "", "{") - countMatches(parts[0] ?? "", "}");
+  let i = startIndex;
+  while (depth > 0 && i + 1 < lines.length) {
+    i += 1;
+    const next = lines[i] ?? "";
+    parts.push(next);
+    depth += countMatches(next, "{") - countMatches(next, "}");
+  }
+  return { json: parts.join("\n"), endIndex: i };
+}
+
+/** Summarizes gateway log tail lines, grouping repeated failures and trimming long output. */
+export function summarizeLogTail(rawLines: string[], opts?: { maxLines?: number }): string[] {
+  const maxLines = Math.max(6, opts?.maxLines ?? 26);
+
+  const out: string[] = [];
+  const groups = new Map<string, { count: number; index: number; base: string }>();
+
+  const addGroup = (key: string, base: string) => {
+    const existing = groups.get(key);
+    if (existing) {
+      existing.count += 1;
+      return;
+    }
+    groups.set(key, { count: 1, index: out.length, base });
+    out.push(base);
+  };
+
+  const addLine = (line: string) => {
+    const trimmed = line.trimEnd();
+    if (!trimmed) {
+      return;
+    }
+    out.push(trimmed);
+  };
+
+  const lines = rawLines.map((line) => line.trimEnd()).filter(Boolean);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] ?? "";
+    const trimmedStart = line.trimStart();
+    if (
+      (trimmedStart.startsWith('"') ||
+        trimmedStart === "}" ||
+        trimmedStart === "{" ||
+        trimmedStart.startsWith("}") ||
+        trimmedStart.startsWith("{")) &&
+      !trimmedStart.startsWith("[") &&
+      !trimmedStart.startsWith("#")
+    ) {
+      // Tail can cut in the middle of a JSON blob; drop orphaned JSON fragments.
+      continue;
+    }
+
+    // "[openai] Token refresh failed: 401 { ...json... }"
+    const tokenRefresh = line.match(/^\[([^\]]+)\]\s+Token refresh failed:\s*(\d+)\s*(\{)?\s*$/);
+    if (tokenRefresh) {
+      const tag = tokenRefresh[1] ?? "unknown";
+      const status = tokenRefresh[2] ?? "unknown";
+      const block = consumeJsonBlock(lines, i);
+      if (block) {
+        i = block.endIndex;
+        const parsed = (() => {
+          try {
+            return JSON.parse(block.json) as {
+              error?: { code?: string; message?: string };
+            };
+          } catch {
+            return null;
+          }
+        })();
+        const code = normalizeOptionalString(parsed?.error?.code) ?? null;
+        const msg = normalizeOptionalString(parsed?.error?.message) ?? null;
+        const refreshReason = classifyOAuthRefreshFailureReason(msg ?? "");
+        // OAuth providers often return verbose JSON; classify re-auth failures into one readable hint.
+        const msgShort = msg ? (refreshReason ? "re-auth required" : shorten(msg, 52)) : null;
+        const base = `[${tag}] token refresh ${status}${code ? ` ${code}` : ""}${msgShort ? ` · ${msgShort}` : ""}`;
+        addGroup(`token:${tag}:${status}:${code ?? ""}:${msgShort ?? ""}`, base);
+        continue;
+      }
+    }
+
+    // "Embedded agent failed before reply: OAuth token refresh failed for openai: ..."
+    const embedded = line.match(
+      /^Embedded agent failed before reply:\s+OAuth token refresh failed for ([^:]+):/,
+    );
+    if (embedded) {
+      const provider = normalizeOptionalString(embedded[1]) || "unknown";
+      addGroup(`embedded:${provider}`, `Embedded agent: OAuth token refresh failed (${provider})`);
+      continue;
+    }
+
+    // "[gws] ⇄ res ✗ agent ... errorCode=UNAVAILABLE errorMessage=Error: OAuth token refresh failed ... runId=..."
+    if (
+      line.startsWith("[gws]") &&
+      line.includes("errorCode=UNAVAILABLE") &&
+      line.includes("OAuth token refresh failed")
+    ) {
+      const normalized = normalizeGwsLine(line);
+      addGroup(`gws:${normalized}`, normalized);
+      continue;
+    }
+
+    addLine(line);
+  }
+
+  for (const g of groups.values()) {
+    if (g.count <= 1) {
+      continue;
+    }
+    out[g.index] = `${g.base} ×${g.count}`;
+  }
+
+  const deduped: string[] = [];
+  for (const line of out) {
+    if (deduped[deduped.length - 1] === line) {
+      continue;
+    }
+    deduped.push(line);
+  }
+
+  if (deduped.length <= maxLines) {
+    return deduped;
+  }
+
+  const head = Math.min(6, Math.floor(maxLines / 3));
+  const tail = Math.max(1, maxLines - head - 1);
+  const kept = [
+    ...deduped.slice(0, head),
+    `… ${deduped.length - head - tail} lines omitted …`,
+    ...deduped.slice(-tail),
+  ];
+  return kept;
+}

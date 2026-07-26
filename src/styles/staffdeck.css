@@ -1,0 +1,172 @@
+/**
+ * StaffDeck CSS 变量定义 — 与 StaffDeck-main styles.css 的 :root 对齐
+ *
+ * 作用：
+ * 1. 为 Tailwind config 中的 `bg-background` / `text-foreground` 等 utility 提供 CSS 变量值
+ * 2. 为 shadcn 组件内联引用 `var(--background)` / `var(--primary)` 等提供基础值
+ * 3. 与 cross-wms 既有 MUI 主题互不干扰（MUI 使用 ThemeProvider，shadcn 使用 CSS 变量）
+ *
+ * 引入方式：在 main.tsx 中 `import './styles/staffdeck.css'`
+ */
+
+:root {
+  /* === 基础色 === */
+  --background: #f7f5ef;
+  --foreground: #20201d;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #eeece4;
+  --surface-subtle: #fbfaf6;
+
+  --border: #ded7cc;
+  --border-strong: #cfc5b7;
+  --line: #e7dfd3;
+
+  --muted: #eeece4;
+  --muted-soft: #9a9b95;
+  --muted-foreground: #6d726e;
+
+  /* === 强调色 === */
+  --accent: #0f766e;
+  --accent-soft: #e1f1ed;
+  --accent-foreground: #ffffff;
+
+  --danger: #dc2626;
+  --warning: #b45309;
+  --success: #138a55;
+
+  --ink-soft: #343633;
+  --copper: #a85d32;
+  --olive: #6f7b42;
+
+  /* === shadcn 标准 token === */
+  --card: #ffffff;
+  --card-foreground: #20201d;
+  --popover: #ffffff;
+  --popover-foreground: #20201d;
+
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+
+  --secondary: #eeece4;
+  --secondary-foreground: #20201d;
+
+  --destructive: #dc2626;
+
+  --input: #ded7cc;
+  --ring: #0f766e;
+
+  /* === Chart 调色板 === */
+  --chart-1: #0f766e;
+  --chart-2: #6f7b42;
+  --chart-3: #a85d32;
+  --chart-4: #138a55;
+  --chart-5: #b45309;
+
+  /* === 圆角 === */
+  --radius: 0.625rem;
+
+  /* === Sidebar 主题（shadcn sidebar.tsx）=== */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #858b9c;
+  --sidebar-primary: #18181a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f6f6f6;
+  --sidebar-accent-foreground: #18181a;
+  --sidebar-border: #f4f4f4;
+  --sidebar-ring: #18181a;
+
+  /* === 阴影 === */
+  --shadow-float: 0 20px 54px rgba(37, 32, 24, 0.1);
+  --shadow-soft: 0 10px 30px rgba(37, 32, 24, 0.055);
+
+  /* === 字体 === */
+  --font-body: "Inter", "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Inter", "IBM Plex Sans", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  /* === 页面渐变背景 === */
+  --page-gradient-a: rgba(15, 118, 110, 0.055);
+  --page-gradient-top: #fbfaf6;
+  --page-gradient-bottom: #f3f0e8;
+  --panel-bg: rgba(249, 247, 241, 0.82);
+
+  /* === 代码块 === */
+  --code-bg: #ffffff;
+  --code-fg: #1f1f1f;
+  --code-border: #e5e5e5;
+  --code-sidebar-bg: #f3f3f3;
+  --code-sidebar-active: #e8e8e8;
+  --code-tab-bg: #f3f3f3;
+  --code-selection: rgba(0, 120, 215, 0.24);
+  --code-comment: #008000;
+  --code-string: #a31515;
+  --code-number: #098658;
+  --code-keyword: #0000ff;
+  --code-function: #795e26;
+  --code-builtin: #267f99;
+  --code-operator: #1f1f1f;
+  --code-punctuation: #666666;
+  --code-property: #001080;
+  --code-boolean: #0000ff;
+
+  /* === Thinking 流效果 === */
+  --thinking-base: #8a918d;
+  --thinking-focus: #2f3734;
+  --thinking-flow-duration: 4.2s;
+}
+
+/* === 暗色模式（暂不启用，预留）=== */
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1a1a1a;
+    --foreground: #f5f5f5;
+    ...
+  }
+}
+*/
+
+/* === 全局基础样式（仅作用于 StaffDeck 容器内，避免污染 cross-wms 主界面）=== */
+.sd-root,
+.sd-root * {
+  box-sizing: border-box;
+}
+
+.sd-root {
+  font-family: var(--font-body);
+  color: var(--foreground);
+  background-color: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 默认所有 sd-root 内的元素使用主题 border 颜色（shadcn 风格） */
+.sd-root * {
+  border-color: var(--border);
+}
+
+/* === 滚动条样式（与 StaffDeck-main 对齐）=== */
+.sd-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sd-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sd-root ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.sd-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-soft);
+}
+
+/* === 焦点环（shadcn 标准）=== */
+.sd-root :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
