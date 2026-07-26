@@ -86,10 +86,13 @@ export type MusicModeCapabilities = {
   maxTracks?: number;
   maxDurationSeconds?: number;
   supportsLyrics?: boolean;
+  supportsLyricsByModel?: Readonly<Record<string, boolean>>;
   supportsInstrumental?: boolean;
+  supportsInstrumentalByModel?: Readonly<Record<string, boolean>>;
   supportsDuration?: boolean;
   supportsFormat?: boolean;
   supportedFormats?: readonly AudioFormat[];
+  supportedFormatsByModel?: Readonly<Record<string, readonly AudioFormat[]>>;
   supportsStyle?: boolean;
   supportsMood?: boolean;
 };
@@ -122,3 +125,40 @@ export type MusicGenerationModelConfig = {
   model?: string;
   fallbacks?: string[];
 };
+
+// ---------------------------------------------------------------------------
+// 兼容 openclaw 命名约定的类型别名
+// （capabilities.ts / normalization.ts / runtime-types.ts 从 openclaw 移植而来）
+// ---------------------------------------------------------------------------
+
+/** 音乐生成模式：纯生成或基于输入素材编辑 */
+export type MusicGenerationMode = "generate" | "edit";
+
+/** 模式能力（openclaw 命名）- 等价于 MusicModeCapabilities */
+export type MusicGenerationModeCapabilities = MusicModeCapabilities;
+
+/** 编辑模式能力（openclaw 命名） */
+export type MusicGenerationEditCapabilities = MusicModeCapabilities & {
+  enabled: boolean;
+  maxInputAssets?: number;
+};
+
+/** 被忽略的覆盖项（openclaw 命名） */
+export type MusicGenerationIgnoredOverride = {
+  key: string;
+  value: unknown;
+};
+
+/** 归一化记录（openclaw 命名） */
+export type MusicGenerationNormalization = {
+  durationSeconds?: {
+    requested: number;
+    applied: number;
+  };
+};
+
+/** 输出格式（openclaw 命名）- 等价于 AudioFormat */
+export type MusicGenerationOutputFormat = AudioFormat;
+
+/** 源图像/素材（openclaw 命名）- 等价于 MusicSourceAsset */
+export type MusicGenerationSourceImage = MusicSourceAsset;

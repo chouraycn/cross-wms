@@ -18,7 +18,7 @@ export type VideoStyle =
   | "artistic";
 
 /** 视频分辨率档位 */
-export type VideoResolution = "360P" | "480P" | "540P" | "720P" | "1080P" | "4K";
+export type VideoResolution = "360P" | "480P" | "540P" | "720P" | "768P" | "1080P" | "4K";
 
 /** 生成视频资产 */
 export type GeneratedVideoAsset = {
@@ -78,6 +78,7 @@ export type VideoModeCapabilities = {
   maxVideos?: number;
   maxDurationSeconds?: number;
   supportedDurationSeconds?: readonly number[];
+  supportedDurationSecondsByModel?: Record<string, readonly number[]>;
   sizes?: readonly string[];
   aspectRatios?: readonly string[];
   resolutions?: readonly VideoResolution[];
@@ -87,6 +88,13 @@ export type VideoModeCapabilities = {
   supportsAudio?: boolean;
   supportsWatermark?: boolean;
   supportsFps?: boolean;
+  maxInputImages?: number;
+  maxInputVideos?: number;
+  maxInputAudios?: number;
+  maxInputImagesByModel?: Record<string, number>;
+  maxInputVideosByModel?: Record<string, number>;
+  maxInputAudiosByModel?: Record<string, number>;
+  providerOptions?: Record<string, unknown>;
 };
 
 /** Provider 变换能力（图生视频/视频生视频） */
@@ -114,10 +122,46 @@ export type VideoGenerationProvider = {
   capabilities: VideoProviderCapabilities;
   isConfigured?: () => boolean;
   generateVideo: (req: VideoRequest) => Promise<VideoResult>;
+  resolveModelCapabilities?: (params: {
+    provider: string;
+    model: string;
+    cfg: unknown;
+    agentDir?: string;
+    authStore?: unknown;
+    timeoutMs?: number;
+  }) => Promise<VideoGenerationProviderCapabilities | undefined | null>;
 };
 
 /** 模型引用配置 */
 export type VideoGenerationModelConfig = {
   model?: string;
   fallbacks?: string[];
+};
+
+// ---------------------------------------------------------------------------
+// openclaw 兼容别名（移植文件使用 VideoGeneration* 命名，映射到 cross-wms 本地类型）
+// ---------------------------------------------------------------------------
+
+export type VideoGenerationModeCapabilities = VideoModeCapabilities;
+export type VideoGenerationTransformCapabilities = VideoTransformCapabilities;
+export type VideoGenerationProviderCapabilities = VideoProviderCapabilities;
+export type VideoGenerationResolution = VideoResolution;
+export type VideoGenerationSourceAsset = VideoSourceAsset;
+
+/** 被忽略的覆盖项（用户传入但 Provider 不支持）。 */
+export type VideoGenerationIgnoredOverride = {
+  key: string;
+  value: unknown;
+};
+
+/** 归一化决策记录，描述用户请求值与最终应用值的差异。 */
+export type VideoGenerationNormalization = {
+  size?: { requested?: string; applied: string; derivedFrom?: string };
+  aspectRatio?: { requested?: string; applied: string; derivedFrom?: string };
+  resolution?: { requested?: VideoResolution; applied: VideoResolution };
+  durationSeconds?: {
+    requested: number;
+    applied: number;
+    supportedValues?: readonly number[];
+  };
 };

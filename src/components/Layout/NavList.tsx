@@ -33,6 +33,7 @@ import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import PhonelinkIcon from '@mui/icons-material/Phonelink';
 import DnsIcon from '@mui/icons-material/Dns';
 import HubIcon from '@mui/icons-material/Hub';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -134,6 +135,7 @@ const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
+  { label: '数字员工', path: '/enterprise/dashboard', icon: <GroupsOutlinedIcon />, desc: 'StaffDeck 企业智能体平台' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
   {
     label: '创作',
@@ -306,6 +308,14 @@ const NavList: React.FC<NavListProps> = ({
 
   const isActive = (path: string) => {
     if (path === '/chat' && isChatWithSession) return false;
+    // StaffDeck 模块入口：任何 /enterprise/* /staff/* /workspace/* 路径都高亮
+    if (path === '/enterprise/dashboard') {
+      return (
+        activePath.startsWith('/enterprise/') ||
+        activePath.startsWith('/staff/') ||
+        activePath.startsWith('/workspace/')
+      );
+    }
     return activePath.startsWith(path);
   };
 

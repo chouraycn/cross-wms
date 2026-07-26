@@ -1,14 +1,11 @@
 /**
- * 惰性缓存值 — 将值或值生成函数封装为至多解析一次的 getter
- *
- * 参考 openclaw/src/plugin-sdk/lazy-value.ts
+ * Public SDK helper for caching a lazily computed value behind a getter.
  */
-
 type LazyValue<T> = T | (() => T);
 
-/** 返回一个至多解析一次的 getter（无 fallback 版本，可为 undefined）。 */
+/** Returns a getter that resolves the supplied value at most once. */
 export function createCachedLazyValueGetter<T>(value: LazyValue<T>): () => T;
-/** 返回一个至多解析一次的 getter（值为 nullish 时使用 fallback）。 */
+/** Returns a getter that resolves once and substitutes a fallback for nullish values. */
 export function createCachedLazyValueGetter<T>(
   value: LazyValue<T | null | undefined>,
   fallback: T,
@@ -23,7 +20,7 @@ export function createCachedLazyValueGetter<T>(
   return () => {
     if (!resolved) {
       const nextValue =
-        typeof value === 'function' ? (value as () => T | null | undefined)() : value;
+        typeof value === "function" ? (value as () => T | null | undefined)() : value;
       cached = nextValue ?? fallback;
       resolved = true;
     }

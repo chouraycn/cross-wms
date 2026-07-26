@@ -6,7 +6,9 @@ export type WebContentExtractMode = "markdown" | "text";
 
 export type WebContentExtractionRequest = {
   url: string;
+  html?: string;
   mode?: WebContentExtractMode;
+  extractMode?: WebContentExtractMode;
   maxBytes?: number;
   timeoutMs?: number;
 };

@@ -115,6 +115,33 @@ const NodeHostPage = React.lazy(() => import('./pages/NodeHostPage'));
 const MediaToolsPage = React.lazy(() => import('./pages/MediaToolsPage'));
 const IntegrationDashboardPage = React.lazy(() => import('./pages/IntegrationDashboardPage'));
 
+// ===================== StaffDeck 模块懒加载 =====================
+// withStaffAuth 是普通函数，static 导入即可；它会被应用到每个 StaffDeck 页面组件，
+// 从 StaffAuthContext 读取 currentUser/isAdmin/onLogout 注入为 props
+import StaffLayout, { withStaffAuth as wrapStaffAuth } from './components/staff/StaffLayout';
+const StaffAgentsPage = React.lazy(() => import('./pages/staff/AgentsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffDashboardPage = React.lazy(() =>
+  import('./pages/staff/dashboard/DashboardPage').then(m => ({
+    default: wrapStaffAuth(m.default) as React.ComponentType<{ profileTab?: 'work' | 'scheduled' | 'memories' | 'logs' }>,
+  })),
+);
+const StaffToolsPage = React.lazy(() => import('./pages/staff/ToolsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffKnowledgePage = React.lazy(() => import('./pages/staff/KnowledgePage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffSkillsPage = React.lazy(() => import('./pages/staff/SkillsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffGeneralSkillsPage = React.lazy(() => import('./pages/staff/GeneralSkillsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffModelsPage = React.lazy(() => import('./pages/staff/ModelsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffAccountsPage = React.lazy(() => import('./pages/staff/AccountsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffOpenPlatformPage = React.lazy(() => import('./pages/staff/OpenPlatformPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffEmployeeGalleryPage = React.lazy(() => import('./pages/staff/EmployeeGalleryPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffPersonaPage = React.lazy(() => import('./pages/staff/PersonaPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffTracesPage = React.lazy(() => import('./pages/staff/TracesPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffDebugPage = React.lazy(() => import('./pages/staff/DebugPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffDistillPage = React.lazy(() => import('./pages/staff/DistillPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffTutorialPage = React.lazy(() => import('./pages/staff/TutorialPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffScheduledTaskEditorPage = React.lazy(() =>
+  import('./pages/staff/scheduled-tasks/ScheduledTaskEditorPage').then(m => ({ default: wrapStaffAuth(m.ScheduledTaskNewPage) })),
+);
+
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
   default: { main: '#111827', light: '#374151' },
@@ -1000,6 +1027,53 @@ const MainLayout: React.FC = () => {
                     <Route path="/process" element={<ProcessManagementPage />} />
                     <Route path="/node-host" element={<NodeHostPage />} />
                     <Route path="/media-tools" element={<MediaToolsPage />} />
+
+                    {/* ===================== StaffDeck 模块路由 =====================
+                       StaffDeck 页面内部使用 /staff/* 与 /enterprise/* 两种路径，
+                       均挂载在 StaffLayout 下，享受统一的 auth 上下文 + 侧边栏。
+                       注意：所有路径需保持与 src/components/staff/enums/routes.ts 中 EnterpriseRoute 一致。 */}
+                    <Route path="/staff" element={<Navigate to="/enterprise/dashboard" replace />} />
+                    <Route path="/enterprise" element={<Navigate to="/enterprise/dashboard" replace />} />
+                    <Route path="/enterprise/platform" element={<StaffLayout><StaffOpenPlatformPage /></StaffLayout>} />
+                    <Route path="/enterprise/agents" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/enterprise/dashboard" element={<StaffLayout><StaffDashboardPage /></StaffLayout>} />
+                    <Route path="/enterprise/scheduled-tasks" element={<StaffLayout><StaffDashboardPage profileTab="scheduled" /></StaffLayout>} />
+                    <Route path="/enterprise/scheduled-tasks/new" element={<StaffLayout><StaffScheduledTaskEditorPage /></StaffLayout>} />
+                    <Route path="/enterprise/memories" element={<StaffLayout><StaffDashboardPage profileTab="memories" /></StaffLayout>} />
+                    <Route path="/enterprise/feedback" element={<StaffLayout><StaffDashboardPage profileTab="logs" /></StaffLayout>} />
+                    <Route path="/enterprise/knowledge" element={<StaffLayout><StaffKnowledgePage /></StaffLayout>} />
+                    <Route path="/enterprise/general-skills" element={<StaffLayout><StaffGeneralSkillsPage /></StaffLayout>} />
+                    <Route path="/enterprise/general-skills/new" element={<StaffLayout><StaffGeneralSkillsPage /></StaffLayout>} />
+                    <Route path="/enterprise/skills" element={<StaffLayout><StaffSkillsPage /></StaffLayout>} />
+                    <Route path="/enterprise/skills/new/distill" element={<StaffLayout><StaffDistillPage /></StaffLayout>} />
+                    <Route path="/enterprise/tools" element={<StaffLayout><StaffToolsPage /></StaffLayout>} />
+                    <Route path="/enterprise/tools/:toolId/test" element={<StaffLayout><StaffToolsPage /></StaffLayout>} />
+                    <Route path="/enterprise/accounts" element={<StaffLayout><StaffAccountsPage /></StaffLayout>} />
+                    <Route path="/enterprise/models" element={<StaffLayout><StaffModelsPage /></StaffLayout>} />
+                    <Route path="/enterprise/persona" element={<StaffLayout><StaffPersonaPage /></StaffLayout>} />
+                    <Route path="/enterprise/traces" element={<StaffLayout><StaffTracesPage /></StaffLayout>} />
+                    <Route path="/enterprise/debug" element={<StaffLayout><StaffDebugPage /></StaffLayout>} />
+                    <Route path="/enterprise/tutorial" element={<StaffLayout><StaffTutorialPage /></StaffLayout>} />
+
+                    {/* /staff/* 别名路径（部分页面内部跳转使用 /staff/* 而非 /enterprise/*） */}
+                    <Route path="/staff/tools" element={<Navigate to="/enterprise/tools" replace />} />
+                    <Route path="/staff/tools/:toolId/test" element={<Navigate to="/enterprise/tools" replace />} />
+                    <Route path="/staff/general-skills" element={<Navigate to="/enterprise/general-skills" replace />} />
+                    <Route path="/staff/general-skills/new" element={<Navigate to="/enterprise/general-skills/new" replace />} />
+                    <Route path="/staff/skills" element={<Navigate to="/enterprise/skills" replace />} />
+                    <Route path="/staff/skills/new/distill" element={<Navigate to="/enterprise/skills/new/distill" replace />} />
+                    <Route path="/staff/scheduled-tasks" element={<Navigate to="/enterprise/scheduled-tasks" replace />} />
+                    <Route path="/staff/scheduled-tasks/new" element={<Navigate to="/enterprise/scheduled-tasks/new" replace />} />
+                    <Route path="/staff/dashboard" element={<Navigate to="/enterprise/dashboard" replace />} />
+                    <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
+
+                    {/* /workspace/* 路径 — StaffDeck chat 与 gallery，简化重定向到员工列表 */}
+                    <Route path="/workspace" element={<Navigate to="/enterprise/dashboard" replace />} />
+                    <Route path="/workspace/chat" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/workspace/chat/:sessionId" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/workspace/chat/draft/:agentId" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/workspace/gallery" element={<StaffLayout><StaffEmployeeGalleryPage /></StaffLayout>} />
+
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

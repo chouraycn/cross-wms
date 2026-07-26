@@ -8,14 +8,14 @@ export function normalizeCapabilityProviderId(providerId: string | undefined): s
 }
 export function buildCapabilityProviderMaps<T extends { id: string; aliases?: readonly string[] }>(
   providers: readonly T[],
-): { byId: Map<string, T>; byAlias: Map<string, T> } {
-  const byId = new Map<string, T>();
-  const byAlias = new Map<string, T>();
+): { canonical: Map<string, T>; aliases: Map<string, T> } {
+  const canonical = new Map<string, T>();
+  const aliases = new Map<string, T>();
   for (const provider of providers) {
-    byId.set(provider.id, provider);
+    canonical.set(provider.id, provider);
     for (const alias of provider.aliases ?? []) {
-      byAlias.set(alias, provider);
+      aliases.set(alias, provider);
     }
   }
-  return { byId, byAlias };
+  return { canonical, aliases };
 }
