@@ -1,0 +1,10 @@
+{
+  "id": "feishu",
+  "name": "Feishu Channel",
+  "description": "Feishu/Lark Bot API channel extension with docs, wiki, drive, and permissions",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

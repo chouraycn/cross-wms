@@ -1,16 +1,7 @@
 // Converts status data into reusable report sections.
 // Section builders keep table column definitions close to the rows they format.
-// 移植自 openclaw/src/commands/status-all/report-sections.ts
-//
-// 降级说明：
-//  - RenderTableOptions / TableColumn 原来自 ../../../packages/terminal-core/src/table.js
-//    → cross-wms 未移植 terminal-core 包；改从已移植的 ./text-report.js 导入等价类型。
-//  - buildStatusChannelsTableRows / statusChannelsTableColumns 来自 ./channels-table.js
-//    → cross-wms 已移植。
-//  - buildStatusAgentTableRows / buildStatusChannelDetailSections /
-//    statusAgentsTableColumns / statusOverviewTableColumns 来自 ./report-tables.js
-//    → cross-wms 已移植（本批次）。
-//  - StatusReportSection 来自 ./text-report.js → cross-wms 已移植。
+
+import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
 import { buildStatusChannelsTableRows, statusChannelsTableColumns } from "./channels-table.js";
 import {
   buildStatusAgentTableRows,
@@ -18,7 +9,7 @@ import {
   statusAgentsTableColumns,
   statusOverviewTableColumns,
 } from "./report-tables.js";
-import type { RenderTableOptions, StatusReportSection, TableColumn } from "./text-report.js";
+import type { StatusReportSection } from "./text-report.js";
 
 type TableRenderer = (input: RenderTableOptions) => string;
 

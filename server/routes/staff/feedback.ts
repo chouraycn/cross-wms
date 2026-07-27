@@ -5,7 +5,7 @@
  *   GET  /summary               反馈汇总统计
  *   GET  /sessions              有反馈的会话列表
  *   GET  /sessions/:session_id  单会话反馈详情
- *   POST /:feedback_id/reanalyze 重新分析反馈（stub）
+ *   POST /:feedback_id/reanalyze 重新分析反馈（接真实 LLM 归因）
  *
  * 响应格式统一为 { code, data, message }
  */
@@ -28,9 +28,24 @@ import {
   getMessageById,
 } from '../../dao/staff/staffSessionDao.js';
 import { getUserById } from '../../dao/staff/staffAuthDao.js';
+import { getDefaultModelConfig } from '../../dao/staff/staffModelConfigDao.js';
+import { complete } from '../../engine/llm/index.js';
 import { getStaffContext, staffAuth } from '../../middleware/staffAuth.js';
 
 const router = Router();
+
+/** 从 LLM 输出中容错抽取第一个 JSON 对象 */
+function parseJsonObject(raw: string): Record<string, unknown> | null {
+  if (!raw) return null;
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 // ===================== GET /api/staffdeck/feedback/summary =====================
 
@@ -223,7 +238,7 @@ router.get('/sessions/:session_id', staffAuth, (req: Request, res: Response) => 
 
 // ===================== POST /api/staffdeck/feedback/:feedback_id/reanalyze =====================
 
-router.post('/:feedback_id/reanalyze', staffAuth, (req: Request, res: Response) => {
+router.post('/:feedback_id/reanalyze', staffAuth, async (req: Request, res: Response) => {
   const ctx = getStaffContext(res);
   const feedbackId = req.params.feedback_id;
 
@@ -247,35 +262,71 @@ router.post('/:feedback_id/reanalyze', staffAuth, (req: Request, res: Response) 
     return;
   }
 
-  // stub：立即写入一个占位分析结果（开发期不调用 LLM）
-  // 生产期此处应触发 LLM 异步分析任务
-  const stubJobId = `job_${feedbackId}_${Math.floor(Date.now() / 1000)}`;
   const ts = Math.floor(Date.now() / 1000);
-  const analyzed = updateMessageFeedbackAnalysis(ctx.tenantId, feedbackId, {
-    analysis_status: 'analyzed',
-    analysis_bucket: 'user_random_or_unclear',
-    analysis_reason: 'Stub 分析：上下文不足以判断根因。',
-    analysis_summary: '已通过 stub 完成重新分析，生产环境应接入 LLM 进行真实归因。',
-    analysis_confidence: 0.3,
-    analysis_json: {
-      stub: true,
-      job_id: stubJobId,
-      retry_requested_at: ts,
-      analyzed_at: ts,
-    },
-    analyzed_at: ts,
-  });
+  const jobId = `job_${feedbackId}_${ts}`;
 
-  res.json({
-    code: 0,
-    data: {
-      feedback_id: feedbackId,
-      analysis_status: analyzed ? analyzed.analysis_status : 'pending',
-      job_id: stubJobId,
-      updated_at: analyzed ? analyzed.updated_at : ts,
-    },
-    message: 'ok',
-  });
+  // 真实分析：用默认模型对会话记录 + 评分做根因归因
+  try {
+    const cfg = getDefaultModelConfig(ctx.tenantId);
+    if (!cfg || !cfg.model) {
+      throw new Error('未配置可用模型，无法执行真实分析');
+    }
+    const transcript = listMessagesBySession(ctx.tenantId, feedback.session_id)
+      .map((m) => `${m.role}: ${m.content}`)
+      .join('\n')
+      .slice(0, 6000);
+    const userPrompt =
+      `你是智能客服质检分析助手。下面是一次客服对话记录与用户对该回复的评分（${feedback.rating}）。` +
+      `请分析该评分的根因，并严格按 JSON 输出：\n` +
+      `{"bucket":"<user_random_or_unclear|agent_error|tool_error|knowledge_gap|other>","reason":"<根因说明>","summary":"<一句话总结>","confidence":<0到1的小数>}\n\n` +
+      `对话记录：\n${transcript}`;
+    const raw = await complete({
+      model: cfg.model,
+      messages: [
+        { role: 'system', content: '你只输出 JSON，不要输出多余文字。' },
+        { role: 'user', content: userPrompt },
+      ],
+    });
+    const parsed = parseJsonObject(raw);
+    const bucket = parsed?.bucket ?? 'other';
+    const reason = parsed?.reason ?? '（模型未给出明确原因）';
+    const summary = parsed?.summary ?? raw.slice(0, 200);
+    const confidence = typeof parsed?.confidence === 'number' ? parsed.confidence : 0.5;
+    const analyzed = updateMessageFeedbackAnalysis(ctx.tenantId, feedbackId, {
+      analysis_status: 'analyzed',
+      analysis_bucket: String(bucket),
+      analysis_reason: String(reason),
+      analysis_summary: String(summary),
+      analysis_confidence: Number(confidence),
+      analysis_json: { job_id: jobId, analyzed_at: ts, model: cfg.model, raw: raw.slice(0, 1000) },
+      analyzed_at: ts,
+    });
+    res.json({
+      code: 0,
+      data: {
+        feedback_id: feedbackId,
+        analysis_status: analyzed ? analyzed.analysis_status : 'analyzed',
+        job_id: jobId,
+        implemented: true,
+        updated_at: analyzed ? analyzed.updated_at : ts,
+      },
+      message: 'ok',
+    });
+  } catch (e) {
+    // 无模型 / 无 Key / 调用失败：保持 pending，诚实返回未接入真实分析
+    const msg = (e as Error).message;
+    res.json({
+      code: 0,
+      data: {
+        feedback_id: feedbackId,
+        analysis_status: 'pending',
+        job_id: jobId,
+        implemented: false,
+        error: msg,
+      },
+      message: `真实分析不可用：${msg}`,
+    });
+  }
 });
 
 export default router;

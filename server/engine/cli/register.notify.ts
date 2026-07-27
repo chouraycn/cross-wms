@@ -1,19 +1,69 @@
-// registerNotifyCommand: CLI command registration.
-// 移植自 openclaw/src/cli/program/register.notify.ts
-//
-// 降级策略：
-//  - 原模块依赖 OpenClaw 内部模块。
-//    cross-wms 未移植；此处注册命令结构，action 输出 "not available in cross-wms"。
-
+// Local notification command for paired nodes.
+import { normalizeOptionalString } from "../infra/string-coerce.js";
+import { randomUUID } from "node:crypto";
 import type { Command } from "commander";
+import { defaultRuntime } from "./runtime.js";
+import { getNodesTheme, runNodesCommand } from "./nodes-cli-utils.js";
+import {
+  callGatewayCli,
+  nodesCallOpts,
+  parseOptionalNodePositiveInteger,
+  resolveNodeId,
+} from "./rpc.js";
+import type { NodesRpcOpts } from "./types.js";
 
-/** Register the notify command(s). */
-export function registerNotifyCommand(program: Command): void {
-  program
-    .command("notify")
-    .description("Notification commands")
-    .action(() => {
-      console.error("notify is not available in cross-wms");
-      process.exit(1);
-    });
+function randomIdempotencyKey(): string {
+  return randomUUID();
+}
+
+export function registerNodesNotifyCommand(nodes: Command) {
+  nodesCallOpts(
+    nodes
+      .command("notify")
+      .description("Send a local notification on a node (mac only)")
+      .requiredOption("--node <idOrNameOrIp>", "Node id, name, or IP")
+      .option("--title <text>", "Notification title")
+      .option("--body <text>", "Notification body")
+      .option("--sound <name>", "Notification sound")
+      .option("--priority <passive|active|timeSensitive>", "Notification priority")
+      .option("--delivery <system|overlay|auto>", "Delivery mode", "system")
+      .option("--invoke-timeout <ms>", "Node invoke timeout in ms (default 15000)", "15000")
+      .action(async (opts: NodesRpcOpts) => {
+        await runNodesCommand("notify", async () => {
+          const nodeId = await resolveNodeId(opts, normalizeOptionalString(opts.node) ?? "");
+          const title = normalizeOptionalString(opts.title) ?? "";
+          const body = normalizeOptionalString(opts.body) ?? "";
+          if (!title && !body) {
+            throw new Error("missing --title or --body");
+          }
+          const invokeTimeout = parseOptionalNodePositiveInteger(
+            opts.invokeTimeout,
+            "--invoke-timeout",
+          );
+          const invokeParams: Record<string, unknown> = {
+            nodeId,
+            command: "system.notify",
+            params: {
+              title,
+              body,
+              sound: opts.sound,
+              priority: opts.priority,
+              delivery: opts.delivery,
+            },
+            idempotencyKey: opts.idempotencyKey ?? randomIdempotencyKey(),
+          };
+          if (typeof invokeTimeout === "number" && Number.isFinite(invokeTimeout)) {
+            invokeParams.timeoutMs = invokeTimeout;
+          }
+
+          const result = await callGatewayCli("node.invoke", opts, invokeParams);
+          if (opts.json) {
+            defaultRuntime.writeJson(result);
+            return;
+          }
+          const { ok } = getNodesTheme();
+          defaultRuntime.log(ok("notify ok"));
+        });
+      }),
+  );
 }

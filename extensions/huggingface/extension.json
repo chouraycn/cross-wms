@@ -1,10 +1,28 @@
 {
   "id": "huggingface",
   "name": "Hugging Face Provider",
-  "description": "Hugging Face inference LLM provider extension",
+  "description": "Hugging Face Inference API LLM provider extension",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["huggingface"],
+  "modelSupport": {
+    "modelPrefixes": ["meta-llama/", "mistralai/", "Qwen/", "google/", "01-ai/"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "huggingface-native",
+      "hosts": ["api-inference.huggingface.co"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "huggingface",
+        "envVars": ["HUGGINGFACE_API_KEY"]
+      }
+    ]
+  }
 }

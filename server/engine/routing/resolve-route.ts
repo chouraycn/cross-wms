@@ -23,6 +23,8 @@ import type {
 } from './types.js';
 
 export { DEFAULT_ACCOUNT_ID } from './session-key.js';
+export type { RoutePeer } from './types.js';
+export type { ChatType as RoutePeerKind } from './types.js';
 
 export interface ResolveAgentRouteInput {
   cfg?: {
@@ -364,7 +366,7 @@ function deriveLastRoutePolicy(params: {
   return params.sessionKey === params.mainSessionKey ? 'main' : 'session';
 }
 
-function buildAgentSessionKey(params: {
+export function buildAgentSessionKey(params: {
   agentId: string;
   channel: string;
   accountId?: string | null;

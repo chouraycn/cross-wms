@@ -1,15 +1,9 @@
 // Table row helpers for status report sections.
 // These functions keep terminal styling decisions out of the scan/data layer.
-// 移植自 openclaw/src/commands/status-all/report-tables.ts
-//
-// 降级说明：
-//  - RenderTableOptions / TableColumn 原来自 ../../../packages/terminal-core/src/table.js
-//    → cross-wms 未移植 terminal-core 包；改从已移植的 ./text-report.js 导入等价类型。
-//  - formatTimeAgo 原来自 ./format.js（re-export 自 infra/format-time/format-relative.ts）
-//    → cross-wms 已有同名实现在 ../../infra/format-relative.js，直接导入。
-//  - StatusReportSection 来自 ./text-report.js → cross-wms 已移植。
-import { formatTimeAgo } from "../../infra/format-relative.js";
-import type { RenderTableOptions, StatusReportSection } from "./text-report.js";
+
+import type { RenderTableOptions } from "@openclaw-src/packages/terminal-core/src/table.js";
+import { formatTimeAgo } from "./format.js";
+import type { StatusReportSection } from "./text-report.js";
 
 type AgentStatusLike = {
   agents: Array<{

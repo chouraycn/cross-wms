@@ -6,6 +6,9 @@ import {
   Folder,
   Wand2,
   MessageSquare,
+  Wrench,
+  BookOpen,
+  Clock,
 } from 'lucide-react';
 
 import { staffdeckDisplayText } from '../../../components/staff/employee.js';
@@ -76,7 +79,7 @@ export default function WorkRecordTab({
   activeScheduledTasks,
   employeeSessions,
   replyStats,
-  activityEvents: _activityEvents,
+  activityEvents,
   positiveRate,
   negativeRate,
 }: WorkRecordTabProps) {
@@ -143,7 +146,8 @@ export default function WorkRecordTab({
         <ClickableMetric label="差评率" value={negativeRate} suffix="%" tone="negative" onClick={goToLogs} />
       </div>
 
-      {/* TODO: ActivityTimeline（Day/Week/Month 视图、HoverCard、日期选择器）复杂度高，待后续完整移植 */}
+      {/* 活动时间线：按日期分组的竖向时间轴（Day/Week/Month 切换与 HoverCard 为后续增强） */}
+      <ActivityTimeline events={activityEvents} />
 
       <div className="w-full min-w-0 max-w-full overflow-x-auto">
         <div className="grid grid-flow-col auto-cols-[minmax(160px,1fr)] gap-[clamp(18px,2.22vw,32px)]">
@@ -175,6 +179,81 @@ export default function WorkRecordTab({
         </div>
       </div>
     </section>
+  );
+}
+
+function toDateKey(ts: string): string {
+  const n = Number(ts);
+  const date = !Number.isNaN(n) ? new Date(n * 1000) : new Date(ts);
+  if (Number.isNaN(date.getTime())) return '未知日期';
+  return date.toISOString().slice(0, 10);
+}
+
+function formatTime(ts: string): string {
+  const n = Number(ts);
+  const date = !Number.isNaN(n) ? new Date(n * 1000) : new Date(ts);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(11, 16);
+}
+
+function groupByDate(events: AgentWorkRecordEventRead[]): Array<[string, AgentWorkRecordEventRead[]]> {
+  const map = new Map<string, AgentWorkRecordEventRead[]>();
+  for (const e of events) {
+    const d = toDateKey(e.timestamp);
+    const arr = map.get(d);
+    if (arr) arr.push(e);
+    else map.set(d, [e]);
+  }
+  return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+}
+
+function KindIcon({ kind }: { kind: AgentWorkRecordEventRead['kind'] }) {
+  const cls = 'size-[14px] shrink-0 text-[#858b9c]';
+  switch (kind) {
+    case 'chat':
+      return <MessageSquare className={cls} />;
+    case 'task':
+      return <Calendar className={cls} />;
+    case 'sop':
+      return <ClipboardList className={cls} />;
+    case 'tool':
+      return <Wrench className={cls} />;
+    case 'knowledge':
+      return <BookOpen className={cls} />;
+    case 'skill':
+      return <Wand2 className={cls} />;
+    default:
+      return <Clock className={cls} />;
+  }
+}
+
+function ActivityTimeline({ events }: { events: AgentWorkRecordEventRead[] }) {
+  if (!events.length) {
+    return <div className="text-[12px] text-[#9aa0ad]">暂无活动时间线</div>;
+  }
+  const groups = groupByDate(events);
+  return (
+    <div className="flex w-full flex-col gap-[14px]">
+      <div className="text-[13px] font-medium text-[#18181a]">活动时间线</div>
+      {groups.map(([date, evs]) => (
+        <div key={date} className="flex flex-col gap-[8px]">
+          <div className="text-[12px] text-[#9aa0ad]">{date}</div>
+          <ol className="relative flex flex-col gap-[10px] pl-[18px]">
+            <span className="absolute bottom-[4px] left-[5px] top-[4px] w-[1.5px] bg-[#e3e7f1]" />
+            {evs.map((e) => (
+              <li key={e.id} className="relative">
+                <span className="absolute -left-[18px] top-[4px] size-[9px] rounded-full bg-[#4f7cff] ring-2 ring-white" />
+                <div className="flex items-center gap-[8px]">
+                  <KindIcon kind={e.kind} />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[#18181a]">{e.label}</span>
+                  <span className="shrink-0 text-[11px] text-[#9aa0ad]">{formatTime(e.timestamp)}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </div>
   );
 }
 

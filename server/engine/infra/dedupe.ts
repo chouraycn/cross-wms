@@ -83,3 +83,58 @@ export function createDedupeFilter<T>(
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const resolveGlobalDedupeCache: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+
+// openclaw compat: bounded in-memory dedupe cache with optional TTL expiry
+export interface DedupeCacheOptions {
+  ttlMs?: number;
+  maxSize?: number;
+}
+export interface DedupeCache {
+  has(key: string): boolean;
+  add(key: string): void;
+  delete(key: string): void;
+  clear(): void;
+  size(): number;
+}
+export function createDedupeCache(options: DedupeCacheOptions): DedupeCache {
+  const ttlMs = Math.max(0, options.ttlMs ?? 0);
+  const maxSize = Math.max(0, options.maxSize ?? 0);
+  const cache = new Map<string, number>();
+  const now = () => Date.now();
+  const prune = (t: number) => {
+    if (ttlMs > 0) {
+      for (const [k, ts] of cache) {
+        if (t - ts > ttlMs) {
+          cache.delete(k);
+        }
+      }
+    }
+    if (maxSize > 0 && cache.size > maxSize) {
+      const oldest = [...cache.entries()].sort((a, b) => a[1] - b[1]);
+      for (let i = 0; i < cache.size - maxSize; i++) {
+        cache.delete(oldest[i][0]);
+      }
+    }
+  };
+  return {
+    has(key: string) {
+      const t = now();
+      prune(t);
+      return cache.has(key);
+    },
+    add(key: string) {
+      const t = now();
+      prune(t);
+      cache.set(key, t);
+    },
+    delete(key: string) {
+      cache.delete(key);
+    },
+    clear() {
+      cache.clear();
+    },
+    size() {
+      return cache.size;
+    },
+  };
+}

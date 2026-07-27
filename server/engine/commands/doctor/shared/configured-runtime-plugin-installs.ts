@@ -1,21 +1,11 @@
 // Doctor helpers for installing plugins required by configured agent runtimes.
-// 移植自 openclaw/src/commands/doctor/shared/configured-runtime-plugin-installs.ts
-//
-// 降级说明：
-//  - asOptionalRecord 来自 @openclaw/normalization-core/record-coerce
-//    → cross-wms 已在 ../../../infra/record-coerce.ts 实现同源函数
-//  - collectConfiguredAgentHarnessRuntimes / ConfiguredAgentHarnessRuntimeOptions
-//    来自 ../../../agents/harness-runtimes.js → cross-wms 已有
-//  - OpenClawConfig 来自 ../../../config/types.openclaw.js
-//    → cross-wms 已在 ../../../infra/_runtime-stubs.ts 提供降级类型
-//  - PluginPackageInstall 来自 ../../../plugins/manifest.js → cross-wms 已有
-import { asOptionalRecord } from "../../../infra/record-coerce.js";
+import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   collectConfiguredAgentHarnessRuntimes,
   type ConfiguredAgentHarnessRuntimeOptions,
-} from "../../../agents/harness-runtimes.js";
-import type { OpenClawConfig } from "../../../infra/_runtime-stubs.js";
-import type { PluginPackageInstall } from "../../../plugins/manifest.js";
+} from "@openclaw-src/agents/harness-runtimes.js";
+import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
+import type { PluginPackageInstall } from "@openclaw-src/plugins/manifest.js";
 
 type ConfiguredRuntimePluginInstallCandidate = {
   /** Runtime/plugin id used in config and plugin installation records. */

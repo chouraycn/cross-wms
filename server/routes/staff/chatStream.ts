@@ -9,7 +9,7 @@
  *   PUT    /sessions/:sessionId               — 重命名 / 更新会话
  *   DELETE /sessions/:sessionId               — 删除会话
  *   GET    /sessions/:sessionId/messages      — 列出会话消息
- *   GET    /sessions/:sessionId/events        — 列出会话事件（stub）
+ *   GET    /sessions/:sessionId/events        — 列出会话事件（Trace 时间线，由 /stream 节点事件写入）
  *   POST   /sessions/:sessionId/cancel        — 取消当前 turn（stub）
  *   GET    /handoffs                          — 列出人工接管请求
  *   POST   /handoffs/:handoffId/reply         — 回复人工接管
@@ -23,6 +23,9 @@
 import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as chatDao from '../../dao/staff/staffChatDao.js';
+import * as traceDao from '../../dao/staff/staffTraceDao.js';
+import * as agentDao from '../../dao/staff/staffAgentDao.js';
+import { runStaffChatTurn, abortStaffChat } from '../../staff/staffChatExecutor.js';
 import type { StaffStreamEvent } from '../../types/staff.js';
 import { logger } from '../../logger.js';
 
@@ -32,9 +35,43 @@ function tenantOf(req: Request): string {
   return (req.query.tenant_id as string) || (req.body?.tenant_id as string) || DEFAULT_TENANT_ID;
 }
 
-/** 写入一条 SSE 事件 */
-function writeSse(res: Response, event: StaffStreamEvent): void {
-  res.write(`data: ${JSON.stringify(event)}\n\n`);
+/** 写入一条 SSE 事件（规范格式：event: <type>\\ndata: <json>） */
+function writeSse(res: Response, type: string, data: Record<string, unknown>): void {
+  res.write(`event: ${type}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+/** 兼容旧调用：传 StaffStreamEvent 对象也支持 */
+function writeSseEvent(res: Response, event: StaffStreamEvent): void {
+  writeSse(res, event.type, event.data);
+}
+
+/**
+ * 落 Trace 的节点级事件白名单（跳过高频增量 delta，避免 sd_agent_events 膨胀）。
+ * 仅这些事件会经 recordTrace 写入 sd_agent_events，供 /sessions/:id/events 回放。
+ */
+const TRACE_EVENT_TYPES = new Set<string>([
+  'session.created',
+  'message.saved',
+  'thinking.end',
+  'text.end',
+  'tool.call',
+  'error',
+  'done',
+]);
+
+function recordTrace(
+  tenantId: string,
+  sessionId: string,
+  type: string,
+  data: Record<string, unknown>,
+): void {
+  if (!TRACE_EVENT_TYPES.has(type)) return;
+  try {
+    traceDao.createEvent(tenantId, sessionId, type, data);
+  } catch (e) {
+    logger.warn('[StaffChat] 写入 Trace 事件失败:', e);
+  }
 }
 
 /** 设置 SSE 响应头（仅一次） */
@@ -49,11 +86,15 @@ function setupSseHeaders(res: Response): void {
 }
 
 // ===================== POST /turn — 同步 chat turn =====================
-router.post('/turn', (req: Request, res: Response) => {
+router.post('/turn', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
-  const { session_id, agent_id, user_id, message } = req.body ?? {};
+  const { session_id, agent_id, user_id, message, model } = req.body ?? {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     res.status(400).json({ code: 400, data: null, message: 'message 不能为空' });
+    return;
+  }
+  if (!agent_id) {
+    res.status(400).json({ code: 400, data: null, message: 'agent_id 必填' });
     return;
   }
   // 1. 确保或创建 session
@@ -62,7 +103,7 @@ router.post('/turn', (req: Request, res: Response) => {
     session = chatDao.createSession({
       tenant_id: tenantId,
       user_id: user_id ?? null,
-      agent_id: agent_id ?? null,
+      agent_id,
       title: message.slice(0, 50),
     });
   }
@@ -73,34 +114,62 @@ router.post('/turn', (req: Request, res: Response) => {
     role: 'user',
     content: message,
   });
-  // TODO: 接入实际 AgentLoop.handle_turn
-  // 此处仅持久化一条占位 assistant 回复
+  // 3. 历史（最多最近 20 条）
+  const history = chatDao
+    .listMessages(tenantId, session.id, 20)
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+    .slice(0, -1); // 去掉刚写入的当前 user 消息
+
+  let accumulated = '';
+  let thinking = '';
+  try {
+    const out = await runStaffChatTurn(
+      { tenantId, sessionId: session.id, agentId: agent_id, message, history, model },
+      (ev) => {
+        const d = ev.data as Record<string, unknown>;
+        if (ev.type === 'text.delta') accumulated += (d?.text as string) || '';
+        else if (ev.type === 'thinking.delta') thinking += (d?.text as string) || '';
+      },
+    );
+    accumulated = out.content;
+    thinking = out.thinkingContent;
+  } catch (err) {
+    logger.error('[StaffChat] turn 执行失败:', err);
+    res.status(500).json({ code: 500, data: null, message: err instanceof Error ? err.message : '对话执行失败' });
+    return;
+  }
+
+  // 4. 持久化 assistant message
   const assistantMsg = chatDao.createMessage({
     tenant_id: tenantId,
     session_id: session.id,
     role: 'assistant',
-    content: 'stub: agent loop 尚未接入',
-    metadata: { stub: true },
+    content: accumulated,
+    metadata: { thinking: thinking || null, mock: thinking === '' && accumulated.startsWith('（演示模式') },
   });
-  logger.debug('[StaffChat] turn stub', { sessionId: session.id, userMsgId: userMsg.id });
   res.json({
     code: 0,
     data: {
       session_id: session.id,
       message_id: assistantMsg.id,
-      content: assistantMsg.content,
-      stub: true,
+      content: accumulated,
+      thinking,
     },
-    message: 'stub: chat turn 尚未接入',
+    message: 'ok',
   });
 });
 
 // ===================== POST /stream — SSE 流式 chat =====================
-router.post('/stream', (req: Request, res: Response) => {
+router.post('/stream', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
-  const { session_id, agent_id, user_id, message } = req.body ?? {};
+  const { session_id, agent_id, user_id, message, model } = req.body ?? {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     res.status(400).json({ code: 400, data: null, message: 'message 不能为空' });
+    return;
+  }
+  if (!agent_id) {
+    res.status(400).json({ code: 400, data: null, message: 'agent_id 必填' });
     return;
   }
   setupSseHeaders(res);
@@ -111,11 +180,12 @@ router.post('/stream', (req: Request, res: Response) => {
     session = chatDao.createSession({
       tenant_id: tenantId,
       user_id: user_id ?? null,
-      agent_id: agent_id ?? null,
+      agent_id,
       title: message.slice(0, 50),
     });
   }
-  writeSse(res, { type: 'session.created', data: { session_id: session.id } });
+  writeSse(res, 'session.created', { session_id: session.id });
+  recordTrace(tenantId, session.id, 'session.created', { session_id: session.id });
 
   // 2. 持久化 user message
   const userMsg = chatDao.createMessage({
@@ -124,28 +194,50 @@ router.post('/stream', (req: Request, res: Response) => {
     role: 'user',
     content: message,
   });
-  writeSse(res, { type: 'message.saved', data: { message_id: userMsg.id, role: 'user' } });
+  writeSse(res, 'message.saved', { message_id: userMsg.id, role: 'user' });
+  recordTrace(tenantId, session.id, 'message.saved', { message_id: userMsg.id, role: 'user' });
 
-  // TODO: 接入实际 AgentLoop 流式输出
-  // 此处推送一段占位 thinking + text + done
-  // 注：thinking.start 未在 StaffStreamEventType 中定义，thinking 阶段由首个 delta 隐式启动
-  writeSse(res, { type: 'thinking.delta', data: { text: '处理中...' } });
-  writeSse(res, { type: 'thinking.end', data: {} });
+  // 3. 历史（最多最近 20 条）
+  const history = chatDao
+    .listMessages(tenantId, session.id, 20)
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+    .slice(0, -1); // 去掉刚写入的当前 user 消息
 
-  writeSse(res, { type: 'text.delta', data: { text: 'stub: agent loop 尚未接入' } });
+  let finalContent = '';
+  try {
+    const out = await runStaffChatTurn(
+      { tenantId, sessionId: session.id, agentId: agent_id, message, history, model },
+      (ev) => {
+        const d = ev.data as Record<string, unknown>;
+        writeSse(res, ev.type as StaffStreamEvent['type'], d);
+        recordTrace(tenantId, session.id, ev.type, d);
+        if (ev.type === 'text.delta') finalContent += (d?.text as string) || '';
+      },
+    );
+    finalContent = out.content;
+  } catch (err) {
+    logger.error('[StaffChat] stream 执行失败:', err);
+    writeSse(res, 'error', { message: err instanceof Error ? err.message : '对话执行失败' });
+    recordTrace(tenantId, session.id, 'error', { message: err instanceof Error ? err.message : '对话执行失败' });
+    writeSse(res, 'done', { session_id: session.id, error: true });
+    recordTrace(tenantId, session.id, 'done', { session_id: session.id, error: true });
+    res.end();
+    return;
+  }
 
-  // 3. 持久化 assistant message
+  // 4. 持久化 assistant message
   const assistantMsg = chatDao.createMessage({
     tenant_id: tenantId,
     session_id: session.id,
     role: 'assistant',
-    content: 'stub: agent loop 尚未接入',
-    metadata: { stub: true },
+    content: finalContent,
+    metadata: { mock: finalContent.startsWith('（演示模式') },
   });
-  writeSse(res, { type: 'message.saved', data: { message_id: assistantMsg.id, role: 'assistant' } });
-
-  writeSse(res, { type: 'text.end', data: {} });
-  writeSse(res, { type: 'done', data: { session_id: session.id, message_id: assistantMsg.id } });
+  writeSse(res, 'message.saved', { message_id: assistantMsg.id, role: 'assistant' });
+  recordTrace(tenantId, session.id, 'message.saved', { message_id: assistantMsg.id, role: 'assistant' });
+  writeSse(res, 'done', { session_id: session.id, message_id: assistantMsg.id });
+  recordTrace(tenantId, session.id, 'done', { session_id: session.id, message_id: assistantMsg.id });
   res.end();
 });
 
@@ -216,25 +308,21 @@ router.get('/sessions/:sessionId/messages', (req: Request, res: Response) => {
   res.json({ code: 0, data: rows.map(chatDao.toMessageRead), message: 'ok' });
 });
 
-// ===================== GET /sessions/:sessionId/events — stub =====================
+// ===================== GET /sessions/:sessionId/events =====================
 router.get('/sessions/:sessionId/events', (req: Request, res: Response) => {
-  // TODO: 接入 AgentEvent 查询
-  logger.debug('[StaffChat] events stub', { sessionId: req.params.sessionId });
-  res.json({
-    code: 0,
-    data: [],
-    message: 'stub: 会话事件查询尚未接入',
-  });
+  const tenantId = tenantOf(req);
+  const limit = parseInt(req.query.limit as string, 10) || 200;
+  const rows = traceDao.listEventsBySessionDesc(tenantId, req.params.sessionId, limit);
+  res.json({ code: 0, data: rows.map(traceDao.toAgentEventRead), message: 'ok' });
 });
 
-// ===================== POST /sessions/:sessionId/cancel — stub =====================
+// ===================== POST /sessions/:sessionId/cancel =====================
 router.post('/sessions/:sessionId/cancel', (req: Request, res: Response) => {
-  // TODO: 接入 AgentLoop 取消逻辑
-  logger.debug('[StaffChat] cancel stub', { sessionId: req.params.sessionId });
+  const cancelled = abortStaffChat(req.params.sessionId);
   res.json({
     code: 0,
-    data: { session_id: req.params.sessionId, cancelled: false },
-    message: 'stub: turn 取消尚未接入',
+    data: { session_id: req.params.sessionId, cancelled },
+    message: cancelled ? '已发送取消信号' : '未找到进行中的会话',
   });
 });
 
@@ -297,6 +385,21 @@ router.get('/messages/:messageId', (req: Request, res: Response) => {
     return;
   }
   res.json({ code: 0, data: chatDao.toMessageRead(row), message: 'ok' });
+});
+
+// ===================== POST /agents/:agentId/use =====================
+// AgentsPage / OpenPlatformPage 标记某 Agent 被当前用户"投入使用"（驱动 used_by 标记与画廊可见性）
+router.post('/agents/:agentId/use', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const userId = (req.body?.user_id as string) || 'default';
+  const agentId = req.params.agentId;
+  agentDao.upsertAgentUsage(tenantId, userId, agentId);
+  const agent = agentDao.getAgentById(tenantId, agentId);
+  if (!agent) {
+    res.status(404).json({ code: 404, data: null, message: 'Agent 不存在' });
+    return;
+  }
+  res.json({ code: 0, data: agentDao.toAgentRead(agent), message: 'ok' });
 });
 
 export default router;

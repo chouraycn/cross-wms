@@ -233,7 +233,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     setModelConfigsLoading(true);
     setModelConfigsLoadError('');
     try {
-      const result = await api.get<ModelConfigRead[]>(`/models?tenant_id=${tenantId}`);
+      const result = await api.get<ModelConfigRead[]>(`/model-configs?tenant_id=${tenantId}`);
       setModelConfigs(result);
     } catch (error) {
       if (isAuthError(error)) {
@@ -444,27 +444,86 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
     let replyText = '';
     let replySessionId = targetSessionId;
+    const trace = turnTraceRef.current.get(turnId) || createTurnTrace();
+    turnTraceRef.current.set(turnId, trace);
+    const thinkingLineId = 'thinking';
     try {
       await streamChatTurn(
         body,
         (event) => {
-          // TODO: 完整移植流式事件处理（trace lines、stream_replace/delta、status、router_decision、error）
-          if (event.event === 'stream_replace' || event.event === 'stream_delta' || event.event === 'token') {
-            const content = typeof event.data.content === 'string' ? event.data.content : '';
-            const text = typeof event.data.text === 'string' ? event.data.text : '';
-            replyText += content || text;
-            const currentSlot = streamRef.current.get(replySessionId);
-            if (currentSlot) {
-              currentSlot.accumulated = replyText;
-              currentSlot.phase = typeof event.data.phase === 'string' ? event.data.phase : '';
+          switch (event.event) {
+            // 后端实际事件：text.delta 携带回复增量（兼兼容旧 token/stream_delta）
+            case 'text.delta':
+            case 'token':
+            case 'stream_delta': {
+              const delta = typeof event.data.text === 'string' ? event.data.text : '';
+              replyText += delta;
+              const currentSlot = streamRef.current.get(replySessionId);
+              if (currentSlot) {
+                currentSlot.accumulated = replyText;
+                notifyStream();
+              }
+              break;
+            }
+            case 'thinking.delta': {
+              const delta = typeof event.data.text === 'string' ? event.data.text : '';
+              const existing = trace.lines.find((l) => l.id === thinkingLineId);
+              if (existing) {
+                existing.text += delta;
+              } else {
+                trace.lines.push({ id: thinkingLineId, kind: 'thinking', text: delta, state: 'running', icon: 'judge' });
+              }
               notifyStream();
+              break;
             }
-          } else if (event.event === 'session_created' || event.event === 'session_ready') {
-            const sid = typeof event.data.session_id === 'string' ? event.data.session_id : '';
-            if (sid && !targetSessionId) {
-              replySessionId = sid;
-              void sid;
+            case 'thinking.end': {
+              const existing = trace.lines.find((l) => l.id === thinkingLineId);
+              if (existing) existing.state = 'completed';
+              notifyStream();
+              break;
             }
+            case 'tool.call': {
+              const toolName = String(event.data.toolName ?? '工具调用');
+              const args = (() => {
+                try { return event.data.args != null ? JSON.stringify(event.data.args, null, 2) : ''; }
+                catch { return String(event.data.args); }
+              })();
+              const result = (() => {
+                try { return event.data.result != null ? JSON.stringify(event.data.result, null, 2) : ''; }
+                catch { return String(event.data.result); }
+              })();
+              trace.lines.push({
+                id: `tool_${trace.lines.length}_${Date.now()}`,
+                kind: 'tool',
+                text: toolName,
+                detail: args || undefined,
+                output: result || undefined,
+                state: 'completed',
+                icon: 'tool',
+                collapsible: true,
+              });
+              notifyStream();
+              break;
+            }
+            case 'session.created': {
+              const sid = typeof event.data.session_id === 'string' ? event.data.session_id : '';
+              if (sid && !targetSessionId) replySessionId = sid;
+              break;
+            }
+            case 'error': {
+              const msg = typeof event.data.message === 'string' ? event.data.message : '对话执行失败';
+              trace.lines.push({ id: `error_${Date.now()}`, kind: 'decision', text: msg, state: 'failed', icon: 'judge' });
+              trace.completedAt = Date.now();
+              notifyStream();
+              break;
+            }
+            case 'done': {
+              trace.completedAt = Date.now();
+              notifyStream();
+              break;
+            }
+            default:
+              break;
           }
         },
         streamSlot.abortController?.signal,

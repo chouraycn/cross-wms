@@ -63,7 +63,8 @@ import {
   SOURCE_TOOLBAR_CLASS,
   WORKBENCH_CLASS,
 } from './distillPageStyles.js';
-import { api, TENANT_ID } from '../../components/staff/api/client.js';
+import { api, TENANT_ID, streamPost } from '../../components/staff/api/client.js';
+import type { StreamEvent } from '../../components/staff/api/client.js';
 import type { EnterpriseAuthUser } from '../../components/staff/auth.js';
 import type {
   SkillRead,
@@ -153,6 +154,9 @@ export default function DistillPage({
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
+  const [streaming, setStreaming] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const jobIdRef = useRef<string>('');
 
   useEffect(() => {
     if (!active) return;
@@ -229,47 +233,101 @@ export default function DistillPage({
     }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const text = input.trim();
-    if (!text) return;
-    const userMessage: ChatItem = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: text,
-    };
-    const assistantPlaceholder: ChatItem = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: '正在生成 SOP 草稿…',
-      pending: true,
-    };
-    setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
+    if (!text || streaming) return;
+    const assistantId = `assistant-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-${Date.now()}`, role: 'user', content: text },
+      { id: assistantId, role: 'assistant', content: '', pending: true },
+    ]);
     setInput('');
-
-    // NOTE: 简化版 — 实际蒸馏流程应通过 SSE 调用 /api/enterprise/skills/distill/stream
-    // 这里仅生成一个简单的占位草稿，供 UI 框架验证使用。
-    setTimeout(() => {
+    setStreaming(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      await streamPost(
+        '/skills/distill/stream',
+        {
+          tenant_id: TENANT_ID,
+          agent_id: activeAgentId || undefined,
+          prompt: text,
+          model_config_id: selectedRewriteModelId || undefined,
+        },
+        (item: StreamEvent) => {
+          if (item.event === 'job_attached') {
+            jobIdRef.current = (item.data.job_id as string) || '';
+            return;
+          }
+          if (item.event === 'status' || item.event === 'chunk') {
+            const delta = (item.data.text as string) || (item.data.content as string) || '';
+            setMessages((prev) => {
+              const next = prev.slice();
+              const last = next[next.length - 1];
+              if (last && last.id === assistantId) {
+                next[next.length - 1] = { ...last, content: last.content + delta };
+              }
+              return next;
+            });
+            return;
+          }
+          if (item.event === 'chunk_reset') {
+            setMessages((prev) => {
+              const next = prev.slice();
+              const last = next[next.length - 1];
+              if (last && last.id === assistantId) next[next.length - 1] = { ...last, content: '' };
+              return next;
+            });
+            return;
+          }
+          if (item.event === 'complete') {
+            if (item.data.draft_skill) setDraft(item.data.draft_skill as SkillCard);
+            setMessages((prev) => {
+              const next = prev.slice();
+              const last = next[next.length - 1];
+              if (last && last.id === assistantId) next[next.length - 1] = { ...last, pending: false };
+              return next;
+            });
+            return;
+          }
+          if (item.event === 'job_complete') {
+            setMessages((prev) => {
+              const next = prev.slice();
+              const last = next[next.length - 1];
+              if (last && last.id === assistantId) next[next.length - 1] = { ...last, pending: false };
+              return next;
+            });
+            if ((item.data.status as string) === 'failed') {
+              notify.error((item.data.error as string) || '蒸馏失败');
+            }
+          }
+        },
+        controller.signal,
+      );
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        notify.error(error instanceof Error ? error.message : '蒸馏请求失败');
+      }
       setMessages((prev) => {
         const next = prev.slice();
         const last = next[next.length - 1];
-        if (last && last.pending) {
-          next[next.length - 1] = {
-            ...last,
-            content: `已收到你的需求：\n\n${text}\n\n（简化版未连接蒸馏后端，请接入 /skills/distill/stream 获取完整结果。）`,
-            pending: false,
-          };
+        if (last && last.id === assistantId) {
+          next[next.length - 1] = { ...last, pending: false, content: last.content || '（蒸馏中断）' };
         }
         return next;
       });
-      setDraft((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          description: text.slice(0, 200),
-          goal: [...(prev.goal || []), text.slice(0, 80)],
-        };
-      });
-    }, 600);
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
+  }
+
+  function stopStreaming() {
+    if (jobIdRef.current) {
+      api.post(`/skills/jobs/${jobIdRef.current}/cancel`, {}).catch(() => {});
+    }
+    abortRef.current?.abort();
   }
 
   function openSaveDialog() {
@@ -459,19 +517,29 @@ export default function DistillPage({
                         type="button"
                         className={RETURN_BUTTON_CLASS}
                         onClick={() => setInput('')}
-                        disabled={!input}
+                        disabled={!input || streaming}
                       >
                         清空
                       </button>
-                      <button
-                        type="button"
-                        className={PRIMARY_BUTTON_CLASS}
-                        onClick={sendMessage}
-                        disabled={!input.trim()}
-                      >
-                        <Send className="size-[14px]" />
-                        发送
-                      </button>
+                      {streaming ? (
+                        <button
+                          type="button"
+                          className={RETURN_BUTTON_CLASS}
+                          onClick={stopStreaming}
+                        >
+                          停止
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={PRIMARY_BUTTON_CLASS}
+                          onClick={sendMessage}
+                          disabled={!input.trim()}
+                        >
+                          <Send className="size-[14px]" />
+                          发送
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

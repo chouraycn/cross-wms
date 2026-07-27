@@ -7,6 +7,8 @@
  */
 import { initDb } from '../../db.js';
 import { DEFAULT_TENANT_ID, newStaffId, StaffIdPrefix } from '../../db-staff.js';
+import { embedBatch, embedText, ONNX_EMBEDDING_DIMENSIONS } from '../../engine/onnxEmbedding.js';
+import { logger } from '../../logger.js';
 import type {
   KnowledgeDocumentRow,
   KnowledgeBucketRow,
@@ -328,6 +330,7 @@ export interface ChunkInput {
   content: string;
   summary?: string | null;
   source_ref?: string | null;
+  embedding?: string | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -339,8 +342,8 @@ export function createChunk(input: ChunkInput): KnowledgeChunkRow {
   db.prepare(
     `INSERT INTO sd_knowledge_chunks
        (id, tenant_id, knowledge_base_id, document_id, bucket_id, knowledge_base_version_id,
-        chunk_index, content, summary, source_ref, metadata_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        chunk_index, content, summary, source_ref, embedding, metadata_json, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     tenantId,
@@ -352,6 +355,7 @@ export function createChunk(input: ChunkInput): KnowledgeChunkRow {
     input.content,
     input.summary ?? null,
     input.source_ref ?? null,
+    input.embedding ?? null,
     JSON.stringify(input.metadata ?? {}),
     ts,
     ts,
@@ -845,7 +849,139 @@ export function updateIngestJob(
   return next;
 }
 
-// ===================== Search (基础 LIKE 搜索) =====================
+// ===================== Ingest (真实文本入库管线：切分 → 向量化 → 落库) =====================
+
+/**
+ * 将长文本切分为有界块：优先在换行/句号等自然断点处截断，避免截断句子；
+ * 块之间保留 overlap 字符重叠以保留上下文连续性。
+ */
+export function splitKnowledgeChunks(
+  text: string,
+  chunkSize = 600,
+  overlap = 80,
+): string[] {
+  const clean = (text || '').replace(/\r\n/g, '\n').trim();
+  if (!clean) return [];
+  if (clean.length <= chunkSize) return [clean];
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < clean.length) {
+    let end = Math.min(clean.length, start + chunkSize);
+    if (end < clean.length) {
+      const slice = clean.slice(start, end);
+      let breakIdx = -1;
+      // 在窗口末尾 120 字符内回看最近的自然断点
+      for (let i = slice.length - 1; i >= Math.max(0, slice.length - 120); i--) {
+        const ch = slice[i];
+        if (ch === '\n' || ch === '。' || ch === '.' || ch === '！' || ch === '!' || ch === '？' || ch === '?') {
+          breakIdx = i + 1;
+          break;
+        }
+      }
+      if (breakIdx > 0) end = start + breakIdx;
+    }
+    const piece = clean.slice(start, end).trim();
+    if (piece) chunks.push(piece);
+    if (end >= clean.length) break;
+    start = Math.max(end - overlap, start + 1);
+  }
+  return chunks.length ? chunks : [clean];
+}
+
+export interface IngestTextInput {
+  tenant_id?: string;
+  knowledge_base_id: string;
+  knowledge_base_version_id?: string | null;
+  document_id: string;
+  title?: string | null;
+  text: string;
+  chunkSize?: number;
+  chunkOverlap?: number;
+}
+
+export interface IngestTextResult {
+  chunkCount: number;
+  bucketId: string;
+}
+
+/**
+ * 真实入库：把一段文本切分、向量化（all-MiniLM-L6-v2, 384 维，L2 归一化）并写入 chunks。
+ * 向量化失败时降级（embedding 置空），搜索自动回退到 LIKE。
+ * 同时把 document 状态置为 indexed、把对应 ingest job 标记 completed。
+ */
+export async function ingestDocumentText(input: IngestTextInput): Promise<IngestTextResult> {
+  const tenantId = input.tenant_id ?? DEFAULT_TENANT_ID;
+  const pieces = splitKnowledgeChunks(input.text, input.chunkSize ?? 600, input.chunkOverlap ?? 80);
+  if (pieces.length === 0) {
+    return { chunkCount: 0, bucketId: '' };
+  }
+
+  // 1. 每个文档建一个默认 bucket（桶名取文档标题）
+  const bucketTitle = input.title || '未命名文档';
+  const bucketKey = `doc-${input.document_id}`;
+  const bucket = createBucket({
+    tenant_id: tenantId,
+    knowledge_base_id: input.knowledge_base_id,
+    document_id: input.document_id,
+    bucket_id: bucketKey,
+    knowledge_base_version_id: input.knowledge_base_version_id ?? null,
+    bucket_key: bucketKey,
+    title: bucketTitle,
+    summary: `由 ${pieces.length} 个文本块组成`,
+    metadata: { auto: true, source: 'text' },
+  });
+
+  // 2. 批量向量化
+  let vectors: Float32Array[] = [];
+  try {
+    vectors = await embedBatch(pieces);
+  } catch (e) {
+    logger.warn('[StaffK] 向量化失败，仅存储文本（搜索降级为 LIKE）:', e instanceof Error ? e.message : String(e));
+    vectors = pieces.map(() => new Float32Array(ONNX_EMBEDDING_DIMENSIONS));
+  }
+
+  // 3. 逐块落库
+  for (let i = 0; i < pieces.length; i++) {
+    const vec = vectors[i];
+    const embedding =
+      vec && vec.length === ONNX_EMBEDDING_DIMENSIONS ? JSON.stringify(Array.from(vec)) : null;
+    createChunk({
+      tenant_id: tenantId,
+      knowledge_base_id: input.knowledge_base_id,
+      document_id: input.document_id,
+      bucket_id: bucket.id,
+      knowledge_base_version_id: input.knowledge_base_version_id ?? null,
+      chunk_index: i,
+      content: pieces[i],
+      summary: pieces[i].slice(0, 120),
+      source_ref: `chunk#${i}`,
+      embedding,
+      metadata: { doc_title: bucketTitle },
+    });
+  }
+
+  // 4. 更新 document + ingest job 状态
+  updateDocument(tenantId, input.document_id, {
+    status: 'indexed',
+    title: input.title ?? null,
+    metadata: { chunk_count: pieces.length, bucket_count: 1 },
+  });
+  const jobs = listIngestJobs({ tenantId, documentId: input.document_id });
+  const job = jobs[0];
+  if (job) {
+    updateIngestJob(tenantId, job.id, {
+      status: 'completed',
+      stage: 'done',
+      progress: 100,
+      finished_at: Math.floor(Date.now() / 1000),
+      metadata: { chunk_count: pieces.length },
+    });
+  }
+  logger.info('[StaffK] 文本入库完成', { docId: input.document_id, chunkCount: pieces.length, bucketId: bucket.id });
+  return { chunkCount: pieces.length, bucketId: bucket.id };
+}
+
+// ===================== Search (向量语义 + LIKE 混合) =====================
 
 export interface KnowledgeSearchHit {
   chunk: KnowledgeChunkRow;
@@ -862,33 +998,76 @@ export interface KnowledgeSearchInput {
   limit?: number;
 }
 
-/** 简易全文搜索：在 chunks.content 上做 LIKE 匹配。
- *  真正的向量检索/语义搜索由后续接入。 */
-export function searchKnowledge(input: KnowledgeSearchInput): KnowledgeSearchHit[] {
+/**
+ * 知识库检索：优先向量语义检索（all-MiniLM-L6-v2, 384 维，L2 归一化 → 点积即余弦相似度），
+ * 向量不可用时（缺失 embedding 或 ONNX 未加载）回退到 LIKE 弱信号。返回按 score 降序的命中。
+ */
+export async function searchKnowledge(input: KnowledgeSearchInput): Promise<KnowledgeSearchHit[]> {
   const db = initDb();
   const tenantId = input.tenant_id ?? DEFAULT_TENANT_ID;
   const limit = Math.max(1, Math.min(100, input.limit ?? 20));
-  const conditions: string[] = ['tenant_id = ?', 'content LIKE ?'];
-  const params: unknown[] = [tenantId, `%${input.query}%`];
+  const q = (input.query || '').trim();
+  if (!q) return [];
+
+  const scopeConditions: string[] = ['tenant_id = ?'];
+  const scopeParams: unknown[] = [tenantId];
   if (input.knowledge_base_id) {
-    conditions.push('knowledge_base_id = ?');
-    params.push(input.knowledge_base_id);
+    scopeConditions.push('knowledge_base_id = ?');
+    scopeParams.push(input.knowledge_base_id);
   }
   if (input.knowledge_base_version_id) {
-    conditions.push('knowledge_base_version_id = ?');
-    params.push(input.knowledge_base_version_id);
+    scopeConditions.push('knowledge_base_version_id = ?');
+    scopeParams.push(input.knowledge_base_version_id);
   }
-  const sql = `SELECT * FROM sd_knowledge_chunks WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT ?`;
-  const chunks = db.prepare(sql).all(...params, limit) as KnowledgeChunkRow[];
-  return chunks.map((chunk) => {
+  const candidates = db
+    .prepare(`SELECT * FROM sd_knowledge_chunks WHERE ${scopeConditions.join(' AND ')}`)
+    .all(...scopeParams) as KnowledgeChunkRow[];
+  if (candidates.length === 0) return [];
+
+  // 查询向量（失败/超时降级为 null → 走 LIKE 兜底）
+  let queryVec: Float32Array | null = null;
+  try {
+    queryVec = await embedText(q);
+  } catch {
+    queryVec = null;
+  }
+  const qLower = q.toLowerCase();
+  const hasVec = queryVec !== null && queryVec.length === ONNX_EMBEDDING_DIMENSIONS;
+
+  const scored = candidates.map((chunk) => {
+    let score = 0;
+    if (hasVec && chunk.embedding) {
+      try {
+        const v = JSON.parse(chunk.embedding) as number[];
+        if (v.length === ONNX_EMBEDDING_DIMENSIONS) {
+          // 向量已 L2 归一化，点积即余弦相似度
+          let dot = 0;
+          for (let i = 0; i < v.length; i++) dot += v[i] * queryVec![i];
+          score = Math.max(0, dot);
+        }
+      } catch {
+        // 损坏的 embedding 字段，忽略
+      }
+    }
+    // 向量未命中时的弱信号兜底
+    if (score === 0 && chunk.content.toLowerCase().includes(qLower)) {
+      score = 0.3 * (q.length / Math.max(1, chunk.content.length));
+    }
+    return { chunk, score };
+  });
+
+  const ranked = scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return ranked.map(({ chunk, score }) => {
     const bucket = db
       .prepare(`SELECT * FROM sd_knowledge_buckets WHERE tenant_id = ? AND id = ?`)
       .get(tenantId, chunk.bucket_id) as KnowledgeBucketRow | null;
     const document = db
       .prepare(`SELECT * FROM sd_knowledge_documents WHERE tenant_id = ? AND id = ?`)
       .get(tenantId, chunk.document_id) as KnowledgeDocumentRow | null;
-    // 简易打分：基于命中字符长度
-    const score = input.query.length / Math.max(1, chunk.content.length);
     return { chunk, bucket, document, score };
   });
 }

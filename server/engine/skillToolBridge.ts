@@ -8,7 +8,7 @@ import { logger } from '../logger.js';
 import { skillRegistry } from './skillRegistry.js';
 import { createSkillContext } from './skillContextFactory.js';
 import { performSecurityChecks } from './skillSecurityGuard.js';
-import type { RegisteredSkill } from '../types/skill-runtime.js';
+import type { RegisteredSkill, SkillContext, SkillResult } from '../types/skill-runtime.js';
 import type { ToolDefinition } from '../aiClient.js';
 
 const SKILL_TOOL_PREFIX = 'skill_';
@@ -96,7 +96,7 @@ export function getSkillToolDefinitions(skills?: RegisteredSkill[] | { allow?: s
  * @param request - 工具调用请求
  * @returns 工具调用响应
  */
-export async function handleSkillToolCall(request: ToolCallRequest | { id: string; type: string; function: { name: string; arguments: string } }, skillConfig?: { allow?: string[]; deny?: string[]; elevated?: { enabled?: string } }, sessionId?: string): Promise<ToolCallResponse> {
+export async function handleSkillToolCall(request: ToolCallRequest | { id: string; type: string; function: { name: string; arguments: string } }, skillConfig?: { allow?: string[]; deny?: string[]; elevated?: { enabled?: string } }, sessionId?: string, extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>): Promise<ToolCallResponse> {
   let skillId: string;
   let params: Record<string, unknown> = {};
   
@@ -115,6 +115,23 @@ export async function handleSkillToolCall(request: ToolCallRequest | { id: strin
   try {
     const skill = skillRegistry.getSkill(skillId);
     if (!skill) {
+      // 全局注册表未命中 —— 回退到数字员工物化技能执行器（per-call 注入）
+      if (extraSkillExecutor) {
+        const ctx = createSkillContext({
+          skillId,
+          sessionId: sessionId || skillId,
+          agentId: 'staff',
+          workspace: process.cwd(),
+        });
+        const result = await extraSkillExecutor(skillId, params, ctx);
+        return {
+          success: result.success,
+          data: result.data,
+          content: typeof result.data === 'string' ? result.data : JSON.stringify(result.data),
+          error: result.error,
+          metadata: result.metadata,
+        };
+      }
       return {
         success: false,
         error: `技能 '${skillId}' 未找到`,

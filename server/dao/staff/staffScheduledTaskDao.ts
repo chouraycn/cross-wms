@@ -51,6 +51,16 @@ export function getScheduledTaskById(
     .get(tenantId, taskId) as ScheduledTaskRow | undefined;
 }
 
+/** 列出所有未归档的任务（跨租户，供调度器启动加载） */
+export function listAllScheduledTasks(): ScheduledTaskRow[] {
+  const db = initDb();
+  return db
+    .prepare(
+      `SELECT * FROM sd_scheduled_tasks WHERE status != 'archived' ORDER BY updated_at DESC`,
+    )
+    .all() as ScheduledTaskRow[];
+}
+
 // ===================== Tasks 写入 =====================
 
 interface CreateScheduledTaskData {
@@ -274,6 +284,17 @@ export function createRun(data: CreateRunData): ScheduledTaskRunRow {
     JSON.stringify(data.trace ?? {}),
   );
   return db.prepare('SELECT * FROM sd_scheduled_task_runs WHERE id = ?').get(id) as ScheduledTaskRunRow;
+}
+
+/** 按 ID 获取单条执行记录 */
+export function getRunById(
+  tenantId: string = DEFAULT_TENANT_ID,
+  runId: string,
+): ScheduledTaskRunRow | undefined {
+  const db = initDb();
+  return db
+    .prepare('SELECT * FROM sd_scheduled_task_runs WHERE tenant_id = ? AND id = ?')
+    .get(tenantId, runId) as ScheduledTaskRunRow | undefined;
 }
 
 /** 更新执行记录 */

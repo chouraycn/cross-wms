@@ -106,7 +106,7 @@ export default function EmployeeGalleryPage({
         await onStartChat(row);
         return;
       }
-      navigate(`/workspace/chat/draft/${row.id}`);
+      navigate(`/enterprise/agents/${row.id}/chat`);
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '发起对话失败');
     } finally {

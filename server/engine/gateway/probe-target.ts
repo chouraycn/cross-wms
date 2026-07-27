@@ -1,18 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/probe-target.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway probe target resolver.
+// Chooses local or remote probe mode from gateway config and URL availability.
+import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-export type GatewayProbeTargetResolution = unknown;
+// Probe target resolution converts configured gateway mode into the actual
+// reachable target. Remote mode falls back to local probing when no remote URL
+// exists so startup diagnostics can explain the missing URL.
+export type GatewayProbeTargetResolution = {
+  gatewayMode: "local" | "remote";
+  mode: "local" | "remote";
+  remoteUrlMissing: boolean;
+};
 
-export function resolveGatewayProbeTarget(..._args: unknown[]): unknown {
-  return undefined;
+/** Resolves whether gateway probe commands should target local or remote gateway. */
+export function resolveGatewayProbeTarget(cfg: OpenClawConfig): GatewayProbeTargetResolution {
+  const gatewayMode = cfg.gateway?.mode === "remote" ? "remote" : "local";
+  const remoteUrlRaw = normalizeOptionalString(cfg.gateway?.remote?.url) ?? "";
+  const remoteUrlMissing = gatewayMode === "remote" && !remoteUrlRaw;
+  return {
+    gatewayMode,
+    mode: gatewayMode === "remote" && !remoteUrlMissing ? "remote" : "local",
+    remoteUrlMissing,
+  };
 }

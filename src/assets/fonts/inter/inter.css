@@ -1,0 +1,16 @@
+/**
+ * Inter 可变字体 — 本地资源引入
+ *
+ * 来源：@fontsource-variable/inter（npm pack 提取的 latin wght normal 子集）
+ * 引入方式：在 src/main.tsx 中 `import './assets/fonts/inter/inter.css'`
+ *
+ * 作用：让 staffdeck.css 的 `--font-body` / `--font-display` 第一优先 "Inter" 真正生效，
+ * 对齐 StaffDeck-main 的字体设计。西文使用 Inter，中文回退到 PingFang SC（macOS 系统字体）。
+ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./inter-variable.woff2') format('woff2');
+}

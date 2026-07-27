@@ -112,8 +112,8 @@ export default function ModelSetupDialog({
         enabled: false,
       };
       const saved = savedModelId
-        ? await api.put<ModelConfigRead>(`/models/${savedModelId}`, payload)
-        : await api.post<ModelConfigRead>('/models', payload);
+        ? await api.put<ModelConfigRead>(`/model-configs/${savedModelId}`, payload)
+        : await api.post<ModelConfigRead>('/model-configs', payload);
       setSavedModelId(saved.id);
 
       const result = await api.post<{
@@ -123,7 +123,7 @@ export default function ModelSetupDialog({
         activated: boolean;
         model?: ModelConfigRead;
       }>(
-        `/models/${saved.id}/test?tenant_id=${encodeURIComponent(tenantId)}&activate_if_initial=true`,
+        `/model-configs/${saved.id}/test?tenant_id=${encodeURIComponent(tenantId)}&activate_if_initial=true`,
       );
       if (!result.success) {
         setTestResult({ success: false, message: result.message || '模型连接失败，请检查配置后重试。' });
@@ -133,7 +133,7 @@ export default function ModelSetupDialog({
       const activated = result.model?.enabled
         ? result.model
         : (await api.get<ModelConfigRead[]>(
-          `/models?tenant_id=${encodeURIComponent(tenantId)}`,
+          `/model-configs?tenant_id=${encodeURIComponent(tenantId)}`,
         )).find((item) => item.enabled && item.is_default);
       if (!activated) {
         setTestResult({ success: false, message: '模型测试通过，但首次激活未完成，请刷新后重试。' });

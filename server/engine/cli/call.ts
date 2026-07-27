@@ -1,8 +1,50 @@
-// 移植自 openclaw/src/cli/call.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 生成方式：自动 stub（保留导出名以便后续替换为正式实现）
+// Shared gateway RPC command options and progress-wrapped CLI call helper.
+import type { Command } from "commander";
+import { callGateway } from "./gateway-call.js";
+import { parseTimeoutMsWithFallback } from "./parse-timeout.js";
+import { withProgress } from "./progress.js";
 
-export type GatewayRpcOpts = unknown;
+export type GatewayRpcOpts = {
+  url?: string;
+  token?: string;
+  password?: string;
+  timeout?: string;
+  expectFinal?: boolean;
+  json?: boolean;
+  localPortOverride?: number;
+};
 
-export const gatewayCallOpts: unknown = undefined;
-export const callGatewayCli: unknown = undefined;
+const DEFAULT_GATEWAY_RPC_TIMEOUT_MS = 10_000;
+
+export const gatewayCallOpts = (cmd: Command) =>
+  cmd
+    .option("--url <url>", "Gateway WebSocket URL (defaults to gateway.remote.url when configured)")
+    .option("--token <token>", "Gateway token (if required)")
+    .option("--password <password>", "Gateway password (password auth)")
+    .option("--timeout <ms>", "Timeout in ms", "10000")
+    .option("--expect-final", "Wait for final response (agent)", false)
+    .option("--json", "Output JSON", false);
+
+export const callGatewayCli = async (method: string, opts: GatewayRpcOpts, params?: unknown) => {
+  const timeoutMs = parseTimeoutMsWithFallback(opts.timeout, DEFAULT_GATEWAY_RPC_TIMEOUT_MS, {
+    invalidType: "error",
+  });
+  return await withProgress(
+    {
+      label: `Gateway ${method}`,
+      indeterminate: true,
+      enabled: opts.json !== true,
+    },
+    async () =>
+      await callGateway({
+        url: opts.url,
+        token: opts.token,
+        method,
+        params,
+        expectFinal: Boolean(opts.expectFinal),
+        timeoutMs,
+        clientName: "cli",
+        mode: "cli",
+      }),
+  );
+};

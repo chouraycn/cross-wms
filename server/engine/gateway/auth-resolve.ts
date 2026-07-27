@@ -1,44 +1,17 @@
-// Gateway 鉴权解析器。
-// 移植自 openclaw/src/gateway/auth-resolve.ts
-//
-// 适配说明：
-//  - ../config/types.gateway.js（GatewayAuthConfig 等）在 cross-wms 中为 unknown stub，
-//    此处定义本地结构化类型替代
-//  - ../config/types.secrets.js（resolveSecretInputRef）在 cross-wms 中为 stub，
-//    降级为：所有 token/password 值视为明文，不支持 SecretRef
-//  - ./credentials.js（resolveGatewayCredentialsFromValues）在 cross-wms 中为 stub，
-//    降级为：本地实现凭据解析，从 config 值 + env 变量读取
-//
-// 降级限制：
-//  - 不支持 SecretRef 引用解析（env:、file: 等前缀）
-//  - 不支持 token/password precedence 配置
-//  - trustedProxy / tailscale 策略保留但仅做基础判断
+// Gateway auth resolver.
+// Combines configured auth, overrides, environment credentials, and Tailscale policy.
+import type {
+  GatewayAuthConfig,
+  GatewayTailscaleMode,
+  GatewayTrustedProxyConfig,
+} from "../config/types.gateway.js";
+import { resolveSecretInputRef } from "../config/types.secrets.js";
+import { resolveGatewayCredentialsFromValues } from "./credentials.js";
 
-import { normalizeOptionalString } from "../infra/string-coerce.js";
-
-/** Gateway 鉴权配置（本地结构化类型，替代 cross-wms stub 的 unknown）。 */
-export type GatewayAuthConfig = {
-  mode?: ResolvedGatewayAuthMode;
-  token?: string;
-  password?: string;
-  allowTailscale?: boolean;
-  rateLimit?: unknown;
-  trustedProxy?: GatewayTrustedProxyConfig;
-};
-
-/** Gateway trusted-proxy 配置（本地结构化类型）。 */
-export type GatewayTrustedProxyConfig = {
-  proxies?: string[];
-  header?: string;
-};
-
-/** Gateway Tailscale 模式。 */
-export type GatewayTailscaleMode = "off" | "serve" | "client";
-
-/** 组合 config、override 和凭据输入后的鉴权模式。 */
+/** Authentication modes after config, override, and credential inputs are combined. */
 export type ResolvedGatewayAuthMode = "none" | "token" | "password" | "trusted-proxy";
 
-/** 记录哪个输入决定了有效 Gateway 鉴权模式。 */
+/** Records which input selected the effective Gateway auth mode. */
 export type ResolvedGatewayAuthModeSource =
   | "override"
   | "config"
@@ -46,7 +19,7 @@ export type ResolvedGatewayAuthModeSource =
   | "token"
   | "default";
 
-/** 启动验证所需密钥前，完全解析的 Gateway 鉴权策略。 */
+/** Fully resolved Gateway auth policy before startup validates required secrets. */
 export type ResolvedGatewayAuth = {
   mode: ResolvedGatewayAuthMode;
   modeSource?: ResolvedGatewayAuthModeSource;
@@ -56,39 +29,13 @@ export type ResolvedGatewayAuth = {
   trustedProxy?: GatewayTrustedProxyConfig;
 };
 
-/** 暴露给仅支持单一 bearer secret 的 Gateway 客户端的 shared-secret 鉴权形态。 */
+/** Shared-secret auth shape exposed to Gateway clients that support a single bearer secret. */
 export type EffectiveSharedGatewayAuth = {
   mode: "token" | "password";
   secret: string | undefined;
 };
 
-/**
- * 从 config 值和 env 变量解析 gateway 凭据。
- *
- * 降级实现：openclaw 的 resolveGatewayCredentialsFromValues 支持完整的 precedence
- * 与 SecretRef 解析。此处简化为直接读取 config 值，回退到 env 变量。
- */
-function resolveGatewayCredentialsFromValues(params: {
-  configToken?: string;
-  configPassword?: string;
-  env: NodeJS.ProcessEnv;
-}): { token?: string; password?: string } {
-  const token =
-    normalizeOptionalString(params.configToken) ??
-    normalizeOptionalString(params.env.OPENCLAW_GATEWAY_AUTH_TOKEN) ??
-    normalizeOptionalString(params.env.GATEWAY_AUTH_TOKEN);
-  const password =
-    normalizeOptionalString(params.configPassword) ??
-    normalizeOptionalString(params.env.OPENCLAW_GATEWAY_AUTH_PASSWORD) ??
-    normalizeOptionalString(params.env.GATEWAY_AUTH_PASSWORD);
-  return { ...(token ? { token } : {}), ...(password ? { password } : {}) };
-}
-
-/**
- * 解析 Gateway 鉴权模式、凭据、trusted-proxy 策略和 Tailscale 许可。
- *
- * 合并持久化配置与运行时 override，从 env 读取凭据，并根据凭据存在性推断模式。
- */
+/** Resolve Gateway auth mode, credentials, trusted-proxy policy, and Tailscale allowance. */
 export function resolveGatewayAuth(params: {
   authConfig?: GatewayAuthConfig | null;
   authOverride?: GatewayAuthConfig | null;
@@ -99,8 +46,9 @@ export function resolveGatewayAuth(params: {
   const authOverride = params.authOverride ?? undefined;
   const authConfig: GatewayAuthConfig = { ...baseAuthConfig };
   if (authOverride) {
-    // 运行时 override 是稀疏字段覆盖；省略的字段保留持久化配置，
-    // 这样调用方可以替换单个鉴权旋钮而无需克隆全部凭据与代理设置。
+    // Runtime overrides are sparse field overlays; omitted fields keep the
+    // persisted config so callers can replace one auth knob without cloning all
+    // credential and proxy settings.
     if (authOverride.mode !== undefined) {
       authConfig.mode = authOverride.mode;
     }
@@ -121,11 +69,16 @@ export function resolveGatewayAuth(params: {
     }
   }
   const env = params.env ?? process.env;
-  // 降级：SecretRef 不支持，所有值视为明文。
+  const tokenRef = resolveSecretInputRef({ value: authConfig.token }).ref;
+  const passwordRef = resolveSecretInputRef({ value: authConfig.password }).ref;
+  // Secret refs are not plaintext credentials here. Startup/runtime secret
+  // resolution validates active refs before request authorization sees them.
   const resolvedCredentials = resolveGatewayCredentialsFromValues({
-    configToken: authConfig.token,
-    configPassword: authConfig.password,
+    configToken: tokenRef ? undefined : authConfig.token,
+    configPassword: passwordRef ? undefined : authConfig.password,
     env,
+    tokenPrecedence: "config-first",
+    passwordPrecedence: "config-first", // pragma: allowlist secret
   });
   const token = resolvedCredentials.token;
   const password = resolvedCredentials.password;
@@ -146,15 +99,15 @@ export function resolveGatewayAuth(params: {
     mode = "token";
     modeSource = "token";
   } else {
-    // Token 保持默认，这样配置断言可以产生清晰的 missing-token 诊断，
-    // 而不是静默禁用 Gateway 鉴权。
+    // Token remains the default so the config assertion can produce a clear
+    // missing-token diagnostic instead of silently disabling Gateway auth.
     mode = "token";
     modeSource = "default";
   }
 
   const allowTailscale =
-    // Tailscale serve 可以提供网络级访问控制，但 password 和
-    // trusted-proxy 模式保持其更严格的显式鉴权边界。
+    // Tailscale serve can supply network-level access control, but password and
+    // trusted-proxy modes keep their stricter explicit auth boundary.
     authConfig.allowTailscale ??
     (params.tailscaleMode === "serve" && mode !== "password" && mode !== "trusted-proxy");
 
@@ -168,7 +121,7 @@ export function resolveGatewayAuth(params: {
   };
 }
 
-/** 为无法建模每种鉴权模式的客户端返回有效的 token/password 密钥。 */
+/** Return the effective token/password secret for clients that cannot model every auth mode. */
 export function resolveEffectiveSharedGatewayAuth(params: {
   authConfig?: GatewayAuthConfig | null;
   authOverride?: GatewayAuthConfig | null;

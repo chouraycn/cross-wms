@@ -1,10 +1,15 @@
-import type { GatewaySessionRow, SessionRunStatus } from './session-utils.types.js';
+import {
+  buildAgentRunTerminalOutcome,
+  type AgentRunTerminalOutcome,
+} from "@openclaw-src/agents/agent-run-terminal-outcome.js";
+import { updateSessionStoreEntry, type SessionEntry } from "@openclaw-src/config/sessions.js";
+import type { AgentEventPayload } from "@openclaw-src/infra/agent-events.js";
+import { loadSessionEntry } from "./session-utils.js";
+import type { GatewaySessionRow, SessionRunStatus } from "./session-utils.types.js";
 
-type LifecyclePhase = 'start' | 'end' | 'error';
+type LifecyclePhase = "start" | "end" | "error";
 
-type LifecycleEventLike = {
-  ts: number;
-  sessionId?: string;
+type LifecycleEventLike = Pick<AgentEventPayload, "ts" | "sessionId"> & {
   runId?: string;
   lifecycleGeneration?: string;
   data?: {
@@ -22,48 +27,64 @@ type LifecycleEventLike = {
 
 type LifecycleSessionShape = Pick<
   GatewaySessionRow,
-  'updatedAt' | 'status' | 'startedAt' | 'endedAt' | 'runtimeMs' | 'abortedLastRun'
+  "updatedAt" | "status" | "startedAt" | "endedAt" | "runtimeMs" | "abortedLastRun"
+>;
+
+type PersistedLifecycleSessionShape = Pick<
+  SessionEntry,
+  | "updatedAt"
+  | "status"
+  | "startedAt"
+  | "endedAt"
+  | "runtimeMs"
+  | "abortedLastRun"
+  | "restartRecoveryRuns"
 >;
 
 export type GatewaySessionLifecycleSnapshot = Partial<LifecycleSessionShape>;
 
 function isFiniteTimestamp(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function resolveLifecyclePhase(event: Pick<LifecycleEventLike, 'data'>): LifecyclePhase | null {
-  const phase = typeof event.data?.phase === 'string' ? event.data.phase : '';
-  return phase === 'start' || phase === 'end' || phase === 'error' ? phase : null;
+function resolveLifecyclePhase(event: Pick<LifecycleEventLike, "data">): LifecyclePhase | null {
+  const phase = typeof event.data?.phase === "string" ? event.data.phase : "";
+  return phase === "start" || phase === "end" || phase === "error" ? phase : null;
 }
 
-function mapStopReasonToSessionStatus(stopReason: string | undefined): SessionRunStatus {
-  switch (stopReason) {
-    case 'completed':
-      return 'done';
-    case 'hard_timeout':
-    case 'timed_out':
-      return 'timeout';
-    case 'cancelled':
-    case 'aborted':
-      return 'killed';
-    case 'blocked':
-    case 'failed':
-      return 'failed';
+function mapAgentRunTerminalOutcomeToSessionStatus(
+  outcome: AgentRunTerminalOutcome,
+): SessionRunStatus {
+  switch (outcome.reason) {
+    case "completed":
+      return "done";
+    case "hard_timeout":
+    case "timed_out":
+      return "timeout";
+    case "cancelled":
+    case "aborted":
+      return "killed";
+    case "blocked":
+    case "failed":
+      return "failed";
     default:
-      return 'done';
+      return outcome.reason satisfies never;
   }
 }
 
 function resolveTerminalStatus(event: LifecycleEventLike): SessionRunStatus {
   const phase = resolveLifecyclePhase(event);
-  if (phase === 'error') {
-    return 'failed';
-  }
-  if (event.data?.aborted === true) {
-    return 'killed';
-  }
-  const stopReason = typeof event.data?.stopReason === 'string' ? event.data.stopReason : undefined;
-  return mapStopReasonToSessionStatus(stopReason);
+  const terminal = buildAgentRunTerminalOutcome({
+    status: phase === "error" ? "error" : event.data?.aborted === true ? "timeout" : "ok",
+    error: event.data?.error,
+    stopReason: event.data?.stopReason,
+    livenessState: event.data?.livenessState,
+    timeoutPhase: event.data?.timeoutPhase,
+    providerStarted: event.data?.providerStarted,
+    startedAt: event.data?.startedAt,
+    endedAt: event.data?.endedAt ?? event.ts,
+  });
+  return mapAgentRunTerminalOutcomeToSessionStatus(terminal);
 }
 
 function resolveLifecycleStartedAt(
@@ -96,7 +117,7 @@ function resolveRuntimeMs(params: {
     return Math.max(0, endedAt - startedAt);
   }
   if (
-    typeof existingRuntimeMs === 'number' &&
+    typeof existingRuntimeMs === "number" &&
     Number.isFinite(existingRuntimeMs) &&
     existingRuntimeMs >= 0
   ) {
@@ -115,12 +136,12 @@ export function deriveGatewaySessionLifecycleSnapshot(params: {
   }
 
   const existing = params.session ?? undefined;
-  if (phase === 'start') {
+  if (phase === "start") {
     const startedAt = resolveLifecycleStartedAt(existing?.startedAt, params.event);
     const updatedAt = startedAt ?? existing?.updatedAt;
     return {
       updatedAt,
-      status: 'running',
+      status: "running",
       startedAt,
       endedAt: undefined,
       runtimeMs: undefined,
@@ -141,8 +162,75 @@ export function deriveGatewaySessionLifecycleSnapshot(params: {
       endedAt,
       existingRuntimeMs: existing?.runtimeMs,
     }),
-    abortedLastRun: resolveTerminalStatus(params.event) === 'killed',
+    abortedLastRun: resolveTerminalStatus(params.event) === "killed",
   };
+}
+
+export function derivePersistedSessionLifecyclePatch(params: {
+  entry?: Partial<PersistedLifecycleSessionShape> | null;
+  event: LifecycleEventLike;
+}): Partial<PersistedLifecycleSessionShape> {
+  if (isRestartRecoveryLifecycleEvent(params)) {
+    return {};
+  }
+  const snapshot = deriveGatewaySessionLifecycleSnapshot({
+    session: params.entry ?? undefined,
+    event: params.event,
+  });
+  const patch: Partial<PersistedLifecycleSessionShape> = {
+    ...snapshot,
+    updatedAt: typeof snapshot.updatedAt === "number" ? snapshot.updatedAt : undefined,
+  };
+  const runId = params.event.runId?.trim();
+  const lifecycleGeneration = params.event.lifecycleGeneration?.trim();
+  const restartRecoveryRuns = params.entry?.restartRecoveryRuns;
+  if (
+    resolveLifecyclePhase(params.event) !== "start" &&
+    runId &&
+    lifecycleGeneration &&
+    restartRecoveryRuns?.some(
+      (run) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
+    )
+  ) {
+    const remainingRuns = restartRecoveryRuns.filter(
+      (run) => run.runId !== runId || run.lifecycleGeneration !== lifecycleGeneration,
+    );
+    if (remainingRuns.length > 0) {
+      return { restartRecoveryRuns: remainingRuns };
+    }
+    patch.restartRecoveryRuns = undefined;
+  }
+  return patch;
+}
+
+export function deriveGatewaySessionLifecycleProjectionPatch(params: {
+  entry?: Partial<PersistedLifecycleSessionShape> | null;
+  event: LifecycleEventLike;
+}): GatewaySessionLifecycleSnapshot {
+  const { restartRecoveryRuns: _restartRecoveryRuns, ...patch } =
+    derivePersistedSessionLifecyclePatch(params);
+  return patch;
+}
+
+export function isRestartRecoveryLifecycleEvent(params: {
+  entry?: Pick<SessionEntry, "restartRecoveryRuns"> | null;
+  event: Pick<LifecycleEventLike, "runId" | "lifecycleGeneration" | "data">;
+}): boolean {
+  const runId = params.event.runId?.trim();
+  const lifecycleGeneration = params.event.lifecycleGeneration?.trim();
+  const phase = resolveLifecyclePhase(params.event);
+  const interrupted = params.event.data?.stopReason === "restart";
+  const matchesRecoveryRun = Boolean(
+    runId &&
+    lifecycleGeneration &&
+    params.entry?.restartRecoveryRuns?.some(
+      (run) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
+    ),
+  );
+  return (
+    matchesRecoveryRun &&
+    (phase === "start" || ((phase === "end" || phase === "error") && interrupted))
+  );
 }
 
 export function isStaleLifecycleEventForSession(params: {
@@ -154,4 +242,46 @@ export function isStaleLifecycleEventForSession(params: {
     params.currentSessionId &&
     params.owningSessionId !== params.currentSessionId,
   );
+}
+
+export async function persistGatewaySessionLifecycleEvent(params: {
+  sessionKey: string;
+  agentId?: string;
+  event: LifecycleEventLike;
+}): Promise<void> {
+  const phase = resolveLifecyclePhase(params.event);
+  if (!phase) {
+    return;
+  }
+
+  const sessionEntry = loadSessionEntry(params.sessionKey, {
+    ...(params.agentId ? { agentId: params.agentId } : {}),
+    clone: false,
+  });
+  if (!sessionEntry.entry) {
+    return;
+  }
+
+  const owningSessionId =
+    typeof params.event.sessionId === "string" && params.event.sessionId
+      ? params.event.sessionId
+      : undefined;
+
+  await updateSessionStoreEntry({
+    storePath: sessionEntry.storePath,
+    sessionKey: sessionEntry.canonicalKey,
+    skipMaintenance: true,
+    takeCacheOwnership: true,
+    requireWriteSuccess: true,
+    update: async (entry) => {
+      if (isStaleLifecycleEventForSession({ owningSessionId, currentSessionId: entry.sessionId })) {
+        return null;
+      }
+      const patch = derivePersistedSessionLifecyclePatch({
+        entry,
+        event: params.event,
+      });
+      return Object.keys(patch).length > 0 ? patch : null;
+    },
+  });
 }

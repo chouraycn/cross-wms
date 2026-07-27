@@ -6,5 +6,23 @@
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["openrouter"],
+  "modelSupport": {
+    "modelPrefixes": ["openrouter/", "anthropic/", "openai/", "google/", "meta-llama/", "mistralai/", "cohere/"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "openrouter-native",
+      "hosts": ["openrouter.ai"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "openrouter",
+        "envVars": ["OPENROUTER_API_KEY"]
+      }
+    ]
+  }
 }

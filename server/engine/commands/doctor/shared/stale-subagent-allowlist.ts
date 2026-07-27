@@ -1,15 +1,7 @@
 // Doctor scanner and repair for subagent allowlists that reference missing agents.
-// 移植自 openclaw/src/commands/doctor/shared/stale-subagent-allowlist.ts
-//
-// 降级说明：
-//  - listAgentIds 来自 ../../../agents/agent-scope-config.js
-//    → 未移植，使用 stub 返回空数组
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { normalizeAgentId, normalizeOptionalAgentId } from "../../../routing/session-key.js";
-
-function listAgentIds(_cfg: OpenClawConfig): string[] {
-  return [];
-}
+import { listAgentIds } from "@openclaw-src/agents/agent-scope-config.js";
+import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
+import { normalizeAgentId, normalizeOptionalAgentId } from "@openclaw-src/routing/session-key.js";
 
 export type StaleSubagentAllowlistHit = {
   /** Config path containing the stale allowAgents entry. */

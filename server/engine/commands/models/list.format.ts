@@ -1,28 +1,14 @@
-// Formatting helpers for model-list terminal tables.
-// 移植自 openclaw/src/commands/models/list.format.ts
-//
-// 降级说明：
-//  - isRich / theme 来自 ../../../packages/terminal-core/src/theme.js
-//    → 未移植，使用简化实现（不使用终端颜色）
+/** Formatting helpers for model-list terminal tables. */
+import { isRich as isRichTerminal, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
 
-const isRichTerminal = () => false;
-
-const theme = {
-  success: (s: string) => s,
-  accentBright: (s: string) => s,
-  accent: (s: string) => s,
-  error: (s: string) => s,
-  warn: (s: string) => s,
-  accentDim: (s: string) => s,
-  muted: (s: string) => s,
-  heading: (s: string) => s,
-};
-
+/** Enables rich formatting only for non-machine-readable output. */
 export const isRich = (opts?: { json?: boolean; plain?: boolean }) =>
   isRichTerminal() && !opts?.json && !opts?.plain;
 
+/** Pads a table cell to a fixed width. */
 export const pad = (value: string, size: number) => value.padEnd(size);
 
+/** Applies terminal color based on a model-list tag. */
 export const formatTag = (tag: string, rich: boolean) => {
   if (!rich) {
     return tag;
@@ -51,6 +37,7 @@ export const formatTag = (tag: string, rich: boolean) => {
   return theme.muted(tag);
 };
 
+/** Truncates model-list cells with an ASCII ellipsis. */
 export const truncate = (value: string, max: number) => {
   if (value.length <= max) {
     return value;

@@ -47,7 +47,7 @@ interface McpClientEntry {
 
 // ===================== McpClientManager 类 =====================
 
-class McpClientManager {
+export class McpClientManager {
   private static instance: McpClientManager;
 
   /** 已连接的 Server（serverId → McpClientEntry） */
@@ -64,6 +64,15 @@ class McpClientManager {
       McpClientManager.instance = new McpClientManager();
     }
     return McpClientManager.instance;
+  }
+
+  /**
+   * 创建独立的（非单例）MCP 客户端管理器实例。
+   * 用于数字员工等需要隔离 MCP server 连接的场景——避免污染全局单例，
+   * 也不与主程序聊天共享 server 连接。
+   */
+  static create(): McpClientManager {
+    return new McpClientManager();
   }
 
   // ===================== 配置 CRUD（委托给 McpConfigStore） =====================
@@ -230,6 +239,22 @@ class McpClientManager {
     this.nameToIdMap.delete(serverPrefix);
     this.clients.delete(serverId);
     logger.debug(`[McpClientManager] 已断开: ${entry.config.name} (${serverId})`);
+  }
+
+  /**
+   * 判断某个 MCP server 前缀是否已连接。
+   * 供数字员工隔离 manager 在工具分发时判断工具名是否属于本 manager。
+   */
+  hasServerPrefix(prefix: string): boolean {
+    return this.nameToIdMap.has(prefix);
+  }
+
+  /**
+   * 断开所有已连接的 server（用于数字员工会话结束时清理隔离连接）。
+   */
+  async disconnectAll(): Promise<void> {
+    const ids = [...this.clients.keys()];
+    await Promise.all(ids.map((id) => this.disconnectServer(id).catch(() => undefined)));
   }
 
   /**

@@ -79,6 +79,22 @@ export function getServerToolByLeafName(serverId: string, leafName: string): Too
   });
 }
 
+/** 按 config.skillId 查找「程序技能」类工具（tool_type='skill'） */
+export function getToolByConfigSkillId(tenantId: string, skillId: string): ToolRow | undefined {
+  const db = initDb();
+  const rows = db
+    .prepare('SELECT * FROM sd_tools WHERE tenant_id = ? AND tool_type = ?')
+    .all(tenantId, 'skill') as ToolRow[];
+  return rows.find((row) => {
+    try {
+      const config = JSON.parse(row.config_json || '{}') as Record<string, unknown>;
+      return String(config.skillId || '') === skillId;
+    } catch {
+      return false;
+    }
+  });
+}
+
 // ===================== 写入 =====================
 
 interface CreateToolData {
@@ -97,6 +113,7 @@ interface CreateToolData {
   output_schema?: Record<string, unknown>;
   allowed_skills?: string[];
   mcp_server_id?: string | null;
+  mcp_tool_name?: string | null;
   enabled?: boolean;
 }
 
@@ -110,8 +127,8 @@ export function createTool(data: CreateToolData): ToolRow {
     `INSERT INTO sd_tools (
       id, tenant_id, name, display_name, description, bucket, tool_type, method, url,
       headers_json, auth_json, config_json, input_schema, output_schema, allowed_skills_json,
-      mcp_server_id, enabled
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      mcp_server_id, mcp_tool_name, enabled
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     tenantId,
@@ -129,6 +146,7 @@ export function createTool(data: CreateToolData): ToolRow {
     JSON.stringify(data.output_schema ?? {}),
     JSON.stringify(data.allowed_skills ?? []),
     data.mcp_server_id ?? null,
+    data.mcp_tool_name ?? null,
     data.enabled === false ? 0 : 1,
   );
   return db.prepare('SELECT * FROM sd_tools WHERE id = ?').get(id) as ToolRow;
@@ -149,6 +167,7 @@ interface UpdateToolData {
   output_schema?: Record<string, unknown>;
   allowed_skills?: string[];
   mcp_server_id?: string | null;
+  mcp_tool_name?: string | null;
   enabled?: boolean;
 }
 
@@ -220,6 +239,10 @@ export function updateTool(
   if (updates.mcp_server_id !== undefined) {
     setClauses.push('mcp_server_id = ?');
     params.push(updates.mcp_server_id);
+  }
+  if (updates.mcp_tool_name !== undefined) {
+    setClauses.push('mcp_tool_name = ?');
+    params.push(updates.mcp_tool_name);
   }
   if (updates.enabled !== undefined) {
     setClauses.push('enabled = ?');

@@ -1,54 +1,14 @@
 // Legacy MCP runtime config migrations for CLI-native transport aliases.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-config-migrations.runtime.mcp.ts
-//
-// 降级说明：
-//  - LegacyConfigMigrationSpec / LegacyConfigRule / defineLegacyConfigMigration
-//    来自 ../../../config/legacy.shared.js → cross-wms 占位为 unknown，
-//    在本文件内提供本地等价类型与 identity 帮助器以保留原迁移逻辑
-//  - isRecord 来自 ./legacy-config-record-shared.js → cross-wms 已移植
-//  - isKnownCliMcpTypeAlias / resolveOpenClawMcpTransportAlias
-//    来自 ../../../config/mcp-config-normalize.js → cross-wms 已移植（降级 stub）
-//    用本地类型化包装函数保留原签名
 import {
-  isKnownCliMcpTypeAlias as isKnownCliMcpTypeAliasStub,
-  resolveOpenClawMcpTransportAlias as resolveOpenClawMcpTransportAliasStub,
-} from "../../../config/mcp-config-normalize.js";
-import { isRecord, type JsonRecord } from "./legacy-config-record-shared.js";
-
-export type LegacyConfigRule = {
-  path: string[];
-  message: string;
-  match?: (value: unknown, root: JsonRecord) => boolean;
-  requireSourceLiteral?: boolean;
-};
-
-export type LegacyConfigMigration = {
-  id: string;
-  describe: string;
-  apply: (raw: JsonRecord, changes: string[]) => void;
-};
-
-export type LegacyConfigMigrationSpec = LegacyConfigMigration & {
-  legacyRules?: LegacyConfigRule[];
-};
-
-/** Identity helper that preserves the LegacyConfigMigrationSpec shape for migration registries. */
-export function defineLegacyConfigMigration(
-  migration: LegacyConfigMigrationSpec,
-): LegacyConfigMigrationSpec {
-  return migration;
-}
-
-/** Typed wrapper for the cross-wms stub. Returns true when value is a known CLI MCP type alias. */
-function isKnownCliMcpTypeAlias(value: unknown): boolean {
-  return Boolean(isKnownCliMcpTypeAliasStub(value));
-}
-
-/** Typed wrapper for the cross-wms stub. Returns the resolved transport alias or undefined. */
-function resolveOpenClawMcpTransportAlias(value: unknown): string | undefined {
-  const result = resolveOpenClawMcpTransportAliasStub(value);
-  return typeof result === "string" ? result : undefined;
-}
+  defineLegacyConfigMigration,
+  type LegacyConfigMigrationSpec,
+  type LegacyConfigRule,
+} from "@openclaw-src/config/legacy.shared.js";
+import {
+  isKnownCliMcpTypeAlias,
+  resolveOpenClawMcpTransportAlias,
+} from "@openclaw-src/config/mcp-config-normalize.js";
+import { isRecord } from "./legacy-config-record-shared.js";
 
 const MCP_SERVER_TYPE_RULE: LegacyConfigRule = {
   path: ["mcp", "servers"],

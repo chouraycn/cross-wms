@@ -37,6 +37,21 @@ export interface ThinkingContent {
   redacted?: boolean;
 }
 
+/** Per-level token budgets for providers that expose thinking/reasoning budget knobs. */
+export interface ThinkingBudgets {
+  minimal?: number;
+  low?: number;
+  medium?: number;
+  high?: number;
+  max?: number;
+}
+
+/** Provider HTTP response metadata exposed to onResponse callbacks. */
+export interface ProviderResponse {
+  status: number;
+  headers: Record<string, string>;
+}
+
 /** Normalized token and cost accounting for a provider response. */
 export interface Usage {
   input: number;

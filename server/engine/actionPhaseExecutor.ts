@@ -10,6 +10,7 @@
 
 import type { AIResponse, ToolCall, MessageContent } from '../aiClient.js';
 import { mcpClientManager } from './mcpClientManager.js';
+import type { McpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { executeToolCall } from './toolRegistry.js';
 import { CircuitBreaker } from './circuitBreaker.js';
@@ -26,11 +27,31 @@ import { toolSendReceipts } from './toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
 import { toolFallbackManager } from './toolFallbackStrategy.js';
 import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
-import { isSkillToolName } from './skillToolBridge.js';
+import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
 
 /**
  * ActionPhase 执行器 — 封装 ACTING 阶段的全部逻辑。
  */
+/**
+ * 选择执行某工具调用所用的 MCP manager。
+ *
+ * 数字员工隔离契约：当工具名属于 per-call 注入的员工 MCP manager 管辖的 server 时，
+ * 优先使用隔离实例（强租户隔离，不污染全局单例）；否则回退全局 mcpClientManager。
+ * 抽为纯函数以便单元测试覆盖分发路由（无需驱动完整 actionPhase）。
+ */
+export function resolveMcpManager(
+  effectiveToolName: string,
+  staffMcpManager: McpClientManager | undefined,
+  fallback: McpClientManager,
+): McpClientManager {
+  if (!isMcpToolName(effectiveToolName)) return fallback;
+  const prefix = getMcpServerPrefix(effectiveToolName);
+  if (staffMcpManager && prefix && staffMcpManager.hasServerPrefix(prefix)) {
+    return staffMcpManager;
+  }
+  return fallback;
+}
+
 export class ActionPhaseExecutor {
   private readonly circuitBreaker: CircuitBreaker;
   private readonly dependencyGraph: ToolDependencyGraph;
@@ -41,6 +62,12 @@ export class ActionPhaseExecutor {
     currentComplexityLevel: 'simple' | 'moderate' | 'complex';
     turn: number;
   };
+  /** 数字员工（per-call）MCP 客户端管理器：隔离 MCP server 连接 */
+  private readonly staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
+  /** 数字员工（per-call）物化技能执行器 */
+  private readonly extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  /** 数字员工（per-call）技能权限配置 */
+  private readonly skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
 
   constructor(deps: {
     circuitBreaker: CircuitBreaker;
@@ -52,11 +79,17 @@ export class ActionPhaseExecutor {
       currentComplexityLevel: 'simple' | 'moderate' | 'complex';
       turn: number;
     };
+    staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
+    extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+    skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
   }) {
     this.circuitBreaker = deps.circuitBreaker;
     this.dependencyGraph = deps.dependencyGraph;
     this.extractUserMessage = deps.extractUserMessage;
     this.getState = deps.getState;
+    this.staffMcpManager = deps.staffMcpManager;
+    this.extraSkillExecutor = deps.extraSkillExecutor;
+    this.skillPermissionConfig = deps.skillPermissionConfig;
   }
 
   /**
@@ -261,13 +294,24 @@ export class ActionPhaseExecutor {
 
     const toolExecutor = async (toolSignal: AbortSignal): Promise<string> => {
       if (isMcpToolName(effectiveToolName)) {
-        const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
-        const mcpResult = await mcpClientManager.executeMcpTool(effectiveToolName, parsedArgs, { signal: toolSignal });
         const prefix = getMcpServerPrefix(effectiveToolName);
+        // 优先使用数字员工隔离的 MCP manager（属于它的 server 走它，否则回退全局）
+        const mgr = resolveMcpManager(effectiveToolName, this.staffMcpManager, mcpClientManager);
+        const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+        const mcpResult = await mgr.executeMcpTool(effectiveToolName, parsedArgs, { signal: toolSignal });
         if (prefix) {
           this.circuitBreaker.recordMcpServerSuccess(prefix);
         }
         return mcpResult;
+      } else if (isSkillToolName(effectiveToolName)) {
+        // 数字员工物化技能：全局未命中时回退到 per-call 执行器
+        const skillResult = await handleSkillToolCall(
+          { id: toolCall.id, type: 'function', function: { name: effectiveToolName, arguments: toolCall.function.arguments } },
+          this.skillPermissionConfig,
+          context.sessionId || `session-${Date.now()}`,
+          this.extraSkillExecutor,
+        );
+        return skillResult.content || JSON.stringify(skillResult);
       } else {
         return executeToolCall({
           ...toolCall,

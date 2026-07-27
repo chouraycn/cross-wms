@@ -1,31 +1,8 @@
-// Pure helpers for doctor skill readiness repairs.
-// 移植自 openclaw/src/commands/doctor-skills-core.ts
-//
-// 降级说明：
-//  - SkillStatusEntry / SkillStatusReport 来自 ../skills/discovery/status.js
-//    → 未移植，使用简化类型定义
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+/** Pure helpers for doctor skill readiness repairs. */
+import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
+import type { SkillStatusEntry, SkillStatusReport } from "@openclaw-src/skills/discovery/status.js";
 
-export type SkillStatusEntry = {
-  skillKey: string;
-  eligible: boolean;
-  disabled: boolean;
-  blockedByAllowlist: boolean;
-  blockedByAgentFilter: boolean;
-  platformIncompatible: boolean;
-  missing: {
-    bins: string[];
-    anyBins: string[];
-    env: string[];
-    config: string[];
-    os: string[];
-  };
-};
-
-export type SkillStatusReport = {
-  skills: SkillStatusEntry[];
-};
-
+/** Returns allowed skills that are unusable in the current runtime environment. */
 export function collectUnavailableAgentSkills(report: SkillStatusReport): SkillStatusEntry[] {
   return report.skills.filter(
     (skill) =>
@@ -33,6 +10,9 @@ export function collectUnavailableAgentSkills(report: SkillStatusReport): SkillS
       !skill.disabled &&
       !skill.blockedByAllowlist &&
       !skill.blockedByAgentFilter &&
+      // Platform-incompatible skills (declared OS requirement excludes this host)
+      // are not broken installs to disable — they remain applicable on a matching
+      // OS, so doctor --fix should leave them alone.
       !skill.platformIncompatible,
   );
 }
@@ -57,6 +37,7 @@ export function formatMissingSkillSummary(skill: SkillStatusEntry): string {
   return missing.join("; ") || "unknown requirement";
 }
 
+/** Disables unavailable skills in config while preserving existing skill entries. */
 export function disableUnavailableSkillsInConfig(
   config: OpenClawConfig,
   skills: readonly SkillStatusEntry[],

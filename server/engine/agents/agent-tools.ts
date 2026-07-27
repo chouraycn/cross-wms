@@ -7,7 +7,13 @@
  */
 
 export { resolveToolLoopDetectionConfig } from "./tool-loop-detection-config.js";
-export type OpenClawCodingToolConstructionPlan = unknown;
+export type OpenClawCodingToolConstructionPlan = {
+  includeBaseCodingTools: boolean;
+  includeShellTools: boolean;
+  includeChannelTools: boolean;
+  includeOpenClawTools: boolean;
+  includePluginTools: boolean;
+};
 export const testing: unknown = undefined;
 export function resolveProcessToolScopeKey(..._args: unknown[]): unknown {
   return undefined;

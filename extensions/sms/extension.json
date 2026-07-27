@@ -1,0 +1,10 @@
+{
+  "id": "sms",
+  "name": "SMS Channel",
+  "description": "SMS text messaging channel extension with pluggable providers",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

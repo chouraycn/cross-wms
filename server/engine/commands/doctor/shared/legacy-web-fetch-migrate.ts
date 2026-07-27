@@ -1,9 +1,5 @@
 // Legacy web-fetch config migration from tools.web.fetch to plugin-owned config.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-web-fetch-migrate.ts
-//
-// 降级说明：
-//  - mergeMissing 来自 ../../../config/legacy.shared.js
-//    → 未移植，使用本地简化实现
+import { mergeMissing } from "@openclaw-src/config/legacy.shared.js";
 import {
   cloneRecord,
   ensureRecord,
@@ -11,19 +7,7 @@ import {
   isRecord,
   type JsonRecord,
 } from "./legacy-config-record-shared.js";
-
 const DANGEROUS_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-
-function mergeMissing(target: JsonRecord, source: JsonRecord): void {
-  for (const [key, value] of Object.entries(source)) {
-    if (DANGEROUS_RECORD_KEYS.has(key)) continue;
-    if (!Object.hasOwn(target, key)) {
-      target[key] = value;
-    } else if (isRecord(target[key]) && isRecord(value)) {
-      mergeMissing(target[key] as JsonRecord, value as JsonRecord);
-    }
-  }
-}
 
 function resolveLegacyFetchConfig(raw: unknown): JsonRecord | undefined {
   if (!isRecord(raw)) {
@@ -92,6 +76,7 @@ function migratePluginWebFetchConfig(params: {
   );
 }
 
+/** Move legacy Firecrawl web-fetch config into plugins.entries.firecrawl.config.webFetch. */
 export function migrateLegacyWebFetchConfig<T>(raw: T): { config: T; changes: string[] } {
   if (!isRecord(raw) || !hasMappedLegacyWebFetchConfig(raw)) {
     return { config: raw, changes: [] };

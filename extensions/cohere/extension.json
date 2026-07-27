@@ -6,5 +6,23 @@
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["cohere"],
+  "modelSupport": {
+    "modelPrefixes": ["command", "c4ai-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "cohere-native",
+      "hosts": ["api.cohere.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "cohere",
+        "envVars": ["COHERE_API_KEY"]
+      }
+    ]
+  }
 }

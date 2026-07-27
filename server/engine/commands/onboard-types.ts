@@ -3,18 +3,9 @@
  *
  * These types model CLI flags plus plugin-defined dynamic auth options used by
  * interactive and non-interactive setup.
- *
- * 移植自 openclaw/src/commands/onboard-types.ts
- *
- * 降级说明：
- *  - ChannelId 来自 ../channels/plugins/types.public.js
- *    → cross-wms 已在 ../channels/types.public.ts 实现同源导出
- *  - SecretInputMode 来自 ../plugins/provider-auth-types.js
- *    → cross-wms 已在 ../plugins/provider-auth-types.ts 实现同源导出
- *  - GatewayDaemonRuntime 来自 ./daemon-runtime.js → cross-wms 已有
  */
-import type { ChannelId } from "../channels/types.public.js";
-import type { SecretInputMode } from "../plugins/provider-auth-types.js";
+import type { ChannelId } from "@openclaw-src/channels/plugins/types.public.js";
+import type { SecretInputMode } from "@openclaw-src/plugins/provider-auth-types.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
 export type OnboardMode = "local" | "remote";
@@ -26,17 +17,17 @@ export type OnboardMode = "local" | "remote";
 type BuiltInAuthChoice =
   /** @deprecated Use `setup-token`. */
   "oauth" | "setup-token" | "token" | "apiKey" | "custom-api-key" | "skip";
-export type AuthChoice = BuiltInAuthChoice | (string & Record<string, never>);
+export type AuthChoice = BuiltInAuthChoice | (string & Record<never, never>);
 
 /** Auth choice groups are plugin-owned ids plus the core `custom` bucket. */
-export type AuthChoiceGroupId = "custom" | (string & Record<string, never>);
+export type AuthChoiceGroupId = "custom" | (string & Record<never, never>);
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
 export type TailscaleMode = "off" | "serve" | "funnel";
 export type NodeManagerChoice = "npm" | "pnpm" | "bun";
 export type ChannelChoice = ChannelId;
-export type { SecretInputMode } from "../plugins/provider-auth-types.js";
+export type { SecretInputMode } from "@openclaw-src/plugins/provider-auth-types.js";
 
 type OnboardDynamicProviderOptions = {
   /**

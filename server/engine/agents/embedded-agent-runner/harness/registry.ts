@@ -1,0 +1,1 @@
+export const resolveHarnessRegistry = (..._args: unknown[]): unknown => undefined;

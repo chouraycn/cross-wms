@@ -2,20 +2,25 @@
  * StaffLayout — StaffDeck 模块的外层布局
  *
  * 职责：
- * 1. 维护企业认证状态（未登录显示 LoginPage，已登录显示业务页面）
+ * 1. 随主应用启动注入默认桌面身份（ensureDefaultSession），不要求 admin 登录
  * 2. 渲染简化版侧边栏 + 顶部用户菜单
  * 3. 通过 React Context 将 currentUser/isAdmin/onLogout 注入到所有子页面
  * 4. 拦截 AppSidebar 的 onNavigate 回调，转换为 react-router 的 navigate 调用
  *
- * 设计原则：与 cross-wms 主应用隔离 — 仅在 /staff, /enterprise, /workspace 路径下挂载
+ * 设计原则：与 cross-wms 主应用联动 — 数字员工作为子模块随应用启动即获得身份，
+ * 仅在 /staff, /enterprise, /workspace 路径下挂载。后端 staffAuth 中间件对无 token
+ * 请求兜底 default-user，因此前端无需强制登录门。
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  Activity,
   Bell,
+  BookOpen,
   Briefcase,
+  Bug,
   CalendarClock,
   ClipboardList,
   FileText,
@@ -24,14 +29,13 @@ import {
   History,
   Settings,
   Sparkles,
+  User,
   Users,
 } from 'lucide-react';
 
 import {
-  clearEnterpriseAuthSession,
-  getEnterpriseAuthSession,
+  ensureDefaultSession,
   isEnterpriseAdmin,
-  setEnterpriseAuthSession,
   type EnterpriseAuthSession,
   type EnterpriseAuthUser,
 } from './auth.js';
@@ -72,6 +76,7 @@ const PROFILE_NAV: NavItem[] = [
   { route: EnterpriseRoute.ScheduledTasks, label: '定时任务', Icon: Bell },
   { route: EnterpriseRoute.Memories, label: '记忆', Icon: History },
   { route: EnterpriseRoute.Feedback, label: '对话日志', Icon: CalendarClock },
+  { route: EnterpriseRoute.Persona, label: '岗位人设', Icon: User },
 ];
 
 const CAPABILITY_NAV: NavItem[] = [
@@ -81,6 +86,15 @@ const CAPABILITY_NAV: NavItem[] = [
   { route: EnterpriseRoute.Tools, label: '工具', Icon: Briefcase },
 ];
 
+const OBSERVE_NAV: NavItem[] = [
+  { route: EnterpriseRoute.Traces, label: '会话 Trace', Icon: Activity },
+  { route: EnterpriseRoute.Debug, label: 'Agent 调试', Icon: Bug },
+];
+
+const HELP_NAV: NavItem[] = [
+  { route: EnterpriseRoute.Tutorial, label: '使用教程', Icon: BookOpen },
+];
+
 const SYSTEM_NAV: NavItem[] = [
   { route: EnterpriseRoute.Accounts, label: '账号管理', Icon: Users },
   { route: EnterpriseRoute.Models, label: '模型配置', Icon: Settings },
@@ -88,7 +102,7 @@ const SYSTEM_NAV: NavItem[] = [
 
 function resolveSelected(pathname: string): string {
   // 精确匹配优先，其次前缀匹配
-  const all = [...PRIMARY_NAV, ...PROFILE_NAV, ...CAPABILITY_NAV, ...SYSTEM_NAV];
+  const all = [...PRIMARY_NAV, ...PROFILE_NAV, ...CAPABILITY_NAV, ...OBSERVE_NAV, ...HELP_NAV, ...SYSTEM_NAV];
   const exact = all.find((item) => pathname === item.route);
   if (exact) return exact.route;
   const prefix = all
@@ -154,6 +168,20 @@ function StaffSidebar({
         <nav className="flex flex-col gap-[2px]">
           {CAPABILITY_NAV.map(renderNavButton)}
         </nav>
+
+        <div className="mt-[16px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+          观测与调试
+        </div>
+        <nav className="flex flex-col gap-[2px]">
+          {OBSERVE_NAV.map(renderNavButton)}
+        </nav>
+
+        <div className="mt-[16px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+          帮助
+        </div>
+        <nav className="flex flex-col gap-[2px]">
+          {HELP_NAV.map(renderNavButton)}
+        </nav>
       </div>
     </aside>
   );
@@ -168,8 +196,9 @@ export type StaffLayoutProps = {
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  // CrossWMS 桌面应用：数字员工随主应用启动即获得默认身份，无需 admin 登录门
   const [session, setSession] = useState<EnterpriseAuthSession | null>(() =>
-    getEnterpriseAuthSession(),
+    ensureDefaultSession(),
   );
 
   // 监听其他标签页的登出事件
@@ -183,14 +212,10 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const handleLogin = useCallback((next: EnterpriseAuthSession) => {
-    setEnterpriseAuthSession(next);
-    setSession(next);
-  }, []);
-
+  // 无登录门场景：退出即重置为默认桌面身份，避免进入无 session 的退化态
   const handleLogout = useCallback(() => {
-    clearEnterpriseAuthSession();
-    setSession(null);
+    const next = ensureDefaultSession();
+    setSession(next);
   }, []);
 
   const handleNavigate = useCallback(
@@ -208,17 +233,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     () => ({ currentUser, isAdmin, onLogout: handleLogout }),
     [currentUser, isAdmin, handleLogout],
   );
-
-  // 未登录：渲染登录页（占满整个 cross-wms 内容区，无侧边栏）
-  if (!session) {
-    // 局部加载 LoginPage，避免直接 import 导致主应用首次加载体积膨胀
-    const LoginPage = ReactLazyLoginPage;
-    return (
-      <div className="sd-root min-h-full bg-[#f7f5ef]">
-        <LoginPage onLogin={handleLogin} />
-      </div>
-    );
-  }
 
   return (
     <StaffAuthContext.Provider value={authValue}>
@@ -274,7 +288,3 @@ export function withStaffAuth<P extends { currentUser?: EnterpriseAuthUser; isAd
   Wrapped.displayName = `withStaffAuth(${Page.displayName || Page.name || 'Page'})`;
   return Wrapped;
 }
-
-// ============================ Lazy login page ============================
-
-const ReactLazyLoginPage = React.lazy(() => import('../../pages/staff/LoginPage.js'));

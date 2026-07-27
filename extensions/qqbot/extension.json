@@ -1,0 +1,10 @@
+{
+  "id": "qqbot",
+  "name": "QQ Bot Channel",
+  "description": "QQ Official Bot API channel extension for Tencent QQ",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

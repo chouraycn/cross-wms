@@ -205,8 +205,16 @@ export default function ConversationLogsTab() {
   const reanalyzeFeedback = async (feedbackId: string) => {
     setReanalyzingId(feedbackId);
     try {
-      await api.post(`/feedback/${feedbackId}/reanalyze?tenant_id=${TENANT_ID}`);
-      notify.success('已重新提交后台分析');
+      const result = await api.post<{
+        code: number;
+        data?: { implemented?: boolean; analysis_status?: string; message?: string };
+      }>(`/feedback/${feedbackId}/reanalyze?tenant_id=${TENANT_ID}`);
+      const implemented = result?.data?.implemented;
+      if (implemented === false) {
+        notify.warning('分析未完成：当前未配置可用模型，无法执行真实归因分析');
+      } else {
+        notify.success('已重新提交后台分析');
+      }
       await reloadCurrentDetail();
       await load();
     } catch (error) {

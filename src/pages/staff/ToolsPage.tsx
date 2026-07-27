@@ -64,9 +64,26 @@ import type {
   MCPServerRead,
   MCPTransport,
 } from '../../components/staff/types/index.js';
+import { ExecutionBadge, type ExecutionRuntimeResponse } from '../../components/staff/ExecutionBadge.js';
+import { StatusBadge } from './scheduled-tasks/StatusBadge.js';
+import type { BadgeTone } from './scheduled-tasks/shared.js';
 
 const TOOL_PAGE_SIZE = 10;
+
+/** 工具启用状态 → 徽章色调（与 StaffDeck-main 同款映射） */
+const TOOL_STATUS_BADGE: Record<'enabled' | 'disabled', { tone: BadgeTone; text: string }> = {
+  enabled: { tone: 'green', text: '已启用' },
+  disabled: { tone: 'gray', text: '已停用' },
+};
 const ENTERPRISE_AGENT_STORAGE_KEY_LOCAL = ENTERPRISE_AGENT_STORAGE_KEY;
+
+/** 工具是否已接入员工执行链路：MCP 工具需父服务器 enabled 且自身 enabled；其余看 enabled */
+function toolConnected(row: ToolRead, mcpRuntime: Record<string, boolean>): boolean {
+  if (row.tool_type === 'mcp') {
+    return row.enabled && !!row.mcp_server_id && mcpRuntime[row.mcp_server_id] === true;
+  }
+  return row.enabled;
+}
 
 type ToolPageProps = {
   currentUser?: EnterpriseAuthUser;
@@ -163,6 +180,8 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
   const [editingTool, setEditingTool] = useState<ToolRead | null>(null);
   const [formValues, setFormValues] = useState<ToolFormValues>({ ...TOOL_FORM_INITIAL });
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [mcpRuntime, setMcpRuntime] = useState<Record<string, boolean>>({});
 
   const currentAgent = useMemo(() => agents.find((item) => item.id === agentId), [agents, agentId]);
   const isOverallAgent = !currentAgent || currentAgent.is_overall;
@@ -202,8 +221,9 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       total: visibleRows.length,
       enabled: visibleRows.filter((row) => row.enabled).length,
       buckets: bucketStats.length,
+      connected: visibleRows.filter((row) => toolConnected(row, mcpRuntime)).length,
     }),
-    [visibleRows, bucketStats],
+    [visibleRows, bucketStats, mcpRuntime],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / TOOL_PAGE_SIZE));
@@ -276,6 +296,17 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     try {
       const rowsData = await api.get<ToolRead[]>(`/tools?tenant_id=${TENANT_ID}${agentQuery}`);
       setRows(rowsData);
+      // 员工 MCP 执行链路接入状态（单一事实来源，tenant 级）
+      try {
+        const rt = await api.get<ExecutionRuntimeResponse>(`/execution-runtime?tenant_id=${TENANT_ID}`);
+        const map: Record<string, boolean> = {};
+        (rt?.data?.mcpServers || []).forEach((s) => {
+          map[s.id] = s.connected;
+        });
+        setMcpRuntime(map);
+      } catch {
+        setMcpRuntime({});
+      }
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '加载工具失败');
     } finally {
@@ -287,6 +318,29 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     setEditingTool(null);
     setFormValues({ ...TOOL_FORM_INITIAL });
     setCreateOpen(true);
+  }
+
+  async function syncProgramSkills() {
+    if (!canManageCurrentScope) return;
+    setSyncing(true);
+    try {
+      const res = await api.post<{ data?: { imported?: number; updated?: number; total?: number } }>(
+        `/program-skills/sync?tenant_id=${TENANT_ID}`,
+      );
+      const data = res?.data;
+      if (data && typeof data.total === 'number') {
+        notify.success(
+          `已同步程序技能：${data.imported ?? 0} 新增 / ${data.updated ?? 0} 更新 / 共 ${data.total} 个`,
+        );
+      } else {
+        notify.success('程序技能已同步到工具目录');
+      }
+      await load();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '同步程序技能失败');
+    } finally {
+      setSyncing(false);
+    }
   }
 
   function openEdit(tool: ToolRead) {
@@ -397,7 +451,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       width: 80,
       render: (row) => (
         <span className="text-[12px] text-[#464c5e]">
-          {row.tool_type === 'mcp' ? 'MCP' : 'HTTP'}
+          {row.tool_type === 'skill' ? '程序技能' : row.tool_type === 'mcp' ? 'MCP' : 'HTTP'}
         </span>
       ),
     },
@@ -411,9 +465,32 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       key: 'enabled',
       title: '状态',
       width: 80,
-      render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">{row.enabled ? '已启用' : '已停用'}</span>
-      ),
+      render: (row) => {
+        const preset = TOOL_STATUS_BADGE[row.enabled ? 'enabled' : 'disabled'];
+        return <StatusBadge tone={preset.tone}>{preset.text}</StatusBadge>;
+      },
+    },
+    {
+      key: 'execution',
+      title: '执行链路',
+      width: 170,
+      render: (row) => {
+        const connected = toolConnected(row, mcpRuntime);
+        if (connected) return <ExecutionBadge connected={true} />;
+        const reason = row.tool_type === 'mcp' ? '父 MCP 服务器未启用' : '工具未启用';
+        return (
+          <button
+            type="button"
+            onClick={() => navigate(`/staff/tools/${row.id}/test`)}
+            title={`未接入执行链路：${reason}。点击前往工具页处理。`}
+            className="group inline-flex cursor-pointer items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-[2px] text-[11px] font-medium text-[#858b9c] transition-colors hover:bg-[#eaf2ff] hover:text-[#2563eb]"
+          >
+            <span className="size-[5px] rounded-full bg-[#cbd2e0]" />
+            未接入
+            <span className="opacity-0 transition-opacity group-hover:opacity-100">· 去处理</span>
+          </button>
+        );
+      },
     },
     {
       key: 'updated_at',
@@ -468,7 +545,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
       <AppHeader
         title={pageTitle}
-        description="管理 HTTP 工具与 MCP 服务器。"
+        description="管理 HTTP 工具、MCP 服务器与程序技能。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
@@ -482,6 +559,17 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
               <RefreshCw className="size-[14px]" />
               刷新
             </button>
+            {canManageCurrentScope ? (
+              <button
+                type="button"
+                className={OUTLINE_ACTION_BUTTON_CLASS}
+                onClick={() => void syncProgramSkills()}
+                disabled={syncing || loading}
+              >
+                <RefreshCw className="size-[14px]" />
+                {syncing ? '同步中…' : '同步程序技能'}
+              </button>
+            ) : null}
             {canManageCurrentScope ? (
               <UIButton
                 className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
@@ -499,6 +587,14 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
         <StatCard value={stats.total} label="工具总数" />
         <StatCard value={stats.enabled} label="已启用" tone="green" />
         <StatCard value={stats.buckets} label="分桶数" />
+        <StatCard value={stats.connected} label="已接入执行链路" tone="green" />
+      </div>
+
+      <div className="flex items-center gap-[8px] rounded-[12px] border border-[#e3e7f1] bg-[#fafbfc] px-[14px] py-[10px] text-[12px] text-[#464c5e]">
+        <span className="size-[6px] rounded-full bg-[#12b76a]" />
+        {stats.connected > 0
+          ? `已有 ${stats.connected} 个工具接入员工执行链路（启用且员工 MCP 服务器已激活的工具可真实调用，隔离于主程序 MCP）。`
+          : '暂无工具接入执行链路；启用工具并确保其员工 MCP 服务器已启用即可接入。'}
       </div>
 
       <section className="flex flex-col gap-[16px]">
@@ -1016,6 +1112,42 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
       .finally(() => setLoading(false));
   }, [isEdit, toolId, agentId]);
 
+  const [syncing, setSyncing] = useState(false);
+  async function syncNow() {
+    if (!toolId) return;
+    setSyncing(true);
+    try {
+      type McpSyncData = {
+        implemented: boolean;
+        success: boolean;
+        imported: string[];
+        updated: string[];
+        removed: string[];
+        tools: number;
+        error?: string;
+      };
+      const res = await api.post<{ code: number; data: McpSyncData; message: string }>(
+        `/mcp-servers/${toolId}/sync?tenant_id=${TENANT_ID}`,
+      );
+      const data = res?.data;
+      if (data?.implemented === false) {
+        notify.warning(data.error || 'MCP 工具同步尚未实现');
+        return;
+      }
+      if (!data?.success) {
+        notify.error(data?.error || 'MCP 工具同步失败');
+        return;
+      }
+      notify.success(
+        `同步完成：新增 ${data.imported.length} / 更新 ${data.updated.length} / 移除 ${data.removed.length}（共 ${data.tools} 个工具）`,
+      );
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '同步失败');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function save() {
     const name = values.name.trim();
     if (!name) {
@@ -1063,7 +1195,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
     <div className="flex flex-col gap-[20px] px-[24px] py-[20px]" aria-busy={loading}>
       <AppHeader
         title={isEdit ? '编辑 MCP 服务器' : '新建 MCP 服务器'}
-        description="连接 MCP Server 并自动同步工具集。"
+        description="配置 MCP Server 连接信息，保存后可「发现并同步工具」将远端工具导入数字员工工具目录。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
@@ -1174,6 +1306,16 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
           <span className="text-[12px] text-[#464c5e]">启用 MCP 服务器</span>
         </label>
         <div className="flex items-center justify-end gap-[8px]">
+          {isEdit && toolId ? (
+            <UIButton
+              variant="outline"
+              className="h-[32px] min-w-[120px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              onClick={() => void syncNow()}
+              disabled={syncing || saving}
+            >
+              {syncing ? '同步中…' : '发现并同步工具'}
+            </UIButton>
+          ) : null}
           <UIButton
             variant="outline"
             className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
@@ -1235,7 +1377,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
     try {
       const args = safeParseJson(argumentsText, {});
       const result = await api.post<{ data?: unknown; error?: string }>(
-        `/tools/${tool.id}/probe?tenant_id=${TENANT_ID}`,
+        `/tools/${tool.id}/test?tenant_id=${TENANT_ID}`,
         { arguments: args },
       );
       setResultText(JSON.stringify(result, null, 2));

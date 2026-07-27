@@ -129,6 +129,8 @@ const StaffToolsPage = React.lazy(() => import('./pages/staff/ToolsPage').then(m
 const StaffKnowledgePage = React.lazy(() => import('./pages/staff/KnowledgePage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffSkillsPage = React.lazy(() => import('./pages/staff/SkillsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffGeneralSkillsPage = React.lazy(() => import('./pages/staff/GeneralSkillsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffGeneralSkillNewPage = React.lazy(() => import('./pages/staff/GeneralSkillsPage').then(m => ({ default: wrapStaffAuth(m.GeneralSkillNewPage) })));
+const StaffGeneralSkillEditPage = React.lazy(() => import('./pages/staff/GeneralSkillsPage').then(m => ({ default: wrapStaffAuth(m.GeneralSkillEditPage) })));
 const StaffModelsPage = React.lazy(() => import('./pages/staff/ModelsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffAccountsPage = React.lazy(() => import('./pages/staff/AccountsPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffOpenPlatformPage = React.lazy(() => import('./pages/staff/OpenPlatformPage').then(m => ({ default: wrapStaffAuth(m.default) })));
@@ -138,6 +140,8 @@ const StaffTracesPage = React.lazy(() => import('./pages/staff/TracesPage').then
 const StaffDebugPage = React.lazy(() => import('./pages/staff/DebugPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffDistillPage = React.lazy(() => import('./pages/staff/DistillPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffTutorialPage = React.lazy(() => import('./pages/staff/TutorialPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffEmployeeChatPage = React.lazy(() => import('./pages/staff/EmployeeChatPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+const StaffChatPage = React.lazy(() => import('./pages/staff/chat/ChatPage'));
 const StaffScheduledTaskEditorPage = React.lazy(() =>
   import('./pages/staff/scheduled-tasks/ScheduledTaskEditorPage').then(m => ({ default: wrapStaffAuth(m.ScheduledTaskNewPage) })),
 );
@@ -1036,6 +1040,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/enterprise" element={<Navigate to="/enterprise/dashboard" replace />} />
                     <Route path="/enterprise/platform" element={<StaffLayout><StaffOpenPlatformPage /></StaffLayout>} />
                     <Route path="/enterprise/agents" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/enterprise/agents/:agentId/chat" element={<StaffLayout><StaffEmployeeChatPage /></StaffLayout>} />
                     <Route path="/enterprise/dashboard" element={<StaffLayout><StaffDashboardPage /></StaffLayout>} />
                     <Route path="/enterprise/scheduled-tasks" element={<StaffLayout><StaffDashboardPage profileTab="scheduled" /></StaffLayout>} />
                     <Route path="/enterprise/scheduled-tasks/new" element={<StaffLayout><StaffScheduledTaskEditorPage /></StaffLayout>} />
@@ -1043,7 +1048,8 @@ const MainLayout: React.FC = () => {
                     <Route path="/enterprise/feedback" element={<StaffLayout><StaffDashboardPage profileTab="logs" /></StaffLayout>} />
                     <Route path="/enterprise/knowledge" element={<StaffLayout><StaffKnowledgePage /></StaffLayout>} />
                     <Route path="/enterprise/general-skills" element={<StaffLayout><StaffGeneralSkillsPage /></StaffLayout>} />
-                    <Route path="/enterprise/general-skills/new" element={<StaffLayout><StaffGeneralSkillsPage /></StaffLayout>} />
+                    <Route path="/enterprise/general-skills/new" element={<StaffLayout><StaffGeneralSkillNewPage /></StaffLayout>} />
+                    <Route path="/enterprise/general-skills/:slug" element={<StaffLayout><StaffGeneralSkillEditPage /></StaffLayout>} />
                     <Route path="/enterprise/skills" element={<StaffLayout><StaffSkillsPage /></StaffLayout>} />
                     <Route path="/enterprise/skills/new/distill" element={<StaffLayout><StaffDistillPage /></StaffLayout>} />
                     <Route path="/enterprise/tools" element={<StaffLayout><StaffToolsPage /></StaffLayout>} />
@@ -1060,6 +1066,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/tools/:toolId/test" element={<Navigate to="/enterprise/tools" replace />} />
                     <Route path="/staff/general-skills" element={<Navigate to="/enterprise/general-skills" replace />} />
                     <Route path="/staff/general-skills/new" element={<Navigate to="/enterprise/general-skills/new" replace />} />
+                    <Route path="/staff/general-skills/:slug" element={<Navigate to="/enterprise/general-skills/:slug" replace />} />
                     <Route path="/staff/skills" element={<Navigate to="/enterprise/skills" replace />} />
                     <Route path="/staff/skills/new/distill" element={<Navigate to="/enterprise/skills/new/distill" replace />} />
                     <Route path="/staff/scheduled-tasks" element={<Navigate to="/enterprise/scheduled-tasks" replace />} />
@@ -1067,11 +1074,16 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/dashboard" element={<Navigate to="/enterprise/dashboard" replace />} />
                     <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
 
-                    {/* /workspace/* 路径 — StaffDeck chat 与 gallery，简化重定向到员工列表 */}
+                    {/* 数字员工对话大厅（缺失页面补齐） */}
+                    <Route path="/staff/chat" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+                    <Route path="/staff/chat/:sessionId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+                    <Route path="/staff/chat/draft/:agentId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+
+                    {/* /workspace/* 路径 — StaffDeck chat 与 gallery */}
                     <Route path="/workspace" element={<Navigate to="/enterprise/dashboard" replace />} />
-                    <Route path="/workspace/chat" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
-                    <Route path="/workspace/chat/:sessionId" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
-                    <Route path="/workspace/chat/draft/:agentId" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
+                    <Route path="/workspace/chat" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+                    <Route path="/workspace/chat/:sessionId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+                    <Route path="/workspace/chat/draft/:agentId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
                     <Route path="/workspace/gallery" element={<StaffLayout><StaffEmployeeGalleryPage /></StaffLayout>} />
 
                     <Route path="*" element={<NotFoundPage />} />

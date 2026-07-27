@@ -1,0 +1,1 @@
+export const resolveCompaction = (..._args: unknown[]): unknown => undefined;

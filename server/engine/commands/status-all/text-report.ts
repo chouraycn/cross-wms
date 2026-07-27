@@ -1,25 +1,7 @@
 // Generic text-report primitives for status command output.
 // Callers assemble typed sections; this file owns heading insertion and table rendering order.
-// 移植自 openclaw/src/commands/status-all/text-report.ts
-//
-// 降级说明：
-//  - RenderTableOptions / TableColumn 来自 ../../../packages/terminal-core/src/table.js
-//    → 未移植，使用简化类型定义
 
-export type TableColumn = {
-  key: string;
-  header: string;
-  minWidth?: number;
-  flex?: boolean;
-  width?: number;
-  align?: "left" | "right" | "center";
-};
-
-export type RenderTableOptions = {
-  width: number;
-  columns: TableColumn[];
-  rows: Array<Record<string, string>>;
-};
+import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
 
 type HeadingFn = (text: string) => string;
 type TableRenderer = (input: RenderTableOptions) => string;
@@ -47,6 +29,7 @@ export type StatusReportSection =
       skipIfEmpty?: boolean;
     };
 
+/** Appends a blank-line-separated section heading. */
 export function appendStatusSectionHeading(params: {
   lines: string[];
   heading: HeadingFn;
@@ -89,6 +72,7 @@ function appendStatusTableSection<Row extends Record<string, string>>(params: {
   );
 }
 
+/** Appends all non-empty report sections in display order. */
 export function appendStatusReportSections(params: {
   lines: string[];
   heading: HeadingFn;

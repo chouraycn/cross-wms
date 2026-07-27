@@ -11,10 +11,10 @@
  *   GET    /:kbId/okf/concepts                     — 列出 OKF concepts
  *   GET    /:kbId/okf/concepts/:conceptId          — 获取 concept
  *   PUT    /:kbId/okf/concepts/:conceptId          — 更新 concept
- *   GET    /:kbId/okf/export                       — 导出 OKF（stub）
- *   POST   /:kbId/okf/lint                         — 校验 OKF（stub）
- *   POST   /:kbId/sync-from-overall                — 从 overall 同步（stub）
- *   POST   /:kbId/promote-to-overall               — 提升为 overall（stub）
+ *   GET    /:kbId/okf/export                       — 导出 OKF（功能未接入）
+ *   POST   /:kbId/okf/lint                         — 校验 OKF（功能未接入）
+ *   POST   /:kbId/sync-from-overall                — 从 overall 同步（已接入）
+ *   POST   /:kbId/promote-to-overall               — 提升为 overall（已接入）
  *   POST   /:kbId/rollback                         — 回滚到指定版本
  */
 import { Router, type Request, type Response } from 'express';
@@ -164,47 +164,54 @@ router.put('/:kbId/okf/concepts/:conceptId', (req: Request, res: Response) => {
   res.json({ code: 0, data: kDao.toConceptRead(row), message: 'ok' });
 });
 
-// ===================== GET /:kbId/okf/export — stub =====================
+// ===================== GET /:kbId/okf/export — 功能未接入 =====================
 router.get('/:kbId/okf/export', (req: Request, res: Response) => {
-  // TODO: 接入 OKF exporter
   res.json({
     code: 0,
-    data: { knowledge_base_id: req.params.kbId, bundle: null },
-    message: 'stub: OKF 导出尚未接入',
+    data: { implemented: false, knowledge_base_id: req.params.kbId, bundle: null },
+    message: '功能未接入：OKF 导出尚未实现（无 OKF schema 规范）',
   });
 });
 
-// ===================== POST /:kbId/okf/lint — stub =====================
+// ===================== POST /:kbId/okf/lint — 功能未接入 =====================
 router.post('/:kbId/okf/lint', (req: Request, res: Response) => {
-  // TODO: 接入 OKF linter
-  logger.debug('[StaffKB] lint stub', { kbId: req.params.kbId });
   res.json({
     code: 0,
-    data: { knowledge_base_id: req.params.kbId, errors: [], warnings: [] },
-    message: 'stub: OKF 校验尚未接入',
+    data: { implemented: false, knowledge_base_id: req.params.kbId, errors: [], warnings: [] },
+    message: '功能未接入：OKF 校验尚未实现（无 OKF schema 规范）',
   });
 });
 
-// ===================== POST /:kbId/sync-from-overall — stub =====================
+// ===================== POST /:kbId/sync-from-overall =====================
 router.post('/:kbId/sync-from-overall', (req: Request, res: Response) => {
-  // TODO: 接入 branching.sync_knowledge_base_from_overall
-  logger.debug('[StaffKB] sync-from-overall stub', { kbId: req.params.kbId });
-  res.json({
-    code: 0,
-    data: { knowledge_base_id: req.params.kbId, sync_state: 'synced' },
-    message: 'stub: 从 overall 同步尚未接入',
-  });
+  const tenantId = tenantOf(req);
+  const agentId = (req.body?.agent_id as string) || (req.query.agent_id as string) || '';
+  if (!agentId) {
+    res.status(400).json({ code: 400, data: null, message: 'agent_id 必填' });
+    return;
+  }
+  try {
+    const row = kbDao.syncAgentKnowledgeBranchFromOverall(tenantId, agentId, req.params.kbId);
+    res.json({ code: 0, data: row, message: 'ok' });
+  } catch (e) {
+    res.status(404).json({ code: 404, data: null, message: (e as Error).message });
+  }
 });
 
-// ===================== POST /:kbId/promote-to-overall — stub =====================
+// ===================== POST /:kbId/promote-to-overall =====================
 router.post('/:kbId/promote-to-overall', (req: Request, res: Response) => {
-  // TODO: 接入 branching.promote_knowledge_branch_to_overall
-  logger.debug('[StaffKB] promote-to-overall stub', { kbId: req.params.kbId });
-  res.json({
-    code: 0,
-    data: { knowledge_base_id: req.params.kbId, promoted: true },
-    message: 'stub: 提升为 overall 尚未接入',
-  });
+  const tenantId = tenantOf(req);
+  const agentId = (req.body?.agent_id as string) || (req.query.agent_id as string) || '';
+  if (!agentId) {
+    res.status(400).json({ code: 400, data: null, message: 'agent_id 必填' });
+    return;
+  }
+  const row = kbDao.promoteAgentKnowledgeBranchToOverall(tenantId, agentId, req.params.kbId);
+  if (!row) {
+    res.status(404).json({ code: 404, data: null, message: '分支不存在' });
+    return;
+  }
+  res.json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
 });
 
 // ===================== POST /:kbId/rollback — 回滚 =====================

@@ -1,5 +1,8 @@
 import type { ChannelId } from "../../channels/types.js";
 
+/** Chat channel identifier alias (openclaw compat). */
+export type ChatChannelId = string;
+
 export type IdType =
   | "message"
   | "conversation"

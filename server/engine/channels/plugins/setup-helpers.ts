@@ -140,3 +140,70 @@ export function defaultCapabilities(): ChannelCapabilities {
     typing: false,
   };
 }
+
+// openclaw compat: account section helpers used by plugin-sdk/core.ts
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
+
+/** Applies an account display name to a channel config section. */
+export function applyAccountNameToChannelSection(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  name?: string;
+  alwaysUseAccounts?: boolean;
+}): OpenClawConfig {
+  const trimmed = params.name?.trim();
+  if (!trimmed) {
+    return params.cfg;
+  }
+  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
+  if (!channels) {
+    return params.cfg;
+  }
+  const section = channels[params.channelKey] as { accounts?: Record<string, unknown> } | undefined;
+  if (!section?.accounts) {
+    return params.cfg;
+  }
+  const nextAccounts = { ...section.accounts };
+  const account = nextAccounts[params.accountId] as { name?: string } | undefined;
+  if (account) {
+    nextAccounts[params.accountId] = { ...account, name: trimmed };
+  } else {
+    nextAccounts[params.accountId] = { name: trimmed };
+  }
+  return {
+    ...params.cfg,
+    channels: {
+      ...channels,
+      [params.channelKey]: { ...section, accounts: nextAccounts },
+    },
+  } as OpenClawConfig;
+}
+
+/** Moves a root-level channel name into `accounts.default` before adding named accounts. */
+export function migrateBaseNameToDefaultAccount(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  alwaysUseAccounts?: boolean;
+}): OpenClawConfig {
+  if (params.alwaysUseAccounts) {
+    return params.cfg;
+  }
+  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
+  const base = channels?.[params.channelKey] as { name?: string; accounts?: Record<string, unknown> } | undefined;
+  const baseName = base?.name?.trim();
+  if (!baseName || base?.accounts) {
+    return params.cfg;
+  }
+  return {
+    ...params.cfg,
+    channels: {
+      ...channels,
+      [params.channelKey]: {
+        ...base,
+        name: undefined,
+        accounts: { default: { name: baseName } },
+      },
+    },
+  } as OpenClawConfig;
+}

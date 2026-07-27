@@ -48,6 +48,8 @@ const MIN_SYNC_INTERVAL_MS = 10_000;
 const MOCK_DELAY_MIN_MS = 100;
 const MOCK_DELAY_MAX_MS = 500;
 
+let deterministicMode = false;
+
 const state: RemoteState = {
   nodes: new Map(),
   skills: new Map(),
@@ -66,8 +68,9 @@ function skillKey(nodeId: string, skillName: string): string {
 }
 
 function mockDelay(): Promise<void> {
-  const delay =
-    Math.floor(Math.random() * (MOCK_DELAY_MAX_MS - MOCK_DELAY_MIN_MS)) + MOCK_DELAY_MIN_MS;
+  const delay = deterministicMode
+    ? MOCK_DELAY_MIN_MS
+    : Math.floor(Math.random() * (MOCK_DELAY_MAX_MS - MOCK_DELAY_MIN_MS)) + MOCK_DELAY_MIN_MS;
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
@@ -79,9 +82,11 @@ function buildMockSkills(nodeId: string): RemoteSkill[] {
     { name: "remote-summarize", version: "0.9.0", metadata: { category: "nlp", author: "ai-team" } },
     { name: "remote-codegen", version: "3.0.0-beta", metadata: { category: "code", author: "dev-team" } },
   ];
-  const count = 3 + Math.floor(Math.random() * 3);
-  const shuffled = [...mockPool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count).map((s) => ({
+  const count = deterministicMode ? 4 : 3 + Math.floor(Math.random() * 3);
+  const selected = deterministicMode
+    ? mockPool.slice(0, count)
+    : [...mockPool].sort(() => Math.random() - 0.5).slice(0, count);
+  return selected.map((s) => ({
     nodeId,
     skillName: s.name,
     version: s.version,
@@ -182,7 +187,7 @@ export async function syncSkillsFromNode(nodeId: string): Promise<SyncResult> {
   try {
     await mockDelay();
 
-    const shouldFail = Math.random() < 0.1;
+    const shouldFail = !deterministicMode && Math.random() < 0.1;
     if (shouldFail) {
       throw new Error(`Simulated network error for node ${nodeId}`);
     }
@@ -192,7 +197,7 @@ export async function syncSkillsFromNode(nodeId: string): Promise<SyncResult> {
     const failedSkills: string[] = [];
 
     for (const skill of remoteSkills) {
-      const failSkill = Math.random() < 0.05;
+      const failSkill = !deterministicMode && Math.random() < 0.05;
       if (failSkill) {
         failedSkills.push(skill.skillName);
         const key = skillKey(nodeId, skill.skillName);
@@ -420,6 +425,7 @@ export function getRemoteSkillNode(skillName: string): RemoteSkillNode | null {
 }
 
 export function resetRemoteState(): void {
+  deterministicMode = true;
   stopRemoteSync();
   state.nodes.clear();
   state.skills.clear();

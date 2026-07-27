@@ -1,0 +1,28 @@
+{
+  "id": "groq",
+  "name": "Groq Provider",
+  "description": "Groq LLM provider extension with ultra-fast inference",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key",
+  "providers": ["groq"],
+  "modelSupport": {
+    "modelPrefixes": ["llama", "mixtral", "gemma", "qwen/", "deepseek-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "groq-native",
+      "hosts": ["api.groq.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "groq",
+        "envVars": ["GROQ_API_KEY"]
+      }
+    ]
+  }
+}

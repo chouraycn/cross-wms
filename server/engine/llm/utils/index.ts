@@ -1,7 +1,18 @@
 // LLM 工具函数入口
-// 注意：shortHash 由 agents/sandbox/hash.ts 提供（基于 SHA-256），此处不重复导出
-// 注意：headersToRecord 由 ../headers.js 提供，此处不重复导出
 export { sanitizeSurrogates } from "./sanitize-unicode.js";
+export { shortHash } from "./hash.js";
+export { parseStreamingJson, parseJsonWithRepair, repairJson } from "./json-parse.js";
+export {
+  EventStream,
+  AssistantMessageEventStream,
+  createAssistantMessageEventStream,
+} from "./event-stream.js";
+export {
+  createAssistantMessageDiagnostic,
+  appendAssistantMessageDiagnostic,
+  formatThrownValue,
+  extractDiagnosticError,
+} from "./diagnostics.js";
 export {
   type OpenAICodexJwtPayload,
   decodeOpenAICodexJwtPayload,

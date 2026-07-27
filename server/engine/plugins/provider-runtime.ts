@@ -99,3 +99,13 @@ export function inspectProviderToolSchemasWithPlugin(params: unknown): unknown {
   void params;
   return undefined;
 }
+
+export function resolveProviderCacheTtlEligibility(params: unknown): unknown {
+  void params;
+  return undefined;
+}
+
+export function prepareProviderRuntimeAuth(params: unknown): unknown {
+  void params;
+  return undefined;
+}

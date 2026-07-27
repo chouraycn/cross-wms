@@ -1,9 +1,5 @@
 // Update-phase helpers that gate doctor repairs during package swaps and convergence.
-// 移植自 openclaw/src/commands/doctor/shared/update-phase.ts
-//
-// 降级说明：
-//  - isTruthyEnvValue 来自 ../../../infra/env.js → cross-wms 已有同源实现
-import { isTruthyEnvValue } from "../../../infra/env.js";
+import { isTruthyEnvValue } from "@openclaw-src/infra/env.js";
 
 export const UPDATE_IN_PROGRESS_ENV = "OPENCLAW_UPDATE_IN_PROGRESS";
 export const UPDATE_POST_CORE_CONVERGENCE_ENV = "OPENCLAW_UPDATE_POST_CORE_CONVERGENCE";

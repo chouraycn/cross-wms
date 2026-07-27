@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Download,
   Folder,
   MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react';
 
 import AppHeader from '../../components/staff/AppHeader.js';
@@ -50,6 +53,9 @@ import {
   AGENT_SCOPE_CHANGE_EVENT,
 } from '../../components/staff/lib/agent-scope-storage.js';
 import { api, TENANT_ID } from '../../components/staff/api/client.js';
+import ResourceImportDialog, {
+  type ImportSourceOption,
+} from '../../components/staff/ResourceImportDialog.js';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '../../components/staff/auth.js';
 import {
   canManageEmployeeAgent,
@@ -75,6 +81,15 @@ type DocumentDraft = {
   title: string;
   status: 'ready' | 'archived';
 };
+
+type KbVersion = {
+  version: string;
+  name?: string;
+  status?: string;
+  created_at?: number;
+};
+
+type ImportItem = { id: string; label: string };
 
 type KnowledgePageProps = {
   currentUser?: EnterpriseAuthUser;
@@ -130,6 +145,16 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   const [savingKb, setSavingKb] = useState(false);
   const [deleteKbTarget, setDeleteKbTarget] = useState<KnowledgeBaseRead | null>(null);
   const [deletingKb, setDeletingKb] = useState(false);
+  const [rollbackKbTarget, setRollbackKbTarget] = useState<KnowledgeBaseRead | null>(null);
+  const [rollbackKbVersions, setRollbackKbVersions] = useState<KbVersion[]>([]);
+  const [rollbackKbVersion, setRollbackKbVersion] = useState('');
+  const [rollingBackKb, setRollingBackKb] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importSourceId, setImportSourceId] = useState('');
+  const [importItems, setImportItems] = useState<ImportItem[]>([]);
+  const [importSelected, setImportSelected] = useState<string[]>([]);
+  const [importLoadingItems, setImportLoadingItems] = useState(false);
   const [documentDraft, setDocumentDraft] = useState<DocumentDraft>({
     title: '',
     status: 'ready',
@@ -138,6 +163,25 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   const [documentSearch, setDocumentSearch] = useState('');
   const [knowledgeBaseFilter, setKnowledgeBaseFilter] = useState('__all__');
   const [page, setPage] = useState(1);
+  const [createDocOpen, setCreateDocOpen] = useState(false);
+  const [docTitle, setDocTitle] = useState('');
+  const [docContent, setDocContent] = useState('');
+  const [docKbId, setDocKbId] = useState('');
+  const [savingDoc, setSavingDoc] = useState(false);
+
+  // 语义检索面板状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchHits, setSearchHits] = useState<
+    Array<{
+      chunk: { content: string; source_ref?: string | null };
+      bucket?: { title: string } | null;
+      document?: { title?: string | null; filename: string } | null;
+      score: number;
+    }>
+  >([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
   const currentAgent = useMemo(() => agents.find((item) => item.id === agentId), [agents, agentId]);
   const isOverallAgent = !currentAgent || currentAgent.is_overall;
@@ -282,6 +326,31 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
     }
   }
 
+  async function runKnowledgeSearch() {
+    const query = searchQuery.trim();
+    if (!query) {
+      notify.warning('请输入检索内容');
+      return;
+    }
+    setSearchLoading(true);
+    setSearchError('');
+    setHasSearched(true);
+    try {
+      const result = await api.post<{
+        code: number;
+        data?: { hits?: typeof searchHits; total?: number };
+        message?: string;
+      }>('/knowledge/search', { query, limit: 10, tenant_id: TENANT_ID });
+      setSearchHits(result?.data?.hits ?? []);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '知识检索失败';
+      setSearchError(msg);
+      notify.error(msg);
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
   async function loadBuckets(document: KnowledgeDocumentRead, select = true) {
     if (select) setSelectedDocument(document);
     setBuckets([]);
@@ -369,6 +438,124 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       notify.error(error instanceof Error ? error.message : '删除失败');
     } finally {
       setDeletingKb(false);
+    }
+  }
+
+  // ===================== 知识库分支版本化：sync / promote / rollback =====================
+  async function syncKbFromOverall(kb: KnowledgeBaseRead) {
+    if (!effectiveAgentId) return;
+    try {
+      await api.post(`/knowledge-bases/${kb.id}/sync-from-overall?agent_id=${encodeURIComponent(effectiveAgentId)}`, {});
+      notify.success(`已同步自全局知识库「${kb.name}」`);
+      await refresh();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '同步失败');
+    }
+  }
+
+  async function promoteKbToOverall(kb: KnowledgeBaseRead) {
+    if (!effectiveAgentId) return;
+    try {
+      await api.post(`/knowledge-bases/${kb.id}/promote-to-overall?agent_id=${encodeURIComponent(effectiveAgentId)}`, {});
+      notify.success(`已提升至全局知识库「${kb.name}」`);
+      await refresh();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '提升失败');
+    }
+  }
+
+  async function openRollbackKb(kb: KnowledgeBaseRead) {
+    try {
+      const versions = await api.get<KbVersion[]>(`/knowledge-bases/${kb.id}/versions`);
+      if (!versions.length) {
+        notify.warning('该知识库暂无历史版本');
+        return;
+      }
+      setRollbackKbTarget(kb);
+      setRollbackKbVersions(versions);
+      setRollbackKbVersion(versions[0]?.version || '');
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '加载版本失败');
+    }
+  }
+
+  async function confirmRollbackKb() {
+    if (!rollbackKbTarget || !rollbackKbVersion) return;
+    setRollingBackKb(true);
+    try {
+      await api.post(`/knowledge-bases/${rollbackKbTarget.id}/rollback`, { version: rollbackKbVersion });
+      notify.success(`已回滚至版本 ${rollbackKbVersion}`);
+      setRollbackKbTarget(null);
+      setRollbackKbVersions([]);
+      setRollbackKbVersion('');
+      await refresh();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '回滚失败');
+    } finally {
+      setRollingBackKb(false);
+    }
+  }
+
+  // ===================== 跨 Agent 批量导入知识库 =====================
+  const importSources: ImportSourceOption[] = useMemo(() => {
+    const list: ImportSourceOption[] = [{ value: 'overall', label: '全局知识库' }];
+    agents
+      .filter((item) => item.id !== effectiveAgentId && !item.is_overall)
+      .forEach((item) => list.push({ value: item.id, label: item.name || item.id }));
+    return list;
+  }, [agents, effectiveAgentId]);
+
+  function resetImport() {
+    setImportOpen(false);
+    setImportSourceId('');
+    setImportItems([]);
+    setImportSelected([]);
+  }
+
+  async function loadImportItems(sourceId: string) {
+    setImportSourceId(sourceId);
+    if (!sourceId) {
+      setImportItems([]);
+      return;
+    }
+    setImportLoadingItems(true);
+    try {
+      if (sourceId === 'overall') {
+        const rows = await api.get<KnowledgeBaseRead[]>(`/knowledge-bases?tenant_id=${TENANT_ID}`);
+        setImportItems(rows.map((r) => ({ id: r.id, label: r.name })));
+      } else {
+        const rows = await api.get<Array<{ knowledge_base_id: string }>>(
+          `/agents/${sourceId}/knowledge-branches`,
+        );
+        setImportItems(rows.map((r) => ({ id: r.knowledge_base_id, label: r.knowledge_base_id })));
+      }
+      setImportSelected([]);
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '加载来源失败');
+    } finally {
+      setImportLoadingItems(false);
+    }
+  }
+
+  async function submitImport() {
+    if (!effectiveAgentId || !importSourceId || !importSelected.length) return;
+    setImportLoading(true);
+    try {
+      const res = await api.post<{ skills: number; knowledge_bases: number }>(
+        `/agents/${effectiveAgentId}/resources/import`,
+        {
+          source_agent_id: importSourceId,
+          resource_types: ['knowledge_base'],
+          knowledge_base_ids: importSelected,
+        },
+      );
+      notify.success(`已导入 ${res.knowledge_bases} 个知识库分支`);
+      resetImport();
+      await refresh();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '导入失败');
+    } finally {
+      setImportLoading(false);
     }
   }
 
@@ -493,6 +680,36 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 <Pencil className="size-[14px]" />
                 编辑
               </DropdownMenuItem>
+              {effectiveAgentId ? (
+                <>
+                  <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                  <DropdownMenuItem
+                    className={MENU_ITEM_CLASS}
+                    onSelect={() => void syncKbFromOverall(row)}
+                  >
+                    <Download className="size-[14px]" />
+                    同步自全局
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={MENU_ITEM_CLASS}
+                    onSelect={() => void promoteKbToOverall(row)}
+                  >
+                    <Upload className="size-[14px]" />
+                    提升至全局
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                  <DropdownMenuItem
+                    className={MENU_ITEM_CLASS}
+                    onSelect={() => void openRollbackKb(row)}
+                  >
+                    <RotateCcw className="size-[14px]" />
+                    回滚版本
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
               <DropdownMenuItem
                 className={MENU_ITEM_DANGER_CLASS}
@@ -608,6 +825,16 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               <RefreshCw className="size-[14px]" />
               刷新
             </button>
+            {canManageCurrentScope && effectiveAgentId ? (
+              <button
+                type="button"
+                className={OUTLINE_ACTION_BUTTON_CLASS}
+                onClick={() => setImportOpen(true)}
+              >
+                <Download className="size-[14px]" />
+                导入
+              </button>
+            ) : null}
             {canManageCurrentScope ? (
               <UIButton
                 className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
@@ -627,6 +854,60 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         <StatCard value={stats.archived} label="归档" tone="red" />
         <StatCard value={stats.documents} label="文档" />
       </div>
+
+      <section className="flex flex-col gap-[12px] rounded-[12px] border border-[#ebedf0] bg-white p-[16px]">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[14px] font-medium text-[#18181a]">语义检索</h3>
+          <span className="text-[12px] text-[#858b9c]">跨知识库向量检索（all-MiniLM-L6-v2）</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-[8px]">
+          <div className={SEARCH_COMBO_CLASS}>
+            <Input
+              className={SEARCH_COMBO_INPUT_CLASS}
+              placeholder="输入问题，检索相关文档片段…"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void runKnowledgeSearch();
+              }}
+            />
+            <button
+              type="button"
+              className={SEARCH_COMBO_BUTTON_CLASS}
+              aria-label="检索"
+              onClick={() => void runKnowledgeSearch()}
+            >
+              <Search className="size-[14px]" />
+            </button>
+          </div>
+          <UIButton
+            className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+            onClick={() => void runKnowledgeSearch()}
+            disabled={searchLoading}
+          >
+            {searchLoading ? '检索中…' : '检索'}
+          </UIButton>
+        </div>
+        {searchError ? <p className="text-[12px] text-[#d4380d]">{searchError}</p> : null}
+        {hasSearched && !searchLoading && searchHits.length === 0 && !searchError ? (
+          <p className="text-[12px] text-[#858b9c]">未检索到相关片段。</p>
+        ) : null}
+        {searchHits.length > 0 ? (
+          <ul className="flex flex-col gap-[8px]">
+            {searchHits.map((hit, index) => (
+              <li key={index} className="rounded-[10px] border border-[#ebedf0] bg-[#fafafa] p-[12px]">
+                <div className="mb-[4px] flex items-center justify-between gap-[8px]">
+                  <span className="text-[12px] font-medium text-[#18181a]">
+                    {hit.document?.title || hit.document?.filename || hit.bucket?.title || '未知来源'}
+                  </span>
+                  <span className="text-[11px] text-[#858b9c]">相似度 {hit.score.toFixed(3)}</span>
+                </div>
+                <p className="whitespace-pre-wrap text-[12px] leading-[1.6] text-[#4b5160]">{hit.chunk.content}</p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
 
       <section className="flex flex-col gap-[16px]">
         <div className="flex flex-wrap items-center justify-between gap-[12px]">
@@ -656,6 +937,20 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 <Search className="size-[14px]" />
               </button>
             </div>
+            {canManageCurrentScope ? (
+              <UIButton
+                className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                onClick={() => {
+                  setDocKbId(knowledgeBaseFilter !== '__all__' ? knowledgeBaseFilter : '');
+                  setDocTitle('');
+                  setDocContent('');
+                  setCreateDocOpen(true);
+                }}
+              >
+                <Plus className="size-[14px]" />
+                新增文档
+              </UIButton>
+            ) : null}
           </div>
         </div>
 
@@ -851,6 +1146,94 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         </DialogContent>
       </Dialog>
 
+      <Dialog open={createDocOpen} onOpenChange={(open) => !savingDoc && setCreateDocOpen(open)}>
+        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
+          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+            新增文档（文本入库）
+          </DialogTitle>
+          <div className="flex max-h-[60vh] flex-col gap-[16px] overflow-y-auto px-[24px] pb-[20px]">
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12px] text-[#464c5e]">目标知识库</span>
+              <Select value={docKbId} onValueChange={setDocKbId}>
+                <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                  <SelectValue placeholder="请选择知识库" />
+                </SelectTrigger>
+                <SelectContent>
+                  {visibleKnowledgeBases.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12px] text-[#464c5e]">标题</span>
+              <Input
+                value={docTitle}
+                onChange={(event) => setDocTitle(event.target.value)}
+                placeholder="请输入文档标题"
+                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
+              />
+            </label>
+            <label className="flex flex-col gap-[6px]">
+              <span className="text-[12px] text-[#464c5e]">知识文本（将自动切分并向量化）</span>
+              <textarea
+                value={docContent}
+                onChange={(event) => setDocContent(event.target.value)}
+                placeholder="粘贴或输入知识内容，例如产品说明、FAQ、流程文档…"
+                className="h-[200px] resize-y rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[12px] text-[14px] leading-[1.6] text-[#18181a] outline-none focus-visible:border-[#18181a] focus-visible:ring-0"
+              />
+            </label>
+          </div>
+          <DialogFooter className="flex items-center justify-end gap-[8px] border-t border-[#f2f3f7] px-[24px] py-[12px]">
+            <UIButton
+              variant="outline"
+              className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              onClick={() => setCreateDocOpen(false)}
+            >
+              取消
+            </UIButton>
+            <UIButton
+              className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+              onClick={async () => {
+                const title = docTitle.trim();
+                const text = docContent.trim();
+                const kbId = docKbId || (knowledgeBaseFilter !== '__all__' ? knowledgeBaseFilter : '');
+                if (!kbId) {
+                  notify.warning('请选择目标知识库');
+                  return;
+                }
+                if (!text) {
+                  notify.warning('请输入知识文本');
+                  return;
+                }
+                setSavingDoc(true);
+                try {
+                  await api.post(`/knowledge/documents`, {
+                    tenant_id: TENANT_ID,
+                    knowledge_base_id: kbId,
+                    filename: title || `文档-${Date.now()}`,
+                    file_type: 'text',
+                    title: title || undefined,
+                    content: text,
+                  });
+                  notify.success('文档已入库（已向量化）');
+                  setCreateDocOpen(false);
+                  await refresh();
+                } catch (error) {
+                  notify.error(error instanceof Error ? error.message : '保存失败');
+                } finally {
+                  setSavingDoc(false);
+                }
+              }}
+            >
+              入库
+            </UIButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={deleteKbTarget !== null}
         onOpenChange={(open) => !deletingKb && !open && setDeleteKbTarget(null)}
@@ -867,6 +1250,72 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         confirmText="删除"
         loading={deletingKb}
         onConfirm={() => void deleteKb()}
+      />
+
+      <Dialog
+        open={rollbackKbTarget !== null}
+        onOpenChange={(open) => !rollingBackKb && !open && setRollbackKbTarget(null)}
+      >
+        <DialogContent className="gap-0 rounded-[16px] p-0">
+          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+            回滚知识库版本
+            {rollbackKbTarget ? (
+              <span className="ml-[6px] text-[13px] font-normal text-[#858b9c]">{rollbackKbTarget.name}</span>
+            ) : null}
+          </DialogTitle>
+          <div className="flex flex-col gap-[12px] px-[24px] pb-[8px]">
+            <p className="text-[12px] text-[#858b9c]">选择一个历史版本，将知识库回滚至该版本的快照。</p>
+            <Select value={rollbackKbVersion} onValueChange={setRollbackKbVersion}>
+              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                <SelectValue placeholder="选择版本" />
+              </SelectTrigger>
+              <SelectContent>
+                {rollbackKbVersions.map((item) => (
+                  <SelectItem key={item.version} value={item.version}>
+                    {item.version}
+                    {item.name ? ` · ${item.name}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="flex justify-end gap-[8px] px-[24px] py-[16px]">
+            <UIButton
+              className="h-[34px] rounded-[10px] bg-[#f2f3f7] px-[16px] text-[12px] text-[#18181a] hover:bg-[#e8e9ef]"
+              onClick={() => setRollbackKbTarget(null)}
+              disabled={rollingBackKb}
+            >
+              取消
+            </UIButton>
+            <UIButton
+              className="h-[34px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+              onClick={() => void confirmRollbackKb()}
+              disabled={rollingBackKb || !rollbackKbVersion}
+            >
+              {rollingBackKb ? '回滚中…' : '确认回滚'}
+            </UIButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ResourceImportDialog
+        open={importOpen}
+        loading={importLoading || importLoadingItems}
+        icon={<Download className="size-[14px]" />}
+        title="跨 Agent 批量导入知识库"
+        sourcePlaceholder="选择复制来源"
+        sources={importSources}
+        sourceId={importSourceId}
+        itemsLabel="选择知识库"
+        items={importItems}
+        selectedIds={importSelected}
+        emptyText="该来源暂无可导入的知识库"
+        note="导入将以「已同步」分支的形式复制到当前员工，可随时回滚或再次从全局同步。"
+        submitText="导入"
+        onSourceChange={(value) => void loadImportItems(value)}
+        onSelectedChange={setImportSelected}
+        onClose={resetImport}
+        onSubmit={() => void submitImport()}
       />
     </div>
   );

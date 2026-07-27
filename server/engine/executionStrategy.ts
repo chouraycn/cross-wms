@@ -37,6 +37,9 @@ export enum ExecutionMode {
   AUTO = 'auto',
 }
 
+import type { McpClientManager } from './mcpClientManager.js';
+import type { SkillDefinition, SkillContext, SkillResult } from '../types/skill-runtime.js';
+
 // ===================== 策略选项 =====================
 
 /** 执行策略选项，扩展 ToolExecutorOptions */
@@ -62,6 +65,22 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   };
   /** v9.1 [五]: 规划模式 — off=不规划；static=生成计划作导航但不重规划；dynamic=循环失败时反思式重规划 */
   planningMode?: 'off' | 'static' | 'dynamic';
+  /**
+   * 数字员工（per-call）MCP 客户端管理器。
+   * 注入后，MCP 工具列表会合并该 manager 的工具，分发时优先用它执行属于它的 server。
+   * 用于隔离数字员工的 MCP server，不污染全局单例。
+   */
+  staffMcpManager?: McpClientManager;
+  /**
+   * 数字员工（per-call）物化技能定义列表。
+   * 注入后，这些技能会以 `skill_<id>` 形式出现在工具列表中，供模型主动调用。
+   */
+  extraSkills?: SkillDefinition[];
+  /**
+   * 数字员工（per-call）物化技能执行器。
+   * 当工具名为 `skill_<id>` 且全局 skillRegistry 未命中时，回退到该函数执行。
+   */
+  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
 }
 
 // ===================== 策略接口 =====================

@@ -203,11 +203,107 @@ router.get('/:agentId/skill-branches', (req: Request, res: Response) => {
   res.json({ code: 0, data: rows, message: 'ok' });
 });
 
+// ===================== POST /:agentId/skills/:skillId/sync-from-overall =====================
+router.post('/:agentId/skills/:skillId/sync-from-overall', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  try {
+    const row = skillDao.syncAgentSkillBranchFromOverall(tenantId, req.params.agentId, req.params.skillId);
+    res.json({ code: 0, data: row, message: 'ok' });
+  } catch (e) {
+    res.status(404).json({ code: 404, data: null, message: (e as Error).message });
+  }
+});
+
+// ===================== POST /:agentId/skills/:skillId/promote-to-overall =====================
+router.post('/:agentId/skills/:skillId/promote-to-overall', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const row = skillDao.promoteAgentSkillBranchToOverall(tenantId, req.params.agentId, req.params.skillId);
+  if (!row) {
+    res.status(404).json({ code: 404, data: null, message: '分支不存在' });
+    return;
+  }
+  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+});
+
+// ===================== POST /:agentId/skills/:skillId/rollback =====================
+router.post('/:agentId/skills/:skillId/rollback', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const { version } = req.body ?? {};
+  if (!version || typeof version !== 'string') {
+    res.status(400).json({ code: 400, data: null, message: 'version 必填' });
+    return;
+  }
+  const row = skillDao.rollbackAgentSkillBranch(tenantId, req.params.agentId, req.params.skillId, version);
+  if (!row) {
+    res.status(404).json({ code: 404, data: null, message: '版本不存在' });
+    return;
+  }
+  res.json({ code: 0, data: row, message: 'ok' });
+});
+
+// ===================== GET /:agentId/skills/:skillId/versions =====================
+router.get('/:agentId/skills/:skillId/versions', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const rows = skillDao.listAgentSkillBranchVersions(tenantId, req.params.agentId, req.params.skillId);
+  res.json({ code: 0, data: rows, message: 'ok' });
+});
+
+// ===================== GET /:agentId/skills =====================
+// 开放广场（OpenPlatformPage）按 overall agent 拉取技能总览，期望 SkillRead[]。
+// 返回该租户下全部技能（overall agent 拥有企业全部技能；非 overall 降级返回全部，避免空列表）
+router.get('/:agentId/skills', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const rows = skillDao.listSkills({ tenantId });
+  res.json({ code: 0, data: rows.map(skillDao.toSkillRead), message: 'ok' });
+});
+
 // ===================== GET /:agentId/knowledge-branches =====================
 router.get('/:agentId/knowledge-branches', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const rows = kbDao.listAgentKnowledgeBranches(tenantId, req.params.agentId);
   res.json({ code: 0, data: rows, message: 'ok' });
+});
+
+// ===================== POST /:agentId/resources/import — 跨 Agent 批量导入资源 =====================
+router.post('/:agentId/resources/import', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const targetAgentId = req.params.agentId;
+  const { source_agent_id, resource_types, skill_ids, knowledge_base_ids } = req.body ?? {};
+  if (!source_agent_id || typeof source_agent_id !== 'string') {
+    res.status(400).json({ code: 400, data: null, message: 'source_agent_id 必填' });
+    return;
+  }
+  const types: string[] = Array.isArray(resource_types) ? resource_types : ['skill', 'knowledge_base'];
+  const result: { skills: number; knowledge_bases: number } = { skills: 0, knowledge_bases: 0 };
+  try {
+    if (types.includes('skill')) {
+      result.skills = skillDao.importSkillBranchesIntoAgent(
+        tenantId,
+        targetAgentId,
+        { agentId: source_agent_id },
+        Array.isArray(skill_ids) ? skill_ids : undefined,
+      ).imported;
+    }
+    if (types.includes('knowledge_base')) {
+      result.knowledge_bases = kbDao.importKnowledgeBranchesIntoAgent(
+        tenantId,
+        targetAgentId,
+        { agentId: source_agent_id },
+        Array.isArray(knowledge_base_ids) ? knowledge_base_ids : undefined,
+      ).imported;
+    }
+    res.json({ code: 0, data: result, message: 'ok' });
+  } catch (e) {
+    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
+  }
+});
+
+// ===================== GET /:agentId/work-record =====================
+// DashboardPage 拉取员工工作记录（对话回复统计 + 活动时间线）
+router.get('/:agentId/work-record', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const data = agentDao.getAgentWorkRecord(tenantId, req.params.agentId);
+  res.json({ code: 0, data, message: 'ok' });
 });
 
 export default router;

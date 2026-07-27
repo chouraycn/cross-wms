@@ -173,6 +173,94 @@ export function upsertAgentUsage(tenantId: string, userId: string, agentId: stri
   return db.prepare(`SELECT * FROM sd_agent_usages WHERE id = ?`).get(id) as AgentUsageRow;
 }
 
+// ===================== Agent Work Record（聚合统计） =====================
+
+export interface AgentWorkRecordEvent {
+  id: string;
+  session_id: string;
+  event_type: string;
+  payload: unknown;
+  created_at: number;
+}
+
+export interface AgentWorkRecord {
+  reply_stats: { total: number; today: number; by_day: Record<string, number> };
+  events: AgentWorkRecordEvent[];
+}
+
+/**
+ * 聚合某 Agent 的工作记录：
+ * - reply_stats：该 Agent 旗下所有会话中 assistant 消息的回复总数 / 今日回复数 / 按天分布
+ * - events：相关会话最近的 Agent 事件时间线（供 Dashboard 工作记录展示）
+ */
+export function getAgentWorkRecord(tenantId: string, agentId: string): AgentWorkRecord {
+  const db = initDb();
+  const sessions = db
+    .prepare(`SELECT id FROM sd_sessions WHERE tenant_id = ? AND agent_id = ?`)
+    .all(tenantId, agentId) as Array<{ id: string }>;
+  const sessionIds = sessions.map((s) => s.id);
+
+  let total = 0;
+  let today = 0;
+  const byDay: Record<string, number> = {};
+
+  if (sessionIds.length > 0) {
+    const placeholders = sessionIds.map(() => '?').join(',');
+    const msgs = db
+      .prepare(
+        `SELECT created_at FROM sd_messages WHERE tenant_id = ? AND session_id IN (${placeholders}) AND role = 'assistant'`,
+      )
+      .all(tenantId, ...sessionIds) as Array<{ created_at: number }>;
+    total = msgs.length;
+    const dayKey = (ts: number): string => {
+      const d = new Date(ts * 1000);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const todayKey = dayKey(Math.floor(Date.now() / 1000));
+    for (const m of msgs) {
+      const k = dayKey(m.created_at);
+      byDay[k] = (byDay[k] ?? 0) + 1;
+      if (k === todayKey) today += 1;
+    }
+  }
+
+  const events: AgentWorkRecordEvent[] = [];
+  if (sessionIds.length > 0) {
+    const placeholders = sessionIds.map(() => '?').join(',');
+    const rows = db
+      .prepare(
+        `SELECT * FROM sd_agent_events WHERE tenant_id = ? AND session_id IN (${placeholders}) ORDER BY created_at DESC LIMIT 50`,
+      )
+      .all(tenantId, ...sessionIds) as Array<{
+        id: string;
+        session_id: string;
+        event_type: string;
+        payload_json: string;
+        created_at: number;
+      }>;
+    for (const r of rows) {
+      let payload: unknown = {};
+      try {
+        payload = r.payload_json ? JSON.parse(r.payload_json) : {};
+      } catch {
+        payload = {};
+      }
+      events.push({
+        id: r.id,
+        session_id: r.session_id,
+        event_type: r.event_type,
+        payload,
+        created_at: r.created_at,
+      });
+    }
+  }
+
+  return { reply_stats: { total, today, by_day: byDay }, events };
+}
+
 // ===================== Agent Model Bindings =====================
 
 export function listAgentModelBindings(

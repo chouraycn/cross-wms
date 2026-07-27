@@ -1,0 +1,2 @@
+// Re-export from parent (file moved up from channels/plugins/ to channels/)
+export * from "../channel-runtime-surface.types.js";

@@ -1,25 +1,5 @@
-// Gateway health auth diagnostic helpers for reachable-but-unauthenticated probes.
-// 移植自 openclaw/src/commands/gateway-health-auth-diagnostic.ts
-//
-// 降级说明：
-//  - DaemonStatus 来自 ../cli/daemon-cli/status.gather.js
-//    → 未移植，使用简化类型定义
-
-type DaemonStatus = {
-  rpc?: {
-    ok?: boolean;
-    auth?: {
-      capability?: string;
-      role?: string;
-      scopes?: string[];
-    };
-    server?: {
-      version?: string;
-      connId?: string;
-    };
-    error?: string;
-  };
-};
+/** Gateway health auth diagnostic helpers for reachable-but-unauthenticated probes. */
+import type { DaemonStatus } from "@openclaw-src/cli/daemon-cli/status.gather.js";
 
 type GatewayProbeReachabilityEvidence = NonNullable<DaemonStatus["rpc"]>;
 
@@ -28,6 +8,9 @@ export const GATEWAY_HEALTH_CREDENTIALS_REQUIRED_MESSAGE =
 export const GATEWAY_HEALTH_CREDENTIALS_REQUIRED_TITLE = "Gateway credentials required";
 export const GATEWAY_HEALTH_REACHABLE_LINE = "Gateway: reachable";
 
+/**
+ * Detects when a daemon probe reached the gateway even if read-scope auth failed.
+ */
 export function gatewayProbeResultSawGateway(status: GatewayProbeReachabilityEvidence): boolean {
   if (status.ok) {
     return true;
@@ -43,11 +26,16 @@ export function gatewayProbeResultSawGateway(status: GatewayProbeReachabilityEvi
   if (server?.version || server?.connId) {
     return true;
   }
+  // Older probes may only expose close/error text for auth failures; treat known gateway
+  // close reasons as reachability evidence so health can explain missing credentials.
   return /\bgateway closed \(\d+\):|\bpairing required\b|\bdevice identity required\b/i.test(
     status.error ?? "",
   );
 }
 
+/**
+ * Builds the health diagnostic emitted when the gateway is reachable but credentials are absent.
+ */
 export function buildCredentialsRequiredHealthDiagnostic() {
   return {
     ok: false,

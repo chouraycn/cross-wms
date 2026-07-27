@@ -1,9 +1,5 @@
 // Legacy web-search config migration from tools.web.search to plugin-owned configs.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-web-search-migrate.ts
-//
-// 降级说明：
-//  - mergeMissing 来自 ../../../config/legacy.shared.js
-//    → 未移植，使用本地简化实现
+import { mergeMissing } from "@openclaw-src/config/legacy.shared.js";
 import {
   cloneRecord,
   ensureRecord,
@@ -13,17 +9,6 @@ import {
 } from "./legacy-config-record-shared.js";
 
 const DANGEROUS_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-
-function mergeMissing(target: JsonRecord, source: JsonRecord): void {
-  for (const [key, value] of Object.entries(source)) {
-    if (DANGEROUS_RECORD_KEYS.has(key)) continue;
-    if (!Object.hasOwn(target, key)) {
-      target[key] = value;
-    } else if (isRecord(target[key]) && isRecord(value)) {
-      mergeMissing(target[key] as JsonRecord, value as JsonRecord);
-    }
-  }
-}
 
 const BUNDLED_LEGACY_WEB_SEARCH_OWNERS = new Map<string, string>([
   ["brave", "brave"],
@@ -170,6 +155,7 @@ function migratePluginWebSearchConfig(params: {
   params.changes.push(`Removed ${params.legacyPath} (${params.targetPath} already set).`);
 }
 
+/** List legacy tools.web.search provider config paths present in raw config. */
 export function listLegacyWebSearchConfigPaths(raw: unknown): string[] {
   const owners = getBundledLegacyWebSearchOwners();
   const search = resolveLegacySearchConfig(raw);
@@ -192,6 +178,7 @@ export function listLegacyWebSearchConfigPaths(raw: unknown): string[] {
   return paths;
 }
 
+/** Move legacy web-search provider config into provider plugin entries. */
 export function migrateLegacyWebSearchConfig<T>(raw: T): { config: T; changes: string[] } {
   if (!isRecord(raw)) {
     return { config: raw, changes: [] };

@@ -1,6 +1,21 @@
 import { logger } from "../../logger.js";
 import type { ChannelId } from "../../channels/types.js";
 
+/** Normalized source kind for channel-provided geographic locations (openclaw compat). */
+export type LocationSource = "pin" | "place" | "live";
+
+/** Channel-neutral location payload passed from plugins into shared prompt rendering (openclaw compat). */
+export type NormalizedLocation = {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  name?: string;
+  address?: string;
+  isLive?: boolean;
+  source?: LocationSource;
+  caption?: string;
+};
+
 export interface ChannelLocation {
   channelId: ChannelId;
   guildId?: string;

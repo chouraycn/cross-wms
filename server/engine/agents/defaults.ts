@@ -29,3 +29,7 @@ export function applyDefaultConfig(config: Partial<DefaultAgentConfig>): Default
   logger.debug('[Agents:Defaults] Applied default config');
   return merged;
 }
+
+export const DEFAULT_CONTEXT_TOKENS = 4096;
+export const DEFAULT_MODEL = 'gpt-4o';
+export const DEFAULT_PROVIDER = 'openai';

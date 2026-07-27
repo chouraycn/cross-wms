@@ -1,42 +1,13 @@
 // Legacy web-search config migration from tools.web.search to plugin-owned config.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-config-migrations.web-search.ts
-//
-// 降级说明：
-//  - LegacyConfigMigrationSpec / LegacyConfigRule / defineLegacyConfigMigration
-//    来自 ../../../config/legacy.shared.js → cross-wms 占位为 unknown，
-//    在本文件内提供本地等价类型与 identity 帮助器以保留原迁移逻辑
-//  - listLegacyWebSearchConfigPaths / migrateLegacyWebSearchConfig
-//    来自 ./legacy-web-search-migrate.js → cross-wms 已移植
+import {
+  defineLegacyConfigMigration,
+  type LegacyConfigMigrationSpec,
+  type LegacyConfigRule,
+} from "@openclaw-src/config/legacy.shared.js";
 import {
   listLegacyWebSearchConfigPaths,
   migrateLegacyWebSearchConfig,
 } from "./legacy-web-search-migrate.js";
-
-type JsonRecord = Record<string, unknown>;
-
-export type LegacyConfigRule = {
-  path: string[];
-  message: string;
-  match?: (value: unknown, root: JsonRecord) => boolean;
-  requireSourceLiteral?: boolean;
-};
-
-export type LegacyConfigMigration = {
-  id: string;
-  describe: string;
-  apply: (raw: JsonRecord, changes: string[]) => void;
-};
-
-export type LegacyConfigMigrationSpec = LegacyConfigMigration & {
-  legacyRules?: LegacyConfigRule[];
-};
-
-/** Identity helper that preserves the LegacyConfigMigrationSpec shape for migration registries. */
-export function defineLegacyConfigMigration(
-  migration: LegacyConfigMigrationSpec,
-): LegacyConfigMigrationSpec {
-  return migration;
-}
 
 const LEGACY_WEB_SEARCH_RULES: LegacyConfigRule[] = [
   {
@@ -49,8 +20,8 @@ const LEGACY_WEB_SEARCH_RULES: LegacyConfigRule[] = [
 ];
 
 function replaceRootRecord(
-  target: JsonRecord,
-  replacement: JsonRecord,
+  target: Record<string, unknown>,
+  replacement: Record<string, unknown>,
 ): void {
   for (const key of Object.keys(target)) {
     delete target[key];
@@ -70,7 +41,7 @@ export const LEGACY_CONFIG_MIGRATIONS_WEB_SEARCH: LegacyConfigMigrationSpec[] = 
       if (migrated.changes.length === 0) {
         return;
       }
-      replaceRootRecord(raw, migrated.config as JsonRecord);
+      replaceRootRecord(raw, migrated.config);
       changes.push(...migrated.changes);
     },
   }),

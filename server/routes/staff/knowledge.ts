@@ -30,10 +30,11 @@ function tenantOf(req: Request): string {
   return (req.query.tenant_id as string) || (req.body?.tenant_id as string) || DEFAULT_TENANT_ID;
 }
 
-// ===================== POST /documents — 上传文档 =====================
-router.post('/documents', (req: Request, res: Response) => {
+// ===================== POST /documents — 上传文档（支持直接入库文本） =====================
+router.post('/documents', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
-  const { knowledge_base_id, knowledge_base_version_id, filename, file_type, title, metadata } = req.body ?? {};
+  const { knowledge_base_id, knowledge_base_version_id, filename, file_type, title, metadata, content } =
+    req.body ?? {};
   if (!knowledge_base_id || !filename || !file_type) {
     res.status(400).json({
       code: 400,
@@ -42,7 +43,7 @@ router.post('/documents', (req: Request, res: Response) => {
     });
     return;
   }
-  // 1. 创建 document
+  // 1. 创建 document + ingest job
   const doc = kDao.createDocument({
     tenant_id: tenantId,
     knowledge_base_id,
@@ -53,7 +54,6 @@ router.post('/documents', (req: Request, res: Response) => {
     status: 'processing',
     metadata: metadata ?? {},
   });
-  // 2. 创建 ingest job（实际 ingest 由后台 worker 执行）
   const job = kDao.createIngestJob({
     tenant_id: tenantId,
     knowledge_base_id,
@@ -64,19 +64,45 @@ router.post('/documents', (req: Request, res: Response) => {
     stage: 'queued',
     progress: 0,
   });
-  // TODO: 接入实际 ingest worker
-  logger.debug('[StaffK] document upload', { docId: doc.id, jobId: job.id });
-  res.status(201).json({ code: 0, data: job, message: 'ok' });
+
+  // 2. 若提供了文本内容，直接走真实入库管线（切分 → 向量化 → 落库）
+  const text = typeof content === 'string' ? content.trim() : '';
+  if (text) {
+    try {
+      const result = await kDao.ingestDocumentText({
+        tenant_id: tenantId,
+        knowledge_base_id,
+        knowledge_base_version_id: knowledge_base_version_id ?? null,
+        document_id: doc.id,
+        title: title ?? filename,
+        text,
+      });
+      logger.info('[StaffK] 文档直接入库完成', { docId: doc.id, chunkCount: result.chunkCount });
+    } catch (e) {
+      logger.error('[StaffK] 文档入库失败:', e instanceof Error ? e.message : String(e));
+      kDao.updateIngestJob(tenantId, job.id, {
+        status: 'failed',
+        stage: 'error',
+        error: e instanceof Error ? e.message : String(e),
+        finished_at: Math.floor(Date.now() / 1000),
+      });
+      kDao.updateDocument(tenantId, doc.id, { status: 'error', error: e instanceof Error ? e.message : String(e) });
+      res.status(201).json({ code: 0, data: { doc, job: kDao.getIngestJobById(tenantId, job.id) }, message: '入库失败' });
+      return;
+    }
+  } else {
+    // 仅登记，等待后台 worker / 文件上传接入（保持向前兼容）
+    logger.debug('[StaffK] document upload（无正文，仅登记）', { docId: doc.id, jobId: job.id });
+  }
+  res.status(201).json({ code: 0, data: { doc, job }, message: 'ok' });
 });
 
-// ===================== POST /okf/import — stub =====================
+// ===================== POST /okf/import — 功能未接入 =====================
 router.post('/okf/import', (req: Request, res: Response) => {
-  // TODO: 接入 OKF importer
-  logger.debug('[StaffK] okf import stub');
   res.json({
     code: 0,
-    data: { imported: 0, concepts: [] },
-    message: 'stub: OKF 导入尚未接入',
+    data: { implemented: false, imported: 0, concepts: [] },
+    message: '功能未接入：OKF 包导入尚未实现（无 OKF schema 规范），请使用「新增文档（文本入库）」入库',
   });
 });
 
@@ -209,21 +235,26 @@ router.post('/jobs/:jobId/cancel', (req: Request, res: Response) => {
 });
 
 // ===================== POST /search — 搜索 =====================
-router.post('/search', (req: Request, res: Response) => {
+router.post('/search', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const { query, knowledge_base_id, knowledge_base_version_id, limit } = req.body ?? {};
   if (!query || typeof query !== 'string') {
     res.status(400).json({ code: 400, data: null, message: 'query 必填' });
     return;
   }
-  const hits = kDao.searchKnowledge({
-    tenant_id: tenantId,
-    query,
-    knowledge_base_id,
-    knowledge_base_version_id,
-    limit,
-  });
-  res.json({ code: 0, data: { hits, total: hits.length }, message: 'ok' });
+  try {
+    const hits = await kDao.searchKnowledge({
+      tenant_id: tenantId,
+      query,
+      knowledge_base_id,
+      knowledge_base_version_id,
+      limit,
+    });
+    res.json({ code: 0, data: { hits, total: hits.length }, message: 'ok' });
+  } catch (e) {
+    logger.error('[StaffK] 知识搜索失败:', e instanceof Error ? e.message : String(e));
+    res.status(500).json({ code: 500, data: null, message: '知识搜索失败' });
+  }
 });
 
 // ===================== GET /discoveries — 列出发现建议 =====================

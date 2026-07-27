@@ -1,13 +1,17 @@
 // Legacy model-provider aliases that encoded runtime/backend selection in model refs.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-runtime-model-providers.ts
-import { normalizeProviderId } from "../../../plugins/_openclaw__model_catalog_core__provider_id.js";
-import { normalizeStaticProviderModelId } from "../../../agents/model-ref-shared.js";
+import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeStaticProviderModelId } from "@openclaw-src/agents/model-ref-shared.js";
 
 type LegacyRuntimeModelProviderAlias = {
+  /** Legacy provider id that encoded the runtime in the model ref. */
   legacyProvider: string;
+  /** Canonical provider id that should own model selection. */
   provider: string;
+  /** Runtime/backend id selected for the migrated ref. */
   runtime: string;
+  /** True when the runtime is a CLI backend rather than an embedded harness. */
   cli: boolean;
+  /** True when doctor must write a runtime policy even if the target runtime is the default. */
   requiresRuntimePolicy: boolean;
 };
 
@@ -54,10 +58,12 @@ const LEGACY_ALIAS_BY_PROVIDER = new Map(
   ]),
 );
 
+/** List legacy model-provider aliases that doctor can migrate to provider/runtime policy. */
 export function listLegacyRuntimeModelProviderAliases(): readonly LegacyRuntimeModelProviderAlias[] {
   return LEGACY_RUNTIME_MODEL_PROVIDER_ALIASES;
 }
 
+/** Return true when a legacy provider alias requires writing explicit runtime policy. */
 export function legacyRuntimeModelAliasRequiresRuntimePolicy(provider: string): boolean {
   return (
     LEGACY_ALIAS_BY_PROVIDER.get(normalizeLegacyRuntimeProviderId(provider))
@@ -71,6 +77,7 @@ function resolveLegacyRuntimeModelProviderAlias(
   return LEGACY_ALIAS_BY_PROVIDER.get(normalizeLegacyRuntimeProviderId(provider));
 }
 
+/** Rewrite a legacy runtime-encoded model ref to canonical provider/model plus runtime intent. */
 export function migrateLegacyRuntimeModelRef(raw: string): {
   ref: string;
   legacyProvider: string;
@@ -89,7 +96,7 @@ export function migrateLegacyRuntimeModelRef(raw: string): {
     return null;
   }
   const rawModel = trimmed.slice(slash + 1).trim();
-  const model = normalizeStaticProviderModelId(alias.provider, rawModel) as string | null | undefined;
+  const model = normalizeStaticProviderModelId(alias.provider, rawModel);
   if (!model) {
     return null;
   }

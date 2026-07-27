@@ -1,0 +1,1 @@
+export const resolveRuntimePlugin = (..._args: unknown[]): unknown => undefined;

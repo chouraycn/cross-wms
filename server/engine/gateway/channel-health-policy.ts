@@ -1,9 +1,6 @@
 // Gateway channel health policy.
 // Evaluates channel lifecycle snapshots for restart/readiness decisions.
-// 移植自 openclaw/src/gateway/channel-health-policy.ts。
-// 降级：ChannelId 类型来自 ../channels/plugins/types.public.js（未移植），内联为 string 别名。
-
-type ChannelId = string;
+import type { ChannelId } from "../channels/plugins/types.public.js";
 
 type ChannelHealthSnapshot = {
   running?: boolean;
@@ -51,6 +48,8 @@ function isManagedAccount(snapshot: ChannelHealthSnapshot): boolean {
 }
 
 const BUSY_ACTIVITY_STALE_THRESHOLD_MS = 25 * 60_000;
+// Keep these shared between the background health monitor and on-demand readiness
+// probes so both surfaces evaluate channel lifecycle windows consistently.
 export const DEFAULT_CHANNEL_STALE_EVENT_THRESHOLD_MS = 30 * 60_000;
 export const DEFAULT_CHANNEL_CONNECT_GRACE_MS = 120_000;
 
@@ -85,6 +84,9 @@ export function evaluateChannelHealth(
   const busyStateInitializedForLifecycle =
     lastStartAt == null || (lastRunActivityAt != null && lastRunActivityAt >= lastStartAt);
 
+  // Runtime snapshots are patch-merged, so a restarted lifecycle can temporarily
+  // inherit stale busy fields from the previous instance. Ignore busy short-circuit
+  // until run activity is known to belong to the current lifecycle.
   if (isBusy) {
     if (!busyStateInitializedForLifecycle) {
       // Fall through to normal startup/disconnect checks below.
@@ -108,6 +110,8 @@ export function evaluateChannelHealth(
   if (snapshot.connected === false) {
     return { healthy: false, reason: "disconnected" };
   }
+  // App-level events are not socket liveness: quiet Slack/Discord workspaces can
+  // go idle while their upstream clients maintain heartbeats internally.
   const shouldCheckStaleSocket = snapshot.connected === true && lastTransportActivityAt != null;
   if (shouldCheckStaleSocket) {
     if (lastStartAt != null && lastTransportActivityAt < lastStartAt) {
@@ -129,6 +133,8 @@ export function resolveChannelRestartReason(
   snapshot: ChannelHealthSnapshot,
   evaluation: ChannelHealthEvaluation,
 ): ChannelRestartReason {
+  // Restart reasons are intentionally coarse: downstream logs/UI need stable
+  // categories, while detailed channel state stays in the health snapshot.
   if (evaluation.reason === "stale-socket") {
     return "stale-socket";
   }

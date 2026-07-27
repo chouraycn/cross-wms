@@ -891,3 +891,75 @@ export * from "./test-openai-responses-model.js";
 export * from "./test-temp-config.js";
 export * from "./test-utils.js";
 export * from "./test-with-server.js";
+
+// ============================================================================
+// 深度移植模块 — 从 openclaw/src/gateway 完整移植
+// ============================================================================
+
+// Auth resolve
+export {
+  resolveGatewayAuth,
+  resolveEffectiveSharedGatewayAuth,
+} from './auth-resolve.js';
+export type {
+  ResolvedGatewayAuth,
+  EffectiveSharedGatewayAuth,
+} from './auth-resolve.js';
+
+// Credentials
+export {
+  resolveGatewayCredentialsFromConfig,
+  resolveGatewayProbeCredentialsFromConfig,
+} from './credentials.js';
+export type { GatewayCredentials } from './credentials.js';
+
+// Credential planner
+export {
+  planGatewayCredentials,
+} from './credential-planner.js';
+export type {
+  CredentialPlan,
+  CredentialPlanStep,
+} from './credential-planner.js';
+
+// Credentials secret inputs
+export {
+  buildGatewayCredentialsSecretInputs,
+} from './credentials-secret-inputs.js';
+export type {
+  GatewayCredentialsSecretInputs,
+} from './credentials-secret-inputs.js';
+
+// Call runtime
+export {
+  callGatewayRuntime,
+} from './call.runtime.js';
+
+// Probe auth
+export {
+  deriveProbeAuthParams,
+} from './probe-auth.js';
+export type {
+  ProbeAuthParams,
+} from './probe-auth.js';
+
+// Probe target
+export {
+  resolveProbeTargetAddress,
+} from './probe-target.js';
+export type {
+  ProbeTargetAddress,
+} from './probe-target.js';
+
+// Event loop ready
+export {
+  awaitEventLoopReady,
+  markEventLoopReady,
+  isEventLoopReady,
+} from './event-loop-ready.js';
+
+// Env deprecation
+export {
+  warnLegacyOpenClawEnvVars,
+  resetLegacyOpenClawEnvWarningForTest,
+} from './env-deprecation.js';

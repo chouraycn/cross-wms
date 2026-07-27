@@ -81,3 +81,30 @@ export type CompleteOptions = {
 export type StreamOptions = CompleteOptions & {
   onEvent?: (event: StreamEvent) => void;
 };
+
+// Re-export shared LLM core types consumed by plugin-sdk/llm.ts and providers.
+// Selective re-exports avoid conflicts with the local Api/Model/Usage/StreamOptions above.
+export type {
+  AssistantMessage,
+  AssistantMessageEvent,
+  AssistantMessageEventStreamContract,
+  ProviderResponse,
+  StopReason,
+  TextContent,
+  ThinkingBudgets,
+  ThinkingContent,
+  Tool,
+  ToolCall,
+} from "../../../packages/llm-core/src/types.js";
+export type {
+  CacheRetention,
+  Context,
+  ImageContent,
+  Message,
+  ProviderStreamOptions,
+  SimpleStreamOptions,
+  StreamFunction,
+  ThinkingLevel,
+  ToolResultMessage,
+  UserMessage,
+} from "../../../packages/llm-core/src/openclaw-compat.js";

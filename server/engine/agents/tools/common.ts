@@ -138,3 +138,176 @@ export type MediaSanitizer = (media: {
   mimeType: string;
   data: string;
 }) => Promise<{ mimeType: string; data: string }> | { mimeType: string; data: string };
+
+// openclaw compat: param readers and helpers used by plugin-sdk/core.ts
+
+export type StringParamOptions = {
+  required?: boolean;
+  trim?: boolean;
+  label?: string;
+  allowEmpty?: boolean;
+};
+
+export type ActionGate<T extends Record<string, boolean | undefined>> = (
+  key: keyof T & string,
+  defaultValue?: boolean,
+) => boolean;
+
+export function createActionGate<T extends Record<string, boolean | undefined>>(
+  actions: T | undefined,
+): ActionGate<T> {
+  return (key, defaultValue = true) => {
+    const value = actions?.[key];
+    if (value === undefined) {
+      return defaultValue;
+    }
+    return value !== false;
+  };
+}
+
+function readParamRaw(params: Record<string, unknown>, key: string): unknown {
+  return params[key];
+}
+
+export function readStringParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions & { required: true },
+): string;
+export function readStringParam(
+  params: Record<string, unknown>,
+  key: string,
+  options?: StringParamOptions,
+): string | undefined;
+export function readStringParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions = {},
+): string | undefined {
+  const { required = false, trim = true, label = key, allowEmpty = false } = options;
+  const raw = readParamRaw(params, key);
+  if (typeof raw !== "string") {
+    if (required) {
+      throw new Error(`Missing required string parameter: ${label}`);
+    }
+    return undefined;
+  }
+  const value = trim ? raw.trim() : raw;
+  if (!allowEmpty && value.length === 0) {
+    if (required) {
+      throw new Error(`Parameter ${label} must not be empty`);
+    }
+    return undefined;
+  }
+  return value;
+}
+
+export function readNumberParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: {
+    required?: boolean;
+    label?: string;
+    integer?: boolean;
+    strict?: boolean;
+    positiveInteger?: boolean;
+  } = {},
+): number | undefined {
+  const { required = false, label = key, integer = false, positiveInteger = false } = options;
+  const raw = readParamRaw(params, key);
+  if (raw === undefined || raw === null) {
+    if (required) {
+      throw new Error(`Missing required number parameter: ${label}`);
+    }
+    return undefined;
+  }
+  const num = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(num)) {
+    if (required) {
+      throw new Error(`Parameter ${label} must be a finite number`);
+    }
+    return undefined;
+  }
+  if (integer && !Number.isInteger(num)) {
+    if (required) {
+      throw new Error(`Parameter ${label} must be an integer`);
+    }
+    return undefined;
+  }
+  if (positiveInteger && (num <= 0 || !Number.isInteger(num))) {
+    if (required) {
+      throw new Error(`Parameter ${label} must be a positive integer`);
+    }
+    return undefined;
+  }
+  return num;
+}
+
+export function readStringArrayParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions & { required: true },
+): string[];
+export function readStringArrayParam(
+  params: Record<string, unknown>,
+  key: string,
+  options?: StringParamOptions,
+): string[] | undefined;
+export function readStringArrayParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions = {},
+): string[] | undefined {
+  const { required = false, label = key } = options;
+  const raw = readParamRaw(params, key);
+  if (raw === undefined || raw === null) {
+    if (required) {
+      throw new Error(`Missing required string array parameter: ${label}`);
+    }
+    return undefined;
+  }
+  if (typeof raw === "string") {
+    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  if (Array.isArray(raw)) {
+    return raw.map((s) => String(s).trim()).filter(Boolean);
+  }
+  if (required) {
+    throw new Error(`Parameter ${label} must be a string or string array`);
+  }
+  return undefined;
+}
+
+export type ReactionParams = {
+  emoji?: string;
+  remove: boolean;
+};
+
+export function readReactionParams(
+  params: Record<string, unknown>,
+  options: {
+    emojiKey?: string;
+    removeKey?: string;
+    removeErrorMessage: string;
+  },
+): ReactionParams {
+  const emojiKey = options.emojiKey ?? "emoji";
+  const removeKey = options.removeKey ?? "remove";
+  const remove = typeof params[removeKey] === "boolean" ? (params[removeKey] as boolean) : false;
+  const emoji = readStringParam(params, emojiKey, {
+    required: true,
+    allowEmpty: true,
+  });
+  if (remove && !emoji) {
+    throw new Error(options.removeErrorMessage);
+  }
+  return { emoji: emoji ?? undefined, remove };
+}
+
+/** Builds a text result with an optional structured payload (openclaw compat alias). */
+export function jsonResult(payload: unknown): AgentToolResult<unknown> {
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    details: payload,
+  };
+}

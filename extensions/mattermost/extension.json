@@ -1,0 +1,10 @@
+{
+  "id": "mattermost",
+  "name": "Mattermost Channel",
+  "description": "Mattermost self-hosted team communication channel extension",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

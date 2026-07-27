@@ -53,9 +53,20 @@ export type {
   PolicyDecision,
 } from './approvalPolicy.js';
 
+export {
+  GatewayApprovalAdapter,
+  default as gatewayApprovalAdapter,
+} from './gatewayAdapter.js';
+
+export type {
+  GatewayApprovalAdapterConfig,
+  ApprovalResult,
+} from './gatewayAdapter.js';
+
 import approvalAudit from './approvalAudit.js';
 import approvalChain from './approvalChain.js';
 import approvalPolicy from './approvalPolicy.js';
+import gatewayApprovalAdapter from './gatewayAdapter.js';
 
 /**
  * Approval 模块聚合对象
@@ -64,6 +75,7 @@ export const approval = {
   audit: approvalAudit,
   chain: approvalChain,
   policy: approvalPolicy,
+  gateway: gatewayApprovalAdapter,
 };
 
 export default approval;

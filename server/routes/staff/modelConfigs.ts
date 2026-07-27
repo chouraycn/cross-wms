@@ -13,6 +13,7 @@ import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import type { ModelConfigRow, ModelConfigRead } from '../../types/staff.js';
 import * as modelConfigDao from '../../dao/staff/staffModelConfigDao.js';
+import { complete } from '../../engine/llm/index.js';
 
 const router = Router();
 
@@ -280,7 +281,7 @@ router.post('/:config_id/set-default', (req: Request, res: Response) => {
 
 // ===================== POST /:config_id/test — 测试模型连接（stub） =====================
 
-router.post('/:config_id/test', (req: Request, res: Response) => {
+router.post('/:config_id/test', async (req: Request, res: Response) => {
   const tenantId = (req.body.tenant_id as string) || (req.query.tenant_id as string) || DEFAULT_TENANT_ID;
   const configId = req.params.config_id;
 
@@ -290,21 +291,44 @@ router.post('/:config_id/test', (req: Request, res: Response) => {
     return;
   }
 
-  // TODO: 接入真实 LLM 客户端验证（text/stream/json 三段探测）
-  // 此处仅更新验证尝试状态为 idle，返回 stub
-  res.json({
-    code: 0,
-    data: {
-      success: false,
-      message: '模型连接测试尚未实现',
-      output: null,
-      activated: false,
-      trust_status: existing.trust_status,
-      attempt_status: existing.verification_attempt_status,
-      capabilities: [],
-    },
-    message: 'ok',
-  });
+  // 真实连通性探测：用该配置引用的模型做一次最短文本补全（依赖环境变量中的 API Key）
+  try {
+    if (!existing.model) {
+      throw new Error('该配置未指定 model，无法探测');
+    }
+    const output = await complete({
+      model: existing.model,
+      messages: [{ role: 'user', content: 'ping' }],
+    });
+    res.json({
+      code: 0,
+      data: {
+        success: true,
+        message: '连接成功',
+        output: output.slice(0, 200),
+        activated: true,
+        trust_status: existing.trust_status,
+        attempt_status: 'succeeded',
+        capabilities: [],
+      },
+      message: 'ok',
+    });
+  } catch (e) {
+    const msg = (e as Error).message;
+    res.json({
+      code: 0,
+      data: {
+        success: false,
+        message: `连接失败：${msg}`,
+        output: null,
+        activated: false,
+        trust_status: existing.trust_status,
+        attempt_status: 'failed',
+        capabilities: [],
+      },
+      message: 'ok',
+    });
+  }
 });
 
 export default router;

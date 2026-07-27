@@ -7,10 +7,31 @@ export type ChannelConfigRuntimeParseResult = unknown;
 
 export type ChannelConfigRuntimeSchema = unknown;
 
-export type ChannelConfigSchema = unknown;
+export type ChannelConfigSchema = {
+  type?: "object";
+  properties?: Record<string, unknown>;
+  required?: string[];
+  additionalProperties?: boolean;
+  [key: string]: unknown;
+};
 
 export type ChannelConfigUiHint = unknown;
 
 export type ChannelGatewayMethodDescriptor = unknown;
 
-export type ChannelPlugin = unknown;
+export type ChannelPlugin<ResolvedAccount = unknown, Probe = unknown, Audit = unknown> = {
+  id: string;
+  meta?: unknown;
+  capabilities?: unknown;
+  config?: unknown;
+  configSchema?: ChannelConfigSchema;
+  setup?: unknown;
+  pairing?: unknown;
+  security?: import("./types.adapters.js").ChannelSecurityAdapter<ResolvedAccount>;
+  groups?: unknown;
+  mentions?: unknown;
+  outbound?: unknown;
+  status?: unknown;
+  gatewayMethods?: string[];
+  [key: string]: unknown;
+};

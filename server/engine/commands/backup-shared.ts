@@ -1,21 +1,13 @@
 // Backup planning helpers for archive naming, payload paths, and deduplicated asset selection.
-// 移植自 openclaw/src/commands/backup-shared.ts
-//
-// 降级说明：
-//  - readConfigFileSnapshot 来自 ../config/config.js → cross-wms 已移植但为 unknown 占位，
-//    通过本地类型化包装恢复原签名。readConfigFileSnapshot 降级为返回最小 snapshot。
-//  - resolveConfigPath / resolveStateDir 来自 ../infra/_runtime-stubs.js
-//    → cross-wms 已有同名实现，签名与 openclaw 兼容（返回 config.json 路径 / 状态目录）。
-//  - resolveOAuthDir 原来自 ../config/config.js → cross-wms 未导出，
-//    本地实现匹配 openclaw 行为（path.join(stateDir, "credentials")）。
-//  - pathExists / shortenHomePath 来自 ../utils.js → cross-wms 实现行为不一致，
-//    本地实现匹配 openclaw 行为。
-//  - buildCleanupPlan / isPathWithin 来自 ./cleanup-utils.js → cross-wms 已移植。
-//  - fs / path 为 node 内置模块。
 import fs from "node:fs/promises";
 import path from "node:path";
-import { readConfigFileSnapshot as readConfigFileSnapshotStub } from "../config/config.js";
-import { resolveConfigPath, resolveStateDir } from "../infra/_runtime-stubs.js";
+import {
+  readConfigFileSnapshot,
+  resolveConfigPath,
+  resolveOAuthDir,
+  resolveStateDir,
+} from "@openclaw-src/config/config.js";
+import { pathExists, shortenHomePath } from "@openclaw-src/utils.js";
 import { buildCleanupPlan, isPathWithin } from "./cleanup-utils.js";
 
 export type BackupAssetKind = "state" | "config" | "credentials" | "workspace";
@@ -51,45 +43,6 @@ type BackupAssetCandidate = {
   canonicalPath: string;
   exists: boolean;
 };
-
-// ===== 本地 utils 工具（匹配 openclaw utils.js 行为）=====
-/** 判断路径是否存在（与 openclaw utils.js pathExists 行为一致）。 */
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** 将路径中的主目录前缀替换为 ~（与 openclaw utils.js shortenHomePath 行为一致）。 */
-function shortenHomePath(value: string): string {
-  const home = (process.env.HOME ?? process.env.USERPROFILE ?? "").trim();
-  if (home && value.startsWith(home)) {
-    return `~${value.slice(home.length)}`;
-  }
-  return value;
-}
-
-/** ConfigFileSnapshot 最小占位（与 openclaw config/config.js 结构兼容）。 */
-type ConfigFileSnapshot = {
-  exists: boolean;
-  valid: boolean;
-  path: string;
-  config: unknown;
-  sourceConfig?: unknown;
-};
-
-/** 解析 OAuth 凭据目录（本地实现，匹配 openclaw config/paths.ts 行为）。 */
-function resolveOAuthDir(env: NodeJS.ProcessEnv = process.env): string {
-  const override = env.OPENCLAW_OAUTH_DIR?.trim();
-  if (override) {
-    return path.resolve(override);
-  }
-  return path.join(resolveStateDir(env), "credentials");
-}
-// ===== 本地工具结束 =====
 
 function backupAssetPriority(kind: BackupAssetKind): number {
   switch (kind) {
@@ -331,16 +284,14 @@ export async function resolveBackupPlanFromDisk(
   const configPath = resolveConfigPath();
   const oauthDir = resolveOAuthDir();
 
-  const configSnapshot = (await (readConfigFileSnapshotStub as unknown as () => Promise<ConfigFileSnapshot>)().catch(
-    () => null,
-  )) as ConfigFileSnapshot | null;
-  if (includeWorkspace && configSnapshot && configSnapshot.exists && !configSnapshot.valid) {
+  const configSnapshot = await readConfigFileSnapshot();
+  if (includeWorkspace && configSnapshot.exists && !configSnapshot.valid) {
     throw new Error(
       `Config invalid at ${shortenHomePath(configSnapshot.path)}. OpenClaw cannot reliably discover custom workspaces for backup. Fix the config or rerun with --no-include-workspace for a partial backup.`,
     );
   }
   const cleanupPlan = buildCleanupPlan({
-    cfg: (configSnapshot?.config ?? undefined) as Parameters<typeof buildCleanupPlan>[0]["cfg"],
+    cfg: configSnapshot.config,
     stateDir,
     configPath,
     oauthDir,

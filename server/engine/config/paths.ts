@@ -57,3 +57,33 @@ export function resolveStateDir(env: NodeJS.ProcessEnv = process.env): string {
   const home = env.HOME ?? env.USERPROFILE ?? homedir();
   return join(home, '.openclaw');
 }
+
+// openclaw compat: gateway port resolver used by plugin-sdk/core.ts
+const DEFAULT_GATEWAY_PORT = 4152;
+
+function parseGatewayPortEnvValue(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 65535) {
+    return null;
+  }
+  return parsed;
+}
+
+export function resolveGatewayPort(
+  cfg?: { gateway?: { port?: number } },
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const envRaw = env.OPENCLAW_GATEWAY_PORT?.trim();
+  const envPort = parseGatewayPortEnvValue(envRaw);
+  if (envPort !== null) {
+    return envPort;
+  }
+  const configPort = cfg?.gateway?.port;
+  if (typeof configPort === "number" && Number.isFinite(configPort)) {
+    return configPort;
+  }
+  return DEFAULT_GATEWAY_PORT;
+}

@@ -1,63 +1,10 @@
-// Terminal/JSON/plain table renderer for model-list rows.
-// 移植自 openclaw/src/commands/models/list.table.ts
-//
-// 降级说明：
-//  - sanitizeTerminalText 来自 ../../../packages/terminal-core/src/safe-text.js
-//    → cross-wms 未移植 terminal-core，使用本地 identity 实现（不转义）
-//  - colorize / theme 来自 ../../../packages/terminal-core/src/theme.js
-//    → cross-wms 未移植，使用本地降级实现（不应用颜色），与 ./list.format.ts 保持一致
-//  - RuntimeEnv / writeRuntimeJson 来自 ../../runtime.js
-//    → cross-wms 未移植 runtime.ts，使用本地最小化类型与 JSON 输出实现
-//  - formatTokenK 来自 ./shared.js
-//    → cross-wms 未移植 shared.ts，使用本地等价实现
-//  - formatTag / isRich / pad / truncate 来自 ./list.format.js → cross-wms 已移植
-//  - ModelRow 来自 ./list.types.js → cross-wms 已移植
+/** Terminal/JSON/plain table renderer for model-list rows. */
+import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
+import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 import { formatTag, isRich, pad, truncate } from "./list.format.js";
 import type { ModelRow } from "./list.types.js";
-
-/** Minimal runtime environment used by model-list table rendering. */
-export type RuntimeEnv = {
-  log: (message: string) => void;
-};
-
-/** Identity sanitizer — preserves terminal text as-is when terminal-core is unavailable. */
-function sanitizeTerminalText(value: string): string {
-  return value;
-}
-
-/** Local theme stubs mirroring ./list.format.ts to keep formatting consistent. */
-const theme = {
-  heading: (s: string) => s,
-  accent: (s: string) => s,
-  accentBright: (s: string) => s,
-  accentDim: (s: string) => s,
-  success: (s: string) => s,
-  error: (s: string) => s,
-  warn: (s: string) => s,
-  muted: (s: string) => s,
-  info: (s: string) => s,
-};
-
-/** No-op colorize — returns the label unchanged when rich formatting is disabled. */
-function colorize(rich: boolean, _paint: (s: string) => string, label: string): string {
-  return rich ? _paint(label) : label;
-}
-
-/** Formats token counts as compact K-suffixed labels. */
-function formatTokenK(value?: number | null): string {
-  if (!value || !Number.isFinite(value)) {
-    return "-";
-  }
-  if (value < 1024) {
-    return `${Math.round(value)}`;
-  }
-  return `${Math.round(value / 1024)}k`;
-}
-
-/** Writes a JSON payload to the runtime log stream. */
-function writeRuntimeJson(runtime: RuntimeEnv, payload: unknown): void {
-  runtime.log(JSON.stringify(payload, null, 2));
-}
+import { formatTokenK } from "./shared.js";
 
 const MODEL_PAD = 42;
 const INPUT_PAD = 10;
@@ -82,7 +29,7 @@ export function printModelTable(
   rows: ModelRow[],
   runtime: RuntimeEnv,
   opts: { json?: boolean; plain?: boolean } = {},
-): void {
+) {
   if (opts.json) {
     writeRuntimeJson(runtime, {
       count: rows.length,
