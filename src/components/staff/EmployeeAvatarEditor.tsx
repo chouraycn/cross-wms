@@ -96,8 +96,8 @@ export default function EmployeeAvatarEditor({
         delete metadata.avatar_image;
       }
 
-      // TODO: 接入实际业务 — 调用 api.put 更新员工头像
-      const saved = await api.put<AgentProfileRead>(`/api/enterprise/agents/${agent.id}`, {
+      // 调用 api.put 更新员工头像（api 已带 /api/staffdeck 前缀，路径用 /agents/:id）
+      const saved = await api.put<AgentProfileRead>(`/agents/${agent.id}`, {
         tenant_id: TENANT_ID,
         metadata,
       });

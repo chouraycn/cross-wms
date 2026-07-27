@@ -145,3 +145,42 @@ export function isThreadActive(threadId: string, maxIdleMs: number = 3600000): b
   if (!thread) return false;
   return Date.now() - thread.updatedAt < maxIdleMs;
 }
+
+// openclaw compat: reply-to-mode resolvers used by plugin-sdk/core.ts
+import type { ReplyToMode } from "../../config/types.base.js";
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
+
+type ReplyToModeResolver = (params: {
+  cfg: OpenClawConfig | unknown;
+  accountId?: string | null;
+  chatType?: string | null;
+}) => ReplyToMode | undefined;
+
+/**
+ * Creates a resolver that reads reply-to mode from top-level channel config.
+ */
+export function createTopLevelChannelReplyToModeResolver(channelId: string): ReplyToModeResolver {
+  return ({ cfg }) => {
+    const channelConfig = (
+      (cfg as { channels?: Record<string, { replyToMode?: ReplyToMode }> } | undefined)?.channels
+    )?.[channelId];
+    return channelConfig?.replyToMode ?? "off";
+  };
+}
+
+/**
+ * Creates a resolver that reads reply-to mode from account-scoped config.
+ */
+export function createScopedAccountReplyToModeResolver<TAccount>(params: {
+  resolveAccount: (cfg: unknown, accountId?: string | null) => TAccount;
+  resolveReplyToMode: (
+    account: TAccount,
+    chatType?: string | null,
+  ) => ReplyToMode | null | undefined;
+  fallback?: ReplyToMode;
+}): ReplyToModeResolver {
+  return ({ cfg, accountId, chatType }) =>
+    params.resolveReplyToMode(params.resolveAccount(cfg, accountId), chatType) ??
+    params.fallback ??
+    "off";
+}

@@ -153,3 +153,5 @@ export function hasReasoningContent(
   if (typeof chunk === 'string') return chunk.length > 0;
   return Boolean(chunk.reasoning_content ?? chunk.reasoning);
 }
+
+export type { ThinkLevel };

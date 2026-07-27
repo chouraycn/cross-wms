@@ -330,7 +330,7 @@ function buildSetupPluginApi(params: {
     description: params.record.description,
     source: params.setupSource,
     rootDir: params.record.rootDir,
-    registrationMode: "setup-only",
+    registrationMode: "discovery",
     config: {} as OpenClawConfig,
     runtime: EMPTY_RUNTIME,
     logger: NOOP_LOGGER,

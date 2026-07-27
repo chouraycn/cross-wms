@@ -295,6 +295,114 @@ export function rollbackKnowledgeBase(
   return getKnowledgeBaseById(tenantId, knowledgeBaseId) ?? null;
 }
 
+// ===================== 分支版本化：sync / promote =====================
+function parseKbBranchContent(json?: string | null): Record<string, unknown> {
+  if (!json) return {};
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+function incrementMinorVersion(version: string): string {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(version || '1.0.0');
+  if (!m) return '1.0.1';
+  return `${m[1]}.${m[2]}.${Number(m[3]) + 1}`;
+}
+/** KB 行的当前版本取自 sd_knowledge_base_versions 表（主表无 version 列） */
+function latestKbVersion(tenantId: string, kbId: string): string {
+  const versions = listKnowledgeBaseVersions(tenantId, kbId);
+  return versions.length ? versions[0].version : '1.0.0';
+}
+
+export function syncAgentKnowledgeBranchFromOverall(
+  tenantId: string,
+  agentId: string,
+  kbId: string,
+): AgentKnowledgeBranchRow {
+  const kb = getKnowledgeBaseById(tenantId, kbId);
+  if (!kb) throw new Error('overall knowledge base 不存在');
+  const content = parseKbBranchContent(kb.metadata_json);
+  const baseVersion = latestKbVersion(tenantId, kbId);
+  return upsertAgentKnowledgeBranch({
+    tenant_id: tenantId,
+    agent_id: agentId,
+    knowledge_base_id: kbId,
+    base_version: baseVersion,
+    head_version: baseVersion,
+    status: 'active',
+    sync_state: 'synced',
+    metadata: content,
+  });
+}
+export function promoteAgentKnowledgeBranchToOverall(
+  tenantId: string,
+  agentId: string,
+  kbId: string,
+): KnowledgeBaseRow | null {
+  const branch = getAgentKnowledgeBranch(tenantId, agentId, kbId);
+  if (!branch) return null;
+  const content = parseKbBranchContent(branch.metadata_json);
+  const existing = getKnowledgeBaseById(tenantId, kbId);
+  if (!existing) return null;
+  const nextVersion = incrementMinorVersion(latestKbVersion(tenantId, kbId));
+  const updated = updateKnowledgeBase(tenantId, kbId, {
+    metadata: content,
+    status: 'published',
+  });
+  if (updated) {
+    upsertKnowledgeBaseVersion({
+      tenant_id: tenantId,
+      knowledge_base_id: kbId,
+      version: nextVersion,
+      name: updated.name,
+      description: updated.description ?? null,
+      status: 'published',
+      metadata: content,
+    });
+  }
+  return updated;
+}
+
+/**
+ * 跨 Agent 批量导入：将 source 的知识库分支/全局知识库复制到 targetAgentId。
+ * source.agentId 为 'overall'（或空）时从全局知识库同步；否则从源 Agent 的分支复制。
+ */
+export function importKnowledgeBranchesIntoAgent(
+  tenantId: string,
+  targetAgentId: string,
+  source: { agentId?: string },
+  kbIds?: string[],
+): { imported: number } {
+  let imported = 0;
+  if (source.agentId && source.agentId !== 'overall') {
+    let branches = listAgentKnowledgeBranches(tenantId, source.agentId);
+    if (kbIds && kbIds.length) branches = branches.filter((b) => kbIds.includes(b.knowledge_base_id));
+    for (const b of branches) {
+      const content = parseKbBranchContent(b.metadata_json);
+      upsertAgentKnowledgeBranch({
+        tenant_id: tenantId,
+        agent_id: targetAgentId,
+        knowledge_base_id: b.knowledge_base_id,
+        base_version: b.head_version,
+        head_version: b.head_version,
+        status: 'active',
+        sync_state: 'synced',
+        metadata: content,
+      });
+      imported += 1;
+    }
+  } else {
+    let kbs = listKnowledgeBases({ tenantId });
+    if (kbIds && kbIds.length) kbs = kbs.filter((k) => kbIds.includes(k.id));
+    for (const k of kbs) {
+      syncAgentKnowledgeBranchFromOverall(tenantId, targetAgentId, k.id);
+      imported += 1;
+    }
+  }
+  return { imported };
+}
+
 // ===================== Agent Knowledge Branches =====================
 
 export function listAgentKnowledgeBranches(

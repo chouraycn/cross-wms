@@ -1,10 +1,28 @@
 {
   "id": "amazon-bedrock",
   "name": "Amazon Bedrock Provider",
-  "description": "Amazon Bedrock managed LLM provider extension (Claude / Llama / Titan)",
+  "description": "Amazon Bedrock managed LLM provider extension (Claude / Llama / Titan / Mistral)",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["amazon-bedrock"],
+  "modelSupport": {
+    "modelPrefixes": ["anthropic.", "meta.", "mistral.", "cohere.", "amazon."]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "bedrock-native",
+      "hosts": ["bedrock-runtime.amazonaws.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "amazon-bedrock",
+        "envVars": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
+      }
+    ]
+  }
 }

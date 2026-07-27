@@ -1,0 +1,10 @@
+{
+  "id": "nostr",
+  "name": "Nostr Channel",
+  "description": "Nostr decentralized protocol channel extension (Notes and Other Stuff Transmitted by Relays)",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  authType: "api-key"
+}

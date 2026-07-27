@@ -112,10 +112,15 @@ export function listTasksForFlowId(_flowId: string): TaskRecord[] {
   return [];
 }
 
+/** 列出所有任务记录 stub：返回空数组。 */
+export function listTaskRecords(): TaskRecord[] {
+  return [];
+}
+
 /** 标记任务终态 stub：返回 null（未找到）。 */
 export function markTaskTerminalById(_params: {
   taskId: string;
-  status: Extract<TaskStatus, "succeeded" | "failed" | "timed_out" | "cancelled">;
+  status: Extract<TaskStatus, "succeeded" | "failed" | "timed_out" | "cancelled" | "lost">;
   endedAt: number;
   lastEventAt?: number;
   error?: string;

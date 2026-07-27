@@ -3,6 +3,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+// StaffDeck 数字员工模块主题（CSS 变量 + 作用域 .sd-root 样式）。
+// 必须引入，否则 bg-background / text-accent / sidebar-* 等工具类无变量来源，UI 样式悬空。
+import './styles/staffdeck.css'
+// Inter 可变字体（本地资源）— 让数字员工模块 UI 西文使用 Inter，对齐 StaffDeck-main 设计
+import './assets/fonts/inter/inter.css'
 import { checkAndMigrate } from './services/migration'
 import { initFromApi as initWarehouseCapability } from './capabilities/warehouse'
 import { initFromApi as initSkills } from './stores/skillStore'

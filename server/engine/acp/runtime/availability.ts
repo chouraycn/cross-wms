@@ -1,0 +1,1 @@
+export const resolveAcpRuntimeAvailability = (..._args: unknown[]): unknown => undefined;

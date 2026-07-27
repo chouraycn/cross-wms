@@ -1,11 +1,7 @@
 // Shared record helpers for legacy config migration modules.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-config-record-shared.ts
-//
-// 降级说明：
-//  - isRecord 来自 ../../../utils.js，cross-wms 已在 ../../infra/record-coerce.ts 实现同源函数
 type JsonRecord = Record<string, unknown>;
 
-import { isRecord } from "../../../infra/record-coerce.js";
+import { isRecord } from "@openclaw-src/utils.js";
 
 export type { JsonRecord };
 export { isRecord };

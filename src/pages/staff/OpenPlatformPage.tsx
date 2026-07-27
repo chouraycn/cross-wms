@@ -1,6 +1,5 @@
-// NOTE: 临时 stub — 从 StaffDeck 移植的开放广场页面（简化版）。
-// 原 613 行，简化为：内联 PlatformColumn/PlatformResourceCard/PlatformEmployeeCard/详情抽屉，
-// 使用 lucide-react 图标替代 StaffDeck SVG 资源，保留核心 UI 结构、数据加载、使用/删除流程。
+// 开放广场平台页面：从 StaffDeck 移植，展示数字员工 / 知识库 / 技能 / SOP / 工具五种广场，
+// 支持详情抽屉、复制到当前员工、从广场移除等流程。
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {

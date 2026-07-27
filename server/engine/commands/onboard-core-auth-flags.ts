@@ -1,5 +1,4 @@
 /** Core auth flag registry for onboarding CLI help and routing. */
-// 移植自 openclaw/src/commands/onboard-core-auth-flags.ts
 import type { AuthChoice, OnboardOptions } from "./onboard-types.js";
 
 type OnboardCoreAuthOptionKey = Extract<keyof OnboardOptions, string>;

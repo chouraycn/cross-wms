@@ -41,7 +41,14 @@ export type ChannelTtsVoiceDeliveryCapabilities = unknown;
 
 export type ChannelCapabilities = unknown;
 
-export type ChannelSecurityDmPolicy = unknown;
+export type ChannelSecurityDmPolicy = {
+  policy: string;
+  allowFrom?: Array<string | number> | null;
+  policyPath?: string;
+  allowFromPath: string;
+  approveHint: string;
+  normalizeEntry?: (raw: string) => string;
+};
 
 export type ChannelSecurityContext = unknown;
 
@@ -57,15 +64,40 @@ export type ChannelReplyTransport = unknown;
 
 export type ChannelFocusedBindingContext = unknown;
 
-export type ChannelOutboundSessionRoute = unknown;
+export type ChannelOutboundSessionRoute = {
+  baseSessionKey?: string;
+  sessionKey?: string;
+  threadId?: string | number | null;
+  channel?: string;
+  accountId?: string;
+  peer?: unknown;
+  chatType?: string;
+  from?: string;
+  to?: string;
+  route?: unknown;
+  normalizeThreadId?: (value?: string | number | null) => string | undefined;
+  [key: string]: unknown;
+};
 
-export type ChannelThreadingAdapter = unknown;
+export type ChannelThreadingAdapter = {
+  matchesToolContextTarget?: (params: unknown) => boolean;
+  resolveReplyToMode?: (params: {
+    cfg: unknown;
+    accountId?: string | null;
+    chatType?: string | null;
+  }) => "off" | "first" | "all" | "batched" | undefined;
+  allowExplicitReplyTagsWhenOff?: boolean;
+  [key: string]: unknown;
+};
 
 export type ChannelThreadingContext = unknown;
 
 export type ChannelThreadingToolContext = unknown;
 
-export type ChannelMessagingAdapter = unknown;
+export type ChannelMessagingAdapter = {
+  resolveOutboundSessionRoute?: (params: unknown) => ChannelOutboundSessionRoute | Promise<ChannelOutboundSessionRoute>;
+  [key: string]: unknown;
+};
 
 export type ChannelAgentPromptAdapter = unknown;
 

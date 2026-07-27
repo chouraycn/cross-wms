@@ -448,3 +448,166 @@ export function rollbackAgentSkillBranch(
   );
   return getAgentSkillBranch(tenantId, agentId, skillId) ?? null;
 }
+
+// ===================== 分支版本化：sync / promote / versions =====================
+function parseBranchContent(json?: string | null): Record<string, unknown> {
+  if (!json) return {};
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+function incrementMinorVersion(version: string): string {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(version || '1.0.0');
+  if (!m) return '1.0.1';
+  return `${m[1]}.${m[2]}.${Number(m[3]) + 1}`;
+}
+
+export interface AgentSkillBranchVersionInput {
+  tenant_id?: string;
+  agent_id: string;
+  skill_id: string;
+  source_skill_id?: string;
+  version: string;
+  base_version?: string;
+  content?: Record<string, unknown>;
+  status?: string;
+  sync_state?: string;
+  change_summary?: string;
+}
+
+export function upsertAgentSkillBranchVersion(
+  input: AgentSkillBranchVersionInput,
+): AgentSkillBranchVersionRow {
+  const db = initDb();
+  const tenantId = input.tenant_id ?? DEFAULT_TENANT_ID;
+  const ts = now();
+  const id = newStaffId(StaffIdPrefix.agentSkillBranch);
+  db.prepare(
+    `INSERT INTO sd_agent_skill_branch_versions
+       (id, tenant_id, agent_id, skill_id, source_skill_id, version, base_version, content_json, status, sync_state, change_summary, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    tenantId,
+    input.agent_id,
+    input.skill_id,
+    input.source_skill_id ?? null,
+    input.version,
+    input.base_version ?? input.version,
+    JSON.stringify(input.content ?? {}),
+    input.status ?? 'active',
+    input.sync_state ?? 'synced',
+    input.change_summary ?? '',
+    ts,
+    ts,
+  );
+  return db
+    .prepare(`SELECT * FROM sd_agent_skill_branch_versions WHERE id = ?`)
+    .get(id) as AgentSkillBranchVersionRow;
+}
+
+export function syncAgentSkillBranchFromOverall(
+  tenantId: string,
+  agentId: string,
+  skillId: string,
+): AgentSkillBranchRow {
+  const skill = getSkillBySkillId(tenantId, skillId);
+  if (!skill) throw new Error('overall skill 不存在');
+  const content = parseBranchContent(skill.content_json);
+  const branch = upsertAgentSkillBranch({
+    tenant_id: tenantId,
+    agent_id: agentId,
+    skill_id: skillId,
+    source_skill_id: skillId,
+    base_version: skill.version,
+    head_version: skill.version,
+    content,
+    status: 'active',
+    sync_state: 'synced',
+  });
+  upsertAgentSkillBranchVersion({
+    tenant_id: tenantId,
+    agent_id: agentId,
+    skill_id: skillId,
+    source_skill_id: skillId,
+    version: skill.version,
+    base_version: skill.version,
+    content,
+    status: 'active',
+    sync_state: 'synced',
+    change_summary: 'synced from overall',
+  });
+  return branch;
+}
+
+export function promoteAgentSkillBranchToOverall(
+  tenantId: string,
+  agentId: string,
+  skillId: string,
+): SkillRow | null {
+  const branch = getAgentSkillBranch(tenantId, agentId, skillId);
+  if (!branch) return null;
+  const content = parseBranchContent(branch.content_json);
+  const existing = getSkillBySkillId(tenantId, skillId);
+  const nextVersion = existing ? incrementMinorVersion(existing.version) : '1.0.0';
+  const updated = updateSkill(tenantId, skillId, {
+    content,
+    version: nextVersion,
+    status: 'published',
+  });
+  if (updated) {
+    upsertSkillVersion({
+      tenant_id: tenantId,
+      skill_id: skillId,
+      version: nextVersion,
+      name: updated.name,
+      business_domain: updated.business_domain,
+      description: updated.description,
+      content,
+      status: 'published',
+    });
+  }
+  return updated;
+}
+
+/**
+ * 跨 Agent 批量导入：将 source 的 SOP 分支/全局 SOP 复制到 targetAgentId。
+ * source.agentId 为 'overall'（或空）时从全局 SOP 广场同步；否则从源 Agent 的分支复制。
+ */
+export function importSkillBranchesIntoAgent(
+  tenantId: string,
+  targetAgentId: string,
+  source: { agentId?: string },
+  skillIds?: string[],
+): { imported: number } {
+  let imported = 0;
+  if (source.agentId && source.agentId !== 'overall') {
+    let branches = listAgentSkillBranches(tenantId, source.agentId);
+    if (skillIds && skillIds.length) branches = branches.filter((b) => skillIds.includes(b.skill_id));
+    for (const b of branches) {
+      const content = parseBranchContent(b.content_json);
+      upsertAgentSkillBranch({
+        tenant_id: tenantId,
+        agent_id: targetAgentId,
+        skill_id: b.skill_id,
+        source_skill_id: b.skill_id,
+        base_version: b.head_version,
+        head_version: b.head_version,
+        content,
+        status: 'active',
+        sync_state: 'synced',
+      });
+      imported += 1;
+    }
+  } else {
+    let skills = listSkills({ tenantId });
+    if (skillIds && skillIds.length) skills = skills.filter((s) => skillIds.includes(s.skill_id));
+    for (const s of skills) {
+      syncAgentSkillBranchFromOverall(tenantId, targetAgentId, s.skill_id);
+      imported += 1;
+    }
+  }
+  return { imported };
+}

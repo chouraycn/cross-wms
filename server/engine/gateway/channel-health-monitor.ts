@@ -1,12 +1,8 @@
 // Gateway channel health monitor.
 // Periodically evaluates channel account health and restarts stale runtimes.
-//
-// 降级说明：
-//  - `../channels/plugins/types.public.js` 的 ChannelId 降级为本地 string 别名。
-//  - `../logging/subsystem.js` 的 createSubsystemLogger 降级为基于 console 的
-//    最小实现（保留 info/warn/error 可选方法签名）。
-//  - `../shared/number-coercion.js` 的 resolveTimerTimeoutMs 内联降级实现。
-//  - `./server-channels.js` 的 ChannelManager 降级为本地宽松占位接口。
+import type { ChannelId } from "../channels/plugins/types.public.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import { resolveTimerTimeoutMs } from "../shared/number-coercion.js";
 import {
   DEFAULT_CHANNEL_CONNECT_GRACE_MS,
   DEFAULT_CHANNEL_STALE_EVENT_THRESHOLD_MS,
@@ -14,100 +10,7 @@ import {
   resolveChannelRestartReason,
   type ChannelHealthPolicy,
 } from "./channel-health-policy.js";
-
-// ============================================================================
-// 降级类型与工具
-// ============================================================================
-
-/** Channel id（降级占位）。 */
-type ChannelId = string;
-
-/**
- * 子系统日志记录器（降级占位）。
- *
- * 降级原因：openclaw `logging/subsystem` 依赖完整的日志子系统与级别过滤。
- * 这里提供与原接口兼容的最小 console 实现。
- */
-type SubsystemLogger = {
-  info?: (message: string) => void;
-  warn?: (message: string) => void;
-  error?: (message: string) => void;
-};
-
-function createSubsystemLogger(_subsystem: string): SubsystemLogger {
-  return {
-    info: (message: string) => {
-      // 降级实现：仅写入 stdout，不附加子系统前缀
-      // eslint-disable-next-line no-console
-      console.log(message);
-    },
-    warn: (message: string) => {
-      // eslint-disable-next-line no-console
-      console.warn(message);
-    },
-    error: (message: string) => {
-      // eslint-disable-next-line no-console
-      console.error(message);
-    },
-  };
-}
-
-/**
- * 解析 timer 超时，至少为 minMs（降级实现）。
- *
- * 降级原因：openclaw `shared/number-coercion.js` 的 resolveTimerTimeoutMs
- * 还会从 env 读取上限。这里仅保证下限。
- */
-function resolveTimerTimeoutMs(timeoutMs: number | undefined, minMs: number): number {
-  if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    return minMs;
-  }
-  return Math.max(minMs, Math.floor(timeoutMs));
-}
-
-/**
- * Channel manager 宽松占位接口（降级）。
- *
- * 降级原因：openclaw `./server-channels.js` 的 ChannelManager 依赖完整的
- * channel 插件运行时、连接状态与重启策略。这里仅描述健康监控所需的方法契约。
- */
-export type ChannelManager = {
-  getRuntimeSnapshot(): {
-    channelAccounts: Record<string, Record<string, ChannelRuntimeStatus> | undefined>;
-  };
-  isHealthMonitorEnabled(channelId: ChannelId, accountId: string): boolean;
-  isManuallyStopped(channelId: ChannelId, accountId: string): boolean;
-  stopChannel(
-    channelId: ChannelId,
-    accountId: string,
-    options?: { manual?: boolean },
-  ): Promise<void>;
-  resetRestartAttempts(channelId: ChannelId, accountId: string): void;
-  startChannel(channelId: ChannelId, accountId: string): Promise<void>;
-};
-
-/** Channel 运行时状态（降级宽松占位，与 channel-health-policy 的 ChannelHealthSnapshot 兼容）。 */
-export type ChannelRuntimeStatus = {
-  running?: boolean;
-  connected?: boolean;
-  enabled?: boolean;
-  configured?: boolean;
-  restartPending?: boolean;
-  busy?: boolean;
-  activeRuns?: number;
-  lastRunActivityAt?: number | null;
-  lastEventAt?: number | null;
-  lastConnectedAt?: number | null;
-  lastTransportActivityAt?: number | null;
-  lastStartAt?: number | null;
-  reconnectAttempts?: number;
-  mode?: string;
-  [key: string]: unknown;
-};
-
-// ============================================================================
-// 主实现
-// ============================================================================
+import type { ChannelManager } from "./server-channels.js";
 
 const log = createSubsystemLogger("gateway/health-monitor");
 

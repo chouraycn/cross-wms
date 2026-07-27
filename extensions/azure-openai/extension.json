@@ -1,10 +1,28 @@
 {
   "id": "azure-openai",
   "name": "Azure OpenAI Provider",
-  "description": "Azure OpenAI Service LLM provider extension",
+  "description": "Azure OpenAI Service LLM provider extension with Chat Completions API support",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["azure-openai"],
+  "modelSupport": {
+    "modelPrefixes": ["gpt-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "azure-openai",
+      "hosts": [".openai.azure.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "azure-openai",
+        "envVars": ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION"]
+      }
+    ]
+  }
 }

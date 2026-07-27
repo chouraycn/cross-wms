@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Download,
   Eye,
   MoreHorizontal,
   Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react';
 
 import AppHeader from '../../components/staff/AppHeader.js';
@@ -18,6 +21,7 @@ import { StatCard } from '../../components/staff/StatCard.js';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +53,9 @@ import {
   ENTERPRISE_AGENT_STORAGE_KEY,
 } from '../../components/staff/lib/agent-scope-storage.js';
 import { api, TENANT_ID } from '../../components/staff/api/client.js';
+import ResourceImportDialog, {
+  type ImportSourceOption,
+} from '../../components/staff/ResourceImportDialog.js';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '../../components/staff/auth.js';
 import {
   canManageEmployeeAgent,
@@ -68,6 +75,15 @@ type SkillsPageProps = {
 };
 
 type SkillStatusFilter = 'all' | SkillRead['status'];
+
+type SkillBranchVersion = {
+  version: string;
+  change_summary?: string;
+  status?: string;
+  created_at?: number;
+};
+
+type ImportItem = { id: string; label: string };
 
 function effectiveAgentId(rows: AgentProfileRead[], agentId: string): string {
   const agent = rows.find((item) => item.id === agentId);
@@ -102,6 +118,16 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
   const [deleteTarget, setDeleteTarget] = useState<SkillRead | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [viewTarget, setViewTarget] = useState<SkillRead | null>(null);
+  const [rollbackTarget, setRollbackTarget] = useState<SkillRead | null>(null);
+  const [rollbackVersions, setRollbackVersions] = useState<SkillBranchVersion[]>([]);
+  const [rollbackVersion, setRollbackVersion] = useState('');
+  const [rollingBack, setRollingBack] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importSourceId, setImportSourceId] = useState('');
+  const [importItems, setImportItems] = useState<ImportItem[]>([]);
+  const [importSelected, setImportSelected] = useState<string[]>([]);
+  const [importLoadingItems, setImportLoadingItems] = useState(false);
 
   const currentAgent = useMemo(() => agents.find((item) => item.id === agentId), [agents, agentId]);
   const isOverallAgent = !currentAgent || currentAgent.is_overall;
@@ -225,6 +251,129 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
     }
   }
 
+  // ===================== Agent 分支版本化：sync / promote / rollback =====================
+  async function syncFromOverall(row: SkillRead) {
+    if (!scopedAgentId) return;
+    try {
+      await api.post(`/agents/${scopedAgentId}/skills/${row.skill_id}/sync-from-overall`, {});
+      notify.success(`已同步自全局 SOP「${row.name}」`);
+      await load();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '同步失败');
+    }
+  }
+
+  async function promoteToOverall(row: SkillRead) {
+    if (!scopedAgentId) return;
+    try {
+      await api.post(`/agents/${scopedAgentId}/skills/${row.skill_id}/promote-to-overall`, {});
+      notify.success(`已提升至全局 SOP「${row.name}」`);
+      await load();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '提升失败');
+    }
+  }
+
+  async function openRollback(row: SkillRead) {
+    if (!scopedAgentId) return;
+    try {
+      const versions = await api.get<SkillBranchVersion[]>(
+        `/agents/${scopedAgentId}/skills/${row.skill_id}/versions`,
+      );
+      if (!versions.length) {
+        notify.warning('该分支暂无历史版本');
+        return;
+      }
+      setRollbackTarget(row);
+      setRollbackVersions(versions);
+      setRollbackVersion(versions[0]?.version || '');
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '加载版本失败');
+    }
+  }
+
+  async function confirmRollback() {
+    if (!rollbackTarget || !scopedAgentId || !rollbackVersion) return;
+    setRollingBack(true);
+    try {
+      await api.post(`/agents/${scopedAgentId}/skills/${rollbackTarget.skill_id}/rollback`, {
+        version: rollbackVersion,
+      });
+      notify.success(`已回滚至版本 ${rollbackVersion}`);
+      setRollbackTarget(null);
+      setRollbackVersions([]);
+      setRollbackVersion('');
+      await load();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '回滚失败');
+    } finally {
+      setRollingBack(false);
+    }
+  }
+
+  // ===================== 跨 Agent 批量导入 SOP =====================
+  const importSources: ImportSourceOption[] = useMemo(() => {
+    const list: ImportSourceOption[] = [{ value: 'overall', label: '全局 SOP 广场' }];
+    agents
+      .filter((item) => item.id !== scopedAgentId && !item.is_overall)
+      .forEach((item) => list.push({ value: item.id, label: item.name || item.id }));
+    return list;
+  }, [agents, scopedAgentId]);
+
+  function resetImport() {
+    setImportOpen(false);
+    setImportSourceId('');
+    setImportItems([]);
+    setImportSelected([]);
+  }
+
+  async function loadImportItems(sourceId: string) {
+    setImportSourceId(sourceId);
+    if (!sourceId) {
+      setImportItems([]);
+      return;
+    }
+    setImportLoadingItems(true);
+    try {
+      if (sourceId === 'overall') {
+        const rows = await api.get<SkillRead[]>(`/skills?tenant_id=${TENANT_ID}`);
+        setImportItems(rows.map((r) => ({ id: r.skill_id, label: r.name })));
+      } else {
+        const rows = await api.get<Array<{ skill_id: string }>>(
+          `/agents/${sourceId}/skill-branches`,
+        );
+        setImportItems(rows.map((r) => ({ id: r.skill_id, label: r.skill_id })));
+      }
+      setImportSelected([]);
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '加载来源失败');
+    } finally {
+      setImportLoadingItems(false);
+    }
+  }
+
+  async function submitImport() {
+    if (!scopedAgentId || !importSourceId || !importSelected.length) return;
+    setImportLoading(true);
+    try {
+      const res = await api.post<{ skills: number; knowledge_bases: number }>(
+        `/agents/${scopedAgentId}/resources/import`,
+        {
+          source_agent_id: importSourceId,
+          resource_types: ['skill'],
+          skill_ids: importSelected,
+        },
+      );
+      notify.success(`已导入 ${res.skills} 个 SOP 分支`);
+      resetImport();
+      await load();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '导入失败');
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
   const pageTitle = isOverallAgent ? 'SOP 广场' : '业务 SOP';
   const listLabel = isOverallAgent ? 'SOP 广场列表' : 'SOP 列表';
 
@@ -312,11 +461,37 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               <>
                 <DropdownMenuItem
                   className={MENU_ITEM_CLASS}
-                  onSelect={() => navigate(`/staff/skills/${row.skill_id}/distill`)}
+                  onSelect={() => navigate(`/enterprise/skills/new/distill?skill_id=${row.skill_id}`)}
                 >
                   <Pencil className="size-[14px]" />
                   编辑
                 </DropdownMenuItem>
+                {scopedAgentId ? (
+                  <>
+                    <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                    <DropdownMenuItem
+                      className={MENU_ITEM_CLASS}
+                      onSelect={() => void syncFromOverall(row)}
+                    >
+                      <Download className="size-[14px]" />
+                      同步自全局
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className={MENU_ITEM_CLASS}
+                      onSelect={() => void promoteToOverall(row)}
+                    >
+                      <Upload className="size-[14px]" />
+                      提升至全局
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className={MENU_ITEM_CLASS}
+                      onSelect={() => void openRollback(row)}
+                    >
+                      <RotateCcw className="size-[14px]" />
+                      回滚版本
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
                 <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
                 <DropdownMenuItem
                   className={MENU_ITEM_DANGER_CLASS}
@@ -351,6 +526,16 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               <RefreshCw className="size-[14px]" />
               刷新
             </button>
+            {canManageCurrentScope && scopedAgentId ? (
+              <button
+                type="button"
+                className={OUTLINE_ACTION_BUTTON_CLASS}
+                onClick={() => setImportOpen(true)}
+              >
+                <Download className="size-[14px]" />
+                导入
+              </button>
+            ) : null}
             {canManageCurrentScope ? (
               <UIButton
                 className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
@@ -490,6 +675,74 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
         confirmText="删除"
         loading={deleting}
         onConfirm={() => void confirmDelete()}
+      />
+
+      <Dialog
+        open={rollbackTarget !== null}
+        onOpenChange={(open) => !rollingBack && !open && setRollbackTarget(null)}
+      >
+        <DialogContent className="gap-0 rounded-[16px] p-0">
+          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+            回滚分支版本
+            {rollbackTarget ? (
+              <span className="ml-[6px] text-[13px] font-normal text-[#858b9c]">{rollbackTarget.name}</span>
+            ) : null}
+          </DialogTitle>
+          <div className="flex flex-col gap-[12px] px-[24px] pb-[8px]">
+            <p className="text-[12px] text-[#858b9c]">
+              选择一个历史版本，将当前 Agent 分支回滚至该版本的快照。
+            </p>
+            <Select value={rollbackVersion} onValueChange={setRollbackVersion}>
+              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                <SelectValue placeholder="选择版本" />
+              </SelectTrigger>
+              <SelectContent>
+                {rollbackVersions.map((item) => (
+                  <SelectItem key={item.version} value={item.version}>
+                    {item.version}
+                    {item.change_summary ? ` · ${item.change_summary}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="flex justify-end gap-[8px] px-[24px] py-[16px]">
+            <UIButton
+              className="h-[34px] rounded-[10px] bg-[#f2f3f7] px-[16px] text-[12px] text-[#18181a] hover:bg-[#e8e9ef]"
+              onClick={() => setRollbackTarget(null)}
+              disabled={rollingBack}
+            >
+              取消
+            </UIButton>
+            <UIButton
+              className="h-[34px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+              onClick={() => void confirmRollback()}
+              disabled={rollingBack || !rollbackVersion}
+            >
+              {rollingBack ? '回滚中…' : '确认回滚'}
+            </UIButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ResourceImportDialog
+        open={importOpen}
+        loading={importLoading || importLoadingItems}
+        icon={<Download className="size-[14px]" />}
+        title="跨 Agent 批量导入 SOP"
+        sourcePlaceholder="选择复制来源"
+        sources={importSources}
+        sourceId={importSourceId}
+        itemsLabel="选择 SOP"
+        items={importItems}
+        selectedIds={importSelected}
+        emptyText="该来源暂无可导入的 SOP"
+        note="导入将以「已同步」分支的形式复制到当前员工，可随时回滚或再次从全局同步。"
+        submitText="导入"
+        onSourceChange={(value) => void loadImportItems(value)}
+        onSelectedChange={setImportSelected}
+        onClose={resetImport}
+        onSubmit={() => void submitImport()}
       />
     </div>
   );

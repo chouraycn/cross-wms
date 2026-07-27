@@ -1,18 +1,7 @@
 // Control-plane rate limiting bounds write-side RPC attempts per device/IP and
 // caps bucket growth against unique-key memory pressure.
-// 移植自 openclaw/src/gateway/control-plane-rate-limit.ts。
-// 降级：GatewayClient 类型来自 ./server-methods/types.js（未移植），内联宽松类型占位。
-
 import { normalizeControlPlaneIdentityPart } from "./control-plane-identity.js";
-
-/** Gateway 客户端宽松类型占位（仅保留 control-plane rate-limit 所需字段）。 */
-type GatewayClientLike = {
-  connId?: string;
-  clientIp?: string;
-  connect?: {
-    device?: { id?: string };
-  };
-} | null;
+import type { GatewayClient } from "./server-methods/types.js";
 
 const CONTROL_PLANE_RATE_LIMIT_MAX_REQUESTS = 3;
 const CONTROL_PLANE_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -29,10 +18,11 @@ type Bucket = {
 const controlPlaneBuckets = new Map<string, Bucket>();
 
 /** Builds a stable throttle key while avoiding shared fallback buckets for anonymous clients. */
-export function resolveControlPlaneRateLimitKey(client: GatewayClientLike): string {
+export function resolveControlPlaneRateLimitKey(client: GatewayClient | null): string {
   const deviceId = normalizeControlPlaneIdentityPart(client?.connect?.device?.id, "unknown-device");
   const clientIp = normalizeControlPlaneIdentityPart(client?.clientIp, "unknown-ip");
   if (deviceId === "unknown-device" && clientIp === "unknown-ip") {
+    // Last-resort fallback: avoid cross-client contention when upstream identity is missing.
     const connId = normalizeControlPlaneIdentityPart(client?.connId, "");
     if (connId) {
       return `${deviceId}|${clientIp}|conn=${connId}`;
@@ -43,7 +33,7 @@ export function resolveControlPlaneRateLimitKey(client: GatewayClientLike): stri
 
 /** Consumes one write budget unit and reports retry state for gateway error responses. */
 export function consumeControlPlaneWriteBudget(params: {
-  client: GatewayClientLike;
+  client: GatewayClient | null;
   nowMs?: number;
 }): {
   allowed: boolean;
@@ -56,6 +46,8 @@ export function consumeControlPlaneWriteBudget(params: {
   const bucket = controlPlaneBuckets.get(key);
 
   if (!bucket || nowMs - bucket.windowStartMs >= CONTROL_PLANE_RATE_LIMIT_WINDOW_MS) {
+    // Enforce hard cap before inserting a new key to bound memory usage
+    // even between periodic prune sweeps.
     if (
       !controlPlaneBuckets.has(key) &&
       controlPlaneBuckets.size >= CONTROL_PLANE_BUCKET_MAX_ENTRIES
@@ -101,7 +93,8 @@ export function consumeControlPlaneWriteBudget(params: {
 
 /**
  * Remove buckets whose rate-limit window expired more than
- * CONTROL_PLANE_BUCKET_MAX_STALE_MS ago.
+ * CONTROL_PLANE_BUCKET_MAX_STALE_MS ago.  Called periodically
+ * by the gateway maintenance timer to prevent unbounded growth.
  */
 export function pruneStaleControlPlaneBuckets(nowMs = Date.now()): number {
   let pruned = 0;

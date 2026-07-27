@@ -1,5 +1,4 @@
 // Legacy X search config migration from tools.web.x_search to the xAI plugin config.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-x-search-migrate.ts
 import { isRecord } from "./legacy-config-record-shared.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -38,6 +37,7 @@ function resolveLegacyXSearchAuth(legacy: JsonRecord): unknown {
   return legacy.apiKey;
 }
 
+/** Move legacy X search API key config into plugins.entries.xai.config.webSearch. */
 export function migrateLegacyXSearchConfig<T>(raw: T): { config: T; changes: string[] } {
   if (!isRecord(raw)) {
     return { config: raw, changes: [] };

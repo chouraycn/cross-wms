@@ -1,24 +1,16 @@
 // Shared destructive-cleanup planning and guarded removal helpers.
-// 移植自 openclaw/src/commands/cleanup-utils.ts
-//
-// 降级说明：
-//  - listAgentIds / resolveAgentWorkspaceDir 来自 ../agents/agent-scope-config.js
-//    → cross-wms 未移植。降级为 listAgentIds 返回空数组，使 collectWorkspaceDirs
-//      返回空集合（cleanup 不包含 workspace 目录），保留函数签名以便未来替换。
-//  - resolveDefaultAgentWorkspaceDir 来自 ../agents/workspace-default.js → 未移植，降级 stub。
-//  - resolveWorkspaceAttestationPaths / shouldRemoveWorkspaceAttestation 来自 ../agents/workspace.js
-//    → 未移植。降级为返回空数组 / false，removeWorkspaceAttestationPaths 成为 no-op。
-//  - OpenClawConfig 来自 ../gateway/_openclaw-stubs.js（宽松占位类型）。
-//  - RuntimeEnv 来自 ../../cli/plugins-command-helpers.js（已移植降级类型）。
-//  - isPathInside 来自 ../infra/path-guards.js → cross-wms 有 infra/fs-safe.ts，但参数顺序
-//    与 openclaw 相反。为避免混淆，本地实现 isPathWithin，不依赖外部 isPathInside。
-//  - resolveHomeDir / shortenHomeInString 来自 ../utils.js → cross-wms 实现行为不一致
-//    （daemon/paths.ts 的 resolveHomeDir 在缺失时抛错）。本地实现匹配 openclaw 行为
-//    （返回空串），避免 cleanup 路径安全检查因抛错中断。
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../gateway/_openclaw-stubs.js";
-import type { RuntimeEnv } from "../cli/plugins-command-helpers.js";
+import { listAgentIds, resolveAgentWorkspaceDir } from "@openclaw-src/agents/agent-scope-config.js";
+import { resolveDefaultAgentWorkspaceDir } from "@openclaw-src/agents/workspace-default.js";
+import {
+  resolveWorkspaceAttestationPaths,
+  shouldRemoveWorkspaceAttestation,
+} from "@openclaw-src/agents/workspace.js";
+import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
+import { isPathInside } from "@openclaw-src/infra/path-guards.js";
+import type { RuntimeEnv } from "@openclaw-src/runtime.js";
+import { resolveHomeDir, shortenHomeInString } from "@openclaw-src/utils.js";
 
 type RemovalResult = {
   ok: boolean;
@@ -42,57 +34,6 @@ type StateRemovalOptions = {
   dryRun?: boolean;
   preservePaths?: readonly string[];
 };
-
-// ===== 内联 agents 模块 stub =====
-/**
- * 列出配置中的 agent ids（降级占位）。
- *
- * 降级原因：openclaw agents/agent-scope-config.js 未移植。返回空数组使
- * collectWorkspaceDirs 返回空集合，cleanup 不包含 workspace 目录。
- */
-function listAgentIds(_cfg: OpenClawConfig): string[] {
-  return [];
-}
-
-/** 解析 agent 工作区目录（降级占位，不会被调用因为 listAgentIds 返回空）。 */
-function resolveAgentWorkspaceDir(_cfg: OpenClawConfig, _agentId: string): string {
-  return "";
-}
-
-/** 解析默认 agent 工作区目录（降级占位）。 */
-function resolveDefaultAgentWorkspaceDir(): string {
-  return "";
-}
-
-/** 解析工作区证明文件路径（降级占位，返回空数组）。 */
-function resolveWorkspaceAttestationPaths(_workspaceDir: string): string[] {
-  return [];
-}
-
-/** 判断是否应移除工作区证明文件（降级占位，返回 false）。 */
-async function shouldRemoveWorkspaceAttestation(
-  _attestationPath: string,
-  _opts?: { trustUnknown?: boolean },
-): Promise<boolean> {
-  return false;
-}
-// ===== agents stub 结束 =====
-
-// ===== 本地路径/主目录工具（匹配 openclaw utils.js 行为）=====
-/** 解析用户主目录，缺失时返回空串（与 openclaw utils.js 行为一致）。 */
-function resolveHomeDir(): string {
-  return (process.env.HOME ?? process.env.USERPROFILE ?? "").trim();
-}
-
-/** 将路径中的主目录前缀替换为 ~（与 openclaw utils.js shortenHomeInString 行为一致）。 */
-function shortenHomeInString(value: string): string {
-  const home = resolveHomeDir();
-  if (home && value.startsWith(home)) {
-    return `~${value.slice(home.length)}`;
-  }
-  return value;
-}
-// ===== 本地工具结束 =====
 
 function collectWorkspaceDirs(cfg: OpenClawConfig | undefined): string[] {
   const dirs = new Set<string>();
@@ -126,11 +67,7 @@ export function buildCleanupPlan(params: {
 
 /** Return true when `child` resolves inside `parent`. */
 export function isPathWithin(child: string, parent: string): boolean {
-  if (!child || !parent) {
-    return false;
-  }
-  const rel = path.relative(path.resolve(parent), path.resolve(child));
-  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  return isPathInside(parent, child);
 }
 
 function isUnsafeRemovalTarget(target: string): boolean {

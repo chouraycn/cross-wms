@@ -1,10 +1,28 @@
 {
   "id": "moonshot",
   "name": "Moonshot Provider",
-  "description": "Moonshot AI Kimi LLM provider extension",
+  "description": "Moonshot AI (Kimi) LLM provider extension with Chat Completions API support",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["moonshot"],
+  "modelSupport": {
+    "modelPrefixes": ["moonshot-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "moonshot-native",
+      "hosts": ["api.moonshot.cn"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "moonshot",
+        "envVars": ["MOONSHOT_API_KEY"]
+      }
+    ]
+  }
 }

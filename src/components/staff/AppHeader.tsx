@@ -1,5 +1,4 @@
-// NOTE: 临时 stub — 等待业务组件子代理创建完整实现。
-// 仅提供页面所需的最小头部（标题 + 用户菜单），实际实现请覆盖本文件。
+// AppHeader — 数字员工模块通用页头（标题 + 描述 + 返回 + 用户菜单）。
 import type { ReactNode } from 'react';
 import { cn } from './lib/utils';
 
@@ -11,6 +10,8 @@ export type AppHeaderProps = {
   onLogout?: () => void;
   userName?: string;
   className?: string;
+  showBack?: boolean;
+  onBack?: () => void;
 };
 
 export default function AppHeader({
@@ -21,19 +22,36 @@ export default function AppHeader({
   onLogout,
   userName,
   className,
+  showBack,
+  onBack,
 }: AppHeaderProps) {
   const initial = userName?.trim()?.[0]?.toUpperCase();
+  const backButton = showBack ? (
+    <button
+      type="button"
+      onClick={onBack}
+      aria-label="返回"
+      className="mr-[4px] grid size-[32px] shrink-0 place-items-center rounded-[10px] outline-none hover:bg-[#f6f6f6]"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#464c5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+  ) : null;
   const leftContent = left ?? (
-    (title !== undefined || description !== undefined) ? (
-      <div className="flex min-h-[40px] flex-col justify-center gap-[4px]">
-        {title !== undefined && (
-          <p className="text-[16px] font-medium leading-[normal] text-[#464c5e]">{title}</p>
-        )}
-        {description !== undefined && (
-          <p className="text-[14px] leading-[normal] text-[#757f9c]">{description}</p>
-        )}
-      </div>
-    ) : null
+    <div className="flex min-h-[40px] items-center gap-[4px]">
+      {backButton}
+      {(title !== undefined || description !== undefined) ? (
+        <div className="flex min-w-0 flex-col justify-center gap-[4px]">
+          {title !== undefined && (
+            <p className="text-[16px] font-medium leading-[normal] text-[#464c5e]">{title}</p>
+          )}
+          {description !== undefined && (
+            <p className="text-[14px] leading-[normal] text-[#757f9c]">{description}</p>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 
   return (

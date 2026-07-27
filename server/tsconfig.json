@@ -2,8 +2,14 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2023", "DOM"],
-    "types": ["vitest/globals", "node"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
+    "types": [
+      "vitest/globals",
+      "node"
+    ],
     "outDir": "../dist-server",
     "rootDir": "..",
     "baseUrl": ".",
@@ -14,16 +20,189 @@
     "moduleResolution": "node",
     "jsx": "preserve",
     "paths": {
-      "@src/*": ["../src/*"],
-      "@openclaw/media-core/*": ["../packages/media-core/src/*"],
-      "@openclaw/normalization-core/*": ["../packages/normalization-core/src/*"],
-      "@cdf-know/normalization-core/*": ["../packages/normalization-core/src/*"],
-      "@cdf-know/memory-host-sdk": ["../packages/memory-host-sdk/src/index.ts"],
-      "@cdf-know/memory-host-sdk/*": ["../packages/memory-host-sdk/src/*"],
-      "@cdf-know/media-generation-core/*": ["../packages/media-generation-core/src/*"],
-      "@cdf-know/gateway-protocol/*": ["../packages/gateway-protocol/src/*"]
+      "@src/*": [
+        "../src/*"
+      ],
+      "openclaw/plugin-sdk": [
+        "./engine/plugin-sdk/index.ts"
+      ],
+      "openclaw/plugin-sdk/*": [
+        "./engine/plugin-sdk/*.ts"
+      ],
+      "@openclaw/media-core": [
+        "../packages/media-core/src/index.ts"
+      ],
+      "@openclaw/media-core/*": [
+        "../packages/media-core/src/*"
+      ],
+      "@openclaw/normalization-core": [
+        "../packages/normalization-core/src/index.ts"
+      ],
+      "@openclaw/normalization-core/*": [
+        "../packages/normalization-core/src/*"
+      ],
+      "@openclaw/llm-core": [
+        "../packages/llm-core/src/index.ts"
+      ],
+      "@openclaw/llm-core/*": [
+        "../packages/llm-core/src/*"
+      ],
+      "@openclaw/llm-runtime": [
+        "../packages/llm-runtime/src/index.ts"
+      ],
+      "@openclaw/llm-runtime/*": [
+        "../packages/llm-runtime/src/*"
+      ],
+      "@openclaw/model-catalog-core": [
+        "../packages/model-catalog-core/src/index.ts"
+      ],
+      "@openclaw/model-catalog-core/*": [
+        "../packages/model-catalog-core/src/*"
+      ],
+      "@openclaw/gateway-client": [
+        "../packages/gateway-client/src/index.ts"
+      ],
+      "@openclaw/gateway-client/*": [
+        "../packages/gateway-client/src/*"
+      ],
+      "@openclaw/gateway-protocol": [
+        "../packages/gateway-protocol/src/index.ts"
+      ],
+      "@openclaw/gateway-protocol/*": [
+        "../packages/gateway-protocol/src/*"
+      ],
+      "@openclaw/media-generation-core": [
+        "../packages/media-generation-core/src/index.ts"
+      ],
+      "@openclaw/media-generation-core/*": [
+        "../packages/media-generation-core/src/*"
+      ],
+      "@openclaw/media-understanding-common": [
+        "../packages/media-understanding-common/src/index.ts"
+      ],
+      "@openclaw/media-understanding-common/*": [
+        "../packages/media-understanding-common/src/*"
+      ],
+      "@openclaw/markdown-core": [
+        "../packages/markdown-core/src/index.ts"
+      ],
+      "@openclaw/markdown-core/*": [
+        "../packages/markdown-core/src/*"
+      ],
+      "@openclaw/acp-core": [
+        "../packages/acp-core/src/index.ts"
+      ],
+      "@openclaw/acp-core/*": [
+        "../packages/acp-core/src/*"
+      ],
+      "@openclaw/terminal-core": [
+        "../packages/terminal-core/src/index.ts"
+      ],
+      "@openclaw/terminal-core/*": [
+        "../packages/terminal-core/src/*"
+      ],
+      "@openclaw/net-policy": [
+        "../packages/net-policy/src/index.ts"
+      ],
+      "@openclaw/net-policy/*": [
+        "../packages/net-policy/src/*"
+      ],
+      "@openclaw/web-content-core": [
+        "../packages/web-content-core/src/index.ts"
+      ],
+      "@openclaw/web-content-core/*": [
+        "../packages/web-content-core/src/*"
+      ],
+      "@openclaw/speech-core": [
+        "../packages/speech-core/runtime-api.ts"
+      ],
+      "@openclaw/speech-core/*": [
+        "../packages/speech-core/*"
+      ],
+      "@openclaw/agent-core": [
+        "../packages/agent-core/src/index.ts"
+      ],
+      "@openclaw/agent-core/*": [
+        "../packages/agent-core/src/*"
+      ],
+      "@openclaw/tool-call-repair": [
+        "../packages/tool-call-repair/src/index.ts"
+      ],
+      "@openclaw/tool-call-repair/*": [
+        "../packages/tool-call-repair/src/*"
+      ],
+      "@openclaw/sdk": [
+        "../packages/sdk/src/index.ts"
+      ],
+      "@openclaw/memory-host-sdk": [
+        "../packages/memory-host-sdk/src/index.ts"
+      ],
+      "@openclaw/memory-host-sdk/*": [
+        "../packages/memory-host-sdk/src/*"
+      ],
+      "@openclaw/*": [
+        "../extensions/*"
+      ],
+      "@cdf-know/llm-core": [
+        "../packages/llm-core/src/index.ts"
+      ],
+      "@cdf-know/llm-core/*": [
+        "../packages/llm-core/src/*"
+      ],
+      "@cdf-know/model-catalog-core": [
+        "../packages/model-catalog-core/src/index.ts"
+      ],
+      "@cdf-know/model-catalog-core/*": [
+        "../packages/model-catalog-core/src/*"
+      ],
+      "@cdf-know/sdk": [
+        "../packages/sdk/src/index.ts"
+      ],
+      "@cdf-know/sdk/*": [
+        "../packages/sdk/src/*"
+      ],
+      "@cdf-know/gateway-client": [
+        "../packages/gateway-client/src/index.ts"
+      ],
+      "@cdf-know/gateway-client/*": [
+        "../packages/gateway-client/src/*"
+      ],
+      "@cdf-know/normalization-core": [
+        "../packages/normalization-core/src/index.ts"
+      ],
+      "@cdf-know/normalization-core/*": [
+        "../packages/normalization-core/src/*"
+      ],
+      "@cdf-know/memory-host-sdk": [
+        "../packages/memory-host-sdk/src/index.ts"
+      ],
+      "@cdf-know/memory-host-sdk/*": [
+        "../packages/memory-host-sdk/src/*"
+      ],
+      "@cdf-know/media-generation-core": [
+        "../packages/media-generation-core/src/index.ts"
+      ],
+      "@cdf-know/media-generation-core/*": [
+        "../packages/media-generation-core/src/*"
+      ],
+      "@cdf-know/gateway-protocol": [
+        "../packages/gateway-protocol/src/index.ts"
+      ],
+      "@cdf-know/gateway-protocol/*": [
+        "../packages/gateway-protocol/src/*"
+      ],
+      "@openclaw-src/*": [
+        "../openclaw/src/*"
+      ]
     }
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "../src", "**/__tests__/**", "tui/**"]
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "../src",
+    "**/__tests__/**",
+    "tui/**"
+  ]
 }

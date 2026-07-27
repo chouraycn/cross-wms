@@ -127,3 +127,5 @@ export type validateConfigObjectRawWithPlugins = unknown;
 export const validateConfigObjectRawWithPlugins: unknown = undefined;
 export type validateConfigObjectWithPlugins = unknown;
 export const validateConfigObjectWithPlugins: unknown = undefined;
+
+export type { OpenClawConfig } from "./types.openclaw.js";

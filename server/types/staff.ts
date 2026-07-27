@@ -280,6 +280,7 @@ export interface KnowledgeChunkRow extends TenantMixin, TimestampMixin {
   content: string;
   summary: string | null;
   source_ref: string | null;
+  embedding: string | null;
   metadata_json: JsonField;
 }
 
@@ -424,6 +425,7 @@ export interface ToolRow extends TenantMixin, TimestampMixin {
   output_schema: JsonField;
   allowed_skills_json: JsonField;
   mcp_server_id: string | null;
+  mcp_tool_name: string | null;
   enabled: 0 | 1;
 }
 
@@ -444,6 +446,7 @@ export interface ToolRead {
   output_schema: Record<string, unknown>;
   allowed_skills: string[];
   mcp_server_id: string | null;
+  mcp_tool_name: string | null;
   enabled: boolean;
   created_at: number;
   updated_at: number;

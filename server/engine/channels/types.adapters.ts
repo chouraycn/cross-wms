@@ -1,7 +1,13 @@
 // 移植自 openclaw/src/channels/plugins/types.adapters.ts
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type ChannelOutboundAdapter = unknown;
+export type ChannelOutboundAdapter = {
+  sendText?: (ctx: unknown) => unknown | Promise<unknown>;
+  sendMedia?: (ctx: unknown) => unknown | Promise<unknown>;
+  sendPoll?: (ctx: unknown) => unknown | Promise<unknown>;
+  resolveOutboundSessionRoute?: (params: unknown) => unknown;
+  [key: string]: unknown;
+};
 
 export type ChannelOutboundChunkContext = unknown;
 
@@ -17,7 +23,12 @@ export type ChannelOutboundTargetRef = unknown;
 
 export type ChannelDeliveryCapabilities = unknown;
 
-export type ChannelPairingAdapter = unknown;
+export type ChannelPairingAdapter = {
+  idLabel?: string;
+  normalizeAllowEntry?: (entry: string) => string | null | undefined;
+  notifyApproval?: (params: unknown) => void | Promise<void>;
+  [key: string]: unknown;
+};
 
 export type ChannelApprovalKind = unknown;
 
@@ -129,4 +140,33 @@ export type ChannelConfiguredBindingProvider = {
 
 export type ChannelConversationBindingSupport = unknown;
 
-export type ChannelSecurityAdapter = unknown;
+export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {
+  normalizeAllowEntry?: (entry: string) => string | null | undefined;
+  notifyApproval?: (params: unknown) => void | Promise<void>;
+  notify?: (params: unknown) => void | Promise<void>;
+  resolveReplyToMode?: (params: {
+    cfg: unknown;
+    accountId?: string | null;
+    chatType?: string | null;
+  }) => "off" | "first" | "all" | "batched" | undefined;
+  collectWarnings?: (params: unknown) => unknown;
+  collectAuditFindings?: (params: unknown) => unknown;
+  dm?: {
+    channelKey?: string;
+    allowFrom?: string[];
+    denyFrom?: string[];
+    defaultAllow?: boolean;
+    defaultPolicy?: unknown;
+    allowFromPathSuffix?: string;
+    policyPathSuffix?: string;
+    approveChannelId?: string;
+    approveHint?: string;
+    normalizeEntry?: (entry: string) => string | null | undefined;
+    resolveFallbackAccountId?: (account: unknown) => string | undefined;
+    resolvePolicy?: (account: unknown) => unknown;
+    resolveAllowFrom?: (account: unknown) => string[] | undefined;
+    inheritSharedDefaultsFromDefaultAccount?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};

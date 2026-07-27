@@ -149,8 +149,11 @@ export function resolveThreadSessionKeys(params: {
   threadId?: string | null;
   parentSessionKey?: string;
   useSuffix?: boolean;
+  normalizeThreadId?: (value?: string | number | null) => string | undefined;
 }): { sessionKey: string; parentSessionKey?: string } {
-  const threadId = (params.threadId ?? '').trim();
+  const normalize = params.normalizeThreadId ?? ((v?: string | number | null) => (v ? String(v).trim() : undefined));
+  const rawThreadId = normalize(params.threadId);
+  const threadId = (rawThreadId ?? '').trim();
   if (!threadId) {
     return { sessionKey: params.baseSessionKey, parentSessionKey: undefined };
   }
@@ -161,4 +164,8 @@ export function resolveThreadSessionKeys(params: {
     : params.baseSessionKey;
   logger.debug(`[Routing:SessionKey] Thread session key: ${sessionKey}`);
   return { sessionKey, parentSessionKey: params.parentSessionKey };
+}
+
+export function isCronSessionKey(sessionKey: string): boolean {
+  return sessionKey.startsWith('cron:');
 }

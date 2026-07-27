@@ -1,203 +1,137 @@
-/**
- * Media Understanding Types — 媒体理解核心类型定义
- *
- * 定义媒体类型、分析结果、Provider 接口等核心类型。
- * 参考 openclaw/src/media-understanding/types.ts，针对 cross-wms 简化。
- */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ModelProviderConfig } from "../config/types.models.js";
 
-/** 媒体类型分类 */
-export type MediaKind = 'image' | 'video' | 'audio' | 'document';
+export const DEFAULT_CACHE_MAX_ENTRIES = 200;
+export const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 
-/** 媒体分析能力 */
-export type MediaCapability = 'image' | 'audio' | 'video' | 'document';
-
-/** 媒体输入：可以是文件路径、URL 或 Buffer */
-export interface MediaInput {
-  /** 文件路径（本地） */
-  path?: string;
-  /** 远程 URL */
-  url?: string;
-  /** 二进制内容 */
-  buffer?: Buffer;
-  /** 文件名 */
-  fileName?: string;
-  /** MIME 类型 */
-  mime?: string;
-}
-
-/** 图像描述结果 */
-export interface ImageDescription {
-  /** 自然语言描述 */
-  description: string;
-  /** 自动标签 */
-  tags: string[];
-  /** OCR 识别文字（如有） */
-  ocrText?: string;
-  /** 检测到的人脸数量 */
-  faceCount?: number;
-  /** 安全检测结果 */
-  safety?: ImageSafetyResult;
-  /** 使用的模型 */
-  model?: string;
-}
-
-/** 图像安全检测结果 */
-export interface ImageSafetyResult {
-  /** 是否安全 */
-  safe: boolean;
-  /** 检测到的风险类别 */
-  categories: string[];
-  /** 置信度 0-1 */
-  confidence: number;
-}
-
-/** 视频分析结果 */
-export interface VideoAnalysis {
-  /** 整体描述 */
-  description: string;
-  /** 关键帧描述列表 */
-  keyframes: VideoKeyframe[];
-  /** 场景描述列表 */
-  scenes: VideoScene[];
-  /** 识别到的动作列表 */
-  actions: string[];
-  /** 视频时长（秒） */
-  durationSeconds?: number;
-  /** 使用的模型 */
-  model?: string;
-}
-
-/** 视频关键帧 */
-export interface VideoKeyframe {
-  /** 时间戳（秒） */
-  timestamp: number;
-  /** 帧描述 */
-  description: string;
-}
-
-/** 视频场景 */
-export interface VideoScene {
-  /** 起始时间（秒） */
-  start: number;
-  /** 结束时间（秒） */
-  end: number;
-  /** 场景描述 */
-  description: string;
-}
-
-/** 音频分析结果 */
-export interface AudioAnalysis {
-  /** 语音转写文本 */
-  transcript?: string;
-  /** 是否包含音乐 */
-  hasMusic: boolean;
-  /** 情绪分析结果 */
-  emotion?: AudioEmotion;
-  /** 音频时长（秒） */
-  durationSeconds?: number;
-  /** 使用的模型 */
-  model?: string;
-}
-
-/** 音频情绪分析 */
-export interface AudioEmotion {
-  /** 主导情绪 */
-  primary: string;
-  /** 情绪分布 */
-  distribution: Record<string, number>;
-}
-
-/** 文档分析结果 */
-export interface DocumentAnalysis {
-  /** 提取的文本内容 */
-  text: string;
-  /** 文档标题 */
-  title?: string;
-  /** 文档类型 */
-  documentType: 'pdf' | 'word' | 'excel' | 'unknown';
-  /** 页数 */
-  pageCount?: number;
-  /** 是否被截断 */
-  truncated: boolean;
-  /** 提取的图片描述列表 */
-  images?: ImageDescription[];
-  /** 使用的模型 */
-  model?: string;
-}
-
-/** 统一的媒体分析结果 */
-export type MediaAnalysis =
-  | { kind: 'image'; result: ImageDescription }
-  | { kind: 'video'; result: VideoAnalysis }
-  | { kind: 'audio'; result: AudioAnalysis }
-  | { kind: 'document'; result: DocumentAnalysis };
-
-/** 分析请求选项 */
-export interface AnalyzeOptions {
-  /** 是否启用 OCR */
-  ocr?: boolean;
-  /** 是否启用人脸检测 */
-  faceDetection?: boolean;
-  /** 是否启用安全检测 */
-  safetyDetection?: boolean;
-  /** 最大内容长度 */
-  maxLength?: number;
-  /** 超时时间（毫秒） */
-  timeoutMs?: number;
-  /** 指定使用的 Provider id */
-  providerId?: string;
-  /** 跳过缓存 */
-  skipCache?: boolean;
-}
-
-/** 媒体分析器接口 */
-export interface MediaAnalyzer {
-  /** 分析器 id */
-  id: MediaKind;
-  /** 支持的 MIME 类型前缀列表 */
-  supportedMimes: string[];
-  /** 执行分析 */
-  analyze(input: MediaInput, options?: AnalyzeOptions): Promise<MediaAnalysis>;
-}
-
-/** Provider 分析请求 */
-export interface ProviderAnalyzeRequest {
-  input: MediaInput;
-  options: AnalyzeOptions;
-}
-
-/** 多模态 Provider：使用 LLM 视觉能力 */
-export interface MultimodalProvider {
-  id: string;
-  capabilities: MediaCapability[];
-  describeImage?: (input: MediaInput, options?: AnalyzeOptions) => Promise<ImageDescription>;
-  describeVideo?: (input: MediaInput, options?: AnalyzeOptions) => Promise<VideoAnalysis>;
-  transcribeAudio?: (input: MediaInput, options?: AnalyzeOptions) => Promise<AudioAnalysis>;
-  extractDocument?: (input: MediaInput, options?: AnalyzeOptions) => Promise<DocumentAnalysis>;
-}
-
-/** OCR Provider：文字识别 */
-export interface OcrProvider {
-  id: string;
-  /** 识别图片中的文字 */
-  recognize(buffer: Buffer, mime?: string): Promise<string>;
-}
-
-/** 默认分析选项 */
-export const DEFAULT_ANALYZE_OPTIONS: Required<Pick<AnalyzeOptions, 'ocr' | 'faceDetection' | 'safetyDetection' | 'maxLength' | 'timeoutMs' | 'skipCache'>> = {
+export const DEFAULT_ANALYZE_OPTIONS: Required<Pick<AnalyzeOptions, "ocr" | "faceDetection" | "safetyDetection" | "skipCache" | "maxLength" | "timeoutMs">> = {
   ocr: false,
   faceDetection: false,
   safetyDetection: true,
+  skipCache: false,
   maxLength: 100_000,
   timeoutMs: 30_000,
-  skipCache: false,
 };
 
-/**
- * Media Understanding Capability Registry — provider capability metadata used
- * to filter shared media model entries. Ported from openclaw.
- */
-export type MediaUnderstandingCapability = 'image' | 'audio' | 'video';
+type MediaUnderstandingKind = "audio.transcription" | "video.description" | "image.description";
+
+export type MediaKind = "image" | "audio" | "video" | "document";
+
+export type MediaInput = {
+  buffer?: Buffer;
+  path?: string;
+  url?: string;
+  fileName?: string;
+  mime?: string;
+};
+
+export type AnalyzeOptions = {
+  providerId?: string;
+  skipCache?: boolean;
+  ocr?: boolean;
+  faceDetection?: boolean;
+  safetyDetection?: boolean;
+  maxLength?: number;
+  timeoutMs?: number;
+  prompt?: string;
+  model?: string;
+};
+
+export type ImageSafetyResult = {
+  safe: boolean;
+  categories: string[];
+  confidence: number;
+};
+
+export type ImageDescription = {
+  description: string;
+  tags: string[];
+  model?: string;
+  ocrText?: string;
+  faceCount?: number;
+  safety?: ImageSafetyResult;
+};
+
+export type AudioAnalysis = {
+  transcript?: string;
+  hasMusic?: boolean;
+  emotion?: {
+    primary: string;
+    distribution: Record<string, number>;
+  };
+  model?: string;
+  durationSeconds?: number;
+};
+
+export type VideoAnalysis = {
+  description: string;
+  keyframes: Array<{ timestamp: number; description: string }>;
+  scenes: Array<{ start: number; end: number; description: string }>;
+  actions?: string[];
+  durationSeconds?: number;
+  model?: string;
+};
+
+export type DocumentAnalysis = {
+  text: string;
+  documentType: "pdf" | "word" | "excel" | "unknown";
+  pageCount?: number;
+  truncated?: boolean;
+  model?: string;
+};
+
+export type MediaAnalysis =
+  | { kind: "image"; result: ImageDescription }
+  | { kind: "audio"; result: AudioAnalysis }
+  | { kind: "video"; result: VideoAnalysis }
+  | { kind: "document"; result: DocumentAnalysis };
+
+export interface MediaAnalyzer {
+  id: MediaKind;
+  supportedMimes: string[];
+  analyze(input: MediaInput, options?: AnalyzeOptions): Promise<MediaAnalysis>;
+}
+
+export interface MultimodalProvider {
+  id: string;
+  capabilities: MediaKind[];
+  describeImage(input: MediaInput, options?: AnalyzeOptions): Promise<ImageDescription>;
+  describeVideo(input: MediaInput, options?: AnalyzeOptions): Promise<VideoAnalysis>;
+  transcribeAudio(input: MediaInput, options?: AnalyzeOptions): Promise<AudioAnalysis>;
+  extractDocument(input: MediaInput, options?: AnalyzeOptions): Promise<DocumentAnalysis>;
+}
+
+export interface OcrProvider {
+  id: string;
+  recognize(buffer: Buffer, mime?: string): Promise<string>;
+}
+
+export function inferMediaKind(mime?: string, fileName?: string): MediaKind | null {
+  const lowerMime = (mime ?? "").toLowerCase();
+  const lowerName = (fileName ?? "").toLowerCase();
+
+  if (lowerMime.startsWith("image/")) return "image";
+  if (lowerMime.startsWith("audio/")) return "audio";
+  if (lowerMime.startsWith("video/")) return "video";
+  if (
+    lowerMime === "application/pdf" ||
+    lowerMime.includes("wordprocessing") ||
+    lowerMime.includes("spreadsheet") ||
+    lowerMime === "application/msword" ||
+    lowerMime === "application/vnd.ms-excel"
+  ) {
+    return "document";
+  }
+
+  if (/\.(png|jpe?g|gif|webp|bmp|svg|tiff?|avif|heic)$/i.test(lowerName)) return "image";
+  if (/\.(mp3|wav|ogg|flac|aac|m4a|wma|opus)$/i.test(lowerName)) return "audio";
+  if (/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v)$/i.test(lowerName)) return "video";
+  if (/\.(pdf|docx?|xlsx?|pptx?|txt|md|rtf)$/i.test(lowerName)) return "document";
+
+  return null;
+}
+
+export type MediaUnderstandingCapability = "image" | "audio" | "video";
 
 export type MediaUnderstandingCapabilityRegistry = Map<
   string,
@@ -206,33 +140,247 @@ export type MediaUnderstandingCapabilityRegistry = Map<
   }
 >;
 
+export type MediaAttachment = {
+  path?: string;
+  url?: string;
+  mime?: string;
+  index: number;
+  alreadyTranscribed?: boolean;
+};
+
+export type MediaUnderstandingOutput = {
+  kind: MediaUnderstandingKind;
+  attachmentIndex: number;
+  text: string;
+  provider: string;
+  model?: string;
+};
+
+type MediaUnderstandingDecisionOutcome =
+  | "success"
+  | "failed"
+  | "skipped"
+  | "disabled"
+  | "no-attachment"
+  | "scope-deny";
+
+export type MediaUnderstandingModelDecision = {
+  provider?: string;
+  model?: string;
+  type: "provider" | "cli";
+  outcome: "success" | "skipped" | "failed";
+  reason?: string;
+};
+
+type MediaUnderstandingAttachmentDecision = {
+  attachmentIndex: number;
+  attempts: MediaUnderstandingModelDecision[];
+  chosen?: MediaUnderstandingModelDecision;
+};
+
+export type MediaUnderstandingDecision = {
+  capability: MediaUnderstandingCapability;
+  outcome: MediaUnderstandingDecisionOutcome;
+  attachments: MediaUnderstandingAttachmentDecision[];
+};
+
+type MediaUnderstandingProviderRequestAuthOverride =
+  | { mode: "provider-default" }
+  | { mode: "authorization-bearer"; token: string }
+  | { mode: "header"; headerName: string; value: string; prefix?: string };
+
+type MediaUnderstandingProviderRequestTlsOverride = {
+  ca?: string;
+  cert?: string;
+  key?: string;
+  passphrase?: string;
+  serverName?: string;
+  insecureSkipVerify?: boolean;
+};
+
+type MediaUnderstandingProviderRequestProxyOverride =
+  | { mode: "env-proxy"; tls?: MediaUnderstandingProviderRequestTlsOverride }
+  | { mode: "explicit-proxy"; url: string; tls?: MediaUnderstandingProviderRequestTlsOverride };
+
+type MediaUnderstandingProviderRequestTransportOverrides = {
+  headers?: Record<string, string>;
+  auth?: MediaUnderstandingProviderRequestAuthOverride;
+  proxy?: MediaUnderstandingProviderRequestProxyOverride;
+  tls?: MediaUnderstandingProviderRequestTlsOverride;
+  allowPrivateNetwork?: boolean;
+};
+
+export type MediaUnderstandingProviderRequestAuth =
+  | { kind: "api-key"; apiKey: string; source?: string }
+  | { kind: "none"; source: string };
+
+export type AudioTranscriptionRequest = {
+  buffer: Buffer;
+  fileName: string;
+  mime?: string;
+  apiKey: string;
+  auth?: MediaUnderstandingProviderRequestAuth;
+  baseUrl?: string;
+  headers?: Record<string, string>;
+  request?: MediaUnderstandingProviderRequestTransportOverrides;
+  model?: string;
+  language?: string;
+  prompt?: string;
+  query?: Record<string, string | number | boolean>;
+  timeoutMs: number;
+  fetchFn?: typeof fetch;
+};
+
+export type AudioTranscriptionResult = {
+  text: string;
+  model?: string;
+};
+
+export type VideoDescriptionRequest = {
+  buffer: Buffer;
+  fileName: string;
+  mime?: string;
+  apiKey: string;
+  auth?: MediaUnderstandingProviderRequestAuth;
+  baseUrl?: string;
+  headers?: Record<string, string>;
+  request?: MediaUnderstandingProviderRequestTransportOverrides;
+  model?: string;
+  prompt?: string;
+  timeoutMs: number;
+  fetchFn?: typeof fetch;
+};
+
+export type VideoDescriptionResult = {
+  text: string;
+  model?: string;
+};
+
+export type ImageDescriptionRequest = {
+  buffer: Buffer;
+  fileName: string;
+  mime?: string;
+  prompt?: string;
+  maxTokens?: number;
+  timeoutMs: number;
+  profile?: string;
+  preferredProfile?: string;
+  authStore?: unknown;
+  agentDir: string;
+  workspaceDir?: string;
+  cfg: OpenClawConfig;
+  model: string;
+  provider: string;
+};
+
+export type ImagesDescriptionInput = {
+  buffer: Buffer;
+  fileName: string;
+  mime?: string;
+};
+
+export type ImagesDescriptionRequest = {
+  images: ImagesDescriptionInput[];
+  model: string;
+  provider: string;
+  prompt?: string;
+  maxTokens?: number;
+  timeoutMs: number;
+  profile?: string;
+  preferredProfile?: string;
+  authStore?: unknown;
+  agentDir: string;
+  workspaceDir?: string;
+  cfg: OpenClawConfig;
+};
+
+export type ImageDescriptionResult = {
+  text: string;
+  model?: string;
+};
+
+export type ImagesDescriptionResult = {
+  text: string;
+  model?: string;
+};
+
+export type StructuredExtractionTextInput = {
+  type: "text";
+  text: string;
+};
+
+export type StructuredExtractionImageInput = {
+  type: "image";
+  buffer: Buffer;
+  fileName: string;
+  mime?: string;
+};
+
+export type StructuredExtractionInput =
+  | StructuredExtractionTextInput
+  | StructuredExtractionImageInput;
+
+export type StructuredExtractionRequest = {
+  input: StructuredExtractionInput[];
+  instructions: string;
+  schemaName?: string;
+  jsonSchema?: unknown;
+  jsonMode?: boolean;
+  timeoutMs: number;
+  profile?: string;
+  preferredProfile?: string;
+  authStore?: unknown;
+  agentDir: string;
+  cfg: OpenClawConfig;
+  model: string;
+  provider: string;
+};
+
+export type StructuredExtractionResult = {
+  text: string;
+  parsed?: unknown;
+  model?: string;
+  provider?: string;
+  contentType?: "json" | "text";
+};
+
+export type MediaUnderstandingDocumentModelDefaults = {
+  textExtraction?: string;
+  image?: string | false;
+};
+
+export type MediaUnderstandingProviderAuthContext = {
+  config?: OpenClawConfig;
+  provider: string;
+  providerConfig?: ModelProviderConfig;
+};
+
+export type MediaUnderstandingProviderAuthResult =
+  | { kind: "none"; source: string }
+  | { kind: "api-key"; apiKey: string; source: string; mode?: "api-key" };
+
+export type MediaUnderstandingProviderSyntheticAuthResult = {
+  apiKey: string;
+  source: string;
+  mode: "api-key";
+};
+
 export type MediaUnderstandingProvider = {
   id: string;
   capabilities?: MediaUnderstandingCapability[];
+  defaultModels?: Partial<Record<MediaUnderstandingCapability, string>>;
+  autoPriority?: Partial<Record<MediaUnderstandingCapability, number>>;
+  nativeDocumentInputs?: Array<"pdf">;
+  documentModels?: Partial<Record<"pdf", MediaUnderstandingDocumentModelDefaults>>;
+  resolveAuth?: (
+    ctx: MediaUnderstandingProviderAuthContext,
+  ) => MediaUnderstandingProviderAuthResult | null | undefined;
+  resolveSyntheticAuth?: (
+    ctx: MediaUnderstandingProviderAuthContext,
+  ) => MediaUnderstandingProviderSyntheticAuthResult | null | undefined;
+  transcribeAudio?: (req: AudioTranscriptionRequest) => Promise<AudioTranscriptionResult>;
+  describeVideo?: (req: VideoDescriptionRequest) => Promise<VideoDescriptionResult>;
+  describeImage?: (req: ImageDescriptionRequest) => Promise<ImageDescriptionResult>;
+  describeImages?: (req: ImagesDescriptionRequest) => Promise<ImagesDescriptionResult>;
+  extractStructured?: (req: StructuredExtractionRequest) => Promise<StructuredExtractionResult>;
 };
-
-/** 默认最大缓存条目数 */
-export const DEFAULT_CACHE_MAX_ENTRIES = 200;
-
-/** 默认缓存 TTL（10 分钟） */
-export const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
-
-/** 根据 MIME 类型推断媒体类型 */
-export function inferMediaKind(mime?: string, fileName?: string): MediaKind | null {
-  if (mime) {
-    if (mime.startsWith('image/')) return 'image';
-    if (mime.startsWith('video/')) return 'video';
-    if (mime.startsWith('audio/')) return 'audio';
-    if (mime === 'application/pdf') return 'document';
-    if (mime.includes('word') || mime.includes('officedocument.wordprocessing')) return 'document';
-    if (mime.includes('spreadsheet') || mime.includes('officedocument.spreadsheet')) return 'document';
-  }
-  if (fileName) {
-    const lower = fileName.toLowerCase();
-    if (/\.(png|jpe?g|gif|webp|bmp|tiff?)$/.test(lower)) return 'image';
-    if (/\.(mp4|mov|avi|mkv|webm|flv)$/.test(lower)) return 'video';
-    if (/\.(mp3|wav|flac|aac|ogg|m4a)$/.test(lower)) return 'audio';
-    if (/\.(pdf|docx?|xlsx?|pptx?)$/.test(lower)) return 'document';
-  }
-  return null;
-}

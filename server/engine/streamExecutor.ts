@@ -19,6 +19,8 @@ import { enhanceInBackground, type EnhancementResult } from './contextEnhancer.j
 import { sanitizeToolMessages } from './contextTruncate.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { type ToolProfileId } from './toolProfiles.js';
+import type { SkillPermissionConfig, SkillDefinition, SkillContext, SkillResult } from '../types/skill-runtime.js';
+import type { McpClientManager } from './mcpClientManager.js';
 import { logger } from '../logger.js';
 import {
   createAssistantMessageEventStream,
@@ -115,6 +117,14 @@ export interface ExecuteChatParams {
     thresholdRatio?: number;
     preserveRecent?: number;
   };
+  /** 程序技能（skill）权限配置：数字员工执行时按启用的程序技能做 opt-in 门控 */
+  skillPermissionConfig?: SkillPermissionConfig;
+  /** 数字员工（per-call）MCP 客户端管理器：隔离的 MCP server 连接 */
+  staffMcpManager?: McpClientManager;
+  /** 数字员工（per-call）物化技能定义列表 */
+  extraSkills?: SkillDefinition[];
+  /** 数字员工（per-call）物化技能执行器 */
+  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
 }
 
 export interface ExecuteChatStreamResult {
@@ -343,6 +353,10 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       onRateLimit: callbacks.onRateLimit,
       toolProfile: params.toolProfile,
       compaction: params.compaction,
+      skillPermissionConfig: params.skillPermissionConfig,
+      staffMcpManager: params.staffMcpManager,
+      extraSkills: params.extraSkills,
+      extraSkillExecutor: params.extraSkillExecutor,
     };
 
     const toolResult: ToolExecutionResult = await strategy.execute(strategyOptions);

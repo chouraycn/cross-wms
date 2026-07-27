@@ -1,17 +1,15 @@
-// Gateway 遗留环境变量告警。
-// 为被忽略的 pre-OpenClaw 环境前缀发射一次性通知。
-// 移植自 openclaw/src/gateway/env-deprecation.ts。
-// 依赖调整：../infra/env.js（cross-wms 已存在等价导出）。
+// Gateway legacy environment warning.
+// Emits a one-shot notice for ignored pre-OpenClaw environment prefixes.
 import { isVitestRuntimeEnv } from "../infra/env.js";
 
-// 遗留环境告警是进程级且刻意为一次性的，这样正常的 gateway 启动噪声足以被注意，
-// 又不会因重复 import 而刷屏。
+// Legacy env warnings are process-wide and intentionally one-shot so normal
+// gateway startup is noisy enough to notice but not spammed by repeated imports.
 const LEGACY_ENV_PREFIXES = ["CLAWDBOT_", "MOLTBOT_"] as const;
 type LegacyEnvPrefix = (typeof LEGACY_ENV_PREFIXES)[number];
 
 let warned = false;
 
-/** 当存在被忽略的遗留 CLAWDBOT_/MOLTBOT_ 环境变量时发射一次性告警。 */
+/** Emits a one-time warning when ignored legacy CLAWDBOT_/MOLTBOT_ env vars are present. */
 export function warnLegacyOpenClawEnvVars(env: NodeJS.ProcessEnv = process.env): void {
   if (warned || isVitestRuntimeEnv(env)) {
     return;
@@ -19,7 +17,8 @@ export function warnLegacyOpenClawEnvVars(env: NodeJS.ProcessEnv = process.env):
 
   const prefixCounts = new Map<LegacyEnvPrefix, number>();
   for (const key of Object.keys(env)) {
-    // 仅按前缀计数；绝不打印环境变量名或值，因为某些遗留名称可能仍编码了账号/提供商密钥。
+    // Count by prefix only; never print env names or values because some legacy
+    // names may still encode account/provider secrets.
     const prefix = LEGACY_ENV_PREFIXES.find((candidate) => key.startsWith(candidate));
     if (prefix) {
       prefixCounts.set(prefix, (prefixCounts.get(prefix) ?? 0) + 1);
@@ -45,7 +44,7 @@ export function warnLegacyOpenClawEnvVars(env: NodeJS.ProcessEnv = process.env):
   warned = true;
 }
 
-/** 重置一次性遗留环境告警锁存（供测试使用）。 */
+/** Resets the one-shot legacy env warning latch for tests. */
 export function resetLegacyOpenClawEnvWarningForTest(): void {
   warned = false;
 }

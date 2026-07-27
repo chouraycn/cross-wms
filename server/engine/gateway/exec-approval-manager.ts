@@ -1,66 +1,13 @@
 // Gateway exec approval manager.
 // Tracks pending operator decisions and short-lived resolved approval records.
-//
-// 降级说明：
-//  - openclaw 原始依赖 `@openclaw/normalization-core/number-coercion` 的
-//    `resolveExpiresAtMsFromDurationMs` 与 `../shared/number-coercion.js` 的
-//    `resolveTimerTimeoutMs`。cross-wms 未移植这两个工具，这里内联最小实现。
-//  - `@openclaw/normalization-core/string-coerce` 的 `normalizeLowercaseStringOrEmpty`
-//    改从 `../infra/string-coerce.js` 导入。
-//  - `../infra/exec-approvals.js` 的 `ExecApprovalDecision`、`ExecApprovalRequestPayload`
-//    在 cross-wms 的 infra/exec-approvals 中未导出，这里定义本地占位类型。
 import { randomUUID } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "../infra/string-coerce.js";
-
-// ============================================================================
-// 降级类型与工具
-// ============================================================================
-
-/** Exec 审批决策（降级占位，与 openclaw infra/exec-approvals 保持一致）。 */
-export type ExecApprovalDecision = "allow-once" | "allow-always" | "deny";
-
-/** Exec 审批请求 payload（降级宽松占位）。 */
-export type ExecApprovalRequestPayload = {
-  command?: string;
-  args?: readonly string[];
-  cwd?: string;
-  env?: Record<string, string>;
-  [key: string]: unknown;
-};
-
-/**
- * 根据持续时长与当前时间戳解析过期时间戳（降级实现）。
- *
- * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
- * 还会处理负数、NaN、Infinity 等边界。这里实现等价语义。
- */
-function resolveExpiresAtMsFromDurationMs(
-  durationMs: number,
-  options?: { nowMs?: number },
-): number | undefined {
-  if (!Number.isFinite(durationMs) || durationMs < 0) {
-    return undefined;
-  }
-  const nowMs = options?.nowMs ?? Date.now();
-  return nowMs + Math.floor(durationMs);
-}
-
-/**
- * 解析 timer 超时，至少为 minMs（降级实现）。
- *
- * 降级原因：openclaw `shared/number-coercion.js` 的 resolveTimerTimeoutMs
- * 还会从 env 读取上限。这里仅保证下限。
- */
-function resolveTimerTimeoutMs(timeoutMs: number, minMs: number): number {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    return minMs;
-  }
-  return Math.max(minMs, Math.floor(timeoutMs));
-}
-
-// ============================================================================
-// 主实现
-// ============================================================================
+import { resolveExpiresAtMsFromDurationMs } from "@openclaw/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import type {
+  ExecApprovalDecision,
+  ExecApprovalRequestPayload as InfraExecApprovalRequestPayload,
+} from "../infra/exec-approvals.js";
+import { resolveTimerTimeoutMs } from "../shared/number-coercion.js";
 
 // Grace period to keep resolved entries for late awaitDecision calls
 const RESOLVED_ENTRY_GRACE_MS = 15_000;
@@ -82,6 +29,8 @@ function scheduleResolvedEntryCleanup(cleanup: () => void): void {
 function resolveApprovalTimeoutMs(timeoutMs: number): number {
   return resolveTimerTimeoutMs(timeoutMs, 1);
 }
+
+type ExecApprovalRequestPayload = InfraExecApprovalRequestPayload;
 
 export type ExecApprovalRecord<TPayload = ExecApprovalRequestPayload> = {
   id: string;

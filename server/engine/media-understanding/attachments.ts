@@ -1,18 +1,38 @@
-// Public attachment facade for normalization and selection helpers.
-// Ported from openclaw/src/media-understanding/attachments.ts.
-//
-// Note: openclaw source also re-exports MediaAttachmentCache and
-// MediaAttachmentCacheOptions from ./attachments.cache.js. cross-wms has not
-// ported attachments.cache.ts because it depends on ../media/fetch.js and
-// ../media/local-roots.js (both unported, deep filesystem/network stacks).
-// The cache re-export is intentionally omitted; it can be added back when
-// attachments.cache.ts is ported.
-export {
-  isAudioAttachment,
-  isImageAttachment,
-  isVideoAttachment,
-  normalizeAttachments,
-  normalizeAttachmentPath,
-  resolveAttachmentKind,
-} from "./attachments.normalize.js";
-export { selectAttachments } from "./attachments.select.js";
+import type { MediaAttachment, MediaUnderstandingCapability } from "./types.js";
+
+export type AttachmentKind = "image" | "audio" | "video" | "document" | "unknown";
+
+export function resolveAttachmentKind(attachment: MediaAttachment): AttachmentKind {
+  const mime = attachment.mime?.trim().toLowerCase();
+  if (!mime) {
+    return "unknown";
+  }
+  if (mime.startsWith("image/")) {
+    return "image";
+  }
+  if (mime.startsWith("audio/")) {
+    return "audio";
+  }
+  if (mime.startsWith("video/")) {
+    return "video";
+  }
+  if (
+    mime.startsWith("text/") ||
+    mime === "application/pdf" ||
+    mime.startsWith("application/") && mime.endsWith("+json") ||
+    mime.startsWith("application/") && mime.endsWith("+xml")
+  ) {
+    return "document";
+  }
+  return "unknown";
+}
+
+export function filterAttachmentsByCapability(
+  attachments: MediaAttachment[],
+  capability: MediaUnderstandingCapability,
+): MediaAttachment[] {
+  return attachments.filter((attachment) => {
+    const kind = resolveAttachmentKind(attachment);
+    return kind === capability;
+  });
+}

@@ -1,27 +1,9 @@
 // Gateway log-tail helpers for status diagnostics.
 // Summaries compact repeated auth/runtime failures while preserving enough context for operators.
-// 移植自 openclaw/src/commands/status-all/gateway.ts
-//
-// 降级说明：
-//  - normalizeOptionalString 原来自 @openclaw/normalization-core/string-coerce
-//    → cross-wms 已有同名导出在 ../../infra/string-coerce.js，行为一致。
-//  - classifyOAuthRefreshFailureReason 来自 ../../agents/auth-profiles/oauth-refresh-failure.js
-//    → cross-wms 未移植。此处降级为返回 null 的 stub，summarizeLogTail 仍可正常工作，
-//      只是 OAuth 刷新失败不会被分类为 "re-auth required"，而是显示缩短后的原始消息。
-import fs from "node:fs/promises";
-import { normalizeOptionalString } from "../../infra/string-coerce.js";
 
-// ===== 内联 classifyOAuthRefreshFailureReason stub =====
-/**
- * 分类 OAuth 刷新失败原因（降级占位）。
- *
- * 降级原因：openclaw 的 agents/auth-profiles/oauth-refresh-failure.js 未移植。
- * 返回 null 使 summarizeLogTail 回退到显示缩短后的原始消息，不影响日志摘要基本功能。
- */
-function classifyOAuthRefreshFailureReason(_message: string): string | null {
-  return null;
-}
-// ===== stub 结束 =====
+import fs from "node:fs/promises";
+import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { classifyOAuthRefreshFailureReason } from "@openclaw-src/agents/auth-profiles/oauth-refresh-failure.js";
 
 /** Reads the last non-empty lines from a gateway log file, returning an empty list on read failure. */
 export async function readFileTailLines(filePath: string, maxLines: number): Promise<string[]> {

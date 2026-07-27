@@ -361,6 +361,7 @@ export function initStaffTables(db: Database.Database): void {
       content TEXT NOT NULL,
       summary TEXT,
       source_ref TEXT,
+      embedding TEXT,
       metadata_json TEXT NOT NULL DEFAULT '{}',
       created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
       updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
@@ -372,6 +373,13 @@ export function initStaffTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sd_kchunks_kb_version ON sd_knowledge_chunks(knowledge_base_version_id);
     CREATE INDEX IF NOT EXISTS idx_sd_kchunks_idx ON sd_knowledge_chunks(chunk_index);
   `);
+
+  // 向量检索列：幂等补充（旧库可能缺少 embedding 列，避免 ALTER 重复执行报错）
+  const kcColumns = db.prepare(`PRAGMA table_info(sd_knowledge_chunks)`).all() as { name: string }[];
+  if (!kcColumns.some((c) => c.name === 'embedding')) {
+    db.exec(`ALTER TABLE sd_knowledge_chunks ADD COLUMN embedding TEXT`);
+    logger.info('[StaffDB] sd_knowledge_chunks.embedding 列已补充（向量检索支持）');
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS sd_knowledge_concepts (
@@ -511,6 +519,7 @@ export function initStaffTables(db: Database.Database): void {
       output_schema TEXT NOT NULL DEFAULT '{}',
       allowed_skills_json TEXT NOT NULL DEFAULT '[]',
       mcp_server_id TEXT,
+      mcp_tool_name TEXT,
       enabled INTEGER NOT NULL DEFAULT 1,
       created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
       updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
@@ -522,7 +531,16 @@ export function initStaffTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sd_tools_type ON sd_tools(tool_type);
     CREATE INDEX IF NOT EXISTS idx_sd_tools_mcp_server ON sd_tools(mcp_server_id);
     CREATE INDEX IF NOT EXISTS idx_sd_tools_enabled ON sd_tools(enabled);
+  `);
 
+  // MCP 工具叶子名：幂等补充（旧库可能缺少 mcp_tool_name 列）
+  const toolsColumns = db.prepare(`PRAGMA table_info(sd_tools)`).all() as { name: string }[];
+  if (!toolsColumns.some((c) => c.name === 'mcp_tool_name')) {
+    db.exec(`ALTER TABLE sd_tools ADD COLUMN mcp_tool_name TEXT`);
+    logger.info('[StaffDB] sd_tools.mcp_tool_name 列已补充（MCP 工具映射支持）');
+  }
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS sd_mcp_servers (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL,
@@ -824,6 +842,26 @@ export function initStaffTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sd_mock_orders_user ON sd_mock_orders(user_id);
     CREATE INDEX IF NOT EXISTS idx_sd_mock_orders_product ON sd_mock_orders(product_id);
     CREATE INDEX IF NOT EXISTS idx_sd_mock_orders_status ON sd_mock_orders(status);
+  `);
+
+  // ============================ 流式蒸馏/重写任务（持久化元数据） ============================
+  // 说明：实时 SSE 事件仍存于进程内存（见 server/staff/streamJobs.ts），此处仅持久化任务元数据，
+  // 使任务状态/历史在进程重启后不丢失，并支撑前端任务列表查询。
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sd_stream_jobs (
+      job_id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT 'default',
+      kind TEXT NOT NULL,
+      status TEXT NOT NULL,
+      meta_json TEXT NOT NULL DEFAULT '{}',
+      error TEXT,
+      created_at INTEGER NOT NULL,
+      finished_at INTEGER,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_sd_stream_jobs_status ON sd_stream_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_sd_stream_jobs_created ON sd_stream_jobs(created_at);
   `);
 
   // ============================ 默认租户与 UI 配置初始化 ============================

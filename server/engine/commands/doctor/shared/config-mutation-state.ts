@@ -1,10 +1,5 @@
 // Shared doctor state helpers for previewing or applying config mutations.
-// 移植自 openclaw/src/commands/doctor/shared/config-mutation-state.ts
-//
-// 降级说明：
-//  - OpenClawConfig 来自 ../../../config/types.openclaw.js
-//    → cross-wms 已在 ../../../infra/_runtime-stubs.ts 提供降级类型
-import type { OpenClawConfig } from "../../../infra/_runtime-stubs.js";
+import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 
 export type DoctorConfigMutationState = {
   /** Config currently used for command execution. */

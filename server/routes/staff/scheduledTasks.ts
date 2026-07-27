@@ -19,6 +19,7 @@ import type {
   ScheduledTaskRead,
 } from '../../types/staff.js';
 import * as scheduledTaskDao from '../../dao/staff/staffScheduledTaskDao.js';
+import { startTaskRun, registerTask, unregisterTask } from '../../staff/scheduledTaskService.js';
 
 const router = Router();
 
@@ -171,8 +172,10 @@ router.post('/', (req: Request, res: Response) => {
     source_session_id,
     metadata,
   });
-  // TODO: 接入 croner 调度器
-  res.status(201).json({ code: 0, data: scheduledTaskRead(row), message: 'ok' });
+  // 接入 croner 真调度：active 任务立即注册，并回写 next_run_at
+  registerTask(row);
+  const refreshed = scheduledTaskDao.getScheduledTaskById(tenantId, row.id) ?? row;
+  res.status(201).json({ code: 0, data: scheduledTaskRead(refreshed), message: 'ok' });
 });
 
 // ===================== GET /runs — 所有任务执行历史 =====================
@@ -224,8 +227,10 @@ router.put('/:task_id', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '定时任务不存在' });
     return;
   }
-  // TODO: 接入 croner 调度器（更新调度）
-  res.json({ code: 0, data: scheduledTaskRead(row), message: 'ok' });
+  // 接入 croner 真调度：状态/调度变更后重注册（active 注册，其余注销）
+  registerTask(row);
+  const refreshed = scheduledTaskDao.getScheduledTaskById(tenantId, row.id) ?? row;
+  res.json({ code: 0, data: scheduledTaskRead(refreshed), message: 'ok' });
 });
 
 // ===================== DELETE /:task_id — 删除（归档） =====================
@@ -239,14 +244,15 @@ router.delete('/:task_id', (req: Request, res: Response) => {
       res.status(404).json({ code: 404, data: null, message: '定时任务不存在' });
       return;
     }
+    unregisterTask(req.params.task_id);
   } else {
     const row = scheduledTaskDao.archiveScheduledTask(tenantId, req.params.task_id);
     if (!row) {
       res.status(404).json({ code: 404, data: null, message: '定时任务不存在' });
       return;
     }
+    unregisterTask(req.params.task_id);
   }
-  // TODO: 接入 croner 调度器（取消调度）
   res.json({ code: 0, data: null, message: 'ok' });
 });
 
@@ -277,16 +283,8 @@ router.post('/:task_id/run-now', (req: Request, res: Response) => {
     return;
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  // TODO: 接入 croner / 真实任务执行器，此处仅创建一条 queued 记录
-  const run = scheduledTaskDao.createRun({
-    tenant_id: tenantId,
-    scheduled_task_id: task.id,
-    agent_id: task.agent_id,
-    user_id: task.created_by_user_id,
-    scheduled_for: now,
-    status: 'queued',
-  });
+  // 真实执行：启动后台运行（复用数字员工引擎 runStaffChatTurn），立即返回 running 记录
+  const run = startTaskRun(tenantId, task.id);
   res.json({ code: 0, data: runRead(run), message: 'ok' });
 });
 

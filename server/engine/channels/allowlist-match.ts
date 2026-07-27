@@ -3,6 +3,26 @@ import type { ChannelId } from "../../channels/types.js";
 
 export type AllowlistEntryType = "user" | "email" | "domain" | "group" | "role" | "phone";
 
+/** Match source kind for allowlist diagnostics (openclaw compat). */
+export type AllowlistMatchSource =
+  | "wildcard"
+  | "id"
+  | "name"
+  | "tag"
+  | "username"
+  | "prefixed-id"
+  | "prefixed-user"
+  | "prefixed-name"
+  | "slug"
+  | "localpart";
+
+/** Allowlist match result with diagnostic metadata (openclaw compat). */
+export type AllowlistMatch<TSource extends string = AllowlistMatchSource> = {
+  allowed: boolean;
+  matchKey?: string;
+  matchSource?: TSource;
+};
+
 export interface AllowlistEntry {
   type: AllowlistEntryType;
   value: string;

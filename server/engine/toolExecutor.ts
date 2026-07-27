@@ -112,6 +112,12 @@ export interface ToolExecutorOptions {
   onRateLimit?: OnRateLimitCallback;
   /** v9.1: Skill 权限配置（Skill 四层架构） */
   skillPermissionConfig?: SkillPermissionConfig;
+  /** 数字员工（per-call）MCP 客户端管理器：隔离 MCP server 连接 */
+  staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
+  /** 数字员工（per-call）物化技能定义列表 */
+  extraSkills?: import('../types/skill-runtime.js').SkillDefinition[];
+  /** 数字员工（per-call）物化技能执行器 */
+  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 会话 ID（用于审批流和插件钩子） */
   sessionId?: string;
   /** 助手消息 ID（用于关联工具调用到特定消息） */
@@ -191,6 +197,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const mcpTools = mcpClientManager.getMcpTools();
   // v9.1: Skill 工具定义注入（Skill 四层架构）
   const skillPermissionConfig = options.skillPermissionConfig ?? { allow: ['*'], deny: [], elevated: { enabled: 'ask' } };
+  const extraSkillExecutor = options.extraSkillExecutor;
   const { getSkillToolDefinitions } = await import('./skillToolBridge.js');
   const skillTools = getSkillToolDefinitions(skillPermissionConfig);
   const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...skillTools];
@@ -809,11 +816,16 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           { id: toolCall.id, type: 'function', function: { name: effectiveToolName, arguments: JSON.stringify(normalizedArgs) } },
           skillPermissionConfig,
           sessionId || `session-${Date.now()}`,
+          extraSkillExecutor,
         );
         return skillResult.content || JSON.stringify(skillResult);
       } else if (isMcpToolName(effectiveToolName)) {
-        const mcpResult = await mcpClientManager.executeMcpTool(effectiveToolName, normalizedArgs, { signal: toolSignal });
+        // 优先使用数字员工隔离的 MCP manager（属于它的 server 走它，否则回退全局）
         const prefix = getMcpServerPrefix(effectiveToolName);
+        const mgr = (options.staffMcpManager && prefix && options.staffMcpManager.hasServerPrefix(prefix))
+          ? options.staffMcpManager
+          : mcpClientManager;
+        const mcpResult = await mgr.executeMcpTool(effectiveToolName, normalizedArgs, { signal: toolSignal });
         if (prefix) {
           circuitBreaker.recordMcpServerSuccess(prefix);
         }

@@ -364,7 +364,13 @@ export type ImageGenerationProviderPlugin = { id: string; [key: string]: unknown
 export type MediaUnderstandingProviderPlugin = { id: string; [key: string]: unknown };
 export type MigrationProviderPlugin = { id: string; [key: string]: unknown };
 export type MusicGenerationProviderPlugin = { id: string; [key: string]: unknown };
-export type OpenClawPluginApi = { [key: string]: unknown };
+export type OpenClawPluginApi = {
+  registrationMode?: "cli-metadata" | "tool-discovery" | "discovery" | "full";
+  runtime?: unknown;
+  registerChannel?: (params: { plugin: unknown }) => void;
+  registerCliMetadata?: (api: OpenClawPluginApi) => void;
+  [key: string]: unknown;
+};
 export type OpenClawPluginCliCommandDescriptor = {
   name: string;
   description: string;
@@ -525,3 +531,25 @@ export type UnifiedModelCatalogProviderPlugin = {
 export type VideoGenerationProviderPlugin = { id: string; [key: string]: unknown };
 export type WebFetchProviderPlugin = { id: string; [key: string]: unknown };
 export type WebSearchProviderPlugin = { id: string; [key: string]: unknown };
+
+// Compat aliases for openclaw plugin-sdk migration
+export type OpenClawPluginConfigSchema = PluginConfigSchema;
+export type OpenClawPluginService = OpenClawPluginApi;
+export type OpenClawPluginServiceContext = OpenClawPluginCliContext;
+export type OpenClawPluginToolFactory = (ctx: OpenClawPluginToolContext) => unknown;
+
+// Re-export hook and tool types consumed by plugin-sdk/core.ts
+export type {
+  OpenClawPluginActiveModelContext,
+  OpenClawPluginToolOptions,
+  OpenClawPluginHookOptions,
+} from "./tool-types.js";
+export type {
+  PluginHookReplyPayload,
+  PluginHookReplyPayloadSendingContext,
+  PluginHookReplyPayloadSendingEvent,
+  PluginHookReplyPayloadSendingResult,
+  PluginHookReplyDispatchContext,
+  PluginHookReplyDispatchEvent,
+  PluginHookReplyDispatchResult,
+} from "./hook-types.js";

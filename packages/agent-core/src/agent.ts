@@ -92,8 +92,8 @@ export class Agent extends EventEmitter<AgentEvents> {
     try {
       // If runtime provides streamSimple, use it via a streamFn wrapper
       const streamFn = this.runtime?.streamSimple
-        ? async (model: unknown, context: unknown, options: unknown) => {
-            const gen = this.runtime.streamSimple!(model, context, options);
+        ? async (model: string, context: unknown, options: unknown) => {
+            const gen = this.runtime.streamSimple!(model, context as any, options as Record<string, unknown> | undefined);
             const chunks: string[] = [];
             let result = '';
             for await (const chunk of gen) {

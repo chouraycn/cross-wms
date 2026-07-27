@@ -1,58 +1,12 @@
 // Legacy TTS runtime config migrations for provider aliases, enabled toggles, and voices.
-// 移植自 openclaw/src/commands/doctor/shared/legacy-config-migrations.runtime.tts.ts
-//
-// 降级说明：
-//  - LegacyConfigMigrationSpec / LegacyConfigRule / defineLegacyConfigMigration / getRecord / mergeMissing
-//    来自 ../../../config/legacy.shared.js → cross-wms 占位为 unknown，
-//    在本文件内提供本地等价类型与 identity 帮助器以保留原迁移逻辑
-//  - isRecord 来自 ./legacy-config-record-shared.js → cross-wms 已移植
-//  - isBlockedObjectKey 来自 ../../../infra/prototype-keys.js → cross-wms 已移植
-//  - mergeMissing 来自 ../../../config/legacy.shared.js → 本地实现
-import { isBlockedObjectKey } from "../../../infra/prototype-keys.js";
-import { isRecord, type JsonRecord } from "./legacy-config-record-shared.js";
-
-export type LegacyConfigRule = {
-  path: string[];
-  message: string;
-  match?: (value: unknown, root: JsonRecord) => boolean;
-  requireSourceLiteral?: boolean;
-};
-
-export type LegacyConfigMigration = {
-  id: string;
-  describe: string;
-  apply: (raw: JsonRecord, changes: string[]) => void;
-};
-
-export type LegacyConfigMigrationSpec = LegacyConfigMigration & {
-  legacyRules?: LegacyConfigRule[];
-};
-
-/** Identity helper that preserves the LegacyConfigMigrationSpec shape for migration registries. */
-export function defineLegacyConfigMigration(
-  migration: LegacyConfigMigrationSpec,
-): LegacyConfigMigrationSpec {
-  return migration;
-}
-
-/** Returns the value as a non-array record or null. */
-function getRecord(value: unknown): JsonRecord | null {
-  return isRecord(value) ? value : null;
-}
-
-const DANGEROUS_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-
-/** Deep-merges source record into target, only filling missing keys. */
-function mergeMissing(target: JsonRecord, source: JsonRecord): void {
-  for (const [key, value] of Object.entries(source)) {
-    if (DANGEROUS_RECORD_KEYS.has(key)) continue;
-    if (!Object.hasOwn(target, key)) {
-      target[key] = value;
-    } else if (isRecord(target[key]) && isRecord(value)) {
-      mergeMissing(target[key] as JsonRecord, value as JsonRecord);
-    }
-  }
-}
+import {
+  defineLegacyConfigMigration,
+  getRecord,
+  mergeMissing,
+  type LegacyConfigMigrationSpec,
+  type LegacyConfigRule,
+} from "@openclaw-src/config/legacy.shared.js";
+import { isBlockedObjectKey } from "@openclaw-src/infra/prototype-keys.js";
 
 const LEGACY_TTS_PROVIDER_KEYS = ["openai", "elevenlabs", "microsoft", "edge"] as const;
 const LEGACY_TTS_PLUGIN_IDS = new Set(["voice-call"]);
@@ -228,14 +182,14 @@ function hasLegacyTtsEnabledInPluginLocations(value: unknown): boolean {
   return hasLegacyTtsInPluginLocations(value, hasLegacyTtsEnabled);
 }
 
-function getOrCreateTtsProviders(tts: JsonRecord): JsonRecord {
+function getOrCreateTtsProviders(tts: Record<string, unknown>): Record<string, unknown> {
   const providers = getRecord(tts.providers) ?? {};
   tts.providers = providers;
   return providers;
 }
 
 function mergeLegacyTtsProviderConfig(
-  tts: JsonRecord,
+  tts: Record<string, unknown>,
   legacyKey: string,
   providerId: string,
 ): boolean {
@@ -253,7 +207,7 @@ function mergeLegacyTtsProviderConfig(
 }
 
 function mergeLegacyTtsProviderAliasConfig(
-  tts: JsonRecord,
+  tts: Record<string, unknown>,
   aliasKey: string,
   providerId: string,
 ): boolean {
@@ -271,7 +225,7 @@ function mergeLegacyTtsProviderAliasConfig(
 }
 
 function migrateLegacyTtsConfig(
-  tts: JsonRecord | null | undefined,
+  tts: Record<string, unknown> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -306,7 +260,7 @@ function migrateLegacyTtsConfig(
 }
 
 function migrateLegacyTtsEnabled(
-  tts: JsonRecord | null | undefined,
+  tts: Record<string, unknown> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -324,7 +278,7 @@ function migrateLegacyTtsEnabled(
 }
 
 function migrateLegacySpeakerSelectionConfig(
-  providerConfig: JsonRecord,
+  providerConfig: Record<string, unknown>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -362,7 +316,7 @@ function migrateLegacySpeakerSelectionConfig(
 }
 
 function migrateLegacyTtsSpeakerSelection(
-  tts: JsonRecord | null | undefined,
+  tts: Record<string, unknown> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -427,8 +381,8 @@ function migrateLegacySpeakerSelectionProviderMap(
 }
 
 function visitKnownTtsConfigLocations(
-  raw: JsonRecord,
-  visit: (tts: JsonRecord | null | undefined, pathLabel: string) => void,
+  raw: Record<string, unknown>,
+  visit: (tts: Record<string, unknown> | null | undefined, pathLabel: string) => void,
 ): void {
   const messages = getRecord(raw.messages);
   visit(getRecord(messages?.tts), "messages.tts");

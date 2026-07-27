@@ -1,10 +1,28 @@
 {
   "id": "deepseek",
   "name": "DeepSeek Provider",
-  "description": "DeepSeek reasoning LLM provider extension",
+  "description": "DeepSeek LLM provider extension with Chat Completions API support",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["deepseek"],
+  "modelSupport": {
+    "modelPrefixes": ["deepseek-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "deepseek-native",
+      "hosts": ["api.deepseek.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "deepseek",
+        "envVars": ["DEEPSEEK_API_KEY"]
+      }
+    ]
+  }
 }

@@ -206,38 +206,39 @@ describe('net 工具函数', () => {
   });
 
   describe('resolveGatewayBindHost', () => {
-    it('loopback 应返回 127.0.0.1', () => {
-      expect(resolveGatewayBindHost('loopback')).toBe('127.0.0.1');
+    it('loopback 应返回 127.0.0.1', async () => {
+      expect(await resolveGatewayBindHost('loopback')).toBe('127.0.0.1');
     });
 
-    it('lan 应返回 0.0.0.0', () => {
-      expect(resolveGatewayBindHost('lan')).toBe('0.0.0.0');
+    it('lan 应返回 0.0.0.0', async () => {
+      expect(await resolveGatewayBindHost('lan')).toBe('0.0.0.0');
     });
 
-    it('tailnet 应返回 0.0.0.0', () => {
-      expect(resolveGatewayBindHost('tailnet')).toBe('0.0.0.0');
+    it('tailnet 应返回 0.0.0.0', async () => {
+      expect(await resolveGatewayBindHost('tailnet')).toBe('0.0.0.0');
     });
 
-    it('auto 应返回 127.0.0.1', () => {
-      expect(resolveGatewayBindHost('auto')).toBe('127.0.0.1');
+    it('auto 应返回 127.0.0.1', async () => {
+      expect(await resolveGatewayBindHost('auto')).toBe('127.0.0.1');
     });
 
-    it('custom 无 host 应回退到 127.0.0.1', () => {
-      expect(resolveGatewayBindHost('custom')).toBe('127.0.0.1');
+    it('custom 无 host 应回退到 127.0.0.1', async () => {
+      expect(await resolveGatewayBindHost('custom')).toBe('127.0.0.1');
     });
 
-    it('custom 有 host 应返回该 host', () => {
-      expect(resolveGatewayBindHost('custom', '192.168.1.10')).toBe('192.168.1.10');
+    it('custom 有 host 应返回该 host', async () => {
+      expect(await resolveGatewayBindHost('custom', '192.168.1.10')).toBe('192.168.1.10');
     });
   });
 
   describe('resolveGatewayListenHosts', () => {
-    it('127.0.0.1 应仅返回 loopback 单元素数组', () => {
-      expect(resolveGatewayListenHosts('127.0.0.1')).toEqual(['127.0.0.1']);
+    it('127.0.0.1 应返回包含 IPv4 和 IPv6 loopback 的数组', async () => {
+      const result = await resolveGatewayListenHosts('127.0.0.1');
+      expect(result).toContain('127.0.0.1');
     });
 
-    it('其他 host 应返回单元素数组', () => {
-      expect(resolveGatewayListenHosts('0.0.0.0')).toEqual(['0.0.0.0']);
+    it('其他 host 应返回单元素数组', async () => {
+      expect(await resolveGatewayListenHosts('0.0.0.0')).toEqual(['0.0.0.0']);
     });
   });
 

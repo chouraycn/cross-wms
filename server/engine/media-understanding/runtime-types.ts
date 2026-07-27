@@ -1,15 +1,21 @@
-// Public media-understanding runtime API types for file-based image/audio/video
-// helpers and direct structured extraction.
-// Ported from openclaw/src/media-understanding/runtime-types.ts.
-// Simplified for cross-wms: removed OpenClawConfig-specific types, adapted to
-// cross-wms media-understanding types.
-import type { MediaUnderstandingCapability, MediaUnderstandingProvider } from "./types.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ActiveMediaModel } from "../../../packages/media-understanding-common/src/active-model.js";
+import type {
+  MediaUnderstandingDecision,
+  MediaUnderstandingOutput,
+  MediaUnderstandingProvider,
+  StructuredExtractionInput,
+} from "./types.js";
 
 export type RunMediaUnderstandingFileParams = {
-  capability: MediaUnderstandingCapability;
+  capability: "image" | "audio" | "video";
   filePath: string;
   mediaUrl?: string;
+  cfg: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
   mime?: string;
+  activeModel?: ActiveMediaModel;
   prompt?: string;
   timeoutMs?: number;
   scopeContext?: MediaUnderstandingScopeContext;
@@ -25,12 +31,18 @@ export type RunMediaUnderstandingFileResult = {
   text: string | undefined;
   provider?: string;
   model?: string;
+  output?: MediaUnderstandingOutput;
+  decision?: MediaUnderstandingDecision;
 };
 
 export type DescribeImageFileParams = {
   filePath: string;
   mediaUrl?: string;
+  cfg: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
   mime?: string;
+  activeModel?: ActiveMediaModel;
   prompt?: string;
   timeoutMs?: number;
   scopeContext?: MediaUnderstandingScopeContext;
@@ -39,6 +51,9 @@ export type DescribeImageFileParams = {
 export type DescribeImageFileWithModelParams = {
   filePath: string;
   mediaUrl?: string;
+  cfg: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
   mime?: string;
   provider: string;
   model: string;
@@ -47,10 +62,9 @@ export type DescribeImageFileWithModelParams = {
   timeoutMs?: number;
 };
 
-export type DescribeImageFileWithModelResult = {
-  text: string;
-  model?: string;
-};
+type DescribeImageFileWithModelResult = Awaited<
+  ReturnType<NonNullable<MediaUnderstandingProvider["describeImage"]>>
+>;
 
 export type ExtractStructuredWithModelParams = {
   input: StructuredExtractionInput[];
@@ -58,25 +72,36 @@ export type ExtractStructuredWithModelParams = {
   schemaName?: string;
   jsonSchema?: unknown;
   jsonMode?: boolean;
+  cfg: OpenClawConfig;
+  agentDir?: string;
   provider: string;
   model: string;
+  profile?: string;
+  preferredProfile?: string;
+  authStore?: unknown;
   timeoutMs?: number;
 };
 
-export type ExtractStructuredWithModelResult = {
-  data?: unknown;
-  text?: string;
-  model?: string;
-};
+type ExtractStructuredWithModelResult = Awaited<
+  ReturnType<NonNullable<MediaUnderstandingProvider["extractStructured"]>>
+>;
 
 export type DescribeVideoFileParams = {
   filePath: string;
+  cfg: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
   mime?: string;
+  activeModel?: ActiveMediaModel;
 };
 
 export type TranscribeAudioFileParams = {
   filePath: string;
+  cfg: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
   mime?: string;
+  activeModel?: ActiveMediaModel;
   language?: string;
   prompt?: string;
 };
@@ -97,19 +122,3 @@ export type MediaUnderstandingRuntime = {
     params: TranscribeAudioFileParams,
   ) => Promise<RunMediaUnderstandingFileResult>;
 };
-
-type StructuredExtractionTextInput = {
-  type: "text";
-  text: string;
-};
-
-type StructuredExtractionImageInput = {
-  type: "image";
-  buffer: Buffer;
-  fileName: string;
-  mime?: string;
-};
-
-export type StructuredExtractionInput =
-  | StructuredExtractionTextInput
-  | StructuredExtractionImageInput;

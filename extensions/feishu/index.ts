@@ -1,6 +1,8 @@
 // Feishu plugin entrypoint registers its cross-wms integration.
+import type { ExtensionProvider, ExtensionManifest, ExtensionContext } from "../extension-types.js";
 import type { ChannelPlugin, ChannelId, ChannelMeta, ChannelCapabilities, ChannelConfigAdapter, AppConfig } from "../../server/channels/types.js";
 import type { ChannelMessageSendResult, MessageSendContext } from "../../server/channels/message/types.js";
+import { getGlobalChannelRegistry } from "../../server/channels/registry.js";
 import { createFeishuClient, clearClientCache } from "./src/client.js";
 import { probeFeishu, type ProbeFeishuOptions } from "./src/probe.js";
 import { sendMessageFeishu, sendMarkdownCardFeishu, sendStructuredCardFeishu, sendMediaFeishu, editMessageFeishu, buildMarkdownCard, buildStructuredCard } from "./src/send.js";
@@ -439,3 +441,40 @@ export {
   // Post
   parsePostContent,
 } from "./src/post.js";
+
+const manifest: ExtensionManifest = {
+  id: "feishu",
+  name: "Feishu Channel",
+  description: "Feishu/Lark Bot API channel extension with docs, wiki, drive, and permissions",
+  version: "1.0.0",
+  kind: "channel",
+  sdkVersion: "1.0.0",
+  requiresAuth: true,
+  authType: "api-key",
+};
+
+export default class FeishuChannelExtension implements ExtensionProvider {
+  manifest = manifest;
+
+  register(context: ExtensionContext): void {
+    context.logger.info("Registering Feishu channel extension");
+
+    const appId = context.secrets("FEISHU_APP_ID");
+    const appSecret = context.secrets("FEISHU_APP_SECRET");
+    if (!appId || !appSecret) {
+      context.logger.warn("FEISHU_APP_ID / FEISHU_APP_SECRET not found in environment");
+    }
+
+    const plugin = createFeishuChannelPlugin();
+    const registry = getGlobalChannelRegistry();
+    registry.register(plugin);
+
+    context.logger.info("Feishu channel plugin registered");
+  }
+
+  unregister(): void {
+    const registry = getGlobalChannelRegistry();
+    registry.unregister(FEISHU_CHANNEL_ID);
+    console.log("Unregistered Feishu channel extension");
+  }
+}

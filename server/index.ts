@@ -509,6 +509,8 @@ registerStaffRoutes(app);
 // ========== StaffDeck P1 扩展模块路由（/api/staffdeck/* 命名空间） ==========
 app.use('/api/staffdeck/tools', lazyRouter(() => import('./routes/staff/tools.js'), undefined, 'staff-tools'));
 app.use('/api/staffdeck/mcp-servers', lazyRouter(() => import('./routes/staff/mcpServers.js'), undefined, 'staff-mcp-servers'));
+app.use('/api/staffdeck/execution-runtime', lazyRouter(() => import('./routes/staff/executionRuntime.js'), undefined, 'staff-execution-runtime'));
+app.use('/api/staffdeck/program-skills', lazyRouter(() => import('./routes/staff/programSkills.js'), undefined, 'staff-program-skills'));
 app.use('/api/staffdeck/scheduled-tasks', lazyRouter(() => import('./routes/staff/scheduledTasks.js'), undefined, 'staff-scheduled-tasks'));
 app.use('/api/staffdeck/model-configs', lazyRouter(() => import('./routes/staff/modelConfigs.js'), undefined, 'staff-model-configs'));
 app.use('/api/staffdeck/memories', lazyRouter(() => import('./routes/staff/memories.js'), undefined, 'staff-memories'));
@@ -738,6 +740,32 @@ server.listen(PORT, () => {
     }, 5000);
 
     startMemoryMonitor(60_000);
+
+    // 数字员工定时任务调度器（croner 真调度，从 DB 恢复 active 任务）
+    import('./staff/scheduledTaskService.js')
+      .then(({ initScheduledTaskScheduler }) => {
+        try {
+          initScheduledTaskScheduler();
+        } catch (err) {
+          logger.warn('[Server] 定时任务调度器初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
+      })
+      .catch((err) => {
+        logger.warn('[Server] 定时任务调度器模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      });
+
+    // 数字员工流式任务元数据 hydrate（从 DB 重建内存态，in-flight 标记 interrupted）
+    import('./staff/streamJobs.js')
+      .then(({ hydrateStreamJobs }) => {
+        try {
+          hydrateStreamJobs();
+        } catch (err) {
+          logger.warn('[Server] 流式任务 hydrate 失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
+      })
+      .catch((err) => {
+        logger.warn('[Server] 流式任务模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      });
 
     setTimeout(() => {
       ensureWmsTables();

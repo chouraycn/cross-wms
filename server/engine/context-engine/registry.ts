@@ -432,3 +432,11 @@ const globalRegistry = new ContextEngineRegistry();
 
 export { ContextEngineRegistry, globalRegistry, OWNER_CORE, OWNER_PUBLIC_SDK, getPluginOwner };
 export default globalRegistry;
+
+export function resolveContextEngine(): typeof globalRegistry {
+  return globalRegistry;
+}
+
+export function resolveContextEngineOwnerPluginId(): string | undefined {
+  return undefined;
+}

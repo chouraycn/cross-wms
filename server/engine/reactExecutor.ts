@@ -27,6 +27,7 @@ import {
   type ModelCallConfig,
   type ToolCall,
   type MessageContent,
+  type ToolDefinition,
 } from '../aiClient.js';
 import { Observer, type Observation } from './observer.js';
 import { Planner, type ExecutionPlan, type PlanStepStatus } from './planner.js';
@@ -37,6 +38,7 @@ import { compressContextWithSummary } from './contextCompress.js';
 import { truncateContextForModel, estimateMessagesTokens, type ApiMessage } from './contextTruncate.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
+import type { SkillDefinition } from '../types/skill-runtime.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
 import { LoopDetector } from './loopDetector.js';
 import { ObservationCompressor, needsCompression } from './observationCompressor.js';
@@ -146,6 +148,21 @@ export interface ScratchpadEntry {
   planStep?: number;
 }
 
+/**
+ * 将 SkillDefinition 转换为 OpenAI 工具定义（与 skillToolBridge.getSkillToolDefinitions 相同的命名规则）。
+ * 供数字员工物化的通用技能出现在模型工具列表中，供模型以 `skill_<id>` 形式主动调用。
+ */
+function skillDefinitionToToolDef(def: SkillDefinition): ToolDefinition {
+  return {
+    type: 'function',
+    function: {
+      name: `skill_${def.id.replace(/-/g, '_')}`,
+      description: def.description || def.name,
+      parameters: def.parameters || { type: 'object', properties: {}, required: [] },
+    },
+  };
+}
+
 // ===================== ReActExecutor =====================
 
 /**
@@ -175,6 +192,12 @@ export class ReActExecutor {
   private _scratchpad?: ScratchpadEntry[];
   /** v9.1 [五]: 当前激活的执行计划 */
   private _activePlan?: ExecutionPlan;
+  /** 数字员工（per-call）MCP 客户端管理器：隔离 MCP server 连接 */
+  private _staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
+  /** 数字员工（per-call）物化技能执行器 */
+  private _extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  /** 数字员工（per-call）技能权限配置 */
+  private _skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
 
   // 懒加载访问器 — 避免构造函数中一次性创建所有对象
   private get observer(): Observer {
@@ -213,6 +236,9 @@ export class ReActExecutor {
         currentComplexityLevel: this.state.currentComplexityLevel,
         turn: this.state.turn,
       }),
+      staffMcpManager: this._staffMcpManager,
+      extraSkillExecutor: this._extraSkillExecutor,
+      skillPermissionConfig: this._skillPermissionConfig,
     }));
   }
   private get autoCompressor(): AutoCompressor {
@@ -459,6 +485,11 @@ ${stepsText}`;
       sessionId,
     } = options;
 
+    // 桥接数字员工（per-call）注入：MCP manager / 物化技能执行器 / 技能权限
+    this._staffMcpManager = options.staffMcpManager;
+    this._extraSkillExecutor = options.extraSkillExecutor;
+    this._skillPermissionConfig = options.skillPermissionConfig;
+
     // 推送初始 SSE 反馈 — 让用户在首 token 到达前就看到"AI 正在处理"
     if (onSSEEvent) {
       onSSEEvent({
@@ -478,11 +509,13 @@ ${stepsText}`;
     // v9.1 [一]: 重置执行轨迹
     this._scratchpad = [];
 
-    // 获取工具定义（内置 + 插件 + MCP）
+    // 获取工具定义（内置 + 插件 + MCP + 数字员工 per-call 注入）
     const builtinTools = getBuiltinToolDefinitions();
     const pluginTools = pluginRegistry.getActiveTools();
     const mcpTools = mcpClientManager.getMcpTools();
-    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
+    const staffMcpTools = options.staffMcpManager?.getMcpTools() ?? [];
+    const extraSkillTools = options.extraSkills ? options.extraSkills.map((def) => skillDefinitionToToolDef(def)) : [];
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...staffMcpTools, ...extraSkillTools];
 
     // 复制消息列表
     const currentMessages = [...messages];

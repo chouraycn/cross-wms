@@ -31,6 +31,33 @@ export function clearEnterpriseAuthSession(): void {
   window.localStorage.removeItem(ENTERPRISE_AUTH_STORAGE_KEY)
 }
 
+/**
+ * 确保存在有效 session：无登录态时自动注入默认桌面身份。
+ * 用于 CrossWMS 桌面应用 — 主应用本身无登录体系，
+ * 数字员工模块作为其子模块，随应用启动即获得默认身份（default-user / admin），
+ * 不需要用户手动 admin/admin 登录。
+ *
+ * 后端 staffAuth 中间件已对无 token 请求兜底 default-user，因此此处即使
+ * 不写 token 也能正常访问 API；写入默认 session 仅为保持前端上下文一致性。
+ */
+export function ensureDefaultSession(): EnterpriseAuthSession {
+  const existing = getEnterpriseAuthSession()
+  if (existing?.token && existing?.user?.id) return existing
+
+  const defaultSession: EnterpriseAuthSession = {
+    token: '',
+    user: {
+      id: 'default-user',
+      tenant_id: 'default',
+      username: 'default-user',
+      display_name: '默认用户',
+      role: 'admin',
+    },
+  }
+  setEnterpriseAuthSession(defaultSession)
+  return defaultSession
+}
+
 function readStoredSession(key: string): EnterpriseAuthSession | null {
   const raw = window.localStorage.getItem(key)
   if (!raw) return null

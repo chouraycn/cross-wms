@@ -23,8 +23,18 @@ export function getApiProvider(api: Api): ApiProvider | undefined {
   return apiProviders.get(api);
 }
 
+/** Lists all currently registered API providers. */
+export function getApiProviders(): ApiProvider[] {
+  return Array.from(apiProviders.values());
+}
+
 export function listApiProviders(): string[] {
   return Array.from(apiProviders.keys());
+}
+
+/** Removes all providers registered for a given source id (no-op stub for plugin-sdk compat). */
+export function unregisterApiProviders(_sourceId: string): void {
+  // cross-wms ApiProvider does not track sourceId; kept for API compatibility.
 }
 
 export function clearApiProviderRegistry(): void {

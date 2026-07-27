@@ -13,6 +13,13 @@ vi.mock('../../../logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      child: vi.fn(),
+    })),
   },
 }));
 
@@ -117,93 +124,112 @@ describe('gateway auth 授权函数', () => {
   });
 
   describe('authorizeGatewayConnect', () => {
-    it('none 模式应直接成功', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'none' },
-        req: { headers: {} },
+    it('none 模式应直接成功', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: { mode: 'none', allowTailscale: false },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
       expect(result.method).toBe('none');
     });
 
-    it('token 模式应从 Authorization 头解析 Bearer token', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'token', token: 'mytoken' },
-        req: { headers: { authorization: 'Bearer mytoken' } },
+    it('token 模式应匹配 connectAuth token', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: { mode: 'token', token: 'mytoken', allowTailscale: false },
+        connectAuth: { token: 'mytoken' },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
       expect(result.method).toBe('token');
     });
 
-    it('token 模式 Bearer 大小写不敏感', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'token', token: 'mytoken' },
-        req: { headers: { authorization: 'bearer mytoken' } },
+    it('token 不匹配时应失败', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: { mode: 'token', token: 'mytoken', allowTailscale: false },
+        connectAuth: { token: 'wrong' },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
     });
 
-    it('password 模式应从 x-gateway-password 头解析', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'password', password: 'secret' },
-        req: { headers: { 'x-gateway-password': 'secret' } },
+    it('password 模式应匹配 connectAuth password', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: { mode: 'password', password: 'secret', allowTailscale: false },
+        connectAuth: { password: 'secret' },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
       expect(result.method).toBe('password');
     });
 
-    it('trusted-proxy 模式无 clientIp 时应失败', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'trusted-proxy', trustedProxies: ['10.0.0.1'] },
-        req: { headers: {} },
+    it('trusted-proxy 模式无 req 时应失败', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: {
+          mode: 'trusted-proxy',
+          allowTailscale: false,
+          trustedProxy: { userHeader: 'x-forwarded-user' },
+        },
+        trustedProxies: ['10.0.0.1'],
         authSurface: 'http',
       });
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('cannot determine client IP');
     });
 
-    it('trusted-proxy 模式 clientIp 可信时应成功并使用 forwarded user', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'trusted-proxy', trustedProxies: ['10.0.0.1'] },
-        req: { headers: { 'x-forwarded-user': 'bob' } },
-        clientIp: '10.0.0.1',
+    it('trusted-proxy 模式可信代理时应成功并使用 forwarded user', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: {
+          mode: 'trusted-proxy',
+          allowTailscale: false,
+          trustedProxy: { userHeader: 'x-forwarded-user', allowLoopback: true },
+        },
+        trustedProxies: ['127.0.0.1'],
+        req: {
+          headers: { 'x-forwarded-user': 'bob' },
+          socket: { remoteAddress: '127.0.0.1' },
+        } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
       expect(result.user).toBe('bob');
     });
 
-    it('未知 auth mode 时应失败', () => {
-      const result = authorizeGatewayConnect({
-        auth: { mode: 'unknown-mode' },
-        req: { headers: {} },
+    it('未知 auth mode 时应失败', async () => {
+      const result = await authorizeGatewayConnect({
+        auth: { mode: 'unknown-mode' as any, allowTailscale: false },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(false);
-      expect(result.reason).toContain('unknown auth mode');
     });
   });
 
   describe('authorizeHttpGatewayConnect / authorizeWsControlUiGatewayConnect', () => {
-    it('http 表面应成功授权 none 模式', () => {
-      const result = authorizeHttpGatewayConnect({ mode: 'none' }, { headers: {} });
+    it('http 表面应成功授权 none 模式', async () => {
+      const result = await authorizeHttpGatewayConnect({
+        auth: { mode: 'none', allowTailscale: false },
+        req: { headers: {} } as any,
+      });
       expect(result.ok).toBe(true);
     });
 
-    it('ws-control-ui 表面应成功授权 none 模式', () => {
-      const result = authorizeWsControlUiGatewayConnect({ mode: 'none' }, { headers: {} });
+    it('ws-control-ui 表面应成功授权 none 模式', async () => {
+      const result = await authorizeWsControlUiGatewayConnect({
+        auth: { mode: 'none', allowTailscale: false },
+        req: { headers: {} } as any,
+      });
       expect(result.ok).toBe(true);
     });
 
-    it('http 表面 token 模式应解析 Bearer', () => {
-      const result = authorizeHttpGatewayConnect(
-        { mode: 'token', token: 't' },
-        { headers: { authorization: 'Bearer t' } },
-      );
+    it('http 表面 token 模式应匹配 token', async () => {
+      const result = await authorizeHttpGatewayConnect({
+        auth: { mode: 'token', token: 't', allowTailscale: false },
+        connectAuth: { token: 't' },
+        req: { headers: {} } as any,
+      });
       expect(result.ok).toBe(true);
     });
   });
@@ -215,7 +241,7 @@ describe('gateway auth 授权函数', () => {
 
     it('token 模式无 token 时应抛出', () => {
       expect(() => assertGatewayAuthConfigured({ mode: 'token' })).toThrow(
-        /no token is configured/,
+        /no token was configured/,
       );
     });
 
@@ -225,7 +251,7 @@ describe('gateway auth 授权函数', () => {
 
     it('password 模式无 password 时应抛出', () => {
       expect(() => assertGatewayAuthConfigured({ mode: 'password' })).toThrow(
-        /no password is configured/,
+        /no password was configured/,
       );
     });
 

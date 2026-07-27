@@ -140,6 +140,21 @@ export function initBundledExtensions(): void {
   // --- 服务扩展 (service) ---
   registerBundledExtension('webhooks', 'service', async () => (await import('./webhooks/index.js')).default);
 
+  // --- 渠道扩展 (channel) ---
+  registerBundledExtension('discord', 'channel', async () => (await import('./discord/index.js')).default);
+  registerBundledExtension('slack', 'channel', async () => (await import('./slack/index.js')).default);
+  registerBundledExtension('telegram', 'channel', async () => (await import('./telegram/index.js')).default);
+  registerBundledExtension('feishu', 'channel', async () => (await import('./feishu/index.js')).default);
+  registerBundledExtension('qqbot', 'channel', async () => (await import('./qqbot/index.js')).default);
+  registerBundledExtension('whatsapp', 'channel', async () => (await import('./whatsapp/index.js')).default);
+  registerBundledExtension('matrix', 'channel', async () => (await import('./matrix/index.js')).default);
+  registerBundledExtension('irc', 'channel', async () => (await import('./irc/index.js')).default);
+  registerBundledExtension('line', 'channel', async () => (await import('./line/index.js')).default);
+  registerBundledExtension('sms', 'channel', async () => (await import('./sms/index.js')).default);
+  registerBundledExtension('nostr', 'channel', async () => (await import('./nostr/index.js')).default);
+  registerBundledExtension('msteams', 'channel', async () => (await import('./msteams/index.js')).default);
+  registerBundledExtension('mattermost', 'channel', async () => (await import('./mattermost/index.js')).default);
+
   logger.info(`[ExtensionRegistry] 内置扩展惰性注册完成，共 ${bundledRegistry.size} 个`);
 }
 

@@ -5,14 +5,18 @@
 // builder function signature and types for future implementation.
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeMediaProviderId } from "./provider-id.js";
-import type { MediaUnderstandingCapability, MediaUnderstandingProvider } from "./types.js";
+import type {
+  MediaUnderstandingCapability,
+  MediaUnderstandingDocumentModelDefaults,
+  MediaUnderstandingProvider,
+} from "./types.js";
 
 type MediaUnderstandingProviderMetadata = {
   capabilities?: MediaUnderstandingCapability[];
   defaultModels?: Partial<Record<MediaUnderstandingCapability, string>>;
   autoPriority?: Partial<Record<MediaUnderstandingCapability, number>>;
-  nativeDocumentInputs?: string[];
-  documentModels?: Record<string, Record<string, string | false>>;
+  nativeDocumentInputs?: Array<"pdf">;
+  documentModels?: Partial<Record<"pdf", MediaUnderstandingDocumentModelDefaults>>;
 };
 
 type MediaUnderstandingProviderWithMetadata = MediaUnderstandingProvider &

@@ -1,6 +1,5 @@
-// Resolves doctor repair mode from CLI flags, TTY state, and update environment.
-// 移植自 openclaw/src/commands/doctor-repair-mode.ts
-import { isTruthyEnvValue } from "../infra/env.js";
+/** Resolves doctor repair mode from CLI flags, TTY state, and update environment. */
+import { isTruthyEnvValue } from "@openclaw-src/infra/env.js";
 import type { DoctorOptions } from "./doctor.types.js";
 
 export type DoctorRepairMode = {
@@ -11,6 +10,7 @@ export type DoctorRepairMode = {
   updateInProgress: boolean;
 };
 
+/** Resolves the effective repair/prompting mode for a doctor invocation. */
 export function resolveDoctorRepairMode(options: DoctorOptions): DoctorRepairMode {
   const yes = options.yes === true;
   const requestedNonInteractive = options.nonInteractive === true;
@@ -30,10 +30,12 @@ export function resolveDoctorRepairMode(options: DoctorOptions): DoctorRepairMod
   };
 }
 
+/** Returns true for noninteractive updater-driven doctor repair runs. */
 export function isDoctorUpdateRepairMode(mode: DoctorRepairMode): boolean {
   return mode.updateInProgress && mode.nonInteractive;
 }
 
+/** Returns whether a doctor repair prompt should be auto-approved under the current mode. */
 export function shouldAutoApproveDoctorFix(
   mode: DoctorRepairMode,
   params: {

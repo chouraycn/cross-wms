@@ -14,22 +14,23 @@
  *   GET    /:skillId/versions/:version    — 获取特定版本
  *   DELETE /:skillId/versions/:version    — 删除特定版本
  *   POST   /:skillId/versions/:version/rollback — 回滚到指定版本
- *   POST   /files/extract                 — 提取 skill 文件（stub）
- *   POST   /distill                       — distill 生成 skill（stub）
- *   POST   /distill/stream                — SSE 流式 distill（stub）
- *   POST   /:skillId/rewrite/stream       — SSE 流式 rewrite（stub）
- *   POST   /distill/jobs                  — 创建 distill job（stub）
- *   POST   /:skillId/rewrite/jobs         — 创建 rewrite job（stub）
+ *   POST   /files/extract                 — 提取 skill 文件（功能未接入）
+ *   POST   /distill                       — distill 生成 skill（已接入，模板蒸馏）
+ *   POST   /distill/stream                — SSE 流式 distill（已接入）
+ *   POST   /:skillId/rewrite/stream       — SSE 流式 rewrite（功能未接入）
+ *   POST   /distill/jobs                  — 创建 distill job（已接入）
+ *   POST   /:skillId/rewrite/jobs         — 创建 rewrite job（功能未接入）
  *   GET    /jobs/:jobId                   — 获取 job 状态
  *   GET    /jobs/:jobId/stream            — SSE 流式获取 job 事件
  *   POST   /jobs/:jobId/cancel            — 取消 job
- *   POST   /:skillId/rewrite              — 同步 rewrite（stub）
+ *   POST   /:skillId/rewrite              — 同步 rewrite（功能未接入）
  */
 import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as skillDao from '../../dao/staff/staffSkillDao.js';
 import type { SkillCreateInput } from '../../dao/staff/staffSkillDao.js';
 import { logger } from '../../logger.js';
+import * as streamJobs from '../../staff/streamJobs.js';
 
 const router = Router();
 
@@ -74,81 +75,287 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
-// ===================== POST /files/extract — stub =====================
+// ===================== POST /files/extract — 功能未接入 =====================
 router.post('/files/extract', (_req: Request, res: Response) => {
-  // TODO: 接入实际服务
   res.json({
     code: 0,
-    data: { files: [], markdown: '' },
-    message: 'stub: skill 文件提取尚未接入',
+    data: { implemented: false, files: [], markdown: '' },
+    message: '功能未接入：skill 文件提取尚未实现',
   });
 });
 
-// ===================== POST /distill — stub =====================
-router.post('/distill', (req: Request, res: Response) => {
-  // TODO: 接入实际 SkillDistiller
-  const { prompt } = req.body ?? {};
-  logger.debug('[StaffSkill] distill stub called', { prompt });
-  res.json({
-    code: 0,
-    data: { skill: { name: 'stub-skill', content: {} }, warnings: [] },
-    message: 'stub: skill distill 尚未接入',
+// ===================== 蒸馏 SSE 基础设施 =====================
+function sse(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function chunkText(text: string, size = 28): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size));
+  return out;
+}
+
+type DistillNode = { id: string; type: string; label: string; [k: string]: unknown };
+type DistillEdge = { id: string; source: string; target: string; label?: string; [k: string]: unknown };
+type DistillDraft = {
+  skill_id: string;
+  name: string;
+  version: string;
+  business_domain: string;
+  description: string;
+  trigger_intents: string[];
+  user_utterance_examples: { text: string }[];
+  goal: string[];
+  required_info: { name: string; type: string }[];
+  nodes: DistillNode[];
+  edges: DistillEdge[];
+  start_node_id: string;
+  terminal_node_ids: string[];
+  interruption_policy: Record<string, unknown>;
+  response_rules: string[];
+};
+
+function extractRequiredInfo(text: string): { name: string; type: string }[] {
+  const out: { name: string; type: string }[] = [];
+  const patterns: [RegExp, string][] = [
+    [/(订单号|order\s*id|order_no)/i, '订单号'],
+    [/(手机号|电话|手机|phone|mobile)/i, '手机号'],
+    [/(姓名|名字|name|username)/i, '姓名'],
+    [/(地址|address)/i, '地址'],
+    [/(金额|价格|price|amount)/i, '金额'],
+    [/(时间|日期|date|time)/i, '时间'],
+    [/(单号|编号|no\.?|number)/i, '单号'],
+  ];
+  for (const [re, label] of patterns) {
+    if (re.test(text) && !out.some((o) => o.name === label)) out.push({ name: label, type: 'string' });
+  }
+  if (out.length === 0) out.push({ name: '用户诉求', type: 'string' });
+  return out;
+}
+function extractTriggerIntents(text: string): string[] {
+  const base = text.slice(0, 40).replace(/[，。；;.\n]/g, ' ').trim();
+  return base ? [base] : ['处理用户请求'];
+}
+function extractGoals(text: string): string[] {
+  const goals: string[] = [];
+  const lines = text.split(/[。；;.\n]/).map((s) => s.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 5)) {
+    if (/(目标|需要|希望|目的|goal|want|need)/i.test(line)) goals.push(line);
+  }
+  if (goals.length === 0) goals.push(text.slice(0, 80) || '完成用户请求');
+  return goals.slice(0, 6);
+}
+function buildSkillCard(
+  prompt: string,
+  params: { name?: string; business_domain?: string; tool_suggestions?: string[] },
+): DistillDraft {
+  const text = (prompt || '').trim();
+  const name = (params.name || '').trim() || (text.slice(0, 24) || '未命名 SOP');
+  const requiredInfo = extractRequiredInfo(text);
+  const triggerIntents = extractTriggerIntents(text);
+  const goal = extractGoals(text);
+  const hasTools = (params.tool_suggestions || []).length > 0;
+  const nodes: DistillNode[] = [
+    { id: 'start', type: 'start', label: '开始' },
+    { id: 'collect', type: 'collect', label: '收集信息', required_info: requiredInfo.map((r) => r.name) },
+    { id: 'act', type: 'action', label: hasTools ? '调用工具执行' : '生成答复' },
+    { id: 'end', type: 'end', label: '结束' },
+  ];
+  const edges: DistillEdge[] = [
+    { id: 'e1', source: 'start', target: 'collect', label: '进入' },
+    { id: 'e2', source: 'collect', target: 'act', label: '信息齐备' },
+    { id: 'e3', source: 'act', target: 'end', label: '完成' },
+  ];
+  return {
+    skill_id: '',
+    name: name.slice(0, 60),
+    version: '0.1.0',
+    business_domain: (params.business_domain || '').slice(0, 40),
+    description: text.slice(0, 200),
+    trigger_intents: triggerIntents,
+    user_utterance_examples: triggerIntents.slice(0, 3).map((t) => ({ text: t })),
+    goal,
+    required_info: requiredInfo,
+    nodes,
+    edges,
+    start_node_id: 'start',
+    terminal_node_ids: ['end'],
+    interruption_policy: {},
+    response_rules: [],
+  };
+}
+function skillCardToText(draft: DistillDraft): string {
+  const lines: string[] = [];
+  lines.push(`# SOP：${draft.name}`);
+  if (draft.description) lines.push(`\n## 场景描述\n${draft.description}`);
+  lines.push('\n## 目标');
+  draft.goal.forEach((g) => lines.push(`- ${g}`));
+  lines.push('\n## 触发意图');
+  draft.trigger_intents.forEach((t) => lines.push(`- ${t}`));
+  lines.push('\n## 需要收集的信息');
+  draft.required_info.forEach((r) => lines.push(`- ${r.name}（${r.type}）`));
+  lines.push('\n## 流程步骤');
+  draft.nodes.forEach((n, i) => lines.push(`${i + 1}. ${n.label}`));
+  return lines.join('\n');
+}
+async function runDistill(
+  jobId: string,
+  params: Record<string, unknown>,
+  write: (event: string, data: unknown) => void,
+  isCancelled: () => boolean,
+): Promise<DistillDraft> {
+  const prompt = (params.prompt as string) || (params.requirement as string) || '';
+  write('status', { text: `正在分析需求：${prompt.slice(0, 48) || '(空)'}…` });
+  await sleep(260);
+  if (isCancelled()) throw new Error('cancelled');
+  write('status', { text: '正在抽取目标、角色、关键字段与工具…' });
+  await sleep(260);
+  if (isCancelled()) throw new Error('cancelled');
+  const draft = buildSkillCard(prompt, {
+    name: params.name as string | undefined,
+    business_domain: params.business_domain as string | undefined,
+    tool_suggestions: (params.tool_suggestions as string[]) || [],
   });
+  write('chunk_reset', {});
+  const sopText = skillCardToText(draft);
+  for (const seg of chunkText(sopText, 28)) {
+    if (isCancelled()) break;
+    write('chunk', { content: seg });
+    await sleep(50);
+  }
+  write('complete', {
+    draft_skill: draft,
+    warnings: [],
+    tool_suggestions: (params.tool_suggestions as string[]) || [],
+  });
+  return draft;
+}
+
+// ===================== POST /distill — 同步蒸馏 =====================
+router.post('/distill', async (req: Request, res: Response) => {
+  const write = (_event: string, _data: unknown) => {
+    /* 同步模式不推送事件 */
+  };
+  try {
+    const draft = await runDistill(`sync-${Date.now()}`, req.body ?? {}, write, () => false);
+    res.json({ code: 0, data: { skill: draft, warnings: [] }, message: 'ok' });
+  } catch (e) {
+    res.status(500).json({ code: 500, data: null, message: (e as Error).message });
+  }
 });
 
-// ===================== POST /distill/stream — SSE stub =====================
-router.post('/distill/stream', (req: Request, res: Response) => {
+// ===================== POST /distill/stream — SSE 流式蒸馏 =====================
+router.post('/distill/stream', async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
-  // TODO: 接入实际 SkillDistiller
-  res.write(`data: ${JSON.stringify({ type: 'distill.start', data: {} })}\n\n`);
-  res.write(`data: ${JSON.stringify({ type: 'done', data: { stub: true } })}\n\n`);
-  res.end();
+  const jobId = streamJobs.createJob('distill', { prompt: req.body?.prompt });
+  let closed = false;
+  const write = (event: string, data: unknown) => {
+    streamJobs.append(jobId, event, data);
+    if (!closed) res.write(sse(event, data));
+  };
+  res.on('close', () => {
+    closed = true;
+  });
+  try {
+    write('job_attached', { job_id: jobId, status: 'running' });
+    await runDistill(jobId, req.body ?? {}, write, () => closed || streamJobs.isCancelled(jobId));
+    if (!closed) {
+      streamJobs.complete(jobId);
+      res.write(sse('job_complete', { status: 'completed', error: null }));
+    }
+  } catch (e) {
+    if (!closed) {
+      const msg = (e as Error).message;
+      streamJobs.fail(jobId, msg);
+      res.write(sse('job_complete', { status: 'failed', error: msg }));
+    }
+  } finally {
+    if (!closed) res.end();
+  }
 });
 
-// ===================== POST /distill/jobs — stub =====================
+// ===================== POST /distill/jobs — 创建异步蒸馏任务 =====================
 router.post('/distill/jobs', (req: Request, res: Response) => {
-  // TODO: 接入实际 stream_jobs
-  const { prompt } = req.body ?? {};
-  const jobId = `stub-distill-${Date.now()}`;
-  logger.debug('[StaffSkill] distill job stub', { jobId, prompt });
-  res.status(201).json({
-    code: 0,
-    data: { job_id: jobId, status: 'queued' },
-    message: 'stub: distill job 尚未接入',
-  });
+  const jobId = streamJobs.createJob('distill', { prompt: req.body?.prompt });
+  void (async () => {
+    const write = (event: string, data: unknown) => streamJobs.append(jobId, event, data);
+    try {
+      write('job_attached', { job_id: jobId, status: 'running' });
+      await runDistill(jobId, req.body ?? {}, write, () => streamJobs.isCancelled(jobId));
+      streamJobs.complete(jobId);
+    } catch (e) {
+      streamJobs.fail(jobId, (e as Error).message);
+    }
+  })();
+  res.status(201).json({ code: 0, data: { job_id: jobId, status: 'queued' }, message: 'ok' });
 });
 
-// ===================== GET /jobs/:jobId — stub =====================
+// ===================== GET /jobs/:jobId — 任务状态 =====================
 router.get('/jobs/:jobId', (req: Request, res: Response) => {
-  // TODO: 接入 stream_jobs.getJob
+  const job = streamJobs.getJob(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ code: 404, data: null, message: 'job 不存在' });
+    return;
+  }
   res.json({
     code: 0,
-    data: { job_id: req.params.jobId, status: 'completed', events: [] },
-    message: 'stub: job 状态查询尚未接入',
+    data: {
+      job_id: job.job_id,
+      status: job.status,
+      error: job.error,
+      events: job.events.map((e) => ({ seq: e.seq, event: e.event, data: e.data })),
+    },
+    message: 'ok',
   });
 });
 
-// ===================== GET /jobs/:jobId/stream — SSE stub =====================
+// ===================== GET /jobs/:jobId/stream — SSE 断点续传 =====================
 router.get('/jobs/:jobId/stream', (req: Request, res: Response) => {
+  const job = streamJobs.getJob(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ code: 404, data: null, message: 'job 不存在' });
+    return;
+  }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
-  // TODO: 接入 stream_jobs 事件流
-  res.write(`data: ${JSON.stringify({ type: 'done', data: { job_id: req.params.jobId, stub: true } })}\n\n`);
-  res.end();
+  const after = Number(req.query.after_seq) || 0;
+  let lastSeq = after;
+  for (const ev of streamJobs.snapshot(job.job_id, after)) {
+    res.write(sse(ev.event, ev.data));
+    lastSeq = ev.seq;
+  }
+  if (streamJobs.isDone(job.job_id)) {
+    res.end();
+    return;
+  }
+  const timer = setInterval(() => {
+    const evs = streamJobs.snapshot(job.job_id, lastSeq);
+    for (const ev of evs) {
+      res.write(sse(ev.event, ev.data));
+      lastSeq = ev.seq;
+    }
+    if (streamJobs.isDone(job.job_id)) {
+      clearInterval(timer);
+      res.end();
+    }
+  }, 200);
+  req.on('close', () => clearInterval(timer));
 });
 
-// ===================== POST /jobs/:jobId/cancel — stub =====================
+// ===================== POST /jobs/:jobId/cancel — 取消任务 =====================
 router.post('/jobs/:jobId/cancel', (req: Request, res: Response) => {
-  // TODO: 接入 stream_jobs.cancel
+  const ok = streamJobs.cancel(req.params.jobId);
   res.json({
     code: 0,
-    data: { job_id: req.params.jobId, status: 'cancelled' },
-    message: 'stub: job 取消尚未接入',
+    data: { job_id: req.params.jobId, status: ok ? 'cancelled' : 'unknown' },
+    message: ok ? 'ok' : 'job 不存在或已完成',
   });
 });
 
@@ -236,38 +443,32 @@ router.post('/:skillId/draft', (req: Request, res: Response) => {
   res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
 });
 
-// ===================== POST /:skillId/rewrite — stub =====================
+// ===================== POST /:skillId/rewrite — 功能未接入 =====================
 router.post('/:skillId/rewrite', (req: Request, res: Response) => {
-  // TODO: 接入 SkillEditor
-  logger.debug('[StaffSkill] rewrite stub', { skillId: req.params.skillId });
   res.json({
     code: 0,
-    data: { skill_id: req.params.skillId, content: {}, warnings: [] },
-    message: 'stub: skill rewrite 尚未接入',
+    data: { implemented: false, skill_id: req.params.skillId, content: {}, warnings: [] },
+    message: '功能未接入：skill rewrite 尚未实现',
   });
 });
 
-// ===================== POST /:skillId/rewrite/jobs — stub =====================
+// ===================== POST /:skillId/rewrite/jobs — 功能未接入 =====================
 router.post('/:skillId/rewrite/jobs', (req: Request, res: Response) => {
-  // TODO: 接入 stream_jobs
-  const jobId = `stub-rewrite-${Date.now()}`;
-  logger.debug('[StaffSkill] rewrite job stub', { jobId, skillId: req.params.skillId });
   res.status(201).json({
     code: 0,
-    data: { job_id: jobId, status: 'queued' },
-    message: 'stub: rewrite job 尚未接入',
+    data: { implemented: false, job_id: null, status: 'unavailable' },
+    message: '功能未接入：rewrite job 尚未实现',
   });
 });
 
-// ===================== POST /:skillId/rewrite/stream — SSE stub =====================
+// ===================== POST /:skillId/rewrite/stream — SSE 功能未接入 =====================
 router.post('/:skillId/rewrite/stream', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
-  // TODO: 接入 SkillEditor 流式
-  res.write(`data: ${JSON.stringify({ type: 'rewrite.start', data: { skill_id: req.params.skillId } })}\n\n`);
-  res.write(`data: ${JSON.stringify({ type: 'done', data: { stub: true } })}\n\n`);
+  res.write(`data: ${JSON.stringify({ type: 'rewrite.start', data: { skill_id: req.params.skillId, implemented: false } })}\n\n`);
+  res.write(`data: ${JSON.stringify({ type: 'done', data: { implemented: false, message: 'skill rewrite 尚未实现' } })}\n\n`);
   res.end();
 });
 

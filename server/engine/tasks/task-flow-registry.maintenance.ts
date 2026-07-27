@@ -1,19 +1,17 @@
 // Reconciles stale task-flow records with their child task state.
 // 移植自 openclaw/src/tasks/task-flow-registry.maintenance.ts。
-// 降级：runtime-internal.ts、task-flow-registry.ts、task-flow-registry.audit.ts 未移植，
-// 从 _openclaw-task-stubs.js 导入占位实现。
 import { listTasksForFlowId } from "./_openclaw-task-stubs.js";
 import {
   listTaskFlowAuditFindings,
   summarizeTaskFlowAuditFindings,
   type TaskFlowAuditSummary,
-} from "./_openclaw-task-stubs.js";
+} from "./task-flow-registry.audit.js";
 import {
   deleteTaskFlowRecordById,
   getTaskFlowById,
   listTaskFlowRecords,
   updateFlowRecordByIdExpectedRevision,
-} from "./_openclaw-task-stubs.js";
+} from "./task-flow-registry.js";
 import type { TaskFlowRecord } from "./task-flow-registry.types.js";
 
 const TASK_FLOW_RETENTION_MS = 7 * 24 * 60 * 60_000;

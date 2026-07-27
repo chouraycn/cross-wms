@@ -1,10 +1,28 @@
 {
   "id": "qwen",
   "name": "Qwen Provider",
-  "description": "Qwen LLM provider extension",
+  "description": "Qwen (通义千问) LLM provider extension with Chat Completions API support",
   "version": "1.0.0",
   "kind": "provider",
   "sdkVersion": "1.0.0",
   "requiresAuth": true,
-  "authType": "api-key"
+  "authType": "api-key",
+  "providers": ["qwen"],
+  "modelSupport": {
+    "modelPrefixes": ["qwen-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "qwen-native",
+      "hosts": ["dashscope.aliyuncs.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "qwen",
+        "envVars": ["QWEN_API_KEY"]
+      }
+    ]
+  }
 }
