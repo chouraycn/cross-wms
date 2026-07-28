@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import EmployeeAvatar from '../../../../components/staff/EmployeeAvatar.js';
 import StaffdeckIcon from '../../../../components/staff/StaffdeckIcon.js';
+import { Box } from '@mui/material';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,40 +12,9 @@ import {
 } from '../../../../components/staff/ui/dropdown-menu.js';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../../../../components/staff/ui/hover-card.js';
 import { employeeDisplayName } from '../../../../components/staff/employee.js';
-import { cn } from '../../../../components/staff/lib/utils.js';
 import { useI18n } from '../../../../components/staff/i18n/index.js';
 
-import {
-  CHAT_COMPOSER_ACTIONS_ROW_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_CHIP_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_COPY_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_ERROR_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_IMG_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_NAME_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_REMOVE_CLASS,
-  CHAT_COMPOSER_ATTACHMENT_STATUS_CLASS,
-  CHAT_COMPOSER_ATTACHMENTS_CLASS,
-  CHAT_COMPOSER_AVATAR_CLASS,
-  CHAT_COMPOSER_CONTEXT_ROW_CLASS,
-  CHAT_COMPOSER_DROP_HINT_CLASS,
-  CHAT_COMPOSER_FORM_CLASS,
-  CHAT_COMPOSER_FORM_DRAG_CLASS,
-  CHAT_COMPOSER_HINT_CLASS,
-  CHAT_COMPOSER_INTENT_CHIP_CLASS,
-  CHAT_COMPOSER_MODEL_BTN_CLASS,
-  CHAT_COMPOSER_PLUS_BTN_CLASS,
-  CHAT_COMPOSER_SEND_BTN_CLASS,
-  CHAT_COMPOSER_STAGE_CLASS,
-  CHAT_COMPOSER_STOP_BTN_CLASS,
-  CHAT_COMPOSER_TEXTAREA_CLASS,
-  CHAT_INPUT_SHELL_CLASS,
-  CHAT_MENU_CONTENT_CLASS,
-  CHAT_MENU_ITEM_CLASS,
-  CHAT_MODEL_MENU_COPY_CLASS,
-  CHAT_MODEL_MENU_DETAIL_CLASS,
-  CHAT_MODEL_MENU_ITEM_CLASS,
-  CHAT_MODEL_MENU_NAME_CLASS,
-} from '../chatPageStyles.js';
+import { chatTokens } from '../chatTokens.js';
 import { attachmentTypeLabel, modelDetailText, modelDisplayName } from '../chatHelpers.js';
 import type { UseChatSession } from '../useChatSession.js';
 
@@ -116,37 +86,79 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
   };
 
   return (
-    <div className={CHAT_INPUT_SHELL_CLASS}>
-      <div className={CHAT_COMPOSER_STAGE_CLASS}>
+    <Box sx={chatTokens.inputShell}>
+      <Box sx={chatTokens.composerStage}>
         {showModelSetupNotice && (
-          <div className="mb-[10px] flex flex-col items-start justify-between gap-[10px] rounded-[12px] border border-[#f3d28b] bg-[#fff8e8] px-[14px] py-[10px] text-[#6f4500] shadow-[0_8px_24px_rgba(92,62,0,0.08)] sm:flex-row sm:items-center">
-            <div className="flex min-w-0 items-center gap-[9px]">
-              <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[8px] bg-[#ffe7ad] text-[#8a4b00]">
+          <Box
+            sx={{
+              mb: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '10px',
+              borderRadius: '12px',
+              border: '1px solid #f3d28b',
+              bgcolor: '#fff8e8',
+              px: '14px',
+              py: '10px',
+              color: '#6f4500',
+              boxShadow: '0 8px 24px rgba(92,62,0,0.08)',
+              '@media (min-width:640px)': { flexDirection: 'row', alignItems: 'center' },
+            }}
+          >
+            <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '9px' }}>
+              <Box
+                component="span"
+                sx={{
+                  display: 'flex',
+                  width: '26px',
+                  height: '26px',
+                  flexShrink: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  bgcolor: '#ffe7ad',
+                  color: '#8a4b00',
+                }}
+              >
                 <StaffdeckIcon name="model" size={14} />
-              </span>
-              <span className="min-w-0 text-[12px] leading-[18px]">{modelSetupNoticeText}</span>
-            </div>
+              </Box>
+              <Box component="span" sx={{ minWidth: 0, fontSize: '12px', lineHeight: '18px' }}>{modelSetupNoticeText}</Box>
+            </Box>
             {canConfigureModels && (
-              <button
+              <Box
+                component="button"
                 type="button"
                 onClick={() => setModelSetupOpen(true)}
-                className="h-[30px] shrink-0 rounded-[8px] bg-[#18181a] px-[12px] text-[12px] text-white transition-colors hover:bg-[#303030]"
+                sx={{
+                  height: '30px',
+                  flexShrink: 0,
+                  borderRadius: '8px',
+                  bgcolor: '#18181a',
+                  px: '12px',
+                  fontSize: '12px',
+                  color: '#fff',
+                  transition: 'background-color 0.15s, color 0.15s',
+                  '&:hover': { bgcolor: '#303030' },
+                }}
               >
                 {t('配置模型')}
-              </button>
+              </Box>
             )}
-          </div>
+          </Box>
         )}
         {showComposerAvatar && displayedProfile && (
           <HoverCard openDelay={80} closeDelay={80}>
             <HoverCardTrigger asChild>
-              <button
+              <Box
+                component="button"
                 type="button"
                 aria-label="员工信息"
-                className={cn(CHAT_COMPOSER_AVATAR_CLASS, 'block cursor-pointer outline-none')}
+                sx={[chatTokens.composerAvatar, { display: 'block', cursor: 'pointer', outline: 'none' }]}
               >
                 <EmployeeAvatar profile={displayedProfile} size={44} className="size-full" />
-              </button>
+              </Box>
             </HoverCardTrigger>
             <HoverCardContent
               side="left"
@@ -154,125 +166,206 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
               sideOffset={10}
               className="flex w-[220px] flex-col items-start gap-[8px] rounded-[20px] border-0 bg-white p-0 py-[4px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0"
             >
-              <div className="flex w-full flex-col px-[6px]">
-                <div className="flex h-[46px] w-full flex-col items-center justify-end rounded-[14px] bg-[#f6f6f6] pb-[4px] pl-[8px] pr-[16px] pt-[8px]">
-                  <div className="flex w-full items-end">
-                    <div className="flex items-end gap-[4px]">
-                      <EmployeeAvatar
-                        profile={displayedProfile}
-                        agent={displayedAgent ?? undefined}
-                        width={60}
-                        height={60}
-                        radius={30}
-                        objectPosition="bottom"
-                      />
-                      <div className="flex h-[36px] flex-col justify-center gap-[2px] whitespace-nowrap pb-[2px] text-[10px] capitalize leading-normal">
-                        <p className="font-medium text-[#464c5e]">
-                          {displayedAgent ? employeeDisplayName(displayedAgent) : displayedProfile.roleName}
-                        </p>
-                        <p className="text-[#757f9c]">{displayedProfile.roleName}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Box
+                sx={{
+                  display: 'flex',
+                  width: '220px',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                  borderRadius: '20px',
+                  borderWidth: 0,
+                  bgcolor: 'background.paper',
+                  p: 0,
+                  py: '4px',
+                  boxShadow: '0px 16px 15px rgba(0,0,0,0.1)',
+                }}
+              >
+                <Box sx={{ display: 'flex', width: '100%', flexDirection: 'column', px: '6px' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      height: '46px',
+                      width: '100%',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      borderRadius: '14px',
+                      bgcolor: '#f6f6f6',
+                      pb: '4px',
+                      pl: '8px',
+                      pr: '16px',
+                      pt: '8px',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-end' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '4px' }}>
+                        <EmployeeAvatar
+                          profile={displayedProfile}
+                          agent={displayedAgent ?? undefined}
+                          width={60}
+                          height={60}
+                          radius={30}
+                          objectPosition="bottom"
+                        />
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            height: '36px',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            gap: '2px',
+                            whiteSpace: 'nowrap',
+                            pb: '2px',
+                            fontSize: '10px',
+                            textTransform: 'capitalize',
+                            lineHeight: 'normal',
+                          }}
+                        >
+                          <Box component="p" sx={{ fontWeight: 500, color: '#464c5e' }}>
+                            {displayedAgent ? employeeDisplayName(displayedAgent) : displayedProfile.roleName}
+                          </Box>
+                          <Box component="p" sx={{ color: '#757f9c' }}>{displayedProfile.roleName}</Box>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
 
-              <div className="flex w-full flex-col gap-[8px] px-[8px]">
-                <p className="w-full text-[10px] capitalize leading-[14px] text-[#757f9c]">
-                  {emptyRoleSummary}
-                </p>
-                {emptyProfileTags.length > 0 && (
-                  <div className="flex w-full flex-wrap content-center items-center gap-[4px]">
-                    {emptyProfileTags.map((tag, index) => (
-                      <div
-                        key={`${tag}-${index}`}
-                        className="flex h-[16px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px]"
-                      >
-                        <span className="whitespace-nowrap text-[8px] capitalize leading-normal text-[#757f9c]">
-                          {tag}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex w-full flex-col px-[8px] pb-[8px]">
-                <div className="flex w-full items-start whitespace-nowrap capitalize leading-normal">
-                  {emptyStats.map((item, index) => (
-                    <div
-                      key={item.label}
-                      className={cn(
-                        'flex flex-1 flex-col justify-center gap-[4px] border-[0.5px] border-[#e3e7f1] px-[12px] py-[6px]',
-                        index === 0 && 'rounded-l-[14px]',
-                        index === emptyStats.length - 1 && 'rounded-r-[14px]',
-                      )}
+                <Box sx={{ display: 'flex', width: '100%', flexWrap: 'wrap', alignContent: 'center', alignItems: 'center', gap: '4px' }}>
+                  {emptyProfileTags.map((tag, index) => (
+                    <Box
+                      key={`${tag}-${index}`}
+                      sx={{
+                        display: 'flex',
+                        height: '16px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '10px',
+                        border: '0.5px solid #e3e7f1',
+                        px: '8px',
+                        py: '2px',
+                      }}
                     >
-                      <p className="text-[16px] font-medium text-[#18181a]">{item.value}</p>
-                      <p className="text-[10px] text-[#464c5e]">{item.label}</p>
-                    </div>
+                      <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '8px', textTransform: 'capitalize', lineHeight: 'normal', color: '#757f9c' }}>
+                        {tag}
+                      </Box>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', width: '100%', flexDirection: 'column', gap: '8px', px: '8px' }}>
+                <Box component="p" sx={{ width: '100%', fontSize: '10px', textTransform: 'capitalize', lineHeight: '14px', color: '#757f9c' }}>
+                  {emptyRoleSummary}
+                </Box>
+                {emptyProfileTags.length > 0 && (
+                  <Box sx={{ display: 'flex', width: '100%', flexWrap: 'wrap', alignContent: 'center', alignItems: 'center', gap: '4px' }}>
+                    {emptyProfileTags.map((tag, index) => (
+                      <Box
+                        key={`${tag}-${index}`}
+                        sx={{
+                          display: 'flex',
+                          height: '16px',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '10px',
+                          border: '0.5px solid #e3e7f1',
+                          px: '8px',
+                          py: '2px',
+                        }}
+                      >
+                        <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '8px', textTransform: 'capitalize', lineHeight: 'normal', color: '#757f9c' }}>
+                          {tag}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              <Box sx={{ display: 'flex', width: '100%', flexDirection: 'column', px: '8px', pb: '8px' }}>
+                <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-start', whiteSpace: 'nowrap', textTransform: 'capitalize', lineHeight: 'normal' }}>
+                  {emptyStats.map((item, index) => (
+                    <Box
+                      key={item.label}
+                      sx={[
+                        {
+                          display: 'flex',
+                          flex: 1,
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          border: '0.5px solid #e3e7f1',
+                          px: '12px',
+                          py: '6px',
+                        },
+                        ...(index === 0 ? [{ borderTopLeftRadius: '14px', borderBottomLeftRadius: '14px' }] : []),
+                        ...(index === emptyStats.length - 1 ? [{ borderTopRightRadius: '14px', borderBottomRightRadius: '14px' }] : []),
+                      ]}
+                    >
+                      <Box component="p" sx={{ fontSize: '16px', fontWeight: 500, color: '#18181a' }}>{item.value}</Box>
+                      <Box component="p" sx={{ fontSize: '10px', color: '#464c5e' }}>{item.label}</Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
             </HoverCardContent>
           </HoverCard>
         )}
-        <form
-          className={cn(CHAT_COMPOSER_FORM_CLASS, composerDragActive && CHAT_COMPOSER_FORM_DRAG_CLASS)}
+        <Box
+          component="form"
+          sx={[chatTokens.composerForm, ...(composerDragActive ? [chatTokens.composerFormDrag] : [])]}
           onDragEnter={handleComposerDragEnter}
           onDragOver={handleComposerDragOver}
           onDragLeave={handleComposerDragLeave}
           onDrop={handleComposerDrop}
           onSubmit={handleSubmit}
         >
-          <input
-            ref={fileInputRef}
-            className="hidden"
-            type="file"
-            multiple
-            onChange={handleComposerFileChange}
-          />
-          {composerDragActive && <div className={CHAT_COMPOSER_DROP_HINT_CLASS}>松开上传文件</div>}
+          <Box component="input" sx={{ display: 'none' }} ref={fileInputRef} type="file" multiple onChange={handleComposerFileChange} />
+          {composerDragActive && <Box sx={chatTokens.composerDropHint}>松开上传文件</Box>}
 
           {composerAttachments.length > 0 && (
-            <div className={CHAT_COMPOSER_ATTACHMENTS_CLASS}>
+            <Box sx={chatTokens.composerAttachments}>
               {composerAttachments.map((attachment) => (
-                <div
-                  className={cn(
-                    CHAT_COMPOSER_ATTACHMENT_CHIP_CLASS,
-                    attachment.uploadStatus === 'error' && CHAT_COMPOSER_ATTACHMENT_ERROR_CLASS,
-                  )}
+                <Box
+                  sx={[
+                    chatTokens.composerAttachmentChip,
+                    ...(attachment.uploadStatus === 'error' ? [chatTokens.composerAttachmentError] : []),
+                  ]}
                   key={attachment.uploadKey}
                 >
                   {attachment.kind === 'image' && attachment.data_url ? (
-                    <img className={CHAT_COMPOSER_ATTACHMENT_IMG_CLASS} src={attachment.data_url} alt={attachment.filename} />
+                    <Box component="img" sx={chatTokens.composerAttachmentImg} src={attachment.data_url} alt={attachment.filename} />
                   ) : (
                     <StaffdeckIcon name={attachment.kind === 'pdf' ? 'file' : 'folder'} size={16} />
                   )}
-                  <span className={CHAT_COMPOSER_ATTACHMENT_COPY_CLASS}>
-                    <span className={CHAT_COMPOSER_ATTACHMENT_NAME_CLASS}>{attachment.filename}</span>
-                    <span className={CHAT_COMPOSER_ATTACHMENT_STATUS_CLASS}>
+                  <Box component="span" sx={chatTokens.composerAttachmentCopy}>
+                    <Box component="span" sx={chatTokens.composerAttachmentName}>{attachment.filename}</Box>
+                    <Box component="span" sx={chatTokens.composerAttachmentStatus}>
                       {attachment.uploadStatus === 'uploading' && '解析中'}
                       {attachment.uploadStatus === 'ready' && attachmentTypeLabel(attachment)}
                       {attachment.uploadStatus === 'error' && (attachment.error || '上传失败')}
-                    </span>
-                  </span>
-                  <button
+                    </Box>
+                  </Box>
+                  <Box
+                    component="button"
                     type="button"
-                    className={CHAT_COMPOSER_ATTACHMENT_REMOVE_CLASS}
+                    sx={chatTokens.composerAttachmentRemove}
                     onClick={() => removeComposerAttachment(attachment.uploadKey)}
                     aria-label="移除附件"
                   >
                     ×
-                  </button>
-                </div>
+                  </Box>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
 
-          <textarea
+          <Box
+            component="textarea"
+            sx={chatTokens.composerTextarea}
             ref={textareaRef}
-            className={CHAT_COMPOSER_TEXTAREA_CLASS}
             value={input}
             rows={2}
             placeholder={t('输入消息，按 Enter 发送...')}
@@ -295,34 +388,41 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
             }}
           />
 
-          <div className={cn('flex items-center justify-between gap-[10px]', !composerActive && 'opacity-95')}>
-            <div className={CHAT_COMPOSER_CONTEXT_ROW_CLASS}>
+          <Box
+            sx={[
+              { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' },
+              ...(!composerActive ? [{ opacity: 0.95 }] : []),
+            ]}
+          >
+            <Box sx={chatTokens.composerContextRow}>
               <DropdownMenu open={composerPlusOpen} onOpenChange={setComposerPlusOpen}>
                 <DropdownMenuTrigger asChild>
-                  <button
+                  <Box
+                    component="button"
                     type="button"
-                    className={CHAT_COMPOSER_PLUS_BTN_CLASS}
+                    sx={chatTokens.composerPlusBtn}
                     aria-label="添加"
                     title="添加"
                   >
                     <StaffdeckIcon name="plus" size={16} />
-                  </button>
+                  </Box>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className={cn(CHAT_MENU_CONTENT_CLASS, 'min-w-[160px]')}>
-                  <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} onSelect={() => handleComposerPlusAction('upload')}>
+                <DropdownMenuContent align="start" side="top" sx={[chatTokens.menuContent, { minWidth: '160px' }]}>
+                  <DropdownMenuItem sx={chatTokens.menuItem} onSelect={() => handleComposerPlusAction('upload')}>
                     <StaffdeckIcon name="upload" size={16} />
                     <span>上传文件</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} onSelect={() => handleComposerPlusAction('scheduled_task')}>
+                  <DropdownMenuItem sx={chatTokens.menuItem} onSelect={() => handleComposerPlusAction('scheduled_task')}>
                     <StaffdeckIcon name="clock" size={16} />
                     <span>定时任务</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               {composerIntent === 'scheduled_task' && (
-                <button
+                <Box
+                  component="button"
                   type="button"
-                  className={CHAT_COMPOSER_INTENT_CHIP_CLASS}
+                  sx={chatTokens.composerIntentChip}
                   onMouseEnter={() => setScheduleIntentHovered(true)}
                   onMouseLeave={() => setScheduleIntentHovered(false)}
                   onFocus={() => setScheduleIntentHovered(true)}
@@ -331,54 +431,66 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                   aria-label="取消定时任务"
                   title="取消定时任务"
                 >
-                  <span className={cn(
-                    'relative inline-grid size-[16px] shrink-0 place-items-center rounded-full transition-colors',
-                    scheduleIntentHovered ? 'text-[#18181a]' : 'text-[#858b9c]',
-                  )}
+                  <Box
+                    component="span"
+                    sx={[
+                      {
+                        position: 'relative',
+                        display: 'inline-grid',
+                        width: '16px',
+                        height: '16px',
+                        flexShrink: 0,
+                        placeItems: 'center',
+                        borderRadius: '9999px',
+                        transition: 'color 0.15s',
+                      },
+                      ...(scheduleIntentHovered ? [{ color: '#18181a' }] : [{ color: '#858b9c' }]),
+                    ]}
                   >
                     <StaffdeckIcon
                       name="clock"
                       size={14}
-                      className={cn('transition-opacity', scheduleIntentHovered ? 'opacity-0' : 'opacity-100')}
+                      className={scheduleIntentHovered ? 'opacity-0' : 'opacity-100'}
                     />
                     <StaffdeckIcon
                       name="close"
                       size={9}
-                      className={cn('absolute transition-opacity', scheduleIntentHovered ? 'opacity-100' : 'opacity-0')}
+                      className={scheduleIntentHovered ? 'opacity-100' : 'opacity-0'}
                       style={{ width: 9, height: 9 }}
                     />
-                  </span>
+                  </Box>
                   <span>定时任务</span>
-                </button>
+                </Box>
               )}
-              <div className={CHAT_COMPOSER_HINT_CLASS}>Enter 发送 / Shift+Enter 换行</div>
-            </div>
-            <div className={CHAT_COMPOSER_ACTIONS_ROW_CLASS}>
+              <Box sx={chatTokens.composerHint}>Enter 发送 / Shift+Enter 换行</Box>
+            </Box>
+            <Box sx={chatTokens.composerActionsRow}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
+                  <Box
+                    component="button"
                     type="button"
-                    className={CHAT_COMPOSER_MODEL_BTN_CLASS}
+                    sx={chatTokens.composerModelBtn}
                     disabled={!enabledModelConfigs.length}
                   >
                     <span>{selectedModelConfig ? modelDisplayName(selectedModelConfig) : '默认模型'}</span>
                     <StaffdeckIcon name="arrow" size={14} style={{ transform: 'rotate(90deg)' }} />
-                  </button>
+                  </Box>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top" className={cn(CHAT_MENU_CONTENT_CLASS, 'max-h-[360px] min-w-[240px] overflow-y-auto')}>
+                <DropdownMenuContent align="end" side="top" sx={[chatTokens.menuContent, { maxHeight: '360px', minWidth: '240px', overflowY: 'auto' }]}>
                   {enabledModelConfigs.length === 0 ? (
-                    <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} disabled>暂无可用模型</DropdownMenuItem>
+                    <DropdownMenuItem sx={chatTokens.menuItem} disabled>暂无可用模型</DropdownMenuItem>
                   ) : (
                     enabledModelConfigs.map((model) => (
                       <DropdownMenuItem
                         key={model.id}
-                        className={CHAT_MODEL_MENU_ITEM_CLASS}
+                        sx={chatTokens.modelMenuItem}
                         onSelect={() => changeModelConfig(model.id)}
                       >
-                        <span className={CHAT_MODEL_MENU_COPY_CLASS}>
-                          <span className={CHAT_MODEL_MENU_NAME_CLASS}>{modelDisplayName(model)}</span>
-                          <span className={CHAT_MODEL_MENU_DETAIL_CLASS}>{modelDetailText(model)}</span>
-                        </span>
+                        <Box component="span" sx={chatTokens.modelMenuCopy}>
+                          <Box component="span" sx={chatTokens.modelMenuName}>{modelDisplayName(model)}</Box>
+                          <Box component="span" sx={chatTokens.modelMenuDetail}>{modelDetailText(model)}</Box>
+                        </Box>
                         {selectedModelConfig?.id === model.id && <StaffdeckIcon name="check" size={15} />}
                       </DropdownMenuItem>
                     ))
@@ -386,29 +498,31 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                 </DropdownMenuContent>
               </DropdownMenu>
               {currentSessionRunning && (
-                <button
+                <Box
+                  component="button"
                   type="button"
-                  className={cn(CHAT_COMPOSER_SEND_BTN_CLASS, CHAT_COMPOSER_STOP_BTN_CLASS)}
+                  sx={[chatTokens.composerSendBtn, chatTokens.composerStopBtn]}
                   onClick={abortStream}
                   aria-label="停止生成"
                   title="停止生成"
                 >
                   <StaffdeckIcon name="stop" size={18} />
-                </button>
+                </Box>
               )}
-              <button
+              <Box
+                component="button"
                 type="submit"
-                className={CHAT_COMPOSER_SEND_BTN_CLASS}
+                sx={chatTokens.composerSendBtn}
                 disabled={sendDisabled}
                 aria-label={currentSessionRunning ? '加入发送队列' : '发送'}
                 title={currentSessionRunning ? '加入发送队列' : '发送'}
               >
                 <StaffdeckIcon name="send" size={18} />
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

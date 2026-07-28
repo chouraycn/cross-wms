@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import StaffdeckIcon from '../../../../components/staff/StaffdeckIcon.js';
+import { Box } from '@mui/material';
 import { Button } from '../../../../components/staff/ui/button.js';
 import { Input } from '../../../../components/staff/ui/input.js';
 import { Textarea } from '../../../../components/staff/ui/textarea.js';
@@ -16,23 +17,7 @@ import { getClientTimeZone } from '../../../../components/staff/lib/timezone.js'
 import { cn } from '../../../../components/staff/lib/utils.js';
 import type { ScheduledTaskDraftRead, ScheduledTaskRead } from '../../../../components/staff/types/index.js';
 
-import {
-  CHAT_DRAFT_CARD_CLASS,
-  CHAT_DRAFT_CARD_CREATED_CLASS,
-  CHAT_DRAFT_CREATED_BADGE_CLASS,
-  CHAT_DRAFT_EDITOR_CLASS,
-  CHAT_DRAFT_EDITOR_FULL_CLASS,
-  CHAT_DRAFT_FOOTER_CLASS,
-  CHAT_DRAFT_HEADER_CLASS,
-  CHAT_DRAFT_ICON_CLASS,
-  CHAT_DRAFT_IDENTITY_CLASS,
-  CHAT_DRAFT_KICKER_CLASS,
-  CHAT_DRAFT_META_GRID_CLASS,
-  CHAT_DRAFT_META_ITEM_CLASS,
-  CHAT_DRAFT_PROMPT_CLASS,
-  CHAT_DRAFT_TITLE_CLASS,
-  CHAT_DRAFT_TOP_ACTIONS_CLASS,
-} from '../chatPageStyles.js';
+import { chatTokens } from '../chatTokens.js';
 import {
   draftScheduleForType,
   formatDraftSchedule,
@@ -127,14 +112,14 @@ export default function ScheduledDraftCard({
   };
 
   return (
-    <div className={cn(CHAT_DRAFT_CARD_CLASS, created && CHAT_DRAFT_CARD_CREATED_CLASS)}>
-      <div className={CHAT_DRAFT_HEADER_CLASS}>
-        <div className={CHAT_DRAFT_IDENTITY_CLASS}>
-          <div className={CHAT_DRAFT_ICON_CLASS}>
+    <Box sx={[chatTokens.draftCard, ...(created ? [chatTokens.draftCardCreated] : [])]}>
+      <Box sx={chatTokens.draftHeader}>
+        <Box sx={chatTokens.draftIdentity}>
+          <Box sx={chatTokens.draftIcon}>
             <StaffdeckIcon name={created ? 'check' : 'clock'} size={18} />
-          </div>
-          <div className="grid min-w-0 gap-[2px]">
-            <div className={CHAT_DRAFT_KICKER_CLASS}>{created ? '定时任务已创建' : '定时任务草案'}</div>
+          </Box>
+          <Box sx={{ display: 'grid', minWidth: 0, gap: '2px' }}>
+            <Box sx={chatTokens.draftKicker}>{created ? '定时任务已创建' : '定时任务草案'}</Box>
             {editing ? (
               <Input
                 className="h-[30px]"
@@ -142,16 +127,16 @@ export default function ScheduledDraftCard({
                 onChange={(event) => updateDraft({ title: event.target.value })}
               />
             ) : (
-              <strong className={CHAT_DRAFT_TITLE_CLASS}>{displayDraft.title}</strong>
+              <Box component="strong" sx={chatTokens.draftTitle}>{displayDraft.title}</Box>
             )}
-          </div>
-        </div>
-        <div className={CHAT_DRAFT_TOP_ACTIONS_CLASS}>
+          </Box>
+        </Box>
+        <Box sx={chatTokens.draftTopActions}>
           {created ? (
-            <span className={CHAT_DRAFT_CREATED_BADGE_CLASS}>
+            <Box component="span" sx={chatTokens.draftCreatedBadge}>
               <StaffdeckIcon name="check" size={13} />
               已创建
-            </span>
+            </Box>
           ) : editing ? (
             <>
               <Button size="sm" onClick={completeEdit}>完成</Button>
@@ -175,10 +160,10 @@ export default function ScheduledDraftCard({
               <Button size="sm" variant="ghost" onClick={onDismiss}>忽略</Button>
             </>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
       {editing ? (
-        <div className={CHAT_DRAFT_EDITOR_CLASS}>
+        <Box sx={chatTokens.draftEditor}>
           <label>
             <span>计划类型</span>
             <Select value={editableDraft.schedule_type} onValueChange={updateScheduleType}>
@@ -210,15 +195,15 @@ export default function ScheduledDraftCard({
               onChange={(event) => updateDraft({ timezone: event.target.value })}
             />
           </label>
-          <label className={CHAT_DRAFT_EDITOR_FULL_CLASS}>
+          <Box component="label" sx={chatTokens.draftEditorFull}>
             <span>执行内容</span>
             <Textarea
               rows={3}
               value={editableDraft.prompt}
               onChange={(event) => updateDraft({ prompt: event.target.value })}
             />
-          </label>
-          <label className={CHAT_DRAFT_EDITOR_FULL_CLASS}>
+          </Box>
+          <Box component="label" sx={chatTokens.draftEditorFull}>
             <span>说明</span>
             <Textarea
               rows={2}
@@ -226,42 +211,42 @@ export default function ScheduledDraftCard({
               placeholder="可补充任务目的、范围或结果要求"
               onChange={(event) => updateDraft({ description: event.target.value })}
             />
-          </label>
-        </div>
+          </Box>
+        </Box>
       ) : (
-        <div className="grid gap-[12px]">
-          <div className={CHAT_DRAFT_META_GRID_CLASS}>
-            <div className={CHAT_DRAFT_META_ITEM_CLASS}>
+        <Box sx={{ display: 'grid', gap: '12px' }}>
+          <Box sx={chatTokens.draftMetaGrid}>
+            <Box sx={chatTokens.draftMetaItem}>
               <span>计划</span>
               <strong>{formatDraftSchedule(displayDraft)}</strong>
-            </div>
-            <div className={CHAT_DRAFT_META_ITEM_CLASS}>
+            </Box>
+            <Box sx={chatTokens.draftMetaItem}>
               <span>类型</span>
               <strong>{scheduleTypeLabel(displayDraft.schedule_type)}</strong>
-            </div>
-            <div className={CHAT_DRAFT_META_ITEM_CLASS}>
+            </Box>
+            <Box sx={chatTokens.draftMetaItem}>
               <span>时区</span>
               <strong>{displayDraft.timezone || currentTimezone}</strong>
-            </div>
-          </div>
-          <div className={CHAT_DRAFT_PROMPT_CLASS}>
+            </Box>
+          </Box>
+          <Box sx={chatTokens.draftPrompt}>
             <span>执行内容</span>
             <p>{displayDraft.prompt}</p>
-          </div>
+          </Box>
           {displayDraft.description && (
-            <div className={CHAT_DRAFT_PROMPT_CLASS}>
+            <Box sx={chatTokens.draftPrompt}>
               <span>说明</span>
               <p>{displayDraft.description}</p>
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       )}
       {!created && (
-        <div className={CHAT_DRAFT_FOOTER_CLASS}>
+        <Box sx={chatTokens.draftFooter}>
           {editing && <Button size="sm" variant="ghost" onClick={onDismiss}>忽略</Button>}
           <Button size="sm" onClick={confirmDraft}>确认创建</Button>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,4 +1,5 @@
 import StaffdeckIcon from '../../../../components/staff/StaffdeckIcon.js';
+import { Box } from '@mui/material';
 import { cn } from '../../../../components/staff/lib/utils.js';
 import type {
   ChatAttachmentRead,
@@ -9,32 +10,10 @@ import type {
 } from '../../../../components/staff/types/index.js';
 
 import {
-  CHAT_ATTACHMENT_CARD_CLASS,
-  CHAT_ATTACHMENT_COPY_CLASS,
-  CHAT_ATTACHMENT_FILE_ICON_CLASS,
-  CHAT_ATTACHMENT_IMG_CLASS,
-  CHAT_ATTACHMENT_LIST_CLASS,
-  CHAT_ATTACHMENT_META_CLASS,
-  CHAT_ATTACHMENT_NAME_CLASS,
-  CHAT_CITATION_CHIP_CLASS,
-  CHAT_CITATION_HEADING_CLASS,
-  CHAT_CITATION_INDEX_CLASS,
-  CHAT_CITATION_LIST_CLASS,
-  CHAT_CITATION_TITLE_CLASS,
-  CHAT_CITATIONS_CLASS,
-  CHAT_FEEDBACK_BTN_ACTIVE_CLASS,
-  CHAT_FEEDBACK_BTN_CLASS,
-  CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS,
-  CHAT_FEEDBACK_CLASS,
-  CHAT_MESSAGE_ITEM_CLASS,
-  CHAT_MESSAGE_MODE_CHIP_CLASS,
-  CHAT_PLAIN_ANSWER_CLASS,
-  CHAT_QUEUED_MESSAGE_ITEM_CLASS,
-  CHAT_QUEUED_STATUS_CLASS,
-  CHAT_QUEUED_STATUS_ROW_CLASS,
-  chatBubbleClass,
-  chatRowClass,
-} from '../chatPageStyles.js';
+  chatBubbleSx,
+  chatRowSx,
+  chatTokens,
+} from '../chatTokens.js';
 import {
   MarkdownMessage,
   attachmentTypeLabel,
@@ -86,13 +65,11 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
   const queuedMessage = item.role === 'user' && item.metadata?.queued === true;
 
   return (
-    <div className={cn(CHAT_MESSAGE_ITEM_CLASS, queuedMessage && CHAT_QUEUED_MESSAGE_ITEM_CLASS)}>
-      <div className={chatRowClass(item.role)}>
-        <div
-          className={chatBubbleClass(item.role, item.isError)}
-        >
+    <Box sx={[chatTokens.messageItem, ...(queuedMessage ? [chatTokens.queuedMessageItem] : [])]}>
+      <Box sx={chatRowSx(item.role)}>
+        <Box sx={chatBubbleSx(item.role, item.isError)}>
           {statusOnly ? (
-            <div className="text-[13px] text-[#858b9c]">{visibleContent}</div>
+            <Box sx={{ fontSize: '13px', color: '#858b9c' }}>{visibleContent}</Box>
           ) : showInlineTrace && summary ? (
             <ExecutionRecord
               traceTurnId={traceTurnId}
@@ -109,61 +86,62 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
                 <MarkdownMessage content={visibleContent} />
               </div>
             ) : (
-              <div className={CHAT_PLAIN_ANSWER_CLASS}>
+              <Box sx={chatTokens.plainAnswer}>
                 {scheduledTaskPrompt && (
-                  <span className={CHAT_MESSAGE_MODE_CHIP_CLASS}>
+                  <Box component="span" sx={chatTokens.messageModeChip}>
                     <StaffdeckIcon name="clock" size={13} />
                     定时任务
-                  </span>
+                  </Box>
                 )}
                 <span data-i18n-ignore>{visibleContent}</span>
-              </div>
+              </Box>
             )
           ) : null}
 
           {!statusOnly && attachments.length > 0 && (
-            <div className={CHAT_ATTACHMENT_LIST_CLASS}>
+            <Box sx={chatTokens.attachmentList}>
               {attachments.map((attachment) => (
-                <div className={CHAT_ATTACHMENT_CARD_CLASS} key={attachment.id}>
+                <Box sx={chatTokens.attachmentCard} key={attachment.id}>
                   {attachment.kind === 'image' && attachment.data_url ? (
-                    <img className={CHAT_ATTACHMENT_IMG_CLASS} src={attachment.data_url} alt={attachment.filename} />
+                    <Box component="img" sx={chatTokens.attachmentImg} src={attachment.data_url} alt={attachment.filename} />
                   ) : (
-                    <span className={CHAT_ATTACHMENT_FILE_ICON_CLASS}>
+                    <Box component="span" sx={chatTokens.attachmentFileIcon}>
                       <StaffdeckIcon name={attachment.kind === 'pdf' ? 'file' : 'folder'} size={18} />
-                    </span>
+                    </Box>
                   )}
-                  <span className={CHAT_ATTACHMENT_COPY_CLASS}>
-                    <span className={CHAT_ATTACHMENT_NAME_CLASS} data-i18n-ignore>{attachment.filename}</span>
-                    <span className={CHAT_ATTACHMENT_META_CLASS} data-i18n-ignore>
+                  <Box component="span" sx={chatTokens.attachmentCopy}>
+                    <Box component="span" sx={chatTokens.attachmentName} data-i18n-ignore>{attachment.filename}</Box>
+                    <Box component="span" sx={chatTokens.attachmentMeta} data-i18n-ignore>
                       {attachmentTypeLabel(attachment)}
                       {attachment.error ? ` · ${attachment.error}` : ''}
-                    </span>
-                  </span>
-                </div>
+                    </Box>
+                  </Box>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
 
           {item.role === 'assistant' && citations.length > 0 && (
-            <div className={CHAT_CITATIONS_CLASS} aria-label="知识引用">
-              <div className={CHAT_CITATION_HEADING_CLASS}>
+            <Box sx={chatTokens.citations} aria-label="知识引用">
+              <Box sx={chatTokens.citationHeading}>
                 <StaffdeckIcon name="file" size={14} />
                 <span>知识来源</span>
-              </div>
-              <div className={CHAT_CITATION_LIST_CLASS}>
+              </Box>
+              <Box sx={chatTokens.citationList}>
                 {citations.map((citation) => (
-                  <button
-                    key={citation.id}
+                  <Box
+                    component="button"
                     type="button"
-                    className={CHAT_CITATION_CHIP_CLASS}
+                    sx={chatTokens.citationChip}
+                    key={citation.id}
                     onClick={() => setActiveCitation(citation)}
                   >
-                    <span className={CHAT_CITATION_INDEX_CLASS} data-i18n-ignore>{citation.label || citation.id}</span>
-                    <span className={CHAT_CITATION_TITLE_CLASS} data-i18n-ignore>{citationDisplayTitle(citation)}</span>
-                  </button>
+                    <Box component="span" sx={chatTokens.citationIndex} data-i18n-ignore>{citation.label || citation.id}</Box>
+                    <Box component="span" sx={chatTokens.citationTitle} data-i18n-ignore>{citationDisplayTitle(citation)}</Box>
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
           {scheduledDraft && (
@@ -176,38 +154,37 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
           )}
 
           {canRateMessage(item) && (
-            <div className={CHAT_FEEDBACK_CLASS}>
-              <button
+            <Box sx={chatTokens.feedback}>
+              <Box
+                component="button"
                 type="button"
-                className={cn(CHAT_FEEDBACK_BTN_CLASS, item.feedback_rating === 'up' && CHAT_FEEDBACK_BTN_ACTIVE_CLASS)}
+                sx={[chatTokens.feedbackBtn, ...(item.feedback_rating === 'up' ? [chatTokens.feedbackBtnActive] : [])]}
                 aria-label="点赞"
                 onClick={() => rateMessage(item, 'up')}
               >
                 <StaffdeckIcon name="thumb-up" size={15} />
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
-                className={cn(
-                  CHAT_FEEDBACK_BTN_CLASS,
-                  item.feedback_rating === 'down' && CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS,
-                )}
+                sx={[chatTokens.feedbackBtn, ...(item.feedback_rating === 'down' ? [chatTokens.feedbackBtnDislikeActive] : [])]}
                 aria-label="点踩"
                 onClick={() => rateMessage(item, 'down')}
               >
                 <StaffdeckIcon name="thumb-down" size={15} />
-              </button>
-            </div>
+              </Box>
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
       {queuedMessage && (
-        <div className={CHAT_QUEUED_STATUS_ROW_CLASS}>
-          <span className={CHAT_QUEUED_STATUS_CLASS} role="status">
+        <Box sx={chatTokens.queuedStatusRow}>
+          <Box component="span" sx={chatTokens.queuedStatus} role="status">
             <StaffdeckIcon name="clock" size={12} />
             排队中
-          </span>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

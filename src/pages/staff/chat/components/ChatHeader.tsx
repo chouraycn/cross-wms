@@ -7,13 +7,10 @@ import {
   DropdownMenuTrigger,
 } from '../../../../components/staff/ui/dropdown-menu.js';
 import LanguageSwitcher from '../../../../components/staff/LanguageSwitcher.js';
+import { Box } from '@mui/material';
 import { staffdeckDisplayText } from '../../../../components/staff/employee.js';
 
-import {
-  CHAT_HEADER_CLASS,
-  CHAT_HEADER_TITLE_NAME_CLASS,
-  CHAT_HEADER_TITLE_STACK_CLASS,
-} from '../chatPageStyles.js';
+import { chatTokens } from '../chatTokens.js';
 import type { UseChatSession } from '../useChatSession.js';
 
 export default function ChatHeader({ chat }: { chat: UseChatSession }) {
@@ -23,33 +20,58 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
   const initial = username ? username.slice(0, 1).toUpperCase() : '--';
 
   return (
-    <div className={CHAT_HEADER_CLASS}>
-      <div className={CHAT_HEADER_TITLE_STACK_CLASS}>
-        <span className="flex min-w-0 items-center gap-[4px]">
-          <span className={CHAT_HEADER_TITLE_NAME_CLASS}>{name}</span>
+    <Box sx={chatTokens.header}>
+      <Box sx={chatTokens.headerTitleStack}>
+        <Box component="span" sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '4px' }}>
+          <Box component="span" sx={chatTokens.headerTitleName}>{name}</Box>
           {currentSession && (
-            <button
+            <Box
+              component="button"
               type="button"
               aria-label="重命名会话"
               onClick={() => openRename(currentSession)}
-              className="inline-grid size-[14px] shrink-0 place-items-center text-[#858b9c] transition-colors hover:text-[#18181a]"
+              sx={{
+                display: 'inline-grid',
+                width: '14px',
+                height: '14px',
+                flexShrink: 0,
+                placeItems: 'center',
+                color: '#858b9c',
+                transition: 'background-color 0.15s, color 0.15s',
+                '&:hover': { color: '#18181a' },
+              }}
             >
               <Edit className="size-[14px]!" />
-            </button>
+            </Box>
           )}
-        </span>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="flex shrink-0 items-center gap-[8px]">
+      <Box sx={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: '8px' }}>
         <LanguageSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="账户菜单"
             className="flex shrink-0 items-center gap-[10px] rounded-[10px] py-[4px] pl-[6px] pr-[10px] outline-none transition-colors"
           >
-            <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium text-[#7e96dc]">
+            <Box
+              component="span"
+              sx={{
+                display: 'grid',
+                width: '32px',
+                height: '32px',
+                flexShrink: 0,
+                placeItems: 'center',
+                overflow: 'hidden',
+                borderRadius: '9999px',
+                bgcolor: '#eef1fb',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#7e96dc',
+              }}
+            >
               {initial}
-            </span>
+            </Box>
             <ChevronDown className="size-[14px] shrink-0 text-[#757F9C]" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -65,7 +87,7 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
