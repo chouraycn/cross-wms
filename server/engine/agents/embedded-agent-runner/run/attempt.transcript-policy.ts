@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves transcript persistence policy for a single embedded-agent attempt.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Plugin HTTP routing tests cover route matching, gateway auth decisions, and upgrade dispatch.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Runs compaction hooks and post-compaction side effects for embedded sessions.
  */

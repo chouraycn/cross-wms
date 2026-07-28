@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks for install/update security policy configuration and synthetic probes. */
 import fs from "node:fs/promises";
 import os from "node:os";

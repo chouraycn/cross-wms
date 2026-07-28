@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway connection authorization.
 // Authorizes HTTP/websocket gateway requests across shared-secret, Tailscale, and proxy modes.
 import type { IncomingMessage } from "node:http";

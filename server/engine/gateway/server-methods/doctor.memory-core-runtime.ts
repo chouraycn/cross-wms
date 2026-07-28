@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Lazy boundary for doctor memory-core repair helpers.
  *

@@ -8,7 +8,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Search,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -28,7 +27,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Input,
+  OutlineActionButton,
+  SearchCombo,
   Select,
   SelectContent,
   SelectItem,
@@ -41,13 +41,9 @@ import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_DANGER_CLASS,
-  OUTLINE_ACTION_BUTTON_CLASS,
-  SEARCH_COMBO_BUTTON_CLASS,
-  SEARCH_COMBO_CLASS,
-  SEARCH_COMBO_INPUT_CLASS,
-  SELECT_TRIGGER_CLASS,
   formatDateTime,
 } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
 import {
   AGENT_SCOPE_CHANGE_EVENT,
   ENTERPRISE_AGENT_STORAGE_KEY,
@@ -517,28 +513,26 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
         userName={currentUser?.display_name || currentUser?.username}
         right={
           <div className="flex items-center gap-[8px]">
-            <button
+            <OutlineActionButton
               type="button"
-              className={OUTLINE_ACTION_BUTTON_CLASS}
               onClick={() => void load()}
               disabled={loading}
             >
               <RefreshCw className="size-[14px]" />
               刷新
-            </button>
+            </OutlineActionButton>
             {canManageCurrentScope && scopedAgentId ? (
-              <button
+              <OutlineActionButton
                 type="button"
-                className={OUTLINE_ACTION_BUTTON_CLASS}
                 onClick={() => setImportOpen(true)}
               >
                 <Download className="size-[14px]" />
                 导入
-              </button>
+              </OutlineActionButton>
             ) : null}
             {canManageCurrentScope ? (
               <UIButton
-                className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                sx={staffTokens.primaryButton}
                 onClick={() => navigate('/staff/skills/new/distill')}
               >
                 <Plus className="size-[14px]" />
@@ -564,7 +558,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value as SkillStatusFilter)}
             >
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[140px]`}>
+              <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>
@@ -574,17 +568,11 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
                 <SelectItem value="archived">已停用</SelectItem>
               </SelectContent>
             </Select>
-            <div className={SEARCH_COMBO_CLASS}>
-              <Input
-                className={SEARCH_COMBO_INPUT_CLASS}
-                placeholder="搜索 SOP 名称 / 业务域"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-              />
-              <button type="button" className={SEARCH_COMBO_BUTTON_CLASS} aria-label="搜索">
-                <Search className="size-[14px]" />
-              </button>
-            </div>
+            <SearchCombo
+              value={searchText}
+              onChange={setSearchText}
+              placeholder="搜索 SOP 名称 / 业务域"
+            />
           </div>
         </div>
 
@@ -693,7 +681,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               选择一个历史版本，将当前 Agent 分支回滚至该版本的快照。
             </p>
             <Select value={rollbackVersion} onValueChange={setRollbackVersion}>
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="选择版本" />
               </SelectTrigger>
               <SelectContent>
@@ -715,7 +703,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               取消
             </UIButton>
             <UIButton
-              className="h-[34px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void confirmRollback()}
               disabled={rollingBack || !rollbackVersion}
             >

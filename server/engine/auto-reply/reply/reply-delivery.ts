@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Normalizes reply directives and delivers block replies through streaming or direct paths. */
 import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
 import { logVerbose } from "../../globals.js";

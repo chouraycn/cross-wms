@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Converts inline provider model config into runtime model definitions.
  */

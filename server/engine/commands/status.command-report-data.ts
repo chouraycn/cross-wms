@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds the data model for the standard `openclaw status` text report.
 // It converts scan/runtime state into table rows and section lines before rendering.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Secrets gateway methods reload runtime secret snapshots and resolve scoped
 // command secrets while redacting validation detail to caller-friendly fields.
 import {

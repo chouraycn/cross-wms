@@ -15,6 +15,12 @@ import { modelsCommand } from './commands/models.js';
 import { nodesCommand } from './commands/nodes.js';
 import { skillsCommand } from './commands/skills.js';
 import { tuiCommand } from './commands/tui.js';
+import { clawbotCommand } from './commands/clawbot.js';
+import { channelsCommand } from './commands/channels.js';
+import { acpCommand } from './commands/acp.js';
+import { capabilityCommand } from './commands/capability.js';
+import { updateCommand } from './commands/update.js';
+import { backupCommand } from './commands/backup.js';
 
 const program = new Command();
 
@@ -37,6 +43,12 @@ program.addCommand(modelsCommand);
 program.addCommand(nodesCommand);
 program.addCommand(skillsCommand);
 program.addCommand(tuiCommand);
+program.addCommand(clawbotCommand);
+program.addCommand(channelsCommand);
+program.addCommand(acpCommand);
+program.addCommand(capabilityCommand);
+program.addCommand(updateCommand);
+program.addCommand(backupCommand);
 
 /**
  * 命令分类与简短描述（用于顶层 help 文本）。
@@ -75,6 +87,7 @@ const commandCategories: Array<{ category: string; commands: Array<{ name: strin
     commands: [
       { name: 'gateway', desc: '网关状态、探测与网络统计' },
       { name: 'nodes', desc: '分布式节点管理（list / status）' },
+      { name: 'channels', desc: '通道管理（list / install / enable / disable）' },
     ],
   },
   {
@@ -86,6 +99,16 @@ const commandCategories: Array<{ category: string; commands: Array<{ name: strin
       { name: 'plugin', desc: '插件注册与管理' },
       { name: 'extension', desc: '扩展加载与发现' },
       { name: 'tui', desc: '进入交互式终端 UI' },
+      { name: 'clawbot', desc: 'AI 对话入口（chat / history / list / clear）' },
+      { name: 'acp', desc: 'ACP 子代理管理（spawn / list / kill）' },
+      { name: 'capability', desc: '能力声明管理（list / inspect / enable / disable）' },
+    ],
+  },
+  {
+    category: '运维 (Operations)',
+    commands: [
+      { name: 'update', desc: 'CLI 自更新（check / download / install）' },
+      { name: 'backup', desc: '数据备份与恢复（create / restore / verify）' },
     ],
   },
 ];

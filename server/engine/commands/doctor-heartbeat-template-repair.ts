@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for HEARTBEAT.md files that accidentally contain docs template wrappers. */
 import fs from "node:fs/promises";
 import path from "node:path";

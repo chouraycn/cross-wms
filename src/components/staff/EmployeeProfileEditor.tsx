@@ -16,7 +16,6 @@ import {
   Textarea,
   notify,
 } from './ui/index.js';
-import { SELECT_TRIGGER_CLASS } from './lib/enterprise-ui.js';
 import { api, TENANT_ID } from './api/client.js';
 import type { EnterpriseAuthUser } from './auth.js';
 import { employeeDisplayName, employeeProfile } from './employee.js';
@@ -177,7 +176,7 @@ export default function EmployeeProfileEditor({
                 </LabeledField>
                 <LabeledField label="工作状态">
                   <Select value={form.status} onValueChange={(value) => update({ status: value as 'active' | 'archived' })}>
-                    <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

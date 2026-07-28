@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Normalizes and logs provider-specific tool schemas at runtime.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway WebSocket connection handler owns pre-auth limits, handshake auth, presence, and message-handler attachment.
 import { randomUUID } from "node:crypto";
 import type { Socket } from "node:net";

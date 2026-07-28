@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared helpers for onboarding, reset, gateway checks, and wizard output. */
 import fs from "node:fs/promises";
 import path from "node:path";

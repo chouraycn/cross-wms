@@ -1,55 +1,135 @@
 import * as React from 'react'
-import { Tooltip as TooltipPrimitive } from 'radix-ui'
+import { Tooltip as MuiTooltip } from '@mui/material'
 
 import { cn } from './utils'
 
+// 统一到 MUI：Tooltip 渲染交由 MUI Tooltip 完成，保留 Radix 的 compound API
+// （TooltipProvider / Tooltip / TooltipTrigger / TooltipContent）与 data-slot。
+type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
+type TooltipAlign = 'start' | 'center' | 'end'
+type Placement = NonNullable<React.ComponentProps<typeof MuiTooltip>['placement']>
+
+type TooltipCtxValue = {
+  content: React.ReactNode
+  setContent: (c: React.ReactNode) => void
+  placement: Placement
+  setPlacement: (p: Placement) => void
+  enterDelay: number
+  leaveDelay: number
+}
+const TooltipCtx = React.createContext<TooltipCtxValue>({
+  content: null,
+  setContent: () => {},
+  placement: 'bottom',
+  setPlacement: () => {},
+  enterDelay: 0,
+  leaveDelay: 0,
+})
+
 function TooltipProvider({
   delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  children,
+}: {
+  delayDuration?: number
+  children?: React.ReactNode
+}) {
   return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
+    <TooltipCtx.Provider
+      value={{
+        content: null,
+        setContent: () => {},
+        placement: 'bottom',
+        setPlacement: () => {},
+        enterDelay: delayDuration,
+        leaveDelay: 0,
+      }}
+    >
+      {children}
+    </TooltipCtx.Provider>
   )
 }
 
 function Tooltip({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  children,
+  openDelay,
+  closeDelay,
+}: {
+  children?: React.ReactNode
+  openDelay?: number
+  closeDelay?: number
+}) {
+  const [content, setContent] = React.useState<React.ReactNode>(null)
+  const [placement, setPlacement] = React.useState<Placement>('bottom')
+  const parent = React.useContext(TooltipCtx)
+  const enterDelay = openDelay !== undefined ? openDelay : parent.enterDelay
+  const leaveDelay = closeDelay !== undefined ? closeDelay : parent.leaveDelay
+  return (
+    <TooltipCtx.Provider value={{ content, setContent, placement, setPlacement, enterDelay, leaveDelay }}>
+      {children}
+    </TooltipCtx.Provider>
+  )
 }
 
 function TooltipTrigger({
+  asChild = false,
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}: { asChild?: boolean } & React.ComponentProps<'button'>) {
+  const { content, placement, enterDelay, leaveDelay } = React.useContext(TooltipCtx)
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement
+    return (
+      <MuiTooltip
+        title={content}
+        placement={placement}
+        enterDelay={enterDelay}
+        leaveDelay={leaveDelay}
+        disableInteractive
+        arrow={false}
+      >
+        {React.cloneElement(child, { 'data-slot': 'tooltip-trigger', ...(props as Record<string, unknown>) } as Record<string, unknown>)}
+      </MuiTooltip>
+    )
+  }
+  return (
+    <MuiTooltip
+      title={content}
+      placement={placement}
+      enterDelay={enterDelay}
+      leaveDelay={leaveDelay}
+      disableInteractive
+      arrow={false}
+    >
+      <button type="button" data-slot="tooltip-trigger" {...(props as Record<string, unknown>)}>
+        {children}
+      </button>
+    </MuiTooltip>
+  )
 }
 
 function TooltipContent({
-  className,
-  sideOffset = 0,
   children,
+  hidden,
+  side = 'top',
+  align = 'center',
+  sideOffset,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          'z-50 inline-flex w-fit max-w-xs origin-(--radix-tooltip-content-transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground" />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  )
+}: React.ComponentProps<'div'> & {
+  hidden?: boolean
+  side?: TooltipSide
+  align?: TooltipAlign
+  sideOffset?: number
+}) {
+  const { setContent, setPlacement } = React.useContext(TooltipCtx)
+  const placement = (align === 'center' ? side : `${side}-${align}`) as Placement
+  void sideOffset
+  React.useEffect(() => {
+    setContent(hidden ? null : children)
+    setPlacement(placement)
+    return () => setContent(null)
+  }, [children, hidden, placement, setContent, setPlacement])
+  void props
+  return null
 }
 
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }

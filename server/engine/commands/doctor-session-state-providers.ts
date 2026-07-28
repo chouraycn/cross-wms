@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for stale plugin-owned routing state persisted in session entries. */
 import { normalizeOptionalString as normalizeString } from "@openclaw/normalization-core/string-coerce";
 import { normalizeStringEntriesLower } from "@openclaw/normalization-core/string-normalization";

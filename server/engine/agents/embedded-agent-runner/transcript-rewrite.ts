@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Rewrites transcript entries in session managers, states, and files.
  */

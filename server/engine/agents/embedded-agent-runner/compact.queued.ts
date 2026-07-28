@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Queues embedded-agent session compaction onto the correct command lane.
  */

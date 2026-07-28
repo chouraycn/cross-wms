@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { cn } from './lib/utils.js';
+import { Box, Typography } from '@mui/material';
 
 export type DetailFieldProps = {
   label: string;
@@ -14,15 +14,25 @@ export type DetailFieldProps = {
  */
 export function DetailField({ label, children, className }: DetailFieldProps) {
   return (
-    <div
-      className={cn(
-        'flex min-w-0 flex-col gap-[6px] rounded-[10px] border border-[#eef0f4] bg-[#fafbfc] px-[12px] py-[10px]',
-        className,
-      )}
+    <Box
+      className={className}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        minWidth: 0,
+        borderRadius: '10px',
+        border: '1px solid #eef0f4',
+        bgcolor: '#fafbfc',
+        px: '12px',
+        py: '10px',
+      }}
     >
-      <span className="text-[11px] font-semibold text-[#858b9c]">{label}</span>
-      <div className="min-w-0 wrap-break-word text-[12px] text-[#18181a]">{children}</div>
-    </div>
+      <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#858b9c' }}>
+        {label}
+      </Typography>
+      <Box sx={{ minWidth: 0, overflowWrap: 'break-word', fontSize: 12, color: '#18181a' }}>{children}</Box>
+    </Box>
   );
 }
 

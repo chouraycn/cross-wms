@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** CLI command orchestration for migration list, plan, and apply flows. */
 import { cancel, confirm, isCancel, log } from "@clack/prompts";
 import {

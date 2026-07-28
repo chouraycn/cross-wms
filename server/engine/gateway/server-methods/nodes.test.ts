@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { readFile, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

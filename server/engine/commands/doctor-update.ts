@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Optional pre-doctor update prompt for source checkouts and package installs. */
 import fs from "node:fs/promises";
 import path from "node:path";

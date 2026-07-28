@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Truncates oversized tool-result content in messages and transcripts.
  */

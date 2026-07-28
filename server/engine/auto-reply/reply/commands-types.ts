@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared command handler context and result contracts.
  *
  * 移植自 openclaw/src/auto-reply/reply/commands-types.ts

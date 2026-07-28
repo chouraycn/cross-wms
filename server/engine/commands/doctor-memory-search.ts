@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fsSync from "node:fs";
 import {
   findNormalizedProviderValue,

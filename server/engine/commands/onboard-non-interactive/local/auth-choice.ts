@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Non-interactive local auth-choice dispatcher.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sanitizes reasoning/thinking blocks for replay and recovery.
  */

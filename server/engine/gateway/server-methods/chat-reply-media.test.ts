@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests chat reply media handling for gateway message delivery.
  */

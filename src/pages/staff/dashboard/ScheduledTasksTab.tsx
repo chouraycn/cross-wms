@@ -9,8 +9,9 @@ import { Paginator } from '../../../components/staff/Paginator.js';
 import { StatCard } from '../../../components/staff/StatCard.js';
 import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/staff/ui/index.js';
+import { Box } from '@mui/material';
 import { notify } from '../../../components/staff/ui/app-toast.js';
-import { MOBILE_CARD_CLASS } from '../../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import type { AgentProfileRead, ScheduledTaskRead, ScheduledTaskRunRead } from '../../../components/staff/types/index.js';
 import { StatusBadge, TaskRunResultBadge, TaskStatusBadge } from '../scheduled-tasks/StatusBadge.js';
 import { TaskActionsMenu } from '../scheduled-tasks/TaskActionsMenu.js';
@@ -338,7 +339,7 @@ export default function ScheduledTasksTab() {
   ];
 
   const renderTaskMobileCard = (row: ScheduledTaskRead) => (
-    <article className={MOBILE_CARD_CLASS} key={row.id}>
+    <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
       <div className={MOBILE_CARD_HEAD_CLASS}>
         <strong className={MOBILE_TITLE_CLASS}>{row.title}</strong>
         <TaskStatusBadge status={row.status} />
@@ -363,11 +364,11 @@ export default function ScheduledTasksTab() {
         </span>
       </div>
       <div className="mt-[12px] flex justify-end">{renderTaskActions(row)}</div>
-    </article>
+    </Box>
   );
 
   const renderRunMobileCard = (row: ScheduledTaskRunRead) => (
-    <article className={MOBILE_CARD_CLASS} key={row.id}>
+    <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
       <div className={MOBILE_CARD_HEAD_CLASS}>
         <strong className={MOBILE_TITLE_CLASS}>{row.task_title || row.scheduled_task_id}</strong>
         <TaskRunResultBadge status={row.status} />
@@ -399,7 +400,7 @@ export default function ScheduledTasksTab() {
           查看会话
         </UIButton>
       </div>
-    </article>
+    </Box>
   );
 
   const actionButtons = (

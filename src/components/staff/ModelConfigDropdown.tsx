@@ -2,7 +2,6 @@ import { CheckOutlined } from './icons.js';
 import type { ModelConfigRead } from './types/index.js';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/index.js';
 import { Button as UIButton } from './ui/button.js';
-import { MENU_CONTENT_CLASS, MENU_ITEM_CLASS } from './lib/enterprise-ui.js';
 import { cn } from './lib/utils.js';
 import StaffdeckIcon from './StaffdeckIcon.js';
 
@@ -44,16 +43,15 @@ export function ModelConfigDropdown({
           <StaffdeckIcon name="arrow" size={12} className="shrink-0" style={{ transform: 'rotate(90deg)' }} />
         </UIButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className={MENU_CONTENT_CLASS}>
+      <DropdownMenuContent align={align}>
         {models.length === 0 ? (
-          <DropdownMenuItem disabled className={MENU_ITEM_CLASS}>
+          <DropdownMenuItem disabled>
             暂无可用模型
           </DropdownMenuItem>
         ) : (
           models.map((model) => (
             <DropdownMenuItem
               key={model.id}
-              className={MENU_ITEM_CLASS}
               onSelect={() => onChange(model.id)}
             >
               <span className="flex min-w-0 flex-1 flex-col">

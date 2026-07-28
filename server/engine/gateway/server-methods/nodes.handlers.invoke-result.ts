@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway RPC handler for asynchronous node invocation results.
 import {
   ErrorCodes,

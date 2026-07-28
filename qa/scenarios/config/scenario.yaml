@@ -1,0 +1,37 @@
+title: config QA Scenario
+scenario:
+  id: config
+  surface: core
+  coverage:
+    primary: [config]
+    secondary: []
+  objective: |
+    Verify config subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/config.md
+  codeRefs:
+    - server/engine/config/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: config
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: config
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: config
+detailsExpr: |
+  config scenario completed

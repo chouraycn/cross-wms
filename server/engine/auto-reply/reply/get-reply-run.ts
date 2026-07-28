@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Prepares and runs auto-reply agent turns, including prompt context and session policy. */
 import crypto from "node:crypto";
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";

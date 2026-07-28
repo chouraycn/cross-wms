@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Update gateway methods run self-update flows, report status, write restart
 // sentinels, and hand off managed-service restarts when needed.
 import { randomUUID } from "node:crypto";

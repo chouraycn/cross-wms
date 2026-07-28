@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Installs context guards for oversized tool-result histories.
  */

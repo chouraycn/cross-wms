@@ -102,7 +102,9 @@ export function parseFrontMatter(content: string): Record<string, unknown> {
  * 提取 Markdown 某个 ## 节的内容
  */
 export function extractSection(content: string, heading: string): string | null {
-  const regex = new RegExp(`^##\\s+${heading}[\\s\\S]*?(?=^##\\s+|^---\\s*$|$)`, 'm');
+  // 注意：使用 m 标志时 $ 匹配任意行尾，会导致惰性匹配在标题后立即停止。
+  // 用 (?![\s\S]) 表示真正的字符串结尾，避免只返回标题行。
+  const regex = new RegExp(`^##\\s+${heading}[\\s\\S]*?(?=^##\\s+|^---\\s*$|(?![\\s\\S]))`, 'm');
   const match = content.match(regex);
   return match ? match[0] : null;
 }
@@ -191,8 +193,8 @@ export function parseStrategyPreferences(content: string): StrategyPreferences {
 export function parseIdentity(content: string): string {
   const section = extractSection(content, '身份');
   if (!section) return 'CrossWMS 智能助手';
-  // 取第一行非空内容
-  const lines = section.split('\n').filter(l => l.trim() && !l.trim().startsWith('<!--'));
+  // 取第一行非空、非标题、非注释内容
+  const lines = section.split('\n').filter(l => l.trim() && !l.trim().startsWith('#') && !l.trim().startsWith('<!--'));
   return lines[0]?.replace(/^[-*]\s*/, '').trim() || 'CrossWMS 智能助手';
 }
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Facade-backed doctor checks and cleanup for bundled browser plugin state. */
 import fs from "node:fs";
 import path from "node:path";

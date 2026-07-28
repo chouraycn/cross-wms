@@ -1,0 +1,37 @@
+title: runtime QA Scenario
+scenario:
+  id: runtime
+  surface: core
+  coverage:
+    primary: [runtime]
+    secondary: []
+  objective: |
+    Verify runtime subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/runtime.md
+  codeRefs:
+    - server/engine/runtime/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: runtime
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: runtime
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: runtime
+detailsExpr: |
+  runtime scenario completed

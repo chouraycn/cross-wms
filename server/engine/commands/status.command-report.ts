@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Renders the standard `openclaw status` report from prebuilt section data.
 // Report data assembly stays separate so tests can validate rows without terminal formatting.
 

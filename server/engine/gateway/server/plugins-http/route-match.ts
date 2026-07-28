@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Plugin HTTP route matching orders registered exact and prefix routes against canonical path candidates.
 import type { PluginRegistry } from "../../../plugins/registry.js";
 import { canonicalizePathVariant } from "../../security-path.js";

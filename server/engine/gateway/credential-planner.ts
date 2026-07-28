@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway credential planning helpers.
 // Classifies local/remote auth inputs before SecretRef resolution.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";

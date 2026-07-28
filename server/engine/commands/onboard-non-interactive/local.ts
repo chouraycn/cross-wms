@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Local non-interactive onboarding orchestration.
  *

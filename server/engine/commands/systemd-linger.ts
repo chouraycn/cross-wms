@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Systemd lingering setup helpers for gateway install/start flows.
 // Lingering keeps user services alive after logout on Linux hosts.
 

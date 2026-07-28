@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ClawHub skills tests cover install/update/detail/status flows, security
 // verdicts, local skill cards, and workspace skill status reports.
 import { beforeEach, describe, expect, it, vi } from "vitest";

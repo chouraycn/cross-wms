@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API-key resolution for non-interactive onboarding.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";

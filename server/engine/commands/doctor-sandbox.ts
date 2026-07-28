@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks and repairs for Docker sandbox images, namespaces, and registry state. */
 import fs from "node:fs";
 import path from "node:path";

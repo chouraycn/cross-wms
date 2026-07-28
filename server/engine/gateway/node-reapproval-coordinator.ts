@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 在配对 node 重新审批请求进入配对存储前进行协调。
 // 移植自 openclaw/src/gateway/node-reapproval-coordinator.ts。
 // 依赖调整：

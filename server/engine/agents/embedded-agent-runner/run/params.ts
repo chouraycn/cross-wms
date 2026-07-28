@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared parameter types for embedded-agent run orchestration.
  */

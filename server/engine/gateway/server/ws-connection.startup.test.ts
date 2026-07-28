@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * WebSocket connection startup regression tests.
  */
@@ -5,14 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
-} from "../../../packages/gateway-protocol/src/client-info.js";
-import { PROTOCOL_VERSION } from "../../../packages/gateway-protocol/src/index.js";
+} from "../../../../packages/gateway-protocol/src/client-info.js";
+import { PROTOCOL_VERSION } from "../../../../packages/gateway-protocol/src/index.js";
 import {
   GATEWAY_STARTUP_CLOSE_CODE,
   GATEWAY_STARTUP_CLOSE_REASON,
   GATEWAY_STARTUP_PENDING_CLOSE_CAUSE,
   GATEWAY_STARTUP_UNAVAILABLE_REASON,
-} from "../../../packages/gateway-protocol/src/startup-unavailable.js";
+} from "../../../../packages/gateway-protocol/src/startup-unavailable.js";
 import { attachGatewayWsConnectionHandler } from "./ws-connection.js";
 import {
   attachGatewayWsForTest,

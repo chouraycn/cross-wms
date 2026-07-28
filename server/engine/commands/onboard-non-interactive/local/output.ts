@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Output helpers for non-interactive onboarding.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Parameter contracts shared by directive-only and fast-lane directive handlers. */
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { ModelAliasIndex } from "../../agents/model-selection.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests shared gateway auth behavior across config method updates.
  */

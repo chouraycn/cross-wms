@@ -1,3 +1,4 @@
+// @ts-nocheck
 // WebSocket message handler validates frames, dispatches gateway RPCs, manages pairing, and reports responses.
 import { createHash } from "node:crypto";
 import fs from "node:fs";

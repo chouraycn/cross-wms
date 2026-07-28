@@ -1,13 +1,15 @@
 import * as React from 'react'
+import { Skeleton as MuiSkeleton } from '@mui/material'
 
 import { cn } from './utils'
 
 function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <MuiSkeleton
       data-slot="skeleton"
-      className={cn('animate-pulse rounded-md bg-muted', className)}
-      {...props}
+      variant="rounded"
+      className={cn(className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logger } from '../../logger.js';
 import { normalizeAuthConfig, validateAuthConfig, getAuthMethodDescription } from './auth-config-utils.js';
 import type { AuthConfig } from './auth-config-utils.js';

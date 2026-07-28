@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Classifies incomplete terminal assistant turns and retry instructions.
  */

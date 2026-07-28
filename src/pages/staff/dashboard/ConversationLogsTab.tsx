@@ -10,8 +10,10 @@ import { StatCard } from '../../../components/staff/StatCard.js';
 import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle, UnderlineTabs, type UnderlineTabItem } from '../../../components/staff/ui/index.js';
 import { notify } from '../../../components/staff/ui/app-toast.js';
+import { Box } from '@mui/material';
 import { cn } from '../../../components/staff/lib/utils.js';
-import { formatDateTime, MOBILE_CARD_CLASS } from '../../../components/staff/lib/enterprise-ui.js';
+import { formatDateTime } from '../../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import { employeeDisplayNameWithCreator } from '../../../components/staff/employee.js';
 import { StatusBadge } from '../scheduled-tasks/StatusBadge.js';
 import type { BadgeTone } from '../scheduled-tasks/shared.js';
@@ -304,7 +306,7 @@ export default function ConversationLogsTab() {
   ];
 
   const renderMobileCard = (row: ConversationLogRow) => (
-    <article className={MOBILE_CARD_CLASS} key={row.id}>
+    <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
         <strong className="min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a]">
           {row.title || row.summary || row.last_agent_question || row.id}
@@ -336,7 +338,7 @@ export default function ConversationLogsTab() {
           查看
         </UIButton>
       </div>
-    </article>
+    </Box>
   );
 
   return (

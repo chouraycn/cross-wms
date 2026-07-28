@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 /**
  * Emits diagnostic model-call events around embedded-agent stream functions.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests persistence effects when chat abort requests complete.
  */

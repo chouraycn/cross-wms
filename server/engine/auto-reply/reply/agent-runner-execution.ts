@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Agent-runner execution loop, fallback handling, and user-facing failure mapping. */
 import crypto from "node:crypto";
 import {

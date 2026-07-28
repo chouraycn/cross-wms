@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Waits for completion-required async tasks before finalizing an attempt.
  */

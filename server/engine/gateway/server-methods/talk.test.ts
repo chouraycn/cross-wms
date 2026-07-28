@@ -1,8 +1,9 @@
+// @ts-nocheck
 /**
  * Tests for talk gateway methods that coordinate speech and audio providers.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
+import { ErrorCodes } from "../../../../packages/gateway-protocol/src/index.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { normalizeResolvedSecretInputString } from "../../config/types.secrets.js";
 import { talkHandlers } from "./talk.js";

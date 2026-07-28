@@ -1,0 +1,37 @@
+title: workspace QA Scenario
+scenario:
+  id: workspace
+  surface: core
+  coverage:
+    primary: [workspace]
+    secondary: []
+  objective: |
+    Verify workspace subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/workspace.md
+  codeRefs:
+    - server/engine/workspace/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: workspace
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: workspace
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: workspace
+detailsExpr: |
+  workspace scenario completed

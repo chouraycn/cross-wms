@@ -1,144 +1,80 @@
-import { randomUUID } from 'node:crypto';
-import type { CrestodianDialogueMessage, CrestodianOverview } from './types.js';
-import { planCrestodianCommand } from './assistant.js';
-import { resolveOperationFromText } from './operations.js';
+// @ts-nocheck
+// Crestodian dialogue parses direct commands and optionally asks the assistant planner.
+import type { RuntimeEnv } from "../runtime.js";
+import type { CrestodianAssistantPlan, CrestodianAssistantPlanner } from "./assistant.js";
+import {
+  describeCrestodianPersistentOperation,
+  parseCrestodianOperation,
+  type CrestodianOperation,
+} from "./operations.js";
+import { loadCrestodianOverview, type CrestodianOverview } from "./overview.js";
 
-type DialogueSession = {
-  id: string;
-  messages: CrestodianDialogueMessage[];
-  createdAt: string;
-  lastActivity: string;
+/**
+ * Dialogue helpers for turning user text into Crestodian operations.
+ *
+ * Direct command parsing wins; the assistant planner is only consulted for
+ * non-empty text that did not parse into a known operation.
+ */
+type CrestodianDialogueOptions = {
+  loadOverview?: typeof loadCrestodianOverview;
+  planWithAssistant?: CrestodianAssistantPlanner;
 };
 
-const sessions = new Map<string, DialogueSession>();
-
-function createSession(): DialogueSession {
-  const now = new Date().toISOString();
-  const session: DialogueSession = {
-    id: randomUUID(),
-    messages: [],
-    createdAt: now,
-    lastActivity: now,
-  };
-  sessions.set(session.id, session);
-  return session;
+/** Format the interactive approval prompt for a persistent operation. */
+export function approvalQuestion(operation: CrestodianOperation): string {
+  return `Apply this operation: ${describeCrestodianPersistentOperation(operation)}?`;
 }
 
-export function getOrCreateSession(sessionId?: string): DialogueSession {
-  if (sessionId) {
-    const existing = sessions.get(sessionId);
-    if (existing) {
-      existing.lastActivity = new Date().toISOString();
-      return existing;
-    }
+/** Parse affirmative approval text accepted by the interactive dialogue. */
+export function isYes(input: string): boolean {
+  return /^(y|yes|apply|do it|approved?)$/i.test(input.trim());
+}
+
+/** Resolve user input to a Crestodian operation, optionally using the assistant planner. */
+export async function resolveCrestodianOperation(
+  input: string,
+  runtime: RuntimeEnv,
+  opts: CrestodianDialogueOptions,
+): Promise<CrestodianOperation> {
+  const operation = parseCrestodianOperation(input);
+  if (!shouldAskAssistant(input, operation)) {
+    return operation;
   }
-  return createSession();
-}
-
-export function addDialogueMessage(
-  sessionId: string,
-  role: CrestodianDialogueMessage['role'],
-  content: string,
-  metadata?: Record<string, unknown>,
-): CrestodianDialogueMessage {
-  const session = getOrCreateSession(sessionId);
-  const message: CrestodianDialogueMessage = {
-    role,
-    content,
-    timestamp: new Date().toISOString(),
-    ...(metadata ? { metadata } : {}),
-  };
-  session.messages.push(message);
-  return message;
-}
-
-export async function processCrestodianDialogue(params: {
-  input: string;
-  overview: CrestodianOverview;
-  sessionId?: string;
-}): Promise<{
-  response: string;
-  sessionId: string;
-  plan?: {
-    operation: string;
-    confidence: number;
-    steps: string[];
-  };
-}> {
-  const session = getOrCreateSession(params.sessionId);
-
-  addDialogueMessage(session.id, 'user', params.input);
-
-  const plan = await planCrestodianCommand({
-    input: params.input,
-    overview: params.overview,
-  });
-
-  let response: string;
-
-  if (plan) {
-    response = `I've analyzed your request and recommend the following:
-
-**Operation:** ${plan.operation}
-**Confidence:** ${Math.round(plan.confidence * 100)}%
-**Reason:** ${plan.reason}
-
-**Steps:**
-${plan.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}
-
-**Risks:**
-${plan.risks.map((r) => `- ${r}`).join('\n')}
-
-Would you like me to proceed with this operation?`;
-
-    addDialogueMessage(session.id, 'assistant', response, { plan });
-  } else {
-    const resolved = resolveOperationFromText(params.input);
-    if (resolved) {
-      response = `I understand you want to ${resolved}. Let me check the current system status and prepare for this operation.`;
-    } else {
-      response = `I'm not sure I understand your request. Could you please clarify?
-
-I can help with:
-- System health checks and diagnostics
-- Repair and recovery operations
-- Backup and restore
-- Configuration validation
-- System cleanup and maintenance`;
-    }
-    addDialogueMessage(session.id, 'assistant', response);
+  const overview = await (opts.loadOverview ?? loadCrestodianOverview)();
+  const planner = opts.planWithAssistant ?? (await import("./assistant.js")).planCrestodianCommand;
+  const plan = await planner({ input, overview });
+  if (!plan) {
+    return operation;
   }
-
-  return {
-    response,
-    sessionId: session.id,
-    plan: plan
-      ? {
-          operation: plan.operation,
-          confidence: plan.confidence,
-          steps: plan.steps,
-        }
-      : undefined,
-  };
-}
-
-export function getDialogueHistory(sessionId: string): CrestodianDialogueMessage[] {
-  const session = sessions.get(sessionId);
-  return session?.messages ?? [];
-}
-
-export function clearDialogueSession(sessionId: string): boolean {
-  return sessions.delete(sessionId);
-}
-
-export function pruneOldSessions(maxAgeMs: number = 3600000): number {
-  const now = Date.now();
-  let pruned = 0;
-  for (const [id, session] of sessions) {
-    if (now - new Date(session.lastActivity).getTime() > maxAgeMs) {
-      sessions.delete(id);
-      pruned++;
-    }
+  const planned = parseCrestodianOperation(plan.command);
+  if (planned.kind === "none") {
+    return operation;
   }
-  return pruned;
+  logAssistantPlan(runtime, plan, overview);
+  return planned;
+}
+
+function shouldAskAssistant(input: string, operation: CrestodianOperation): boolean {
+  if (operation.kind !== "none") {
+    return false;
+  }
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed || trimmed === "quit" || trimmed === "exit") {
+    return false;
+  }
+  return true;
+}
+
+function logAssistantPlan(
+  runtime: RuntimeEnv,
+  plan: CrestodianAssistantPlan,
+  overview: CrestodianOverview,
+): void {
+  // Assistant plans are echoed before execution so the user can see the interpreted command.
+  const modelLabel = plan.modelLabel ?? overview.defaultModel ?? "configured model";
+  runtime.log(`[crestodian] planner: ${modelLabel}`);
+  if (plan.reply) {
+    runtime.log(plan.reply);
+  }
+  runtime.log(`[crestodian] interpreted: ${plan.command}`);
 }

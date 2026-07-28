@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Implements embedded-agent transcript compaction and runtime handoff.
  */

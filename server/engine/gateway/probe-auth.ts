@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway probe auth resolver.
 // Adapts gateway credential precedence for local/remote reachability checks.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";

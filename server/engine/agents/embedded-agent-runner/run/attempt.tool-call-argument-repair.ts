@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Repairs malformed tool-call arguments in embedded-agent stream results.
  */

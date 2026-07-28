@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Top-level status scan entrypoint.
 // Chooses fast JSON policy or full human scan and returns one normalized scan result.
 

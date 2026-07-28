@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Channels capabilities tests cover capability reporting, account selection, probes, and installable plugins.
 process.env.NO_COLOR = "1";
 

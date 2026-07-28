@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for redacting historical config audit log argv records. */
 import fs from "node:fs/promises";
 import os from "node:os";

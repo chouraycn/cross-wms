@@ -54,3 +54,54 @@ export function chunkTextByBreakResolver(
   }
   return chunks;
 }
+
+// ===================== 高级封装：带 overlap 的自然断点切分 =====================
+
+const SENTENCE_BREAKS = new Set(['\n', '。', '.', '！', '!', '？', '?']);
+
+export interface ChunkTextOptions {
+  /** 单块最大字符数（默认 600） */
+  maxChars?: number;
+  /** 相邻块重叠字符数（默认 80），用于保留上下文连续性 */
+  overlapChars?: number;
+}
+
+/**
+ * 把长文本切分为有界块：优先在换行 / 句号等自然断点处截断，避免截断句子；
+ * 块之间保留 overlapChars 字符重叠。块边界会自动规避 UTF-16 代理对截断。
+ *
+ * 这是主程序与数字员工知识库共用的权威切分实现（轻量、无重依赖），
+ * 数字员工的 splitKnowledgeChunks 直接委托本函数，避免两处维护平行逻辑。
+ */
+export function chunkText(text: string, options: ChunkTextOptions = {}): string[] {
+  const maxChars = Math.max(1, options.maxChars ?? 600);
+  const overlapChars = Math.max(0, options.overlapChars ?? 80);
+  const clean = (text || '').replace(/\r\n/g, '\n').trim();
+  if (!clean) return [];
+  if (clean.length <= maxChars) return [clean];
+
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < clean.length) {
+    let end = Math.min(clean.length, start + maxChars);
+    if (end < clean.length) {
+      const slice = clean.slice(start, end);
+      let breakIdx = -1;
+      // 在窗口末尾 120 字符内回看最近的自然断点
+      for (let i = slice.length - 1; i >= Math.max(0, slice.length - 120); i--) {
+        if (SENTENCE_BREAKS.has(slice[i])) {
+          breakIdx = i + 1;
+          break;
+        }
+      }
+      if (breakIdx > 0) end = start + breakIdx;
+    }
+    // 代理对安全：避免把 UTF-16 代理对从中间切开
+    end = avoidTrailingHighSurrogateBreak(clean, start, end);
+    const piece = clean.slice(start, end).trim();
+    if (piece) chunks.push(piece);
+    if (end >= clean.length) break;
+    start = Math.max(end - overlapChars, start + 1);
+  }
+  return chunks.length ? chunks : [clean];
+}

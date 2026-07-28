@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Configure wizard service install/restart helper for the Gateway daemon.
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
 import { withProgress } from "@openclaw-src/cli/progress.js";

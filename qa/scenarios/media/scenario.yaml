@@ -1,0 +1,37 @@
+title: media QA Scenario
+scenario:
+  id: media
+  surface: core
+  coverage:
+    primary: [media]
+    secondary: []
+  objective: |
+    Verify media subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/media.md
+  codeRefs:
+    - server/engine/media/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: media
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: media
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: media
+detailsExpr: |
+  media scenario completed

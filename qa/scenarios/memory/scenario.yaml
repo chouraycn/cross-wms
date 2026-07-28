@@ -1,0 +1,238 @@
+title: CrossWMS 记忆存储 / 检索 / 删除
+
+# 验证 CrossWMS 记忆引擎（memory engine）的核心操作：
+#   1. 存储（store）— 把 WMS 业务事实写入 memory store
+#   2. 检索（recall）— 通过 query 召回相关事实
+#   3. 删除（delete）— 按 id 移除单条事实 / 按 scope 批量清理
+#   4. 会话隔离（isolation）— 跨会话不串数据
+#
+# CrossWMS 记忆用于跨会话保留 WMS 上下文：
+#   - 用户偏好（默认仓库、默认 KPI 维度）
+#   - 业务事实（"SKC-COFFEE-001 的安全库存是 20"）
+#   - 工作进度（"今日盘点完成 60%"）
+#
+# 与 OpenClaw memory/ 主题对齐：recall 行为、durable / 短期分层一致。
+# 业务差异：CrossWMS 记忆带 `warehouseId` 维度，必须按仓库隔离。
+
+scenario:
+  id: memory-store-retrieve-delete
+  surface: memory-core
+  coverage:
+    primary:
+      - memory.store
+      - memory.retrieve
+      - memory.delete
+    secondary:
+      - memory.isolation
+  objective: 验证 CrossWMS 记忆引擎的存储、检索、删除全链路，确保事实可被持久化、可被召回、删除生效，并按仓库 / 会话维度正确隔离。
+  successCriteria:
+    - store() 写入后立即可被 recall() 命中。
+    - recall() 在切换 query 后召回相关事实的 top-k 排序正确。
+    - delete() 后同一 id 的 recall() 返回空。
+    - 跨仓库 recall 不返回其他仓库的事实。
+    - 跨会话 recall 仅返回当前会话 + 全局事实。
+  docsRefs:
+    - docs/memory/memory-engine.md
+    - docs/memory/recall.md
+    - docs/wms/warehouse-scope.md
+  codeRefs:
+    - server/memoryEngine.ts
+    - server/routes/memory.ts
+    - server/db-core.ts
+  execution:
+    kind: flow
+    summary: 写入 WMS 业务事实 → recall → 切换 query 验证 top-k → delete → 验证不可召回 → 跨仓库 / 跨会话隔离验证。
+    config:
+      requiredChannelDriver: qa-channel
+      resetDurableMemory: true
+      canaryFact: "SKU-COFFEE-001 在 WH-SH-001 的安全库存是 20 件"
+      canaryNeedle: "SKU-COFFEE-001"
+      secondaryFact: "SKU-TEA-007 在 WH-BJ-001 的库龄预警是 30 天"
+      secondaryNeedle: "SKU-TEA-007"
+      sessionA: "session-warehouse-ops-A"
+      sessionB: "session-warehouse-ops-B"
+      scope: warehouse
+
+flow:
+  steps:
+    - name: resets durable memory state
+      actions:
+        - assert:
+            expr: "!config.resetDurableMemory || true"
+        - call: memory.purge
+          args:
+            - ref: env
+        - call: memory.count
+          saveAs: initialCount
+          args:
+            - ref: env
+        - assert:
+            expr: "initialCount.total === 0"
+            message:
+              expr: "`memory was not empty after purge: ${JSON.stringify(initialCount)}`"
+
+    - name: stores the WMS business canary fact
+      actions:
+        - call: memory.store
+          saveAs: storeResult
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionA
+              scope:
+                expr: config.scope
+              warehouseId: WH-SH-001
+              fact:
+                expr: config.canaryFact
+              tags:
+                - wms
+                - inventory
+                - canary
+        - assert:
+            expr: "storeResult.id && storeResult.warehouseId === 'WH-SH-001'"
+            message:
+              expr: "`store did not return id/warehouseId: ${JSON.stringify(storeResult)}`"
+        - set: canaryId
+          value:
+            expr: storeResult.id
+
+    - name: recalls the canary fact immediately after store
+      actions:
+        - call: memory.recall
+          saveAs: recallResult
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionA
+              scope:
+                expr: config.scope
+              warehouseId: WH-SH-001
+              query: "WH-SH-001 仓库的咖啡 SKU 安全库存"
+              topK: 3
+        - assert:
+            expr: "recallResult.results.length >= 1 && String(recallResult.results[0].fact).includes(config.canaryNeedle)"
+            message:
+              expr: "`immediate recall missed canary: ${JSON.stringify(recallResult)}`"
+
+    - name: stores a secondary fact in another warehouse and validates recall isolation
+      actions:
+        - call: memory.store
+          saveAs: storeSecondary
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionB
+              scope:
+                expr: config.scope
+              warehouseId: WH-BJ-001
+              fact:
+                expr: config.secondaryFact
+              tags:
+                - wms
+                - inventory-age
+        - call: memory.recall
+          saveAs: crossWarehouseRecall
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionA
+              scope:
+                expr: config.scope
+              warehouseId: WH-SH-001
+              query: "WH-SH-001 的咖啡 SKU"
+              topK: 5
+        - assert:
+            expr: "crossWarehouseRecall.results.every((entry) => entry.warehouseId === 'WH-SH-001' || entry.scope === 'global')"
+            message:
+              expr: "`cross-warehouse leak: ${JSON.stringify(crossWarehouseRecall)}`"
+        - call: memory.recall
+          saveAs: directSecondaryRecall
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionB
+              scope:
+                expr: config.scope
+              warehouseId: WH-BJ-001
+              query: "WH-BJ-001 库龄预警 SKU"
+              topK: 5
+        - assert:
+            expr: "directSecondaryRecall.results.some((entry) => String(entry.fact).includes(config.secondaryNeedle))"
+            message:
+              expr: "`secondary recall missed WH-BJ-001 fact: ${JSON.stringify(directSecondaryRecall)}`"
+
+    - name: validates session isolation for the same warehouse
+      actions:
+        - call: memory.recall
+          saveAs: otherSessionRecall
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionB
+              scope: session
+              warehouseId: WH-SH-001
+              query: "WH-SH-001 的咖啡 SKU"
+              topK: 5
+        - assert:
+            expr: "otherSessionRecall.results.every((entry) => entry.scope !== 'session' || entry.sessionKey === config.sessionB)"
+            message:
+              expr: "`session scope leak: ${JSON.stringify(otherSessionRecall)}`"
+
+    - name: deletes the canary and confirms recall no longer returns it
+      actions:
+        - call: memory.delete
+          saveAs: deleteResult
+          args:
+            - ref: env
+            - id:
+                expr: canaryId
+        - assert:
+            expr: "deleteResult.deleted === true"
+            message:
+              expr: "`delete did not confirm: ${JSON.stringify(deleteResult)}`"
+        - call: memory.recall
+          saveAs: postDeleteRecall
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionA
+              scope:
+                expr: config.scope
+              warehouseId: WH-SH-001
+              query: "WH-SH-001 的咖啡 SKU"
+              topK: 5
+        - assert:
+            expr: "!postDeleteRecall.results.some((entry) => entry.id === canaryId)"
+            message:
+              expr: "`deleted fact still recalled: ${JSON.stringify(postDeleteRecall)}`"
+
+    - name: bulk deletes by warehouse scope
+      actions:
+        - call: memory.bulkDelete
+          saveAs: bulkResult
+          args:
+            - ref: env
+            - where:
+                warehouseId: WH-BJ-001
+                scope:
+                  expr: config.scope
+        - call: memory.recall
+          saveAs: postBulkRecall
+          args:
+            - ref: env
+            - sessionKey:
+                expr: config.sessionB
+              scope:
+                expr: config.scope
+              warehouseId: WH-BJ-001
+              query: "WH-BJ-001 库龄预警 SKU"
+              topK: 5
+        - assert:
+            expr: "postBulkRecall.results.length === 0"
+            message:
+              expr: "`bulk delete failed: ${JSON.stringify(postBulkRecall)}`"
+        - assert:
+            expr: "bulkResult.deletedCount >= 1"
+            message:
+              expr: "`bulk delete reported 0 deletions: ${JSON.stringify(bulkResult)}`"
+      detailsExpr: "JSON.stringify({ stored: storeResult.id, recalled: recallResult.results.length, crossWarehouseLeak: crossWarehouseRecall.results.length, deleted: deleteResult.deleted, postBulkCount: postBulkRecall.results.length })"

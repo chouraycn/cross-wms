@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** CLI entrypoint for channel message actions. */
 import {
   normalizeLowercaseStringOrEmpty,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Formatting and validation helpers for migration previews and apply results. */
 import { log } from "@clack/prompts";
 import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";

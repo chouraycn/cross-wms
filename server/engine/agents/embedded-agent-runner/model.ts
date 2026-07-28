@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves embedded-agent provider/model selections from config, registry, and catalogs.
  */

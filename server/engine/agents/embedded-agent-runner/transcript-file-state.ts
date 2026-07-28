@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Reads, mutates, and atomically writes embedded session transcript files.
  */

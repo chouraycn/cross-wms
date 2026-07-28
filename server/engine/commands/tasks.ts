@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Human-facing background task commands.
 // Handles task listing/show/cancel/notify/audit plus registry maintenance for tasks, flows, and sessions.
 

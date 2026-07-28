@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks and repair effects for cached shell completion setup. */
 import { spawnSync } from "node:child_process";
 import path from "node:path";

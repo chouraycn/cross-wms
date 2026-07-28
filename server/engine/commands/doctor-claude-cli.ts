@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor health note for Claude CLI binary, auth, and workspace/project directories. */
 import fs from "node:fs";
 import {

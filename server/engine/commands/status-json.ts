@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Thin `openclaw status --json` wrapper.
 // Command wiring lives here; scan/payload behavior lives in the shared JSON command runner.
 

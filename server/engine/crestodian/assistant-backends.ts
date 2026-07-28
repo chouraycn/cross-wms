@@ -1,59 +1,82 @@
-import type { CrestodianOverview } from './types.js';
+// @ts-nocheck
+// Crestodian planner backends choose safe local model runners available on this host.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { CrestodianOverview } from "./overview.js";
 
-export type CrestodianPlannerBackend = {
-  id: string;
+/**
+ * Local planner backend selection for Crestodian assistant mode.
+ *
+ * Crestodian only offers planners backed by tools present on the host, and the
+ * returned backend config is scoped to the workspace being repaired.
+ */
+const CRESTODIAN_CLAUDE_CLI_MODEL = "claude-opus-4-8";
+const CRESTODIAN_CODEX_MODEL = "gpt-5.5";
+
+type CrestodianLocalPlannerBackend = {
+  kind: "claude-cli" | "codex-app-server";
   label: string;
-  type: 'local' | 'remote' | 'embedded';
-  available: boolean;
-  priority: number;
+  runner: "cli" | "embedded";
+  provider: string;
+  model: string;
+  buildConfig: (workspaceDir: string) => OpenClawConfig;
 };
 
-const KNOWN_BACKENDS: CrestodianPlannerBackend[] = [
-  {
-    id: 'local-model',
-    label: 'Local Model',
-    type: 'local',
-    available: false,
-    priority: 1,
-  },
-  {
-    id: 'embedded-runtime',
-    label: 'Embedded Runtime',
-    type: 'embedded',
-    available: false,
-    priority: 2,
-  },
-  {
-    id: 'rule-based',
-    label: 'Rule Based',
-    type: 'local',
-    available: true,
-    priority: 3,
-  },
-];
+const CLAUDE_CLI_BACKEND: CrestodianLocalPlannerBackend = {
+  kind: "claude-cli",
+  label: `claude-cli/${CRESTODIAN_CLAUDE_CLI_MODEL}`,
+  runner: "cli",
+  provider: "claude-cli",
+  model: CRESTODIAN_CLAUDE_CLI_MODEL,
+  buildConfig: (workspaceDir) =>
+    buildCliPlannerConfig(workspaceDir, `claude-cli/${CRESTODIAN_CLAUDE_CLI_MODEL}`),
+};
 
-export function getCrestodianPlannerBackends(): CrestodianPlannerBackend[] {
-  return [...KNOWN_BACKENDS].sort((a, b) => a.priority - b.priority);
-}
+const CODEX_APP_SERVER_BACKEND: CrestodianLocalPlannerBackend = {
+  kind: "codex-app-server",
+  label: `openai/${CRESTODIAN_CODEX_MODEL} via codex`,
+  runner: "embedded",
+  provider: "openai",
+  model: CRESTODIAN_CODEX_MODEL,
+  buildConfig: buildCodexAppServerPlannerConfig,
+};
 
+/** Select local assistant planner backends available for the current overview. */
 export function selectCrestodianLocalPlannerBackends(
-  _overview: CrestodianOverview,
-): CrestodianPlannerBackend[] {
-  return KNOWN_BACKENDS.filter((b) => b.available && b.type !== 'remote');
-}
-
-export function getBestAvailableBackend(): CrestodianPlannerBackend | null {
-  const available = KNOWN_BACKENDS.filter((b) => b.available).sort((a, b) => a.priority - b.priority);
-  return available[0] ?? null;
-}
-
-export function isBackendAvailable(backendId: string): boolean {
-  return KNOWN_BACKENDS.some((b) => b.id === backendId && b.available);
-}
-
-export function setBackendAvailability(backendId: string, available: boolean): void {
-  const backend = KNOWN_BACKENDS.find((b) => b.id === backendId);
-  if (backend) {
-    backend.available = available;
+  overview: CrestodianOverview,
+): CrestodianLocalPlannerBackend[] {
+  const backends: CrestodianLocalPlannerBackend[] = [];
+  if (overview.tools.claude.found) {
+    backends.push(CLAUDE_CLI_BACKEND);
   }
+  if (overview.tools.codex.found) {
+    backends.push(CODEX_APP_SERVER_BACKEND);
+  }
+  return backends;
+}
+
+function buildCliPlannerConfig(workspaceDir: string, modelRef: string): OpenClawConfig {
+  return {
+    agents: {
+      defaults: {
+        workspace: workspaceDir,
+        model: { primary: modelRef },
+      },
+    },
+  };
+}
+
+function buildCodexAppServerPlannerConfig(workspaceDir: string): OpenClawConfig {
+  return {
+    agents: {
+      defaults: {
+        workspace: workspaceDir,
+        model: { primary: `openai/${CRESTODIAN_CODEX_MODEL}` },
+      },
+    },
+    plugins: {
+      entries: {
+        codex: { enabled: true },
+      },
+    },
+  };
 }

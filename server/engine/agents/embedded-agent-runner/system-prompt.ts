@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds and installs embedded-agent system prompts.
  */

@@ -1,23 +1,23 @@
 import type { ReactNode } from 'react';
 
-import { cn } from './lib/utils.js';
+import { Box } from '@mui/material';
 
 export type StatCardTone = 'default' | 'green' | 'red';
 
-const SURFACE_CLASS: Record<StatCardTone, string> = {
-  default: 'bg-[#f6f6f6]',
-  green: 'bg-[#e9f7ef]',
-  red: 'bg-[#fce7e7]',
+const SURFACE: Record<StatCardTone, string> = {
+  default: '#f6f6f6',
+  green: '#e9f7ef',
+  red: '#fce7e7',
 };
-const VALUE_CLASS: Record<StatCardTone, string> = {
-  default: 'text-[#18181a]',
-  green: 'text-[#2cb360]',
-  red: 'text-[#d20b0b]',
+const VALUE_COLOR: Record<StatCardTone, string> = {
+  default: '#18181a',
+  green: '#2cb360',
+  red: '#d20b0b',
 };
-const LABEL_CLASS: Record<StatCardTone, string> = {
-  default: 'text-[#464c5e]',
-  green: 'text-[#2cb360]',
-  red: 'text-[#d20b0b]',
+const LABEL_COLOR: Record<StatCardTone, string> = {
+  default: '#464c5e',
+  green: '#2cb360',
+  red: '#d20b0b',
 };
 
 export type StatCardProps = {
@@ -37,20 +37,42 @@ export type StatCardProps = {
  */
 export function StatCard({ value, label, tone = 'default', valueClassName, className }: StatCardProps) {
   return (
-    <div
-      className={cn(
-        'flex h-[70px] flex-1 basis-[180px] items-center rounded-[14px] px-[24px] py-[8px]',
-        SURFACE_CLASS[tone],
-        className,
-      )}
+    <Box
+      className={className}
+      sx={{
+        display: 'flex',
+        height: 70,
+        flex: '1 1 180px',
+        alignItems: 'center',
+        borderRadius: '14px',
+        px: '24px',
+        py: '8px',
+        bgcolor: SURFACE[tone],
+      }}
     >
-      <div className="flex min-w-0 items-end gap-[6px]">
-        <span className={cn('shrink-0 text-[26px] font-semibold leading-none', VALUE_CLASS[tone], valueClassName)}>
+      <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'flex-end', gap: '6px' }}>
+        <Box
+          component="span"
+          className={valueClassName}
+          sx={{ shrink: 0, fontSize: 26, fontWeight: 600, lineHeight: 0, color: VALUE_COLOR[tone] }}
+        >
           {value}
-        </span>
-        <span className={cn('truncate text-[14px] leading-none', LABEL_CLASS[tone])}>{label}</span>
-      </div>
-    </div>
+        </Box>
+        <Box
+          component="span"
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: 14,
+            lineHeight: 0,
+            color: LABEL_COLOR[tone],
+          }}
+        >
+          {label}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

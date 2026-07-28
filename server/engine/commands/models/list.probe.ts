@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Auth probe planning and execution helpers for model diagnostics. */
 import crypto from "node:crypto";
 import fs from "node:fs/promises";

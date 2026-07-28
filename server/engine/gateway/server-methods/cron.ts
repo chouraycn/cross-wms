@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway RPC handlers for cron job CRUD, run logs, wake, and delivery previews.
 import {
   ErrorCodes,

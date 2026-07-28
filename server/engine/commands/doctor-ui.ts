@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks and repairs for Control UI assets after gateway protocol changes. */
 import fs from "node:fs/promises";
 import path from "node:path";

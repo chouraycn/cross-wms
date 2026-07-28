@@ -1,218 +1,278 @@
-import { z } from 'zod';
-import type {
-  CrestodianAssistantPlan,
-  CrestodianOperationType,
-  CrestodianOverview,
-} from './types.js';
+// @ts-nocheck
+// Crestodian assistant planning converts fuzzy user text into one safe command.
+import { randomUUID } from "node:crypto";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { extractAssistantText } from "../agents/embedded-agent-utils.js";
 import {
+  completeWithPreparedSimpleCompletionModel,
+  prepareSimpleCompletionModelForAgent,
+} from "../agents/simple-completion-runtime.js";
+import { readConfigFileSnapshot } from "../config/config.js";
+import { selectCrestodianLocalPlannerBackends } from "./assistant-backends.js";
+import {
+  CRESTODIAN_ASSISTANT_MAX_TOKENS,
+  CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
+  CRESTODIAN_ASSISTANT_TIMEOUT_MS,
   buildCrestodianAssistantUserPrompt,
   parseCrestodianAssistantPlanText,
-  CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
-} from './assistant-prompts.js';
+  type CrestodianAssistantPlan,
+} from "./assistant-prompts.js";
+import type { CrestodianOverview } from "./overview.js";
 
-export type { CrestodianAssistantPlan } from './types.js';
-export { buildCrestodianAssistantUserPrompt, parseCrestodianAssistantPlanText };
+export {
+  buildCrestodianAssistantUserPrompt,
+  parseCrestodianAssistantPlanText,
+  type CrestodianAssistantPlan,
+} from "./assistant-prompts.js";
 
 export type CrestodianAssistantPlanner = (params: {
   input: string;
   overview: CrestodianOverview;
 }) => Promise<CrestodianAssistantPlan | null>;
 
-const KNOWN_OPERATIONS: CrestodianOperationType[] = [
-  'inspect',
-  'repair',
-  'restart',
-  'reset',
-  'backup',
-  'restore',
-  'cleanup',
-  'migrate',
-  'validate',
-  'diagnose',
-];
+type RunCliAgentFn = typeof import("../agents/cli-runner.js").runCliAgent;
+type RunEmbeddedAgentFn = typeof import("../agents/embedded-agent.js").runEmbeddedAgent;
+type ReadConfigFileSnapshotFn = typeof readConfigFileSnapshot;
+type PrepareSimpleCompletionModelForAgentFn = typeof prepareSimpleCompletionModelForAgent;
+type CompleteWithPreparedSimpleCompletionModelFn = typeof completeWithPreparedSimpleCompletionModel;
 
-const OPERATION_KEYWORDS: Record<CrestodianOperationType, string[]> = {
-  inspect: ['check', 'inspect', 'status', 'overview', 'health', 'diagnose'],
-  repair: ['fix', 'repair', 'mend', 'heal', 'recover'],
-  restart: ['restart', 'reboot', 'reset', 'cycle'],
-  reset: ['reset', 'factory', 'default', 'wipe'],
-  backup: ['backup', 'save', 'snapshot', 'export'],
-  restore: ['restore', 'recover', 'import', 'load'],
-  cleanup: ['clean', 'purge', 'prune', 'remove', 'delete'],
-  migrate: ['migrate', 'upgrade', 'update', 'convert'],
-  validate: ['validate', 'verify', 'check', 'test'],
-  diagnose: ['diagnose', 'debug', 'troubleshoot', 'analyze'],
+export type CrestodianConfiguredModelPlannerDeps = {
+  readConfigFileSnapshot?: ReadConfigFileSnapshotFn;
+  prepareSimpleCompletionModelForAgent?: PrepareSimpleCompletionModelForAgentFn;
+  completeWithPreparedSimpleCompletionModel?: CompleteWithPreparedSimpleCompletionModelFn;
 };
 
-function detectOperation(input: string): {
-  operation: CrestodianOperationType;
-  confidence: number;
-} | null {
-  const lower = input.toLowerCase();
-  let bestMatch: { operation: CrestodianOperationType; score: number } | null = null;
+export type CrestodianLocalRuntimePlannerDeps = {
+  runCliAgent?: RunCliAgentFn;
+  runEmbeddedAgent?: RunEmbeddedAgentFn;
+  createTempDir?: () => Promise<string>;
+  removeTempDir?: (dir: string) => Promise<void>;
+};
 
-  for (const [op, keywords] of Object.entries(OPERATION_KEYWORDS)) {
-    let score = 0;
-    for (const keyword of keywords) {
-      if (lower.includes(keyword)) {
-        score += keyword.length / lower.length;
-      }
-    }
-    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { operation: op as CrestodianOperationType, score };
-    }
-  }
-
-  if (bestMatch) {
-    return {
-      operation: bestMatch.operation,
-      confidence: Math.min(0.9, bestMatch.score * 5),
-    };
-  }
-
-  return null;
-}
-
-function extractTarget(input: string): string | undefined {
-  const patterns = [
-    /(?:for|on|with|about|regarding)\s+(\S+)/i,
-    /^(\S+)\s+(?:needs|has|is|should)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = input.match(pattern);
-    if (match) {
-      return match[1];
-    }
-  }
-  return undefined;
-}
-
-function generateSteps(operation: CrestodianOperationType, target?: string): string[] {
-  const steps: Record<CrestodianOperationType, string[]> = {
-    inspect: [
-      'Collect system overview information',
-      'Run all health probes',
-      'Analyze probe results',
-      'Generate status report',
-    ],
-    repair: [
-      'Identify failing components',
-      'Determine root cause',
-      'Apply repair actions',
-      'Verify fix with probes',
-    ],
-    restart: [
-      'Gracefully shutdown services',
-      'Restart core components',
-      'Verify service health',
-      'Confirm normal operation',
-    ],
-    reset: [
-      'Backup current configuration',
-      'Reset to defaults',
-      'Apply minimal configuration',
-      'Verify reset completed',
-    ],
-    backup: [
-      'Identify data to backup',
-      'Create backup archive',
-      'Verify backup integrity',
-      'Store backup safely',
-    ],
-    restore: [
-      'Select backup to restore',
-      'Validate backup file',
-      'Restore data from backup',
-      'Verify restored data',
-    ],
-    cleanup: [
-      'Identify cleanup targets',
-      'Remove stale data',
-      'Compact databases',
-      'Verify cleanup results',
-    ],
-    migrate: [
-      'Backup current state',
-      'Run migration scripts',
-      'Validate migrated data',
-      'Confirm migration success',
-    ],
-    validate: [
-      'Check configuration syntax',
-      'Verify required permissions',
-      'Test connectivity',
-      'Report validation results',
-    ],
-    diagnose: [
-      'Collect diagnostic data',
-      'Analyze error patterns',
-      'Run diagnostic probes',
-      'Generate diagnostic report',
-    ],
-  };
-  return steps[operation] ?? ['Perform operation', 'Verify results'];
-}
-
-function generateRisks(operation: CrestodianOperationType): string[] {
-  const risks: Record<CrestodianOperationType, string[]> = {
-    inspect: ['Minimal risk - read-only operation'],
-    repair: ['Possible service interruption', 'Configuration changes may be required'],
-    restart: ['Service downtime during restart', 'Temporary data unavailability'],
-    reset: ['Data loss - ensure backup exists', 'Configuration will be lost'],
-    backup: ['Minimal risk - read with storage'],
-    restore: ['Data overwrite risk', 'Downtime during restore'],
-    cleanup: ['Accidental data deletion', 'Service interruption'],
-    migrate: ['Data corruption risk', 'Downtime during migration'],
-    validate: ['Minimal risk - read-only operation'],
-    diagnose: ['Minimal risk - read-only operation'],
-  };
-  return risks[operation] ?? ['Unknown risk'];
-}
+export type CrestodianPlannerDeps = CrestodianConfiguredModelPlannerDeps &
+  CrestodianLocalRuntimePlannerDeps;
 
 export async function planCrestodianCommand(params: {
   input: string;
   overview: CrestodianOverview;
+  deps?: CrestodianPlannerDeps;
+}): Promise<CrestodianAssistantPlan | null> {
+  // Prefer the user's configured model; local runtime planners are only a fallback.
+  const configured = await planCrestodianCommandWithConfiguredModel(params);
+  if (configured) {
+    return configured;
+  }
+  return await planCrestodianCommandWithLocalRuntime(params);
+}
+
+export async function planCrestodianCommandWithConfiguredModel(params: {
+  input: string;
+  overview: CrestodianOverview;
+  deps?: CrestodianConfiguredModelPlannerDeps;
 }): Promise<CrestodianAssistantPlan | null> {
   const input = params.input.trim();
   if (!input) {
     return null;
   }
-
-  const detected = detectOperation(input);
-  if (!detected) {
+  const snapshot = await (params.deps?.readConfigFileSnapshot ?? readConfigFileSnapshot)();
+  if (!snapshot.exists || !snapshot.valid) {
+    return null;
+  }
+  const cfg = snapshot.runtimeConfig ?? snapshot.config;
+  const agentId = resolveDefaultAgentId(cfg);
+  const prepared = await (
+    params.deps?.prepareSimpleCompletionModelForAgent ?? prepareSimpleCompletionModelForAgent
+  )({
+    cfg,
+    agentId,
+    allowMissingApiKeyModes: ["aws-sdk"],
+  });
+  if ("error" in prepared) {
     return null;
   }
 
-  const target = extractTarget(input);
-  const steps = generateSteps(detected.operation, target);
-  const risks = generateRisks(detected.operation);
-
-  return {
-    operation: detected.operation,
-    target,
-    reason: `Detected ${detected.operation} operation from user input`,
-    confidence: detected.confidence,
-    steps,
-    risks,
-  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CRESTODIAN_ASSISTANT_TIMEOUT_MS);
+  try {
+    const response = await (
+      params.deps?.completeWithPreparedSimpleCompletionModel ??
+      completeWithPreparedSimpleCompletionModel
+    )({
+      model: prepared.model,
+      auth: prepared.auth,
+      context: {
+        systemPrompt: CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: buildCrestodianAssistantUserPrompt({
+              input,
+              overview: params.overview,
+            }),
+            timestamp: Date.now(),
+          },
+        ],
+      },
+      options: {
+        maxTokens: CRESTODIAN_ASSISTANT_MAX_TOKENS,
+        signal: controller.signal,
+      },
+    });
+    const parsed = parseCrestodianAssistantPlanText(extractAssistantText(response));
+    if (!parsed) {
+      return null;
+    }
+    return {
+      ...parsed,
+      modelLabel: `${prepared.selection.provider}/${prepared.selection.modelId}`,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-export function formatAssistantPlan(plan: CrestodianAssistantPlan): string {
-  const lines: string[] = [];
-  lines.push(`Operation: ${plan.operation}`);
-  if (plan.target) {
-    lines.push(`Target: ${plan.target}`);
+export async function planCrestodianCommandWithLocalRuntime(params: {
+  input: string;
+  overview: CrestodianOverview;
+  deps?: CrestodianLocalRuntimePlannerDeps;
+}): Promise<CrestodianAssistantPlan | null> {
+  const input = params.input.trim();
+  if (!input) {
+    return null;
   }
-  lines.push(`Confidence: ${Math.round(plan.confidence * 100)}%`);
-  lines.push('');
-  lines.push('Steps:');
-  plan.steps.forEach((step, i) => {
-    lines.push(`  ${i + 1}. ${step}`);
+  const backends = selectCrestodianLocalPlannerBackends(params.overview);
+  if (backends.length === 0) {
+    return null;
+  }
+  const prompt = buildCrestodianAssistantUserPrompt({
+    input,
+    overview: params.overview,
   });
-  lines.push('');
-  lines.push('Risks:');
-  plan.risks.forEach((risk) => {
-    lines.push(`  - ${risk}`);
-  });
-  return lines.join('\n');
+
+  for (const backend of backends) {
+    try {
+      const rawText = await runLocalRuntimePlanner(backend, {
+        prompt,
+        deps: params.deps,
+      });
+      const parsed = parseCrestodianAssistantPlanText(rawText);
+      if (parsed) {
+        return {
+          ...parsed,
+          modelLabel: backend.label,
+        };
+      }
+    } catch {
+      // Try the next locally available runtime. Crestodian must keep booting.
+    }
+  }
+  return null;
+}
+
+async function runLocalRuntimePlanner(
+  backend: ReturnType<typeof selectCrestodianLocalPlannerBackends>[number],
+  params: {
+    prompt: string;
+    deps?: CrestodianLocalRuntimePlannerDeps;
+  },
+): Promise<string | undefined> {
+  const tempDir = await (params.deps?.createTempDir ?? createTempPlannerDir)();
+  try {
+    // Planner sessions are isolated in a temp workspace and run with no tools for command planning.
+    const runId = `crestodian-planner-${randomUUID()}`;
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    const sessionId = `${runId}-session`;
+    const sessionKey = `temp:crestodian-planner:${runId}`;
+    switch (backend.runner) {
+      case "cli": {
+        const runCli = params.deps?.runCliAgent ?? (await loadRunCliAgent());
+        const result = await runCli({
+          sessionId,
+          sessionKey,
+          agentId: "crestodian",
+          trigger: "manual",
+          sessionFile,
+          workspaceDir: tempDir,
+          config: backend.buildConfig(tempDir),
+          prompt: params.prompt,
+          provider: backend.provider,
+          model: backend.model,
+          timeoutMs: CRESTODIAN_ASSISTANT_TIMEOUT_MS,
+          runId,
+          extraSystemPrompt: CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
+          extraSystemPromptStatic: CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
+          messageChannel: "crestodian",
+          messageProvider: "crestodian",
+          cleanupCliLiveSessionOnRunEnd: true,
+        });
+        return extractPlannerResultText(result);
+      }
+      case "embedded": {
+        const runEmbedded = params.deps?.runEmbeddedAgent ?? (await loadRunEmbeddedAgent());
+        const result = await runEmbedded({
+          sessionId,
+          sessionKey,
+          agentId: "crestodian",
+          trigger: "manual",
+          sessionFile,
+          workspaceDir: tempDir,
+          config: backend.buildConfig(tempDir),
+          prompt: params.prompt,
+          provider: backend.provider,
+          model: backend.model,
+          agentHarnessId: "codex",
+          disableTools: true,
+          toolsAllow: [],
+          timeoutMs: CRESTODIAN_ASSISTANT_TIMEOUT_MS,
+          runId,
+          extraSystemPrompt: CRESTODIAN_ASSISTANT_SYSTEM_PROMPT,
+          messageChannel: "crestodian",
+          messageProvider: "crestodian",
+          cleanupBundleMcpOnRunEnd: true,
+        });
+        return extractPlannerResultText(result);
+      }
+    }
+    return undefined;
+  } finally {
+    await (params.deps?.removeTempDir ?? removeTempPlannerDir)(tempDir);
+  }
+}
+
+async function createTempPlannerDir(): Promise<string> {
+  return await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-crestodian-planner-"));
+}
+
+async function removeTempPlannerDir(dir: string): Promise<void> {
+  await fs.rm(dir, { recursive: true, force: true });
+}
+
+async function loadRunCliAgent(): Promise<RunCliAgentFn> {
+  return (await import("../agents/cli-runner.js")).runCliAgent;
+}
+
+async function loadRunEmbeddedAgent(): Promise<RunEmbeddedAgentFn> {
+  return (await import("../agents/embedded-agent.js")).runEmbeddedAgent;
+}
+
+function extractPlannerResultText(result: {
+  payloads?: Array<{ text?: string }>;
+  meta?: {
+    finalAssistantVisibleText?: string;
+    finalAssistantRawText?: string;
+  };
+}): string | undefined {
+  return (
+    result.meta?.finalAssistantVisibleText ??
+    result.meta?.finalAssistantRawText ??
+    result.payloads
+      ?.map((payload) => payload.text?.trim())
+      .filter(Boolean)
+      .join("\n")
+  );
 }

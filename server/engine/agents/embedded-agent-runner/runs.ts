@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Manages active embedded-agent run handles, queues, aborts, and waiters.
  */

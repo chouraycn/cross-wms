@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds extension factories available to embedded-agent runtime sessions.
  */

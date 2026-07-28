@@ -1,7 +1,5 @@
-'use client'
-
 import * as React from 'react'
-import { Separator as SeparatorPrimitive } from 'radix-ui'
+import { Divider } from '@mui/material'
 
 import { cn } from './utils'
 
@@ -10,17 +8,18 @@ function Separator({
   orientation = 'horizontal',
   decorative = true,
   ...props
-}: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
+}: React.ComponentProps<'div'> & {
+  orientation?: 'horizontal' | 'vertical'
+  decorative?: boolean
+}) {
   return (
-    <SeparatorPrimitive.Root
+    <Divider
       data-slot="separator"
-      decorative={decorative}
       orientation={orientation}
-      className={cn(
-        'shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch',
-        className,
-      )}
-      {...props}
+      flexItem={orientation === 'vertical'}
+      className={cn(className)}
+      sx={{ borderColor: 'divider', ...(decorative ? null : {}) }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }

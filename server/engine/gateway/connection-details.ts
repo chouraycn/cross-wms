@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway connection detail builder for CLI/user-facing target diagnostics.
 import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";

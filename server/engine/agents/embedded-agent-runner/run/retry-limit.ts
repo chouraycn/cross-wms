@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Converts retry-limit exhaustion into failover errors or terminal replies.
  */

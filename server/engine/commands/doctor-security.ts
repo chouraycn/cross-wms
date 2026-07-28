@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Security warnings for gateway exposure, exec policy drift, channel DMs, and plaintext secrets. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";

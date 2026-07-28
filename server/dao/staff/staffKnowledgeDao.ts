@@ -9,6 +9,8 @@ import { initDb } from '../../db.js';
 import { DEFAULT_TENANT_ID, newStaffId, StaffIdPrefix } from '../../db-staff.js';
 import { embedBatch, embedText, ONNX_EMBEDDING_DIMENSIONS } from '../../engine/onnxEmbedding.js';
 import { logger } from '../../logger.js';
+import { chunkText } from '../../engine/shared/text-chunking.js';
+import { cosineSimilarity } from '../../engine/plugins/embedding-capability.js';
 import type {
   KnowledgeDocumentRow,
   KnowledgeBucketRow,
@@ -854,38 +856,14 @@ export function updateIngestJob(
 /**
  * 将长文本切分为有界块：优先在换行/句号等自然断点处截断，避免截断句子；
  * 块之间保留 overlap 字符重叠以保留上下文连续性。
+ * 委托主程序共享的 chunkText（server/engine/shared/text-chunking.ts），不再自维护平行逻辑。
  */
 export function splitKnowledgeChunks(
   text: string,
   chunkSize = 600,
   overlap = 80,
 ): string[] {
-  const clean = (text || '').replace(/\r\n/g, '\n').trim();
-  if (!clean) return [];
-  if (clean.length <= chunkSize) return [clean];
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < clean.length) {
-    let end = Math.min(clean.length, start + chunkSize);
-    if (end < clean.length) {
-      const slice = clean.slice(start, end);
-      let breakIdx = -1;
-      // 在窗口末尾 120 字符内回看最近的自然断点
-      for (let i = slice.length - 1; i >= Math.max(0, slice.length - 120); i--) {
-        const ch = slice[i];
-        if (ch === '\n' || ch === '。' || ch === '.' || ch === '！' || ch === '!' || ch === '？' || ch === '?') {
-          breakIdx = i + 1;
-          break;
-        }
-      }
-      if (breakIdx > 0) end = start + breakIdx;
-    }
-    const piece = clean.slice(start, end).trim();
-    if (piece) chunks.push(piece);
-    if (end >= clean.length) break;
-    start = Math.max(end - overlap, start + 1);
-  }
-  return chunks.length ? chunks : [clean];
+  return chunkText(text, { maxChars: chunkSize, overlapChars: overlap });
 }
 
 export interface IngestTextInput {
@@ -1033,6 +1011,7 @@ export async function searchKnowledge(input: KnowledgeSearchInput): Promise<Know
   }
   const qLower = q.toLowerCase();
   const hasVec = queryVec !== null && queryVec.length === ONNX_EMBEDDING_DIMENSIONS;
+  const queryVecArr = hasVec && queryVec ? Array.from(queryVec) : [];
 
   const scored = candidates.map((chunk) => {
     let score = 0;
@@ -1040,10 +1019,8 @@ export async function searchKnowledge(input: KnowledgeSearchInput): Promise<Know
       try {
         const v = JSON.parse(chunk.embedding) as number[];
         if (v.length === ONNX_EMBEDDING_DIMENSIONS) {
-          // 向量已 L2 归一化，点积即余弦相似度
-          let dot = 0;
-          for (let i = 0; i < v.length; i++) dot += v[i] * queryVec![i];
-          score = Math.max(0, dot);
+          // 复用主程序共享的余弦相似度（向量已 L2 归一化，cosine == dot）
+          score = Math.max(0, cosineSimilarity(v, queryVecArr));
         }
       } catch {
         // 损坏的 embedding 字段，忽略

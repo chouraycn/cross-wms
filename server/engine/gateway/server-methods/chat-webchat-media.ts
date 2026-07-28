@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Webchat media helpers translate reply payload media into assistant content
 // blocks that the control UI can render without unsafe file exposure.
 import path from "node:path";

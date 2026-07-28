@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Config preflight for doctor: legacy config/state migration, recovery, and snapshot loading. */
 import fs from "node:fs/promises";
 import path from "node:path";

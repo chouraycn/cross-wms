@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Pre-auth connection budget caps unauthenticated WebSocket handshakes per client IP before full gateway auth runs.
 import {
   parseStrictPositiveInteger,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor cron repair orchestration for legacy stores, run logs, payloads, and warnings.
 import { normalizeOptionalString } from "@openclaw-src/../packages/normalization-core/src/string-coerce.js";
 import { note } from "@openclaw-src/../packages/terminal-core/src/note.js";

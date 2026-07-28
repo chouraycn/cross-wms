@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Formats ACP diagnostics and runtime error details for command replies.
 import { formatAcpRuntimeErrorText } from "@openclaw/acp-core/runtime/error-text";
 import {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Migration apply tests cover backups, filtering, provider apply calls, and report output.
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";

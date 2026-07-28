@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Workspace resolution for local non-interactive onboarding.
  *

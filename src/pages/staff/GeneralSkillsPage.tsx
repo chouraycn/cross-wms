@@ -6,7 +6,6 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
-  Search,
   Trash2,
   Wrench,
   Download,
@@ -34,6 +33,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
+  OutlineActionButton,
+  SearchCombo,
   Select,
   SelectContent,
   SelectItem,
@@ -48,13 +49,9 @@ import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_DANGER_CLASS,
-  OUTLINE_ACTION_BUTTON_CLASS,
-  SEARCH_COMBO_BUTTON_CLASS,
-  SEARCH_COMBO_CLASS,
-  SEARCH_COMBO_INPUT_CLASS,
-  SELECT_TRIGGER_CLASS,
   formatDateTime,
 } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
 import {
   AGENT_SCOPE_CHANGE_EVENT,
   ENTERPRISE_AGENT_STORAGE_KEY,
@@ -221,7 +218,7 @@ function ClawHubDialog({
           <UIButton
             disabled={loading}
             onClick={onSubmit}
-            className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            sx={staffTokens.primaryButton}
           >
             {loading ? '导入中…' : '新增'}
           </UIButton>
@@ -538,27 +535,25 @@ export default function GeneralSkillsPage({
         userName={currentUser?.display_name || currentUser?.username}
         right={
           <div className="flex items-center gap-[8px]">
-            <button
+            <OutlineActionButton
               type="button"
-              className={OUTLINE_ACTION_BUTTON_CLASS}
               onClick={() => void load()}
               disabled={loading}
             >
               <RefreshCw className="size-[14px]" />
               刷新
-            </button>
+            </OutlineActionButton>
             {canManageCurrentScope ? (
               <>
-                <button
+                <OutlineActionButton
                   type="button"
-                  className={OUTLINE_ACTION_BUTTON_CLASS}
                   onClick={openClawHubImport}
                 >
                   <Download className="size-[14px]" />
                   导入技能
-                </button>
+                </OutlineActionButton>
                 <UIButton
-                  className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                  sx={staffTokens.primaryButton}
                   onClick={() => navigate('/staff/general-skills/new')}
                 >
                   <Plus className="size-[14px]" />
@@ -595,7 +590,7 @@ export default function GeneralSkillsPage({
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value as 'all' | GeneralSkillRead['status'])}
             >
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[140px]`}>
+              <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="全部状态" />
               </SelectTrigger>
               <SelectContent>
@@ -605,17 +600,11 @@ export default function GeneralSkillsPage({
                 <SelectItem value="archived">已停用</SelectItem>
               </SelectContent>
             </Select>
-            <div className={SEARCH_COMBO_CLASS}>
-              <Input
-                className={SEARCH_COMBO_INPUT_CLASS}
-                placeholder="搜索技能名称 / Slug"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-              />
-              <button type="button" className={SEARCH_COMBO_BUTTON_CLASS} aria-label="搜索">
-                <Search className="size-[14px]" />
-              </button>
-            </div>
+            <SearchCombo
+              value={searchText}
+              onChange={setSearchText}
+              placeholder="搜索技能名称 / Slug"
+            />
           </div>
         </div>
 
@@ -815,13 +804,12 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <button
+          <OutlineActionButton
             type="button"
-            className={OUTLINE_ACTION_BUTTON_CLASS}
             onClick={() => navigate('/staff/general-skills')}
           >
             返回列表
-          </button>
+          </OutlineActionButton>
         }
       />
 
@@ -919,7 +907,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
           />
           <div className="flex items-center justify-end">
             <UIButton
-              className="h-[32px] gap-[4px] rounded-[10px] bg-[#18181a] px-[14px] text-[13px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void runSkill()}
               disabled={runLoading || !isEdit}
             >
@@ -967,7 +955,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
           {saving ? '保存中…' : '保存并继续'}
         </UIButton>
         <UIButton
-          className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+          sx={staffTokens.primaryButton}
           onClick={() => void save()}
           disabled={saving}
         >

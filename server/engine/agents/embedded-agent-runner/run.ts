@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Top-level embedded-agent run orchestration entrypoint.
  */

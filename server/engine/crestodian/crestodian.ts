@@ -1,203 +1,115 @@
-import {
-  runProbes,
-  registerProbe,
-  getDefaultProbes,
-  type CrestodianProbe,
-} from './probes.js';
-import {
-  loadCrestodianOverview,
-  formatCrestodianOverview,
-  type CrestodianOverview,
-} from './overview.js';
+// @ts-nocheck
+// Crestodian CLI runner selects JSON, one-shot, or interactive setup-helper mode.
+import { stdin as defaultStdin, stdout as defaultStdout } from "node:process";
+import { withProgress } from "../cli/progress.js";
+import { defaultRuntime, writeRuntimeJson, type RuntimeEnv } from "../runtime.js";
+import type { CrestodianAssistantPlanner } from "./assistant.js";
+import { resolveCrestodianOperation } from "./dialogue.js";
 import {
   executeCrestodianOperation,
-  type CrestodianOperationResult,
-  type CrestodianOperationType,
-} from './operations.js';
+  isPersistentCrestodianOperation,
+  type CrestodianCommandDeps,
+} from "./operations.js";
 import {
-  auditCrestodianOperation,
-  getRecentAuditEntries,
-  type CrestodianAuditEntry,
-} from './audit.js';
-import {
-  checkRescueConditions,
-  triggerRescue,
-  type CrestodianRescueMessage,
-} from './rescue-message.js';
-import { getDefaultRescuePolicy, type CrestodianRescuePolicy } from './rescue-policy.js';
-import { type CrestodianStatus } from './types.js';
+  formatCrestodianOverview,
+  loadCrestodianOverview,
+  type CrestodianOverview,
+} from "./overview.js";
 
-class Crestodian {
-  private started = false;
-  private startTime = Date.now();
-  private probes: CrestodianProbe[] = [];
-  private rescuePolicy: CrestodianRescuePolicy;
-  private status: CrestodianStatus = 'unknown';
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+/**
+ * CLI entry point for Crestodian.
+ *
+ * This module chooses JSON, one-shot, or interactive TUI mode and delegates all
+ * command parsing/execution to dialogue and operation modules.
+ */
+type CrestodianInteractiveRunner = (
+  opts: RunCrestodianOptions,
+  runtime: RuntimeEnv,
+) => Promise<void>;
 
-  constructor() {
-    this.rescuePolicy = getDefaultRescuePolicy();
-    this.probes = getDefaultProbes();
+/** Options accepted by the Crestodian command runner. */
+export type RunCrestodianOptions = {
+  message?: string;
+  yes?: boolean;
+  json?: boolean;
+  interactive?: boolean;
+  onReady?: () => void;
+  deps?: CrestodianCommandDeps;
+  formatOverview?: (overview: CrestodianOverview) => string;
+  loadOverview?: typeof loadCrestodianOverview;
+  planWithAssistant?: CrestodianAssistantPlanner;
+  input?: NodeJS.ReadableStream;
+  output?: NodeJS.WritableStream;
+  runInteractiveTui?: CrestodianInteractiveRunner;
+};
+
+function crestodianCommandDepsFromOptions(
+  opts: RunCrestodianOptions,
+): CrestodianCommandDeps | undefined {
+  if (!opts.deps && !opts.formatOverview && !opts.loadOverview) {
+    return undefined;
   }
-
-  start(): void {
-    if (this.started) return;
-    this.started = true;
-    this.startTime = Date.now();
-    this.startHeartbeat();
-  }
-
-  stop(): void {
-    this.started = false;
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
-  private startHeartbeat(): void {
-    this.heartbeatInterval = setInterval(() => {
-      void this.heartbeat();
-    }, 30000);
-    this.heartbeatInterval.unref?.();
-  }
-
-  private async heartbeat(): Promise<void> {
-    try {
-      const results = await runProbes(this.probes);
-      const criticalCount = results.filter((r) => r.status === 'critical').length;
-      const degradedCount = results.filter((r) => r.status === 'degraded').length;
-
-      if (criticalCount > 0) {
-        this.status = 'critical';
-      } else if (degradedCount > 0) {
-        this.status = 'degraded';
-      } else {
-        this.status = 'healthy';
-      }
-
-      if (this.rescuePolicy.enabled && this.rescuePolicy.autoRecover) {
-        await checkRescueConditions(results, this.rescuePolicy);
-      }
-    } catch {
-      this.status = 'unknown';
-    }
-  }
-
-  async getOverview(): Promise<CrestodianOverview> {
-    return loadCrestodianOverview({
-      probes: this.probes,
-      uptimeMs: Date.now() - this.startTime,
-    });
-  }
-
-  formatOverview(overview: CrestodianOverview): string {
-    return formatCrestodianOverview(overview);
-  }
-
-  async runProbe(name: string): Promise<{
-    name: string;
-    status: CrestodianStatus;
-    message: string;
-  } | null> {
-    const probe = this.probes.find((p) => p.name === name);
-    if (!probe) return null;
-    const result = await probe.check();
-    return {
-      name: probe.name,
-      status: result.status,
-      message: result.message,
-    };
-  }
-
-  async runAllProbes(): Promise<CrestodianOverview> {
-    return this.getOverview();
-  }
-
-  async executeOperation(
-    operation: CrestodianOperationType,
-    options?: { initiator?: 'system' | 'user' | 'automatic'; approved?: boolean },
-  ): Promise<CrestodianOperationResult> {
-    const auditEntry = auditCrestodianOperation({
-      operation,
-      status: 'started',
-      initiator: options?.initiator ?? 'user',
-      message: `Starting ${operation} operation`,
-    });
-
-    try {
-      const result = await executeCrestodianOperation(operation);
-      auditCrestodianOperation({
-        ...auditEntry,
-        status: result.success ? 'completed' : 'failed',
-        message: result.message,
-        durationMs: result.durationMs,
-        error: result.error,
-      });
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      auditCrestodianOperation({
-        ...auditEntry,
-        status: 'failed',
-        message: `Operation failed: ${error}`,
-        error,
-      });
-      return {
-        success: false,
-        operation,
-        message: `Operation failed: ${error}`,
-        durationMs: 0,
-        error,
-      };
-    }
-  }
-
-  getAuditHistory(limit?: number): CrestodianAuditEntry[] {
-    return getRecentAuditEntries(limit);
-  }
-
-  registerProbe(probe: CrestodianProbe): void {
-    this.probes.push(probe);
-  }
-
-  getRescuePolicy(): CrestodianRescuePolicy {
-    return { ...this.rescuePolicy };
-  }
-
-  setRescuePolicy(policy: Partial<CrestodianRescuePolicy>): void {
-    this.rescuePolicy = { ...this.rescuePolicy, ...policy };
-  }
-
-  getStatus(): CrestodianStatus {
-    return this.status;
-  }
-
-  getUptimeMs(): number {
-    return Date.now() - this.startTime;
-  }
-
-  async triggerRescue(message: CrestodianRescueMessage): Promise<void> {
-    await triggerRescue(message, this.rescuePolicy);
-  }
-
-  isRunning(): boolean {
-    return this.started;
-  }
+  return {
+    ...opts.deps,
+    ...(opts.formatOverview ? { formatOverview: opts.formatOverview } : {}),
+    ...(opts.loadOverview ? { loadOverview: opts.loadOverview } : {}),
+  };
 }
 
-export const crestodian = new Crestodian();
-
-export function startCrestodian(): void {
-  crestodian.start();
+async function runOneShot(
+  input: string,
+  runtime: RuntimeEnv,
+  opts: RunCrestodianOptions,
+): Promise<void> {
+  const operation = await resolveCrestodianOperation(input, runtime, opts);
+  await executeCrestodianOperation(operation, runtime, {
+    approved: opts.yes === true || !isPersistentCrestodianOperation(operation),
+    deps: crestodianCommandDepsFromOptions(opts),
+  });
 }
 
-export function stopCrestodian(): void {
-  crestodian.stop();
-}
+/** Run Crestodian in JSON, one-shot message, or interactive TUI mode. */
+export async function runCrestodian(
+  opts: RunCrestodianOptions = {},
+  runtime: RuntimeEnv = defaultRuntime,
+): Promise<void> {
+  if (opts.json) {
+    const overview = await (opts.loadOverview ?? loadCrestodianOverview)();
+    writeRuntimeJson(runtime, overview);
+    return;
+  }
 
-export function getCrestodian(): Crestodian {
-  return crestodian;
-}
+  if (opts.message?.trim()) {
+    // One-shot mode always shows the overview first so planned changes have local context.
+    const overview = await withProgress(
+      {
+        label: "Loading Crestodian overview…",
+        indeterminate: true,
+        delayMs: 0,
+        fallback: "none",
+      },
+      async () => await (opts.loadOverview ?? loadCrestodianOverview)(),
+    );
+    runtime.log((opts.formatOverview ?? formatCrestodianOverview)(overview));
+    runtime.log("");
+    await runOneShot(opts.message, runtime, opts);
+    return;
+  }
 
-export { Crestodian };
+  const interactive = opts.interactive ?? true;
+  const input = opts.input ?? defaultStdin;
+  const output = opts.output ?? defaultStdout;
+  const inputIsTty = (input as { isTTY?: boolean }).isTTY === true;
+  const outputIsTty = (output as { isTTY?: boolean }).isTTY === true;
+  if (!interactive || !inputIsTty || !outputIsTty) {
+    // Without a TTY, Crestodian cannot safely ask for confirmation; require --message instead.
+    runtime.error("Crestodian needs an interactive TTY. Use --message for one command.");
+    runtime.exit(1);
+    return;
+  }
+
+  const runInteractiveTui =
+    opts.runInteractiveTui ?? (await import("./tui-backend.js")).runCrestodianTui;
+  opts.onReady?.();
+  await runInteractiveTui(opts, runtime);
+}

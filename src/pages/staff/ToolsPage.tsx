@@ -33,6 +33,8 @@ import {
   SelectValue,
   Switch,
   Textarea,
+  OutlineActionButton,
+  SearchCombo,
 } from '../../components/staff/ui/index.js';
 import { Button as UIButton } from '../../components/staff/ui/button.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
@@ -40,13 +42,9 @@ import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_DANGER_CLASS,
-  OUTLINE_ACTION_BUTTON_CLASS,
-  SEARCH_COMBO_BUTTON_CLASS,
-  SEARCH_COMBO_CLASS,
-  SEARCH_COMBO_INPUT_CLASS,
-  SELECT_TRIGGER_CLASS,
   formatDateTime,
 } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
 import {
   AGENT_SCOPE_CHANGE_EVENT,
   ENTERPRISE_AGENT_STORAGE_KEY,
@@ -550,29 +548,19 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
         userName={currentUser?.display_name || currentUser?.username}
         right={
           <div className="flex items-center gap-[8px]">
-            <button
-              type="button"
-              className={OUTLINE_ACTION_BUTTON_CLASS}
-              onClick={() => void load()}
-              disabled={loading}
-            >
+            <OutlineActionButton type="button" onClick={() => void load()} disabled={loading}>
               <RefreshCw className="size-[14px]" />
               刷新
-            </button>
+            </OutlineActionButton>
             {canManageCurrentScope ? (
-              <button
-                type="button"
-                className={OUTLINE_ACTION_BUTTON_CLASS}
-                onClick={() => void syncProgramSkills()}
-                disabled={syncing || loading}
-              >
-                <RefreshCw className="size-[14px]" />
-                {syncing ? '同步中…' : '同步程序技能'}
-              </button>
+            <OutlineActionButton type="button" onClick={() => void syncProgramSkills()} disabled={syncing || loading}>
+              <RefreshCw className="size-[14px]" />
+              {syncing ? '同步中…' : '同步程序技能'}
+            </OutlineActionButton>
             ) : null}
             {canManageCurrentScope ? (
               <UIButton
-                className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                sx={staffTokens.primaryButton}
                 onClick={openCreate}
               >
                 <Plus className="size-[14px]" />
@@ -602,7 +590,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
           <h3 className="text-[14px] font-medium text-[#18181a]">工具列表</h3>
           <div className="flex flex-wrap items-center gap-[8px]">
             <Select value={bucketFilter} onValueChange={setBucketFilter}>
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[160px]`}>
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="全部分桶" />
               </SelectTrigger>
               <SelectContent>
@@ -614,17 +602,11 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
                 ))}
               </SelectContent>
             </Select>
-            <div className={SEARCH_COMBO_CLASS}>
-              <Input
-                className={SEARCH_COMBO_INPUT_CLASS}
-                placeholder="搜索工具名称 / URL"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-              />
-              <button type="button" className={SEARCH_COMBO_BUTTON_CLASS} aria-label="搜索">
-                <Search className="size-[14px]" />
-              </button>
-            </div>
+            <SearchCombo
+              value={searchText}
+              onChange={setSearchText}
+              placeholder="搜索工具名称 / URL"
+            />
           </div>
         </div>
 
@@ -692,7 +674,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
                     setFormValues((prev) => ({ ...prev, tool_type: value as 'http' | 'mcp' }))
                   }
                 >
-                  <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择类型" />
                   </SelectTrigger>
                   <SelectContent>
@@ -709,7 +691,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
                   value={formValues.method}
                   onValueChange={(value) => setFormValues((prev) => ({ ...prev, method: value }))}
                 >
-                  <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择方法" />
                   </SelectTrigger>
                   <SelectContent>
@@ -773,7 +755,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
               取消
             </UIButton>
             <UIButton
-              className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void save()}
               disabled={saving}
             >
@@ -901,13 +883,9 @@ function ToolEditorPage({ mode, currentUser, onLogout }: ToolEditorProps) {
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <button
-            type="button"
-            className={OUTLINE_ACTION_BUTTON_CLASS}
-            onClick={() => navigate('/staff/tools')}
-          >
+          <OutlineActionButton type="button" onClick={() => navigate('/staff/tools')}>
             返回列表
-          </button>
+          </OutlineActionButton>
         }
       />
       <ToolForm
@@ -984,7 +962,7 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
             value={values.tool_type}
             onValueChange={(value) => set('tool_type', value as 'http' | 'mcp')}
           >
-            <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -998,7 +976,7 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
         <label className="flex flex-col gap-[6px]">
           <span className="text-[12px] text-[#464c5e]">HTTP 方法</span>
           <Select value={values.method} onValueChange={(value) => set('method', value)}>
-            <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1048,7 +1026,7 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
           取消
         </UIButton>
         <UIButton
-          className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+          sx={staffTokens.primaryButton}
           onClick={onSave}
           disabled={saving}
         >
@@ -1199,13 +1177,9 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <button
-            type="button"
-            className={OUTLINE_ACTION_BUTTON_CLASS}
-            onClick={() => navigate('/staff/tools')}
-          >
+          <OutlineActionButton type="button" onClick={() => navigate('/staff/tools')}>
             返回列表
-          </button>
+          </OutlineActionButton>
         }
       />
       <section className="flex flex-col gap-[16px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
@@ -1251,7 +1225,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
               value={values.transport}
               onValueChange={(value) => set('transport', value as MCPTransport)}
             >
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1324,7 +1298,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
             取消
           </UIButton>
           <UIButton
-            className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+            sx={staffTokens.primaryButton}
             onClick={() => void save()}
             disabled={saving}
           >
@@ -1396,13 +1370,9 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <button
-            type="button"
-            className={OUTLINE_ACTION_BUTTON_CLASS}
-            onClick={() => navigate('/staff/tools')}
-          >
+          <OutlineActionButton type="button" onClick={() => navigate('/staff/tools')}>
             返回列表
-          </button>
+          </OutlineActionButton>
         }
       />
       {tool ? (
@@ -1431,7 +1401,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
             />
             <button
               type="button"
-              className="h-[34px] self-end rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030] disabled:opacity-50"
+              sx={staffTokens.primaryButton}
               onClick={() => void runTest()}
               disabled={testing}
             >

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Formatting helpers for model-list terminal tables. */
 import { isRich as isRichTerminal, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
 

@@ -1,0 +1,237 @@
+title: CrossWMS 智能体生命周期管理
+
+# 验证 CrossWMS 智能体的完整生命周期：
+#   1. 创建（create）
+#   2. 列出（list）
+#   3. 启动（start）
+#   4. 停止（stop）
+#   5. 删除（delete）
+#
+# 覆盖 CrossWMS 的 WMS 业务场景：
+#   - 每个智能体可绑定一个具体仓库（仓库切换器）
+#   - 智能体在停机 / 删除后不能继续接收 AI 助手消息
+#   - 列表 API 返回的智能体元数据必须包含 id / name / warehouseId / state / createdAt
+#
+# 与 OpenClaw 的 `agents/` 主题结构对齐，但目标产品是 WMS 桌面端，
+# 不再是 OpenClaw 的 subagent 派发。
+
+scenario:
+  id: agents-lifecycle
+  surface: agent-lifecycle
+  coverage:
+    primary:
+      - agents.lifecycle
+    secondary:
+      - agents.persistence
+      - agents.run-state
+  objective: 验证 CrossWMS 智能体的创建、删除、启动、停止、列表操作均符合预期，并且运行状态在 WMS 业务上下文中保持一致。
+  successCriteria:
+    - 创建智能体后立即出现在 list 结果中，且 state=stopped。
+    - 启动后 state=running，AI 助手可以接收消息并基于绑定的 warehouseId 返回数据。
+    - 停止后 state=stopped，AI 助手不再处理新消息。
+    - 删除后 list 不再返回该智能体，再次访问其历史消息返回 404。
+    - 同一 warehouseId 下不允许重名智能体。
+  docsRefs:
+    - docs/agents/agent-lifecycle.md
+    - docs/wms/warehouse-scope.md
+  codeRefs:
+    - server/routes/agents.ts
+    - server/engine/agents.ts
+    - server/db-core.ts
+    - server/db-staff.ts
+  execution:
+    kind: flow
+    summary: 验证 CrossWMS 智能体的 create / list / start / stop / delete 全生命周期，并在每一步校验 WMS 业务约束。
+    config:
+      requiredChannelDriver: qa-channel
+      resetDurableState: true
+      agentName: "WH-OPS-AGENT-${randomUUID().slice(0, 8)}"
+      warehouseId: "WH-SH-001"
+      warehouseName: "上海前置仓 #1"
+      createPrompt: "创建一个仓库 ${config.warehouseName} (${config.warehouseId}) 下的智能体，名称 ${config.agentName}，用于出入库自动审单。"
+      listExpectedAny:
+        - "agents.list"
+      startExpectedMarker: "AGENT-START-OK"
+      stopExpectedMarker: "AGENT-STOP-OK"
+      deleteExpectedMarker: "AGENT-DELETED-OK"
+
+flow:
+  steps:
+    - name: resets durable WMS state for the run
+      actions:
+        - assert:
+            expr: "!config.resetDurableState || true"
+        - call: reset
+        - call: db.seedWarehouse
+          args:
+            - ref: env
+            - id:
+                expr: config.warehouseId
+              name:
+                expr: config.warehouseName
+              volumeCapacity: 5000
+        - call: db.assertWarehouseExists
+          args:
+            - ref: env
+            - id:
+                expr: config.warehouseId
+
+    - name: creates a new agent bound to the WMS warehouse
+      actions:
+        - call: agents.create
+          saveAs: createdAgent
+          args:
+            - ref: env
+            - name:
+                expr: config.agentName
+              warehouseId:
+                expr: config.warehouseId
+              role: warehouse-ops
+            - expectedStatus: 201
+        - assert:
+            expr: "createdAgent.id && createdAgent.warehouseId === config.warehouseId && createdAgent.state === 'stopped'"
+            message:
+              expr: "`create returned unexpected payload: ${JSON.stringify(createdAgent)}`"
+        - call: agents.list
+          saveAs: listAfterCreate
+          args:
+            - ref: env
+        - assert:
+            expr: "listAfterCreate.agents.some((candidate) => candidate.id === createdAgent.id)"
+            message:
+              expr: "`created agent not present in list: ${JSON.stringify(listAfterCreate)}`"
+
+    - name: rejects duplicate agent name in the same warehouse
+      actions:
+        - call: agents.create
+          args:
+            - ref: env
+            - name:
+                expr: config.agentName
+              warehouseId:
+                expr: config.warehouseId
+              role: warehouse-ops
+            - expectedStatus: 409
+        - call: agents.create
+          args:
+            - ref: env
+            - name:
+                expr: config.agentName
+              warehouseId: WH-BJ-001
+              role: warehouse-ops
+            - expectedStatus: 201
+        - call: agents.delete
+          args:
+            - ref: env
+            - id:
+                expr: agents.lastCreatedAlternateId
+
+    - name: starts the agent and replies on the qa-channel with a marker
+      actions:
+        - call: agents.start
+          saveAs: startedAgent
+          args:
+            - ref: env
+            - id:
+                expr: createdAgent.id
+        - assert:
+            expr: "startedAgent.state === 'running' && startedAgent.startedAt"
+            message:
+              expr: "`start did not transition state: ${JSON.stringify(startedAgent)}`"
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey:
+                expr: "`agent:qa:lifecycle:${createdAgent.id}`"
+              message:
+                expr: "`Agent start QA marker. Reply exactly: ${config.startExpectedMarker}`"
+              timeoutMs:
+                expr: liveTurnTimeoutMs(env, 45000)
+        - call: waitForOutboundMessage
+          saveAs: startOutbound
+          args:
+            - ref: state
+            - lambda:
+                params: [candidate]
+                expr: "candidate.conversation.id === 'qa-operator' && String(candidate.text ?? '').includes(config.startExpectedMarker)"
+            - expr: liveTurnTimeoutMs(env, 30000)
+        - set: startMarker
+          value:
+            expr: config.startExpectedMarker
+        - assert:
+            expr: "String(startOutbound.text).includes(startMarker)"
+            message:
+              expr: "`start reply missing marker: ${startOutbound.text}`"
+
+    - name: stops the agent and asserts WMS run-state
+      actions:
+        - call: agents.stop
+          saveAs: stoppedAgent
+          args:
+            - ref: env
+            - id:
+                expr: createdAgent.id
+        - assert:
+            expr: "stoppedAgent.state === 'stopped' && stoppedAgent.stoppedAt"
+            message:
+              expr: "`stop did not transition state: ${JSON.stringify(stoppedAgent)}`"
+        - call: agents.get
+          saveAs: reloadedAgent
+          args:
+            - ref: env
+            - id:
+                expr: createdAgent.id
+        - assert:
+            expr: "reloadedAgent.state === 'stopped'"
+            message:
+              expr: "`persisted state diverged after stop: ${JSON.stringify(reloadedAgent)}`"
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey:
+                expr: "`agent:qa:lifecycle:${createdAgent.id}`"
+              message:
+                expr: "Agent stop QA marker. Reply exactly: AGENT-STOP-NOOP"
+              timeoutMs:
+                expr: liveTurnTimeoutMs(env, 10000)
+        - call: waitForCondition
+          saveAs: stopOutbound
+          args:
+            - lambda:
+                expr: "state.getSnapshot().messages.filter((candidate) => candidate.direction === 'outbound' && candidate.conversation.id === 'qa-operator' && String(candidate.text ?? '').includes('AGENT-STOP-OK')).at(-1)"
+            - 15000
+        - set: stopMarker
+          value:
+            expr: config.stopExpectedMarker
+        - assert:
+            expr: "String(stopOutbound.text).includes(stopMarker)"
+            message:
+              expr: "`stop reply missing marker: ${stopOutbound.text}`"
+
+    - name: deletes the agent and asserts it disappears from list and history
+      actions:
+        - call: agents.delete
+          saveAs: deleteResult
+          args:
+            - ref: env
+            - id:
+                expr: createdAgent.id
+        - assert:
+            expr: "deleteResult.deleted === true"
+            message:
+              expr: "`delete did not confirm: ${JSON.stringify(deleteResult)}`"
+        - call: agents.list
+          saveAs: listAfterDelete
+          args:
+            - ref: env
+        - assert:
+            expr: "!listAfterDelete.agents.some((candidate) => candidate.id === createdAgent.id)"
+            message:
+              expr: "`deleted agent still present in list: ${JSON.stringify(listAfterDelete)}`"
+        - call: agents.get
+          args:
+            - ref: env
+            - id:
+                expr: createdAgent.id
+            - expectedStatus: 404
+      detailsExpr: "JSON.stringify({ created: createdAgent, listedAfterCreate: listAfterCreate.agents.length, started: startedAgent.state, stopped: stoppedAgent.state, listedAfterDelete: listAfterDelete.agents.length })"

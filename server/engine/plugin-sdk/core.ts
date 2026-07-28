@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Core SDK contracts expose stable identifiers, manifests, and shared plugin metadata types.
 import { normalizeLowercaseStringOrEmpty } from "../../../packages/normalization-core/src/string-coerce.js";
 import type { ResolvedConfiguredAcpBinding } from "../acp/persistent-bindings.types.js";

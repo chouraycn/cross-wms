@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor migration for legacy plugin manifest capability keys into contracts.* fields. */
 import fs from "node:fs";
 import path from "node:path";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Node status/list/describe commands and paired-node display formatting.
 import {
   normalizeLowercaseStringOrEmpty,

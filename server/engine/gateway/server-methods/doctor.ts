@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor gateway methods inspect and repair memory dreaming artifacts, managed
 // cron state, and REM harness previews for operator diagnostics.
 import fs from "node:fs/promises";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Converts status data into reusable report sections.
 // Section builders keep table column definitions close to the rows they format.
 

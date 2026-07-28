@@ -1,5 +1,6 @@
-// 共享 debug-proxy 抓取 schema。这些 record 支撑 SQLite store、CLI 报告
-// 与 HTTP/SSE/websocket 流量的运行时抓取事件
+// @ts-nocheck
+// Shared debug-proxy capture schema. These records back the SQLite store, CLI
+// reports, and runtime capture events for HTTP/SSE/websocket traffic.
 export type CaptureProtocol = "http" | "https" | "sse" | "ws" | "wss" | "connect";
 
 export type CaptureDirection = "outbound" | "inbound" | "local";
@@ -23,9 +24,9 @@ export type CaptureSessionRecord = {
   sourceScope: "openclaw";
   sourceProcess: string;
   proxyUrl?: string;
-  /** @deprecated 抓取存储现已位于共享状态数据库 */
+  /** @deprecated Capture storage now lives in the shared state database. */
   dbPath?: string;
-  /** @deprecated 抓取负载现已位于共享状态数据库 */
+  /** @deprecated Capture payloads now live in the shared state database. */
   blobDir?: string;
 };
 

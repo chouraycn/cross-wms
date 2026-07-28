@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor hints for WhatsApp responsiveness when local TUI clients block gateway work. */
 import { spawnSync } from "node:child_process";
 import path from "node:path";

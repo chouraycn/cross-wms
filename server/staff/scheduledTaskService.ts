@@ -1,16 +1,19 @@
 /**
- * scheduledTaskService — 数字员工定时任务真实调度器
+ * scheduledTaskService — 数字员工定时任务调度器
  *
- * 定位：把 StaffDeck 的定时任务从「仅建 queued 记录」升级为「croner 真调度 + 真实执行」。
+ * 定位：把 StaffDeck 的定时任务接入主程序统一调度器（server/engine/cronScheduler.ts
+ * 的 CronScheduler 单例），复用其「调度循环 + 指数退避重试 + 运行日志」能力，
+ * 不再自己维护一套 croner 定时器。
  *
  * 设计：
- *  - 调度层用 croner（项目已装 v10）把 once/daily/weekly/monthly 映射为 cron 表达式（或一次性 Date），
- *    注册到内存 registry，并在启动时从 DB 恢复所有 active 任务。
- *  - 执行层复用 staffChatExecutor.runStaffChatTurn —— 与「数字员工对话」走完全相同的引擎链路
- *    （人格隔离 system prompt + 绑定 SOP + 真实 RAG 检索 + 真实 LLM / 本地 mock 兜底），
- *    保证定时任务产出的回答与对话一致，而非另写一套。
- *  - 每次执行写入 sd_scheduled_task_runs（running → succeeded/failed），并回写任务的
- *    last_run_at / last_status / run_count / next_run_at；达到 max_runs 或 once 任务完成后翻转状态为 completed。
+ *  - 每个 active 任务在 CronScheduler 中注册为一个 job（taskType = 'staff-chat-turn'），
+ *    触发时由注册好的 executor 调用 runStaffChatTurn（与「数字员工对话」同引擎链路）。
+ *  - 运行记录（sd_scheduled_task_runs）仍由本模块写入（持久、前端可读），主 cron 的
+ *    run-log 作为内存诊断补充。
+ *  - 任务完成（once 已执行 / 达 max_runs）时把 staff DB 状态翻 completed；executor 在
+ *    非 active 状态下 no-op，避免重复执行（主调度器按周期触发，但本模块据此熔断）。
+ *  - 仅 computeNextRunAt 仍用 croner 做「下一次执行时间」的纯日期计算（无定时器副作用），
+ *    用于写入 staff DB 的 next_run_at 展示字段。
  *
  * 状态约定：任务 status ∈ {active, paused, completed, archived}；可执行 = active。
  * 运行记录 status ∈ {queued, running, succeeded, failed}（前端按 succeeded/failed/running 渲染）。
@@ -19,12 +22,31 @@ import { Cron } from 'croner';
 import { DEFAULT_TENANT_ID } from '../db-staff.js';
 import * as scheduledTaskDao from '../dao/staff/staffScheduledTaskDao.js';
 import { runStaffChatTurn } from './staffChatExecutor.js';
+import { getCronScheduler, registerCronTask } from '../engine/cronScheduler.js';
 import { logger } from '../logger.js';
 import type { ScheduledTaskRow, ScheduledTaskRunRow } from '../types/staff.js';
 
-// ===================== 调度注册表 =====================
+// ===================== 调度注册表（staff taskId → 主 cron jobId） =====================
 
-const registry = new Map<string, Cron>();
+const cronJobIds = new Map<string, string>();
+
+// ===================== 主 cron 执行器（注册一次，触发时调用数字员工引擎） =====================
+
+registerCronTask('staff-chat-turn', async (params) => {
+  const { tenantId, taskDbId } = params as Record<string, string>;
+  const task = scheduledTaskDao.getScheduledTaskById(tenantId, taskDbId);
+  if (!task) {
+    logger.warn(`[ScheduledTaskService] 定时任务 ${taskDbId} 不存在，跳过执行`);
+    return { ok: false, error: 'task not found' };
+  }
+  // 已完成/归档的任务不再执行（主调度器按周期触发，本模块据此熔断，避免重复运行）
+  if (task.status !== 'active') {
+    return { ok: true, skipped: true };
+  }
+  const run = createRunningRun(task, Math.random().toString(36).slice(2, 8));
+  await executeAndRecord(task, run); // 内部失败会抛错 → 由主 cron 的 withRetry 重试
+  return { ok: true };
+});
 
 // ===================== 调度表达式解析 =====================
 
@@ -44,8 +66,8 @@ function parseScheduleJson(task: ScheduledTaskRow): Record<string, unknown> {
 }
 
 /**
- * 把 StaffDeck 的 schedule_type（once/daily/weekly/monthly）解析为 croner 可接受的 pattern。
- * 前端 weekday：0=周一 … 6=周日；croner dow：0=周日 … 6=周六，故需 (d+1)%7 映射。
+ * 把 StaffDeck 的 schedule_type（once/daily/weekly/monthly）解析为 cron 表达式（或一次性 Date）。
+ * 前端 weekday：0=周一 … 6=周日；croner/标准 cron 的 dow：0=周日 … 6=周六，故需 (d+1)%7 映射。
  */
 function parseSchedule(task: ScheduledTaskRow): ScheduleParseResult | null {
   const schedule = parseScheduleJson(task);
@@ -84,13 +106,21 @@ function parseSchedule(task: ScheduledTaskRow): ScheduleParseResult | null {
   }
 }
 
+/** 把解析结果统一为 5 字段 cron 表达式字符串（once 转为「年触发一次」，完成后由 executor no-op 熔断） */
+function toCronExpression(parsed: ScheduleParseResult): string {
+  if (typeof parsed.pattern === 'string') return parsed.pattern;
+  const d = parsed.pattern as Date;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getMinutes())} ${pad(d.getHours())} ${pad(d.getDate())} ${pad(d.getMonth() + 1)} *`;
+}
+
 function isSchedulable(task: ScheduledTaskRow): boolean {
   return task.status === 'active';
 }
 
 // ===================== 公共工具 =====================
 
-/** 计算任务的下一次执行时间（unix 秒），无法解析/过去时间返回 null */
+/** 计算任务的下一次执行时间（unix 秒），无法解析/过去时间返回 null。复用 croner 仅做纯日期计算。 */
 export function computeNextRunAt(task: ScheduledTaskRow): number | null {
   const parsed = parseSchedule(task);
   if (!parsed) return null;
@@ -106,7 +136,7 @@ export function computeNextRunAt(task: ScheduledTaskRow): number | null {
 
 // ===================== 注册 / 注销 =====================
 
-/** 注册（或重注册）一个任务到 croner。非 active 任务直接跳过（并清理旧注册） */
+/** 注册（或重注册）一个任务到主 CronScheduler。非 active 任务直接跳过（并清理旧注册） */
 export function registerTask(task: ScheduledTaskRow): void {
   unregisterTask(task.id);
   if (!isSchedulable(task)) return;
@@ -115,36 +145,39 @@ export function registerTask(task: ScheduledTaskRow): void {
     logger.warn(`[ScheduledTaskService] 任务 ${task.id} 调度表达式无法解析，跳过注册`);
     return;
   }
-  const cron = new Cron(
-    parsed.pattern,
-    { timezone: parsed.timezone },
-    async () => {
-      try {
-        await startTaskRun(task.tenant_id, task.id);
-      } catch (err) {
-        logger.error('[ScheduledTaskService] 定时触发执行失败:', err instanceof Error ? err.message : String(err));
-      }
+  const cronExpression = toCronExpression(parsed);
+  const sched = getCronScheduler();
+  const job = sched.createJob({
+    name: task.title,
+    cronExpression,
+    taskType: 'staff-chat-turn',
+    taskParams: {
+      tenantId: task.tenant_id,
+      agentId: task.agent_id,
+      prompt: task.prompt,
+      taskDbId: task.id,
     },
-  );
-  registry.set(task.id, cron);
-  const next = cron.nextRun();
-  if (next) {
-    scheduledTaskDao.updateScheduledTask(task.tenant_id, task.id, {
-      next_run_at: Math.floor(next.getTime() / 1000),
-    });
+    agent: task.agent_id,
+    enabled: true,
+    metadata: { staffTaskId: task.id },
+  });
+  cronJobIds.set(task.id, job.id);
+  const next = computeNextRunAt(task);
+  if (next !== null) {
+    scheduledTaskDao.updateScheduledTask(task.tenant_id, task.id, { next_run_at: next });
   }
 }
 
-/** 从 croner 注销一个任务 */
+/** 从主 CronScheduler 注销一个任务 */
 export function unregisterTask(taskId: string): void {
-  const existing = registry.get(taskId);
-  if (existing) {
-    existing.stop();
-    registry.delete(taskId);
+  const jobId = cronJobIds.get(taskId);
+  if (jobId) {
+    getCronScheduler().deleteJob(jobId);
+    cronJobIds.delete(taskId);
   }
 }
 
-/** 启动调度器：从 DB 恢复所有 active 任务 */
+/** 启动调度器：从 DB 恢复所有 active 任务到主 CronScheduler（其定时器由 server/index.ts 的 startCronScheduler 驱动） */
 export function initScheduledTaskScheduler(): void {
   let registered = 0;
   const tasks = scheduledTaskDao.listAllScheduledTasks();
@@ -155,7 +188,7 @@ export function initScheduledTaskScheduler(): void {
     }
   }
   logger.info(
-    `[ScheduledTaskService] 调度器初始化完成：已注册 ${registered}/${tasks.length} 个任务（croner 真调度）`,
+    `[ScheduledTaskService] 调度器初始化完成：已注册 ${registered}/${tasks.length} 个任务（复用主 CronScheduler）`,
   );
 }
 
@@ -178,6 +211,8 @@ function createRunningRun(task: ScheduledTaskRow, nonce: string): ScheduledTaskR
 /**
  * 真正执行一次任务：调用数字员工引擎产出回答，并回写运行记录与任务统计。
  * 与「对话」共用 runStaffChatTurn，因此拥有同等的人格 / SOP / RAG 能力。
+ * 注意：once / 达 max_runs 的任务在此将 staff DB 状态翻为 completed；其调度熔断由
+ * executor 的 no-op 守卫负责（主调度器按周期触发，但非 active 时不再执行）。
  */
 async function executeAndRecord(task: ScheduledTaskRow, run: ScheduledTaskRunRow): Promise<void> {
   const startedAt = Math.floor(Date.now() / 1000);
@@ -221,7 +256,6 @@ async function executeAndRecord(task: ScheduledTaskRow, run: ScheduledTaskRunRow
       next_run_at: nextStatus === 'completed' ? null : next,
       status: nextStatus,
     });
-    if (nextStatus === 'completed') unregisterTask(task.id);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     scheduledTaskDao.updateRun(task.tenant_id, run.id, {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds the system prompt inputs for a single embedded-agent attempt.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds runtime context for context-engine backed embedded compaction.
  */

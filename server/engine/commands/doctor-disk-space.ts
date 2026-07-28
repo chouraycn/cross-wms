@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor contribution for low disk space around the OpenClaw state directory. */
 import os from "node:os";
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";

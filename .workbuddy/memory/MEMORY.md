@@ -76,5 +76,46 @@
 - **`ctx.tools.run(name, args)`**：skill 调后端工具的便携接口（`SkillToolRunner`），内部 `await import('./toolRegistry.js')` 调 `executeToolCall`。**禁止改回 require**（会 ESM 崩溃）。
 - 真实 `require` 残留：pdfProcessor/documentTools/imageTools/pdfTools 等仍用 `require`，属已存在债务（生产 CJS 打包可用，dev tsx 部分路径可能崩），不在 skill 任务范围，勿顺手改。
 
+## 数字员工执行集成（StaffDeck × 真实引擎）
+- **工具来源闭环**：员工"能干活"的工具 = HTTP + 全局 MCP + **员工隔离 MCP**(`sd_mcp_servers`) + 程序原生 skill + **通用技能 markdown 物化**(`sd_general_skills`)。
+- **per-call 注入架构（强隔离，不污染全局单例）**：`ExecuteChatParams`/`ExecutionStrategyOptions` 增 `staffMcpManager?`、`extraSkills?`、`extraSkillExecutor?`，透传到 `reactExecutor`→`actionPhaseExecutor`/`toolExecutor`。
+- **员工隔离 MCP**：`McpClientManager.create()`（非单例）连 `sd_mcp_servers` 的 `enabled===1`；分发时 `staffMcpManager.hasServerPrefix(prefix)` 为真才走隔离实例，否则回退全局 `mcpClientManager`。工具名 `mcp__<sanitizedName>__<tool>`。
+- **通用技能物化**：`materializeGeneralSkills(tenantId)` 把 `published` 且非空 markdown 的 `sd_general_skills` 转 `SkillDefinition[]`（**id=`staff-${tenant}-${slug}`(横线!)**，group=`wms`，source=`user`，指令型）；`executor` 全局 registry miss 时回退执行 `runDeclarative` → 返 `{type:'prompt',instructions,params}`，由模型按已有工具干活。
+  - ⚠️ **round-trip 铁律**：def.id 必须用横线。执行链 `reactExecutor.skillDefinitionToToolDef` 把 `def.id` 的 `-`→`_` 生成工具名；`skillToolBridge.handleSkillToolCall` 把工具名的 `_`→`-` 还原 skillId 传给 `extraSkillExecutor`。若 id 用下划线，slug 含横线（如 `refund-policy`）时 round-trip 错位 → executor 按 id 查找 miss → 模型调用物化技能报"未找到"。已用 `e2e/api/staff-dispatch.e2e.test.ts` 钉死。
+- **接线点**：`server/staff/staffChatExecutor.ts` 真实 LLM 路径内 `buildStaffMcpManager`+`materializeGeneralSkills`，结果注入 `executeChat`，`finally` 中 `staffMcpManager?.disconnectAll()`。
+- **注意**：`McpClientManager` 已改 `export class`；`SkillPermissionGroup` 无 `'custom'`，物化技能用 `'wms'`。
+- **前端"已接入执行链路"状态（单一事实来源）**：`GET /api/staffdeck/execution-runtime?tenant_id=`（新文件 `server/routes/staff/executionRuntime.ts`，导出 `buildExecutionRuntimeData`）。判定条件与执行装配一致：通用技能 `published && markdown非空`→connected；员工 MCP `sd_mcp_servers.enabled===1`→connected（不做真实握手）。前端 `ExecutionBadge` 组件（`src/components/staff/ExecutionBadge.tsx`）在 `GeneralSkillsPage`/`ToolsPage` 的"执行链路"列 + 统计卡 + 横幅复用此端点。
+- **"未接入"可点击钻取（2026-07-27 续）**：`GeneralSkillsPage`/`ToolsPage` 的"执行链路"列，当未接入时渲染可点击「未接入·去处理」按钮。`GeneralSkillsPage` 跳转 `/staff/general-skills/<slug>`（编辑）；`ToolsPage` 跳转 `/staff/tools/<id>/test`。
+  - ⚠️ **补路由**：此前 `/enterprise/general-skills/new` 错误渲染成列表、`GeneralSkillNewPage`/`GeneralSkillEditPage` 是死代码（未被路由引用）。现已在 `src/App.tsx` 接上：`/enterprise/general-skills/new`→`StaffGeneralSkillNewPage`，新增 `/enterprise/general-skills/:slug`→`StaffGeneralSkillEditPage`，并加 `/staff/general-skills/:slug` 重定向。`StaffGeneralSkillsPage` 仍只渲染列表。
+  - **分发路由端到端验证（继续完善）**：新增 `e2e/api/staff-dispatch.e2e.test.ts`(5 用例)。① 物化技能：mock 全局 `skillRegistry.getSkill`→undefined，`handleSkillToolCall` 以 `skill_${def.id.replace(/-/g,'_')}` 工具名调用，验证回退到 `extraSkillExecutor`(materialize executor)→`runDeclarative` 返 prompt 指令，错误 id 返"未找到"。② 员工 MCP：`actionPhaseExecutor.resolveMcpManager`(抽出导出纯函数)——员工 manager 拥有前缀→隔离实例；否则回退全局单例；未注入→全局；非 MCP 名→全局。合计 `staff-execution`(9)+`staff-dispatch`(5)=14/14 全绿。
+
+## Staff 前端全面 MUI 化迁移（2026-07-28 启动）
+- **范围（用户澄清）**：① 样式全面 MUI 化——92 个 staff .tsx 的 Tailwind className → MUI `Box`/`Typography` + `sx`；② 内容接入主程序 i18n——276 条硬编码 zh/en 文案 → `src/i18n/locales` + `useI18n`/`t()`；③ 图片=确认无本地资源，**不做**。
+- **执行策略（本轮校准）**：基础优先·分批验证（每批 tsc 验证、构建不红）；品牌色=采用主程序靛蓝 `#1a237e`（彻底并入主程序，不保留 teal/近黑）。
+- **关键架构发现**：staff 样式是**三方分叉**——① `staffdeck.css`+`tailwind.config.js` 的 teal/warm 系统(`--primary:#0f766e`)；② `distillPageStyles.ts`/`chatPageStyles.ts` 的近黑/灰硬编码 hex(`#18181a`/`#858b9c`)；③ 主程序 MUI 靛蓝。又：复杂 shadcn 组件（dropdown-menu/select 等）**已是基于 MUI**（`MuiMenu`/`MuiMenuItem`），仅内部叠加 Tailwind `ITEM_BASE`；`DropdownMenuItem` 透传 `...props` 到 `MuiMenuItem` → 消费者传 `sx` 实际生效。
+- **单一事实来源 `src/components/staff/lib/staffTokens.ts`**：导出 `staffTokens: Record<string, SxProps<Theme>>`，所有颜色/间距映射到主程序 MUI 主题（`primary.main`/`text.secondary`/`divider`/`background.paper`），覆盖 menuItem/menuContent/selectTrigger/outlineActionButton/searchCombo/dialog*/sectionCard 等模式。消费者 `sx={staffTokens.xxx}` 无需 `as`（类型已对齐）。后续所有 staff 样式迁移都从这里取 token。
+- **已验证转换模式（MUI v5.15.15）**：
+  - 组件 `<div className>` → `<Box sx>`；文本 → `<Typography sx>`；保留 `className` 透传（cn）以免父级布局断。
+  - **spread 联合类型（SxProps）进 `Box.sx` 触发 "No overload matches"** → 数组形式 `as SxProps` 收口（dialog.tsx 同因）。
+  - `SxProps`/`Theme` 从 `@mui/material/styles` 导出；**`SystemStyleObject` 该版本不导出**，勿用。
+  - `Button` 封装（`ui/button.tsx`）已补 `sx?: SxProps` 透传，可对其传 `sx`。
+  - `Box component="article"` 可替代 `<article className>` 以用 `sx`。
+- **进度**：
+  - **第一批**（基础优先）：`staffTokens.ts`（新增）+ 3 个仪表盘移动端卡片（`ScheduledTasksTab`/`ConversationLogsTab`/`MemoriesTab` 的 `<article>` → `<Box component="article" sx={staffTokens.mobileCard}>`，移除 `enterprise-ui` 的 `MOBILE_CARD_CLASS` 依赖）。全量 `tsc --noEmit` 0 错。
+  - **第二批**（菜单系统集中化，15:4x 完成）：**把菜单样式集中进 `ui/dropdown-menu.tsx` wrapper 内部**（而非逐页面传 sx）。`DropdownMenuItem` 按 `variant` 应用 `staffTokens.menuItem`/`menuItemDanger`（删内部 `ITEM_BASE` Tailwind）；`DropdownMenuContent`/`SubContent` 新增 `sx` 透传并应用到 **MuiMenu 的 Paper**（`slotProps.paper.sx`，数组合并外部 sx）。`staffTokens.menuItem/menuItemDanger` 已升级为完整 base（含 `position:relative`/`userSelect:none`/inset/disabled，等价原 `ITEM_BASE`）。已迁移 3 个组件层消费者（`ModelConfigDropdown`/`EmployeeCard`/`scheduled-tasks/TaskActionsMenu`）去掉 `MENU_ITEM_*`/`MENU_CONTENT_CLASS` 依赖；全量 `tsc --noEmit` 0 错。
+  - **关键模式（菜单）**：wrapper 内部已接管菜单默认样式 → 所有用 `DropdownMenuXxx` 的页面（含未迁移的 ToolsPage/KnowledgePage/…）**默认**获得靛蓝主题菜单，逐步把各页面 `className={MENU_ITEM_CLASS}` 删掉即可（删后视觉不变）。`enterprise-ui.ts` 的 `MENU_*` 常量**暂留**（未迁移页面仍用），全部清完后再删。
+  - **第三批**（Select 集中化，~16:1x 完成）：**复用菜单的 wrapper 集中模式**——把 `SELECT_TRIGGER_CLASS` 集中进 `ui/select.tsx` 的 `SelectTrigger`（`MuiSelect` 新增 `sx={staffTokens.selectTrigger}`，移除原 `cn('rounded-lg text-sm')` Tailwind 默认类，保留 `className` 透传承接各页宽度 `w-[160px]`/`w-full` 等）。7 个消费者（`EmployeeProfileEditor`/`ResourceImportDialog`/`ToolsPage`/`KnowledgePage`/`DistillPage`/`GeneralSkillsPage`/`SkillsPage`，共 18 处）删 `SELECT_TRIGGER_CLASS` 导入 + 用法；全量 `tsc --noEmit` 0 错，`SELECT_TRIGGER_CLASS` 现已无引用（定义暂留 `enterprise-ui.ts`）。**模式总结（shadcn 系→wrapper 集中；原始 HTML 按钮/输入框→建可复用组件）**。
+  - **第四批（进行中）**：原始 HTML 按钮/输入框 → 建可复用 `OutlineActionButton`(ui/outline-action-button.tsx) + `SearchCombo`(ui/search-combo.tsx) 组件（均已注册 ui/index），`staffTokens.outlineActionButton/Sm/searchCombo*` 已备。各页内联 `#18181a` 主按钮 → `UIButton sx={staffTokens.primaryButton}`（token 加 `minWidth:0` 抵消 MUI 默认 64px）。ToolsPage 已手迁（5 描边+1 搜索+5 主按钮，tsc 0 错）；KnowledgePage/GeneralSkillsPage/SkillsPage/OpenPlatformPage 由子代理批量迁移（描边+搜索+主按钮）。
+  - **第五批（进行中）**：`chat/chatPageStyles.ts`(~150 常量，含 `[&_p]` 后代选择器) → 新建 `chat/chatTokens.ts`(sx)，9 个消费者(`chatHelpers`/`ChatDialogs`/`Composer`/`MessageBubble`/`MessageList`/`ChatEmptyState`/`ExecutionRecord`/`ChatHeader`/`ScheduledDraftCard`) 的 `className={CHAT_X}` → `<Box sx={chatTokens.x}>`；`chatRowClass`/`chatBubbleClass` → 返 sx 数组的 `chatRowSx`/`chatBubbleSx`；markdown 容器用嵌套 `'& p'` 选择器。由子代理执行。
+  - **第六批（进行中）**：`distillPageStyles.ts`(~100 常量+条件拼接 helper) → `distillTokens.ts`(sx)，`DistillPage.tsx` 的 `className={DISTILL_X}` 与内联 Tailwind 全部 → `<Box sx>`/数组。由子代理执行。
+  - **收尾**：三批完成后全量 `tsc --noEmit`(8GB) 验证；再清理 `enterprise-ui.ts` 已无引用的常量(`MENU_*`/`SELECT_TRIGGER`/`OUTLINE_ACTION_BUTTON`/`SEARCH_COMBO_*`/`DIALOG_*`/`MOBILE_CARD`) 与 `staffdeck.css` teal 主题残留（全局 `tailwind.config.js` 不动）。i18n 内容迁移(276 条)另立专项，本次未做。
+
+## 数字员工 e2e 测试索引（2026-07-28 补齐）
+- **运行**：`npm run test:e2e:api`（= `vitest run --config=vitest.config.e2e.ts`）。覆盖 `e2e/api/staff-*` 共 9 套件 48 用例，全绿。
+- **集成缝测试（关键）**：`e2e/api/staff-chat-execution-seam.e2e.test.ts` — 真跑 `staffChatExecutor.runStaffChatTurn→executeChat`，断言 `staffMcpManager/extraSkills/extraSkillExecutor/executionMode=REACT` 注入 + system 消息含 persona+SOP。改此处装配缝务必跑此套件。
+- **SSE 协议 + 演示模式**：`e2e/api/staff-chat-turn.e2e.test.ts` — `/turn` 演示模式兜底 + `/stream` 事件顺序断言（done 必为末事件）。
+- **前端 UI 级 e2e**：`tests/staff-chat.spec.ts`（Playwright，目标 /staff/chat）。本机无 Chromium 且无法下载，**未实跑**；CI/有浏览器时 `npm run test:e2e` 可用。
+- **未覆盖 P2**：`/cancel` 取消流测试、主/员工会话表存储隔离直接断言。
+
 ## 详细修复历史
 - 见 `.workbuddy/memory/YYYY-MM-DD.md` 每日工作日志

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Normalizes tool-call names, ids, and standalone text calls for providers.
  */

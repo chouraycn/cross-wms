@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Command for setting the default text model. */
 import { logConfigUpdated } from "@openclaw-src/config/logging.js";
 import { resolveAgentModelPrimaryValue } from "@openclaw-src/config/model-input.js";

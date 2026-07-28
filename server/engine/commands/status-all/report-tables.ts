@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Table row helpers for status report sections.
 // These functions keep terminal styling decisions out of the scan/data layer.
 

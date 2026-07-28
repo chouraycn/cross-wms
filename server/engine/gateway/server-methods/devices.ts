@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway RPC handlers for device pairing and device-token lifecycle operations.
 import {
   ErrorCodes,

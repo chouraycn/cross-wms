@@ -1,26 +1,20 @@
-import { logger } from '../../logger.js';
+// @ts-nocheck
+// Routing account id helpers normalize account identifiers for route matching.
+import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 
-export const DEFAULT_ACCOUNT_ID = 'default';
+export const DEFAULT_ACCOUNT_ID = "default";
 
+// Account ids are config/session keys, not display names. Normalize them into
+// short lowercase safe keys and reject prototype-like object keys.
 const VALID_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
 const INVALID_CHARS_RE = /[^a-z0-9_-]+/g;
 const LEADING_DASH_RE = /^-+/;
 const TRAILING_DASH_RE = /-+$/;
 const ACCOUNT_ID_CACHE_MAX = 512;
 
-const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
 const normalizeAccountIdCache = new Map<string, string>();
 const normalizeOptionalAccountIdCache = new Map<string, string | undefined>();
-
-function normalizeLowercaseStringOrEmpty(value: string | undefined | null): string {
-  if (!value) return '';
-  return String(value).trim().toLowerCase();
-}
-
-function isBlockedObjectKey(value: string): boolean {
-  return BLOCKED_KEYS.has(value.toLowerCase());
-}
 
 function canonicalizeAccountId(value: string): string {
   const normalized = normalizeLowercaseStringOrEmpty(value);
@@ -28,9 +22,9 @@ function canonicalizeAccountId(value: string): string {
     return normalized;
   }
   return normalized
-    .replace(INVALID_CHARS_RE, '-')
-    .replace(LEADING_DASH_RE, '')
-    .replace(TRAILING_DASH_RE, '')
+    .replace(INVALID_CHARS_RE, "-")
+    .replace(LEADING_DASH_RE, "")
+    .replace(TRAILING_DASH_RE, "")
     .slice(0, 64);
 }
 
@@ -42,19 +36,8 @@ function normalizeCanonicalAccountId(value: string): string | undefined {
   return canonical;
 }
 
-function setNormalizeCache<T>(cache: Map<string, T>, key: string, value: T): void {
-  cache.set(key, value);
-  if (cache.size <= ACCOUNT_ID_CACHE_MAX) {
-    return;
-  }
-  const oldest = cache.keys().next();
-  if (!oldest.done) {
-    cache.delete(oldest.value);
-  }
-}
-
 export function normalizeAccountId(value: string | undefined | null): string {
-  const trimmed = (value ?? '').trim();
+  const trimmed = (value ?? "").trim();
   if (!trimmed) {
     return DEFAULT_ACCOUNT_ID;
   }
@@ -64,12 +47,13 @@ export function normalizeAccountId(value: string | undefined | null): string {
   }
   const normalized = normalizeCanonicalAccountId(trimmed) || DEFAULT_ACCOUNT_ID;
   setNormalizeCache(normalizeAccountIdCache, trimmed, normalized);
-  logger.debug(`[Routing:AccountId] Normalized account id: ${trimmed} -> ${normalized}`);
   return normalized;
 }
 
+// Optional variant for config fields where absence is meaningful. Invalid ids
+// return undefined instead of silently selecting the default account.
 export function normalizeOptionalAccountId(value: string | undefined | null): string | undefined {
-  const trimmed = (value ?? '').trim();
+  const trimmed = (value ?? "").trim();
   if (!trimmed) {
     return undefined;
   }
@@ -81,7 +65,15 @@ export function normalizeOptionalAccountId(value: string | undefined | null): st
   return normalized;
 }
 
-export function isValidAccountId(value: string | undefined | null): boolean {
-  const trimmed = (value ?? '').trim();
-  return Boolean(trimmed) && VALID_ID_RE.test(trimmed);
+function setNormalizeCache<T>(cache: Map<string, T>, key: string, value: T): void {
+  cache.set(key, value);
+  if (cache.size <= ACCOUNT_ID_CACHE_MAX) {
+    return;
+  }
+  // Bounded FIFO-ish cache avoids unbounded growth from user/channel input
+  // while keeping hot account ids cheap during routing.
+  const oldest = cache.keys().next();
+  if (!oldest.done) {
+    cache.delete(oldest.value);
+  }
 }

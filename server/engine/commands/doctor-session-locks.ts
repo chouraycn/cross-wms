@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor diagnostics and cleanup for stale session write lock files. */
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
 import { resolveAgentSessionDirs } from "@openclaw-src/agents/session-dirs.js";

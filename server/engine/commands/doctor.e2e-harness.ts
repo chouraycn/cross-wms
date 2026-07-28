@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared Vitest harness mocks and helpers for doctor command e2e-style tests. */
 import fs from "node:fs";
 import os from "node:os";

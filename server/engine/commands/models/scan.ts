@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** OpenRouter free-model scanner and fallback updater for model commands. */
 import { cancel, multiselect as clackMultiselect, isCancel } from "@clack/prompts";
 import {

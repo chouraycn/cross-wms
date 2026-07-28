@@ -1,212 +1,315 @@
 import * as React from 'react'
-import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui'
-
-import { cn } from './utils'
+import { Menu as MuiMenu, MenuItem as MuiMenuItem, Divider as MuiDivider, Box } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { CheckIcon, ChevronRightIcon } from 'lucide-react'
 
-function DropdownMenu({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+import { cn } from './utils'
+import { staffTokens } from '../lib/staffTokens.js'
+
+// 统一到 MUI：DropdownMenu 映射为 MUI Menu（context 受控），保留完整 compound API 与 data-slot。
+type MenuCtxValue = {
+  anchorEl: HTMLElement | null
+  setAnchorEl: (el: HTMLElement | null) => void
+  open: boolean
+  setOpen: (o: boolean) => void
+  onOpenChange?: (o: boolean) => void
+}
+const MenuCtx = React.createContext<MenuCtxValue>({
+  anchorEl: null,
+  setAnchorEl: () => {},
+  open: false,
+  setOpen: () => {},
+  onOpenChange: undefined,
+})
+const SubCtx = React.createContext<{ anchorEl: HTMLElement | null; setAnchorEl: (el: HTMLElement | null) => void }>({
+  anchorEl: null,
+  setAnchorEl: () => {},
+})
+const RadioGroupCtx = React.createContext<{ value?: string; onValueChange?: (v: string) => void }>({})
+
+function anchorOriginFor(
+  side: 'top' | 'bottom' | 'left' | 'right' = 'bottom',
+  align: 'start' | 'center' | 'end' = 'start',
+) {
+  const h: 'left' | 'center' | 'right' =
+    align === 'start' ? 'left' : align === 'end' ? 'right' : 'center'
+  if (side === 'top')
+    return {
+      anchorOrigin: { vertical: 'top' as const, horizontal: h },
+      transformOrigin: { vertical: 'bottom' as const, horizontal: h },
+    }
+  if (side === 'left')
+    return {
+      anchorOrigin: { vertical: 'center' as const, horizontal: 'left' as const },
+      transformOrigin: { vertical: 'center' as const, horizontal: 'right' as const },
+    }
+  if (side === 'right')
+    return {
+      anchorOrigin: { vertical: 'center' as const, horizontal: 'right' as const },
+      transformOrigin: { vertical: 'center' as const, horizontal: 'left' as const },
+    }
+  return {
+    anchorOrigin: { vertical: 'bottom' as const, horizontal: h },
+    transformOrigin: { vertical: 'top' as const, horizontal: h },
+  }
 }
 
-function DropdownMenuPortal({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
+function DropdownMenu({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: { children?: React.ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? !!controlledOpen : !!anchorEl
+  const setOpen = React.useCallback(
+    (o: boolean) => {
+      if (!isControlled && !o) setAnchorEl(null)
+      onOpenChange?.(o)
+    },
+    [isControlled, onOpenChange],
+  )
   return (
-    <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
+    <MenuCtx.Provider value={{ anchorEl, setAnchorEl, open, setOpen, onOpenChange }}>
+      {children}
+    </MenuCtx.Provider>
   )
 }
 
+function DropdownMenuPortal({ children }: { children?: React.ReactNode }) {
+  return <>{children}</>
+}
+
 function DropdownMenuTrigger({
+  asChild = false,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+}: { asChild?: boolean } & React.ComponentProps<'button'>) {
+  const { setAnchorEl, setOpen } = React.useContext(MenuCtx)
+  const open = (el: HTMLElement) => {
+    setAnchorEl(el)
+    setOpen(true)
+  }
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement
+    return React.cloneElement(child, {
+      'data-slot': 'dropdown-menu-trigger',
+      onClick: (e: React.MouseEvent<HTMLElement>) => {
+        ;(child.props as { onClick?: (e: React.MouseEvent<HTMLElement>) => void }).onClick?.(e)
+        ;(props as { onClick?: (e: React.MouseEvent<HTMLElement>) => void }).onClick?.(e)
+        open(e.currentTarget)
+      },
+    } as Record<string, unknown>)
+  }
   return (
-    <DropdownMenuPrimitive.Trigger
+    <button
+      type="button"
       data-slot="dropdown-menu-trigger"
-      {...props}
-    />
+      onClick={(e) => open(e.currentTarget)}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </button>
   )
 }
 
 function DropdownMenuContent({
   className,
+  sx,
   align = 'start',
+  side = 'bottom',
   sideOffset = 4,
+  onCloseAutoFocus,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: React.ComponentProps<'div'> & {
+  align?: 'start' | 'center' | 'end'
+  side?: 'top' | 'bottom' | 'left' | 'right'
+  sideOffset?: number
+  onCloseAutoFocus?: (e: Event) => void
+  sx?: SxProps<Theme>
+}) {
+  const { anchorEl, open, setOpen } = React.useContext(MenuCtx)
+  const origin = anchorOriginFor(side, align)
+  void sideOffset
+  void onCloseAutoFocus
   return (
-    <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Content
-        data-slot="dropdown-menu-content"
-        sideOffset={sideOffset}
-        align={align}
-        className={cn('z-50 max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95', className)}
-        {...props}
-      />
-    </DropdownMenuPrimitive.Portal>
+    <MuiMenu
+      open={open && !!anchorEl}
+      anchorEl={anchorEl}
+      onClose={() => setOpen(false)}
+      {...origin}
+      slotProps={{
+        paper: {
+          'data-slot': 'dropdown-menu-content',
+          className,
+          sx: [staffTokens.menuContent, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>,
+          style: { overflow: 'visible' },
+        } as Record<string, unknown>,
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </MuiMenu>
   )
 }
 
-function DropdownMenuGroup({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
+function DropdownMenuGroup({ children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+    <Box component="div" data-slot="dropdown-menu-group" {...(props as Record<string, unknown>)}>
+      {children}
+    </Box>
   )
 }
 
 function DropdownMenuItem({
   className,
+  sx,
   inset,
   variant = 'default',
+  disabled,
+  onClick,
+  onSelect,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+}: React.ComponentProps<'div'> & {
   inset?: boolean
   variant?: 'default' | 'destructive'
-}) {
+  disabled?: boolean
+  onSelect?: () => void
+} & { onClick?: (e: React.MouseEvent<HTMLElement>) => void; sx?: SxProps<Theme> }) {
+  const { setOpen } = React.useContext(MenuCtx)
+  const baseSx = variant === 'destructive' ? staffTokens.menuItemDanger : staffTokens.menuItem
   return (
-    <DropdownMenuPrimitive.Item
+    <MuiMenuItem
       data-slot="dropdown-menu-item"
       data-inset={inset}
       data-variant={variant}
-      className={cn(
-        'group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive',
-        className,
-      )}
-      {...props}
-    />
+      disabled={disabled}
+      className={className}
+      sx={[baseSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>}
+      onClick={(e) => {
+        onSelect?.()
+        onClick?.(e)
+        setOpen(false)
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-item-indicator" />
+      {children}
+    </MuiMenuItem>
   )
 }
 
 function DropdownMenuCheckboxItem({
   className,
-  children,
-  checked,
   inset,
+  disabled,
+  checked,
+  onClick,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
+}: React.ComponentProps<'div'> & {
   inset?: boolean
+  disabled?: boolean
+  checked?: boolean
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void
 }) {
+  const { setOpen } = React.useContext(MenuCtx)
   return (
-    <DropdownMenuPrimitive.CheckboxItem
+      <MuiMenuItem
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
-      className={cn(
-        'relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
-        className,
-      )}
-      checked={checked}
-      {...props}
+      disabled={disabled}
+      className={className}
+      sx={staffTokens.menuItem}
+      onClick={(e) => {
+        onClick?.(e)
+        setOpen(false)
+      }}
+      {...(props as Record<string, unknown>)}
     >
-      <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center"
-        data-slot="dropdown-menu-checkbox-item-indicator"
-      >
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon />
-        </DropdownMenuPrimitive.ItemIndicator>
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-checkbox-item-indicator">
+        {checked ? <CheckIcon /> : null}
       </span>
       {children}
-    </DropdownMenuPrimitive.CheckboxItem>
+    </MuiMenuItem>
   )
 }
 
 function DropdownMenuRadioGroup({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) {
-  return (
-    <DropdownMenuPrimitive.RadioGroup
-      data-slot="dropdown-menu-radio-group"
-      {...props}
-    />
-  )
+  value,
+  onValueChange,
+  disabled,
+  children,
+}: {
+  value?: string
+  onValueChange?: (v: string) => void
+  disabled?: boolean
+  children?: React.ReactNode
+}) {
+  void disabled
+  return <RadioGroupCtx.Provider value={{ value, onValueChange }}>{children}</RadioGroupCtx.Provider>
 }
 
 function DropdownMenuRadioItem({
   className,
-  children,
   inset,
+  disabled,
+  value,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & {
-  inset?: boolean
-}) {
+}: React.ComponentProps<'div'> & { inset?: boolean; disabled?: boolean; value: string }) {
+  const { value: groupValue, onValueChange } = React.useContext(RadioGroupCtx)
+  const selected = groupValue === value
   return (
-    <DropdownMenuPrimitive.RadioItem
+      <MuiMenuItem
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
-      className={cn(
-        'relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
-        className,
-      )}
-      {...props}
+      disabled={disabled}
+      selected={selected}
+      className={className}
+      sx={staffTokens.menuItem}
+      onClick={() => onValueChange?.(value)}
+      {...(props as Record<string, unknown>)}
     >
-      <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center"
-        data-slot="dropdown-menu-radio-item-indicator"
-      >
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon />
-        </DropdownMenuPrimitive.ItemIndicator>
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-radio-item-indicator">
+        {selected ? <CheckIcon /> : null}
       </span>
       {children}
-    </DropdownMenuPrimitive.RadioItem>
+    </MuiMenuItem>
   )
 }
 
-function DropdownMenuLabel({
-  className,
-  inset,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
-  inset?: boolean
-}) {
+function DropdownMenuLabel({ className, inset, ...props }: React.ComponentProps<'div'> & { inset?: boolean }) {
   return (
-    <DropdownMenuPrimitive.Label
+    <Box
+      component="div"
       data-slot="dropdown-menu-label"
       data-inset={inset}
-      className={cn(
-        'px-1.5 py-1 text-xs font-medium text-muted-foreground data-inset:pl-7',
-        className,
-      )}
-      {...props}
+      className={cn('px-1.5 py-1 text-xs font-medium text-muted-foreground', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function DropdownMenuSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
-  return (
-    <DropdownMenuPrimitive.Separator
-      data-slot="dropdown-menu-separator"
-      className={cn('-mx-1 my-1 h-px bg-border', className)}
-      {...props}
-    />
-  )
+function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<'div'>) {
+  return <MuiDivider data-slot="dropdown-menu-separator" className={cn(className)} {...(props as Record<string, unknown>)} />
 }
 
-function DropdownMenuShortcut({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
+function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn(
-        'ml-auto text-xs tracking-widest text-muted-foreground group-focus/dropdown-menu-item:text-accent-foreground',
-        className,
-      )}
-      {...props}
+      className={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function DropdownMenuSub({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
-  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
+function DropdownMenuSub({ children }: { children?: React.ReactNode }) {
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
+  return <SubCtx.Provider value={{ anchorEl, setAnchorEl }}>{children}</SubCtx.Provider>
 }
 
 function DropdownMenuSubTrigger({
@@ -214,35 +317,44 @@ function DropdownMenuSubTrigger({
   inset,
   children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
-  inset?: boolean
-}) {
+}: React.ComponentProps<'div'> & { inset?: boolean }) {
+  const { setAnchorEl } = React.useContext(SubCtx)
   return (
-    <DropdownMenuPrimitive.SubTrigger
+    <MuiMenuItem
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
-      className={cn(
-        'flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
-        className,
-      )}
-      {...props}
+      className={className}
+      sx={staffTokens.menuItem}
+      onMouseEnter={(e) => setAnchorEl(e.currentTarget)}
+      {...(props as Record<string, unknown>)}
     >
       {children}
       <ChevronRightIcon className="ml-auto" />
-    </DropdownMenuPrimitive.SubTrigger>
+    </MuiMenuItem>
   )
 }
 
-function DropdownMenuSubContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+function DropdownMenuSubContent({ className, sx, children, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
+  const { anchorEl, setAnchorEl } = React.useContext(SubCtx)
   return (
-    <DropdownMenuPrimitive.SubContent
-      data-slot="dropdown-menu-sub-content"
-      className={cn('z-50 min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95', className)}
-      {...props}
-    />
+    <MuiMenu
+      open={!!anchorEl}
+      anchorEl={anchorEl}
+      onClose={() => setAnchorEl(null)}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      slotProps={{
+        paper: {
+          'data-slot': 'dropdown-menu-sub-content',
+          className,
+          sx: [staffTokens.menuContent, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>,
+          style: { overflow: 'visible' },
+        } as Record<string, unknown>,
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </MuiMenu>
   )
 }
 

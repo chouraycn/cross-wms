@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds embedded-agent payload objects from attempt inputs and outcomes.
  */

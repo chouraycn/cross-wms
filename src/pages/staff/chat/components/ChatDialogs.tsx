@@ -1,5 +1,6 @@
 import { ConfirmDialog } from '../../../../components/staff/ConfirmDialog.js';
 import EmployeeAvatar from '../../../../components/staff/EmployeeAvatar.js';
+import { Box } from '@mui/material';
 import { Button } from '../../../../components/staff/ui/button.js';
 import {
   Dialog,
@@ -11,21 +12,7 @@ import { Input } from '../../../../components/staff/ui/input.js';
 import { Textarea } from '../../../../components/staff/ui/textarea.js';
 import { employeeDisplayNameWithCreator, employeeProfile } from '../../../../components/staff/employee.js';
 
-import {
-  CHAT_CITATION_DETAIL_CLASS,
-  CHAT_CITATION_DETAIL_EYEBROW_CLASS,
-  CHAT_CITATION_DETAIL_GRID_CLASS,
-  CHAT_CITATION_DETAIL_MARKDOWN_CLASS,
-  CHAT_CITATION_DETAIL_NOTE_CLASS,
-  CHAT_CITATION_DETAIL_SECTION_CLASS,
-  CHAT_CITATION_DETAIL_TITLE_CLASS,
-  CHAT_HANDOFF_ACTIONS_CLASS,
-  CHAT_HANDOFF_BLOCK_CLASS,
-  CHAT_HANDOFF_CARD_CLASS,
-  CHAT_HANDOFF_EMPTY_CLASS,
-  CHAT_HANDOFF_HEAD_CLASS,
-  CHAT_HANDOFF_LIST_CLASS,
-} from '../chatPageStyles.js';
+import { chatTokens } from '../chatTokens.js';
 import {
   citationDisplayTitle,
   citationKindLabel,
@@ -82,33 +69,33 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
             <DialogTitle>待回答</DialogTitle>
           </DialogHeader>
           {handoffs.length === 0 ? (
-            <div className={CHAT_HANDOFF_EMPTY_CLASS}>
+            <Box sx={chatTokens.handoffEmpty}>
               {handoffsLoading ? '正在加载待回答消息' : '暂无待回答消息'}
-            </div>
+            </Box>
           ) : (
-            <div className={CHAT_HANDOFF_LIST_CLASS}>
+            <Box sx={chatTokens.handoffList}>
               {handoffs.map((handoff) => {
                 const handoffAgent = handoff.agent_id
                   ? agents.find((item) => item.id === handoff.agent_id) || null
                   : displayedAgent;
                 const profile = handoffAgent ? employeeProfile(handoffAgent) : displayedProfile;
                 return (
-                  <article className={CHAT_HANDOFF_CARD_CLASS} key={handoff.id}>
-                    <div className={CHAT_HANDOFF_HEAD_CLASS}>
+                  <Box component="article" sx={chatTokens.handoffCard} key={handoff.id}>
+                    <Box sx={chatTokens.handoffHead}>
                       {profile ? <EmployeeAvatar profile={profile} size={36} radius={10} /> : null}
                       <div>
                         <strong>{handoffAgent ? employeeDisplayNameWithCreator(handoffAgent) : '数字员工'}</strong>
                         <span>需要人工接续</span>
                       </div>
-                    </div>
-                    <div className={CHAT_HANDOFF_BLOCK_CLASS}>
+                    </Box>
+                    <Box sx={chatTokens.handoffBlock}>
                       <span>上下文摘要</span>
                       <p>{handoff.context_summary || '暂无上下文摘要'}</p>
-                    </div>
-                    <div className={CHAT_HANDOFF_BLOCK_CLASS}>
+                    </Box>
+                    <Box sx={chatTokens.handoffBlock}>
                       <span>这一步需要你处理</span>
                       <p>{handoff.pending_question || '请根据当前会话补充人工回复。'}</p>
-                    </div>
+                    </Box>
                     <Textarea
                       rows={3}
                       value={handoffReplies[handoff.id] || ''}
@@ -118,7 +105,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                         [handoff.id]: event.target.value,
                       }))}
                     />
-                    <div className={CHAT_HANDOFF_ACTIONS_CLASS}>
+                    <Box sx={chatTokens.handoffActions}>
                       <Button
                         variant="outline"
                         onClick={() => {

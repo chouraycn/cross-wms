@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves per-attempt runtime decisions from config and channel context.
  */

@@ -1,590 +1,1019 @@
-/**
- * Doctor 核心检查 — 参考 openclaw/src/flows/doctor-core-checks.ts
- *
- * 收集环境、配置、运行时就绪性等核心诊断检查，作为 doctor 流程的基础检查集。
- * 整合并扩展现有 doctor-health 中的检查，提供可组合的核心检查工厂。
- */
-
+// Doctor core checks collect environment, config, and runtime readiness diagnostics.
+// @ts-nocheck
+import path from "node:path";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  detectLegacyClawdBrowserProfileResidue,
+  maybeArchiveLegacyClawdBrowserProfileResidue,
+  noteChromeMcpBrowserReadiness,
+  type LegacyClawdBrowserProfileResidue,
+} from "../commands/doctor-browser.js";
+import { hasConfiguredCommandOwners } from "../commands/doctor-command-owner.js";
+import {
+  checkShellCompletionStatus,
+  shellCompletionStatusToHealthFindings,
+  shellCompletionStatusToRepairEffects,
+} from "../commands/doctor-completion.js";
+import {
+  disableUnavailableSkillsInConfig,
+  formatMissingSkillSummary,
+} from "../commands/doctor-skills-core.js";
+import {
+  detectUiProtocolFreshnessIssues,
+  uiProtocolFreshnessIssueToHealthFinding,
+  uiProtocolFreshnessIssueToRepairEffects,
+} from "../commands/doctor-ui.js";
+import { collectDisabledCodexPluginRouteIssues } from "../commands/doctor/shared/codex-route-warnings.js";
+import type { ConfigValidationIssue, OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveSecretInputRef, type SecretRef } from "../config/types.secrets.js";
+import { hasAmbiguousGatewayAuthModeConfig } from "../gateway/auth-mode-policy.js";
+import { resolveGatewayAuthToken } from "../gateway/auth-token-resolution.js";
+import { resolveGatewayAuth } from "../gateway/auth.js";
+import { getSkippedExecRefStaticError } from "../secrets/exec-resolution-policy.js";
+import type { SkillStatusEntry } from "../skills/discovery/status.js";
+import { registerHealthCheck } from "./health-check-registry.js";
 import type {
-  FlowConfig,
   HealthCheck,
   HealthCheckContext,
   HealthFinding,
   HealthRepairContext,
-  HealthRepairResult,
-} from './types.js';
-import { registerHealthCheck } from './health-check-registry.js';
-import { logger } from '../../logger.js';
+} from "./health-checks.js";
 
-// ===================== 检查 ID 常量 =====================
+const BROWSER_CLAWD_PROFILE_RESIDUE_CHECK_ID = "core/doctor/browser-clawd-profile-residue";
+const CODEX_SESSION_ROUTES_CHECK_ID = "core/doctor/codex-session-routes";
+const FINAL_CONFIG_VALIDATION_CHECK_ID = "core/doctor/final-config-validation";
+const GATEWAY_SERVICES_EXTRA_CHECK_ID = "core/doctor/gateway-services/extra";
 
-export const CONFIG_INTEGRITY_CHECK_ID = 'core/doctor/config-integrity';
-export const PROVIDER_AUTH_CHECK_ID = 'core/doctor/provider-auth';
-export const CHANNEL_CONFIG_CHECK_ID = 'core/doctor/channel-config';
-export const SEARCH_PROVIDER_CHECK_ID = 'core/doctor/search-provider';
-export const DEFAULT_MODEL_CHECK_ID = 'core/doctor/default-model';
-export const WORKING_DIR_CHECK_ID = 'core/doctor/working-directory';
-export const ENVIRONMENT_CHECK_ID = 'core/doctor/environment';
+type CoreHealthCheckContext = HealthCheckContext & {
+  readonly deep?: boolean;
+};
 
-// ===================== 辅助函数 =====================
+type CoreHealthRepairContext = HealthRepairContext & {
+  readonly deep?: boolean;
+};
 
-/** 构建单条 finding 的便捷函数。 */
-function buildFinding(params: {
+const loadDoctorCoreChecksRuntimeModule = async () =>
+  await import("./doctor-core-checks.runtime.js");
+const loadDoctorWorkspaceModule = async () => await import("../commands/doctor-workspace.js");
+
+export type CoreHealthCheckDeps = {
+  readonly detectUnavailableSkills: (cfg: OpenClawConfig) => Promise<readonly SkillStatusEntry[]>;
+  readonly collectSecurityWarnings: (cfg: OpenClawConfig) => Promise<readonly string[]>;
+  readonly collectWorkspaceSuggestionNotes: (workspaceDir: string) => Promise<readonly string[]>;
+  readonly collectRuntimeToolSchemaFindings: (
+    ctx: HealthCheckContext,
+  ) => Promise<readonly HealthFinding[]>;
+  readonly collectProviderCatalogProjectionFindings: (
+    ctx: HealthCheckContext,
+  ) => Promise<readonly HealthFinding[]>;
+};
+
+async function detectUnavailableSkillsWithRuntime(
+  cfg: OpenClawConfig,
+): Promise<readonly SkillStatusEntry[]> {
+  const runtime = await loadDoctorCoreChecksRuntimeModule();
+  return runtime.detectUnavailableSkills(cfg);
+}
+
+async function collectSecurityWarningsWithRuntime(cfg: OpenClawConfig): Promise<readonly string[]> {
+  const { collectSecurityWarnings } = await import("../commands/doctor-security.js");
+  return collectSecurityWarnings(cfg);
+}
+
+async function collectWorkspaceSuggestionNotesWithRuntime(
+  workspaceDir: string,
+): Promise<readonly string[]> {
+  const { collectWorkspaceBackupTip } = await import("../commands/doctor-state-integrity.js");
+  const { MEMORY_SYSTEM_PROMPT, shouldSuggestMemorySystem } = await loadDoctorWorkspaceModule();
+  const notes: string[] = [];
+  const backupTip = collectWorkspaceBackupTip(workspaceDir);
+  if (backupTip) {
+    notes.push(backupTip);
+  }
+  if (await shouldSuggestMemorySystem(workspaceDir)) {
+    notes.push(MEMORY_SYSTEM_PROMPT);
+  }
+  return notes;
+}
+
+async function collectRuntimeToolSchemaFindingsWithRuntime(
+  ctx: HealthCheckContext,
+): Promise<readonly HealthFinding[]> {
+  const runtime = await loadDoctorCoreChecksRuntimeModule();
+  return runtime.collectRuntimeToolSchemaFindings(ctx.cfg);
+}
+
+async function collectProviderCatalogProjectionFindingsWithRuntime(
+  ctx: HealthCheckContext,
+): Promise<readonly HealthFinding[]> {
+  const runtime = await loadDoctorCoreChecksRuntimeModule();
+  return runtime.collectProviderCatalogProjectionFindings(ctx.cfg);
+}
+
+const defaultCoreHealthCheckDeps: CoreHealthCheckDeps = {
+  detectUnavailableSkills: detectUnavailableSkillsWithRuntime,
+  collectSecurityWarnings: collectSecurityWarningsWithRuntime,
+  collectWorkspaceSuggestionNotes: collectWorkspaceSuggestionNotesWithRuntime,
+  collectRuntimeToolSchemaFindings: collectRuntimeToolSchemaFindingsWithRuntime,
+  collectProviderCatalogProjectionFindings: collectProviderCatalogProjectionFindingsWithRuntime,
+};
+
+export function configValidationIssuesToHealthFindings(
+  issues: readonly ConfigValidationIssue[],
+): readonly HealthFinding[] {
+  return issues.map(
+    (issue): HealthFinding => ({
+      checkId: FINAL_CONFIG_VALIDATION_CHECK_ID,
+      severity: "error",
+      message: issue.message,
+      path: issue.path || "<root>",
+    }),
+  );
+}
+
+const gatewayConfigCheck: HealthCheck = {
+  id: "core/doctor/gateway-config",
+  kind: "core",
+  description: "openclaw.jsonc gateway block is set and unambiguous.",
+  source: "doctor",
+  async detect(ctx) {
+    const findings: HealthFinding[] = [];
+    if (!ctx.cfg.gateway?.mode) {
+      findings.push({
+        checkId: "core/doctor/gateway-config",
+        severity: "warning",
+        message: "gateway.mode is unset; gateway start will be blocked.",
+        path: "gateway.mode",
+        fixHint:
+          "Run `openclaw configure` and set Gateway mode (local/remote), or `openclaw config set gateway.mode local`.",
+      });
+    }
+    if (ctx.cfg.gateway?.mode !== "remote" && hasAmbiguousGatewayAuthModeConfig(ctx.cfg)) {
+      findings.push({
+        checkId: "core/doctor/gateway-config",
+        severity: "warning",
+        message:
+          "gateway.auth.token and gateway.auth.password are both configured while gateway.auth.mode is unset; auth selection is ambiguous.",
+        path: "gateway.auth.mode",
+        fixHint:
+          "Set an explicit mode: `openclaw config set gateway.auth.mode token` or `... password`.",
+      });
+    }
+    return findings;
+  },
+};
+
+const commandOwnerCheck: HealthCheck = {
+  id: "core/doctor/command-owner",
+  kind: "core",
+  description: "An owner account is configured for owner-only commands.",
+  source: "doctor",
+  async detect(ctx) {
+    if (hasConfiguredCommandOwners(ctx.cfg)) {
+      return [];
+    }
+    return [
+      {
+        checkId: "core/doctor/command-owner",
+        severity: "info",
+        message:
+          "No command owner is configured. Owner-only commands (/diagnostics, /export-trajectory, /config, exec approvals) have no allowed sender.",
+        path: "commands.ownerAllowFrom",
+        fixHint:
+          "Set commands.ownerAllowFrom to your channel user id, e.g. `openclaw config set commands.ownerAllowFrom '[\"telegram:123456789\"]'`.",
+      },
+    ];
+  },
+};
+
+function resolveDoctorMode(cfg: OpenClawConfig): "local" | "remote" {
+  return cfg.gateway?.mode === "remote" ? "remote" : "local";
+}
+
+export function buildGatewayTokenSecretRefUnavailableMessage(params: {
+  cfg: OpenClawConfig;
+  ref: SecretRef;
+  unresolvedRefReason?: string;
+}): string {
+  if (params.unresolvedRefReason) {
+    return `Gateway token SecretRef could not be resolved: ${params.unresolvedRefReason}`;
+  }
+  if (params.ref.source === "exec") {
+    const staticError = getSkippedExecRefStaticError({ ref: params.ref, config: params.cfg });
+    if (staticError) {
+      return `Gateway token SecretRef could not be verified: ${staticError}`;
+    }
+    return "Gateway token SecretRef uses an exec provider and did not resolve.";
+  }
+  return "Gateway token is managed via SecretRef and is currently unavailable.";
+}
+
+export function buildGatewayTokenSecretRefFixHint(ref: SecretRef): string {
+  if (ref.source === "exec") {
+    return "Run `openclaw doctor --allow-exec` to verify exec SecretRefs during doctor, or `openclaw secrets audit --allow-exec` to audit all exec SecretRefs.";
+  }
+  return "Resolve or rotate the external secret source, then rerun doctor.";
+}
+
+const gatewayAuthCheck: HealthCheck = {
+  id: "core/doctor/gateway-auth",
+  kind: "core",
+  description: "Local Gateway auth mode has a usable token or another explicit auth mode.",
+  source: "doctor",
+  async detect(ctx) {
+    if (resolveDoctorMode(ctx.cfg) !== "local") {
+      return [];
+    }
+    const gatewayTokenRef = resolveSecretInputRef({
+      value: ctx.cfg.gateway?.auth?.token,
+      defaults: ctx.cfg.secrets?.defaults,
+    }).ref;
+    const auth = resolveGatewayAuth({
+      authConfig: ctx.cfg.gateway?.auth,
+      tailscaleMode: ctx.cfg.gateway?.tailscale?.mode ?? "off",
+    });
+    const hasInlineToken = typeof auth.token === "string" && auth.token.trim() !== "";
+    const needsToken =
+      auth.mode !== "password" &&
+      auth.mode !== "none" &&
+      auth.mode !== "trusted-proxy" &&
+      (auth.mode !== "token" || !hasInlineToken || Boolean(gatewayTokenRef));
+    if (!needsToken) {
+      return [];
+    }
+    let unresolvedRefReason: string | undefined;
+    if (gatewayTokenRef && gatewayTokenRef.source === "exec") {
+      const staticError = getSkippedExecRefStaticError({ ref: gatewayTokenRef, config: ctx.cfg });
+      if (staticError) {
+        unresolvedRefReason = undefined;
+      } else if (ctx.allowExecSecretRefs !== true) {
+        return [];
+      } else {
+        const resolvedToken = await resolveGatewayAuthToken({
+          cfg: ctx.cfg,
+          env: process.env,
+          unresolvedReasonStyle: "detailed",
+          envFallback: "never",
+        });
+        if (resolvedToken.source === "secretRef") {
+          return [];
+        }
+        unresolvedRefReason = resolvedToken.unresolvedRefReason;
+      }
+    } else {
+      const resolvedToken = await resolveGatewayAuthToken({
+        cfg: ctx.cfg,
+        env: process.env,
+        unresolvedReasonStyle: "detailed",
+        envFallback: gatewayTokenRef ? "never" : "always",
+      });
+      if (gatewayTokenRef ? resolvedToken.source === "secretRef" : resolvedToken.token) {
+        return [];
+      }
+      unresolvedRefReason = resolvedToken.unresolvedRefReason;
+    }
+    if (gatewayTokenRef) {
+      return [
+        {
+          checkId: "core/doctor/gateway-auth",
+          severity: "warning",
+          message: buildGatewayTokenSecretRefUnavailableMessage({
+            cfg: ctx.cfg,
+            ref: gatewayTokenRef,
+            unresolvedRefReason,
+          }),
+          path: "gateway.auth.token",
+          fixHint: buildGatewayTokenSecretRefFixHint(gatewayTokenRef),
+        },
+      ];
+    }
+    return [
+      {
+        checkId: "core/doctor/gateway-auth",
+        severity: "warning",
+        message: "Gateway auth is off or missing a token.",
+        path: "gateway.auth",
+        fixHint: "Run `openclaw doctor --fix --generate-gateway-token` to generate a token.",
+      },
+    ];
+  },
+};
+
+const hooksModelCheck: HealthCheck = {
+  id: "core/doctor/hooks-model",
+  kind: "core",
+  description: "hooks.gmail.model resolves to an allowed catalog model.",
+  source: "doctor",
+  async detect(ctx) {
+    if (!ctx.cfg.hooks?.gmail?.model?.trim()) {
+      return [];
+    }
+    const { DEFAULT_MODEL, DEFAULT_PROVIDER } = await import("../agents/defaults.js");
+    const { loadModelCatalog } = await import("../agents/model-catalog.js");
+    const { getModelRefStatus, resolveConfiguredModelRef, resolveHooksGmailModel } =
+      await import("../agents/model-selection.js");
+    const hooksModelRef = resolveHooksGmailModel({
+      cfg: ctx.cfg,
+      defaultProvider: DEFAULT_PROVIDER,
+    });
+    if (!hooksModelRef) {
+      return [
+        {
+          checkId: "core/doctor/hooks-model",
+          severity: "warning",
+          message: `hooks.gmail.model "${ctx.cfg.hooks.gmail.model}" could not be resolved.`,
+          path: "hooks.gmail.model",
+        },
+      ];
+    }
+    const { provider: defaultProvider, model: defaultModel } = resolveConfiguredModelRef({
+      cfg: ctx.cfg,
+      defaultProvider: DEFAULT_PROVIDER,
+      defaultModel: DEFAULT_MODEL,
+    });
+    const catalog = await loadModelCatalog({ config: ctx.cfg, readOnly: true });
+    const status = getModelRefStatus({
+      cfg: ctx.cfg,
+      catalog,
+      ref: hooksModelRef,
+      defaultProvider,
+      defaultModel,
+    });
+    const findings: HealthFinding[] = [];
+    if (!status.allowed) {
+      findings.push({
+        checkId: "core/doctor/hooks-model",
+        severity: "warning",
+        message: `hooks.gmail.model "${status.key}" is not in agents.defaults.models allowlist.`,
+        path: "hooks.gmail.model",
+        fixHint: "Add the model to agents.defaults.models or remove hooks.gmail.model.",
+      });
+    }
+    if (!status.inCatalog) {
+      findings.push({
+        checkId: "core/doctor/hooks-model",
+        severity: "warning",
+        message: `hooks.gmail.model "${status.key}" is not in the model catalog.`,
+        path: "hooks.gmail.model",
+        fixHint: "Choose a model from the configured provider catalog.",
+      });
+    }
+    return findings;
+  },
+};
+
+const legacyStateCheck: HealthCheck = {
+  id: "core/doctor/legacy-state",
+  kind: "core",
+  description: "Legacy sessions, agent state, and channel auth paths have been migrated.",
+  source: "doctor",
+  async detect(ctx) {
+    const { detectLegacyStateMigrations } = await import("../commands/doctor-state-migrations.js");
+    const detected = await detectLegacyStateMigrations({ cfg: ctx.cfg });
+    return detected.preview.map(
+      (line): HealthFinding => ({
+        checkId: "core/doctor/legacy-state",
+        severity: "warning",
+        message: line.replace(/^- /, ""),
+        path: detected.stateDir,
+        fixHint: "Run `openclaw doctor --fix` to migrate legacy state.",
+      }),
+    );
+  },
+};
+
+const bootstrapSizeCheck: HealthCheck = {
+  id: "core/doctor/bootstrap-size",
+  kind: "core",
+  description: "Workspace bootstrap files fit within configured injection limits.",
+  source: "doctor",
+  async detect(ctx) {
+    const { buildBootstrapInjectionStats, analyzeBootstrapBudget } =
+      await import("../agents/bootstrap-budget.js");
+    const { resolveBootstrapContextForRun } = await import("../agents/bootstrap-files.js");
+    const { resolveBootstrapMaxChars, resolveBootstrapTotalMaxChars } =
+      await import("../agents/embedded-agent-helpers.js");
+    const workspaceDir = resolveAgentWorkspaceDir(ctx.cfg, resolveDefaultAgentId(ctx.cfg));
+    const { bootstrapFiles, contextFiles } = await resolveBootstrapContextForRun({
+      workspaceDir,
+      config: ctx.cfg,
+    });
+    const analysis = analyzeBootstrapBudget({
+      files: buildBootstrapInjectionStats({
+        bootstrapFiles,
+        injectedFiles: contextFiles,
+      }),
+      bootstrapMaxChars: resolveBootstrapMaxChars(ctx.cfg),
+      bootstrapTotalMaxChars: resolveBootstrapTotalMaxChars(ctx.cfg),
+    });
+    const findings: HealthFinding[] = [];
+    for (const file of analysis.truncatedFiles) {
+      findings.push({
+        checkId: "core/doctor/bootstrap-size",
+        severity: "warning",
+        message: `${file.name} exceeds bootstrap limits and will be truncated.`,
+        path: file.path,
+        fixHint: "Reduce the file size or tune agents.defaults.bootstrapMaxChars/TotalMaxChars.",
+      });
+    }
+    for (const file of analysis.nearLimitFiles) {
+      if (file.truncated) {
+        continue;
+      }
+      findings.push({
+        checkId: "core/doctor/bootstrap-size",
+        severity: "info",
+        message: `${file.name} is near the configured bootstrap file limit.`,
+        path: file.path,
+        fixHint: "Reduce the file size or tune agents.defaults.bootstrapMaxChars.",
+      });
+    }
+    if (analysis.totalNearLimit) {
+      findings.push({
+        checkId: "core/doctor/bootstrap-size",
+        severity: analysis.hasTruncation ? "warning" : "info",
+        message: "Total bootstrap context is near the configured total limit.",
+        path: workspaceDir,
+        fixHint: "Reduce bootstrap file sizes or tune agents.defaults.bootstrapTotalMaxChars.",
+      });
+    }
+    return findings;
+  },
+};
+
+function createRuntimeToolSchemaCheck(deps: CoreHealthCheckDeps): HealthCheck {
+  return {
+    id: "core/doctor/runtime-tool-schemas",
+    kind: "core",
+    description: "Active agent tool schemas project into model/runtime-compatible tool inputs.",
+    source: "doctor",
+    async detect(ctx) {
+      return deps.collectRuntimeToolSchemaFindings(ctx);
+    },
+  };
+}
+
+function createProviderCatalogProjectionCheck(deps: CoreHealthCheckDeps): HealthCheck {
+  return {
+    id: "core/doctor/provider-catalog-projection",
+    kind: "core",
+    description: "Provider catalog hooks project into unified text model catalog rows.",
+    source: "doctor",
+    async detect(ctx) {
+      return deps.collectProviderCatalogProjectionFindings(ctx);
+    },
+  };
+}
+
+function normalizeDoctorNoteLine(line: string): string {
+  return line.replace(/^- /, "").trim();
+}
+
+function noteTextToFinding(params: {
   checkId: string;
-  severity: HealthFinding['severity'];
-  message: string;
-  path?: string;
-  source?: string;
-  target?: string;
-  fixHint?: string;
-  requirement?: string;
+  severity: HealthFinding["severity"];
+  text: string;
 }): HealthFinding {
+  const lines = params.text.split("\n");
+  const first = normalizeDoctorNoteLine(lines[0] ?? params.text);
+  const rest = lines.slice(1).join("\n");
   return {
     checkId: params.checkId,
     severity: params.severity,
-    message: params.message,
-    ...(params.path ? { path: params.path } : {}),
-    ...(params.source ? { source: params.source } : {}),
-    ...(params.target ? { target: params.target } : {}),
-    ...(params.fixHint ? { fixHint: params.fixHint } : {}),
-    ...(params.requirement ? { requirement: params.requirement } : {}),
+    message: first,
+    ...(rest ? { fixHint: rest } : {}),
   };
 }
 
-// ===================== 配置完整性检查 =====================
+function inferCapturedNoteSeverity(text: string): HealthFinding["severity"] {
+  if (text.includes("CRITICAL")) {
+    return "error";
+  }
+  if (
+    text.includes("- Fix:") ||
+    text.includes("unavailable") ||
+    text.includes("not found") ||
+    text.includes("missing") ||
+    text.includes("not readable") ||
+    text.includes("not writable") ||
+    text.includes("readonly")
+  ) {
+    return "warning";
+  }
+  return "info";
+}
 
-/**
- * 配置完整性检查：验证配置存在且非空。
- * 支持修复：空配置时初始化基础结构。
- */
-export const configIntegrityCheck: HealthCheck = {
-  id: CONFIG_INTEGRITY_CHECK_ID,
-  kind: 'core',
-  description: '应用配置完整性与基础结构验证',
-  source: 'doctor',
-  async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-    const findings: HealthFinding[] = [];
-    const cfg = ctx.cfg;
+function createNoteCollector(checkId: string): {
+  readonly findings: readonly HealthFinding[];
+  readonly noteFn: (message: unknown) => void;
+} {
+  const findings: HealthFinding[] = [];
+  const noteFn = (message: unknown): void => {
+    const text = noteMessageToText(message);
+    if (!text.trim()) {
+      return;
+    }
+    const severity = inferCapturedNoteSeverity(text);
+    if (severity === "info") {
+      return;
+    }
+    findings.push(
+      noteTextToFinding({
+        checkId,
+        severity,
+        text,
+      }),
+    );
+  };
+  return {
+    findings,
+    noteFn,
+  };
+}
 
-    if (!cfg || Object.keys(cfg).length === 0) {
-      findings.push(
-        buildFinding({
-          checkId: CONFIG_INTEGRITY_CHECK_ID,
-          severity: 'warning',
-          message: '应用配置为空，可能需要完成初始化向导',
-          path: '<root>',
-          source: 'config-integrity',
-          fixHint: '运行 setup 流程完成基础配置，或执行 doctor --fix 初始化默认配置',
+function noteMessageToText(message: unknown): string {
+  if (message instanceof Error) {
+    return message.message;
+  }
+  if (message == null) {
+    return "";
+  }
+  if (typeof message === "string") {
+    return message;
+  }
+  if (typeof message === "number" || typeof message === "boolean" || typeof message === "bigint") {
+    return String(message);
+  }
+  try {
+    return JSON.stringify(message) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+const claudeCliCheck: HealthCheck = {
+  id: "core/doctor/claude-cli",
+  kind: "core",
+  description: "Claude CLI readiness is captured as structured findings.",
+  source: "doctor",
+  async detect(ctx) {
+    const { noteClaudeCliHealth } = await import("../commands/doctor-claude-cli.js");
+    const collector = createNoteCollector("core/doctor/claude-cli");
+    noteClaudeCliHealth(ctx.cfg, {
+      noteFn: collector.noteFn,
+      ...(ctx.cwd ? { workspaceDir: ctx.cwd } : {}),
+    });
+    return collector.findings;
+  },
+};
+
+function createSecurityCheck(deps: CoreHealthCheckDeps): HealthCheck {
+  return {
+    id: "core/doctor/security",
+    kind: "core",
+    description: "Security posture checks produce structured findings.",
+    source: "doctor",
+    async detect(ctx) {
+      const warnings = await deps.collectSecurityWarnings(ctx.cfg);
+      return warnings.map((warning) =>
+        noteTextToFinding({
+          checkId: "core/doctor/security",
+          severity: warning.includes("CRITICAL") ? "error" : "warning",
+          text: warning,
         }),
       );
-      return findings;
-    }
+    },
+  };
+}
 
-    const requiredTopLevel = ['model', 'channels'];
-    for (const key of requiredTopLevel) {
-      if (!(key in cfg)) {
-        findings.push(
-          buildFinding({
-            checkId: CONFIG_INTEGRITY_CHECK_ID,
-            severity: 'info',
-            message: `配置缺少 "${key}" 顶层节点`,
-            path: key,
-            source: 'config-integrity',
-            fixHint: `添加 ${key} 配置节点`,
-          }),
-        );
-      }
+const openAIOAuthTlsCheck: HealthCheck = {
+  id: "core/doctor/oauth-tls",
+  kind: "core",
+  description: "OpenAI OAuth TLS prerequisites are satisfied before browser auth.",
+  source: "doctor",
+  async detect(ctx) {
+    const {
+      formatOpenAIOAuthTlsPreflightFix,
+      runOpenAIOAuthTlsPreflight,
+      shouldRunOpenAIOAuthTlsPrerequisites,
+    } = await import("../plugins/provider-openai-chatgpt-oauth-tls.js");
+    if (!shouldRunOpenAIOAuthTlsPrerequisites({ cfg: ctx.cfg, deep: ctx.mode === "doctor" })) {
+      return [];
     }
-
-    return findings;
+    const result = await runOpenAIOAuthTlsPreflight({ timeoutMs: 4000 });
+    if (result.ok || result.kind !== "tls-cert") {
+      return [];
+    }
+    const fix = formatOpenAIOAuthTlsPreflightFix(result);
+    return [
+      noteTextToFinding({
+        checkId: "core/doctor/oauth-tls",
+        severity: "warning",
+        text: fix,
+      }),
+    ];
   },
-  async repair(ctx: HealthRepairContext): Promise<HealthRepairResult> {
-    const cfg = ctx.cfg;
-    if (cfg && Object.keys(cfg).length > 0) {
-      return { status: 'skipped', reason: '配置非空，无需初始化', changes: [] };
+};
+
+const legacyWhatsAppCrontabCheck: HealthCheck = {
+  id: "core/doctor/legacy-whatsapp-crontab",
+  kind: "core",
+  description: "Legacy WhatsApp crontab health entries are detected as structured findings.",
+  source: "doctor",
+  async detect() {
+    const { collectLegacyWhatsAppCrontabHealthWarning } =
+      await import("../commands/doctor/cron/index.js");
+    const warning = await collectLegacyWhatsAppCrontabHealthWarning();
+    if (!warning) {
+      return [];
     }
-    const defaultConfig: FlowConfig = {
-      model: {},
-      channels: {},
-      search: {},
-    };
-    const changes = ['初始化基础配置结构（model/channels/search 顶层节点）'];
-    if (ctx.dryRun) {
-      return { status: 'repaired', changes, effects: [{ kind: 'config', action: 'init-config', dryRunSafe: true }] };
+    return [
+      noteTextToFinding({
+        checkId: "core/doctor/legacy-whatsapp-crontab",
+        severity: "warning",
+        text: warning,
+      }),
+    ];
+  },
+};
+
+const codexSessionRoutesCheck: HealthCheck = {
+  id: CODEX_SESSION_ROUTES_CHECK_ID,
+  kind: "core",
+  description: "Codex runtime routes have a registered Codex plugin harness before sessions run.",
+  source: "doctor",
+  async detect(ctx) {
+    return collectDisabledCodexPluginRouteIssues(ctx.cfg).map(
+      (issue): HealthFinding => ({
+        checkId: CODEX_SESSION_ROUTES_CHECK_ID,
+        severity: "warning",
+        message: [
+          `${issue.path} routes ${issue.modelRef} to ${issue.canonicalModel}`,
+          "with Codex runtime, but the Codex plugin is disabled by config.",
+        ].join(" "),
+        path: issue.path,
+        target: issue.canonicalModel,
+        requirement: "Codex plugin enabled for routes that use the Codex runtime.",
+        fixHint: issue.blockedOutsideEntry
+          ? [
+              "Enable plugin loading and remove codex from plugins.deny,",
+              "or set the affected OpenAI models to an OpenClaw runtime policy.",
+            ].join(" ")
+          : [
+              "Run `openclaw doctor --fix`: it enables plugins.entries.codex,",
+              "or set the affected OpenAI models to an OpenClaw runtime policy.",
+            ].join(" "),
+      }),
+    );
+  },
+};
+
+const gatewayServicesExtraCheck: HealthCheck = {
+  id: GATEWAY_SERVICES_EXTRA_CHECK_ID,
+  kind: "core",
+  description: "Extra gateway-like services are represented as structured findings.",
+  source: "doctor",
+  async detect(ctx) {
+    const coreCtx = ctx as CoreHealthCheckContext;
+    const { detectExtraGatewayServiceIssues, extraGatewayServiceToHealthFinding } =
+      await import("../commands/doctor-gateway-services.js");
+    return (await detectExtraGatewayServiceIssues({ deep: coreCtx.deep === true })).map(
+      extraGatewayServiceToHealthFinding,
+    );
+  },
+  async repair(ctx) {
+    const coreCtx = ctx as CoreHealthRepairContext;
+    const { detectExtraGatewayServiceIssues, extraGatewayServiceToRepairEffects } =
+      await import("../commands/doctor-gateway-services.js");
+    const effects = (
+      await detectExtraGatewayServiceIssues({ deep: coreCtx.deep === true })
+    ).flatMap(extraGatewayServiceToRepairEffects);
+    if (ctx.dryRun === true) {
+      return { status: "repaired", changes: [], effects };
     }
     return {
-      status: 'repaired',
-      config: defaultConfig,
-      changes,
-      effects: [{ kind: 'config', action: 'init-config', target: '<root>', dryRunSafe: true }],
+      status: "skipped",
+      reason: "legacy doctor gateway service contribution owns cleanup",
+      changes: [],
+      effects,
     };
   },
 };
 
-// ===================== 工作目录检查 =====================
-
-/**
- * 工作目录检查：验证 cwd 存在且可写。
- */
-export const workingDirectoryCheck: HealthCheck = {
-  id: WORKING_DIR_CHECK_ID,
-  kind: 'core',
-  description: '工作目录存在性与可写性验证',
-  source: 'doctor',
-  async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-    const findings: HealthFinding[] = [];
-    const cwd = ctx.cwd ?? ctx.runtime?.cwd;
-
-    if (!cwd) {
-      findings.push(
-        buildFinding({
-          checkId: WORKING_DIR_CHECK_ID,
-          severity: 'warning',
-          message: '未设置工作目录（cwd）',
-          source: 'working-directory',
-          fixHint: '确保在有效目录下运行，或显式指定 --cwd',
-        }),
-      );
-      return findings;
-    }
-
-    findings.push(
-      buildFinding({
-        checkId: WORKING_DIR_CHECK_ID,
-        severity: 'info',
-        message: `工作目录: ${cwd}`,
-        path: cwd,
-        source: 'working-directory',
+const gatewayPlatformNotesCheck: HealthCheck = {
+  id: "core/doctor/gateway-services/platform-notes",
+  kind: "core",
+  description: "Gateway platform notes are captured as structured findings.",
+  source: "doctor",
+  async detect(ctx) {
+    const { collectMacGatewayPlatformWarnings } =
+      await import("../commands/doctor-platform-notes.js");
+    const warnings = await collectMacGatewayPlatformWarnings(ctx.cfg);
+    return warnings.map((warning) =>
+      noteTextToFinding({
+        checkId: "core/doctor/gateway-services/platform-notes",
+        severity: "warning",
+        text: warning,
       }),
     );
-
-    return findings;
   },
 };
 
-// ===================== 环境变量检查 =====================
-
-/**
- * 环境变量检查：验证关键环境变量设置。
- */
-export const environmentCheck: HealthCheck = {
-  id: ENVIRONMENT_CHECK_ID,
-  kind: 'core',
-  description: '运行环境变量与平台信息验证',
-  source: 'doctor',
-  async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-    const findings: HealthFinding[] = [];
-    const env = ctx.runtime?.env ?? process.env;
-    const platform = ctx.runtime?.platform ?? process.platform;
-
-    findings.push(
-      buildFinding({
-        checkId: ENVIRONMENT_CHECK_ID,
-        severity: 'info',
-        message: `运行平台: ${platform}`,
-        source: 'environment',
-      }),
-    );
-
-    if (ctx.runtime?.isDev || env.NODE_ENV === 'development') {
-      findings.push(
-        buildFinding({
-          checkId: ENVIRONMENT_CHECK_ID,
-          severity: 'info',
-          message: '运行模式: 开发模式（development）',
-          source: 'environment',
-        }),
-      );
-    }
-
-    const nodeVersion = process.versions.node;
-    if (nodeVersion) {
-      const major = parseInt(nodeVersion.split('.')[0], 10);
-      if (major < 20) {
-        findings.push(
-          buildFinding({
-            checkId: ENVIRONMENT_CHECK_ID,
-            severity: 'warning',
-            message: `Node.js 版本 ${nodeVersion} 低于推荐的 20.x`,
-            source: 'environment',
-            fixHint: '升级到 Node.js 20 或更高版本',
-          }),
-        );
-      } else {
-        findings.push(
-          buildFinding({
-            checkId: ENVIRONMENT_CHECK_ID,
-            severity: 'info',
-            message: `Node.js 版本: ${nodeVersion}`,
-            source: 'environment',
-          }),
-        );
-      }
-    }
-
-    return findings;
+const browserCheck: HealthCheck = {
+  id: "core/doctor/browser",
+  kind: "core",
+  description: "Browser readiness is captured as structured findings.",
+  source: "doctor",
+  async detect(ctx) {
+    const collector = createNoteCollector("core/doctor/browser");
+    await noteChromeMcpBrowserReadiness(ctx.cfg, { noteFn: collector.noteFn });
+    return collector.findings;
   },
 };
 
-// ===================== Provider 认证检查 =====================
-
-/**
- * Provider 认证检查依赖。
- * 提取为接口便于测试注入。
- */
-export interface ProviderAuthCheckDeps {
-  readonly getAllProviders: () => ReadonlyArray<{
-    id: string;
-    label?: string;
-    name?: string;
-    isLocal?: boolean;
-    envVars?: readonly string[];
-  }>;
-  readonly resolveAuthStatus: (
-    provider: { id: string; isLocal?: boolean; envVars?: readonly string[] },
-    env: NodeJS.ProcessEnv,
-  ) => 'authenticated' | 'unauthenticated' | 'local';
-}
-
-/**
- * 创建 Provider 认证检查。
- *
- * 识别未认证的非本地 provider，并提供修复建议。
- */
-export function createProviderAuthCheck(deps: ProviderAuthCheckDeps): HealthCheck {
+function createSkillsReadinessCheck(deps: CoreHealthCheckDeps): HealthCheck {
   return {
-    id: PROVIDER_AUTH_CHECK_ID,
-    kind: 'core',
-    description: '已注册 provider 的认证状态检查',
-    source: 'doctor',
-    async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-      const findings: HealthFinding[] = [];
-      const env = ctx.runtime?.env ?? process.env;
-      const providers = deps.getAllProviders();
-
-      if (providers.length === 0) {
-        findings.push(
-          buildFinding({
-            checkId: PROVIDER_AUTH_CHECK_ID,
-            severity: 'info',
-            message: '未注册任何 model provider',
-            source: 'provider-auth',
-            fixHint: '配置至少一个 model provider 以启用 AI 功能',
-          }),
-        );
-        return findings;
-      }
-
-      let authenticatedCount = 0;
-      for (const provider of providers) {
-        const status = deps.resolveAuthStatus(provider, env);
-        if (status === 'unauthenticated') {
-          const envVars = provider.envVars ?? [];
-          const requirement = envVars.length > 0 ? envVars.join(' 或 ') : '查看 provider 文档';
-          findings.push(
-            buildFinding({
-              checkId: PROVIDER_AUTH_CHECK_ID,
-              severity: 'warning',
-              message: `Provider "${provider.id}" 未认证`,
-              source: 'provider-auth',
-              target: provider.id,
-              requirement,
-              fixHint:
-                envVars.length > 0
-                  ? `设置环境变量 ${envVars.join(' / ')}`
-                  : '配置 provider 认证信息',
-            }),
-          );
-        } else {
-          authenticatedCount++;
-        }
-      }
-
-      if (authenticatedCount === 0 && findings.length === 0) {
-        findings.push(
-          buildFinding({
-            checkId: PROVIDER_AUTH_CHECK_ID,
-            severity: 'warning',
-            message: '没有已认证的 model provider，AI 功能将不可用',
-            source: 'provider-auth',
-            fixHint: '配置至少一个 provider 的 API 密钥',
-          }),
-        );
-      }
-
-      return findings;
-    },
-  };
-}
-
-// ===================== 渠道配置检查 =====================
-
-/**
- * 渠道配置检查依赖。
- */
-export interface ChannelConfigCheckDeps {
-  readonly getChannelOptions: (config?: FlowConfig) => ReadonlyArray<{
-    channelId: string;
-    label: string;
-    configured: boolean;
-    enabled: boolean;
-  }>;
-}
-
-/**
- * 创建渠道配置检查。
- */
-export function createChannelConfigCheck(deps: ChannelConfigCheckDeps): HealthCheck {
-  return {
-    id: CHANNEL_CONFIG_CHECK_ID,
-    kind: 'core',
-    description: '渠道插件配置状态检查',
-    source: 'doctor',
-    async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-      const findings: HealthFinding[] = [];
-      const options = deps.getChannelOptions(ctx.cfg);
-
-      if (options.length === 0) {
-        findings.push(
-          buildFinding({
-            checkId: CHANNEL_CONFIG_CHECK_ID,
-            severity: 'info',
-            message: '未注册任何渠道插件',
-            source: 'channel-config',
-          }),
-        );
-        return findings;
-      }
-
-      let configuredCount = 0;
-      for (const option of options) {
-        if (!option.configured) {
-          findings.push(
-            buildFinding({
-              checkId: CHANNEL_CONFIG_CHECK_ID,
-              severity: 'info',
-              message: `渠道 "${option.label}" 已注册但未配置`,
-              source: 'channel-config',
-              target: option.channelId,
-              fixHint: `通过渠道设置流程配置 ${option.label}`,
-            }),
-          );
-        } else {
-          configuredCount++;
-        }
-      }
-
-      if (configuredCount === 0 && findings.length > 0) {
-        findings.push(
-          buildFinding({
-            checkId: CHANNEL_CONFIG_CHECK_ID,
-            severity: 'warning',
-            message: '所有已注册渠道均未配置，消息通道不可用',
-            source: 'channel-config',
-            fixHint: '配置至少一个渠道以启用消息收发',
-          }),
-        );
-      }
-
-      return findings;
-    },
-  };
-}
-
-// ===================== 搜索 Provider 检查 =====================
-
-/**
- * 搜索 provider 检查依赖。
- */
-export interface SearchProviderCheckDeps {
-  readonly getSearchProviders: () => ReadonlyArray<{
-    id: string;
-    label: string;
-    requiresCredential?: boolean;
-  }>;
-  readonly isCredentialReady: (
-    provider: { id: string; requiresCredential?: boolean },
-    params: { config?: FlowConfig; env?: NodeJS.ProcessEnv },
-  ) => boolean;
-}
-
-/**
- * 创建搜索 provider 检查。
- */
-export function createSearchProviderCheck(deps: SearchProviderCheckDeps): HealthCheck {
-  return {
-    id: SEARCH_PROVIDER_CHECK_ID,
-    kind: 'core',
-    description: 'Web 搜索 provider 凭证就绪状态检查',
-    source: 'doctor',
-    async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-      const findings: HealthFinding[] = [];
-      const env = ctx.runtime?.env ?? process.env;
-      const providers = deps.getSearchProviders();
-
-      if (providers.length === 0) {
-        findings.push(
-          buildFinding({
-            checkId: SEARCH_PROVIDER_CHECK_ID,
-            severity: 'info',
-            message: '未注册任何 Web 搜索 provider',
-            source: 'search-provider',
-          }),
-        );
-        return findings;
-      }
-
-      const ready = providers.filter((provider) =>
-        deps.isCredentialReady(provider, { config: ctx.cfg, env }),
+    id: "core/doctor/skills-readiness",
+    kind: "core",
+    description: "Allowed skills are usable in the current runtime environment.",
+    source: "doctor",
+    async detect(ctx, scope) {
+      const unavailable = filterUnavailableSkillsForScope(
+        await deps.detectUnavailableSkills(ctx.cfg),
+        scope?.paths,
       );
-
-      if (ready.length === 0) {
-        findings.push(
-          buildFinding({
-            checkId: SEARCH_PROVIDER_CHECK_ID,
-            severity: 'warning',
-            message: '所有 Web 搜索 provider 均未配置凭证，web_search 不可用',
-            source: 'search-provider',
-            fixHint: '为任一搜索 provider 配置 API 密钥',
-          }),
-        );
-      } else {
-        findings.push(
-          buildFinding({
-            checkId: SEARCH_PROVIDER_CHECK_ID,
-            severity: 'info',
-            message: `${ready.length}/${providers.length} 个搜索 provider 凭证就绪`,
-            source: 'search-provider',
-          }),
-        );
+      return unavailable.map(unavailableSkillToFinding);
+    },
+    async repair(ctx, findings) {
+      const unavailable = filterUnavailableSkillsForScope(
+        await deps.detectUnavailableSkills(ctx.cfg),
+        findings.map((finding) => finding.path),
+      );
+      if (unavailable.length === 0) {
+        return { changes: [] };
       }
-
-      return findings;
+      const nextConfig = disableUnavailableSkillsInConfig(ctx.cfg, unavailable);
+      return {
+        config: nextConfig,
+        changes: unavailable.map((skill) => `Disabled unavailable skill ${skill.name}.`),
+        effects: unavailable.map((skill) => ({
+          kind: "config" as const,
+          action: ctx.dryRun === true ? "would-disable-skill" : "disable-skill",
+          target: skillReadinessPath(skill),
+          dryRunSafe: true,
+        })),
+      };
     },
   };
 }
 
-// ===================== 默认模型检查 =====================
-
-/**
- * 默认模型检查依赖。
- */
-export interface DefaultModelCheckDeps {
-  readonly resolveDefaultModel: (params: {
-    config?: FlowConfig;
-    authenticatedOnly?: boolean;
-  }) => string | undefined;
-}
-
-/**
- * 创建默认模型检查。
- */
-export function createDefaultModelCheck(deps: DefaultModelCheckDeps): HealthCheck {
+function unavailableSkillToFinding(skill: SkillStatusEntry): HealthFinding {
   return {
-    id: DEFAULT_MODEL_CHECK_ID,
-    kind: 'core',
-    description: '默认模型可用性检查',
-    source: 'doctor',
-    async detect(ctx: HealthCheckContext): Promise<readonly HealthFinding[]> {
-      const findings: HealthFinding[] = [];
+    checkId: "core/doctor/skills-readiness",
+    severity: "warning",
+    message: `${skill.name} is allowed but unavailable: ${formatMissingSkillSummary(skill)}.`,
+    path: skillReadinessPath(skill),
+    fixHint:
+      "Install/configure the missing requirement, or run `openclaw doctor --fix` to disable unused unavailable skills.",
+  };
+}
 
-      const defaultModel = deps.resolveDefaultModel({
-        config: ctx.cfg,
-        authenticatedOnly: true,
-      });
+function filterUnavailableSkillsForScope(
+  unavailable: readonly SkillStatusEntry[],
+  paths: readonly (string | undefined)[] | undefined,
+): SkillStatusEntry[] {
+  const scopedPaths = new Set(
+    paths?.filter((pathLocal): pathLocal is string => pathLocal !== undefined) ?? [],
+  );
+  if (scopedPaths.size === 0) {
+    return [...unavailable];
+  }
+  return unavailable.filter((skill) => scopedPaths.has(skillReadinessPath(skill)));
+}
 
-      if (!defaultModel) {
-        findings.push(
-          buildFinding({
-            checkId: DEFAULT_MODEL_CHECK_ID,
-            severity: 'warning',
-            message: '没有可用的已认证默认模型',
-            source: 'default-model',
-            path: 'model.default',
-            fixHint: '配置至少一个已认证的 provider，或设置 model.default',
-          }),
-        );
-      } else {
-        findings.push(
-          buildFinding({
-            checkId: DEFAULT_MODEL_CHECK_ID,
-            severity: 'info',
-            message: `默认模型: ${defaultModel}`,
-            source: 'default-model',
-            path: 'model.default',
-          }),
-        );
-      }
+function skillReadinessPath(skill: SkillStatusEntry): string {
+  return `skills.entries.${skill.skillKey}.enabled`;
+}
 
-      return findings;
+function browserResidueDeps(ctx: { configPath?: string }) {
+  return ctx.configPath ? { configDir: path.dirname(ctx.configPath) } : {};
+}
+
+function browserResidueFinding(residue: LegacyClawdBrowserProfileResidue): HealthFinding {
+  return {
+    checkId: BROWSER_CLAWD_PROFILE_RESIDUE_CHECK_ID,
+    severity: "warning",
+    message: `Legacy managed browser profile residue was found at ${residue.legacyProfileDir}.`,
+    path: residue.legacyProfileDir,
+    ocPath: "oc://state/browser/clawd",
+    fixHint:
+      "Run `openclaw doctor --fix` to archive the stale clawd profile safely instead of deleting it in place.",
+  };
+}
+
+function formatWouldArchiveBrowserResidue(residue: LegacyClawdBrowserProfileResidue): string {
+  return [
+    "Would archive legacy clawd managed browser profile residue.",
+    `- legacy profile: ${residue.legacyProfileDir}`,
+    `- canonical profile: ${residue.canonicalUserDataDir}`,
+  ].join("\n");
+}
+
+const browserClawdProfileResidueCheck: HealthCheck = {
+  id: BROWSER_CLAWD_PROFILE_RESIDUE_CHECK_ID,
+  kind: "core",
+  description:
+    "Legacy clawd managed browser profile residue has been archived after the OpenClaw rename.",
+  source: "doctor",
+  async detect(ctx, scope) {
+    const residue = await detectLegacyClawdBrowserProfileResidue(ctx.cfg, browserResidueDeps(ctx));
+    if (!residue) {
+      return [];
+    }
+    const scopedPaths = new Set(scope?.paths ?? []);
+    if (scopedPaths.size > 0 && !scopedPaths.has(residue.legacyProfileDir)) {
+      return [];
+    }
+    return [browserResidueFinding(residue)];
+  },
+  async repair(ctx) {
+    const residue = await detectLegacyClawdBrowserProfileResidue(ctx.cfg, browserResidueDeps(ctx));
+    if (!residue) {
+      return {
+        status: "skipped",
+        reason: "legacy clawd browser profile residue no longer exists",
+        changes: [],
+      };
+    }
+    const effect = {
+      kind: "state" as const,
+      action:
+        ctx.dryRun === true
+          ? "would-archive-legacy-browser-profile-residue"
+          : "archive-legacy-browser-profile-residue",
+      target: residue.legacyProfileDir,
+      dryRunSafe: false,
+    };
+    if (ctx.dryRun === true) {
+      return {
+        changes: [formatWouldArchiveBrowserResidue(residue)],
+        effects: [effect],
+      };
+    }
+    const result = await maybeArchiveLegacyClawdBrowserProfileResidue(
+      ctx.cfg,
+      browserResidueDeps(ctx),
+    );
+    if (result.changes.length === 0 && result.warnings.length > 0) {
+      return {
+        status: "failed",
+        reason: result.warnings.join("; "),
+        changes: [],
+        warnings: result.warnings,
+        effects: [],
+      };
+    }
+    return {
+      changes: result.changes,
+      warnings: result.warnings,
+      effects: result.changes.length > 0 ? [effect] : [],
+    };
+  },
+};
+
+const finalConfigValidationCheck: HealthCheck = {
+  id: FINAL_CONFIG_VALIDATION_CHECK_ID,
+  kind: "core",
+  description: "Active openclaw.jsonc parses and conforms to the config schema.",
+  source: "doctor",
+  async detect() {
+    const { readConfigFileSnapshot } = await import("../config/config.js");
+    const snap = await readConfigFileSnapshot({ observe: false });
+    if (!snap.exists || snap.valid) {
+      return [];
+    }
+    return configValidationIssuesToHealthFindings(snap.issues);
+  },
+};
+
+const shellCompletionCheck: HealthCheck = {
+  id: "core/doctor/shell-completion",
+  kind: "core",
+  description: "Shell completion uses the cached completion path when configured.",
+  source: "doctor",
+  async detect() {
+    return shellCompletionStatusToHealthFindings(await checkShellCompletionStatus());
+  },
+  async repair(ctx) {
+    const status = await checkShellCompletionStatus();
+    const effects = shellCompletionStatusToRepairEffects(status);
+    if (ctx.dryRun === true) {
+      return { status: "repaired", changes: [], effects };
+    }
+    return {
+      status: "skipped",
+      reason: "legacy doctor shell-completion repair owns real mutations",
+      changes: [],
+      effects,
+    };
+  },
+};
+
+const uiProtocolFreshnessCheck: HealthCheck = {
+  id: "core/doctor/ui-protocol-freshness",
+  kind: "core",
+  description: "Control UI assets are present and current with the Gateway protocol schema.",
+  source: "doctor",
+  async detect() {
+    return (await detectUiProtocolFreshnessIssues()).map(uiProtocolFreshnessIssueToHealthFinding);
+  },
+  async repair(ctx) {
+    const effects = (await detectUiProtocolFreshnessIssues()).flatMap(
+      uiProtocolFreshnessIssueToRepairEffects,
+    );
+    if (ctx.dryRun === true) {
+      return { status: "repaired", changes: [], effects };
+    }
+    return {
+      status: "skipped",
+      reason: "legacy doctor UI freshness repair owns real mutations",
+      changes: [],
+      effects,
+    };
+  },
+};
+
+function createWorkspaceSuggestionsCheck(deps: CoreHealthCheckDeps): HealthCheck {
+  return {
+    id: "core/doctor/workspace-suggestions",
+    kind: "core",
+    description:
+      "Workspace backup and memory-system suggestions are captured as structured findings.",
+    source: "doctor",
+    async detect(ctx) {
+      const workspaceDir = resolveAgentWorkspaceDir(ctx.cfg, resolveDefaultAgentId(ctx.cfg));
+      const notes = await deps.collectWorkspaceSuggestionNotes(workspaceDir);
+      return notes.map((text) =>
+        noteTextToFinding({
+          checkId: "core/doctor/workspace-suggestions",
+          severity: "info",
+          text,
+        }),
+      );
     },
   };
 }
 
-// ===================== 核心检查集合 =====================
-
-/** 核心健康检查依赖集合。 */
-export interface CoreHealthCheckDeps {
-  readonly providerAuth?: ProviderAuthCheckDeps;
-  readonly channelConfig?: ChannelConfigCheckDeps;
-  readonly searchProvider?: SearchProviderCheckDeps;
-  readonly defaultModel?: DefaultModelCheckDeps;
-}
-
-/**
- * 构建核心健康检查集合。
- *
- * 所有检查按推荐顺序排列：环境 → 配置 → provider → 渠道 → 搜索。
- * 未提供依赖的检查会被跳过。
- */
-export function buildCoreHealthChecks(
-  deps: CoreHealthCheckDeps = {},
-): readonly HealthCheck[] {
-  const checks: HealthCheck[] = [
-    environmentCheck,
-    workingDirectoryCheck,
-    configIntegrityCheck,
+function createConvertedWorkflowChecks(deps: CoreHealthCheckDeps): readonly HealthCheck[] {
+  return [
+    claudeCliCheck,
+    gatewayAuthCheck,
+    legacyStateCheck,
+    legacyWhatsAppCrontabCheck,
+    codexSessionRoutesCheck,
+    shellCompletionCheck,
+    uiProtocolFreshnessCheck,
+    gatewayServicesExtraCheck,
+    gatewayPlatformNotesCheck,
+    createSecurityCheck(deps),
+    browserCheck,
+    openAIOAuthTlsCheck,
+    hooksModelCheck,
+    bootstrapSizeCheck,
+    createProviderCatalogProjectionCheck(deps),
+    createRuntimeToolSchemaCheck(deps),
+    createWorkspaceSuggestionsCheck(deps),
   ];
-
-  if (deps.providerAuth) {
-    checks.push(createProviderAuthCheck(deps.providerAuth));
-  }
-  if (deps.defaultModel) {
-    checks.push(createDefaultModelCheck(deps.defaultModel));
-  }
-  if (deps.channelConfig) {
-    checks.push(createChannelConfigCheck(deps.channelConfig));
-  }
-  if (deps.searchProvider) {
-    checks.push(createSearchProviderCheck(deps.searchProvider));
-  }
-
-  return checks;
 }
 
-let coreRegistered = false;
+let registered = false;
 
-/**
- * 注册核心健康检查到全局注册表。
- * 幂等操作，重复调用不会重复注册。
- */
-export function registerCoreHealthChecks(deps: CoreHealthCheckDeps = {}): void {
-  if (coreRegistered) {
+/** @deprecated Core doctor flows use ordered doctor contributions; keep this only for SDK compatibility. */
+export function registerCoreHealthChecks(): void {
+  if (registered) {
     return;
   }
-  const checks = buildCoreHealthChecks(deps);
-  for (const check of checks) {
-    try {
-      registerHealthCheck(check);
-    } catch (err) {
-      logger.warn(`[doctor-core-checks] 注册检查 ${check.id} 失败: ${err}`);
-    }
+  for (const check of CORE_HEALTH_CHECKS) {
+    registerHealthCheck(check);
   }
-  coreRegistered = true;
-  logger.debug(`[doctor-core-checks] 已注册 ${checks.length} 个核心检查`);
+  registered = true;
 }
 
-/** 重置注册标记，用于测试。 */
 export function resetCoreHealthChecksForTest(): void {
-  coreRegistered = false;
+  registered = false;
 }
+
+export function createCoreHealthChecks(
+  deps: CoreHealthCheckDeps = defaultCoreHealthCheckDeps,
+): readonly HealthCheck[] {
+  return [
+    gatewayConfigCheck,
+    ...createConvertedWorkflowChecks(deps),
+    commandOwnerCheck,
+    createSkillsReadinessCheck(deps),
+    browserClawdProfileResidueCheck,
+    finalConfigValidationCheck,
+  ];
+}
+
+export const CORE_HEALTH_CHECKS: readonly HealthCheck[] = createCoreHealthChecks();

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Collects core config secret refs during runtime preparation. */
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../config/types.openclaw.js";

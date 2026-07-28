@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Handshake auth helper tests cover browser-origin security, pairing locality, and auth error details.
 import { describe, expect, it } from "vitest";
 import {

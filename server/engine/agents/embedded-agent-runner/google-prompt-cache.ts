@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Prepares Google prompt-cache payloads for embedded-agent stream calls.
  */

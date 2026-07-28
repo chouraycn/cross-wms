@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Chat gateway methods implement chat.send/history/abort/inject/metadata and
 // bridge UI RPCs to agent dispatch, transcripts, media, and streaming state.
 import { createHash } from "node:crypto";

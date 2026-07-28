@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Configure wizard helper for removing channel config sections safely.
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
 import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";

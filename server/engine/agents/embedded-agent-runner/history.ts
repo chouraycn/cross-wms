@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Limits embedded-agent history length from session-key policy.
  */

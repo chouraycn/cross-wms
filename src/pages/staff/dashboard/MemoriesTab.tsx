@@ -8,8 +8,10 @@ import { Paginator } from '../../../components/staff/Paginator.js';
 import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/staff/ui/index.js';
 import { notify } from '../../../components/staff/ui/app-toast.js';
+import { Box } from '@mui/material';
 import { cn } from '../../../components/staff/lib/utils.js';
-import { MOBILE_CARD_CLASS, formatDateTime } from '../../../components/staff/lib/enterprise-ui.js';
+import { formatDateTime } from '../../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import type { MemoryRead } from '../../../components/staff/types/index.js';
 import { StatusBadge } from '../scheduled-tasks/StatusBadge.js';
 import type { BadgeTone } from '../scheduled-tasks/shared.js';
@@ -191,7 +193,7 @@ export default function MemoriesTab() {
   ];
 
   const renderMobileCard = (row: MemoryUserGroup) => (
-    <article className={MOBILE_CARD_CLASS} key={row.key}>
+    <Box component="article" sx={staffTokens.mobileCard} key={row.key}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
         <strong className="min-w-0 truncate text-[14px] font-semibold text-[#18181a]">
           {row.username || row.user_id}
@@ -214,7 +216,7 @@ export default function MemoriesTab() {
         <span>{row.memories.length} 条记忆</span>
         <span>{formatDateTime(row.latest_at)}</span>
       </div>
-    </article>
+    </Box>
   );
 
   return (

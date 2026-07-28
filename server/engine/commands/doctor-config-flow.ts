@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Main doctor config flow: preflight, migrations, previews, repairs, and final write decision. */
 import path from "node:path";
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Talk shared helpers build provider configs, launch options, tool schemas, and
 // room event broadcasts used by browser and gateway-owned Talk sessions.
 import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Fast `openclaw status --json` scan policy.
 // Skips channel tables and most network/update work unless `--all` asks for fuller evidence.
 

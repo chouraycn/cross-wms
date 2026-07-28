@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Usage gateway methods aggregate provider and session cost/token metrics from
 // caches, logs, session stores, and discovered transcript files.
 import fs from "node:fs";

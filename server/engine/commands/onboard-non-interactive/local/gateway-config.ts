@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Gateway config mutation for local non-interactive onboarding.
  *

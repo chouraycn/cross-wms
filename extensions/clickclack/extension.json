@@ -1,0 +1,10 @@
+{
+  "id": "clickclack",
+  "name": "clickclack",
+  "description": "clickclack extension ported from openclaw",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

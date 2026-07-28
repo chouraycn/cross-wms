@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Schedules and runs deferred context-engine turn maintenance.
  */

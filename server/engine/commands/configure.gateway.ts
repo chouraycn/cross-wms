@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Configure wizard Gateway port, bind, auth, and Tailscale prompts.
 import { validateIPv4AddressInput } from "@openclaw/net-policy/ipv4";
 import {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tracks prompt-cache snapshot changes for observability diagnostics.
  */

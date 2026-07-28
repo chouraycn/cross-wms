@@ -1,0 +1,181 @@
+title: CrossWMS QA Scenario Registry
+
+# CrossWMS QA 场景注册表
+#
+# CrossWMS (CDF Know Clow) 的 QA 场景注册表，列出所有已注册的 QA 场景及其元数据。
+# 遵循 OpenClaw QA 框架的结构与风格，但针对 WMS (Warehouse Management System)
+# 业务场景做了适配。
+#
+# 目录约定:
+# - `qa/index.yaml`           - 场景注册表（本文件）
+# - `qa/README.md`            - QA 框架说明、运行方式、贡献指南
+# - `qa/scenarios/<theme>/*.yaml` - 可执行场景定义 (scenario.yaml)
+# - `qa/scenarios/<theme>/steps.md` - 场景步骤说明 (Markdown 文档)
+#
+# 场景主题目录:
+#
+# - `agents/`    - 智能体生命周期：创建/删除/启动/停止/列表
+# - `channels/`  - 通信通道：安装/启用/禁用/消息发送
+# - `memory/`    - 记忆引擎：存储/检索/删除
+# - `models/`    - 模型管理：切换/failover/能力检测
+# - `security/`  - 安全合规：审计/权限验证/exec-approval
+# - `config/`    - 配置管理（占位）
+# - `plugins/`   - 插件管理（占位）
+# - `runtime/`   - 运行时行为（占位）
+# - `ui/`        - 桌面 UI 行为（占位）
+# - `workspace/` - 工作空间（占位）
+# - `jsonl-replay/` - 会话重放（占位）
+# - `media/`     - 媒体处理（占位）
+# - `personal/`  - 个人助手（占位）
+# - `scheduling/` - 定时任务（占位）
+# - `character/` - 角色人设（占位）
+
+pack:
+  version: 1
+  name: crosswms-qa-scenarios
+  description: CrossWMS (CDF Know Clow) 仓库管理系统的 QA 场景注册表
+  product: CrossWMS
+  domain: warehouse-management
+
+  # QA operator 身份
+  agent:
+    identityMarkdown: |-
+      # CrossWMS QA Operator
+
+      你是 CrossWMS (CDF Know Clow) 仓库管理系统的 QA 运营智能体。
+
+      职责:
+      - 验证 WMS 核心流程（仓库 / 库存 / 在途 / 报表）
+      - 跟踪 AI 助手、记忆、模型、通道、安全的行为回归
+      - 记录通过、失败、阻塞的测试，并提供可执行的复现步骤
+
+      风格:
+      - 先读源码与文档再下结论
+      - 系统化地执行每个 step
+      - 失败时给出具体的调用链与日志
+      - 结束时输出简明的协议报告
+
+  # 启动任务说明
+  kickoffTask: |-
+    QA 任务：
+    在 CrossWMS 仓库管理系统中运行 QA 场景。
+    仓库可执行文件位于 ./repo/。
+    使用 qa/index.yaml 作为场景注册基线，按场景运行。
+    通过 qa-channel / e2e / 单元测试等真实通道运行场景。
+    跟踪通过、失败、阻塞和观察结果。
+    结束时输出简洁报告：passed / failed / blocked / follow-up。
+
+    关键期望：
+    - 覆盖仓库 CRUD、库存预警、在途状态
+    - 包含 AI 助手的对话与记忆一致性测试
+    - 包含模型切换和 fail-over 测试
+    - 包含安全审计与权限校验测试
+    - 保持客观的工程师语气
+
+# 场景清单
+scenarios:
+  - id: agents-lifecycle
+    name: 智能体生命周期管理
+    path: qa/scenarios/agents/scenario.yaml
+    steps: qa/scenarios/agents/steps.md
+    theme: agents
+    surface: agent-lifecycle
+    coverage:
+      primary:
+        - agents.lifecycle
+      secondary:
+        - agents.persistence
+        - agents.run-state
+    description: 验证 CrossWMS 智能体的创建、删除、启动、停止、列表操作
+    status: draft
+    priority: high
+    runtimeParityTier: standard
+
+  - id: channels-install-and-message
+    name: 通道安装与消息发送
+    path: qa/scenarios/channels/scenario.yaml
+    steps: qa/scenarios/channels/steps.md
+    theme: channels
+    surface: channel-install
+    coverage:
+      primary:
+        - channels.install
+        - channels.message-send
+      secondary:
+        - channels.enable-disable
+    description: 验证 CrossWMS 通道（飞书 / 企微 / SMS）的安装、启用、禁用与消息发送
+    status: draft
+    priority: high
+    runtimeParityTier: standard
+
+  - id: memory-store-retrieve-delete
+    name: 记忆存储 / 检索 / 删除
+    path: qa/scenarios/memory/scenario.yaml
+    steps: qa/scenarios/memory/steps.md
+    theme: memory
+    surface: memory-core
+    coverage:
+      primary:
+        - memory.store
+        - memory.retrieve
+        - memory.delete
+      secondary:
+        - memory.isolation
+    description: 验证 CrossWMS 记忆引擎的写入、查询、删除以及会话隔离
+    status: draft
+    priority: high
+    runtimeParityTier: standard
+
+  - id: models-switch-failover-capabilities
+    name: 模型切换 / Failover / 能力检测
+    path: qa/scenarios/models/scenario.yaml
+    steps: qa/scenarios/models/steps.md
+    theme: models
+    surface: models
+    coverage:
+      primary:
+        - models.switching
+        - models.failover
+        - models.capability-detection
+      secondary:
+        - runtime.tool-continuity
+    description: 验证 CrossWMS 模型切换的会话连续性、failover 与能力探测
+    status: draft
+    priority: high
+    runtimeParityTier: standard
+
+  - id: security-audit-permission-exec-approval
+    name: 安全审计 / 权限验证 / Exec-Approval
+    path: qa/scenarios/security/scenario.yaml
+    steps: qa/scenarios/security/steps.md
+    theme: security
+    surface: security
+    coverage:
+      primary:
+        - security.audit
+        - security.permission
+        - security.exec-approval
+      secondary:
+        - qa.artifact-safety
+        - runtime.tool-policy
+    description: 验证 CrossWMS 的安全审计日志、权限校验与危险操作 exec-approval
+    status: draft
+    priority: high
+    runtimeParityTier: standard
+
+# 全局前置条件
+prerequisites:
+  - node: ">= 22.19"
+  - platform: macos
+  - products:
+      - CrossWMS 桌面应用
+      - CrossWMS AI 后端 (Express)
+  - services:
+      - localStorage 或 mock 数据源
+      - OpenAI / Anthropic 兼容模型 API
+
+# 报告命令约定
+reporting:
+  inventory: "pnpm crosswms qa coverage"
+  suite: "pnpm crosswms qa suite"
+  manual: "pnpm crosswms qa manual"

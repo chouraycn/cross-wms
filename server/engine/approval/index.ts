@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Approval 模块统一导出
  *

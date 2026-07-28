@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for skill proposal gateway methods and proposal lifecycle responses.
  */

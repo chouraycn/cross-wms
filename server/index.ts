@@ -74,6 +74,9 @@ import agentChatRouter from './routes/agentChat.js';
 // import projectsRouter from './routes/projects.js'; → lazyRouter
 // import tasksRouter from './routes/tasks.js'; → lazyRouter
 
+// Subagent routes (lazy) — 子代理管理（spawn/list/cancel/metrics/announcements）
+// subagentRouter → lazyRouter
+
 // WMS skill routes (lazy)
 // import wmsQualityRoutes from './routes/wms-quality.js'; → lazyRouter
 // import wmsInventoryRoutes from './routes/wms-inventory.js'; → lazyRouter
@@ -110,6 +113,7 @@ import { startEngine } from './engine/engine.js';
 
 // Trigger Engine v2.0 (触发器系统)
 import { startTriggerEngine, stopTriggerEngine } from './engine/triggerEngine.js';
+import { startCronScheduler, stopCronScheduler } from './engine/cronScheduler.js';
 import { initTriggerManager } from './engine/triggerManager.js';
 import { startEventListener, stopEventListener } from './engine/eventListener.js';
 
@@ -384,6 +388,9 @@ app.use('/api/task-monitor', lazyRouter(() => import('./routes/taskMonitor.js'),
 // Workboard routes (lazy) — 任务编排系统
 app.use('/api/workboard', lazyRouter(() => import('./routes/workboard.js'), undefined, 'workboard'));
 
+// Subagent routes (lazy) — 子代理管理（spawn/list/cancel/metrics/announcements）
+app.use('/api/subagent', lazyRouter(() => import('./routes/subagent.js'), undefined, 'subagent'));
+
 // Automation webhook routes (lazy)
 app.use('/api/automation', lazyRouter(() => import('./routes/automation.js'), undefined, 'automation'));
 
@@ -470,6 +477,8 @@ app.use('/api/process', lazyRouter(() => import('./routes/process.js'), undefine
 app.use('/api/node-host', lazyRouter(() => import('./routes/nodeHost.js'), undefined, 'node-host'));
 // TTS 语音合成（仅 JSON 请求，延迟加载）
 app.use('/api/tts', lazyRouter(() => import('./routes/tts.js'), undefined, 'tts'));
+// STT 语音转文字（批量转录 + WebSocket 流式转录，延迟加载）
+app.use('/api/stt', lazyRouter(() => import('./routes/stt.js'), undefined, 'stt'));
 
 // ========== 死代码接入：补全能力（非删除） ==========
 app.use('/api/cron', lazyRouter(() => import('./routes/cron.js'), undefined, 'cron'));
@@ -846,6 +855,16 @@ server.listen(PORT, () => {
     initTriggerManager();
     startEventListener();
 
+    // 主统一调度器（cron）：驱动数字员工定时任务（staff-chat-turn）及其他 cron job。
+    // 注意：数字员工任务由 initScheduledTaskScheduler 异步导入并注册到本调度器，
+    // 本调用负责启动其扫描循环（非阻塞）。
+    try {
+      startCronScheduler();
+      logger.info('[Server] CronScheduler 已启动');
+    } catch (err) {
+      logger.warn('[Server] CronScheduler 启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+    }
+
     import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
       sessionLifecycleManager.start();
       logger.info('[SessionLifecycle] 已启动');
@@ -899,6 +918,9 @@ server.listen(PORT, () => {
       stop();
       stopTriggerEngine();
       stopEventListener();
+      try {
+        stopCronScheduler();
+      } catch { /* noop */ }
       import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
         sessionLifecycleManager.stop();
       }).catch(() => {});

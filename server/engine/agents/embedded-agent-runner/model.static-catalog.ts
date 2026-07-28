@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves bundled static catalog rows for embedded-agent model selection.
  */

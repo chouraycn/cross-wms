@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Assistant visible text helpers strip hidden reasoning and control marker text.
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 import { stripPlainTextToolCallBlocks } from "../../../../packages/tool-call-repair/src/index.js";

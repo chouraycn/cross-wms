@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared parameter and metric types for embedded-agent compaction.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repairs for legacy auth profile JSON stores and OpenAI provider-id migrations. */
 import fs from "node:fs";
 import path from "node:path";

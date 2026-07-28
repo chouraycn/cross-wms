@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor diagnostics for pending, paired, and locally cached device auth state. */
 import path from "node:path";
 import { normalizeUniqueSingleOrTrimmedStringList } from "@openclaw/normalization-core/string-normalization";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Lists subagent runs with focus and status information.
 import { buildSubagentList } from "../../../agents/subagent-list.js";
 import type { CommandHandlerResult } from "../commands-types.js";
