@@ -1,12 +1,3 @@
-// Stub for @openclaw/fs-safe/advanced
-export type MovePathToTrashOptions = {
-  fs?: unknown;
-  basePath?: string;
-};
-export async function movePathToTrash(_targetPath: string, _options?: MovePathToTrashOptions): Promise<void> {}
-export async function acquireFileLock(_path: string): Promise<{ release: () => Promise<void> }> {
-  return { release: async () => {} };
-}
-export async function withFileLock<T>(_path: string, fn: () => Promise<T>): Promise<T> {
-  return fn();
-}
+// Re-export everything from the real @openclaw/fs-safe npm package
+// Using direct path to bypass tsconfig catch-all @openclaw/* -> ../extensions/*
+export * from "../../node_modules/@openclaw/fs-safe/dist/advanced.js";

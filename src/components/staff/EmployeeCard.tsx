@@ -1,3 +1,5 @@
+import type * as React from 'react';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,14 +7,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/index.js';
-import { cn } from './lib/utils.js';
-import { staffTokens } from './lib/staffTokens.js';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 import StaffdeckIcon from './StaffdeckIcon.js';
 import { isGalleryEmployee } from './auth.js';
 import { employeeDisplayNameWithCreator, employeeProfile, resourceCount } from './employee.js';
 import type { AgentProfileRead } from './types/index.js';
 import EmployeeAvatar from './EmployeeAvatar.js';
+import { staffTokens } from './lib/staffTokens.js';
 
 // 菜单项/容器样式已集中到 DropdownMenuXxx wrapper（staffTokens.menuItem / menuContent），
 // 此处无需再传 className。
@@ -66,13 +69,14 @@ export default function EmployeeCard({
   ];
 
   return (
-    <div
+    <Box
+      component="div"
       role="button"
       tabIndex={0}
       onClick={() => {
         if (!busy) onOpen();
       }}
-      onKeyDown={(event) => {
+      onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
         if (!busy && (event.key === 'Enter' || event.key === ' ')) {
           event.preventDefault();
           onOpen();
@@ -80,66 +84,151 @@ export default function EmployeeCard({
       }}
       aria-pressed={selected}
       aria-busy={busy}
-      className={cn(
-        'group relative flex h-full flex-col cursor-pointer overflow-visible rounded-[20px] border border-[#F6F6F6] bg-white py-[12px] px-[10px] transition-shadow',
-        selected && 'shadow-[0_16px_30px_0_rgba(0,0,0,0.10)]',
-      )}
+      sx={[
+        {
+          position: 'relative',
+          display: 'flex',
+          height: '100%',
+          flexDirection: 'column',
+          cursor: 'pointer',
+          overflow: 'visible',
+          borderRadius: '20px',
+          border: '1px solid',
+          borderColor: '#F6F6F6',
+          bgcolor: '#fff',
+          py: '12px',
+          px: '10px',
+          transition: 'box-shadow 0.2s',
+        },
+        selected && { boxShadow: '0 16px 30px 0 rgba(0,0,0,0.10)' },
+      ] as SxProps<Theme>}
     >
       {/* Header band */}
-      <div className="flex rounded-[18px] h-[68px] box-border gap-[10px] bg-[#f6f6f6] p-[8px] mt-[34px]">
+      <Box
+        sx={{
+          display: 'flex',
+          borderRadius: '18px',
+          height: '68px',
+          boxSizing: 'border-box',
+          gap: '10px',
+          bgcolor: '#f6f6f6',
+          p: '8px',
+          mt: '34px',
+        }}
+      >
         {/* Avatar illustration */}
-        <div className="w-[80px] relative">
-          <div className="absolute inset-0 flex items-end justify-center">
-            <EmployeeAvatar
-              agent={employee}
-              width={80}
-              height={94}
-              fit="contain"
-              objectPosition="center bottom"
-              className="overflow-visible! rounded-none! border-0! bg-transparent! bg-none! shadow-none! after:hidden!"
-            />
-          </div>
-        </div>
+        <Box sx={{ width: '80px', position: 'relative' }}>
+          <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                overflow: 'visible',
+                borderRadius: 0,
+                border: 0,
+                bgcolor: 'transparent',
+                background: 'none',
+                boxShadow: 'none',
+                '&::after, & > *::after': { display: 'none' },
+              }}
+            >
+              <EmployeeAvatar
+                agent={employee}
+                width={80}
+                height={94}
+                fit="contain"
+                objectPosition="center bottom"
+              />
+            </Box>
+          </Box>
+        </Box>
 
         {/* Name / role / status */}
-        <div className="flex-1 flex flex-col gap-[2px]">
-          <strong className="truncate text-[12px] font-bold text-[#18181A]">
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <Box
+            component="strong"
+            sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: 700, color: '#18181A' }}
+          >
             {employee.is_overall ? displayName : <span data-i18n-ignore>{displayName}</span>}
-          </strong>
-          <span className="truncate text-[10px] text-[#757F9C]">
+          </Box>
+          <Box
+            component="span"
+            sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '10px', color: '#757F9C' }}
+          >
             {rawRoleName === '待补充岗位' ? rawRoleName : <span data-i18n-ignore>{rawRoleName}</span>}
-          </span>
-          <div className="leading-none">
-            <span className="inline-flex items-center gap-[2px] py-[2px] px-[4px] text-[8px] font-semibold text-[#757F9C] rounded-[90px] bg-white">
-              <i className={cn('size-[6px] shrink-0 rounded-full', online ? 'bg-[#22c55e]' : 'bg-[#9ca3af]')} aria-hidden="true" />
+          </Box>
+          <Box sx={{ lineHeight: 'none' }}>
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px',
+                py: '2px',
+                px: '4px',
+                fontSize: '8px',
+                fontWeight: 600,
+                color: '#757F9C',
+                borderRadius: '90px',
+                bgcolor: '#fff',
+              }}
+            >
+              <Box
+                component="i"
+                aria-hidden="true"
+                sx={[
+                  { width: '6px', height: '6px', flexShrink: 0, borderRadius: '50%' },
+                  online ? { bgcolor: '#22c55e' } : { bgcolor: '#9ca3af' },
+                ] as SxProps<Theme>}
+              />
               {online ? '在线' : '下线'}
-            </span>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Chat button */}
-        <button
+        <Box
+          component="button"
           type="button"
           aria-label="发起对话"
           disabled={!online || busy}
-          onClick={(event) => {
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             onChat();
           }}
-          className="grid size-[28px] shrink-0 self-center place-items-center rounded-[10px] bg-white text-[#757F9C] transition-colors hover:text-[#18181A] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-[#757F9C]"
+          sx={[
+            {
+              display: 'grid',
+              width: '28px',
+              height: '28px',
+              flexShrink: 0,
+              alignSelf: 'center',
+              placeItems: 'center',
+              borderRadius: '10px',
+              bgcolor: '#fff',
+              color: '#757F9C',
+              transition: 'color 0.2s',
+              '&:hover': { color: '#18181A' },
+            },
+            {
+              '&:disabled': {
+                cursor: 'not-allowed',
+                opacity: 0.5,
+                '&:hover': { color: '#757F9C' },
+              },
+            },
+          ] as SxProps<Theme>}
         >
           <StaffdeckIcon name="chat" size={16} />
-        </button>
-      </div>
+        </Box>
+      </Box>
 
       {/* Actions menu */}
       {showMenu && (
-        <div className="absolute right-[12px] top-[12px] z-20">
+        <Box sx={{ position: 'absolute', right: '12px', top: '12px', zIndex: 20 }}>
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="员工操作"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event: React.PointerEvent<HTMLButtonElement>) => event.stopPropagation()}
+              onClick={(event: React.MouseEvent<HTMLButtonElement>) => event.stopPropagation()}
               className="grid size-7 place-items-center rounded-[10px] text-[#757F9C] transition-colors outline-none hover:bg-black/5 focus-visible:bg-black/5"
             >
               <StaffdeckIcon name="more" size={16} />
@@ -147,11 +236,11 @@ export default function EmployeeCard({
             <DropdownMenuContent
               align="end"
               sx={staffTokens.menuContent}
-              onCloseAutoFocus={(event) => event.preventDefault()}
+              onCloseAutoFocus={(event: Event) => event.preventDefault()}
             >
               <DropdownMenuItem
                 disabled={!online || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onChat()}
               >
                 <StaffdeckIcon name="chat" size={16} />
@@ -160,7 +249,7 @@ export default function EmployeeCard({
               {online ? (
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onStatus('archived')}
                 >
                   <StaffdeckIcon name="pause" size={16} />
@@ -169,7 +258,7 @@ export default function EmployeeCard({
               ) : (
                 <DropdownMenuItem
                   disabled={!canManage || busy}
-                  onClick={(event) => event.stopPropagation()}
+                  onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                   onSelect={() => onStatus('active')}
                 >
                   <StaffdeckIcon name="play" size={16} />
@@ -178,7 +267,7 @@ export default function EmployeeCard({
               )}
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onGallery(!galleryPublished)}
               >
                 <StaffdeckIcon name="globe" size={16} />
@@ -186,7 +275,7 @@ export default function EmployeeCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onEdit()}
               >
                 <StaffdeckIcon name="edit" size={16} />
@@ -194,17 +283,17 @@ export default function EmployeeCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onAvatar()}
               >
                 <StaffdeckIcon name="image" size={16} />
                 设置头像
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
+              <DropdownMenuSeparator sx={{ my: '2px', borderColor: '#eef0f4' }} />
               <DropdownMenuItem
                 variant="destructive"
                 disabled={!canManage || busy}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
                 onSelect={() => onDelete()}
               >
                 <StaffdeckIcon name="trash" size={16} />
@@ -212,41 +301,88 @@ export default function EmployeeCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </Box>
       )}
 
       {/* Description */}
-      <p className="line-clamp-2 mt-[8px] h-[36px] shrink-0 text-[12px] leading-[18px] text-[#757F9C]">
+      <Box
+        component="p"
+        sx={[
+          {
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 2,
+            overflow: 'hidden',
+            mt: '8px',
+            height: '36px',
+            flexShrink: 0,
+            fontSize: '12px',
+            lineHeight: '18px',
+            color: '#757F9C',
+          },
+        ] as SxProps<Theme>}
+      >
         {employee.description ? <span data-i18n-ignore>{displayDescription}</span> : displayDescription}
-      </p>
+      </Box>
 
       {/* Work style tags */}
-      <div className="flex flex-wrap my-[8px] items-center gap-[10px]">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', my: '8px', alignItems: 'center', gap: '10px' }}>
         {profile.workStyles.slice(0, 3).map((item) => (
-          <span
+          <Box
+            component="span"
             key={item}
-            className="rounded-[20px] px-[8px] py-px text-[10px] leading-[13px] text-[#757f9c] border border-[#E3E7F1]"
+            sx={{
+              borderRadius: '20px',
+              px: '8px',
+              py: '1px',
+              fontSize: '10px',
+              lineHeight: '13px',
+              color: '#757f9c',
+              border: '1px solid',
+              borderColor: '#E3E7F1',
+            }}
           >
             <span data-i18n-ignore>{item}</span>
-          </span>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Stats — pinned to the bottom of the card */}
-      <div className="mt-auto grid grid-cols-3 rounded-[14px] border border-[#E3E7F1] box-border">
+      <Box
+        sx={{
+          mt: 'auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
+          borderRadius: '14px',
+          border: '1px solid',
+          borderColor: '#E3E7F1',
+          boxSizing: 'border-box',
+        }}
+      >
         {stats.map((stat, index) => (
-          <div
+          <Box
             key={stat.label}
-            className={cn(
-              'flex flex-col justify-center gap-[4px] px-[20px] py-[6px]',
-              index < stats.length - 1 && 'border-r border-[#eef1f5]',
-            )}
+            sx={[
+              {
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '4px',
+                px: '20px',
+                py: '6px',
+              },
+              index < stats.length - 1 && { borderRight: '1px solid', borderColor: '#eef1f5' },
+            ] as SxProps<Theme>}
           >
-            <strong className="text-[18px] leading-[24px] font-bold text-[#18181A]">{stat.value}</strong>
-            <em className="text-[10px] not-italic text-[#464C5E]">{stat.label}</em>
-          </div>
+            <Box component="strong" sx={{ fontSize: '18px', lineHeight: '24px', fontWeight: 700, color: '#18181A' }}>
+              {stat.value}
+            </Box>
+            <Box component="em" sx={{ fontSize: '10px', fontStyle: 'normal', color: '#464C5E' }}>
+              {stat.label}
+            </Box>
+          </Box>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

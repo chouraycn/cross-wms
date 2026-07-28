@@ -55,7 +55,7 @@ export default function EmptyEmployeeState({
             boxShadow: '0 12px 30px rgba(37,32,24,0.08)',
           }}
         >
-          <StaffdeckIcon name="user" size={40} className="text-[#858b9c]" />
+          <StaffdeckIcon name="user" size={40} style={{ color: '#858b9c' }} />
           <Box
             sx={{
               position: 'absolute',
@@ -72,7 +72,7 @@ export default function EmptyEmployeeState({
               boxShadow: '0 6px 16px rgba(0,0,0,0.22)',
             }}
           >
-            <StaffdeckIcon name="plus" size={18} className="text-white" />
+            <StaffdeckIcon name="plus" size={18} style={{ color: '#fff' }} />
           </Box>
         </Box>
 
@@ -111,7 +111,7 @@ export default function EmptyEmployeeState({
               '&:hover': { bgcolor: '#3a3940' },
             }}
           >
-            <StaffdeckIcon name="plus" size={16} className="text-white" />
+            <StaffdeckIcon name="plus" size={16} style={{ color: '#fff' }} />
             新建数字员工
           </Button>
           <Button

@@ -217,9 +217,28 @@ hdiutil create \
   "$DMG_RW_PATH"
 
 # v1.7.15: 使用自定义挂载点在 /tmp 下，避免 /Volumes 不在 Sandbox allowlist 中的问题
+# v1.7.162: 增加 hdiutil attach 失败时的沙箱回退（一步创建只读 DMG，无 Finder 样式）
 DMG_MOUNT_POINT="/tmp/openclaw-dmg-mount-$$"
 mkdir -p "$DMG_MOUNT_POINT"
-hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT"
+
+if ! hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT" 2>/dev/null; then
+  echo "WARN: hdiutil attach 被沙箱阻止（/dev/rdisk* 不可访问），回退到一步创建 DMG（无 Finder 样式）" >&2
+  # 清理 RW 镜像和挂载点
+  rm -f "$DMG_RW_PATH"
+  rmdir "$DMG_MOUNT_POINT" 2>/dev/null
+  # 一步创建压缩只读 DMG（不挂载，不访问 /dev/rdisk*）
+  hdiutil create \
+    -volname "$DMG_VOLUME_NAME" \
+    -srcfolder "$DMG_SOURCE" \
+    -ov \
+    -format ULMO \
+    "$OUT_PATH"
+  hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（沙箱回退模式，无 Finder 样式）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+  # 清理临时目录
+  rm -rf "$DMG_SOURCE"
+  exit 0
+fi
+
 MOUNT_POINT="$DMG_MOUNT_POINT"
 MOUNTED=1
 

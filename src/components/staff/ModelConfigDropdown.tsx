@@ -2,11 +2,33 @@ import { CheckOutlined } from './icons.js';
 import type { ModelConfigRead } from './types/index.js';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/index.js';
 import { Button as UIButton } from './ui/button.js';
-import { cn } from './lib/utils.js';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import StaffdeckIcon from './StaffdeckIcon.js';
 
-const DEFAULT_MODEL_BUTTON_CLASS =
-  'h-8 max-w-[220px] gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-4 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6]! hover:bg-white! hover:text-[#18181a]! aria-expanded:border-[#cbd3e6]! aria-expanded:bg-white! aria-expanded:text-[#18181a]!';
+const DEFAULT_MODEL_BUTTON_SX: SxProps<Theme> = {
+  height: '32px',
+  maxWidth: '220px',
+  gap: '4px',
+  borderRadius: '10px',
+  border: '0.5px solid',
+  borderColor: '#e3e7f1',
+  bgcolor: '#fff',
+  px: '16px',
+  fontSize: '12px',
+  fontWeight: 400,
+  color: '#757f9c',
+  '&:hover': {
+    borderColor: '#cbd3e6 !important',
+    bgcolor: '#fff !important',
+    color: '#18181a !important',
+  },
+  '&[aria-expanded="true"]': {
+    borderColor: '#cbd3e6 !important',
+    bgcolor: '#fff !important',
+    color: '#18181a !important',
+  },
+};
 
 export type ModelConfigDropdownProps = {
   models: ModelConfigRead[];
@@ -36,11 +58,17 @@ export function ModelConfigDropdown({
         <UIButton
           variant="outline"
           disabled={disabled || models.length === 0}
-          className={cn(DEFAULT_MODEL_BUTTON_CLASS, buttonClassName)}
+          sx={DEFAULT_MODEL_BUTTON_SX}
+          className={buttonClassName}
           title={label}
         >
-          <span className="min-w-0 truncate">{label}</span>
-          <StaffdeckIcon name="arrow" size={12} className="shrink-0" style={{ transform: 'rotate(90deg)' }} />
+          <Box
+            component="span"
+            sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {label}
+          </Box>
+          <StaffdeckIcon name="arrow" size={12} style={{ transform: 'rotate(90deg)', flexShrink: 0 }} />
         </UIButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align}>
@@ -54,13 +82,28 @@ export function ModelConfigDropdown({
               key={model.id}
               onSelect={() => onChange(model.id)}
             >
-              <span className="flex min-w-0 flex-1 flex-col">
-                <strong className="truncate text-[13px] text-foreground">{model.name || model.model}</strong>
-                <em className="truncate text-[11px] not-italic text-[#858b9c]">
+              <Box component="span" sx={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column' }}>
+                <Box
+                  component="strong"
+                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px', color: 'var(--foreground)' }}
+                >
+                  {model.name || model.model}
+                </Box>
+                <Box
+                  component="em"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '11px',
+                    fontStyle: 'normal',
+                    color: '#858b9c',
+                  }}
+                >
                   {model.is_default ? `${model.model} · 默认` : model.model}
-                </em>
-              </span>
-              {value === model.id && <CheckOutlined className="size-4" />}
+                </Box>
+              </Box>
+              {value === model.id && <CheckOutlined size={16} />}
             </DropdownMenuItem>
           ))
         )}

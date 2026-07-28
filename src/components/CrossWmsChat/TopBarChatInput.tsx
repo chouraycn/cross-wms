@@ -431,6 +431,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
   const [showAISettings, setShowAISettings] = useState(false);
 
+  // v1.7.162: 跟踪用户是否主动选择了 Auto，防止 useEffect 覆盖
+  const userSelectedAutoRef = useRef(false);
+
   // 附件状态
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -442,6 +445,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     if (modelsLoading) return;
     if (!defaultModelId || defaultModelId === 'auto') return;
     if (selectedModelId !== 'auto') return; // 用户已主动选择其他模型，不覆盖
+    if (userSelectedAutoRef.current) return; // 用户主动选择了 Auto，不覆盖
     const found = modelList.find(m => m.id === defaultModelId);
     if (found && selectedModel === 'Auto') {
       setSelectedModel(found.name);
@@ -453,9 +457,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const handleModelChange = useCallback((name: string) => {
     setSelectedModel(name);
     if (name === 'Auto') {
+      userSelectedAutoRef.current = true;
       setSelectedModelId('auto');
       updateSessionModel('auto');
     } else {
+      userSelectedAutoRef.current = false;
       const found = enabledModels.find((m) => m.name === name);
       const modelId = found?.id || name;
       setSelectedModelId(modelId);

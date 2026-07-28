@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { Box } from '@mui/material';
+import type { SxProps } from '@mui/material/styles';
 import {
   Briefcase,
   Calendar,
@@ -45,30 +47,110 @@ export type WorkRecordTabProps = {
 
 type MetricTone = 'default' | 'positive' | 'negative';
 
-const metricToneClass: Record<MetricTone, string> = {
-  default: 'border-[0.5px] border-[#e3e7f1] bg-transparent hover:bg-[#f7f8fa]',
-  positive: 'bg-[#e9f7ef] hover:bg-[#dcf1e5]',
-  negative: 'bg-[#fce7e7] hover:bg-[#f9dada]',
+const metricToneSx: Record<MetricTone, SxProps> = {
+  default: { border: '0.5px solid', borderColor: '#e3e7f1', bgcolor: 'transparent', '&:hover': { bgcolor: '#f7f8fa' } },
+  positive: { bgcolor: '#e9f7ef', '&:hover': { bgcolor: '#dcf1e5' } },
+  negative: { bgcolor: '#fce7e7', '&:hover': { bgcolor: '#f9dada' } },
 };
 
-const metricValueToneClass: Record<MetricTone, string> = {
-  default: 'text-[#18181a]',
-  positive: 'text-[#2cb360]',
-  negative: 'text-[#d20b0b]',
+const metricValueToneSx: Record<MetricTone, SxProps> = {
+  default: { color: '#18181a' },
+  positive: { color: '#2cb360' },
+  negative: { color: '#d20b0b' },
 };
 
-const capabilityCardClass =
-  'group relative flex h-[230px] w-full min-w-0 appearance-none flex-col items-stretch gap-[6px] overflow-hidden rounded-[20px] border px-[24px] py-[20px] text-left transition-[transform,box-shadow] duration-[180ms] ease-[ease] hover:-translate-y-[2px]';
-const capabilityLightCardClass =
-  'border-[#f6f6f6] bg-white shadow-[0_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_26px_rgba(0,0,0,0.08)]';
-const capabilityDarkCardClass =
-  'border-[#29282d] bg-[#29282d] text-white shadow-none hover:shadow-[0_12px_26px_rgba(0,0,0,0.28)]';
-const capabilityGlyphClass = 'size-[14px] shrink-0 text-[#858b9c] group-data-[tone=dark]:text-white';
-const capabilityNameClass = 'min-w-0 truncate text-[14px] font-normal text-[#858b9c] group-data-[tone=dark]:text-white';
-const capabilityBarClass = 'block h-[4px] w-full overflow-hidden rounded-[90px] bg-[#e9e9e9] group-data-[tone=dark]:bg-[#6a6a6a]';
-const capabilityBarFillClass = 'block h-full w-[20px] rounded-[90px] bg-[#282931] group-data-[tone=dark]:bg-[#e9e9e9]';
-const capabilityDescClass =
-  'line-clamp-5 min-w-0 overflow-hidden text-[10px] leading-[16px] font-normal text-[#757f9c] [overflow-wrap:anywhere] group-data-[tone=dark]:line-clamp-2 group-data-[tone=dark]:text-[#f6f6f6]';
+const capabilityBaseSx = {
+  position: 'relative',
+  display: 'flex',
+  height: '230px',
+  width: '100%',
+  minWidth: 0,
+  appearance: 'none',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  gap: '6px',
+  overflow: 'hidden',
+  borderRadius: '20px',
+  border: '1px solid',
+  px: '24px',
+  py: '20px',
+  textAlign: 'left',
+  cursor: 'pointer',
+  transition: 'transform 180ms ease, box-shadow 180ms ease',
+};
+
+const capabilityLightCardSx: SxProps = {
+  ...capabilityBaseSx,
+  borderColor: '#f6f6f6',
+  bgcolor: 'background.paper',
+  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 26px rgba(0,0,0,0.08)' },
+};
+
+const capabilityDarkCardSx: SxProps = {
+  ...capabilityBaseSx,
+  borderColor: '#29282d',
+  bgcolor: '#29282d',
+  color: '#fff',
+  boxShadow: 'none',
+  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 26px rgba(0,0,0,0.28)' },
+};
+
+const capabilityGlyphSx: SxProps = {
+  flexShrink: 0,
+  color: '#858b9c',
+  '[data-tone="dark"] &': { color: '#fff' },
+};
+
+const capabilityNameSx: SxProps = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  fontSize: '14px',
+  fontWeight: 400,
+  color: '#858b9c',
+  '[data-tone="dark"] &': { color: '#fff' },
+};
+
+const capabilityBarSx: SxProps = {
+  display: 'block',
+  height: '4px',
+  width: '100%',
+  overflow: 'hidden',
+  borderRadius: '90px',
+  bgcolor: '#e9e9e9',
+  '[data-tone="dark"] &': { bgcolor: '#6a6a6a' },
+};
+
+const capabilityBarFillSx: SxProps = {
+  display: 'block',
+  height: '100%',
+  width: '20px',
+  borderRadius: '90px',
+  bgcolor: '#282931',
+  '[data-tone="dark"] &': { bgcolor: '#e9e9e9' },
+};
+
+const capabilityDescSx: SxProps = {
+  display: '-webkit-box',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 5,
+  overflow: 'hidden',
+  minWidth: 0,
+  fontSize: '10px',
+  lineHeight: '16px',
+  fontWeight: 400,
+  color: '#757f9c',
+  overflowWrap: 'anywhere',
+  '[data-tone="dark"] &': {
+    WebkitLineClamp: 2,
+    color: '#f6f6f6',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+};
 
 export default function WorkRecordTab({
   selectedAgent,
@@ -92,7 +174,7 @@ export default function WorkRecordTab({
       title: '知识库',
       count: activeKnowledge.length,
       body: activeKnowledge.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无知识库',
-      icon: <Folder className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><Folder size={14} /></Box>,
       dark: false,
     },
     {
@@ -100,7 +182,7 @@ export default function WorkRecordTab({
       title: '技能',
       count: activeGeneralSkills.length,
       body: activeGeneralSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无启用技能',
-      icon: <Wand2 className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><Wand2 size={14} /></Box>,
       dark: false,
     },
     {
@@ -108,7 +190,7 @@ export default function WorkRecordTab({
       title: 'SOP',
       count: activeSkills.length,
       body: activeSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无启用 SOP',
-      icon: <ClipboardList className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><ClipboardList size={14} /></Box>,
       dark: false,
     },
     {
@@ -116,7 +198,7 @@ export default function WorkRecordTab({
       title: '工具',
       count: activeTools.length,
       body: activeTools.slice(0, 3).map((item) => staffdeckDisplayText(item.display_name || item.name)).join(' / ') || '暂无启用工具',
-      icon: <Briefcase className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><Briefcase size={14} /></Box>,
       dark: true,
     },
     {
@@ -124,7 +206,7 @@ export default function WorkRecordTab({
       title: '定时任务',
       count: activeScheduledTasks.length,
       body: activeScheduledTasks.slice(0, 2).map((item) => staffdeckDisplayText(item.title)).join(' / ') || '暂无启用定时任务',
-      icon: <Calendar className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><Calendar size={14} /></Box>,
       dark: true,
     },
     {
@@ -132,53 +214,82 @@ export default function WorkRecordTab({
       title: '对话日志',
       count: replyStats.total,
       body: staffdeckDisplayText(employeeSessions[0]?.summary || employeeSessions[0]?.last_agent_question || '暂无对话任务'),
-      icon: <MessageSquare className={capabilityGlyphClass} />,
+      icon: <Box sx={capabilityGlyphSx}><MessageSquare size={14} /></Box>,
       dark: true,
     },
   ];
 
   return (
-    <section className="relative flex w-full min-w-0 max-w-full mt-[-2px] flex-col gap-[24px] overflow-hidden rounded-[18px] shadow-[0_20px_42px_rgba(21,26,38,0.045)] bg-white p-[14px] *:min-w-0 min-[521px]:p-[18px]">
-      <div className="flex w-full items-stretch gap-[16px]">
+    <Box
+      component="section"
+      sx={{
+        position: 'relative',
+        display: 'flex',
+        width: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        mt: '-2px',
+        flexDirection: 'column',
+        gap: '24px',
+        overflow: 'hidden',
+        borderRadius: '18px',
+        boxShadow: '0 20px 42px rgba(21,26,38,0.045)',
+        bgcolor: 'background.paper',
+        p: '14px',
+        '& > *': { minWidth: 0 },
+        '@media (min-width:521px)': { p: '18px' },
+      }}
+    >
+      <Box sx={{ display: 'flex', width: '100%', alignItems: 'stretch', gap: '16px' }}>
         <ClickableMetric label="今日对话" value={replyStats.today} onClick={goToLogs} />
         <ClickableMetric label="累计对话" value={replyStats.total} onClick={goToLogs} />
         <ClickableMetric label="好评率" value={positiveRate} suffix="%" tone="positive" onClick={goToLogs} />
         <ClickableMetric label="差评率" value={negativeRate} suffix="%" tone="negative" onClick={goToLogs} />
-      </div>
+      </Box>
 
       {/* 活动时间线：按日期分组的竖向时间轴（Day/Week/Month 切换与 HoverCard 为后续增强） */}
       <ActivityTimeline events={activityEvents} />
 
-      <div className="w-full min-w-0 max-w-full overflow-x-auto">
-        <div className="grid grid-flow-col auto-cols-[minmax(160px,1fr)] gap-[clamp(18px,2.22vw,32px)]">
+      <Box sx={{ width: '100%', minWidth: 0, maxWidth: '100%', overflowX: 'auto' }}>
+        <Box sx={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(160px,1fr)', gap: 'clamp(18px,2.22vw,32px)' }}>
           {capabilityCards.map((item) => (
-            <button
+            <Box
+              component="button"
               type="button"
               key={item.title}
-              className={`${capabilityCardClass} ${item.dark ? capabilityDarkCardClass : capabilityLightCardClass}`}
               data-tone={item.dark ? 'dark' : 'light'}
               onClick={() => navigate(item.route)}
+              sx={item.dark ? capabilityDarkCardSx : capabilityLightCardSx}
             >
-              <span className="flex flex-col gap-[12px]">
-                <span className="flex min-w-0 items-center gap-[6px] pr-[24px]">
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '6px', pr: '24px' }}>
                   {item.icon}
-                  <span className={capabilityNameClass}>{item.title}</span>
-                </span>
-                <span className="flex flex-col gap-[6px]">
-                  <strong className="text-[24px] leading-none font-semibold text-[#18181a] group-data-[tone=dark]:text-white">
+                  <Box component="span" sx={capabilityNameSx}>{item.title}</Box>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <Box
+                    component="strong"
+                    sx={{
+                      fontSize: '24px',
+                      lineHeight: 'none',
+                      fontWeight: 600,
+                      color: '#18181a',
+                      '[data-tone="dark"] &': { color: '#fff' },
+                    }}
+                  >
                     {item.count}
-                  </strong>
-                  <span className={capabilityBarClass}>
-                    <span className={capabilityBarFillClass} />
-                  </span>
-                </span>
-              </span>
-              <span className={capabilityDescClass}>{item.body}</span>
-            </button>
+                  </Box>
+                  <Box component="span" sx={capabilityBarSx}>
+                    <Box component="span" sx={capabilityBarFillSx} />
+                  </Box>
+                </Box>
+              </Box>
+              <Box component="span" sx={capabilityDescSx}>{item.body}</Box>
+            </Box>
           ))}
-        </div>
-      </div>
-    </section>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -207,53 +318,58 @@ function groupByDate(events: AgentWorkRecordEventRead[]): Array<[string, AgentWo
   return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 }
 
+const kindIconSx: SxProps = {
+  flexShrink: 0,
+  display: 'inline-flex',
+  color: '#858b9c',
+};
+
 function KindIcon({ kind }: { kind: AgentWorkRecordEventRead['kind'] }) {
-  const cls = 'size-[14px] shrink-0 text-[#858b9c]';
   switch (kind) {
     case 'chat':
-      return <MessageSquare className={cls} />;
+      return <Box sx={kindIconSx}><MessageSquare size={14} /></Box>;
     case 'task':
-      return <Calendar className={cls} />;
+      return <Box sx={kindIconSx}><Calendar size={14} /></Box>;
     case 'sop':
-      return <ClipboardList className={cls} />;
+      return <Box sx={kindIconSx}><ClipboardList size={14} /></Box>;
     case 'tool':
-      return <Wrench className={cls} />;
+      return <Box sx={kindIconSx}><Wrench size={14} /></Box>;
     case 'knowledge':
-      return <BookOpen className={cls} />;
+      return <Box sx={kindIconSx}><BookOpen size={14} /></Box>;
     case 'skill':
-      return <Wand2 className={cls} />;
+      return <Box sx={kindIconSx}><Wand2 size={14} /></Box>;
     default:
-      return <Clock className={cls} />;
+      return <Box sx={kindIconSx}><Clock size={14} /></Box>;
   }
 }
 
 function ActivityTimeline({ events }: { events: AgentWorkRecordEventRead[] }) {
   if (!events.length) {
-    return <div className="text-[12px] text-[#9aa0ad]">暂无活动时间线</div>;
+    return <Box component="div" sx={{ fontSize: '12px', color: '#9aa0ad' }}>暂无活动时间线</Box>;
   }
   const groups = groupByDate(events);
   return (
-    <div className="flex w-full flex-col gap-[14px]">
-      <div className="text-[13px] font-medium text-[#18181a]">活动时间线</div>
+    <Box component="div" sx={{ display: 'flex', width: '100%', flexDirection: 'column', gap: '14px' }}>
+      <Box component="div" sx={{ fontSize: '13px', fontWeight: 500, color: '#18181a' }}>活动时间线</Box>
       {groups.map(([date, evs]) => (
-        <div key={date} className="flex flex-col gap-[8px]">
-          <div className="text-[12px] text-[#9aa0ad]">{date}</div>
-          <ol className="relative flex flex-col gap-[10px] pl-[18px]">
-            <span className="absolute bottom-[4px] left-[5px] top-[4px] w-[1.5px] bg-[#e3e7f1]" />
+        <Box key={date} component="div" sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Box component="div" sx={{ fontSize: '12px', color: '#9aa0ad' }}>{date}</Box>
+          <Box component="ol" sx={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', pl: '18px' }}>
+            <Box component="span" sx={{ position: 'absolute', bottom: '4px', left: '5px', top: '4px', width: '1.5px', bgcolor: '#e3e7f1' }} />
             {evs.map((e) => (
-              <li key={e.id} className="relative">
-                <span className="absolute -left-[18px] top-[4px] size-[9px] rounded-full bg-[#4f7cff] ring-2 ring-white" />
-                <div className="flex items-center gap-[8px]">
+              <Box key={e.id} component="li" sx={{ position: 'relative' }}>
+                <Box component="span" sx={{ position: 'absolute', left: '-18px', top: '4px', width: '9px', height: '9px', borderRadius: '50%', bgcolor: '#4f7cff', boxShadow: '0 0 0 2px #fff' }} />
+                <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <KindIcon kind={e.kind} />
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-[#18181a]">{e.label}</span>
-                  <span className="shrink-0 text-[11px] text-[#9aa0ad]">{formatTime(e.timestamp)}</span>
-                </div>
-              </li>
+                  <Box component="span" sx={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px', color: '#18181a' }}>{e.label}</Box>
+                  <Box component="span" sx={{ flexShrink: 0, fontSize: '11px', color: '#9aa0ad' }}>{formatTime(e.timestamp)}</Box>
+                </Box>
+              </Box>
             ))}
-          </ol>
-        </div>
+          </Box>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -271,16 +387,39 @@ function ClickableMetric({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Box
+      component="button"
       type="button"
       onClick={onClick}
-      className={`flex min-w-px flex-[1_0_0] cursor-pointer flex-col justify-center gap-[4px] rounded-[20px] px-[32px] py-[16px] text-left transition-colors ${metricToneClass[tone]}`}
+      sx={{
+        display: 'flex',
+        minWidth: '1px',
+        flex: '1 0 0',
+        cursor: 'pointer',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: '4px',
+        borderRadius: '20px',
+        px: '32px',
+        py: '16px',
+        textAlign: 'left',
+        transition: 'background-color 180ms ease',
+        ...metricToneSx[tone],
+      }}
     >
-      <strong className={`text-[18px] font-medium leading-none ${metricValueToneClass[tone]}`}>
+      <Box
+        component="strong"
+        sx={{
+          fontSize: '18px',
+          fontWeight: 500,
+          lineHeight: 'none',
+          ...metricValueToneSx[tone],
+        }}
+      >
         {value}
         {suffix}
-      </strong>
-      <span className="text-[12px] leading-none text-[#757f9c]">{label}</span>
-    </button>
+      </Box>
+      <Box component="span" sx={{ fontSize: '12px', lineHeight: 'none', color: '#757f9c' }}>{label}</Box>
+    </Box>
   );
 }

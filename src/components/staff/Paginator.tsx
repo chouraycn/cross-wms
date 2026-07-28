@@ -1,6 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
-import { cn } from './lib/utils.js';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { Pagination, PaginationContent, PaginationItem } from './ui/index.js';
 
 export type PaginatorProps = {
@@ -17,10 +18,28 @@ export type PaginatorProps = {
   'aria-label'?: string;
 };
 
-const PILL_CLASS =
-  'flex h-[20px] min-w-[20px] items-center justify-center rounded-[6px] px-[12px] text-[10px] leading-none transition-colors';
-const ARROW_CLASS =
-  'flex size-[14px] shrink-0 items-center justify-center text-[#464c5e] transition-opacity disabled:cursor-not-allowed disabled:opacity-30';
+const ARROW_SX: SxProps<Theme> = {
+  display: 'flex',
+  width: '14px',
+  height: '14px',
+  flexShrink: 0,
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#464c5c',
+  transition: 'opacity 0.2s',
+  '&:disabled': { cursor: 'not-allowed', opacity: 0.3 },
+};
+
+const ELLIPSIS_SX: SxProps<Theme> = {
+  display: 'flex',
+  height: '20px',
+  alignItems: 'center',
+  justifyContent: 'center',
+  px: '4px',
+  fontSize: '10px',
+  lineHeight: 'none',
+  color: '#999',
+};
 
 function getPaginationRange(
   current: number,
@@ -62,60 +81,73 @@ export function Paginator({
     if (next !== page) onChange(next);
   };
   return (
-    <Pagination aria-label={ariaLabel} className={cn('mt-[16px]', className)}>
-      <PaginationContent className="gap-[16px]">
-        <PaginationItem>
-          <button
-            type="button"
-            className={ARROW_CLASS}
-            disabled={page <= 1}
-            onClick={() => goTo(page - 1)}
-            aria-label="上一页"
-          >
-            <ChevronLeftIcon className="size-[14px]" />
-          </button>
-        </PaginationItem>
-        {range.map((item, index) =>
-          item === 'ellipsis' ? (
-            <PaginationItem key={`ellipsis-${index}`}>
-              <span
-                aria-hidden="true"
-                className="flex h-[20px] items-center justify-center px-[4px] text-[10px] leading-none text-[#999]"
-              >
-                ···
-              </span>
-            </PaginationItem>
-          ) : (
-            <PaginationItem key={item}>
-              <button
-                type="button"
-                aria-current={item === page ? 'page' : undefined}
-                onClick={() => goTo(item)}
-                className={cn(
-                  PILL_CLASS,
-                  item === page
-                    ? 'bg-[#f6f6f6] text-[#464c5e]'
-                    : 'text-[#999] hover:bg-[#f2f3f7] hover:text-[#464c5e]',
-                )}
-              >
-                {label(item)}
-              </button>
-            </PaginationItem>
-          ),
-        )}
-        <PaginationItem>
-          <button
-            type="button"
-            className={ARROW_CLASS}
-            disabled={page >= pageCount}
-            onClick={() => goTo(page + 1)}
-            aria-label="下一页"
-          >
-            <ChevronRightIcon className="size-[14px]" />
-          </button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+    <Box sx={{ mt: '16px' }} className={className}>
+      <Pagination aria-label={ariaLabel}>
+        <PaginationContent sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+          <PaginationItem>
+            <Box
+              component="button"
+              type="button"
+              sx={ARROW_SX}
+              disabled={page <= 1}
+              onClick={() => goTo(page - 1)}
+              aria-label="上一页"
+            >
+              <ChevronLeftIcon size={14} />
+            </Box>
+          </PaginationItem>
+          {range.map((item, index) =>
+            item === 'ellipsis' ? (
+              <PaginationItem key={`ellipsis-${index}`}>
+                <Box component="span" aria-hidden="true" sx={ELLIPSIS_SX}>
+                  ···
+                </Box>
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={item}>
+                <Box
+                  component="button"
+                  type="button"
+                  aria-current={item === page ? 'page' : undefined}
+                  onClick={() => goTo(item)}
+                  sx={[
+                    {
+                      display: 'flex',
+                      height: '20px',
+                      minWidth: '20px',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '6px',
+                      px: '12px',
+                      fontSize: '10px',
+                      lineHeight: 'none',
+                      transition: 'background-color 0.2s',
+                    },
+                    item === page
+                      ? { bgcolor: '#f6f6f6', color: '#464c5e' }
+                      : { color: '#999', '&:hover': { bgcolor: '#f2f3f7', color: '#464c5e' } },
+                  ] as SxProps<Theme>}
+                >
+                  {label(item)}
+                </Box>
+              </PaginationItem>
+            ),
+          )}
+          <PaginationItem>
+            <Box
+              component="button"
+              type="button"
+              sx={ARROW_SX}
+              disabled={page >= pageCount}
+              onClick={() => goTo(page + 1)}
+              aria-label="下一页"
+            >
+              <ChevronRightIcon size={14} />
+            </Box>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </Box>
   );
 }
 

@@ -1,6 +1,7 @@
-// 开放广场平台页面：从 StaffDeck 移植，展示数字员工 / 知识库 / 技能 / SOP / 工具五种广场，
-// 支持详情抽屉、复制到当前员工、从广场移除等流程。
+//
+//
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Box } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -432,211 +433,212 @@ export default function OpenPlatformPage({
     ? detailDrawerItems.findIndex((entry) => entry.id === detailItem.item.id)
     : -1;
 
-  // ---- Detail view (selected kind): list all items of one kind --------------
+  //
   if (selectedKind) {
     const config = PLATFORM_BY_KIND.get(selectedKind) || PLATFORM_CONFIGS[0];
     const PlatformIcon = config.icon;
     const items = platformItems[selectedKind];
     return (
-      <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
+      <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
         <AppHeader
           title={config.title}
           description={config.subtitle}
           onLogout={onLogout}
           userName={currentUser?.display_name || currentUser?.username}
           right={
-            <div className="flex items-center gap-[8px]">
+            <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
               <OutlineActionButton
                 type="button"
                 onClick={() => void loadPlatformData()}
                 disabled={loading}
               >
-                <RefreshCw className="size-[14px]" />
+                <RefreshCw  size={14} />
                 刷新
               </OutlineActionButton>
               <OutlineActionButton
                 type="button"
                 onClick={() => navigate('/enterprise/platform')}
               >
-                <ArrowLeft className="size-[14px]" />
+                <ArrowLeft  size={14} />
                 返回广场
               </OutlineActionButton>
-            </div>
+            </Box>
           }
-        />
-        <div className="flex items-center gap-[8px] text-[12px] text-[#858b9c]">
-          <PlatformIcon className="size-[14px]" />
+         />
+        <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px',"fontSize":'12px',"color":"#858b9c"}}>
+          <PlatformIcon  size={14} />
           <span>
             共 {items.length} {platformCountLabel(selectedKind)}
           </span>
           {config.signals.map((signal) => (
-            <span
+            <Box component="span"
               key={signal}
-              className="rounded-full border border-[#e3e7f1] bg-white px-[8px] py-[2px] text-[11px] text-[#464c5e]"
-            >
+             
+             sx={{"borderRadius":'50%',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"px":'8px',"py":'2px',"fontSize":'11px',"color":"#464c5e"}}>
               {signal}
-            </span>
+            </Box>
           ))}
-        </div>
+        </Box>
         {loading ? (
-          <div className="rounded-[12px] border border-[#eceef1] bg-white p-[24px] text-center text-[13px] text-[#858b9c]">
+          <Box component="div" sx={{"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'24px',"textAlign":"center","fontSize":'13px',"color":"#858b9c"}}>
             加载中…
-          </div>
+          </Box>
         ) : items.length === 0 ? (
-          <div className="rounded-[12px] border border-dashed border-[#e3e7f1] bg-[#fbfcfd] p-[32px] text-center text-[13px] text-[#858b9c]">
+          <Box component="div" sx={{"borderRadius":'12px',"border":"1px solid","borderStyle":"dashed","borderColor":'divider',"bgcolor":"#fbfcfd","p":'32px',"textAlign":"center","fontSize":'13px',"color":"#858b9c"}}>
             暂无{config.metricLabel}内容
-          </div>
+          </Box>
         ) : (
-          <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(1, minmax(0,1fr))","gap":'12px',"sm":{"gridTemplateColumns":"repeat(2, minmax(0,1fr))"},"lg":{"gridTemplateColumns":"repeat(3, minmax(0,1fr))"},"xl":{"gridTemplateColumns":"repeat(4, minmax(0,1fr))"}}}>
             {items.map((item) => (
-              <button
+              <Box component="button"
                 key={item.id}
                 type="button"
                 onClick={() => setDetailItem({ kind: selectedKind, item })}
-                className="flex min-h-[140px] w-full flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-white p-[16px] text-left transition-colors hover:border-[#cbd3e6] hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)]"
-              >
+               
+               sx={{"display":"flex","minHeight":'140px',"width":'100%',"flexDirection":"column","gap":'8px',"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'16px',"textAlign":"left","transition":"background-color 0.2s","&:hover":{"borderColor":"#cbd3e6","boxShadow":"0 4px 16px rgba(0,0,0,0.04)"}}}>
                 {selectedKind === 'agents' && item.agent ? (
-                  <div className="flex items-center gap-[10px]">
-                    <EmployeeAvatar agent={item.agent} size={40} radius={8} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium text-[#18181a]">{item.title}</p>
-                      <p className="truncate text-[12px] text-[#858b9c]">{item.meta}</p>
-                    </div>
-                  </div>
+                  <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'10px'}}>
+                    <EmployeeAvatar agent={item.agent} size={40} radius={8}  />
+                    <Box component="div" sx={{"minWidth":0,"flex":1}}>
+                      <Box component="p" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>{item.title}</Box>
+                      <Box component="p" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{item.meta}</Box>
+                    </Box>
+                  </Box>
                 ) : (
-                  <div className="flex items-center gap-[8px]">
-                    <span className="grid size-[36px] place-items-center rounded-[8px] bg-[#f3f4f6] text-[#464c5e]">
-                      <PlatformIcon className="size-[16px]" />
-                    </span>
-                    <p className="min-w-0 flex-1 truncate text-[14px] font-medium text-[#18181a]">
+                  <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+                    <Box component="span" sx={{"display":"grid","width":'36px',"height":'36px',"placeItems":"center","borderRadius":'8px',"bgcolor":"#f3f4f6","color":"#464c5e"}}>
+                      <PlatformIcon  size={16} />
+                    </Box>
+                    <Box component="p" sx={{"minWidth":0,"flex":1,"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>
                       {item.title}
-                    </p>
-                  </div>
+                    </Box>
+                  </Box>
                 )}
-                <p className="line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]">
+                <Box component="p" sx={{"display":"-webkit-box","WebkitBoxOrient":"vertical","WebkitLineClamp":2,"overflow":"hidden","fontSize":'12px',"lineHeight":1.55,"color":"#858b9c"}}>
                   {item.description}
-                </p>
-                <p className="truncate text-[11px] text-[#464c5e]">{item.meta}</p>
-                <div className="mt-auto flex flex-wrap gap-[4px]">
+                </Box>
+                <Box component="p" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'11px',"color":"#464c5e"}}>{item.meta}</Box>
+                <Box component="div" sx={{"mt":"auto","display":"flex","flexWrap":"wrap","gap":'4px'}}>
                   {item.tags.slice(0, 2).map((tag) => (
-                    <span
+                    <Box component="span"
                       key={tag}
-                      className="rounded-full border border-[#e3e7f1] bg-[#f6f7fb] px-[7px] py-px text-[11px] text-[#464c5e]"
-                    >
+                     
+                     sx={{"borderRadius":'50%',"border":"1px solid","borderColor":'divider',"bgcolor":"#f6f7fb","px":'7px',"py":'1px',"fontSize":'11px',"color":"#464c5e"}}>
                       {tag}
-                    </span>
+                    </Box>
                   ))}
-                </div>
-              </button>
+                </Box>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
         {renderItemDrawer()}
         {renderConfirm()}
-      </div>
+      </Box>
     );
   }
 
-  // ---- Plaza overview: 5 columns --------------------------------------------
+  //
   return (
-    <div className="flex min-h-full flex-col box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px] xl:h-full xl:min-h-0 xl:overflow-hidden">
-      <AppHeader
-        className="mb-[24px]"
-        onLogout={onLogout}
-        userName={currentUser?.display_name || currentUser?.username}
-        title="开放广场平台"
-        description="浏览广场上的数字员工、知识库、技能、SOP 与工具。"
-        right={
-          <OutlineActionButton
-            type="button"
-            onClick={() => void loadPlatformData()}
-            disabled={loading}
-          >
-            <RefreshCw className="size-[14px]" />
-            刷新
-          </OutlineActionButton>
-        }
-      />
-      <div className="mx-auto grid w-full grid-cols-1 gap-[12px] sm:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-5 xl:grid-rows-1">
+    <Box component="div" sx={{"display":"flex","minHeight":'100%',"flexDirection":"column","boxSizing":"border-box","px":'48px',"pt":'32px',"pb":'43px',"@media (max-width:900px)":{"px":'16px'},"xl":{"height":'100%',"minHeight":0,"overflow":"hidden"}}}>
+      <Box sx={{ mb: '24px' }}>
+        <AppHeader
+          onLogout={onLogout}
+          userName={currentUser?.display_name || currentUser?.username}
+          title="开放广场平台"
+          description="浏览广场上的数字员工、知识库、技能、SOP 与工具。"
+          right={
+            <OutlineActionButton
+              type="button"
+              onClick={() => void loadPlatformData()}
+              disabled={loading}
+            >
+              <RefreshCw  size={14} />
+              刷新
+            </OutlineActionButton>
+          }
+         />
+      </Box>
+      <Box component="div" sx={{"mx":"auto","display":"grid","width":'100%',"gridTemplateColumns":"repeat(1, minmax(0,1fr))","gap":'12px',"sm":{"gridTemplateColumns":"repeat(2, minmax(0,1fr))"},"xl":{"minHeight":0,"flex":1,"gridTemplateColumns":"repeat(5, minmax(0,1fr))","gridTemplateRows":"repeat(1, minmax(0,1fr))"}}}>
         {platformStats.map((platform) => {
           const items = platformItems[platform.kind];
           const previews = items.slice(0, 3);
           const PlatformIcon = platform.icon;
           return (
-            <div
+            <Box component="div"
               key={platform.kind}
-              className="flex min-h-0 flex-col rounded-[14px] border border-[#eceef1] bg-white p-[14px]"
-            >
-              <div className="flex items-center gap-[8px] pb-[10px]">
-                <span className="grid size-[26px] place-items-center rounded-[8px] bg-[#f3f4f6] text-[#464c5e]">
-                  <PlatformIcon className="size-[14px]" />
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[#18181a]">
+             
+             sx={{"display":"flex","minHeight":0,"flexDirection":"column","borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'14px'}}>
+              <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px',"pb":'10px'}}>
+                <Box component="span" sx={{"display":"grid","width":'26px',"height":'26px',"placeItems":"center","borderRadius":'8px',"bgcolor":"#f3f4f6","color":"#464c5e"}}>
+                  <PlatformIcon  size={14} />
+                </Box>
+                <Box component="span" sx={{"minWidth":0,"flex":1,"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>
                   {platform.title}
-                </span>
-                <span className="text-[12px] text-[#858b9c]">
+                </Box>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>
                   {platform.count} {platformCountLabel(platform.kind)}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-[4px] pb-[8px]">
+                </Box>
+              </Box>
+              <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'4px',"pb":'8px'}}>
                 {platform.signals.map((signal) => (
-                  <span
+                  <Box component="span"
                     key={signal}
-                    className="rounded-full border border-[#e3e7f1] bg-[#f6f7fb] px-[7px] py-px text-[11px] text-[#464c5e]"
-                  >
+                   
+                   sx={{"borderRadius":'50%',"border":"1px solid","borderColor":'divider',"bgcolor":"#f6f7fb","px":'7px',"py":'1px',"fontSize":'11px',"color":"#464c5e"}}>
                     {signal}
-                  </span>
+                  </Box>
                 ))}
-              </div>
-              <div className="grid min-h-0 flex-1 content-start gap-[8px] overflow-y-auto pr-[2px]">
+              </Box>
+              <Box component="div" sx={{"display":"grid","minHeight":0,"flex":1,"alignContent":"start","gap":'8px',"overflowY":"auto","pr":'2px'}}>
                 {loading ? (
-                  <div className="rounded-[10px] border border-dashed border-[#e3e7f1] bg-[#fbfcfd] p-[16px] text-center text-[12px] text-[#858b9c]">
+                  <Box component="div" sx={{"borderRadius":'10px',"border":"1px solid","borderStyle":"dashed","borderColor":'divider',"bgcolor":"#fbfcfd","p":'16px',"textAlign":"center","fontSize":'12px',"color":"#858b9c"}}>
                     加载中…
-                  </div>
+                  </Box>
                 ) : previews.length === 0 ? (
-                  <div className="rounded-[10px] border border-dashed border-[#e3e7f1] bg-[#fbfcfd] p-[16px] text-center text-[12px] text-[#858b9c]">
+                  <Box component="div" sx={{"borderRadius":'10px',"border":"1px solid","borderStyle":"dashed","borderColor":'divider',"bgcolor":"#fbfcfd","p":'16px',"textAlign":"center","fontSize":'12px',"color":"#858b9c"}}>
                     暂无内容
-                  </div>
+                  </Box>
                 ) : (
                   previews.map((item) => (
-                    <button
+                    <Box component="button"
                       key={item.id}
                       type="button"
                       onClick={() => setDetailItem({ kind: platform.kind, item })}
-                      className="flex w-full flex-col gap-[4px] rounded-[10px] border border-[#eceef1] bg-white p-[10px] text-left transition-colors hover:border-[#cbd3e6] hover:bg-[#fbfcfd]"
-                    >
+                     
+                     sx={{"display":"flex","width":'100%',"flexDirection":"column","gap":'4px',"borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'10px',"textAlign":"left","transition":"background-color 0.2s","&:hover":{"borderColor":"#cbd3e6","bgcolor":"#fbfcfd"}}}>
                       {platform.kind === 'agents' && item.agent ? (
-                        <div className="flex items-center gap-[8px]">
-                          <EmployeeAvatar agent={item.agent} size={28} radius={6} />
-                          <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#18181a]">
+                        <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+                          <EmployeeAvatar agent={item.agent} size={28} radius={6}  />
+                          <Box component="span" sx={{"minWidth":0,"flex":1,"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"fontWeight":500,"color":"#18181a"}}>
                             {item.title}
-                          </span>
-                        </div>
+                          </Box>
+                        </Box>
                       ) : (
-                        <span className="truncate text-[12px] font-medium text-[#18181a]">
+                        <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"fontWeight":500,"color":"#18181a"}}>
                           {item.title}
-                        </span>
+                        </Box>
                       )}
-                      <span className="truncate text-[11px] text-[#858b9c]">{item.meta}</span>
-                    </button>
+                      <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'11px',"color":"#858b9c"}}>{item.meta}</Box>
+                    </Box>
                   ))
                 )}
-              </div>
-              <button
+              </Box>
+              <Box component="button"
                 type="button"
                 onClick={() => navigate(`/enterprise/platform/${platform.kind}`)}
                 disabled={platform.count === 0}
-                className="mt-[10px] h-[28px] rounded-[8px] border border-[#e3e7f1] bg-white text-[12px] text-[#464c5e] transition-colors hover:border-[#cbd3e6] hover:bg-[#f6f7fb] hover:text-[#18181a] disabled:cursor-not-allowed disabled:opacity-50"
-              >
+               
+               sx={{"mt":'10px',"height":'28px',"borderRadius":'8px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#464c5e","transition":"background-color 0.2s","&:hover":{"borderColor":"#cbd3e6","bgcolor":"#f6f7fb","color":"#18181a"},"&:disabled":{"cursor":"not-allowed","opacity":0.5}}}>
                 查看全部 ({platform.count})
-              </button>
-            </div>
+              </Box>
+            </Box>
           );
         })}
-      </div>
+      </Box>
       {renderItemDrawer()}
       {renderConfirm()}
-    </div>
+    </Box>
   );
 
   function renderItemDrawer() {
@@ -656,107 +658,107 @@ export default function OpenPlatformPage({
       >
         <SheetContent
           side="right"
-          className="flex w-[min(440px,100vw)] flex-col gap-0 p-0"
+          sx={{ display: 'flex', width: 'min(440px,100vw)', flexDirection: 'column', gap: 0, p: 0 }}
         >
-          <SheetHeader className="flex flex-col gap-[8px] border-b border-[#eceef1] p-[20px]">
-            <div className="flex items-center gap-[10px]">
+          <SheetHeader sx={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid', borderColor: 'divider', p: '20px' }}>
+            <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'10px'}}>
               {isAgent ? (
-                <EmployeeAvatar agent={item.agent} size={48} radius={10} />
+                <EmployeeAvatar agent={item.agent} size={48} radius={10}  />
               ) : (
-                <span className="grid size-[40px] place-items-center rounded-[10px] bg-[#f3f4f6] text-[#464c5e]">
-                  <detailConfig.icon className="size-[18px]" />
-                </span>
+                <Box component="span" sx={{"display":"grid","width":'40px',"height":'40px',"placeItems":"center","borderRadius":'10px',"bgcolor":"#f3f4f6","color":"#464c5e"}}>
+                  <detailConfig.icon  size={18} />
+                </Box>
               )}
-              <div className="min-w-0 flex-1">
-                <SheetTitle className="truncate text-[16px] font-medium text-[#18181a]">
+              <Box component="div" sx={{"minWidth":0,"flex":1}}>
+                <SheetTitle sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '16px', fontWeight: 500, color: '#18181a' }}>
                   {item.title}
                 </SheetTitle>
-                <p className="truncate text-[12px] text-[#858b9c]">{detailConfig.title}</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-[4px]">
+                <Box component="p" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{detailConfig.title}</Box>
+              </Box>
+            </Box>
+            <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'4px'}}>
               {item.tags.map((tag) => (
-                <span
+                <Box component="span"
                   key={tag}
-                  className="rounded-full border border-[#e3e7f1] bg-[#f6f7fb] px-[7px] py-px text-[11px] text-[#464c5e]"
-                >
+                 
+                 sx={{"borderRadius":'50%',"border":"1px solid","borderColor":'divider',"bgcolor":"#f6f7fb","px":'7px',"py":'1px',"fontSize":'11px',"color":"#464c5e"}}>
                   {tag}
-                </span>
+                </Box>
               ))}
-            </div>
+            </Box>
           </SheetHeader>
 
-          <div className="grid min-h-0 flex-1 content-start gap-[16px] overflow-y-auto p-[20px]">
-            <div className="grid gap-[6px]">
-              <p className="text-[12px] font-semibold text-[#858b9c]">描述</p>
-              <p className="whitespace-pre-wrap text-[13px] leading-[1.65] text-[#18181a]">
+          <Box component="div" sx={{"display":"grid","minHeight":0,"flex":1,"alignContent":"start","gap":'16px',"overflowY":"auto","p":'20px'}}>
+            <Box component="div" sx={{"display":"grid","gap":'6px'}}>
+              <Box component="p" sx={{"fontSize":'12px',"fontWeight":600,"color":"#858b9c"}}>描述</Box>
+              <Box component="p" sx={{"whiteSpace":"pre-wrap","fontSize":'13px',"lineHeight":1.65,"color":"#18181a"}}>
                 {item.description}
-              </p>
-            </div>
-            <div className="grid gap-[6px]">
-              <p className="text-[12px] font-semibold text-[#858b9c]">分类信息</p>
-              <p className="text-[13px] text-[#18181a]">{item.meta}</p>
-            </div>
-            <div className="grid gap-[6px]">
-              <p className="text-[12px] font-semibold text-[#858b9c]">详情</p>
-              <p className="whitespace-pre-wrap text-[13px] leading-[1.65] text-[#18181a]">
+              </Box>
+            </Box>
+            <Box component="div" sx={{"display":"grid","gap":'6px'}}>
+              <Box component="p" sx={{"fontSize":'12px',"fontWeight":600,"color":"#858b9c"}}>分类信息</Box>
+              <Box component="p" sx={{"fontSize":'13px',"color":"#18181a"}}>{item.meta}</Box>
+            </Box>
+            <Box component="div" sx={{"display":"grid","gap":'6px'}}>
+              <Box component="p" sx={{"fontSize":'12px',"fontWeight":600,"color":"#858b9c"}}>详情</Box>
+              <Box component="p" sx={{"whiteSpace":"pre-wrap","fontSize":'13px',"lineHeight":1.65,"color":"#18181a"}}>
                 {detailText}
-              </p>
-            </div>
+              </Box>
+            </Box>
             {isAgent && profile ? (
-              <div className="grid gap-[6px]">
-                <p className="text-[12px] font-semibold text-[#858b9c]">岗位</p>
-                <p className="text-[13px] text-[#18181a]">{profile.roleName}</p>
-              </div>
+              <Box component="div" sx={{"display":"grid","gap":'6px'}}>
+                <Box component="p" sx={{"fontSize":'12px',"fontWeight":600,"color":"#858b9c"}}>岗位</Box>
+                <Box component="p" sx={{"fontSize":'13px',"color":"#18181a"}}>{profile.roleName}</Box>
+              </Box>
             ) : null}
             {isAgent ? (
-              <div className="grid grid-cols-3 gap-[8px]">
+              <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(3, minmax(0,1fr))","gap":'8px'}}>
                 <PlatformStat
                   value={agentResourceCount(item.agent!, 'knowledge_base')}
                   label="资料"
-                />
+                 />
                 <PlatformStat
                   value={agentResourceCount(item.agent!, 'general_skill')}
                   label="技能"
-                />
+                 />
                 <PlatformStat
                   value={agentResourceCount(item.agent!, 'skill')}
                   label="SOP"
-                />
-              </div>
+                 />
+              </Box>
             ) : null}
-          </div>
+          </Box>
 
-          <div className="flex items-center justify-between gap-[8px] border-t border-[#eceef1] p-[16px]">
-            <div className="flex items-center gap-[6px]">
-              <button
+          <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"space-between","gap":'8px',"borderTop":"1px solid","borderColor":'divider',"p":'16px'}}>
+            <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'6px'}}>
+              <Box component="button"
                 type="button"
                 onClick={() => navigateDetailItem(-1)}
                 disabled={detailDrawerIndex <= 0}
-                className="inline-flex size-[28px] items-center justify-center rounded-[8px] border border-[#e3e7f1] bg-white text-[12px] text-[#464c5e] transition-colors hover:bg-[#f6f7fb] disabled:cursor-not-allowed disabled:opacity-50"
-              >
+               
+               sx={{"display":"inline-flex","width":'28px',"height":'28px',"alignItems":"center","justifyContent":"center","borderRadius":'8px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#464c5e","transition":"background-color 0.2s","&:hover":{"bgcolor":"#f6f7fb"},"&:disabled":{"cursor":"not-allowed","opacity":0.5}}}>
                 上一项
-              </button>
-              <button
+              </Box>
+              <Box component="button"
                 type="button"
                 onClick={() => navigateDetailItem(1)}
                 disabled={detailDrawerIndex < 0 || detailDrawerIndex >= detailDrawerItems.length - 1}
-                className="inline-flex size-[28px] items-center justify-center rounded-[8px] border border-[#e3e7f1] bg-white text-[12px] text-[#464c5e] transition-colors hover:bg-[#f6f7fb] disabled:cursor-not-allowed disabled:opacity-50"
-              >
+               
+               sx={{"display":"inline-flex","width":'28px',"height":'28px',"alignItems":"center","justifyContent":"center","borderRadius":'8px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#464c5e","transition":"background-color 0.2s","&:hover":{"bgcolor":"#f6f7fb"},"&:disabled":{"cursor":"not-allowed","opacity":0.5}}}>
                 下一项
-              </button>
-            </div>
-            <div className="flex items-center gap-[8px]">
+              </Box>
+            </Box>
+            <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
               {canManagePlatform ? (
-                <button
+                <Box component="button"
                   type="button"
                   onClick={() => setConfirmTarget({ kind: detailItem.kind, item })}
                   disabled={deletingItemKey === deleteKey}
-                  className="inline-flex h-[32px] items-center gap-[4px] rounded-[10px] border border-[#fecaca] bg-white px-[12px] text-[12px] text-[#d20b0b] transition-colors hover:bg-[#fef2f2] disabled:opacity-50"
-                >
-                  <Trash2 className="size-[14px]" />
+                 
+                 sx={{"display":"inline-flex","height":'32px',"alignItems":"center","gap":'4px',"borderRadius":'10px',"border":"1px solid","borderColor":"#fecaca","bgcolor":'background.paper',"px":'12px',"fontSize":'12px',"color":"#d20b0b","transition":"background-color 0.2s","&:hover":{"bgcolor":"#fef2f2"},"&:disabled":{"opacity":0.5}}}>
+                  <Trash2  size={14} />
                   移除
-                </button>
+                </Box>
               ) : null}
               <UIButton
                 sx={staffTokens.primaryButton}
@@ -767,9 +769,9 @@ export default function OpenPlatformPage({
               >
                 {detailConfig.useLabel}
               </UIButton>
-            </div>
-          </div>
-          <SheetDescription className="sr-only">{detailConfig.detail}</SheetDescription>
+            </Box>
+          </Box>
+          <SheetDescription sx={{ position: 'absolute', width: '1px', height: '1px', p: 0, m: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>{detailConfig.detail}</SheetDescription>
         </SheetContent>
       </Sheet>
     );
@@ -787,16 +789,16 @@ export default function OpenPlatformPage({
           : '删除后该广场内容会从开放平台移除，已复制到员工侧的引用可能不再可同步。'}
         loading={Boolean(confirmTarget) && deletingItemKey === (confirmTarget ? platformItemDeleteKey(confirmTarget.kind, confirmTarget.item) : '')}
         onConfirm={() => void runDelete()}
-      />
+       />
     );
   }
 }
 
 function PlatformStat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-col items-center gap-[2px] rounded-[10px] border border-[#eceef1] bg-[#fbfcfd] p-[8px]">
-      <span className="text-[16px] font-semibold text-[#18181a]">{value}</span>
-      <span className="text-[11px] text-[#858b9c]">{label}</span>
-    </div>
+    <Box component="div" sx={{"display":"flex","flexDirection":"column","alignItems":"center","gap":'2px',"borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fbfcfd","p":'8px'}}>
+      <Box component="span" sx={{"fontSize":'16px',"fontWeight":600,"color":"#18181a"}}>{value}</Box>
+      <Box component="span" sx={{"fontSize":'11px',"color":"#858b9c"}}>{label}</Box>
+    </Box>
   );
 }

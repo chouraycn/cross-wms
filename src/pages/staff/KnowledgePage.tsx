@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Box } from '@mui/material';
 import {
   Download,
   Folder,
@@ -166,7 +167,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   const [docKbId, setDocKbId] = useState('');
   const [savingDoc, setSavingDoc] = useState(false);
 
-  // 语义检索面板状态
+  //
   const [searchQuery, setSearchQuery] = useState('');
   const [searchHits, setSearchHits] = useState<
     Array<{
@@ -438,7 +439,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
     }
   }
 
-  // ===================== 知识库分支版本化：sync / promote / rollback =====================
+  //
   async function syncKbFromOverall(kb: KnowledgeBaseRead) {
     if (!effectiveAgentId) return;
     try {
@@ -493,7 +494,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
     }
   }
 
-  // ===================== 跨 Agent 批量导入知识库 =====================
+  //
   const importSources: ImportSourceOption[] = useMemo(() => {
     const list: ImportSourceOption[] = [{ value: 'overall', label: '全局知识库' }];
     agents
@@ -611,49 +612,49 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       key: 'name',
       title: '知识库',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate text-[13px] font-medium text-[#18181a]">{row.name}</span>
+        <Box component="div" sx={{"display":"flex","minWidth":0,"flexDirection":"column","gap":'2px'}}>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>{row.name}</Box>
           {row.description ? (
-            <span className="truncate text-[12px] text-[#858b9c]">{row.description}</span>
+            <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{row.description}</Box>
           ) : null}
-        </div>
+        </Box>
       ),
     },
     {
       key: 'version',
       title: '版本',
       width: 100,
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.version || '-'}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.version || '-'}</Box>,
     },
     {
       key: 'document_count',
       title: '文档',
       width: 80,
       align: 'right',
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.document_count}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.document_count}</Box>,
     },
     {
       key: 'bucket_count',
       title: '目录',
       width: 80,
       align: 'right',
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.bucket_count}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.bucket_count}</Box>,
     },
     {
       key: 'status',
       title: '状态',
       width: 100,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>
           {row.status === 'active' ? '启用' : row.status === 'archived' ? '归档' : row.status}
-        </span>
+        </Box>
       ),
     },
     {
       key: 'created_at',
       title: '创建时间',
       width: 160,
-      render: (row) => <span className="text-[12px] text-[#858b9c]">{formatDateTime(row.created_at)}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>{formatDateTime(row.created_at)}</Box>,
     },
     {
       key: 'actions',
@@ -664,55 +665,55 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         canManageCurrentScope ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Box component="button"
                 type="button"
-                className="ml-auto flex size-[24px] items-center justify-center rounded-[6px] text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
+               
                 aria-label="更多操作"
-              >
-                <MoreHorizontal className="size-[14px]" />
-              </button>
+               sx={{"ml":"auto","display":"flex","width":'24px',"height":'24px',"alignItems":"center","justifyContent":"center","borderRadius":'6px',"color":"#858b9c","&:hover":{"bgcolor":"#f2f3f7","color":"#18181a"}}}>
+                <MoreHorizontal  size={14} />
+              </Box>
             </DropdownMenuTrigger>
             <DropdownMenuContent className={MENU_CONTENT_CLASS} align="end">
               <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEditKb(row)}>
-                <Pencil className="size-[14px]" />
+                <Pencil  size={14} />
                 编辑
               </DropdownMenuItem>
               {effectiveAgentId ? (
                 <>
-                  <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                  <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
                   <DropdownMenuItem
                     className={MENU_ITEM_CLASS}
                     onSelect={() => void syncKbFromOverall(row)}
                   >
-                    <Download className="size-[14px]" />
+                    <Download  size={14} />
                     同步自全局
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className={MENU_ITEM_CLASS}
                     onSelect={() => void promoteKbToOverall(row)}
                   >
-                    <Upload className="size-[14px]" />
+                    <Upload  size={14} />
                     提升至全局
                   </DropdownMenuItem>
                 </>
               ) : (
                 <>
-                  <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                  <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
                   <DropdownMenuItem
                     className={MENU_ITEM_CLASS}
                     onSelect={() => void openRollbackKb(row)}
                   >
-                    <RotateCcw className="size-[14px]" />
+                    <RotateCcw  size={14} />
                     回滚版本
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+              <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
               <DropdownMenuItem
                 className={MENU_ITEM_DANGER_CLASS}
                 onSelect={() => setDeleteKbTarget(row)}
               >
-                <Trash2 className="size-[14px]" />
+                <Trash2  size={14} />
                 删除
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -726,42 +727,42 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       key: 'filename',
       title: '文档',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate text-[13px] font-medium text-[#18181a]">
+        <Box component="div" sx={{"display":"flex","minWidth":0,"flexDirection":"column","gap":'2px'}}>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>
             {row.title || row.filename}
-          </span>
-          <span className="truncate text-[12px] text-[#858b9c]">{row.filename}</span>
-        </div>
+          </Box>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{row.filename}</Box>
+        </Box>
       ),
     },
     {
       key: 'file_type',
       title: '类型',
       width: 80,
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.file_type}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.file_type}</Box>,
     },
     {
       key: 'chunk_count',
       title: '切片',
       width: 80,
       align: 'right',
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.chunk_count}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.chunk_count}</Box>,
     },
     {
       key: 'status',
       title: '状态',
       width: 100,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>
           {row.status === 'ready' ? '就绪' : row.status === 'archived' ? '归档' : row.status}
-        </span>
+        </Box>
       ),
     },
     {
       key: 'updated_at',
       title: '更新时间',
       width: 160,
-      render: (row) => <span className="text-[12px] text-[#858b9c]">{formatDateTime(row.updated_at)}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>{formatDateTime(row.updated_at)}</Box>,
     },
     {
       key: 'actions',
@@ -772,25 +773,25 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         canManageCurrentScope ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Box component="button"
                 type="button"
-                className="ml-auto flex size-[24px] items-center justify-center rounded-[6px] text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
+               
                 aria-label="文档操作"
-              >
-                <MoreHorizontal className="size-[14px]" />
-              </button>
+               sx={{"ml":"auto","display":"flex","width":'24px',"height":'24px',"alignItems":"center","justifyContent":"center","borderRadius":'6px',"color":"#858b9c","&:hover":{"bgcolor":"#f2f3f7","color":"#18181a"}}}>
+                <MoreHorizontal  size={14} />
+              </Box>
             </DropdownMenuTrigger>
             <DropdownMenuContent className={MENU_CONTENT_CLASS} align="end">
               <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEditDocument(row)}>
-                <Pencil className="size-[14px]" />
+                <Pencil  size={14} />
                 编辑
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+              <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
               <DropdownMenuItem
                 className={MENU_ITEM_DANGER_CLASS}
                 onSelect={() => deleteDocument(row)}
               >
-                <Trash2 className="size-[14px]" />
+                <Trash2  size={14} />
                 删除
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -805,20 +806,20 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   }, [documents, knowledgeBaseFilter]);
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
+    <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={pageTitle}
         description="管理知识库、文档与引用来源。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <div className="flex items-center gap-[8px]">
+          <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
             <OutlineActionButton
               type="button"
               onClick={() => void refresh()}
               disabled={loading}
             >
-              <RefreshCw className="size-[14px]" />
+              <RefreshCw  size={14} />
               刷新
             </OutlineActionButton>
             {canManageCurrentScope && effectiveAgentId ? (
@@ -826,7 +827,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 type="button"
                 onClick={() => setImportOpen(true)}
               >
-                <Download className="size-[14px]" />
+                <Download  size={14} />
                 导入
               </OutlineActionButton>
             ) : null}
@@ -835,33 +836,33 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 sx={staffTokens.primaryButton}
                 onClick={openCreateKb}
               >
-                <Plus className="size-[14px]" />
+                <Plus  size={14} />
                 新增知识库
               </UIButton>
             ) : null}
-          </div>
+          </Box>
         }
-      />
+       />
 
-      <div className="flex flex-wrap gap-[12px]">
-        <StatCard value={stats.total} label="知识库总数" />
-        <StatCard value={stats.active} label="启用" tone="green" />
-        <StatCard value={stats.archived} label="归档" tone="red" />
-        <StatCard value={stats.documents} label="文档" />
-      </div>
+      <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'12px'}}>
+        <StatCard value={stats.total} label="知识库总数"  />
+        <StatCard value={stats.active} label="启用" tone="green"  />
+        <StatCard value={stats.archived} label="归档" tone="red"  />
+        <StatCard value={stats.documents} label="文档"  />
+      </Box>
 
-      <section className="flex flex-col gap-[12px] rounded-[12px] border border-[#ebedf0] bg-white p-[16px]">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[14px] font-medium text-[#18181a]">语义检索</h3>
-          <span className="text-[12px] text-[#858b9c]">跨知识库向量检索（all-MiniLM-L6-v2）</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-[8px]">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'12px',"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'16px'}}>
+        <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"space-between"}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>语义检索</Box>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>跨知识库向量检索（all-MiniLM-L6-v2）</Box>
+        </Box>
+        <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":'8px'}}>
           <SearchCombo
             value={searchQuery}
             onChange={setSearchQuery}
             onSubmit={() => void runKnowledgeSearch()}
             placeholder="输入问题，检索相关文档片段…"
-          />
+           />
           <UIButton
             sx={staffTokens.primaryButton}
             onClick={() => void runKnowledgeSearch()}
@@ -869,35 +870,35 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           >
             {searchLoading ? '检索中…' : '检索'}
           </UIButton>
-        </div>
-        {searchError ? <p className="text-[12px] text-[#d4380d]">{searchError}</p> : null}
+        </Box>
+        {searchError ? <Box component="p" sx={{"fontSize":'12px',"color":"#d4380d"}}>{searchError}</Box> : null}
         {hasSearched && !searchLoading && searchHits.length === 0 && !searchError ? (
-          <p className="text-[12px] text-[#858b9c]">未检索到相关片段。</p>
+          <Box component="p" sx={{"fontSize":'12px',"color":"#858b9c"}}>未检索到相关片段。</Box>
         ) : null}
         {searchHits.length > 0 ? (
-          <ul className="flex flex-col gap-[8px]">
+          <Box component="ul" sx={{"display":"flex","flexDirection":"column","gap":'8px'}}>
             {searchHits.map((hit, index) => (
-              <li key={index} className="rounded-[10px] border border-[#ebedf0] bg-[#fafafa] p-[12px]">
-                <div className="mb-[4px] flex items-center justify-between gap-[8px]">
-                  <span className="text-[12px] font-medium text-[#18181a]">
+              <Box component="li" key={index} sx={{"borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fafafa","p":'12px'}}>
+                <Box component="div" sx={{"mb":'4px',"display":"flex","alignItems":"center","justifyContent":"space-between","gap":'8px'}}>
+                  <Box component="span" sx={{"fontSize":'12px',"fontWeight":500,"color":"#18181a"}}>
                     {hit.document?.title || hit.document?.filename || hit.bucket?.title || '未知来源'}
-                  </span>
-                  <span className="text-[11px] text-[#858b9c]">相似度 {hit.score.toFixed(3)}</span>
-                </div>
-                <p className="whitespace-pre-wrap text-[12px] leading-[1.6] text-[#4b5160]">{hit.chunk.content}</p>
-              </li>
+                  </Box>
+                  <Box component="span" sx={{"fontSize":'11px',"color":"#858b9c"}}>相似度 {hit.score.toFixed(3)}</Box>
+                </Box>
+                <Box component="p" sx={{"whiteSpace":"pre-wrap","fontSize":'12px',"lineHeight":1.6,"color":"#4b5160"}}>{hit.chunk.content}</Box>
+              </Box>
             ))}
-          </ul>
+          </Box>
         ) : null}
-      </section>
+      </Box>
 
-      <section className="flex flex-col gap-[16px]">
-        <div className="flex flex-wrap items-center justify-between gap-[12px]">
-          <h3 className="text-[14px] font-medium text-[#18181a]">{listLabel}</h3>
-          <div className="flex flex-wrap items-center gap-[8px]">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px'}}>
+        <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","justifyContent":"space-between","gap":'12px'}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>{listLabel}</Box>
+          <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":'8px'}}>
             <Select value={knowledgeBaseFilter} onValueChange={selectKnowledgeBase}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="全部知识库" />
+              <SelectTrigger sx={{"width":'180px'}}>
+                <SelectValue placeholder="全部知识库"  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">全部知识库</SelectItem>
@@ -912,7 +913,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               value={documentSearch}
               onChange={setDocumentSearch}
               placeholder="搜索知识库名称 / 描述"
-            />
+             />
             {canManageCurrentScope ? (
               <UIButton
                 sx={staffTokens.primaryButton}
@@ -923,12 +924,12 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   setCreateDocOpen(true);
                 }}
               >
-                <Plus className="size-[14px]" />
+                <Plus  size={14} />
                 新增文档
               </UIButton>
             ) : null}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         <DataTable
           columns={kbColumns}
@@ -937,18 +938,18 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           loading={loading}
           emptyText={listEmptyText}
           aria-label={listLabel}
-        />
+         />
 
         {totalPages > 1 ? (
-          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage} />
+          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage}  />
         ) : null}
-      </section>
+      </Box>
 
-      <section className="flex flex-col gap-[16px]">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[14px] font-medium text-[#18181a]">文档列表</h3>
-          <span className="text-[12px] text-[#858b9c]">共 {scopedDocuments.length} 个文档</span>
-        </div>
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px'}}>
+        <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"space-between"}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>文档列表</Box>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>共 {scopedDocuments.length} 个文档</Box>
+        </Box>
         <DataTable
           columns={documentColumns}
           data={scopedDocuments}
@@ -957,67 +958,67 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           emptyText="暂无文档"
           onRowClick={(row) => void loadBuckets(row)}
           aria-label="文档列表"
-        />
-      </section>
+         />
+      </Box>
 
       {selectedDocument ? (
-        <section className="flex flex-col gap-[12px]">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[14px] font-medium text-[#18181a]">
+        <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'12px'}}>
+          <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"space-between"}}>
+            <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>
               引用来源 — {selectedDocument.title || selectedDocument.filename}
-            </h3>
-            <span className="text-[12px] text-[#858b9c]">共 {buckets.length} 个目录</span>
-          </div>
-          <div className="grid grid-cols-1 gap-[12px] md:grid-cols-2 xl:grid-cols-3">
+            </Box>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>共 {buckets.length} 个目录</Box>
+          </Box>
+          <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(1, minmax(0,1fr))","gap":'12px',"md":{"gridTemplateColumns":"repeat(2, minmax(0,1fr))"},"xl":{"gridTemplateColumns":"repeat(3, minmax(0,1fr))"}}}>
             {buckets.length === 0 ? (
-              <div className="col-span-full rounded-[12px] border border-[#f2f3f7] bg-white px-[16px] py-[24px] text-center text-[12px] text-[#858b9c]">
+              <Box component="div" sx={{"gridColumn":"1 / -1","borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"px":'16px',"py":'24px',"textAlign":"center","fontSize":'12px',"color":"#858b9c"}}>
                 暂无引用来源
-              </div>
+              </Box>
             ) : (
               buckets.map((bucket) => (
-                <div
+                <Box component="div"
                   key={bucket.id}
-                  className="flex flex-col gap-[8px] rounded-[12px] border border-[#f2f3f7] bg-white p-[14px]"
-                >
-                  <div className="flex items-center gap-[6px]">
-                    <Folder className="size-[14px] text-[#858b9c]" />
-                    <span className="truncate text-[13px] font-medium text-[#18181a]">
+                 
+                 sx={{"display":"flex","flexDirection":"column","gap":'8px',"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'14px'}}>
+                  <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'6px'}}>
+                    <Folder  size={14} color="#858b9c" />
+                    <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>
                       {bucket.title || bucket.bucket_key}
-                    </span>
-                  </div>
+                    </Box>
+                  </Box>
                   {bucket.summary ? (
-                    <p className="line-clamp-2 text-[12px] text-[#858b9c]">{bucket.summary}</p>
+                    <Box component="p" sx={{"display":"-webkit-box","WebkitBoxOrient":"vertical","WebkitLineClamp":2,"overflow":"hidden","fontSize":'12px',"color":"#858b9c"}}>{bucket.summary}</Box>
                   ) : null}
-                  <div className="flex items-center gap-[12px] text-[12px] text-[#858b9c]">
+                  <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'12px',"fontSize":'12px',"color":"#858b9c"}}>
                     <span>{bucket.chunk_count} 切片</span>
                     <span>{formatDateTime(bucket.updated_at)}</span>
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               ))
             )}
-          </div>
-        </section>
+          </Box>
+        </Box>
       ) : null}
 
       <Dialog open={createKbOpen} onOpenChange={(open) => !savingKb && setCreateKbOpen(open)}>
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"overflow":"hidden","borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             {editingKnowledgeBase ? '编辑知识库' : '新建知识库'}
           </DialogTitle>
-          <div className="flex flex-col gap-[16px] px-[24px] pb-[20px]">
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">名称</span>
+          <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'16px',"px":'24px',"pb":'20px'}}>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>名称</Box>
               <Input
                 value={knowledgeBaseDraft.name}
                 onChange={(event) =>
                   setKnowledgeBaseDraft((prev) => ({ ...prev, name: event.target.value }))
                 }
                 placeholder="请输入知识库名称"
-                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">描述</span>
+                sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>描述</Box>
               <Textarea
                 value={knowledgeBaseDraft.description}
                 onChange={(event) =>
@@ -1025,31 +1026,31 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 }
                 placeholder="请输入描述（可选）"
                 rows={3}
-                className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">状态</span>
+                sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>状态</Box>
               <Select
                 value={knowledgeBaseDraft.status}
                 onValueChange={(value) =>
                   setKnowledgeBaseDraft((prev) => ({ ...prev, status: value as 'active' | 'archived' }))
                 }
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="请选择状态" />
+                <SelectTrigger sx={{"width":'100%'}}>
+                  <SelectValue placeholder="请选择状态"  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">启用</SelectItem>
                   <SelectItem value="archived">归档</SelectItem>
                 </SelectContent>
               </Select>
-            </label>
-          </div>
-          <DialogFooter className="flex items-center justify-end gap-[8px] border-t border-[#f2f3f7] px-[24px] py-[12px]">
+            </Box>
+          </Box>
+          <DialogFooter sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px',"borderTop":"1px solid","borderColor":'divider',"px":'24px',"py":'12px'}}>
             <UIButton
               variant="outline"
-              className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => setCreateKbOpen(false)}
               disabled={savingKb}
             >
@@ -1070,44 +1071,44 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         open={editingDocument !== null}
         onOpenChange={(open) => !open && setEditingDocument(null)}
       >
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"overflow":"hidden","borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             编辑文档
           </DialogTitle>
-          <div className="flex flex-col gap-[16px] px-[24px] pb-[20px]">
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">标题</span>
+          <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'16px',"px":'24px',"pb":'20px'}}>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>标题</Box>
               <Input
                 value={documentDraft.title}
                 onChange={(event) =>
                   setDocumentDraft((prev) => ({ ...prev, title: event.target.value }))
                 }
                 placeholder="请输入文档标题"
-                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">状态</span>
+                sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>状态</Box>
               <Select
                 value={documentDraft.status}
                 onValueChange={(value) =>
                   setDocumentDraft((prev) => ({ ...prev, status: value as 'ready' | 'archived' }))
                 }
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="请选择状态" />
+                <SelectTrigger sx={{"width":'100%'}}>
+                  <SelectValue placeholder="请选择状态"  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ready">就绪</SelectItem>
                   <SelectItem value="archived">归档</SelectItem>
                 </SelectContent>
               </Select>
-            </label>
-          </div>
-          <DialogFooter className="flex items-center justify-end gap-[8px] border-t border-[#f2f3f7] px-[24px] py-[12px]">
+            </Box>
+          </Box>
+          <DialogFooter sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px',"borderTop":"1px solid","borderColor":'divider',"px":'24px',"py":'12px'}}>
             <UIButton
               variant="outline"
-              className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => setEditingDocument(null)}
             >
               取消
@@ -1123,16 +1124,16 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       </Dialog>
 
       <Dialog open={createDocOpen} onOpenChange={(open) => !savingDoc && setCreateDocOpen(open)}>
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"overflow":"hidden","borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             新增文档（文本入库）
           </DialogTitle>
-          <div className="flex max-h-[60vh] flex-col gap-[16px] overflow-y-auto px-[24px] pb-[20px]">
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">目标知识库</span>
+          <Box component="div" sx={{"display":"flex","maxHeight":'60vh',"flexDirection":"column","gap":'16px',"overflowY":"auto","px":'24px',"pb":'20px'}}>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>目标知识库</Box>
               <Select value={docKbId} onValueChange={setDocKbId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="请选择知识库" />
+                <SelectTrigger sx={{"width":'100%'}}>
+                  <SelectValue placeholder="请选择知识库"  />
                 </SelectTrigger>
                 <SelectContent>
                   {visibleKnowledgeBases.map((item) => (
@@ -1142,30 +1143,30 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   ))}
                 </SelectContent>
               </Select>
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">标题</span>
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>标题</Box>
               <Input
                 value={docTitle}
                 onChange={(event) => setDocTitle(event.target.value)}
                 placeholder="请输入文档标题"
-                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">知识文本（将自动切分并向量化）</span>
+                sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>知识文本（将自动切分并向量化）</Box>
               <textarea
                 value={docContent}
                 onChange={(event) => setDocContent(event.target.value)}
                 placeholder="粘贴或输入知识内容，例如产品说明、FAQ、流程文档…"
-                className="h-[200px] resize-y rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[12px] text-[14px] leading-[1.6] text-[#18181a] outline-none focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-          </div>
-          <DialogFooter className="flex items-center justify-end gap-[8px] border-t border-[#f2f3f7] px-[24px] py-[12px]">
+                sx={{"height":'200px',"resize":"vertical","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'12px',"fontSize":'14px',"lineHeight":1.6,"color":"#18181a","outline":"none","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+          </Box>
+          <DialogFooter sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px',"borderTop":"1px solid","borderColor":'divider',"px":'24px',"py":'12px'}}>
             <UIButton
               variant="outline"
-              className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => setCreateDocOpen(false)}
             >
               取消
@@ -1216,7 +1217,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         title={
           deleteKbTarget ? (
             <>
-              删除知识库 <strong className="ml-[4px]">{deleteKbTarget.name}</strong>
+              删除知识库 <Box component="strong" sx={{"ml":'4px'}}>{deleteKbTarget.name}</Box>
             </>
           ) : (
             '删除知识库'
@@ -1226,24 +1227,24 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         confirmText="删除"
         loading={deletingKb}
         onConfirm={() => void deleteKb()}
-      />
+       />
 
       <Dialog
         open={rollbackKbTarget !== null}
         onOpenChange={(open) => !rollingBackKb && !open && setRollbackKbTarget(null)}
       >
-        <DialogContent className="gap-0 rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             回滚知识库版本
             {rollbackKbTarget ? (
-              <span className="ml-[6px] text-[13px] font-normal text-[#858b9c]">{rollbackKbTarget.name}</span>
+              <Box component="span" sx={{"ml":'6px',"fontSize":'13px',"fontWeight":400,"color":"#858b9c"}}>{rollbackKbTarget.name}</Box>
             ) : null}
           </DialogTitle>
-          <div className="flex flex-col gap-[12px] px-[24px] pb-[8px]">
-            <p className="text-[12px] text-[#858b9c]">选择一个历史版本，将知识库回滚至该版本的快照。</p>
+          <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'12px',"px":'24px',"pb":'8px'}}>
+            <Box component="p" sx={{"fontSize":'12px',"color":"#858b9c"}}>选择一个历史版本，将知识库回滚至该版本的快照。</Box>
             <Select value={rollbackKbVersion} onValueChange={setRollbackKbVersion}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="选择版本" />
+              <SelectTrigger sx={{"width":'100%'}}>
+                <SelectValue placeholder="选择版本"  />
               </SelectTrigger>
               <SelectContent>
                 {rollbackKbVersions.map((item) => (
@@ -1254,10 +1255,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <DialogFooter className="flex justify-end gap-[8px] px-[24px] py-[16px]">
+          </Box>
+          <DialogFooter sx={{"display":"flex","justifyContent":"flex-end","gap":'8px',"px":'24px',"py":'16px'}}>
             <UIButton
-              className="h-[34px] rounded-[10px] bg-[#f2f3f7] px-[16px] text-[12px] text-[#18181a] hover:bg-[#e8e9ef]"
+              sx={{"height":'34px',"borderRadius":'10px',"bgcolor":'divider',"px":'16px',"fontSize":'12px',"color":"#18181a","&:hover":{"bgcolor":"#e8e9ef"}}}
               onClick={() => setRollbackKbTarget(null)}
               disabled={rollingBackKb}
             >
@@ -1277,7 +1278,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       <ResourceImportDialog
         open={importOpen}
         loading={importLoading || importLoadingItems}
-        icon={<Download className="size-[14px]" />}
+        icon={<Download  size={14} />}
         title="跨 Agent 批量导入知识库"
         sourcePlaceholder="选择复制来源"
         sources={importSources}
@@ -1292,7 +1293,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         onSelectedChange={setImportSelected}
         onClose={resetImport}
         onSubmit={() => void submitImport()}
-      />
-    </div>
+       />
+    </Box>
   );
 }

@@ -9,7 +9,7 @@ import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javasc
 import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
 import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark';
-import { cn } from './lib/utils.js';
+import { Box } from '@mui/material';
 
 // 复用主程序的 react-syntax-highlighter（PrismLight），不再自维护 token 解析器。
 // 注册常见语言（与 MarkdownRenderer 对齐）；未注册语言会降级为纯文本渲染。
@@ -48,16 +48,35 @@ export default function CodeBlock({ code, language, className, showCopy = true }
   }
 
   return (
-    <div className={cn('relative group', className)}>
+    <Box
+      sx={{ position: 'relative', '&:hover .code-copy-btn': { opacity: 1 } }}
+      className={className}
+    >
       {showCopy && (
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={() => void copyCode()}
-          className="absolute right-[8px] top-[8px] z-10 rounded-[6px] bg-white/80 px-[8px] py-[3px] text-[11px] text-[#464c5e] opacity-0 transition-opacity hover:bg-white group-hover:opacity-100"
           aria-label="复制代码"
+          className="code-copy-btn"
+          sx={{
+            position: 'absolute',
+            right: '8px',
+            top: '8px',
+            zIndex: 10,
+            borderRadius: '6px',
+            bgcolor: 'rgba(255,255,255,0.8)',
+            px: '8px',
+            py: '3px',
+            fontSize: '11px',
+            color: '#464c5e',
+            opacity: 0,
+            transition: 'opacity 0.2s',
+            '&:hover': { bgcolor: '#fff' },
+          }}
         >
           {copied ? '已复制' : '复制'}
-        </button>
+        </Box>
       )}
       <SyntaxHighlighter
         language={language || 'text'}
@@ -81,6 +100,6 @@ export default function CodeBlock({ code, language, className, showCopy = true }
       >
         {code}
       </SyntaxHighlighter>
-    </div>
+    </Box>
   );
 }

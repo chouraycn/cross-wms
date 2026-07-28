@@ -15,6 +15,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import {
   Activity,
   Bell,
@@ -40,7 +42,6 @@ import {
   type EnterpriseAuthUser,
 } from './auth.js';
 import { EnterpriseRoute } from './enums/routes.js';
-import { cn } from './lib/utils.js';
 import BrandLogo from './BrandLogo.js';
 
 // ============================ Auth Context ============================
@@ -127,63 +128,89 @@ function StaffSidebar({
   const renderNavButton = (item: NavItem) => {
     const active = selected === item.route;
     return (
-      <button
+      <Box
+        component="button"
         key={item.route}
         type="button"
         onClick={() => onNavigate(item.route)}
-        className={cn(
-          'flex w-full items-center gap-[10px] rounded-[10px] px-[14px] py-[8px] text-left text-[13px] transition-colors',
+        sx={[
+          {
+            display: 'flex',
+            width: '100%',
+            alignItems: 'center',
+            gap: '10px',
+            borderRadius: '10px',
+            px: '14px',
+            py: '8px',
+            textAlign: 'left',
+            fontSize: '13px',
+            transition: 'background-color 0.2s',
+          },
           active
-            ? 'bg-[#eef1fb] text-[#3a4fbf] font-medium'
-            : 'text-[#464c5e] hover:bg-[#f6f6f6]',
-        )}
+            ? { bgcolor: '#eef1fb', color: '#3a4fbf', fontWeight: 500 }
+            : { color: '#464c5e', '&:hover': { bgcolor: '#f6f6f6' } },
+        ] as SxProps<Theme>}
       >
-        <item.Icon className="size-[16px] shrink-0" />
-        <span className="truncate">{item.label}</span>
-      </button>
+        <item.Icon style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.label}
+        </Box>
+      </Box>
     );
   };
 
   return (
-    <aside className="flex h-full w-[220px] shrink-0 flex-col border-r border-[#e3e7f1] bg-[#fbfbf9]">
-      <div className="flex items-center justify-center px-[16px] py-[20px]">
+    <Box
+      component="aside"
+      sx={{
+        display: 'flex',
+        height: '100%',
+        width: '220px',
+        flexShrink: 0,
+        flexDirection: 'column',
+        borderRight: '1px solid',
+        borderColor: '#e3e7f1',
+        bgcolor: '#fbfbf9',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: '16px', py: '20px' }}>
         <BrandLogo />
-      </div>
+      </Box>
 
-      <div className="flex-1 overflow-y-auto px-[12px] pb-[16px]">
-        <nav className="flex flex-col gap-[4px]">
+      <Box sx={{ flex: 1, overflowY: 'auto', px: '12px', pb: '16px' }}>
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {primaryItems.map(renderNavButton)}
-        </nav>
+        </Box>
 
-        <div className="mt-[20px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+        <Box sx={{ mt: '20px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
           基本资料
-        </div>
-        <nav className="flex flex-col gap-[2px]">
+        </Box>
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {PROFILE_NAV.map(renderNavButton)}
-        </nav>
+        </Box>
 
-        <div className="mt-[16px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
           员工能力
-        </div>
-        <nav className="flex flex-col gap-[2px]">
+        </Box>
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {CAPABILITY_NAV.map(renderNavButton)}
-        </nav>
+        </Box>
 
-        <div className="mt-[16px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
           观测与调试
-        </div>
-        <nav className="flex flex-col gap-[2px]">
+        </Box>
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {OBSERVE_NAV.map(renderNavButton)}
-        </nav>
+        </Box>
 
-        <div className="mt-[16px] mb-[8px] px-[14px] text-[10px] font-medium uppercase tracking-wide text-[#9aa0b5]">
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
           帮助
-        </div>
-        <nav className="flex flex-col gap-[2px]">
+        </Box>
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {HELP_NAV.map(renderNavButton)}
-        </nav>
-      </div>
-    </aside>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -236,32 +263,54 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
   return (
     <StaffAuthContext.Provider value={authValue}>
-      <div className="sd-root flex h-full min-h-0 bg-[#f7f5ef]">
+      <Box sx={{ display: 'flex', height: '100%', minHeight: 0, bgcolor: '#f7f5ef' }} className="sd-root">
         <StaffSidebar
           selected={selected}
           onNavigate={handleNavigate}
           isAdmin={isAdmin}
         />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <Box sx={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column' }}>
           {/* 顶部用户条 */}
-          <header className="flex h-[44px] shrink-0 items-center justify-end gap-[8px] border-b border-[#e3e7f1] bg-white px-[16px]">
-            <span className="text-[12px] text-[#757f9c]">
+          <Box
+            component="header"
+            sx={{
+              display: 'flex',
+              height: '44px',
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '8px',
+              borderBottom: '1px solid',
+              borderColor: '#e3e7f1',
+              bgcolor: '#fff',
+              px: '16px',
+            }}
+          >
+            <Box component="span" sx={{ fontSize: '12px', color: '#757f9c' }}>
               {currentUser?.display_name || currentUser?.username || '未登录'}
-            </span>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               onClick={handleLogout}
-              className="rounded-[6px] px-[8px] py-[4px] text-[12px] text-[#757f9c] hover:bg-[#f6f6f6]"
+              sx={{
+                borderRadius: '6px',
+                px: '8px',
+                py: '4px',
+                fontSize: '12px',
+                color: '#757f9c',
+                '&:hover': { bgcolor: '#f6f6f6' },
+              }}
             >
               退出
-            </button>
-          </header>
+            </Box>
+          </Box>
           {/* 主内容区 */}
-          <main className="min-h-0 flex-1 overflow-y-auto">
+          <Box component="main" sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
             {children}
-          </main>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
     </StaffAuthContext.Provider>
   );
 }

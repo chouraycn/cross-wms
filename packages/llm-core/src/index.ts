@@ -32,11 +32,39 @@ export type { LlmUsage, LlmStreamEvent, StreamEventType } from './streaming';
 export { CostEstimator, costEstimator } from './usage';
 export type { CostEstimation } from './usage';
 
-// OpenClaw 兼容模块
-export * from './model-contracts/anthropic';
-export * from './utils/diagnostics';
-export * from './utils/event-stream';
-export * from './validation';
+// OpenClaw 兼容模块 - explicit named exports for tsx runtime compatibility
+export {
+  CLAUDE_FABLE_5_THINKING_PROFILE,
+  resolveClaudeModelIdentity,
+  resolveClaudeFable5ModelIdentity,
+  supportsClaudeAdaptiveThinking,
+  supportsClaudeNativeMaxEffort,
+  supportsClaudeNativeXhighEffort,
+  resolveClaudeNativeThinkingLevelMap,
+} from './model-contracts/anthropic';
+export {
+  formatThrownValue,
+  extractDiagnosticError,
+  createAssistantMessageDiagnostic,
+  appendAssistantMessageDiagnostic,
+} from './utils/diagnostics';
+export type { DiagnosticErrorInfo, AssistantMessageDiagnostic } from './utils/diagnostics';
+export {
+  EventStream,
+  AssistantMessageEventStream,
+  createAssistantMessageEventStream,
+} from './utils/event-stream';
+export { validateToolCall, validateToolArguments } from './validation';
 
 // 导出适配器
-export * from './adapters';
+export {
+  deepseekAdapter,
+  alibabaAdapter,
+  kimiAdapter,
+  stepfunAdapter,
+  doubaoAdapter,
+  yiAdapter,
+  baichuanAdapter,
+  minimaxAdapter,
+  getAdapterForProvider,
+} from './adapters';

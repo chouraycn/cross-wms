@@ -36,7 +36,7 @@ import {
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
 import { logger } from '../logger.js';
-import { autoSelectModelAsync, generateMockResponse, isModelAvailable, MODEL_PRESETS } from './modelSelector.js';
+import { autoSelectModelAsync, generateMockResponse, isModelAvailable, MODEL_PRESETS, type ScoringInput } from './modelSelector.js';
 import { extractAndAppendMemory, readMemoryMd } from './memoryExtractor.js';
 import { getAppSettings } from '../dao/settings.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
@@ -686,7 +686,21 @@ export async function handleChat(req: import('express').Request, res: import('ex
     if (model === 'auto') {
       const hasImg = hasImageAttachment(attachments);
       try {
-        const autoResult = await autoSelectModelAsync(message, modelsConfig, hasImg);
+        // v1.7.162: 传入完整 ScoringInput，启用 5 维度评分（上下文长度 + 工具调用加分）
+        const historyMsgs: ApiMessage[] = (conversationHistory || []).map((m: any) => ({
+          role: m.role || 'user',
+          content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content || ''),
+        }));
+        const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
+        const toolCallCount = (conversationHistory || []).filter((m: any) =>
+          m.tool_calls || (Array.isArray(m.content) && m.content.some((c: any) => c.type === 'tool_use' || c.type === 'tool_result'))
+        ).length;
+        const scoringInput: Partial<ScoringInput> = {
+          contextTokenCount,
+          toolCallCount,
+          activeSkillCount: skillId ? 1 : 0,
+        };
+        const autoResult = await autoSelectModelAsync(message, modelsConfig, hasImg, scoringInput);
         effectiveModel = autoResult.modelId;
         effectiveModelName = autoResult.modelName;
         autoReason = `${autoResult.modelName} · ${autoResult.reason}`;

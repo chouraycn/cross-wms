@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, FileText, Pencil, UserCircle, MessageSquare } from 'lucide-react';
+import { Box } from '@mui/material';
 import { Badge, Button as UiButton, Tabs, TabsList, TabsTrigger, notify } from '../../../components/staff/ui/index.js';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import { EnterpriseRoute } from '../../../components/staff/enums/routes.js';
 import { api, TENANT_ID } from '../../../components/staff/api/client.js';
 import type { EnterpriseAuthUser } from '../../../components/staff/auth.js';
@@ -173,16 +175,16 @@ export default function DashboardPage({
   if (!selectedAgent && !isAdmin) {
     return (
       <div className="page dashboard-page">
-        <div className="empty-workspace-card p-[24px]">
-          <h3 className="m-0 text-[20px] font-semibold text-foreground">还没有数字员工</h3>
-          <p className="mt-[8px] text-[14px] text-muted-foreground">
+        <Box className="empty-workspace-card" sx={{ p: '24px' }}>
+          <Box component="h3" sx={{ m: 0, fontSize: '20px', fontWeight: 600, color: 'text.primary' }}>还没有数字员工</Box>
+          <Box component="p" sx={{ mt: '8px', fontSize: '14px', color: 'text.secondary' }}>
             点击左下角「新建数字员工」开始创建，或前往员工广场选择已发布的员工。
-          </p>
-          <div className="mt-[16px] flex gap-[8px]">
+          </Box>
+          <Box sx={{ mt: '16px', display: 'flex', gap: '8px' }}>
             <UiButton onClick={() => navigate(EnterpriseRoute.Agents)}>查看我的数字员工</UiButton>
             <UiButton variant="outline" onClick={() => navigate(EnterpriseRoute.Feedback)}>查看对话日志</UiButton>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </div>
     );
   }
@@ -216,10 +218,10 @@ export default function DashboardPage({
           <DashboardStat title="好评" value={positiveFeedback || feedbackSummary?.up_count || 0} />
           <DashboardStat title="差评" value={negativeFeedback || feedbackSummary?.down_count || 0} />
           <div className="org-dashboard-card">
-            <div className="ui-card-body p-[24px]">
-              <span className="text-[13px] text-muted-foreground">默认模型</span>
-              <span className="text-[15px] text-foreground">{defaultModel ? `${defaultModel.name} / ${defaultModel.model}` : '未配置'}</span>
-            </div>
+            <Box className="ui-card-body" sx={{ p: '24px' }}>
+              <Box component="span" sx={{ fontSize: '13px', color: 'text.secondary' }}>默认模型</Box>
+              <Box component="span" sx={{ fontSize: '15px', color: 'text.primary' }}>{defaultModel ? `${defaultModel.name} / ${defaultModel.model}` : '未配置'}</Box>
+            </Box>
           </div>
         </div>
       </div>
@@ -249,7 +251,16 @@ export default function DashboardPage({
     132,
   );
 
-  const heroActionButtonClass = 'inline-flex items-center justify-center gap-[4px] py-[8px] px-[12px] rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] font-normal text-[#858b9c] shadow-[0px_6px_6px_rgba(0,0,0,0.05)] hover:bg-[#f6f6f6] hover:text-[#858b9c]';
+  const heroActionButtonSx = {
+    ...staffTokens.outlineActionButton,
+    height: 'auto',
+    borderRadius: '14px',
+    px: '12px',
+    py: '8px',
+    gap: '4px',
+    boxShadow: '0px 6px 6px rgba(0,0,0,0.05)',
+    '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.paper', color: 'text.secondary' },
+  };
   const heroAvatar = (
     <EmployeeAvatar
       agent={selectedAgent}
@@ -263,96 +274,153 @@ export default function DashboardPage({
   );
 
   return (
-    <div className="min-h-full w-full min-w-0 max-w-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]">
+    <Box
+      sx={{
+        minHeight: '100%',
+        width: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width:900px)': { px: '16px' },
+      }}
+    >
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
         left={(
-          <div className="flex flex-wrap items-center gap-x-9 gap-y-6 pt-1 pl-1">
-            <div className="flex shrink-0 flex-col items-center">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: '36px', rowGap: '24px', pt: '4px', pl: '4px' }}>
+            <Box sx={{ display: 'flex', flexShrink: 0, flexDirection: 'column', alignItems: 'center' }}>
               {canEditSelectedAgent ? (
-                <button
+                <Box
+                  component="button"
                   type="button"
                   onClick={() => setAvatarEditorOpen(true)}
                   aria-label="更换头像"
-                  className="group relative block cursor-pointer border-0 bg-transparent p-0"
+                  sx={{
+                    position: 'relative',
+                    display: 'block',
+                    cursor: 'pointer',
+                    border: 0,
+                    bgcolor: 'transparent',
+                    p: 0,
+                    '&:hover .avatar-edit-overlay': { opacity: 1 },
+                  }}
                 >
                   {heroAvatar}
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/45 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-                    <UserCircle className="size-3" />
+                  <Box
+                    component="span"
+                    className="avatar-edit-overlay"
+                    sx={{
+                      pointerEvents: 'none',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      bgcolor: 'rgba(0,0,0,0.45)',
+                      py: '4px',
+                      fontSize: '11px',
+                      color: '#fff',
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                    }}
+                  >
+                    <UserCircle size={12} />
                     更换头像
-                  </span>
-                </button>
+                  </Box>
+                </Box>
               ) : (
                 heroAvatar
               )}
-              <div className="flex items-center gap-4">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <UiButton
                   variant="outline"
-                  className={heroActionButtonClass}
+                  sx={heroActionButtonSx}
                   onClick={() => navigate(EnterpriseRoute.Chat)}
                 >
-                  <MessageSquare className="size-[14px]" />
+                  <MessageSquare size={14} />
                   去对话
                 </UiButton>
                 {canEditSelectedAgent && (
                   <UiButton
                     variant="outline"
-                    className={heroActionButtonClass}
+                    sx={heroActionButtonSx}
                     onClick={() => setProfileEditorOpen(true)}
                   >
-                    <Pencil className="size-[14px]" />
+                    <Pencil size={14} />
                     编辑资料
                   </UiButton>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="flex min-w-[280px] flex-1 flex-col gap-2">
-              <div className="flex items-end gap-2">
-                <h2 className="m-0 text-[22px] leading-none font-semibold text-[#18181a]">
+            <Box sx={{ display: 'flex', minWidth: '280px', flex: 1, flexDirection: 'column', gap: '8px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+                <Box component="h2" sx={{ m: 0, fontSize: '22px', lineHeight: 'none', fontWeight: 600, color: '#18181a' }}>
                   {employeeDisplayName(selectedAgent)}
-                </h2>
-                <span className="text-[13px] leading-none text-[#757f9c]">{employee.roleName || employeeDisplayName(selectedAgent)}</span>
-              </div>
+                </Box>
+                <Box component="span" sx={{ fontSize: '13px', lineHeight: 'none', color: '#757f9c' }}>{employee.roleName || employeeDisplayName(selectedAgent)}</Box>
+              </Box>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f6f6f6] px-2.5 py-0.5">
-                  <span
-                    className="size-1.5 rounded-full ring-[1.5px] ring-white"
-                    style={{ background: selectedAgent.status === 'active' ? '#22c55e' : '#c4c9d4' }}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px' }}>
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '9999px', bgcolor: '#f6f6f6', px: '10px', py: '2px' }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      boxShadow: '0 0 0 1.5px #fff',
+                      bgcolor: selectedAgent.status === 'active' ? '#22c55e' : '#c4c9d4',
+                    }}
                   />
-                  <span className="text-[12px] text-[#757f9c]">
+                  <Box component="span" sx={{ fontSize: '12px', color: '#757f9c' }}>
                     {selectedAgent.status === 'active' ? '在线' : '下线'}
-                  </span>
-                </span>
-                <span className="text-[12px] text-[#757f9c]">创建者：{employeeCreator}</span>
-                <span className="text-[12px] text-[#757f9c]">入职时间：{employee.onboardedAt}</span>
-                <div className="flex flex-wrap items-center gap-3">
+                  </Box>
+                </Box>
+                <Box component="span" sx={{ fontSize: '12px', color: '#757f9c' }}>创建者：{employeeCreator}</Box>
+                <Box component="span" sx={{ fontSize: '12px', color: '#757f9c' }}>入职时间：{employee.onboardedAt}</Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
                   {employee.workStyles.slice(0, 3).map((item) => (
                     <Badge
                       key={item}
                       variant="outline"
-                      className="h-auto rounded-[10px] border-[0.5px] border-[#e3e7f1] px-4 py-1 text-[12px] font-normal text-[#757f9c]"
+                      sx={{
+                        height: 'auto',
+                        borderRadius: '10px',
+                        border: '0.5px solid',
+                        borderColor: '#e3e7f1',
+                        px: '16px',
+                        py: '4px',
+                        fontSize: '12px',
+                        fontWeight: 400,
+                        color: '#757f9c',
+                      }}
                     >
                       {item}
                     </Badge>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <p className="m-0 line-clamp-2 max-w-[720px] text-[14px] leading-[22px] text-[#757f9c]">
+              <Box component="p" sx={{ m: 0, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', maxWidth: '720px', fontSize: '14px', lineHeight: '22px', color: '#757f9c' }}>
                 {systemSummary}
-              </p>
+              </Box>
 
-              <div className="flex w-full max-w-[514px] gap-3">
+              <Box sx={{ display: 'flex', width: '100%', maxWidth: '514px', gap: '12px' }}>
                 <HeroMetric value={selectedKnowledgeCount} label="资料" />
                 <HeroMetric value={selectedGeneralSkillCount} label="技能" />
                 <HeroMetric value={selectedSkillCount} label="SOP" />
                 <HeroMetric value={activeScheduledTasks.length} label="定时任务" />
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
         )}
       />
       <EmployeeProfileTabs activeKey={profileTab} />
@@ -394,10 +462,10 @@ export default function DashboardPage({
 function DashboardStat({ title, value }: { title: string; value: number }): ReactNode {
   return (
     <div className="org-dashboard-card">
-      <div className="ui-card-body p-[24px]">
-        <span className="text-[13px] text-muted-foreground">{title}</span>
+      <Box className="ui-card-body" sx={{ p: '24px' }}>
+        <Box component="span" sx={{ fontSize: '13px', color: 'text.secondary' }}>{title}</Box>
         <strong>{value}</strong>
-      </div>
+      </Box>
     </div>
   );
 }
@@ -447,17 +515,32 @@ function EmployeeProfileTabs({ activeKey = 'work' }: { activeKey?: ProfileTabKey
         const tab = PROFILE_TABS.find((item) => item.key === value);
         if (tab && value !== activeKey) navigate(tab.route);
       }}
-      className="flex w-full flex-col items-center"
+      sx={{ width: '100%', flexDirection: 'column', alignItems: 'center' }}
     >
       <TabsList
         aria-label="个人档案分区"
-        className="h-[35px]! w-[504px] max-w-full gap-2 rounded-none bg-transparent p-0"
+        sx={{ height: '35px', width: '504px', maxWidth: '100%', gap: '8px', borderRadius: 0, bgcolor: 'transparent', p: 0 }}
       >
         {PROFILE_TABS.map(({ key, label, Icon }) => (
           <TabsTrigger
             key={key}
             value={key}
-            className="h-[35px] flex-1 gap-[7px] rounded-t-lg rounded-b-none border-0 text-[14px] font-bold text-[#8b94aa] hover:text-[#202226] data-[state=active]:bg-white data-[state=active]:text-[#202226] data-[state=active]:shadow-[0_-12px_28px_rgba(21,26,38,0.04)]"
+            sx={{
+              height: '35px',
+              flex: 1,
+              gap: '7px',
+              borderRadius: '8px 8px 0 0',
+              border: 0,
+              fontSize: '14px',
+              fontWeight: 700,
+              color: '#8b94aa',
+              '&:hover': { color: '#202226' },
+              '&[data-state=active]': {
+                bgcolor: 'background.paper',
+                color: '#202226',
+                boxShadow: '0 -12px 28px rgba(21,26,38,0.04)',
+              },
+            }}
           >
             <Icon />
             {label}
@@ -470,10 +553,10 @@ function EmployeeProfileTabs({ activeKey = 'work' }: { activeKey?: ProfileTabKey
 
 function HeroMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex flex-1 items-end gap-1 rounded-[10px] bg-[#f6f6f6] px-5 py-2">
-      <strong className="text-[14px] leading-none font-medium text-[#18181a]">{value}</strong>
-      <span className="text-[12px] leading-none text-[#464c5e]">{label}</span>
-    </div>
+    <Box sx={{ display: 'flex', flex: 1, alignItems: 'flex-end', gap: '4px', borderRadius: '10px', bgcolor: '#f6f6f6', px: '20px', py: '8px' }}>
+      <Box component="strong" sx={{ fontSize: '14px', lineHeight: 'none', fontWeight: 500, color: '#18181a' }}>{value}</Box>
+      <Box component="span" sx={{ fontSize: '12px', lineHeight: 'none', color: '#464c5e' }}>{label}</Box>
+    </Box>
   );
 }
 
