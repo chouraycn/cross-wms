@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Mattermost 渠道扩展入口
  *

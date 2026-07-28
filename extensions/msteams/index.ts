@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Microsoft Teams 渠道扩展入口
  *

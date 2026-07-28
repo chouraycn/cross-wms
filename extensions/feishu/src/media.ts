@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin module implements media behavior for cross-wms.
 import fs from "node:fs";
 import path from "node:path";

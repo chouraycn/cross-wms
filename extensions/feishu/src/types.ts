@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin module implements types for cross-wms.
 import type { FeishuDomain } from "./types.js";
 

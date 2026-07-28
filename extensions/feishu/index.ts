@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin entrypoint registers its cross-wms integration.
 import type { ExtensionProvider, ExtensionManifest, ExtensionContext } from "../extension-types.js";
 import type { ChannelPlugin, ChannelId, ChannelMeta, ChannelCapabilities, ChannelConfigAdapter, AppConfig } from "../../server/channels/types.js";

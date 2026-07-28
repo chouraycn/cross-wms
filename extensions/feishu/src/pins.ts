@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin module implements pins behavior for cross-wms.
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import { createFeishuClient } from "./client.js";

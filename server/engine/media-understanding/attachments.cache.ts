@@ -177,17 +177,13 @@ export class MediaAttachmentCache {
     const entry = await this.ensureEntry(params.attachmentIndex);
     if (entry.resolvedPath) {
       if (params.maxBytes) {
-        try {
-          const size = await this.ensureLocalStat(entry);
-          if (entry.resolvedPath) {
-            if (size !== undefined && size > params.maxBytes) {
-              throw new Error(
-                `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
-              );
-            }
+        const size = await this.ensureLocalStat(entry);
+        if (entry.resolvedPath) {
+          if (size !== undefined && size > params.maxBytes) {
+            throw new Error(
+              `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
+            );
           }
-        } catch (err) {
-          throw err;
         }
       }
       if (entry.resolvedPath) {
@@ -318,29 +314,25 @@ export class MediaAttachmentCache {
     filePath: string;
     maxBytes: number;
   }): Promise<LocalReadResult> {
-    try {
-      const stat = await fs.stat(params.filePath);
-      if (stat.size > params.maxBytes) {
-        throw new Error(
-          `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
-        );
-      }
-      const canonicalRoots = await this.getCanonicalLocalPathRoots();
-      const realPath = await fs.realpath(params.filePath);
-      if (!isInboundPathAllowed({ filePath: realPath, roots: canonicalRoots })) {
-        throw new Error(
-          `Attachment ${params.attachmentIndex + 1} path is outside allowed roots.`,
-        );
-      }
-      const buffer = await fs.readFile(params.filePath);
-      if (buffer.length > params.maxBytes) {
-        throw new Error(
-          `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
-        );
-      }
-      return { buffer, filePath: realPath };
-    } catch (err) {
-      throw err;
+    const stat = await fs.stat(params.filePath);
+    if (stat.size > params.maxBytes) {
+      throw new Error(
+        `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
+      );
     }
+    const canonicalRoots = await this.getCanonicalLocalPathRoots();
+    const realPath = await fs.realpath(params.filePath);
+    if (!isInboundPathAllowed({ filePath: realPath, roots: canonicalRoots })) {
+      throw new Error(
+        `Attachment ${params.attachmentIndex + 1} path is outside allowed roots.`,
+      );
+    }
+    const buffer = await fs.readFile(params.filePath);
+    if (buffer.length > params.maxBytes) {
+      throw new Error(
+        `Attachment ${params.attachmentIndex + 1} exceeds maxBytes ${params.maxBytes}`,
+      );
+    }
+    return { buffer, filePath: realPath };
   }
 }

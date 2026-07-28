@@ -264,7 +264,7 @@ async function simulateChatStream(
   _options: MistralOptions | undefined,
   _apiKey: string,
 ): Promise<void> {
-  let currentBlock: TextContent | ThinkingContent | null = null;
+  const currentBlock: TextContent | ThinkingContent | null = null;
   const blocks = output.content;
   const blockIndex = () => blocks.length - 1;
 

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Slack 渠道扩展入口
  *

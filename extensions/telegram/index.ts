@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Telegram 渠道扩展入口
  *

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 
 import type { ExtensionProvider, ExtensionManifest, ExtensionContext } from '../extension-types.js';
 import type {

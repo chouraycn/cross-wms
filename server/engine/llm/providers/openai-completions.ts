@@ -175,7 +175,7 @@ async function simulateCompletionsStream(
   _options: OpenAICompletionsOptions | undefined,
   _apiKey: string,
 ): Promise<void> {
-  let currentBlock: TextContent | ThinkingContent | null = null;
+  const currentBlock: TextContent | ThinkingContent | null = null;
   const blocks = output.content;
   const blockIndex = () => blocks.length - 1;
   const toolBlocksById = new Map<string, number>();
