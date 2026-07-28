@@ -164,7 +164,7 @@ function SidebarProvider({
           width: '100%',
           '&:has([data-variant="inset"])': { bgcolor: 'var(--sidebar, #ffffff)' },
         }}
-        {...props}
+        {...(props as Record<string, unknown>)}
       >
         {children}
       </Box>
@@ -199,7 +199,7 @@ function Sidebar({
           bgcolor: 'var(--sidebar, #ffffff)',
           color: 'var(--sidebar-foreground, #858b9c)',
         }}
-        {...props}
+        {...(props as Record<string, unknown>)}
       >
         {children}
       </Box>
@@ -276,7 +276,7 @@ function Sidebar({
                 },
               }),
         }}
-        {...props}
+        {...(props as Record<string, unknown>)}
       >
         <Box
           data-sidebar="sidebar"
@@ -364,12 +364,10 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
         transition: 'all 0.15s',
         transitionTimingFunction: 'linear',
         transform: 'translateX(-50%)',
-        '[data-side="left"] &': { right: '-16px' },
-        '[data-side="right"] &': { left: 0 },
         '&::after': { position: 'absolute', top: 0, bottom: 0, insetInlineStart: '50%', width: '2px' },
         '&:hover::after': { bgcolor: 'var(--sidebar-border, #f4f4f4)' },
-        '[data-side="left"] &': { cursor: 'w-resize' },
-        '[data-side="right"] &': { cursor: 'e-resize' },
+        '[data-side="left"] &': { right: '-16px', cursor: 'w-resize' },
+        '[data-side="right"] &': { left: 0, cursor: 'e-resize' },
         '[data-side="left"][data-state="collapsed"] &': { cursor: 'e-resize' },
         '[data-side="right"][data-state="collapsed"] &': { cursor: 'w-resize' },
         '[data-collapsible="offcanvas"] &': {
@@ -381,7 +379,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
         '[data-side="right"][data-collapsible="offcanvas"] &': { left: '-8px' },
         '@media (min-width: 640px)': { display: 'flex' },
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -409,7 +407,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
           '[data-variant="inset"][data-state="collapsed"] ~ &': { ml: '8px' },
         },
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -442,7 +440,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>) {
       data-sidebar="header"
       className={className}
       sx={{ display: 'flex', flexDirection: 'column', gap: '8px', p: '8px' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -455,7 +453,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>) {
       data-sidebar="footer"
       className={className}
       sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -494,7 +492,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
         scrollbarWidth: 'none',
         '[data-collapsible="icon"] &': { overflow: 'hidden' },
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -514,7 +512,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
         flexDirection: 'column',
         p: '8px',
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -522,12 +520,23 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
 function SidebarGroupLabel({
   className,
   asChild = false,
+  sx,
   ...props
-}: React.ComponentProps<'div'> & { asChild?: boolean }) {
-  const Comp = asChild ? SlotRoot : 'div'
+}: React.ComponentProps<'div'> & { asChild?: boolean; sx?: SxProps<Theme> }) {
+  if (asChild) {
+    return (
+      <SlotRoot
+        data-slot="sidebar-group-label"
+        data-sidebar="group-label"
+        className={className}
+        {...(props as Record<string, unknown>)}
+      />
+    )
+  }
 
   return (
-    <Comp
+    <Box
+      component="div"
       data-slot="sidebar-group-label"
       data-sidebar="group-label"
       className={className}
@@ -546,11 +555,12 @@ function SidebarGroupLabel({
         outlineOffset: '2px',
         transition: 'margin 0.2s, opacity 0.2s',
         transitionTimingFunction: 'linear',
-        '&[data-collapsible="icon"] &': { mt: '-32px', opacity: 0 },
+        '[data-collapsible="icon"] &': { mt: '-32px', opacity: 0 },
         '&:focus-visible': { boxShadow: '0 0 0 2px var(--sidebar-ring, #18181a)' },
         '& > svg': { width: '16px', height: '16px', flexShrink: 0 },
+        ...(sx as Record<string, unknown>),
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -558,12 +568,23 @@ function SidebarGroupLabel({
 function SidebarGroupAction({
   className,
   asChild = false,
+  sx,
   ...props
-}: React.ComponentProps<'button'> & { asChild?: boolean }) {
-  const Comp = asChild ? SlotRoot : 'button'
+}: React.ComponentProps<'button'> & { asChild?: boolean; sx?: SxProps<Theme> }) {
+  if (asChild) {
+    return (
+      <SlotRoot
+        data-slot="sidebar-group-action"
+        data-sidebar="group-action"
+        className={className}
+        {...(props as Record<string, unknown>)}
+      />
+    )
+  }
 
   return (
-    <Comp
+    <Box
+      component="button"
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={className}
@@ -597,8 +618,9 @@ function SidebarGroupAction({
         '&:focus-visible': { boxShadow: '0 0 0 2px var(--sidebar-ring, #18181a)' },
         '@media (min-width: 768px)': { '&::after': { display: 'none' } },
         '& > svg': { width: '16px', height: '16px', flexShrink: 0 },
+        ...(sx as Record<string, unknown>),
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -614,7 +636,7 @@ function SidebarGroupContent({
       data-sidebar="group-content"
       className={className}
       sx={{ width: '100%', fontSize: '14px' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -627,7 +649,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>) {
       data-sidebar="menu"
       className={className}
       sx={{ display: 'flex', width: '100%', minWidth: 0, flexDirection: 'column', gap: 0 }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -641,7 +663,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
       data-menu-item
       className={className}
       sx={{ position: 'relative' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -737,9 +759,8 @@ function SidebarMenuButton({
       data-size={size}
       data-active={isActive}
       data-menu-button
-      sx={menuButtonSx({ variant, size })}
       className={className}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   ) : (
     <Box
@@ -751,7 +772,7 @@ function SidebarMenuButton({
       data-menu-button
       sx={menuButtonSx({ variant, size })}
       className={className}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 
@@ -782,15 +803,27 @@ function SidebarMenuAction({
   className,
   asChild = false,
   showOnHover = false,
+  sx,
   ...props
 }: React.ComponentProps<'button'> & {
   asChild?: boolean
   showOnHover?: boolean
+  sx?: SxProps<Theme>
 }) {
-  const Comp = asChild ? SlotRoot : 'button'
+  if (asChild) {
+    return (
+      <SlotRoot
+        data-slot="sidebar-menu-action"
+        data-sidebar="menu-action"
+        className={className}
+        {...(props as Record<string, unknown>)}
+      />
+    )
+  }
 
   return (
-    <Comp
+    <Box
+      component="button"
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={className}
@@ -835,8 +868,9 @@ function SidebarMenuAction({
               '[data-menu-item]:hover &': { opacity: 1 },
             }
           : {}),
+        ...(sx as Record<string, unknown>),
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -877,7 +911,7 @@ function SidebarMenuBadge({
           color: 'var(--sidebar-accent-foreground, #18181a)',
         },
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -901,7 +935,7 @@ function SidebarMenuSkeleton({
       data-sidebar="menu-skeleton"
       className={className}
       sx={{ display: 'flex', height: '32px', alignItems: 'center', gap: '8px', borderRadius: '6px', px: '8px' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     >
       {showIcon && (
         <Skeleton
@@ -944,7 +978,7 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<'ul'>) {
         py: '2px',
         '[data-collapsible="icon"] &': { display: 'none' },
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -960,7 +994,7 @@ function SidebarMenuSubItem({
       data-sidebar="menu-sub-item"
       className={className}
       sx={{ position: 'relative' }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -970,16 +1004,30 @@ function SidebarMenuSubButton({
   size = 'md',
   isActive = false,
   className,
+  sx,
   ...props
 }: React.ComponentProps<'a'> & {
   asChild?: boolean
   size?: 'sm' | 'md'
   isActive?: boolean
+  sx?: SxProps<Theme>
 }) {
-  const Comp = asChild ? SlotRoot : 'a'
+  if (asChild) {
+    return (
+      <SlotRoot
+        data-slot="sidebar-menu-sub-button"
+        data-sidebar="menu-sub-button"
+        data-size={size}
+        data-active={isActive}
+        className={className}
+        {...(props as Record<string, unknown>)}
+      />
+    )
+  }
 
   return (
-    <Comp
+    <Box
+      component="a"
       data-slot="sidebar-menu-sub-button"
       data-sidebar="menu-sub-button"
       data-size={size}
@@ -1015,10 +1063,15 @@ function SidebarMenuSubButton({
           color: 'var(--sidebar-accent-foreground, #18181a)',
         },
         '& > span:last-child': { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-        '& > svg': { width: '16px', height: '16px', flexShrink: 0 },
-        '& > svg': { color: 'var(--sidebar-accent-foreground, #18181a)' },
+        '& > svg': {
+          width: '16px',
+          height: '16px',
+          flexShrink: 0,
+          color: 'var(--sidebar-accent-foreground, #18181a)',
+        },
+        ...(sx as Record<string, unknown>),
       }}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
