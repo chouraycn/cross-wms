@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactElement } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Popover,
@@ -11,13 +11,12 @@ import {
 import { Button } from './ui/button.js'
 import { X as XIcon } from 'lucide-react'
 import Box from '@mui/material/Box'
-import type { ReactType } from 'react'
 import { EnterpriseRoute } from './enums/routes.js'
 import { OPEN_QUICK_START_EVENT } from './OnboardingGuide.js'
 
 // PopoverContent applies className to the paper but exposes no sx slot; route the
 // card styles to the MUI Popover paper via slotProps (cast keeps us from editing popover.tsx).
-const PopoverContentSx = PopoverContent as unknown as ReactType
+const PopoverContentSx = PopoverContent as unknown as (props: Record<string, unknown>) => ReactElement
 
 const ONBOARDING_SEEN_KEY = 'staffdeck_onboarding_guide_seen'
 export const QUICK_START_SEEN_KEY = 'staffdeck_quick_start_guide_seen'
