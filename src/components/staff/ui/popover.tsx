@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Popover as MuiPopover, Box } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 
@@ -192,17 +193,17 @@ function PopoverArrow({
   return null
 }
 
-function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function PopoverHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box component="div" data-slot="popover-header" className={cn('flex flex-col gap-0.5 text-sm', className)} {...(props as Record<string, unknown>)} />
   )
 }
-function PopoverTitle({ className, ...props }: React.ComponentProps<'h2'>) {
+function PopoverTitle({ className, ...props }: React.ComponentProps<'h2'> & { sx?: SxProps }) {
   return (
     <Box component="div" data-slot="popover-title" className={cn('font-medium', className)} {...(props as Record<string, unknown>)} />
   )
 }
-function PopoverDescription({ className, ...props }: React.ComponentProps<'p'>) {
+function PopoverDescription({ className, ...props }: React.ComponentProps<'p'> & { sx?: SxProps }) {
   return (
     <Box component="p" data-slot="popover-description" className={cn('text-muted-foreground', className)} {...(props as Record<string, unknown>)} />
   )

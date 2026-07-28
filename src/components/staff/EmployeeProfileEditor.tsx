@@ -1,6 +1,6 @@
 import { User } from './icons.js';
 import { X as XIcon } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from 'react';
 import {
   Button as UIButton,
   Dialog,
@@ -16,6 +16,8 @@ import {
   Textarea,
   notify,
 } from './ui/index.js';
+import Box from '@mui/material/Box';
+import { staffTokens } from './lib/staffTokens.js';
 import { api, TENANT_ID } from './api/client.js';
 import type { EnterpriseAuthUser } from './auth.js';
 import { employeeDisplayName, employeeProfile } from './employee.js';
@@ -145,25 +147,58 @@ export default function EmployeeProfileEditor({
     <Dialog open={open} onOpenChange={(next) => { if (!next && !saving) onClose(); }}>
       <DialogContent
         aria-describedby={undefined}
-        className="employee-profile-modal flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[860px]"
+        className="employee-profile-modal"
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          maxHeight: 'calc(100dvh - 4rem)',
+          width: 'calc(100% - 2rem)',
+          flexDirection: 'column',
+          gap: '16px',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          px: '20px',
+          py: '16px',
+          '@media (min-width: 640px)': { maxWidth: '860px' },
+        }}
       >
-        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c]">
+        <DialogTitle sx={{ px: '12px', fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: '#757f9c' }}>
           {agent ? `编辑数字员工档案：${employeeDisplayName(agent)}` : '编辑数字员工档案'}
         </DialogTitle>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
+        <Box sx={{ minHeight: 0, flex: 1, overflowY: 'auto', px: '12px' }}>
           <div className="employee-profile-editor">
             <div className="employee-profile-preview">
               <EmployeeAvatar agent={agent} size={92} />
               <div>
-                <span className="m-0 block text-[12px] text-muted-foreground">数字员工档案</span>
-                <h4 className="mt-[4px] mb-[6px] text-[18px] font-semibold text-[#18181a]">{agent ? employeeDisplayName(agent) : '数字员工'}</h4>
-                <span className="m-0 block text-[12px] text-muted-foreground">{profile.roleName}</span>
+                <Box
+                  component="span"
+                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'text.secondary' }}
+                >
+                  数字员工档案
+                </Box>
+                <Box
+                  component="h4"
+                  sx={{ mt: '4px', mb: '6px', fontSize: '18px', fontWeight: 600, color: '#18181a' }}
+                >
+                  {agent ? employeeDisplayName(agent) : '数字员工'}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'text.secondary' }}
+                >
+                  {profile.roleName}
+                </Box>
               </div>
-              <span className="employee-profile-preview-icon"><User className="size-full" /></span>
+              <span className="employee-profile-preview-icon">
+                <Box component={User} sx={{ width: '100%', height: '100%' }} />
+              </span>
             </div>
 
-            <div className="employee-profile-form flex flex-col gap-[14px]">
+            <Box
+              className="employee-profile-form"
+              sx={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               <div className="employee-profile-form-grid">
                 <LabeledField label="数字员工姓名">
                   <Input value={form.name} placeholder="例如：默认员工" onChange={(event) => update({ name: event.target.value })} />
@@ -176,7 +211,7 @@ export default function EmployeeProfileEditor({
                 </LabeledField>
                 <LabeledField label="工作状态">
                   <Select value={form.status} onValueChange={(value) => update({ status: value as 'active' | 'archived' })}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger sx={{ width: '100%' }}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -211,34 +246,39 @@ export default function EmployeeProfileEditor({
 
               <div className="employee-profile-publish">
                 <div>
-                  <strong className="text-[13px] text-[#18181a]">发布到广场</strong>
-                  <p className="m-0 mt-[4px] text-[12px] text-muted-foreground">
+                  <Box component="strong" sx={{ fontSize: '13px', color: '#18181a' }}>
+                    发布到广场
+                  </Box>
+                  <Box
+                    component="p"
+                    sx={{ margin: 0, mt: '4px', fontSize: '12px', color: 'text.secondary' }}
+                  >
                     开启后，其他账号可以在对话端和数字员工广场中选择这个员工。
-                  </p>
+                  </Box>
                 </div>
                 <Switch checked={form.publishedToGallery} onCheckedChange={(next) => update({ publishedToGallery: next })} />
               </div>
-            </div>
+            </Box>
           </div>
-        </div>
+        </Box>
 
-        <div className="flex items-center justify-end gap-[8px] px-[12px]">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', px: '12px' }}>
           <UIButton
             variant="outline"
             disabled={saving}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+            sx={staffTokens.dialogCancelButton}
           >
             取消
           </UIButton>
           <UIButton
             disabled={saving}
             onClick={() => void save()}
-            className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            sx={staffTokens.dialogPrimaryButton}
           >
             保存
           </UIButton>
-        </div>
+        </Box>
       </DialogContent>
     </Dialog>
   );
@@ -246,10 +286,12 @@ export default function EmployeeProfileEditor({
 
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
+    <Box component="label" sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: '#464c5e' }}>
+        {label}
+      </Box>
       {children}
-    </label>
+    </Box>
   );
 }
 
@@ -274,29 +316,63 @@ function TagsField({
   const suggestions = options.filter((item) => !value.includes(item));
 
   return (
-    <div className="flex flex-col gap-[8px]">
-      <div className="flex min-h-[34px] flex-wrap items-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] py-[5px] transition-colors focus-within:border-[#18181a]">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          minHeight: '34px',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '6px',
+          borderRadius: '10px',
+          border: '0.5px solid',
+          borderColor: '#e3e7f1',
+          bgcolor: '#fff',
+          px: '8px',
+          py: '5px',
+          transition: 'background-color 0.15s, color 0.15s',
+          '&:focus-within': { borderColor: '#18181a' },
+        }}
+      >
         {value.map((tag) => (
-          <span
+          <Box
+            component="span"
             key={tag}
-            className="inline-flex items-center gap-[4px] rounded-[6px] bg-[#f2f3f7] px-[8px] py-[2px] text-[12px] text-[#18181a]"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              borderRadius: '6px',
+              bgcolor: '#f2f3f7',
+              px: '8px',
+              py: '2px',
+              fontSize: '12px',
+              color: '#18181a',
+            }}
           >
             {tag}
-            <button
+            <Box
+              component="button"
               type="button"
               aria-label={`移除 ${tag}`}
               onClick={() => removeTag(tag)}
-              className="grid place-items-center text-[#858b9c] hover:text-[#18181a]"
+              sx={{
+                display: 'grid',
+                placeItems: 'center',
+                color: '#858b9c',
+                '&:hover': { color: '#18181a' },
+              }}
             >
-              <XIcon className="size-[12px]" />
-            </button>
-          </span>
+              <Box component={XIcon} sx={{ width: '12px', height: '12px' }} />
+            </Box>
+          </Box>
         ))}
-        <input
+        <Box
+          component="input"
           value={draft}
           placeholder={value.length ? '' : placeholder}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setDraft(event.target.value)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
             if (event.key === 'Enter' || event.key === ',' || event.key === '，') {
               event.preventDefault();
               addTags(draft);
@@ -305,24 +381,44 @@ function TagsField({
             }
           }}
           onBlur={() => draft.trim() && addTags(draft)}
-          className="h-[22px] min-w-[80px] flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
+          sx={{
+            height: '22px',
+            minWidth: '80px',
+            flex: 1,
+            bgcolor: 'transparent',
+            fontSize: '12px',
+            color: '#17191f',
+            outline: 'none',
+            border: 0,
+            '&::placeholder': { color: '#c0c6d4' },
+          }}
         />
-      </div>
+      </Box>
       {suggestions.length > 0 && (
-        <div className="flex flex-wrap gap-[6px]">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {suggestions.map((item) => (
-            <button
-              key={item}
+            <Box
+              component="button"
               type="button"
+              key={item}
               onClick={() => addTags(item)}
-              className="rounded-[6px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[12px] text-[#858b9c] hover:border-[#18181a] hover:text-[#18181a]"
+              sx={{
+                borderRadius: '6px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                px: '8px',
+                py: '2px',
+                fontSize: '12px',
+                color: '#858b9c',
+                '&:hover': { borderColor: '#18181a', color: '#18181a' },
+              }}
             >
               + {item}
-            </button>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, type ChangeEvent } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from './ui/index.js'
 import { Button } from './ui/button.js'
-import { cn } from './lib/utils.js'
+import Box from '@mui/material/Box'
+import { staffTokens } from './lib/staffTokens.js'
 
 export type ImportSourceOption = { value: string; label: string }
 export type ImportChoiceItem = { id: string; label: ReactNode }
@@ -99,21 +100,50 @@ export function ResourceImportDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[640px]"
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          maxHeight: 'calc(100dvh - 4rem)',
+          width: 'calc(100% - 2rem)',
+          flexDirection: 'column',
+          gap: '16px',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          px: '20px',
+          py: '16px',
+          '@media (min-width: 640px)': { maxWidth: '640px' },
+        }}
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: '#757f9c' }}>
           {icon}
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
+          <DialogTitle
+            sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: '#757f9c' }}
+          >
             {title}
           </DialogTitle>
-        </div>
+        </Box>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-[12px]">
+        <Box
+          sx={{
+            display: 'flex',
+            minHeight: 0,
+            flex: 1,
+            flexDirection: 'column',
+            gap: '14px',
+            overflowY: 'auto',
+            px: '12px',
+          }}
+        >
           {showTargetSelect && (
-            <div className="flex flex-col gap-[6px]">
-              <span className="text-[11px] font-semibold text-[#858b9c]">{targetLabel}</span>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box
+                component="span"
+                sx={{ fontSize: '11px', fontWeight: 600, color: '#858b9c' }}
+              >
+                {targetLabel}
+              </Box>
               <Select value={targetId || undefined} onValueChange={onTargetChange}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger sx={{ width: '100%' }}>
                   <SelectValue placeholder={targetPlaceholder || targetLabel} />
                 </SelectTrigger>
                 <SelectContent>
@@ -124,18 +154,31 @@ export function ResourceImportDialog({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </Box>
           )}
 
-          <div className="flex flex-col gap-[6px]">
-            <span className="text-[11px] font-semibold text-[#858b9c]">复制来源</span>
-            <div className="relative">
-              <select
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <Box
+              component="span"
+              sx={{ fontSize: '11px', fontWeight: 600, color: '#858b9c' }}
+            >
+              复制来源
+            </Box>
+            <Box sx={{ position: 'relative' }}>
+              <Box
+                component="select"
                 value={effectiveSourceId}
-                onChange={(event) => onSourceChange(event.target.value)}
-                className={cn(
-                  'w-full appearance-none px-3 pr-9 outline-none disabled:cursor-not-allowed disabled:opacity-60',
-                )}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                  onSourceChange(event.target.value)
+                }
+                sx={{
+                  width: '100%',
+                  appearance: 'none',
+                  pl: '12px',
+                  pr: '36px',
+                  outline: 'none',
+                  '&:disabled': { cursor: 'not-allowed', opacity: 0.6 },
+                }}
               >
                 <option value="" disabled>
                   {sourcePlaceholder}
@@ -145,57 +188,112 @@ export function ResourceImportDialog({
                     {item.label}
                   </option>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#858b9c]" />
-            </div>
-          </div>
+              </Box>
+              <Box
+                component={ChevronDown}
+                sx={{
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  width: '16px',
+                  height: '16px',
+                  transform: 'translateY(-50%)',
+                  color: '#858b9c',
+                }}
+              />
+            </Box>
+          </Box>
 
-          <div className="flex flex-col gap-[6px]">
-            <span className="text-[11px] font-semibold text-[#858b9c]">{itemsLabel}</span>
-            <div className="max-h-[300px] overflow-y-auto rounded-[10px] border border-[#eef0f4] p-[6px]">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <Box
+              component="span"
+              sx={{ fontSize: '11px', fontWeight: 600, color: '#858b9c' }}
+            >
+              {itemsLabel}
+            </Box>
+            <Box
+              sx={{
+                maxHeight: '300px',
+                overflowY: 'auto',
+                borderRadius: '10px',
+                border: '1px solid',
+                borderColor: '#eef0f4',
+                p: '6px',
+              }}
+            >
               {items.length === 0 ? (
-                <div className="py-[28px] text-center text-[12px] text-[#858b9c]">
+                <Box
+                  component="div"
+                  sx={{ py: '28px', textAlign: 'center', fontSize: '12px', color: '#858b9c' }}
+                >
                   {sourceId ? emptyText : emptySourceText}
-                </div>
+                </Box>
               ) : (
                 items.map((item) => (
-                  <label
+                  <Box
+                    component="label"
                     key={item.id}
-                    className="flex cursor-pointer items-center gap-[10px] rounded-[8px] px-[8px] py-[7px] hover:bg-[#f6f6f6]"
+                    sx={{
+                      display: 'flex',
+                      cursor: 'pointer',
+                      alignItems: 'center',
+                      gap: '10px',
+                      borderRadius: '8px',
+                      px: '8px',
+                      py: '7px',
+                      '&:hover': { bgcolor: '#f6f6f6' },
+                    }}
                   >
                     <Checkbox
                       checked={selectedIds.includes(item.id)}
                       onCheckedChange={(checked) => toggle(item.id, checked === true)}
                     />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-[#18181a]">
+                    <Box
+                      component="span"
+                      sx={{
+                        minWidth: 0,
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: '12px',
+                        color: '#18181a',
+                      }}
+                    >
                       {item.label}
-                    </span>
-                  </label>
+                    </Box>
+                  </Box>
                 ))
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <p className="text-[12px] leading-[1.6] text-[#858b9c]">{note}</p>
-        </div>
+          <Box
+            component="p"
+            sx={{ fontSize: '12px', lineHeight: '1.6', color: '#858b9c' }}
+          >
+            {note}
+          </Box>
+        </Box>
 
-        <div className="flex items-center justify-end gap-[8px] px-[12px]">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', px: '12px' }}>
           <Button
             variant="outline"
             disabled={loading}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+            sx={staffTokens.dialogCancelButton}
           >
             取消
           </Button>
           <Button
             disabled={loading}
             onClick={onSubmit}
-            className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            sx={staffTokens.dialogPrimaryButton}
           >
             {submitText}
           </Button>
-        </div>
+        </Box>
       </DialogContent>
     </Dialog>
   )
