@@ -3,7 +3,6 @@ import { Select as MuiSelect, MenuItem as MuiMenuItem, Divider as MuiDivider, Bo
 import type { SxProps, Theme } from '@mui/material/styles'
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react'
 
-import { cn } from './utils'
 import { staffTokens } from '../lib/staffTokens.js'
 
 // 统一到 MUI：Select 映射为 MUI Select（context 受控）。
@@ -20,7 +19,7 @@ type SelectCtxValue = {
 const SelectCtx = React.createContext<SelectCtxValue | null>(null)
 
 function renderDisplay(val: unknown, items: React.ReactNode, placeholder: React.ReactNode) {
-  if (val == null || val === '') return <span className="text-muted-foreground">{placeholder}</span>
+  if (val == null || val === '') return <span style={{ color: 'var(--muted-foreground, #6d726e)' }}>{placeholder}</span>
   const arr = React.Children.toArray(items) as React.ReactElement[]
   const found = arr.find((it) => (it as React.ReactElement)?.props?.value === val)
   return found ? (found.props as { children?: React.ReactNode }).children : (val as React.ReactNode)
@@ -53,7 +52,7 @@ function Select({ value, defaultValue, onValueChange, disabled, children }: {
 
 function SelectGroup({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <Box component="div" data-slot="select-group" className={cn('scroll-my-1 p-1', className)} {...(props as Record<string, unknown>)}>
+    <Box component="div" data-slot="select-group" className={className} sx={{ scrollMargin: '4px', p: '4px' }} {...(props as Record<string, unknown>)}>
       {children}
     </Box>
   )
@@ -71,7 +70,7 @@ function SelectTrigger({ className, size = 'default', children, ...props }: { si
   const ctx = React.useContext(SelectCtx)
   if (!ctx) return null
   return (
-    <Box className="w-fit">
+    <Box sx={{ width: 'fit-content' }}>
       <MuiSelect
         value={ctx.value ?? ''}
         onChange={(e) => ctx.setValue(e.target.value)}
@@ -105,7 +104,7 @@ function SelectContent({ children, ...props }: React.ComponentProps<'div'>) {
 
 function SelectLabel({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <MuiMenuItem disabled data-slot="select-label" className={cn('px-1.5 py-1 text-xs text-muted-foreground', className)} {...(props as Record<string, unknown>)}>
+    <MuiMenuItem disabled data-slot="select-label" className={className} sx={{ px: '6px', py: '4px', fontSize: '12px', color: 'var(--muted-foreground, #6d726e)' }} {...(props as Record<string, unknown>)}>
       {children}
     </MuiMenuItem>
   )
@@ -119,19 +118,45 @@ function SelectItem({ className, children, value, ...props }: { value: string } 
       value={value}
       selected={!!selected}
       data-slot="select-item"
-      className={cn('relative flex w-full items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm', className)}
+      className={className}
+      sx={{
+        position: 'relative',
+        display: 'flex',
+        width: '100%',
+        alignItems: 'center',
+        gap: '6px',
+        borderRadius: '6px',
+        py: '4px',
+        pr: '32px',
+        pl: '6px',
+        fontSize: '14px',
+      }}
       {...(props as Record<string, unknown>)}
     >
-      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="select-item-indicator">
-        {selected ? <CheckIcon className="pointer-events-none" /> : null}
-      </span>
+      <Box
+        component="span"
+        sx={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          right: '8px',
+          display: 'flex',
+          width: '16px',
+          height: '16px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '& svg': { width: '14px', height: '14px' },
+        }}
+        data-slot="select-item-indicator"
+      >
+        {selected ? <CheckIcon /> : null}
+      </Box>
       {children}
     </MuiMenuItem>
   )
 }
 
 function SelectSeparator({ className, ...props }: React.ComponentProps<'div'>) {
-  return <MuiDivider data-slot="select-separator" className={cn(className)} {...(props as Record<string, unknown>)} />
+  return <MuiDivider data-slot="select-separator" className={className} {...(props as Record<string, unknown>)} />
 }
 
 function SelectScrollUpButton({ className, ...props }: React.ComponentProps<'button'>) {

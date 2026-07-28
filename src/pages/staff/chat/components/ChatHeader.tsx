@@ -41,7 +41,7 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
                 '&:hover': { color: '#18181a' },
               }}
             >
-              <Edit className="size-[14px]!" />
+              <Edit size={14} />
             </Box>
           )}
         </Box>
@@ -86,7 +86,7 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
               >
                 {initial}
               </Box>
-              <ChevronDown className="size-[14px] shrink-0 text-[#757F9C]" />
+              <ChevronDown size={14} color="#757F9C" style={{ flexShrink: 0 }} />
             </Box>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -97,7 +97,7 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
               onSelect={logout}
               sx={chatTokens.menuItem}
             >
-              <LogOut className="size-[16px]" />
+              <LogOut size={16} />
               退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>

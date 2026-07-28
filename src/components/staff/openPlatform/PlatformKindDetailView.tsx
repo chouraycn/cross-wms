@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import Box from '@mui/material/Box';
+import { keyframes } from '@mui/material/styles';
+
 import AppHeader from '../AppHeader';
 import { StatCard } from '../StatCard';
 import { Button as UIButton } from '../ui';
-import { cn } from '../lib/utils';
+import { staffTokens } from '../lib/staffTokens.js';
 import {
   ArrowRight,
   Database,
@@ -46,8 +49,25 @@ const PLATFORM_ACCENT: Partial<Record<PlatformDetailKind, PlatformResourceAccent
   tools: 'orange',
 };
 
-const RETURN_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]';
+const CARD_GRID_SX = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+  gap: '16px',
+  '@media (min-width: 640px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+  '@media (min-width: 1024px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+  '@media (min-width: 1280px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+  '@media (min-width: 1536px)': { gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' },
+} as const;
+
+const pulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+`;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
 export type PlatformKindDetailViewProps = {
   kind: PlatformDetailKind;
@@ -67,27 +87,44 @@ export type PlatformKindDetailViewProps = {
 };
 
 function DetailSkeleton({ kind }: { kind: PlatformDetailKind }) {
-  const cardHeight = kind === 'agents' ? 'h-[140px]' : 'h-[112px]';
+  const cardHeight = kind === 'agents' ? '140px' : '112px';
   return (
-    <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <Box sx={CARD_GRID_SX}>
       {Array.from({ length: 8 }, (_, index) => (
-        <div
+        <Box
           key={index}
-          className={cn(
-            'w-full animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6]',
-            cardHeight,
-          )}
+          sx={{
+            width: '100%',
+            animation: `${pulse} 2s cubic-bezier(0.4,0,0.6,1) infinite`,
+            borderRadius: '20px',
+            border: '0.5px solid',
+            borderColor: '#f0f1f5',
+            bgcolor: '#f6f6f6',
+            height: cardHeight,
+          }}
         />
       ))}
-    </div>
+    </Box>
   );
 }
 
 function ResourceIconTile({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <span className="grid size-[32px] shrink-0 place-items-center rounded-[10px] bg-[#f2f4f8] text-[#8a94a6]">
-      <Icon className="size-[18px]" />
-    </span>
+    <Box
+      component="span"
+      sx={{
+        display: 'grid',
+        width: '32px',
+        height: '32px',
+        flexShrink: 0,
+        placeItems: 'center',
+        borderRadius: '10px',
+        bgcolor: '#f2f4f8',
+        color: '#8a94a6',
+      }}
+    >
+      <Icon size={18} />
+    </Box>
   );
 }
 
@@ -132,14 +169,32 @@ export default function PlatformKindDetailView({
     body = <DetailSkeleton kind={kind} />;
   } else if (filteredItems.length === 0) {
     body = (
-      <div className="grid min-h-[180px] w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] px-[20px] py-[40px] text-center font-bold text-[#8b94aa]">
-        <Search className="size-[20px] shrink-0" />
-        <span>{items.length === 0 ? '暂无开放内容' : '没有匹配的广场内容'}</span>
-      </div>
+      <Box
+        sx={{
+          display: 'grid',
+          minHeight: '180px',
+          width: '100%',
+          placeItems: 'center',
+          alignContent: 'center',
+          gap: '10px',
+          borderRadius: '18px',
+          border: '1px dashed',
+          borderColor: '#dfe4ec',
+          bgcolor: '#fbfcfd',
+          px: '20px',
+          py: '40px',
+          textAlign: 'center',
+          fontWeight: 700,
+          color: '#8b94aa',
+        }}
+      >
+        <Search size={20} />
+        <Box component="span">{items.length === 0 ? '暂无开放内容' : '没有匹配的广场内容'}</Box>
+      </Box>
     );
   } else if (kind === 'agents') {
     body = (
-      <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <Box sx={CARD_GRID_SX}>
         {filteredItems.map((item) => item.agent && (
           <PlatformEmployeeCard
             key={item.id}
@@ -161,11 +216,11 @@ export default function PlatformKindDetailView({
             onOpen={() => onOpenItem(item)}
           />
         ))}
-      </div>
+      </Box>
     );
   } else {
     body = (
-      <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <Box sx={CARD_GRID_SX}>
         {filteredItems.map((item) => (
           <PlatformResourceCard
             key={item.id}
@@ -178,12 +233,22 @@ export default function PlatformKindDetailView({
             onClick={() => onOpenItem(item)}
           />
         ))}
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
+    <Box
+      sx={{
+        minHeight: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width: 900px)': { px: '16px' },
+      }}
+      aria-busy={loading}
+    >
       <AppHeader
         onLogout={onLogout}
         userName={userName}
@@ -191,59 +256,125 @@ export default function PlatformKindDetailView({
         description={subtitle}
       />
 
-      <div className="mt-[20px] mb-[16px] flex flex-wrap justify-end gap-[16px]">
-        <UIButton variant="outline" onClick={onBack} className={RETURN_BUTTON_CLASS}>
-          <ArrowRight className="size-3.5 rotate-180" />
+      <Box sx={{ mt: '20px', mb: '16px', display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '16px' }}>
+        <UIButton variant="outline" onClick={onBack} sx={{ ...staffTokens.outlineActionButton }}>
+          <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} />
           返回开放广场
         </UIButton>
         <UIButton
           variant="outline"
           onClick={onRefresh}
           disabled={loading}
-          className={RETURN_BUTTON_CLASS}
+          sx={{ ...staffTokens.outlineActionButton }}
         >
-          <RefreshCw className={cn('size-[14px]', loading && 'animate-spin')} />
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              '& svg': {
+                width: '14px',
+                height: '14px',
+                ...(loading ? { animation: `${spin} 1s linear infinite` } : {}),
+              },
+            }}
+          >
+            <RefreshCw />
+          </Box>
           刷新
         </UIButton>
-      </div>
+      </Box>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label={`${title}统计`}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          borderRadius: '20px',
+          bgcolor: '#fff',
+          p: '18px 18px 24px 18px',
+          boxShadow: '0 -4px 16px 0 rgba(0,0,0,0.05)',
+        }}
+      >
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px' }} aria-label={`${title}统计`}>
           <StatCard value={items.length} label={countLabel} className="max-w-[220px]" />
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <PlatformIcon className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">{title}</span>
-          </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: '#757f9c' }}>
+            <Box sx={{ display: 'inline-flex', flexShrink: 0, color: '#757f9c', '& svg': { width: '14px', height: '14px' } }}>
+              <PlatformIcon />
+            </Box>
+            <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none' }}>
+              {title}
+            </Box>
+          </Box>
 
           {signals.length > 0 && (
-            <div className="flex flex-wrap items-center gap-[6px] px-[12px]">
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', px: '12px' }}>
               {signals.map((signal) => (
-                <span
+                <Box
                   key={signal}
-                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c]"
+                  component="span"
+                  sx={{
+                    borderRadius: '20px',
+                    border: '0.5px solid',
+                    borderColor: '#e3e7f1',
+                    px: '8px',
+                    py: '2px',
+                    fontSize: '10px',
+                    lineHeight: 'normal',
+                    color: '#757f9c',
+                  }}
                 >
                   {signal}
-                </span>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
 
-          <label className="flex h-[34px] w-full max-w-[360px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a]">
-            <Search className="size-[14px] shrink-0 text-[#858b9c]" />
-            <input
+          <Box
+            component="label"
+            sx={{
+              display: 'flex',
+              height: '34px',
+              width: '100%',
+              maxWidth: '360px',
+              alignItems: 'center',
+              gap: '8px',
+              overflow: 'hidden',
+              borderRadius: '10px',
+              border: '0.5px solid',
+              borderColor: '#e3e7f1',
+              bgcolor: '#fff',
+              px: '12px',
+              transition: 'border-color 0.15s',
+              '&:focus-within': { borderColor: '#18181a' },
+            }}
+          >
+            <Box sx={{ display: 'inline-flex', flexShrink: 0, color: '#858b9c', '& svg': { width: '14px', height: '14px' } }}>
+              <Search />
+            </Box>
+            <Box
+              component="input"
               value={searchText}
               placeholder={`搜索${countLabel}`}
               onChange={(event) => setSearchText(event.target.value)}
-              className="min-w-0 flex-1 border-0 bg-transparent text-[12px] text-[#18181a] outline-none placeholder:text-[#858b9c]"
+              sx={{
+                minWidth: 0,
+                flex: 1,
+                border: 0,
+                bgcolor: 'transparent',
+                fontSize: '12px',
+                color: '#18181a',
+                outline: 'none',
+                '&::placeholder': { color: '#858b9c' },
+              }}
             />
-          </label>
+          </Box>
 
           {body}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

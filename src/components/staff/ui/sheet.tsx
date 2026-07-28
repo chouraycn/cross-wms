@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { Drawer as MuiDrawer, Box } from '@mui/material'
 import { XIcon } from 'lucide-react'
+import type { SxProps, Theme } from '@mui/material/styles'
 
-import { cn } from './utils'
 import { Button } from './button'
 
 // 统一到 MUI：Sheet 映射为 MUI Drawer（context 受控），保留 compound API 与 data-slot。
@@ -81,6 +81,7 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<'div'>) {
 
 function SheetContent({
   className,
+  sx,
   children,
   side = 'right',
   showCloseButton = true,
@@ -88,6 +89,7 @@ function SheetContent({
 }: React.ComponentProps<'div'> & {
   side?: 'top' | 'right' | 'bottom' | 'left'
   showCloseButton?: boolean
+  sx?: SxProps<Theme>
 }) {
   const { open, setOpen } = React.useContext(SheetCtx)
   const anchor = side === 'top' ? 'top' : side === 'bottom' ? 'bottom' : side === 'left' ? 'left' : 'right'
@@ -115,8 +117,16 @@ function SheetContent({
         <Box
           data-slot="sheet-content"
           data-side={side}
-          className={cn('flex h-full flex-col gap-4 text-sm', className)}
-          sx={{ p: 2 }}
+          className={className}
+          sx={{
+            display: 'flex',
+            height: '100%',
+            flexDirection: 'column',
+            gap: '16px',
+            fontSize: '14px',
+            p: 2,
+            ...(sx as object),
+          }}
         >
           {children}
           {showCloseButton && (
@@ -124,11 +134,26 @@ function SheetContent({
               variant="ghost"
               size="icon-sm"
               onClick={() => setOpen(false)}
-              className="absolute top-3 right-3"
+              sx={{ position: 'absolute', top: '12px', right: '12px' }}
               aria-label="Close"
             >
               <XIcon />
-              <span className="sr-only">Close</span>
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  width: '1px',
+                  height: '1px',
+                  padding: 0,
+                  margin: '-1px',
+                  overflow: 'hidden',
+                  clip: 'rect(0,0,0,0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                Close
+              </Box>
             </Button>
           )}
         </Box>
@@ -138,16 +163,16 @@ function SheetContent({
 }
 
 function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return <Box component="div" data-slot="sheet-header" className={cn('flex flex-col gap-0.5 p-4', className)} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-header" className={className} sx={{ display: 'flex', flexDirection: 'column', gap: '2px', p: '16px' }} {...(props as Record<string, unknown>)} />
 }
 function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
-  return <Box component="div" data-slot="sheet-footer" className={cn('mt-auto flex flex-col gap-2 p-4', className)} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-footer" className={className} sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', p: '16px' }} {...(props as Record<string, unknown>)} />
 }
 function SheetTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return <Box component="div" data-slot="sheet-title" className={cn('text-base font-medium', className)} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-title" className={className} sx={{ fontSize: '16px', fontWeight: 500 }} {...(props as Record<string, unknown>)} />
 }
 function SheetDescription({ className, ...props }: React.ComponentProps<'div'>) {
-  return <Box component="div" data-slot="sheet-description" className={cn('text-sm text-muted-foreground', className)} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-description" className={className} sx={{ fontSize: '14px', color: 'var(--muted-foreground, #6d726e)' }} {...(props as Record<string, unknown>)} />
 }
 
 export {

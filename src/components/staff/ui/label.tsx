@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { Box } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 
-function Label({ className, ...props }: React.ComponentProps<'label'>) {
+function Label({ className, ...props }: React.ComponentProps<'label'> & { sx?: SxProps }) {
   return (
     <Box
       component="label"

@@ -70,7 +70,7 @@ export default function ChatPage(): JSX.Element {
               '&:hover': { bgcolor: '#303030' },
             }}
           >
-            <Plus className="size-[13px]" />
+            <Plus size={13} />
             新建
           </Box>
         </Box>
@@ -116,7 +116,7 @@ export default function ChatPage(): JSX.Element {
                 textAlign: 'center',
               }}
             >
-              <MessageSquare className="size-[28px] text-[#c4c9d6]" />
+              <MessageSquare size={28} color="#c4c9d6" />
               <Box component="p" sx={{ fontSize: '12px', lineHeight: '1.625', color: '#9aa0b5' }}>
                 还没有对话，点击「新建」选择一个数字员工开始。
               </Box>
@@ -176,7 +176,7 @@ export default function ChatPage(): JSX.Element {
                           {agent ? (
                             <EmployeeAvatar agent={agent} size={32} radius={8} />
                           ) : (
-                            <MessageSquare className="size-[16px] text-[#9aa0b5]" />
+                            <MessageSquare size={16} color="#9aa0b5" />
                           )}
                         </Box>
                         <Box component="span" sx={{ minWidth: 0, flex: 1 }}>
@@ -229,7 +229,7 @@ export default function ChatPage(): JSX.Element {
                           '&:hover': { bgcolor: '#fdeceb', color: '#f5483b' },
                         }}
                       >
-                        <Trash2 className="size-[14px]" />
+                        <Trash2 size={14} />
                       </Box>
                     </Box>
                   </Box>
@@ -258,7 +258,7 @@ export default function ChatPage(): JSX.Element {
               '&:hover': { bgcolor: '#f6f6f6' },
             }}
           >
-            <Users className="size-[15px]" />
+            <Users size={15} />
             数字员工广场
           </Box>
         </Box>

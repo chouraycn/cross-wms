@@ -1,17 +1,17 @@
 import { ArrowLeft, AlarmClock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import type { Theme } from '@mui/material/styles';
 
 import AppHeader from '../../../components/staff/AppHeader.js';
 import { api, TENANT_ID } from '../../../components/staff/api/client.js';
 import type { EnterpriseAuthUser } from '../../../components/staff/auth.js';
 import { getClientTimeZone } from '../../../components/staff/lib/timezone.js';
-import { cn } from '../../../components/staff/lib/utils.js';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import {
   Button,
   Checkbox,
-  Input,
-  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -46,10 +46,59 @@ export function ScheduledTaskEditPage(props: ScheduledTaskPageProps = {}) {
 
 type FormErrors = Partial<Record<'title' | 'prompt' | 'run_at' | 'time' | 'weekdays', string>>;
 
-const CARD_CLASS = 'rounded-[14px] border border-[#eceef1] bg-white p-[20px]';
-const CARD_TITLE_CLASS = 'mb-[16px] text-[14px] font-medium text-[#18181a]';
-const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
-const FIELD_ERROR_CLASS = 'text-[12px] leading-none text-[#d20b0b]';
+const cardSx = {
+  borderRadius: '14px',
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+  p: '20px',
+};
+const cardTitleSx = {
+  mb: '16px',
+  fontSize: '14px',
+  fontWeight: 500,
+  color: 'text.primary',
+};
+const fieldErrorSx = {
+  fontSize: '12px',
+  lineHeight: 1,
+  color: '#d20b0b',
+};
+const labelBaseSx = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '13px',
+  fontWeight: 500,
+  lineHeight: 1,
+  color: 'text.primary',
+  userSelect: 'none',
+};
+const inputBaseSx = {
+  height: '32px',
+  width: '100%',
+  minWidth: 0,
+  borderRadius: '8px',
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'transparent',
+  px: '10px',
+  py: '4px',
+  fontSize: '14px',
+  transition: 'background-color 0.15s, color 0.15s',
+  outline: 'none',
+  '&::placeholder': { color: 'text.disabled' },
+  '&:focus': {
+    borderColor: 'primary.main',
+    boxShadow: (theme: Theme) => `0 0 0 2px ${theme.palette.primary.main}33`,
+  },
+  '&:disabled': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    bgcolor: 'action.disabledBackground',
+  },
+};
 
 function ScheduledTaskEditorPage({
   mode,
@@ -166,8 +215,15 @@ function ScheduledTaskEditorPage({
   }
 
   return (
-    <div
-      className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]"
+    <Box
+      sx={{
+        minHeight: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width: 900px)': { px: '16px' },
+      }}
       aria-busy={loading || saving}
     >
       <AppHeader
@@ -176,75 +232,107 @@ function ScheduledTaskEditorPage({
         title={isEdit ? '编辑定时任务' : '新建空白定时任务'}
         description="保存后到点会拉起一个新的执行记录，并交给当前员工按 SOP、技能、资料和工具执行。"
       />
-      <div className="flex justify-end gap-[16px] mt-[20px] mb-[16px]">
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', mt: '20px', mb: '16px' }}>
         <Button
           variant="outline"
           onClick={() => navigate('/staff/scheduled-tasks')}
-          className="h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
+          sx={{ ...staffTokens.outlineActionButton, height: '32px' }}
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft size={14} />
           返回定时任务
         </Button>
         <Button
           onClick={() => void save()}
           disabled={saving}
-          className="h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]"
+          sx={{ ...staffTokens.primaryButton, height: '32px', px: '20px', fontSize: '12px' }}
         >
           保存
         </Button>
-      </div>
+      </Box>
 
-      <div className="grid grid-cols-1 items-start gap-[20px] lg:grid-cols-2">
-        <section className={CARD_CLASS}>
-          <h3 className={CARD_TITLE_CLASS}>任务说明</h3>
-          <div className="flex flex-col gap-[16px]">
-            <div className="flex flex-col gap-[6px]">
-              <Label htmlFor="task-title" className={FIELD_LABEL_CLASS}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+          alignItems: 'flex-start',
+          gap: '20px',
+          '@media (min-width: 1024px)': {
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          },
+        }}
+      >
+        <Box component="section" sx={cardSx}>
+          <Box component="h3" sx={cardTitleSx}>任务说明</Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box component="label" htmlFor="task-title" data-slot="label" sx={labelBaseSx}>
                 任务名称
-              </Label>
-              <div className="relative">
-                <AlarmClock className="pointer-events-none absolute left-[10px] top-1/2 size-[14px] -translate-y-1/2 text-[#858b9c]" />
-                <Input
+              </Box>
+              <Box sx={{ position: 'relative' }}>
+                <Box
+                  component="span"
+                  sx={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    color: '#858b9c',
+                    display: 'flex',
+                  }}
+                >
+                  <AlarmClock size={14} />
+                </Box>
+                <Box
+                  component="input"
                   id="task-title"
-                  className={cn('pl-[30px]', errors.title && 'border-destructive')}
+                  data-slot="input"
+                  sx={{ ...inputBaseSx, pl: '30px', borderColor: errors.title ? 'error.main' : 'divider' }}
                   maxLength={80}
                   placeholder="例如：每日交付质量复盘"
                   value={values.title}
                   onChange={(event) => update('title', event.target.value)}
                 />
-              </div>
-              {errors.title && <p className={FIELD_ERROR_CLASS}>{errors.title}</p>}
-            </div>
+              </Box>
+              {errors.title && <Box component="p" sx={fieldErrorSx}>{errors.title}</Box>}
+            </Box>
 
-            <div className="flex flex-col gap-[6px]">
-              <Label htmlFor="task-prompt" className={FIELD_LABEL_CLASS}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box component="label" htmlFor="task-prompt" data-slot="label" sx={labelBaseSx}>
                 每次执行时交给员工的任务
-              </Label>
+              </Box>
               <Textarea
                 id="task-prompt"
                 rows={7}
                 maxLength={10000}
-                className={cn(errors.prompt && 'border-destructive')}
+                sx={{
+                  borderColor: errors.prompt ? 'error.main' : 'divider',
+                  '&:focus': {
+                    borderColor: 'primary.main',
+                    boxShadow: '0 0 0 2px rgba(25,118,210,0.2)',
+                  },
+                  '&:disabled': { bgcolor: 'action.disabledBackground' },
+                }}
                 placeholder="描述员工每次执行时需要做什么，可以包含拆解要求、输出格式和注意事项。"
                 value={values.prompt}
                 onChange={(event) => update('prompt', event.target.value)}
               />
-              <div className="flex items-center justify-between">
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 {errors.prompt ? (
-                  <p className={FIELD_ERROR_CLASS}>{errors.prompt}</p>
+                  <Box component="p" sx={fieldErrorSx}>{errors.prompt}</Box>
                 ) : (
                   <span />
                 )}
-                <span className="text-[12px] leading-none text-[#858b9c]">
+                <Box component="span" sx={{ fontSize: '12px', lineHeight: 1, color: '#858b9c' }}>
                   {values.prompt.length}/10000
-                </span>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex flex-col gap-[6px]">
-              <Label htmlFor="task-description" className={FIELD_LABEL_CLASS}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box component="label" htmlFor="task-description" data-slot="label" sx={labelBaseSx}>
                 内部备注
-              </Label>
+              </Box>
               <Textarea
                 id="task-description"
                 rows={3}
@@ -252,38 +340,38 @@ function ScheduledTaskEditorPage({
                 value={values.description || ''}
                 onChange={(event) => update('description', event.target.value)}
               />
-            </div>
-          </div>
-        </section>
+            </Box>
+          </Box>
+        </Box>
 
-        <section className={CARD_CLASS}>
-          <h3 className={CARD_TITLE_CLASS}>唤醒计划</h3>
-          <div className="flex flex-col gap-[16px]">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="task-status" className={FIELD_LABEL_CLASS}>
+        <Box component="section" sx={cardSx}>
+          <Box component="h3" sx={cardTitleSx}>唤醒计划</Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box component="label" htmlFor="task-status" data-slot="label" sx={labelBaseSx}>
                 启用状态
-              </Label>
-              <div className="flex items-center gap-[8px]">
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Switch
                   id="task-status"
                   checked={values.status !== 'paused'}
                   onCheckedChange={(checked) => update('status', checked ? 'active' : 'paused')}
                 />
-                <span className="text-[13px] text-[#858b9c]">
+                <Box component="span" sx={{ fontSize: '13px', color: '#858b9c' }}>
                   {values.status !== 'paused' ? '启用' : '暂停'}
-                </span>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex flex-col gap-[6px]">
-              <Label className={FIELD_LABEL_CLASS}>调度类型</Label>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box component="label" data-slot="label" sx={labelBaseSx}>调度类型</Box>
               <Select
                 value={values.schedule_type}
                 onValueChange={(value) =>
                   update('schedule_type', value as TaskFormValues['schedule_type'])
                 }
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger sx={{ ...staffTokens.selectTrigger, width: '100%' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -293,46 +381,58 @@ function ScheduledTaskEditorPage({
                   <SelectItem value="once">一次性</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </Box>
 
             {scheduleType === 'once' ? (
-              <div className="flex flex-col gap-[6px]">
-                <Label htmlFor="task-run-at" className={FIELD_LABEL_CLASS}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Box component="label" htmlFor="task-run-at" data-slot="label" sx={labelBaseSx}>
                   执行时间
-                </Label>
-                <Input
+                </Box>
+                <Box
+                  component="input"
                   id="task-run-at"
                   type="datetime-local"
-                  className={cn(errors.run_at && 'border-destructive')}
+                  data-slot="input"
+                  sx={{ ...inputBaseSx, borderColor: errors.run_at ? 'error.main' : 'divider' }}
                   value={values.run_at}
                   onChange={(event) => update('run_at', event.target.value)}
                 />
-                {errors.run_at && <p className={FIELD_ERROR_CLASS}>{errors.run_at}</p>}
-              </div>
+                {errors.run_at && <Box component="p" sx={fieldErrorSx}>{errors.run_at}</Box>}
+              </Box>
             ) : (
-              <div className="flex flex-col gap-[6px]">
-                <Label htmlFor="task-time" className={FIELD_LABEL_CLASS}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Box component="label" htmlFor="task-time" data-slot="label" sx={labelBaseSx}>
                   执行时间
-                </Label>
-                <Input
+                </Box>
+                <Box
+                  component="input"
                   id="task-time"
                   type="time"
-                  className={cn(errors.time && 'border-destructive')}
+                  data-slot="input"
+                  sx={{ ...inputBaseSx, borderColor: errors.time ? 'error.main' : 'divider' }}
                   value={values.time}
                   onChange={(event) => update('time', event.target.value)}
                 />
-                {errors.time && <p className={FIELD_ERROR_CLASS}>{errors.time}</p>}
-              </div>
+                {errors.time && <Box component="p" sx={fieldErrorSx}>{errors.time}</Box>}
+              </Box>
             )}
 
             {scheduleType === 'weekly' && (
-              <div className="flex flex-col gap-[8px]">
-                <Label className={FIELD_LABEL_CLASS}>执行日期</Label>
-                <div className="flex flex-wrap gap-x-[16px] gap-y-[10px]">
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Box component="label" data-slot="label" sx={labelBaseSx}>执行日期</Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: '16px', rowGap: '10px' }}>
                   {WEEKDAY_OPTIONS.map((option) => (
-                    <label
+                    <Box
+                      component="label"
                       key={option.value}
-                      className="flex cursor-pointer items-center gap-[6px] text-[13px] text-[#18181a]"
+                      sx={{
+                        display: 'flex',
+                        cursor: 'pointer',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '13px',
+                        color: 'text.primary',
+                      }}
                     >
                       <Checkbox
                         checked={values.weekdays.includes(option.value)}
@@ -341,52 +441,69 @@ function ScheduledTaskEditorPage({
                         }
                       />
                       {option.label}
-                    </label>
+                    </Box>
                   ))}
-                </div>
-                {errors.weekdays && <p className={FIELD_ERROR_CLASS}>{errors.weekdays}</p>}
-              </div>
+                </Box>
+                {errors.weekdays && <Box component="p" sx={fieldErrorSx}>{errors.weekdays}</Box>}
+              </Box>
             )}
 
             {scheduleType === 'monthly' && (
-              <div className="flex flex-col gap-[6px]">
-                <Label htmlFor="task-day" className={FIELD_LABEL_CLASS}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Box component="label" htmlFor="task-day" data-slot="label" sx={labelBaseSx}>
                   每月几号
-                </Label>
-                <Input
+                </Box>
+                <Box
+                  component="input"
                   id="task-day"
                   type="number"
                   min={1}
                   max={31}
-                  className="w-[120px]"
+                  data-slot="input"
+                  sx={{ ...inputBaseSx, width: '120px' }}
                   value={values.day_of_month}
                   onChange={(event) => update('day_of_month', Number(event.target.value) || 1)}
                 />
-              </div>
+              </Box>
             )}
 
-            <div className="flex flex-col gap-[6px]">
-              <Label htmlFor="task-max-runs" className={FIELD_LABEL_CLASS}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <Box component="label" htmlFor="task-max-runs" data-slot="label" sx={labelBaseSx}>
                 最大运行次数
-              </Label>
-              <Input
+              </Box>
+              <Box
+                component="input"
                 id="task-max-runs"
                 type="number"
                 min={1}
+                data-slot="input"
                 placeholder="不填为无限制"
                 value={values.max_runs ?? ''}
+                sx={inputBaseSx}
                 onChange={(event) =>
                   update('max_runs', event.target.value ? Number(event.target.value) : undefined)
                 }
               />
-            </div>
+            </Box>
 
-            <div className="rounded-[12px] border border-[#eef0f4] bg-[#fafbfc] px-[14px] py-[12px] text-[13px] leading-[1.6] text-[#858b9c]">
+            <Box
+              sx={{
+                borderRadius: '12px',
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: '#fafbfc',
+                px: '14px',
+                py: '12px',
+                fontSize: '13px',
+                lineHeight: 1.6,
+                color: '#858b9c',
+              }}
+            >
               默认使用 forbid 并发策略：上一轮未结束时跳过本次唤醒，避免同一员工重复处理同一批任务。
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

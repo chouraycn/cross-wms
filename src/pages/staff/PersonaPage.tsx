@@ -1,4 +1,5 @@
 import { Save, User } from 'lucide-react';
+import Box from '@mui/material/Box';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Button as UIButton,
@@ -217,9 +218,9 @@ export default function PersonaPage() {
       </div>
       <Card className="editor-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-[6px]"><User /> 岗位人设</CardTitle>
+          <CardTitle sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User /> 岗位人设</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-[14px]">
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <LabeledField label="名称">
             <Input value={form.agent_name} placeholder="数字员工姓名" onChange={(event) => updatePersona({ agent_name: event.target.value })} />
           </LabeledField>
@@ -235,14 +236,14 @@ export default function PersonaPage() {
               onChange={(event) => updatePersona({ system_prompt: event.target.value })}
             />
           </LabeledField>
-          {updatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(updatedAt)}</span>}
+          {updatedAt && <Box component="span" sx={{ fontSize: '12px', color: 'text.secondary' }}>最后更新：{formatDateOnly(updatedAt)}</Box>}
         </CardContent>
       </Card>
       <Card className="editor-card settings-card">
         <CardHeader>
           <CardTitle>执行记录与展示设置</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-[16px]">
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <SwitchRow label="展示思考状态" checked={uiForm.show_thinking_trace} onChange={(next) => updateUiConfig({ show_thinking_trace: next })} />
           <SwitchRow label="展示执行技能" checked={uiForm.show_skill_trace} onChange={(next) => updateUiConfig({ show_skill_trace: next })} />
           <SwitchRow label="展示工具调用" checked={uiForm.show_tool_trace} onChange={(next) => updateUiConfig({ show_tool_trace: next })} />
@@ -266,11 +267,11 @@ export default function PersonaPage() {
               onChange={(event) => updateUiConfig({ agent_loop_max_actions: event.target.value })}
             />
           </LabeledField>
-          <UIButton className="self-start" disabled={uiLoading} onClick={() => void saveUiConfig()}>
+          <UIButton sx={{ alignSelf: 'flex-start' }} disabled={uiLoading} onClick={() => void saveUiConfig()}>
             <Save />
             保存设置
           </UIButton>
-          {uiUpdatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(uiUpdatedAt)}</span>}
+          {uiUpdatedAt && <Box component="span" sx={{ fontSize: '12px', color: 'text.secondary' }}>最后更新：{formatDateOnly(uiUpdatedAt)}</Box>}
         </CardContent>
       </Card>
     </>
@@ -279,19 +280,19 @@ export default function PersonaPage() {
 
 function LabeledField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
-      {hint && <span className="text-[11px] leading-[16px] text-muted-foreground">{hint}</span>}
+    <Box component="label" sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: '#464c5e' }}>{label}</Box>
+      {hint && <Box component="span" sx={{ fontSize: '11px', lineHeight: '16px', color: 'text.secondary' }}>{hint}</Box>}
       {children}
-    </label>
+    </Box>
   );
 }
 
 function SwitchRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (next: boolean) => void }) {
   return (
-    <label className="flex items-center justify-between gap-[16px]">
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
+    <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: '#464c5e' }}>{label}</Box>
       <Switch checked={checked} onCheckedChange={onChange} />
-    </label>
+    </Box>
   );
 }

@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import Box from '@mui/material/Box';
 import { UnderlineTabs, type UnderlineTabItem } from '../../components/staff/ui/index.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
 
@@ -194,26 +195,59 @@ export default function EmployeeGalleryPage({
     : '当前分类还没有可用员工';
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
+    <Box
+      sx={{
+        minHeight: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width: 900px)': { px: '16px' },
+      }}
+      aria-busy={loading}
+    >
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
         left={(
-          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)]">
-            <Search className="size-[20px] shrink-0" />
-            <input
+          <Box
+            sx={{
+              display: 'flex',
+              height: '50px',
+              width: '100%',
+              alignItems: 'center',
+              gap: '6px',
+              borderRadius: '20px',
+              bgcolor: 'background.paper',
+              px: '20px',
+              color: '#757F9C',
+              boxShadow: '0 0 6px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Search size={20} style={{ flexShrink: 0 }} />
+            <Box
+              component="input"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
               aria-label="搜索数字员工"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
+              sx={{
+                minWidth: 0,
+                flex: 1,
+                border: 0,
+                bgcolor: 'transparent',
+                fontSize: '14px',
+                color: '#18181A',
+                outline: 'none',
+                '&::placeholder': { color: '#757F9C' },
+              }}
             />
-          </div>
+          </Box>
         )}
       />
 
       <UnderlineTabs
-        className="mt-[36px] mb-[16px] max-[560px]:w-full"
+        sx={{ mt: '36px', mb: '16px', '@media (max-width: 560px)': { width: '100%' } }}
         aria-label="数字员工分类"
         value={scope}
         onChange={setScope}
@@ -221,7 +255,19 @@ export default function EmployeeGalleryPage({
         tabClassName="max-[560px]:min-h-[54px] max-[560px]:w-auto max-[560px]:flex-1 max-[560px]:px-[6px] max-[560px]:text-[12px] max-[560px]:leading-[16px]"
       />
 
-      <div className="grid auto-rows-[minmax(262px,auto)] grid-cols-1 content-start gap-[32px] sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 max-[900px]:gap-[18px]">
+      <Box
+        sx={{
+          display: 'grid',
+          gridAutoRows: 'minmax(262px,auto)',
+          gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+          alignContent: 'start',
+          gap: '32px',
+          '@media (min-width: 640px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+          '@media (min-width: 1024px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+          '@media (min-width: 1536px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+          '@media (max-width: 900px)': { gap: '18px' },
+        }}
+      >
         {filteredEmployees.map((employee) => (
           <EmployeeCard
             key={employee.id}
@@ -241,7 +287,7 @@ export default function EmployeeGalleryPage({
         {!filteredEmployees.length && (
           <EmployeeGalleryEmptyState title={emptyText} description={emptyDescription} />
         )}
-      </div>
+      </Box>
 
       <EmployeeAvatarEditor
         agent={avatarAgent}
@@ -266,7 +312,7 @@ export default function EmployeeGalleryPage({
         description="删除后该员工的所有配置将一并移除，操作不可撤销。"
         onConfirm={() => void confirmDelete()}
       />
-    </div>
+    </Box>
   );
 }
 
@@ -278,18 +324,42 @@ function EmployeeGalleryEmptyState({
   description: string;
 }) {
   return (
-    <div className="flex h-[262px] w-full items-center justify-center rounded-[20px] border border-dashed border-[#e4e9f2] bg-[#fbfcfe] px-[24px] text-center">
-      <div className="flex max-w-[210px] flex-col items-center">
-        <span className="grid size-[34px] place-items-center rounded-[12px] bg-white text-[#98a2b3] shadow-[0_1px_8px_rgba(70,76,94,0.06)] ring-1 ring-[#edf1f6]">
-          <Search className="size-[16px] shrink-0" />
-        </span>
-        <p className="mt-[12px] text-[14px] font-medium leading-[20px] text-[#7f879a]">
+    <Box
+      sx={{
+        display: 'flex',
+        height: '262px',
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '20px',
+        border: '1px dashed #e4e9f2',
+        bgcolor: '#fbfcfe',
+        px: '24px',
+        textAlign: 'center',
+      }}
+    >
+      <Box sx={{ display: 'flex', maxWidth: '210px', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            width: '34px',
+            height: '34px',
+            placeItems: 'center',
+            borderRadius: '12px',
+            bgcolor: 'background.paper',
+            color: '#98a2b3',
+            boxShadow: '0 0 0 1px #edf1f6, 0 1px 8px rgba(70,76,94,0.06)',
+          }}
+        >
+          <Search size={16} />
+        </Box>
+        <Box component="p" sx={{ mt: '12px', fontSize: '14px', fontWeight: 500, lineHeight: '20px', color: '#7f879a' }}>
           {title}
-        </p>
-        <p className="mt-[4px] text-[11px] leading-[17px] text-[#a7adbb]">
+        </Box>
+        <Box component="p" sx={{ mt: '4px', fontSize: '11px', lineHeight: '17px', color: '#a7adbb' }}>
           {description}
-        </p>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

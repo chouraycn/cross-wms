@@ -1,11 +1,12 @@
 import * as React from 'react'
 import { Box } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 
 // 用 MUI Box(component="input") 封装：保留原生 <input> 的 ref/事件语义，
 // 同时用 theme token 提供 MUI outlined 输入框外观；className(Tailwind) 仍透传。
-function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+function Input({ className, type, ...props }: React.ComponentProps<'input'> & { sx?: SxProps }) {
   return (
     <Box
       component="input"

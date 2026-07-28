@@ -1,4 +1,5 @@
 import { List, MoreHorizontal, Pause, Pencil, Play, Trash2 } from 'lucide-react';
+import Box from '@mui/material/Box';
 
 import {
   DropdownMenu,
@@ -32,11 +33,27 @@ export function TaskActionsMenu({
   const isCompleted = task.status === 'completed';
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label="操作"
-        className="grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
-      >
-        <MoreHorizontal className="size-3.5" />
+      <DropdownMenuTrigger asChild>
+        <Box
+          component="button"
+          type="button"
+          aria-label="操作"
+          sx={{
+            display: 'grid',
+            width: '28px',
+            height: '28px',
+            placeItems: 'center',
+            borderRadius: '8px',
+            color: '#1a71ff',
+            transition: 'background-color 0.15s, color 0.15s',
+            outline: 'none',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', color: '#4a8dff' },
+            '&:focus-visible': { bgcolor: 'rgba(0,0,0,0.05)' },
+          }}
+        >
+          <MoreHorizontal size={14} />
+        </Box>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sx={staffTokens.menuContent}>
         <DropdownMenuItem onSelect={() => onViewRuns(task)}>
@@ -59,7 +76,7 @@ export function TaskActionsMenu({
                 {task.status === 'active' ? '暂停' : '启用'}
               </DropdownMenuItem>
             )}
-            <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
+            <DropdownMenuSeparator sx={{ my: '2px', bgcolor: '#eef0f4' }} />
             <DropdownMenuItem
               variant="destructive"
               onSelect={() => onDelete(task)}

@@ -154,7 +154,7 @@ export default function ModelSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-[680px]">
+      <DialogContent sx={{ position: 'relative', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', '@media (min-width: 640px)': { maxWidth: '680px' } }}>
         <DialogHeader>
           <Box
             sx={{
@@ -168,7 +168,7 @@ export default function ModelSetupDialog({
               color: '#1a71ff',
             }}
           >
-            <Settings2 className="size-[20px]" />
+            <Settings2 size={20} />
           </Box>
           <DialogTitle>需要先配置模型</DialogTitle>
           <DialogDescription>
@@ -177,7 +177,7 @@ export default function ModelSetupDialog({
         </DialogHeader>
 
         {canConfigure ? (
-          <div className="grid gap-[14px] py-[4px] sm:grid-cols-2">
+          <Box sx={{ display: 'grid', gap: '14px', py: '4px', gridTemplateColumns: { sm: 'repeat(2, minmax(0, 1fr))' } }}>
             <LabeledField label="配置名称">
               <Input value={form.name} onChange={(event) => updateForm('name', event.target.value)} />
             </LabeledField>
@@ -224,7 +224,7 @@ export default function ModelSetupDialog({
                 onChange={(event) => updateForm('apiKey', event.target.value)}
               />
             </LabeledField>
-            <div className="grid grid-cols-2 gap-[12px]">
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               <LabeledField label="Temperature">
                 <Input
                   type="number"
@@ -244,8 +244,8 @@ export default function ModelSetupDialog({
                   onChange={(event) => updateForm('maxOutputTokens', event.target.value)}
                 />
               </LabeledField>
-            </div>
-          </div>
+            </Box>
+          </Box>
         ) : (
           <Box
             sx={{
@@ -260,7 +260,7 @@ export default function ModelSetupDialog({
               color: '#7b5c16',
             }}
           >
-            <AlertCircle className="mt-[1px] size-[16px] shrink-0" />
+            <AlertCircle size={16} style={{ marginTop: '1px', flexShrink: 0 }} />
             <span>当前账号没有模型管理权限，请联系管理员完成模型配置和连通性测试。</span>
           </Box>
         )}
@@ -292,20 +292,20 @@ export default function ModelSetupDialog({
               }}
           >
             {testResult.success
-              ? <CheckCircle2 className="mt-[1px] size-[16px] shrink-0" />
-              : <AlertCircle className="mt-[1px] size-[16px] shrink-0" />}
-            <span className="min-w-0 wrap-break-word">{testResult.message}</span>
+              ? <CheckCircle2 size={16} style={{ marginTop: '1px', flexShrink: 0 }} />
+              : <AlertCircle size={16} style={{ marginTop: '1px', flexShrink: 0 }} />}
+            <Box component="span" sx={{ minWidth: 0, overflowWrap: 'break-word' }}>{testResult.message}</Box>
           </Box>
         )}
 
-        <DialogFooter className={`gap-[8px] ${canConfigure ? 'sm:justify-between' : 'sm:justify-end'}`}>
+        <DialogFooter sx={{ gap: '8px', '@media (min-width: 640px)': { justifyContent: canConfigure ? 'space-between' : 'flex-end' } }}>
           {canConfigure && (
             <Button
               type="button"
               variant="outline"
               onClick={() => window.open('/staff/models', '_blank', 'noopener,noreferrer')}
             >
-              <ExternalLink className="size-[15px]" />
+              <ExternalLink size={15} />
               打开模型管理
             </Button>
           )}
@@ -315,7 +315,7 @@ export default function ModelSetupDialog({
             </Button>
             {canConfigure && !testResult?.success && (
               <Button type="button" disabled={testing} onClick={() => void saveAndTest()}>
-                <FlaskConical className="size-[15px]" />
+                <FlaskConical size={15} />
                 {testing ? '正在测试' : savedModelId ? '保存并重新测试' : '保存并测试'}
               </Button>
             )}
@@ -329,7 +329,7 @@ export default function ModelSetupDialog({
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Box component="label" sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '6px' }}>
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: '#464c5e' }}>{label}</Box>
       {children}
     </Box>
   );

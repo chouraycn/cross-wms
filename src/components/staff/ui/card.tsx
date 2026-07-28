@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Card as MuiCard, Box, Typography } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 
@@ -9,7 +10,7 @@ function Card({
   className,
   size = 'default',
   ...props
-}: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
+}: React.ComponentProps<'div'> & { size?: 'default' | 'sm'; sx?: SxProps }) {
   return (
     <MuiCard
       variant="outlined"
@@ -22,7 +23,7 @@ function Card({
   )
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function CardHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       data-slot="card-header"
@@ -32,7 +33,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
+function CardTitle({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Typography
       data-slot="card-title"
@@ -44,7 +45,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
+function CardDescription({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Typography
       data-slot="card-description"
@@ -56,7 +57,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
+function CardAction({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       data-slot="card-action"
@@ -66,7 +67,7 @@ function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
+function CardContent({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       data-slot="card-content"
@@ -76,7 +77,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
+function CardFooter({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       data-slot="card-footer"

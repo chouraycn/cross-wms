@@ -55,7 +55,7 @@ export const distillTokens = {
   },
 
   // —— 页面布局 ——
-  DISTILL_PAGE_CLASS: {
+  PAGE_CLASS: {
     display: 'flex',
     height: '100%',
     minHeight: 0,
@@ -67,7 +67,7 @@ export const distillTokens = {
     pb: '22px',
     '@media (max-width: 900px)': { px: '4px' },
   },
-  DISTILL_ACTIONS_CLASS: {
+  ACTIONS_CLASS: {
     mt: '20px',
     mb: '16px',
     display: 'flex',
@@ -91,7 +91,7 @@ export const distillTokens = {
   },
 
   // —— 区块卡片（聊天 / 来源共用） ——
-  DISTILL_CARD_CLASS: {
+  CARD_CLASS: {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
@@ -103,14 +103,14 @@ export const distillTokens = {
     minWidth: 0,
     overflow: 'hidden',
   },
-  DISTILL_CARD_BODY_CLASS: {
+  CARD_BODY_CLASS: {
     display: 'flex',
     minHeight: 0,
     flex: 1,
     flexDirection: 'column',
     overflow: 'hidden',
   },
-  DISTILL_CARD_HEADER_CLASS: {
+  CARD_HEADER_CLASS: {
     display: 'flex',
     flexShrink: 0,
     alignItems: 'center',
@@ -1877,7 +1877,7 @@ const TOOL_STATUS_BADGE_VARIANTS: Record<ToolStatusBadgeVariant, SxProps<Theme>>
 }
 
 export function toolStatusBadgeClass(status: ToolStatusBadgeVariant): SxProps<Theme> {
-  return [distillTokens.TOOL_STATUS_BADGE_BASE_CLASS, TOOL_STATUS_BADGE_VARIANTS[status]]
+  return [distillTokens.TOOL_STATUS_BADGE_BASE_CLASS, TOOL_STATUS_BADGE_VARIANTS[status]] as SxProps<Theme>
 }
 
 export function flowZoomPresetButtonClass(active: boolean): SxProps<Theme> {
