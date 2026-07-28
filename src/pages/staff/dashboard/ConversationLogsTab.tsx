@@ -11,7 +11,6 @@ import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle, UnderlineTabs, type UnderlineTabItem } from '../../../components/staff/ui/index.js';
 import { notify } from '../../../components/staff/ui/app-toast.js';
 import { Box } from '@mui/material';
-import { cn } from '../../../components/staff/lib/utils.js';
 import { formatDateTime } from '../../../components/staff/lib/enterprise-ui.js';
 import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import { employeeDisplayNameWithCreator } from '../../../components/staff/employee.js';
@@ -231,29 +230,46 @@ export default function ConversationLogsTab() {
       key: 'title',
       title: '对话任务',
       width: 200,
-      className: 'whitespace-normal text-[#18181a]',
       render: (row) => (
-        <span className="line-clamp-1 wrap-break-word">
+        <Box
+          component="span"
+          sx={{
+            color: '#18181a',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1,
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+          }}
+        >
           {row.title || row.summary || row.last_agent_question || row.id}
-        </span>
+        </Box>
       ),
     },
     {
       key: 'agent',
       title: '数字员工',
       width: 180,
-      render: (row) => <span className="block truncate" title={agentLabel(row)}>{agentLabel(row)}</span>,
+      render: (row) => (
+        <Box
+          component="span"
+          title={agentLabel(row)}
+          sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        >
+          {agentLabel(row)}
+        </Box>
+      ),
     },
     {
       key: 'status',
       title: '状态',
       width: 120,
       render: (row) => (
-        <div className="flex flex-wrap gap-[4px]">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {row.downFeedback && <StatusBadge tone="red">差评</StatusBadge>}
           {row.upFeedback && <StatusBadge tone="green">好评</StatusBadge>}
           {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未评价</StatusBadge>}
-        </div>
+        </Box>
       ),
     },
     {
@@ -271,15 +287,23 @@ export default function ConversationLogsTab() {
     {
       key: 'latest',
       title: '最近内容',
-      className: 'whitespace-normal',
       render: (row) => (
-        <span className="line-clamp-1 wrap-break-word">
+        <Box
+          component="span"
+          sx={{
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 1,
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+          }}
+        >
           {row.downFeedback?.latest_message ||
             row.upFeedback?.latest_message ||
             row.summary ||
             row.last_agent_question ||
             '-'}
-        </span>
+        </Box>
       ),
     },
     {
@@ -297,7 +321,16 @@ export default function ConversationLogsTab() {
           variant="link"
           disabled={detailLoading}
           onClick={() => void openDetail(row)}
-          className="h-auto p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
+          sx={{
+            height: 'auto',
+            p: 0,
+            fontSize: '12px',
+            fontWeight: 400,
+            color: '#1a71ff',
+            textDecoration: 'none',
+            '&:hover': { color: '#4a8dff', textDecoration: 'none' },
+            '&.Mui-disabled': { color: '#c0c6d4', textDecoration: 'none' },
+          }}
         >
           查看
         </UIButton>
@@ -307,78 +340,115 @@ export default function ConversationLogsTab() {
 
   const renderMobileCard = (row: ConversationLogRow) => (
     <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
-      <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <strong className="min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a]">
+      <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+        <Box component="strong" sx={{ minWidth: 0, overflowWrap: 'break-word', fontSize: '14px', fontWeight: 600, color: '#18181a' }}>
           {row.title || row.summary || row.last_agent_question || row.id}
-        </strong>
-        <div className="flex shrink-0 flex-wrap justify-end gap-[4px]">
+        </Box>
+        <Box sx={{ display: 'flex', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', gap: '4px' }}>
           {row.downFeedback && <StatusBadge tone="red">差评</StatusBadge>}
           {row.upFeedback && <StatusBadge tone="green">好评</StatusBadge>}
           {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未评价</StatusBadge>}
-        </div>
-      </div>
-      <p className="mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]">
+        </Box>
+      </Box>
+      <Box
+        component="p"
+        sx={{
+          mt: '8px',
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 2,
+          overflow: 'hidden',
+          fontSize: '12px',
+          lineHeight: '1.55',
+          color: '#858b9c',
+        }}
+      >
         {row.downFeedback?.latest_message ||
           row.upFeedback?.latest_message ||
           row.summary ||
           row.last_agent_question ||
           '-'}
-      </p>
-      <div className="mt-[10px] flex items-center justify-between gap-[10px] text-[12px] text-[#858b9c]">
-        <span className="truncate" title={agentLabel(row)}>{agentLabel(row)}</span>
-        <span className="shrink-0">{formatDateTime(row.updated_at)}</span>
-      </div>
-      <div className="mt-[10px] flex justify-end">
+      </Box>
+      <Box sx={{ mt: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '12px', color: '#858b9c' }}>
+        <Box component="span" title={agentLabel(row)} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentLabel(row)}</Box>
+        <Box component="span" sx={{ flexShrink: 0 }}>{formatDateTime(row.updated_at)}</Box>
+      </Box>
+      <Box sx={{ mt: '10px', display: 'flex', justifyContent: 'flex-end' }}>
         <UIButton
           variant="link"
           disabled={detailLoading}
           onClick={() => void openDetail(row)}
-          className="h-auto p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
+          sx={{
+            height: 'auto',
+            p: 0,
+            fontSize: '12px',
+            fontWeight: 400,
+            color: '#1a71ff',
+            textDecoration: 'none',
+            '&:hover': { color: '#4a8dff', textDecoration: 'none' },
+            '&.Mui-disabled': { color: '#c0c6d4', textDecoration: 'none' },
+          }}
         >
           查看
         </UIButton>
-      </div>
+      </Box>
     </Box>
   );
 
   return (
     <>
-      <section
+      <Box
+        component="section"
         aria-busy={loading}
-        className="relative mt-[-2px] flex w-full min-w-0 max-w-full flex-col gap-[24px] overflow-hidden rounded-[18px] bg-white p-[14px] shadow-[0_20px_42px_rgba(21,26,38,0.045)] min-[521px]:p-[18px]"
+        sx={{
+          position: 'relative',
+          mt: '-2px',
+          display: 'flex',
+          width: '100%',
+          minWidth: 0,
+          maxWidth: '100%',
+          flexDirection: 'column',
+          gap: '24px',
+          overflow: 'hidden',
+          borderRadius: '18px',
+          bgcolor: 'background.paper',
+          p: '14px',
+          boxShadow: '0 20px 42px rgba(21,26,38,0.045)',
+          '@media (min-width:521px)': { p: '18px' },
+        }}
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-          <Clock className="size-[14px] shrink-0" />
-          <span className="text-[14px] font-normal leading-none">对话记录</span>
-        </div>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: '#757f9c' }}>
+          <Clock size={14} style={{ flexShrink: 0 }} />
+          <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none' }}>对话记录</Box>
+        </Box>
 
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="对话反馈统计">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px' }} aria-label="对话反馈统计">
           <StatCard value={rows.length} label="对话" />
           <StatCard value={summary?.total_feedback ?? 0} label="反馈" />
           <StatCard value={summary?.up_count ?? 0} label="好评" tone="green" />
           <StatCard value={summary?.down_count ?? 0} label="差评" tone="red" />
-        </div>
+        </Box>
 
         {summary && (summary.summary || summary.bucket_counts.length > 0) && (
-          <div className="flex flex-col gap-[12px] rounded-[14px] border border-[#eef0f4] bg-[#fafbfc] px-[20px] py-[16px]">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', borderRadius: '14px', border: '1px solid', borderColor: '#eef0f4', bgcolor: '#fafbfc', px: '20px', py: '16px' }}>
             {summary.summary && (
-              <p className="wrap-break-word text-[13px] leading-[1.7] text-[#464c5e]">
+              <Box component="p" sx={{ overflowWrap: 'break-word', fontSize: '13px', lineHeight: '1.7', color: '#464c5e' }}>
                 {summary.summary}
-              </p>
+              </Box>
             )}
             {summary.bucket_counts.length > 0 && (
-              <div className="flex flex-wrap gap-[6px]">
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {summary.bucket_counts.map((item) => (
                   <StatusBadge key={item.bucket} tone={bucketTone(item.bucket)}>
                     {item.label} {item.count}
                   </StatusBadge>
                 ))}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
         )}
 
-        <div className="overflow-x-auto">
+        <Box sx={{ overflowX: 'auto' }}>
           <UnderlineTabs
             aria-label="对话日志筛选"
             variant="line"
@@ -386,17 +456,17 @@ export default function ConversationLogsTab() {
             onChange={setFilter}
             items={FILTER_TABS}
           />
-        </div>
+        </Box>
 
-        <div className="grid gap-[10px] md:hidden">
+        <Box sx={{ display: 'grid', gap: '10px', '@media (min-width:768px)': { display: 'none' } }}>
           {filteredRows.length ? (
             pagedItems.map(renderMobileCard)
           ) : (
-            <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无对话日志</div>
+            <Box component="div" sx={{ py: '40px', textAlign: 'center', fontSize: '13px', color: '#858b9c' }}>暂无对话日志</Box>
           )}
-        </div>
+        </Box>
 
-        <div className="hidden md:block">
+        <Box sx={{ display: 'none', '@media (min-width:768px)': { display: 'block' } }}>
           <DataTable
             aria-label="对话日志"
             columns={columns}
@@ -405,18 +475,19 @@ export default function ConversationLogsTab() {
             loading={loading}
             emptyText="暂无对话日志"
           />
-        </div>
+        </Box>
 
         {filteredRows.length > 0 && (
-          <Paginator
-            aria-label="对话日志分页"
-            className="mt-0 mb-[6px]"
-            page={page}
-            pageCount={pageCount}
-            onChange={setPage}
-          />
+          <Box sx={{ mb: '6px' }}>
+            <Paginator
+              aria-label="对话日志分页"
+              page={page}
+              pageCount={pageCount}
+              onChange={setPage}
+            />
+          </Box>
         )}
-      </section>
+      </Box>
 
       <FeedbackDetailDialog
         detail={detail}
@@ -446,26 +517,39 @@ function FeedbackDetailDialog({
     <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[900px]"
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          maxHeight: 'calc(100dvh - 4rem)',
+          width: 'calc(100% - 2rem)',
+          flexDirection: 'column',
+          gap: '16px',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          px: '20px',
+          py: '16px',
+          '@media (min-width:640px)': { maxWidth: '900px' },
+        }}
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-          <Clock className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: '#757f9c' }}>
+          <Clock size={14} style={{ flexShrink: 0 }} />
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: '#757f9c' }}>
             对话日志详情
           </DialogTitle>
-        </div>
+        </Box>
 
         {detail && (
-          <div className="flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto px-[12px]">
-            <div className="grid grid-cols-2 gap-[10px] max-[520px]:grid-cols-1">
+          <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '16px', overflowY: 'auto', px: '12px' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', '@media (max-width:520px)': { gridTemplateColumns: '1fr' } }}>
               <DetailField label="任务 ID">
                 {String(detail.session.session_id || detail.session.id || '-')}
               </DetailField>
               <DetailField label="数字员工">{agentLabelFromId(String(detail.session.agent_id || ''))}</DetailField>
               <DetailField label="用户">{displayUser(detail.session)}</DetailField>
               <DetailField label="状态">{String(detail.session.status || '-')}</DetailField>
-              <DetailField label="反馈" className="col-span-2 max-[520px]:col-span-1">
-                <div className="flex flex-wrap gap-[6px]">
+              <Box sx={{ gridColumn: 'span 2', '@media (max-width:520px)': { gridColumn: 'span 1' } }}>
+                <DetailField label="反馈">
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   <StatusBadge tone="green">
                     好评 {detail.feedback.filter((item) => item.rating === 'up').length}
                   </StatusBadge>
@@ -484,9 +568,10 @@ function FeedbackDetailDialog({
                         {analysis?.bucket_label || analysis?.bucket || '待分析'}
                       </StatusBadge>
                     ))}
-                </div>
-              </DetailField>
-            </div>
+                  </Box>
+                </DetailField>
+              </Box>
+            </Box>
 
             <div className="feedback-conversation">
               {conversationItems(detail).map(({ message: item, trace }) => (
@@ -508,7 +593,7 @@ function FeedbackDetailDialog({
                   ))
                 : null}
             </div>
-          </div>
+          </Box>
         )}
       </DialogContent>
     </Dialog>
@@ -575,9 +660,21 @@ function FeedbackMessage({
                 variant="outline"
                 disabled={reanalyzing}
                 onClick={() => onReanalyze(item.feedback_id as string)}
-                className="mt-[8px] h-[30px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[14px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:text-[#18181a]"
+                sx={{ ...staffTokens.outlineActionButton, mt: '8px', height: '30px', px: '14px' }}
               >
-                <RefreshCw className={cn('size-3.5', reanalyzing && 'animate-spin')} />
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    animation: reanalyzing ? 'spin 1s linear infinite' : undefined,
+                    '@keyframes spin': {
+                      from: { transform: 'rotate(0deg)' },
+                      to: { transform: 'rotate(360deg)' },
+                    },
+                  }}
+                >
+                  <RefreshCw size={14} />
+                </Box>
                 重新分析
               </UIButton>
             )}
@@ -618,7 +715,7 @@ function FeedbackTraceBlock({ trace }: { trace: TurnTraceRead }) {
   return (
     <div className="feedback-trace-block">
       <div className="feedback-trace-header">
-        <Workflow className="size-[14px]" />
+        <Workflow size={14} />
         <span>执行记录</span>
         <span>{trace.completed_at ? '已完成' : '执行中'}</span>
       </div>
@@ -659,10 +756,10 @@ function traceDetails(lines: TraceLineRead[]): TraceLineRead[] {
 }
 
 function traceLineIcon(kind: TraceLineRead['kind']) {
-  if (kind === 'skill') return <GitBranch className="size-[13px]" />;
-  if (kind === 'tool') return <Wrench className="size-[13px]" />;
-  if (kind === 'knowledge') return <FileSearch className="size-[13px]" />;
-  return <Workflow className="size-[13px]" />;
+  if (kind === 'skill') return <GitBranch size={13} />;
+  if (kind === 'tool') return <Wrench size={13} />;
+  if (kind === 'knowledge') return <FileSearch size={13} />;
+  return <Workflow size={13} />;
 }
 
 function displayUser(session: Record<string, unknown>): string {

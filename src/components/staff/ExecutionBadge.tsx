@@ -3,16 +3,46 @@
  * 绿色「已接入执行链路」表示该项已接入员工执行链路（可被真实调用）；
  * 灰色「未接入」表示尚未接入。
  */
+import { Box } from '@mui/material';
+
 export function ExecutionBadge({ connected }: { connected: boolean }) {
   return connected ? (
-    <span className="inline-flex items-center gap-[4px] rounded-full bg-[#ecfdf3] px-[8px] py-[2px] text-[11px] font-medium text-[#067647]">
-      <span className="size-[5px] rounded-full bg-[#12b76a]" />
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        borderRadius: '50%',
+        bgcolor: '#ecfdf3',
+        px: '8px',
+        py: '2px',
+        fontSize: '11px',
+        fontWeight: 500,
+        color: '#067647',
+      }}
+    >
+      <Box component="span" sx={{ width: '5px', height: '5px', borderRadius: '50%', bgcolor: '#12b76a' }} />
       已接入执行链路
-    </span>
+    </Box>
   ) : (
-    <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-[2px] text-[11px] font-medium text-[#858b9c]">
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        borderRadius: '50%',
+        bgcolor: '#f2f3f7',
+        px: '8px',
+        py: '2px',
+        fontSize: '11px',
+        fontWeight: 500,
+        color: '#858b9c',
+      }}
+    >
       未接入
-    </span>
+    </Box>
   );
 }
 

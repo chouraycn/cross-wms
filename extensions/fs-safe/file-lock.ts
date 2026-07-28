@@ -1,8 +1,3 @@
-// Stub for @openclaw/fs-safe/file-lock
-export type FileLockHandle = { release: () => Promise<void> };
-export async function acquireFileLock(_path: string): Promise<FileLockHandle> {
-  return { release: async () => {} };
-}
-export async function withFileLock<T>(_path: string, fn: () => Promise<T>): Promise<T> {
-  return fn();
-}
+// Re-export everything from the real @openclaw/fs-safe npm package
+// Using direct path to bypass tsconfig catch-all @openclaw/* -> ../extensions/*
+export * from "../../node_modules/@openclaw/fs-safe/dist/file-lock.js";

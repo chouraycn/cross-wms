@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { cn } from './lib/utils.js';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import {
   Table,
   TableBody,
@@ -47,25 +48,46 @@ export type DataTableProps<T> = {
   'aria-label'?: string;
 };
 
-const ALIGN_CLASS = {
-  left: 'text-left',
-  center: 'text-center',
-  right: 'text-right',
-} as const;
+const ALIGN_SX: Record<'left' | 'center' | 'right', SxProps<Theme>> = {
+  left: { textAlign: 'left' },
+  center: { textAlign: 'center' },
+  right: { textAlign: 'right' },
+};
 
-const HEAD_CELL_CLASS =
-  'h-[36px] bg-[#f2f3f7] px-[16px] py-[12px] align-middle text-[12px] font-normal text-[#464c5e]';
-const BODY_CELL_CLASS = 'px-[16px] py-[12px] align-middle text-[12px] text-[#858b9c]';
-const BODY_HEIGHT = {
-  default: 'min-h-[64px]',
-  compact: 'min-h-[46px]',
-} as const;
-const CELL_BORDER = 'border border-[#f2f3f7]';
+const HEAD_CELL_SX: SxProps<Theme> = {
+  height: '36px',
+  bgcolor: '#f2f3f7',
+  px: '16px',
+  py: '12px',
+  verticalAlign: 'middle',
+  fontSize: '12px',
+  fontWeight: 400,
+  color: '#464c5e',
+  textAlign: 'left',
+};
+
+const BODY_CELL_SX: SxProps<Theme> = {
+  px: '16px',
+  py: '12px',
+  verticalAlign: 'middle',
+  fontSize: '12px',
+  color: '#858b9c',
+};
+
+const CELL_BORDER_SX: SxProps<Theme> = {
+  border: '1px solid',
+  borderColor: '#f2f3f7',
+};
+
+const BODY_HEIGHT_SX: Record<'default' | 'compact', SxProps<Theme>> = {
+  default: { minHeight: '64px' },
+  compact: { minHeight: '46px' },
+};
 
 /**
  * Business data table: rounded `#f2f3f7` frame, gray header row, white body
  * rows with hairline dividers. Built on top of the shadcn `Table` primitives
- * but owns the product-specific styling.
+ * but owns the product-specific styling (moved to `sx`).
  */
 export function DataTable<T>({
   columns,
@@ -83,25 +105,28 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const hasData = data.length > 0;
   return (
-    <div
-      className={cn(
-        'overflow-hidden rounded-[14px] border border-[#f2f3f7]',
-        className,
-      )}
+    <Box
+      sx={{ overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: '#f2f3f7' }}
+      className={className}
     >
-      <Table className="w-full table-fixed text-[12px]" aria-label={ariaLabel}>
+      <Table
+        sx={{ width: '100%', tableLayout: 'fixed', fontSize: '12px' } as SxProps<Theme>}
+        aria-label={ariaLabel}
+      >
         <TableHeader>
-          <TableRow className="border-0 hover:bg-transparent">
+          <TableRow sx={{ border: 'none', '&:hover': { bgcolor: 'transparent' } } as SxProps<Theme>}>
             {columns.map((column) => (
               <TableHead
                 key={column.key}
                 style={column.width ? { width: column.width } : undefined}
-                className={cn(
-                  HEAD_CELL_CLASS,
-                  bordered && CELL_BORDER,
-                  ALIGN_CLASS[column.align ?? 'left'],
-                  column.headClassName,
-                )}
+                sx={
+                  [
+                    HEAD_CELL_SX,
+                    bordered && CELL_BORDER_SX,
+                    ALIGN_SX[column.align ?? 'left'],
+                  ].filter(Boolean) as SxProps<Theme>[]
+                }
+                className={column.headClassName}
               >
                 {column.title}
               </TableHead>
@@ -114,29 +139,32 @@ export function DataTable<T>({
               <TableRow
                 key={rowKey(row, index)}
                 onClick={onRowClick ? () => onRowClick(row, index) : undefined}
-                className={cn(
-                  'has-aria-expanded:bg-transparent',
-                  bordered
-                    ? 'border-0'
-                    : 'border-b border-[#f2f3f7] last:border-0',
-                  striped
-                    ? index % 2 === 1
-                      ? 'bg-[#fbfbfb] hover:bg-[#f2f3f7]'
-                      : 'bg-white hover:bg-[#f2f3f7]'
-                    : 'hover:bg-[#fafbfc]',
-                  onRowClick && 'cursor-pointer',
-                )}
+                sx={
+                  {
+                    cursor: onRowClick ? 'pointer' : undefined,
+                    borderBottom: bordered ? 'none' : '1px solid #f2f3f7',
+                    '&:last-child': { borderBottom: 'none' },
+                    '&:has([aria-expanded])': { bgcolor: 'transparent' },
+                    ...(striped
+                      ? index % 2 === 1
+                        ? { bgcolor: '#fbfbff', '&:hover': { bgcolor: '#f2f3f7' } }
+                        : { bgcolor: '#fff', '&:hover': { bgcolor: '#f2f3f7' } }
+                      : { '&:hover': { bgcolor: '#fafbfc' } }),
+                  } as SxProps<Theme>
+                }
               >
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
-                    className={cn(
-                      BODY_CELL_CLASS,
-                      BODY_HEIGHT[size],
-                      bordered && CELL_BORDER,
-                      ALIGN_CLASS[column.align ?? 'left'],
-                      column.className,
-                    )}
+                    sx={
+                      [
+                        BODY_CELL_SX,
+                        BODY_HEIGHT_SX[size],
+                        bordered && CELL_BORDER_SX,
+                        ALIGN_SX[column.align ?? 'left'],
+                      ].filter(Boolean) as SxProps<Theme>[]
+                    }
+                    className={column.className}
                   >
                     {column.render
                       ? column.render(row, index)
@@ -148,15 +176,26 @@ export function DataTable<T>({
               </TableRow>
             ))
           ) : (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={columns.length} className="h-[160px] text-center align-middle text-[13px] text-[#858b9c]">
+            <TableRow sx={{ '&:hover': { bgcolor: 'transparent' } } as SxProps<Theme>}>
+              <TableCell
+                colSpan={columns.length}
+                sx={
+                  {
+                    height: '160px',
+                    textAlign: 'center',
+                    verticalAlign: 'middle',
+                    fontSize: '13px',
+                    color: '#858b9c',
+                  } as SxProps<Theme>
+                }
+              >
                 {loading ? loadingText : emptyText}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-    </div>
+    </Box>
   );
 }
 

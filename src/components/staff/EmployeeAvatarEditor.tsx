@@ -8,6 +8,9 @@ import {
   DialogTitle,
   notify,
 } from './ui/index.js';
+import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
+import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { api, TENANT_ID } from './api/client.js';
 import {
@@ -18,6 +21,7 @@ import {
 } from './employee.js';
 import type { AgentProfileRead } from './types/index.js';
 import EmployeeAvatar from './EmployeeAvatar.js';
+import { staffTokens } from './lib/staffTokens.js';
 
 const MAX_INPUT_IMAGE_BYTES = 5 * 1024 * 1024;
 const AVATAR_CANVAS_SIZE = 360;
@@ -116,35 +120,64 @@ export default function EmployeeAvatarEditor({
     <Dialog open={open} onOpenChange={(next) => { if (!next && !saving) onClose(); }}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden rounded-[14px] px-5 py-4 sm:max-w-[680px]"
+        sx={
+          {
+            position: 'relative',
+            display: 'flex',
+            maxHeight: 'calc(100dvh - 4rem)',
+            width: 'calc(100% - 2rem)',
+            flexDirection: 'column',
+            gap: '16px',
+            overflow: 'hidden',
+            borderRadius: '14px',
+            px: '20px',
+            py: '16px',
+            '@media (min-width: 640px)': { maxWidth: '680px' },
+          } as SxProps<Theme>
+        }
       >
-        <DialogHeader className="px-3">
-          <DialogTitle className="text-sm font-normal leading-none text-[#757f9c]">
+        <DialogHeader sx={{ px: '12px' } as SxProps<Theme>}>
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: '#757f9c' } as SxProps<Theme>>
             {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 space-y-[18px] overflow-y-auto px-3">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[18px] rounded-2xl border border-border bg-[#fafbfc] p-[18px]">
+        <Box sx={{ minHeight: 0, flex: 1, overflowY: 'auto', px: '12px', '& > * + *': { marginTop: '18px' } }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'auto minmax(0,1fr)',
+              alignItems: 'center',
+              gap: '18px',
+              borderRadius: '16px',
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: '#fafbfc',
+              p: '18px',
+            }}
+          >
             <EmployeeAvatar profile={profile} width={104} height={122} />
-            <div>
-              <strong className="block text-sm text-foreground">{mode === 'upload' ? '自定义头像' : selected.label}</strong>
-              <p className="mt-1 text-xs text-muted-foreground">
+            <Box>
+              <Box component="strong" sx={{ display: 'block', fontSize: '14px', color: 'var(--foreground)' }}>
+                {mode === 'upload' ? '自定义头像' : selected.label}
+              </Box>
+              <Box component="p" sx={{ mt: '4px', fontSize: '12px', color: 'var(--muted-foreground)' }}>
                 头像会显示在我的数字员工、数字员工档案页和对话端的员工选择中。
-              </p>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <strong className="text-[13px] text-foreground">默认头像</strong>
-              <span className="text-xs text-muted-foreground">选择一个适合岗位的默认头像。</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2.5">
+          <Box component="section" sx={{ '& > * + *': { marginTop: '12px' } }}>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px' }}>
+              <Box component="strong" sx={{ fontSize: '13px', color: 'var(--foreground)' }}>默认头像</Box>
+              <Box component="span" sx={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>选择一个适合岗位的默认头像。</Box>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '10px' }}>
               {EMPLOYEE_AVATAR_PRESETS.map((preset) => {
                 const active = mode === 'preset' && selectedPreset === preset.key;
                 return (
-                  <button
+                  <Box
+                    component="button"
                     key={preset.key}
                     type="button"
                     data-active={active}
@@ -152,7 +185,28 @@ export default function EmployeeAvatarEditor({
                       setSelectedPreset(preset.key);
                       setMode('preset');
                     }}
-                    className="grid min-h-[88px] min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[14px] border border-border bg-white p-3 text-left text-foreground transition-all hover:-translate-y-px hover:border-[#cbd3e6] data-[active=true]:-translate-y-px data-[active=true]:border-[#18181a]"
+                    sx={[
+                      {
+                        display: 'grid',
+                        minHeight: '88px',
+                        minWidth: 0,
+                        gridTemplateColumns: 'auto minmax(0,1fr) auto',
+                        alignItems: 'center',
+                        gap: '10px',
+                        borderRadius: '14px',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: '#fff',
+                        p: '12px',
+                        textAlign: 'left',
+                        color: 'var(--foreground)',
+                        transition: 'all 0.2s',
+                      },
+                      {
+                        '&:hover': { transform: 'translateY(-1px)', borderColor: '#cbd3e6' },
+                        '&[data-active="true"]': { transform: 'translateY(-1px)', borderColor: '#18181a' },
+                      },
+                    ] as SxProps<Theme>}
                   >
                     <EmployeeAvatar
                       profile={{
@@ -164,49 +218,100 @@ export default function EmployeeAvatarEditor({
                       }}
                       size={52}
                     />
-                    <span className="min-w-0 truncate text-left font-semibold">{preset.label}</span>
-                    {active && <CheckOutlined className="size-4 text-[#18181a]" />}
-                  </button>
+                    <Box component="span" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', fontWeight: 600 }}>
+                      {preset.label}
+                    </Box>
+                    {active && <CheckOutlined size={16} style={{ color: '#18181a' }} />}
+                  </Box>
                 );
               })}
-            </div>
-          </section>
+            </Box>
+          </Box>
 
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-[#cbd3e6] bg-[#fafbfc] px-4 py-3.5 text-left transition-all hover:border-[#18181a] hover:shadow-[0_12px_28px_rgba(30,24,16,0.07)] focus-visible:shadow-[0_0_0_3px_rgba(24,24,26,0.12)] focus-visible:outline-none"
+            sx={[
+              {
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                gap: '14px',
+                borderRadius: '16px',
+                border: '1px dashed',
+                borderColor: '#cbd3e6',
+                bgcolor: '#fafbfc',
+                px: '16px',
+                py: '14px',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+              },
+              {
+                '&:hover': { borderColor: '#18181a', boxShadow: '0 12px 28px rgba(30,24,16,0.07)' },
+                '&:focus-visible': { boxShadow: '0 0 0 3px rgba(24,24,26,0.12)', outline: 'none' },
+              },
+            ] as SxProps<Theme>}
           >
-            <input
+            <Box
+              component="input"
               ref={inputRef}
               type="file"
               accept="image/*"
-              className="hidden"
-              onChange={(event) => void handleUpload(event.target.files?.[0])}
+              sx={{ display: 'none' }}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => void handleUpload(event.target.files?.[0])}
             />
-            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#f2f4f8] text-lg text-[#18181a]">
-              <UploadOutlined className="size-5" />
-            </span>
-            <span className="grid min-w-0 gap-0.5">
-              <span className="text-sm font-semibold text-foreground">上传自定义头像</span>
-              <span className="text-xs text-muted-foreground">支持常见图片格式，会自动裁剪为方形头像。</span>
-            </span>
-          </button>
-        </div>
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                width: '40px',
+                height: '40px',
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '12px',
+                bgcolor: '#f2f4f8',
+                fontSize: '18px',
+                color: '#18181a',
+              }}
+            >
+              <UploadOutlined size={20} />
+            </Box>
+            <Box component="span" sx={{ display: 'grid', minWidth: 0, gap: '2px' }}>
+              <Box component="span" sx={{ fontSize: '14px', fontWeight: 600, color: 'var(--foreground)' }}>上传自定义头像</Box>
+              <Box component="span" sx={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>支持常见图片格式，会自动裁剪为方形头像。</Box>
+            </Box>
+          </Box>
+        </Box>
 
-        <DialogFooter className="gap-2 px-3 py-0 sm:justify-end">
+        <DialogFooter sx={{ gap: '8px', px: '12px', py: 0, '@media (min-width: 640px)': { justifyContent: 'flex-end' } } as SxProps<Theme>}>
           <Button
             variant="outline"
             disabled={saving}
             onClick={onClose}
-            className="h-8 w-[92px] rounded-[10px] border-[#e3e7f1] bg-white px-3 text-sm font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+            sx={[
+              staffTokens.dialogCancelButton,
+              {
+                width: '92px',
+                height: '32px',
+                px: '12px',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: '#464c5e',
+                '&:hover': { borderColor: '#e3e7f1', bgcolor: '#f6f6f6', color: '#18181a' },
+              },
+            ] as SxProps<Theme>}
           >
             取消
           </Button>
           <Button
             disabled={saving}
             onClick={() => void save()}
-            className="h-8 w-[92px] rounded-[10px] bg-[#18181a] px-3 text-sm font-normal text-white hover:bg-[#303030]"
+            sx={[
+              staffTokens.primaryButton,
+              { width: '92px', height: '32px', px: '12px', fontSize: '14px', fontWeight: 400 },
+            ] as SxProps<Theme>}
           >
             保存头像
           </Button>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
   Download,
@@ -247,7 +248,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
     }
   }
 
-  // ===================== Agent 分支版本化：sync / promote / rollback =====================
+  //
   async function syncFromOverall(row: SkillRead) {
     if (!scopedAgentId) return;
     try {
@@ -307,7 +308,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
     }
   }
 
-  // ===================== 跨 Agent 批量导入 SOP =====================
+  //
   const importSources: ImportSourceOption[] = useMemo(() => {
     const list: ImportSourceOption[] = [{ value: 'overall', label: '全局 SOP 广场' }];
     agents
@@ -378,19 +379,19 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
       key: 'name',
       title: 'SOP',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate text-[13px] font-medium text-[#18181a]">{row.name}</span>
-          <span className="truncate text-[12px] text-[#858b9c]">{row.skill_id}</span>
-        </div>
+        <Box component="div" sx={{"display":"flex","minWidth":0,"flexDirection":"column","gap":'2px'}}>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>{row.name}</Box>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{row.skill_id}</Box>
+        </Box>
       ),
     },
     {
       key: 'description',
       title: '描述',
       render: (row) => (
-        <span className="line-clamp-2 text-[12px] text-[#858b9c]">
+        <Box component="span" sx={{"display":"-webkit-box","WebkitBoxOrient":"vertical","WebkitLineClamp":2,"overflow":"hidden","fontSize":'12px',"color":"#858b9c"}}>
           {row.description || '暂无描述'}
-        </span>
+        </Box>
       ),
     },
     {
@@ -398,23 +399,23 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
       title: '业务域',
       width: 120,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">{row.business_domain || '-'}</span>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.business_domain || '-'}</Box>
       ),
     },
     {
       key: 'version',
       title: '版本',
       width: 80,
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.version}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.version}</Box>,
     },
     {
       key: 'status',
       title: '状态',
       width: 100,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>
           {row.status === 'published' ? '已启用' : row.status === 'draft' ? '草稿' : '已停用'}
-        </span>
+        </Box>
       ),
     },
     {
@@ -423,14 +424,14 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
       width: 100,
       align: 'right',
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">{row.call_count}</span>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.call_count}</Box>
       ),
     },
     {
       key: 'updated_at',
       title: '更新时间',
       width: 160,
-      render: (row) => <span className="text-[12px] text-[#858b9c]">{formatDateTime(row.updated_at)}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>{formatDateTime(row.updated_at)}</Box>,
     },
     {
       key: 'actions',
@@ -440,17 +441,17 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            <Box component="button"
               type="button"
-              className="ml-auto flex size-[24px] items-center justify-center rounded-[6px] text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
+             
               aria-label="更多操作"
-            >
-              <MoreHorizontal className="size-[14px]" />
-            </button>
+             sx={{"ml":"auto","display":"flex","width":'24px',"height":'24px',"alignItems":"center","justifyContent":"center","borderRadius":'6px',"color":"#858b9c","&:hover":{"bgcolor":"#f2f3f7","color":"#18181a"}}}>
+              <MoreHorizontal  size={14} />
+            </Box>
           </DropdownMenuTrigger>
           <DropdownMenuContent className={MENU_CONTENT_CLASS} align="end">
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => setViewTarget(row)}>
-              <Eye className="size-[14px]" />
+              <Eye  size={14} />
               查看
             </DropdownMenuItem>
             {canManageCurrentScope ? (
@@ -459,41 +460,41 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
                   className={MENU_ITEM_CLASS}
                   onSelect={() => navigate(`/enterprise/skills/new/distill?skill_id=${row.skill_id}`)}
                 >
-                  <Pencil className="size-[14px]" />
+                  <Pencil  size={14} />
                   编辑
                 </DropdownMenuItem>
                 {scopedAgentId ? (
                   <>
-                    <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                    <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
                     <DropdownMenuItem
                       className={MENU_ITEM_CLASS}
                       onSelect={() => void syncFromOverall(row)}
                     >
-                      <Download className="size-[14px]" />
+                      <Download  size={14} />
                       同步自全局
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className={MENU_ITEM_CLASS}
                       onSelect={() => void promoteToOverall(row)}
                     >
-                      <Upload className="size-[14px]" />
+                      <Upload  size={14} />
                       提升至全局
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className={MENU_ITEM_CLASS}
                       onSelect={() => void openRollback(row)}
                     >
-                      <RotateCcw className="size-[14px]" />
+                      <RotateCcw  size={14} />
                       回滚版本
                     </DropdownMenuItem>
                   </>
                 ) : null}
-                <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+                <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
                 <DropdownMenuItem
                   className={MENU_ITEM_DANGER_CLASS}
                   onSelect={() => setDeleteTarget(row)}
                 >
-                  <Trash2 className="size-[14px]" />
+                  <Trash2  size={14} />
                   删除
                 </DropdownMenuItem>
               </>
@@ -505,20 +506,20 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
   ];
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
+    <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={pageTitle}
         description="管理可复用的业务 SOP 与执行规范。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <div className="flex items-center gap-[8px]">
+          <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
             <OutlineActionButton
               type="button"
               onClick={() => void load()}
               disabled={loading}
             >
-              <RefreshCw className="size-[14px]" />
+              <RefreshCw  size={14} />
               刷新
             </OutlineActionButton>
             {canManageCurrentScope && scopedAgentId ? (
@@ -526,7 +527,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
                 type="button"
                 onClick={() => setImportOpen(true)}
               >
-                <Download className="size-[14px]" />
+                <Download  size={14} />
                 导入
               </OutlineActionButton>
             ) : null}
@@ -535,31 +536,31 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
                 sx={staffTokens.primaryButton}
                 onClick={() => navigate('/staff/skills/new/distill')}
               >
-                <Plus className="size-[14px]" />
+                <Plus  size={14} />
                 新增 SOP
               </UIButton>
             ) : null}
-          </div>
+          </Box>
         }
-      />
+       />
 
-      <div className="flex flex-wrap gap-[12px]">
-        <StatCard value={stats.total} label="SOP 总数" />
-        <StatCard value={stats.published} label="已启用" tone="green" />
-        <StatCard value={stats.draft} label="草稿" />
-        <StatCard value={stats.archived} label="已停用" tone="red" />
-      </div>
+      <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'12px'}}>
+        <StatCard value={stats.total} label="SOP 总数"  />
+        <StatCard value={stats.published} label="已启用" tone="green"  />
+        <StatCard value={stats.draft} label="草稿"  />
+        <StatCard value={stats.archived} label="已停用" tone="red"  />
+      </Box>
 
-      <section className="flex flex-col gap-[16px]">
-        <div className="flex flex-wrap items-center justify-between gap-[12px]">
-          <h3 className="text-[14px] font-medium text-[#18181a]">{listLabel}</h3>
-          <div className="flex flex-wrap items-center gap-[8px]">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px'}}>
+        <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","justifyContent":"space-between","gap":'12px'}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>{listLabel}</Box>
+          <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":'8px'}}>
             <Select
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value as SkillStatusFilter)}
             >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="全部状态" />
+              <SelectTrigger sx={{"width":'140px'}}>
+                <SelectValue placeholder="全部状态"  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
@@ -572,9 +573,9 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
               value={searchText}
               onChange={setSearchText}
               placeholder="搜索 SOP 名称 / 业务域"
-            />
-          </div>
-        </div>
+             />
+          </Box>
+        </Box>
 
         <DataTable
           columns={columns}
@@ -583,66 +584,66 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
           loading={loading}
           emptyText="暂无 SOP，点击「新增」创建一个吧"
           aria-label={listLabel}
-        />
+         />
 
         {totalPages > 1 ? (
-          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage} />
+          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage}  />
         ) : null}
-      </section>
+      </Box>
 
       <Dialog open={viewTarget !== null} onOpenChange={(open) => !open && setViewTarget(null)}>
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"overflow":"hidden","borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             {viewTarget?.name || 'SOP 详情'}
           </DialogTitle>
           {viewTarget ? (
-            <div className="flex flex-col gap-[16px] px-[24px] pb-[20px]">
-              <div className="grid grid-cols-2 gap-[12px] text-[12px]">
+            <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'16px',"px":'24px',"pb":'20px'}}>
+              <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px',"fontSize":'12px'}}>
                 <div>
-                  <span className="text-[#858b9c]">Skill ID：</span>
-                  <span className="text-[#18181a]">{viewTarget.skill_id}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>Skill ID：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.skill_id}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">版本：</span>
-                  <span className="text-[#18181a]">{viewTarget.version}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>版本：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.version}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">业务域：</span>
-                  <span className="text-[#18181a]">{viewTarget.business_domain || '-'}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>业务域：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.business_domain || '-'}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">状态：</span>
-                  <span className="text-[#18181a]">
+                  <Box component="span" sx={{"color":"#858b9c"}}>状态：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>
                     {viewTarget.status === 'published'
                       ? '已启用'
                       : viewTarget.status === 'draft'
                         ? '草稿'
                         : '已停用'}
-                  </span>
+                  </Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">调用次数：</span>
-                  <span className="text-[#18181a]">{viewTarget.call_count}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>调用次数：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.call_count}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">正面反馈：</span>
-                  <span className="text-[#18181a]">{viewTarget.positive_feedback_count}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>正面反馈：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.positive_feedback_count}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">负面反馈：</span>
-                  <span className="text-[#18181a]">{viewTarget.negative_feedback_count}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>负面反馈：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{viewTarget.negative_feedback_count}</Box>
                 </div>
                 <div>
-                  <span className="text-[#858b9c]">更新时间：</span>
-                  <span className="text-[#18181a]">{formatDateTime(viewTarget.updated_at)}</span>
+                  <Box component="span" sx={{"color":"#858b9c"}}>更新时间：</Box>
+                  <Box component="span" sx={{"color":"#18181a"}}>{formatDateTime(viewTarget.updated_at)}</Box>
                 </div>
-              </div>
+              </Box>
               {viewTarget.description ? (
-                <div className="rounded-[10px] border border-[#f2f3f7] bg-[#fafbfc] p-[12px] text-[13px] text-[#18181a]">
+                <Box component="div" sx={{"borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fafbfc","p":'12px',"fontSize":'13px',"color":"#18181a"}}>
                   {viewTarget.description}
-                </div>
+                </Box>
               ) : null}
-            </div>
+            </Box>
           ) : null}
         </DialogContent>
       </Dialog>
@@ -653,7 +654,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
         title={
           deleteTarget ? (
             <>
-              删除 SOP <strong className="ml-[4px]">{deleteTarget.name}</strong>
+              删除 SOP <Box component="strong" sx={{"ml":'4px'}}>{deleteTarget.name}</Box>
             </>
           ) : (
             '删除 SOP'
@@ -663,26 +664,26 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
         confirmText="删除"
         loading={deleting}
         onConfirm={() => void confirmDelete()}
-      />
+       />
 
       <Dialog
         open={rollbackTarget !== null}
         onOpenChange={(open) => !rollingBack && !open && setRollbackTarget(null)}
       >
-        <DialogContent className="gap-0 rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"gap":0,"borderRadius":'16px',"p":0,"position":'relative'}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             回滚分支版本
             {rollbackTarget ? (
-              <span className="ml-[6px] text-[13px] font-normal text-[#858b9c]">{rollbackTarget.name}</span>
+              <Box component="span" sx={{"ml":'6px',"fontSize":'13px',"fontWeight":400,"color":"#858b9c"}}>{rollbackTarget.name}</Box>
             ) : null}
           </DialogTitle>
-          <div className="flex flex-col gap-[12px] px-[24px] pb-[8px]">
-            <p className="text-[12px] text-[#858b9c]">
+          <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'12px',"px":'24px',"pb":'8px'}}>
+            <Box component="p" sx={{"fontSize":'12px',"color":"#858b9c"}}>
               选择一个历史版本，将当前 Agent 分支回滚至该版本的快照。
-            </p>
+            </Box>
             <Select value={rollbackVersion} onValueChange={setRollbackVersion}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="选择版本" />
+              <SelectTrigger sx={{"width":'100%'}}>
+                <SelectValue placeholder="选择版本"  />
               </SelectTrigger>
               <SelectContent>
                 {rollbackVersions.map((item) => (
@@ -693,10 +694,10 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <DialogFooter className="flex justify-end gap-[8px] px-[24px] py-[16px]">
+          </Box>
+          <DialogFooter sx={{"display":"flex","justifyContent":"flex-end","gap":'8px',"px":'24px',"py":'16px'}}>
             <UIButton
-              className="h-[34px] rounded-[10px] bg-[#f2f3f7] px-[16px] text-[12px] text-[#18181a] hover:bg-[#e8e9ef]"
+              sx={{"height":'34px',"borderRadius":'10px',"bgcolor":'divider',"px":'16px',"fontSize":'12px',"color":"#18181a","&:hover":{"bgcolor":"#e8e9ef"}}}
               onClick={() => setRollbackTarget(null)}
               disabled={rollingBack}
             >
@@ -716,7 +717,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
       <ResourceImportDialog
         open={importOpen}
         loading={importLoading || importLoadingItems}
-        icon={<Download className="size-[14px]" />}
+        icon={<Download  size={14} />}
         title="跨 Agent 批量导入 SOP"
         sourcePlaceholder="选择复制来源"
         sources={importSources}
@@ -731,7 +732,7 @@ export default function SkillsPage({ currentUser, onLogout }: SkillsPageProps = 
         onSelectedChange={setImportSelected}
         onClose={resetImport}
         onSubmit={() => void submitImport()}
-      />
-    </div>
+       />
+    </Box>
   );
 }
