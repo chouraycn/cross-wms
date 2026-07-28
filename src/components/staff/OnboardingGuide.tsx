@@ -8,6 +8,8 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog.js'
+import Box from '@mui/material/Box'
+import { staffTokens } from './lib/staffTokens.js'
 
 export const ONBOARDING_SEEN_KEY = 'staffdeck_onboarding_guide_seen'
 
@@ -22,7 +24,7 @@ type GuideCard = {
 }
 
 type GuideStep = {
-  /** Tailwind background classes for the left illustration panel. */
+  /** CSS background-image (gradient) for the left illustration panel. */
   illustrationClass: string
   eyebrow: string
   titleLines: string[]
@@ -30,52 +32,70 @@ type GuideStep = {
   cards: GuideCard[]
 }
 
-const CARD_ICON_CLASS = 'size-[18px] text-white'
-const CARD_BADGE_CLASS = "font-['Alimama_ShuHeiTi',_sans-serif] text-[16px] font-bold text-white"
+const CARD_BADGE_SX = {
+  fontFamily: "'Alimama ShuHeiTi', sans-serif",
+  fontSize: '16px',
+  fontWeight: 700,
+  color: '#fff',
+} as const
+
+const CARD_ICON_SX = { width: '18px', height: '18px', color: '#fff' } as const
 
 const STEPS: GuideStep[] = [
   {
-    illustrationClass: 'bg-gradient-to-br from-[#cfe0ff] via-[#e9eef6] to-[#dbe7fb]',
+    illustrationClass: 'linear-gradient(to bottom right, #cfe0ff, #e9eef6, #dbe7fb)',
     eyebrow: '欢迎使用 StaffDeck',
     titleLines: ['数字员工', '全流程构建与管理平台'],
     description:
       '像招聘、培养、管理真人员工一样，构建你的数字员工团队。把重复的事情交给数字员工，让自己专注更重要的工作。',
     cards: [
       {
-        icon: <IdCard className={CARD_ICON_CLASS} />,
+        icon: <Box component={IdCard} sx={CARD_ICON_SX} />,
         title: '像管员工一样管AI',
         description: '每位数字员工都有档案、岗位与成长记录。',
       },
       {
-        icon: <Workflow className={CARD_ICON_CLASS} />,
+        icon: <Box component={Workflow} sx={CARD_ICON_SX} />,
         title: '按流程执行任务',
         description: '每位数字员工都有档案、岗位与成长记录。',
       },
       {
-        icon: <Brain className={CARD_ICON_CLASS} />,
+        icon: <Box component={Brain} sx={CARD_ICON_SX} />,
         title: '理解业务而非检索',
         description: '每位数字员工都有档案、岗位与成长记录。',
       },
     ],
   },
   {
-    illustrationClass: 'bg-gradient-to-br from-[#e3f1ff] via-[#f9fcff] to-[#d7e9ff]',
+    illustrationClass: 'linear-gradient(to bottom right, #e3f1ff, #f9fcff, #d7e9ff)',
     eyebrow: '核心概念',
     titleLines: ['三步搭建你的数字员工'],
     description: '先给它配大脑，再给它配能力，最后上岗对话。',
     cards: [
       {
-        icon: <span className={CARD_BADGE_CLASS}>01</span>,
+        icon: (
+          <Box component="span" sx={CARD_BADGE_SX}>
+            01
+          </Box>
+        ),
         title: '模型',
         description: '数字员工的大脑，接入 OpenAI 兼容模型即可。',
       },
       {
-        icon: <span className={CARD_BADGE_CLASS}>02</span>,
+        icon: (
+          <Box component="span" sx={CARD_BADGE_SX}>
+            02
+          </Box>
+        ),
         title: '能力',
         description: '知识库、技能、SOP、工具，决定它懂什么、会做什么。',
       },
       {
-        icon: <span className={CARD_BADGE_CLASS}>03</span>,
+        icon: (
+          <Box component="span" sx={CARD_BADGE_SX}>
+            03
+          </Box>
+        ),
         title: '上岗',
         description: '创建数字员工并绑定能力，去对话端与它协作。',
       },
@@ -140,105 +160,271 @@ export default function OnboardingGuide({ storageKey = ONBOARDING_SEEN_KEY }: On
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="grid w-[904px] max-w-[calc(100vw-2rem)] grid-cols-1 gap-0 overflow-hidden rounded-[20px] border-0 p-0 ring-0 md:grid-cols-[474px_430px] sm:max-w-[904px]"
+        sx={{
+          position: 'relative',
+          display: 'grid',
+          width: '904px',
+          maxWidth: 'calc(100vw - 2rem)',
+          gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+          gap: 0,
+          overflow: 'hidden',
+          borderRadius: '20px',
+          border: 0,
+          p: 0,
+          boxShadow: 'none',
+          '@media (min-width: 768px)': { gridTemplateColumns: '474px 430px' },
+          '@media (min-width: 640px)': { maxWidth: '904px' },
+        }}
       >
-        <DialogTitle className="sr-only">{current.titleLines.join('')}</DialogTitle>
+        <DialogTitle
+          sx={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: 0,
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+        >
+          {current.titleLines.join('')}
+        </DialogTitle>
 
-        <div className={`hidden h-[560px] md:block ${current.illustrationClass}`} aria-hidden="true" />
+        <Box
+          aria-hidden="true"
+          sx={{
+            display: 'none',
+            height: '560px',
+            '@media (min-width: 768px)': { display: 'block' },
+            backgroundImage: current.illustrationClass,
+          }}
+        />
 
-        <div className="relative flex h-[560px] flex-col justify-between bg-linear-to-b from-[#f9fcff] to-[#e3f1ff] px-[36px] pt-[10px] pb-[32px]">
-          <div className="flex items-center justify-end">
-            <button
+        <Box
+          sx={{
+            position: 'relative',
+            display: 'flex',
+            height: '560px',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            backgroundImage: 'linear-gradient(to bottom, #f9fcff, #e3f1ff)',
+            px: '36px',
+            pt: '10px',
+            pb: '32px',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Box
+              component="button"
               type="button"
               onClick={finish}
               aria-label="关闭引导"
-              className="flex size-[20px] items-center justify-center text-[#757f9c] transition-colors hover:text-[#18181a]"
+              sx={{
+                display: 'flex',
+                width: '20px',
+                height: '20px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#757f9c',
+                transition: 'background-color 0.15s, color 0.15s',
+                '&:hover': { color: '#18181a' },
+              }}
             >
-              <XIcon className="size-[14px]" />
-            </button>
-          </div>
+              <Box component={XIcon} sx={{ width: '14px', height: '14px' }} />
+            </Box>
+          </Box>
 
-          <div className="flex flex-col gap-[24px]">
-            <div className="flex flex-col gap-[4px]">
-              <span className="-skew-x-6 text-[12px] leading-none text-[#464c5e]">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <Box
+                component="span"
+                sx={{
+                  transform: 'skewX(-6deg)',
+                  fontSize: '12px',
+                  lineHeight: 'normal',
+                  color: '#464c5e',
+                }}
+              >
                 {current.eyebrow}
-              </span>
-              <div className="-skew-x-6">
+              </Box>
+              <Box sx={{ transform: 'skewX(-6deg)' }}>
                 {current.titleLines.map((line) => (
-                  <p
+                  <Box
+                    component="p"
                     key={line}
-                    className="bg-linear-to-r from-[#105acf] to-[#007bff] bg-clip-text text-[32px] leading-[44px] font-semibold text-transparent"
+                    sx={{
+                      backgroundImage: 'linear-gradient(to right, #105acf, #007bff)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      fontSize: '32px',
+                      lineHeight: '44px',
+                      fontWeight: 600,
+                    }}
                   >
                     {line}
-                  </p>
+                  </Box>
                 ))}
-              </div>
-              <p className="text-[12px] leading-[20px] text-[#757f9c]">{current.description}</p>
-            </div>
+              </Box>
+              <Box
+                component="p"
+                sx={{ fontSize: '12px', lineHeight: '20px', color: '#757f9c' }}
+              >
+                {current.description}
+              </Box>
+            </Box>
 
-            <div className="flex flex-col gap-[12px]">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {current.cards.map((card) => (
-                <div
+                <Box
                   key={card.title}
-                  className="flex items-center gap-[8px] rounded-[14px] bg-white/60 px-[12px] py-[10px]"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderRadius: '14px',
+                    bgcolor: 'rgba(255,255,255,0.6)',
+                    px: '12px',
+                    py: '10px',
+                  }}
                 >
-                  <div className="flex size-[32px] shrink-0 items-center justify-center rounded-[8px] bg-linear-to-br from-[#89b6ff] to-[#527aff]">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      width: '32px',
+                      height: '32px',
+                      flexShrink: 0,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '8px',
+                      backgroundImage: 'linear-gradient(to bottom right, #89b6ff, #527aff)',
+                    }}
+                  >
                     {card.icon}
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-[4px]">
-                    <p className="truncate text-[14px] leading-none text-[#464c5e]">{card.title}</p>
-                    <p className="truncate text-[12px] leading-none text-[#757f9c]">
+                  </Box>
+                  <Box sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '4px' }}>
+                    <Box
+                      component="p"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: '14px',
+                        lineHeight: 'normal',
+                        color: '#464c5e',
+                      }}
+                    >
+                      {card.title}
+                    </Box>
+                    <Box
+                      component="p"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: '12px',
+                        lineHeight: 'normal',
+                        color: '#757f9c',
+                      }}
+                    >
                       {card.description}
-                    </p>
-                  </div>
-                </div>
+                    </Box>
+                  </Box>
+                </Box>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-[4px] text-[#757f9c]">
-              <button
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#757f9c' }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={goPrev}
                 disabled={isFirst}
                 aria-label="上一步"
-                className="flex size-[14px] items-center justify-center transition-colors enabled:hover:text-[#18181a] disabled:cursor-default disabled:opacity-40"
+                sx={{
+                  display: 'flex',
+                  width: '14px',
+                  height: '14px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s, color 0.15s',
+                  '&:enabled:hover': { color: '#18181a' },
+                  '&:disabled': { cursor: 'default', opacity: 0.4 },
+                }}
               >
-                <ChevronLeft className="size-[14px]" />
-              </button>
-              <span className="text-[12px]">
+                <Box component={ChevronLeft} sx={{ width: '14px', height: '14px' }} />
+              </Box>
+              <Box component="span" sx={{ fontSize: '12px' }}>
                 {step + 1}/{STEPS.length}
-              </span>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={goNext}
                 disabled={isLast}
                 aria-label="下一步"
-                className="flex size-[14px] items-center justify-center transition-colors enabled:hover:text-[#18181a] disabled:cursor-default disabled:opacity-40"
+                sx={{
+                  display: 'flex',
+                  width: '14px',
+                  height: '14px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.15s, color 0.15s',
+                  '&:enabled:hover': { color: '#18181a' },
+                  '&:disabled': { cursor: 'default', opacity: 0.4 },
+                }}
               >
-                <ChevronRight className="size-[14px]" />
-              </button>
-            </div>
+                <Box component={ChevronRight} sx={{ width: '14px', height: '14px' }} />
+              </Box>
+            </Box>
 
-            <div className="flex items-center gap-[12px]">
-              <button
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={finish}
-                className="flex w-[80px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] py-[8px] text-[14px] text-[#757f9c] transition-colors hover:bg-[#f6f6f6] hover:text-[#18181a]"
+                sx={{
+                  display: 'flex',
+                  width: '80px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  border: '0.5px solid',
+                  borderColor: '#e3e7f1',
+                  bgcolor: '#fff',
+                  px: '20px',
+                  py: '8px',
+                  fontSize: '14px',
+                  color: '#757f9c',
+                  transition: 'background-color 0.15s, color 0.15s',
+                  '&:hover': { bgcolor: '#f6f6f6', color: '#18181a' },
+                }}
               >
                 跳过
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={goNext}
-                className="flex w-[134px] items-center justify-center rounded-[10px] bg-[#18181a] px-[32px] py-[8px] text-[14px] text-white transition-colors hover:bg-[#303030]"
+                sx={{
+                  ...staffTokens.primaryButton,
+                  width: '134px',
+                  px: '32px',
+                  fontSize: '14px',
+                  height: 'auto',
+                  py: '8px',
+                  lineHeight: 'normal',
+                }}
               >
                 {isLast ? '开始使用' : '下一步'}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       </DialogContent>
     </Dialog>
   )

@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react';
 
+import Box from '@mui/material/Box';
+import type { SxProps, Theme } from '@mui/material/styles';
+
 import { Sheet, SheetContent } from '../ui';
-import { cn } from '../lib/utils';
 import { ChevronDown, Trash2, X } from '../icons';
 
 import { platformResourceAccentStyles, type PlatformResourceAccent } from './PlatformResourceCard';
+import { staffTokens } from '../lib/staffTokens.js';
 
 export type PlatformResourceDrawerProps = {
   open: boolean;
@@ -28,13 +31,29 @@ export type PlatformResourceDrawerProps = {
   onUse: () => void;
 };
 
-const DRAWER_SHEET_CLASS = cn(
-  'platform-resource-drawer flex w-[400px] flex-col gap-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[16px_20px] shadow-[0_4px_15px_rgba(0,0,0,0.25)] sm:max-w-[400px]',
-  'top-[24px]! right-[24px]! bottom-[24px]! left-auto! h-auto! max-h-[calc(100vh-48px)] rounded-[20px]',
-);
+const DRAWER_SHEET_SX: SxProps<Theme> = {
+  position: 'absolute',
+  top: '24px !important',
+  right: '24px !important',
+  bottom: '24px !important',
+  left: 'auto !important',
+  height: 'auto !important',
+  maxHeight: 'calc(100vh - 48px) !important',
+  width: '400px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  border: '0.5px solid',
+  borderColor: '#e3e7f1',
+  bgcolor: '#fff',
+  p: '16px 20px',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.25)',
+  borderRadius: '20px',
+  maxWidth: { sm: '400px' },
+};
 
 function DrawerDivider() {
-  return <div className="h-px w-full shrink-0 bg-[#e3e7f1]" />;
+  return <Box sx={{ height: '1px', width: '100%', flexShrink: 0, bgcolor: '#e3e7f1' }} />;
 }
 
 function NavChevron({
@@ -49,17 +68,25 @@ function NavChevron({
   label: string;
 }) {
   return (
-    <button
+    <Box
+      component="button"
       type="button"
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-[14px] place-items-center text-[#757f9c] transition-colors enabled:hover:text-[#18181a] disabled:cursor-not-allowed disabled:opacity-35"
+      sx={{
+        display: 'grid',
+        width: '14px',
+        height: '14px',
+        placeItems: 'center',
+        color: '#757f9c',
+        transition: 'color 0.15s',
+        '&:enabled:hover': { color: '#18181a' },
+        '&:disabled': { cursor: 'not-allowed', opacity: 0.35 },
+      }}
     >
-      <ChevronDown
-        className={cn('size-[14px]', direction === 'prev' ? 'rotate-90' : '-rotate-90')}
-      />
-    </button>
+      <ChevronDown size={14} style={{ transform: direction === 'prev' ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
+    </Box>
   );
 }
 
@@ -91,95 +118,174 @@ export default function PlatformResourceDrawer({
 
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <SheetContent side="right" showCloseButton={false} className={DRAWER_SHEET_CLASS}>
-        <div className="flex w-full shrink-0 flex-col gap-[10px]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-[4px]">
-              <span className="text-[12px] font-medium capitalize text-[#464c5e]">
+      <SheetContent side="right" showCloseButton={false} sx={DRAWER_SHEET_SX}>
+        <Box sx={{ display: 'flex', width: '100%', flexShrink: 0, flexDirection: 'column', gap: '10px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Box
+                component="span"
+                sx={{ fontSize: '12px', fontWeight: 500, textTransform: 'capitalize', color: '#464c5e' }}
+              >
                 {platformTitle}
-              </span>
+              </Box>
               <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一项" />
               <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一项" />
-            </div>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               aria-label="关闭"
               onClick={onClose}
-              className="grid size-[14px] place-items-center text-[#757f9c] transition-colors hover:text-[#18181a]"
+              sx={{
+                display: 'grid',
+                width: '14px',
+                height: '14px',
+                placeItems: 'center',
+                color: '#757f9c',
+                transition: 'color 0.15s',
+                '&:hover': { color: '#18181a' },
+              }}
             >
-              <X className="size-[14px]" strokeWidth={1.75} />
-            </button>
-          </div>
+              <X size={14} strokeWidth={1.75} />
+            </Box>
+          </Box>
           <DrawerDivider />
-        </div>
+        </Box>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-[10px] overflow-auto px-[4px]">
-          <div className="size-[36px] shrink-0">{icon}</div>
+        <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '10px', overflowY: 'auto', px: '4px' }}>
+          <Box sx={{ width: '36px', height: '36px', flexShrink: 0 }}>{icon}</Box>
 
-          <div className="flex min-h-[75px] w-full flex-col justify-center gap-[8px] pb-[2px]">
-            <div className="flex flex-col gap-[4px]">
-              <p className="text-[16px] font-medium capitalize text-[#464c5e]">
+          <Box sx={{ display: 'flex', minHeight: '75px', width: '100%', flexDirection: 'column', justifyContent: 'center', gap: '8px', pb: '2px' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <Box
+                component="p"
+                sx={{ fontSize: '16px', fontWeight: 500, textTransform: 'capitalize', color: '#464c5e' }}
+              >
                 {title}
-              </p>
-              <p className="text-[12px] leading-[18px] text-[#757f9c]">
+              </Box>
+              <Box component="p" sx={{ fontSize: '12px', lineHeight: '18px', color: '#757f9c' }}>
                 {description}
-              </p>
-            </div>
-            <span
-              className={cn(
-                'inline-flex w-fit items-center rounded-[90px] px-[10px] py-[4px] text-[10px] capitalize',
-                accentStyles.tag,
-              )}
+              </Box>
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                width: 'fit-content',
+                alignItems: 'center',
+                borderRadius: '90px',
+                px: '10px',
+                py: '4px',
+                fontSize: '10px',
+                textTransform: 'capitalize',
+                ...accentStyles.tag,
+              }}
             >
               {badge}
-            </span>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="grid grid-cols-2 gap-[10px]">
-            <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
-              <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                minHeight: '60px',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '14px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                px: '16px',
+                py: '8px',
+              }}
+            >
+              <Box component="span" sx={{ fontSize: '10px', lineHeight: '13px', color: '#464c5e' }}>分类</Box>
+              <Box
+                component="strong"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '16px', fontWeight: 500, color: '#18181a' }}
+              >
                 {platformTitle}
-              </strong>
-            </div>
-            <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
-              <strong className={cn('truncate text-[12px] leading-[16px] font-medium', accentStyles.meta)}>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                minHeight: '60px',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '14px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                px: '16px',
+                py: '8px',
+              }}
+            >
+              <Box component="span" sx={{ fontSize: '10px', lineHeight: '13px', color: '#464c5e' }}>分类</Box>
+              <Box
+                component="strong"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '16px', fontWeight: 500, ...accentStyles.meta }}
+              >
                 {categoryMeta}
-              </strong>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-[8px]">
-            <span className="text-[12px] capitalize text-[#464c5e]">说明</span>
-            <p className="text-[12px] leading-[20px] text-[#757f9c]">
+          <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '8px' }}>
+            <Box component="span" sx={{ fontSize: '12px', textTransform: 'capitalize', color: '#464c5e' }}>说明</Box>
+            <Box component="p" sx={{ fontSize: '12px', lineHeight: '20px', color: '#757f9c' }}>
               {detailText}
-            </p>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         <DrawerDivider />
 
-        <div className="flex shrink-0 justify-end gap-[10px]">
+        <Box sx={{ display: 'flex', flexShrink: 0, justifyContent: 'flex-end', gap: '10px' }}>
           {canManage && onDelete && (
-            <button
+            <Box
+              component="button"
               type="button"
               disabled={deleting}
               onClick={onDelete}
-              className="inline-flex h-[34px] w-[80px] items-center justify-center gap-[4px] rounded-[10px] border-[0.5px] border-[#d20b0b] bg-white text-[12px] text-[#d20b0b] transition-colors hover:bg-[#fce7e7] disabled:cursor-not-allowed disabled:opacity-50"
+              sx={{
+                display: 'inline-flex',
+                height: '34px',
+                width: '80px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '10px',
+                border: '0.5px solid',
+                borderColor: '#d20b0b',
+                bgcolor: '#fff',
+                fontSize: '12px',
+                color: '#d20b0b',
+                transition: 'background-color 0.15s, color 0.15s',
+                '&:hover': { bgcolor: '#fce7e7' },
+                '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+              }}
             >
-              <Trash2 className="size-[14px]" />
+              <Trash2 size={14} />
               删除
-            </button>
+            </Box>
           )}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={onUse}
-            className="inline-flex h-[34px] items-center justify-center rounded-[10px] bg-[#18181a] px-[20px] text-[12px] text-white transition-colors hover:bg-[#2a2a2e]"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...staffTokens.primaryButton,
+              height: '34px',
+            }}
           >
             {useLabel}
-          </button>
-        </div>
+          </Box>
+        </Box>
       </SheetContent>
     </Sheet>
   );

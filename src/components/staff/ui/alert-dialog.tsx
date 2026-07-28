@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Dialog as MuiDialog, Box } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 import { Button } from './button'
@@ -78,7 +79,7 @@ function AlertDialogContent({
   size = 'default',
   children,
   ...props
-}: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
+}: React.ComponentProps<'div'> & { size?: 'default' | 'sm'; sx?: SxProps }) {
   return (
     <Box
       data-slot="alert-dialog-content"
@@ -131,7 +132,7 @@ function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) 
   )
 }
 
-function AlertDialogTitle({ className, ...props }: React.ComponentProps<'div'>) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       component="div"
@@ -143,7 +144,7 @@ function AlertDialogTitle({ className, ...props }: React.ComponentProps<'div'>) 
   )
 }
 
-function AlertDialogDescription({ className, ...props }: React.ComponentProps<'div'>) {
+function AlertDialogDescription({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       component="div"

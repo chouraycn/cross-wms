@@ -1,7 +1,14 @@
 import type { ReactNode } from 'react';
 
-import { cn } from '../lib/utils';
+import Box from '@mui/material/Box';
+import { keyframes } from '@mui/material/styles';
+
 import { ChevronDown } from '../icons';
+
+const pulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+`;
 
 export type PlatformColumnProps = {
   /** Small 14px glyph shown before the title. */
@@ -49,92 +56,178 @@ export default function PlatformColumn({
 }: PlatformColumnProps) {
   void countLabel;
   return (
-    <section
-      className={cn(
-        'flex h-full min-h-0 w-full min-w-[180px] flex-col items-center gap-[10px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[12px] py-[14px]',
-        className,
-      )}
+    <Box
+      component="section"
+      className={className}
+      sx={{
+        display: 'flex',
+        height: '100%',
+        minHeight: 0,
+        width: '100%',
+        minWidth: '180px',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '10px',
+        borderRadius: '14px',
+        border: '0.5px solid',
+        borderColor: '#e3e7f1',
+        px: '12px',
+        py: '14px',
+      }}
     >
-      <div className="flex w-full min-h-0 flex-1 flex-col gap-[16px]">
-        <div className="flex w-full shrink-0 flex-col gap-[10px]">
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-[4px]">
-              <span className="flex size-[14px] shrink-0 items-center justify-center text-[#464c5e]">
+      <Box sx={{ display: 'flex', width: '100%', minHeight: 0, flex: 1, flexDirection: 'column', gap: '16px' }}>
+        <Box sx={{ display: 'flex', width: '100%', flexShrink: 0, flexDirection: 'column', gap: '10px' }}>
+          <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Box
+                component="span"
+                sx={{ display: 'flex', width: '14px', height: '14px', flexShrink: 0, alignItems: 'center', justifyContent: 'center', color: '#464c5e' }}
+              >
                 {icon}
-              </span>
-              <p className="truncate text-[12px] font-medium text-[#464c5e]">{title}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-[2px] text-[12px] text-[#464c5e]">
-              <span>{count}</span>
-            </div>
-          </div>
+              </Box>
+              <Box
+                component="p"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: 500, color: '#464c5e' }}
+              >
+                {title}
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: '2px', fontSize: '12px', color: '#464c5e' }}>
+              <Box component="span">{count}</Box>
+            </Box>
+          </Box>
 
           {filters && filters.length > 0 && (
-            <div className="flex flex-wrap items-center gap-[6px]">
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
               {filters.map((filter) => (
-                <span
+                <Box
                   key={filter}
-                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c]"
+                  component="span"
+                  sx={{
+                    borderRadius: '20px',
+                    border: '0.5px solid',
+                    borderColor: '#e3e7f1',
+                    px: '8px',
+                    py: '2px',
+                    fontSize: '10px',
+                    lineHeight: 'normal',
+                    color: '#757f9c',
+                  }}
                 >
                   {filter}
-                </span>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
 
-          <div className="h-px w-full bg-[#e3e7f1]" />
-        </div>
+          <Box sx={{ height: '1px', width: '100%', bgcolor: '#e3e7f1' }} />
+        </Box>
 
-        <div className="mr-[-12px] flex min-h-0 w-[calc(100%+12px)] flex-1 flex-col gap-[16px] overflow-y-auto pr-[12px]">
+        <Box sx={{ marginRight: '-12px', display: 'flex', minHeight: 0, width: 'calc(100% + 12px)', flex: 1, flexDirection: 'column', gap: '16px', overflowY: 'auto', pr: '12px' }}>
           {loading ? (
             <PlatformColumnSkeleton />
           ) : isEmpty ? (
-            <div className="flex min-h-[180px] w-full flex-1 items-center justify-center rounded-[18px] border border-dashed border-[#e4e9f2] bg-[#fbfcfe] px-[18px] py-[28px] text-center">
-              <div className="flex max-w-[180px] flex-col items-center">
-                <span className="grid size-[34px] place-items-center rounded-[12px] bg-white text-[#98a2b3] shadow-[0_1px_8px_rgba(70,76,94,0.06)] ring-1 ring-[#edf1f6]">
-                  <ChevronDown className="size-[16px] rotate-90" />
-                </span>
-                <p className="mt-[12px] text-[13px] font-medium leading-[19px] text-[#7f879a]">
+            <Box
+              sx={{
+                display: 'flex',
+                minHeight: '180px',
+                width: '100%',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '18px',
+                border: '1px dashed',
+                borderColor: '#e4e9f2',
+                bgcolor: '#fbfcfe',
+                px: '18px',
+                py: '28px',
+                textAlign: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', maxWidth: '180px', flexDirection: 'column', alignItems: 'center' }}>
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'grid',
+                    width: '34px',
+                    height: '34px',
+                    placeItems: 'center',
+                    borderRadius: '12px',
+                    bgcolor: '#fff',
+                    color: '#98a2b3',
+                    boxShadow: '0 1px 8px rgba(70,76,94,0.06), 0 0 0 1px #edf1f6',
+                  }}
+                >
+                  <ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} />
+                </Box>
+                <Box component="p" sx={{ mt: '12px', fontSize: '13px', fontWeight: 500, lineHeight: '19px', color: '#7f879a' }}>
                   {emptyText}
-                </p>
-                <p className="mt-[4px] text-[10px] leading-[16px] text-[#a7adbb]">
+                </Box>
+                <Box component="p" sx={{ mt: '4px', fontSize: '10px', lineHeight: '16px', color: '#a7adbb' }}>
                   发布内容后会在这里展示
-                </p>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ) : (
             children
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {!isEmpty && (
         <>
-          <div className="h-px w-full shrink-0 bg-[#e3e7f1]" />
+          <Box sx={{ height: '1px', width: '100%', flexShrink: 0, bgcolor: '#e3e7f1' }} />
 
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={onViewAll}
-            className="flex w-[120px] shrink-0 items-center justify-center gap-[2px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] py-[8px] text-[12px] text-[#757f9c] transition-colors hover:text-[#18181a]"
+            sx={{
+              display: 'flex',
+              width: '120px',
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              borderRadius: '10px',
+              border: '0.5px solid',
+              borderColor: '#e3e7f1',
+              bgcolor: '#fff',
+              px: '20px',
+              py: '8px',
+              fontSize: '12px',
+              color: '#757f9c',
+              transition: 'color 0.15s',
+              '&:hover': { color: '#18181a' },
+            }}
           >
             查看全部
-            <ChevronDown className="size-[14px] shrink-0 -rotate-90" />
-          </button>
+            <ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} />
+          </Box>
         </>
       )}
-    </section>
+    </Box>
   );
 }
 
 function PlatformColumnSkeleton() {
   return (
-    <div className="flex w-full flex-col gap-[16px]">
+    <Box sx={{ display: 'flex', width: '100%', flexDirection: 'column', gap: '16px' }}>
       {[0, 1, 2].map((index) => (
-        <div
+        <Box
           key={index}
-          className="h-[112px] w-full shrink-0 animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6]"
+          sx={{
+            height: '112px',
+            width: '100%',
+            flexShrink: 0,
+            animation: `${pulse} 2s cubic-bezier(0.4,0,0.6,1) infinite`,
+            borderRadius: '20px',
+            border: '0.5px solid',
+            borderColor: '#f0f1f5',
+            bgcolor: '#f6f6f6',
+          }}
         />
       ))}
-    </div>
+    </Box>
   );
 }

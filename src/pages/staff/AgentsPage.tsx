@@ -1,7 +1,7 @@
 import { Plus, Search } from 'lucide-react';
+import Box from '@mui/material/Box';
 import { UnderlineTabs, type UnderlineTabItem } from '../../components/staff/ui/index.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
-import { cn } from '../../components/staff/lib/utils.js';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +32,21 @@ function persistSharedAgentScope(agentId: string, _userId?: string) {
 function emitAgentScopeChange(agentId: string) {
   window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId } }));
 }
+
+const cardBaseSx = {
+  display: 'flex',
+  height: '100px',
+  flex: 1,
+  flexBasis: '220px',
+  alignItems: 'center',
+  gap: '16px',
+  borderRadius: '20px',
+  bgcolor: '#f6f6f6',
+  px: '32px',
+  py: '20px',
+  textAlign: 'left',
+  transition: 'box-shadow 0.15s',
+};
 
 export default function AgentsPage({
   currentUser,
@@ -214,8 +229,6 @@ export default function AgentsPage({
     { value: 'offline', label: '下线员工' },
   ];
 
-  const summaryCardClass =
-    'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow';
   const summaryStats: { key: typeof employeeFilter; value: number; label: string; sub: string }[] = [
     { key: 'all', value: employees.length, label: '员工总数', sub: `${onlineEmployees.length}位在线` },
     { key: 'offline', value: offlineEmployees.length, label: '下线员工', sub: '0位在线' },
@@ -228,63 +241,113 @@ export default function AgentsPage({
   ];
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
+    <Box
+      sx={{
+        minHeight: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width: 900px)': { px: '16px' },
+      }}
+      aria-busy={loading}
+    >
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
         left={(
-          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)]">
-            <Search className="size-[20px] shrink-0" />
-            <input
+          <Box
+            sx={{
+              display: 'flex',
+              height: '50px',
+              width: '100%',
+              alignItems: 'center',
+              gap: '6px',
+              borderRadius: '20px',
+              bgcolor: 'background.paper',
+              px: '20px',
+              color: '#757F9C',
+              boxShadow: '0 0 6px rgba(0,0,0,0.05)',
+            }}
+          >
+            <Search size={20} style={{ flexShrink: 0 }} />
+            <Box
+              component="input"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
               aria-label="搜索员工"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
+              sx={{
+                minWidth: 0,
+                flex: 1,
+                border: 0,
+                bgcolor: 'transparent',
+                fontSize: '14px',
+                color: '#18181A',
+                outline: 'none',
+                '&::placeholder': { color: '#757F9C' },
+              }}
             />
-          </div>
+          </Box>
         )}
       />
 
 
-      <div className="flex flex-wrap items-stretch gap-[20px] my-[36px]" aria-label="数字员工统计">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px', my: '36px' }} aria-label="数字员工统计">
         {summaryStats.map((stat) => (
-          <button
+          <Box
             key={stat.key}
+            component="button"
             type="button"
             aria-pressed={employeeFilter === stat.key}
             onClick={() => setEmployeeFilter(stat.key)}
-            className={cn(
-              summaryCardClass,
-            )}
+            sx={cardBaseSx}
           >
-            <span className="shrink-0 text-[34px] font-semibold leading-none text-[#18181A]">{stat.value}</span>
-            <span className="flex min-w-0 flex-col gap-[4px]">
-              <span className="whitespace-nowrap text-[14px] text-[#464C5E]">{stat.label}</span>
-              <span className="whitespace-nowrap text-[12px] text-[#757F9C]">{stat.sub}</span>
-            </span>
-          </button>
+            <Box component="span" sx={{ flexShrink: 0, fontSize: '34px', fontWeight: 600, lineHeight: 'none', color: '#18181A' }}>{stat.value}</Box>
+            <Box component="span" sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '4px' }}>
+              <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '14px', color: '#464C5E' }}>{stat.label}</Box>
+              <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '12px', color: '#757F9C' }}>{stat.sub}</Box>
+            </Box>
+          </Box>
         ))}
-        <button data-guide-target="agents-create" type="button" onClick={onCreateAgent} className={cn(summaryCardClass, 'hover:shadow-[0_16px_30px_0_rgba(0,0,0,0.10)]')}>
-          <span className="grid size-[38px] shrink-0 place-items-center text-[#18181A]">
-            <Plus className="size-[38px]" />
-          </span>
-          <span className="flex min-w-0 flex-col gap-[4px]">
-            <span className="whitespace-nowrap text-[14px] text-[#464C5E]">创建新员工</span>
-            <span className="whitespace-nowrap text-[12px] text-[#757F9C]">几步搭好你的数字员工</span>
-          </span>
-        </button>
-      </div>
+        <Box
+          component="button"
+          type="button"
+          data-guide-target="agents-create"
+          onClick={onCreateAgent}
+          sx={{ ...cardBaseSx, '&:hover': { boxShadow: '0 16px 30px 0 rgba(0,0,0,0.10)' } }}
+        >
+          <Box component="span" sx={{ display: 'grid', width: '38px', height: '38px', flexShrink: 0, placeItems: 'center', color: '#18181A' }}>
+            <Plus size={38} />
+          </Box>
+          <Box component="span" sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '4px' }}>
+            <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '14px', color: '#464C5E' }}>创建新员工</Box>
+            <Box component="span" sx={{ whiteSpace: 'nowrap', fontSize: '12px', color: '#757F9C' }}>几步搭好你的数字员工</Box>
+          </Box>
+        </Box>
+      </Box>
 
       <UnderlineTabs
-        className="mb-[16px]"
+        sx={{ mb: '16px' }}
         aria-label="数字员工分类"
         value={employeeFilter}
         onChange={setEmployeeFilter}
         items={employeeTabs}
       />
 
-      <div className="grid auto-rows-[minmax(262px,auto)] grid-cols-1 content-start gap-[32px] sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 max-[900px]:gap-[18px]">
+      <Box
+        sx={{
+          display: 'grid',
+          gridAutoRows: 'minmax(262px,auto)',
+          gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+          alignContent: 'start',
+          gap: '32px',
+          '@media (min-width: 640px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+          '@media (min-width: 1024px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+          '@media (min-width: 1536px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+          '@media (max-width: 900px)': { gap: '18px' },
+        }}
+      >
         {filteredEmployees.map((employee) => (
           <EmployeeCard
             key={employee.id}
@@ -304,7 +367,7 @@ export default function AgentsPage({
         {!filteredEmployees.length && (
           <AgentsEmptyState />
         )}
-      </div>
+      </Box>
       <EmployeeAvatarEditor
         agent={avatarAgent}
         open={Boolean(avatarAgent)}
@@ -328,24 +391,48 @@ export default function AgentsPage({
         description="删除后该员工的所有配置将一并移除，操作不可撤销。"
         onConfirm={() => void confirmDelete()}
       />
-    </div>
+    </Box>
   );
 }
 
 function AgentsEmptyState() {
   return (
-    <div className="flex h-[262px] w-full items-center justify-center rounded-[20px] border border-dashed border-[#e4e9f2] bg-[#fbfcfe] px-[24px] text-center">
-      <div className="flex max-w-[210px] flex-col items-center">
-        <span className="grid size-[34px] place-items-center rounded-[12px] bg-white text-[#98a2b3] shadow-[0_1px_8px_rgba(70,76,94,0.06)] ring-1 ring-[#edf1f6]">
-          <Search className="size-[16px] shrink-0" />
-        </span>
-        <p className="mt-[12px] text-[14px] font-medium leading-[20px] text-[#7f879a]">
+    <Box
+      sx={{
+        display: 'flex',
+        height: '262px',
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '20px',
+        border: '1px dashed #e4e9f2',
+        bgcolor: '#fbfcfe',
+        px: '24px',
+        textAlign: 'center',
+      }}
+    >
+      <Box sx={{ display: 'flex', maxWidth: '210px', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            width: '34px',
+            height: '34px',
+            placeItems: 'center',
+            borderRadius: '12px',
+            bgcolor: 'background.paper',
+            color: '#98a2b3',
+            boxShadow: '0 0 0 1px #edf1f6, 0 1px 8px rgba(70,76,94,0.06)',
+          }}
+        >
+          <Search size={16} />
+        </Box>
+        <Box component="p" sx={{ mt: '12px', fontSize: '14px', fontWeight: 500, lineHeight: '20px', color: '#7f879a' }}>
           没有匹配的数字员工
-        </p>
-        <p className="mt-[4px] text-[11px] leading-[17px] text-[#a7adbb]">
+        </Box>
+        <Box component="p" sx={{ mt: '4px', fontSize: '11px', lineHeight: '17px', color: '#a7adbb' }}>
           调整筛选条件，或换个关键词再试试
-        </p>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

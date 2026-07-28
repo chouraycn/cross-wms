@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react';
 
+import Box from '@mui/material/Box';
+import type { SxProps, Theme } from '@mui/material/styles';
+
 import { Sheet, SheetContent } from '../ui';
-import { cn } from '../lib/utils';
 import { ChevronDown, Trash2, X } from '../icons';
 import EmployeeAvatar from '../EmployeeAvatar';
 import type { AgentProfileRead } from '../types';
 
 import type { PlatformStat } from './PlatformEmployeeCard';
+import { staffTokens } from '../lib/staffTokens.js';
 
 export type PlatformEmployeeDrawerProps = {
   open: boolean;
@@ -30,8 +33,29 @@ export type PlatformEmployeeDrawerProps = {
   onUse: () => void;
 };
 
+const DRAWER_SHEET_SX: SxProps<Theme> = {
+  position: 'absolute',
+  top: '24px !important',
+  right: '24px !important',
+  bottom: '24px !important',
+  left: 'auto !important',
+  height: 'auto !important',
+  maxHeight: 'calc(100vh - 48px) !important',
+  width: '400px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  border: '0.5px solid',
+  borderColor: '#e3e7f1',
+  bgcolor: '#fff',
+  p: '16px 20px',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.25)',
+  borderRadius: '20px',
+  maxWidth: { sm: '400px' },
+};
+
 function DrawerDivider() {
-  return <div className="h-px w-full shrink-0 bg-[#e3e7f1]" />;
+  return <Box sx={{ height: '1px', width: '100%', flexShrink: 0, bgcolor: '#e3e7f1' }} />;
 }
 
 function NavChevron({
@@ -46,17 +70,25 @@ function NavChevron({
   label: string;
 }) {
   return (
-    <button
+    <Box
+      component="button"
       type="button"
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-[14px] place-items-center text-[#757f9c] transition-colors enabled:hover:text-[#18181a] disabled:cursor-not-allowed disabled:opacity-35"
+      sx={{
+        display: 'grid',
+        width: '14px',
+        height: '14px',
+        placeItems: 'center',
+        color: '#757f9c',
+        transition: 'color 0.15s',
+        '&:enabled:hover': { color: '#18181a' },
+        '&:disabled': { cursor: 'not-allowed', opacity: 0.35 },
+      }}
     >
-      <ChevronDown
-        className={cn('size-[14px]', direction === 'prev' ? 'rotate-90' : '-rotate-90')}
-      />
-    </button>
+      <ChevronDown size={14} style={{ transform: direction === 'prev' ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
+    </Box>
   );
 }
 
@@ -86,38 +118,43 @@ export default function PlatformEmployeeDrawer({
 }: PlatformEmployeeDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <SheetContent
-        side="right"
-        showCloseButton={false}
-        className={cn(
-          'platform-employee-drawer flex w-[400px] flex-col gap-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[16px_20px] shadow-[0_4px_15px_rgba(0,0,0,0.25)] sm:max-w-[400px]',
-          'top-[24px]! right-[24px]! bottom-[24px]! left-auto! h-auto! max-h-[calc(100vh-48px)] rounded-[20px]',
-        )}
-      >
-        <div className="flex w-full shrink-0 flex-col gap-[10px]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-[4px]">
-              <span className="text-[12px] font-medium capitalize text-[#464c5e]">
+      <SheetContent side="right" showCloseButton={false} sx={DRAWER_SHEET_SX}>
+        <Box sx={{ display: 'flex', width: '100%', flexShrink: 0, flexDirection: 'column', gap: '10px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Box
+                component="span"
+                sx={{ fontSize: '12px', fontWeight: 500, textTransform: 'capitalize', color: '#464c5e' }}
+              >
                 {platformTitle}
-              </span>
+              </Box>
               <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一位员工" />
               <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一位员工" />
-            </div>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               aria-label="关闭"
               onClick={onClose}
-              className="grid size-[14px] place-items-center text-[#757f9c] transition-colors hover:text-[#18181a]"
+              sx={{
+                display: 'grid',
+                width: '14px',
+                height: '14px',
+                placeItems: 'center',
+                color: '#757f9c',
+                transition: 'color 0.15s',
+                '&:hover': { color: '#18181a' },
+              }}
             >
-              <X className="size-[14px]" strokeWidth={1.75} />
-            </button>
-          </div>
+              <X size={14} strokeWidth={1.75} />
+            </Box>
+          </Box>
           <DrawerDivider />
-        </div>
+        </Box>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-[10px] overflow-auto px-[4px] pt-[48px]">
-          <div className="flex w-full items-end gap-[10px] pb-[4px]">
-            <div className="flex h-[117.5px] w-[100px] shrink-0 items-end justify-center overflow-hidden">
+        <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '10px', overflowY: 'auto', px: '4px', pt: '48px' }}>
+          <Box sx={{ display: 'flex', width: '100%', alignItems: 'flex-end', gap: '10px', pb: '4px' }}>
+            <Box sx={{ display: 'flex', height: '117.5px', width: '100px', flexShrink: 0, alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
               <EmployeeAvatar
                 agent={agent}
                 width={100}
@@ -126,105 +163,202 @@ export default function PlatformEmployeeDrawer({
                 objectPosition="center bottom"
                 className="overflow-visible! rounded-none! border-0! bg-transparent! bg-none! shadow-none! after:hidden!"
               />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-[8px] pb-[2px]">
-              <div className="flex flex-col gap-[4px]">
-                <p className="truncate text-[16px] font-medium capitalize text-[#464c5e]">
+            </Box>
+            <Box sx={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column', justifyContent: 'center', gap: '8px', pb: '2px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <Box
+                  component="p"
+                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '16px', fontWeight: 500, textTransform: 'capitalize', color: '#464c5e' }}
+                >
                   {name}
-                </p>
-                <p className="line-clamp-2 text-[12px] leading-[18px] text-[#757f9c]">
+                </Box>
+                <Box
+                  component="p"
+                  sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: '12px', lineHeight: '18px', color: '#757f9c' }}
+                >
                   {description}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  'inline-flex w-fit items-center gap-[4px] rounded-[90px] border-[0.5px] px-[10px] py-[4px]',
-                  online
-                    ? 'border-[#96d9b0] bg-[#e9f7ef] text-[#2cb360]'
-                    : 'border-[#d1d5db] bg-[#f3f4f6] text-[#757f9c]',
-                )}
+                </Box>
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  width: 'fit-content',
+                  alignItems: 'center',
+                  gap: '4px',
+                  borderRadius: '90px',
+                  border: '0.5px solid',
+                  px: '10px',
+                  py: '4px',
+                  fontSize: '10px',
+                  textTransform: 'capitalize',
+                  ...(online
+                    ? { borderColor: '#96d9b0', bgcolor: '#e9f7ef', color: '#2cb360' }
+                    : { borderColor: '#d1d5db', bgcolor: '#f3f4f6', color: '#757f9c' }),
+                }}
               >
-                <i
-                  className={cn('size-[4px] shrink-0 rounded-full shadow-[inset_1px_1px_2px_0.5px_rgba(0,0,0,0.05)]', online ? 'bg-[#22c55e]' : 'bg-[#9ca3af]')}
+                <Box
+                  component="i"
                   aria-hidden="true"
+                  sx={{
+                    width: '4px',
+                    height: '4px',
+                    flexShrink: 0,
+                    borderRadius: '9999px',
+                    boxShadow: 'inset 1px 1px 2px 0.5px rgba(0,0,0,0.05)',
+                    bgcolor: online ? '#22c55e' : '#9ca3af',
+                  }}
                 />
-                <span className="text-[10px] capitalize">{online ? '在线' : '下线'}</span>
-              </span>
-            </div>
-          </div>
+                <Box component="span" sx={{ fontSize: '10px', textTransform: 'capitalize' }}>
+                  {online ? '在线' : '下线'}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="flex w-full items-stretch">
+          <Box sx={{ display: 'flex', width: '100%', alignItems: 'stretch' }}>
             {stats.map((stat, index) => (
-              <div
+              <Box
                 key={stat.label}
-                className={cn(
-                  'flex h-[60px] flex-1 flex-col justify-center gap-[4px] border-[0.5px] border-[#e3e7f1] px-[20px] py-[8px]',
-                  index === 0 && 'rounded-l-[14px]',
-                  index === stats.length - 1 && 'rounded-r-[14px]',
-                  index > 0 && 'border-l-0',
-                )}
+                sx={{
+                  display: 'flex',
+                  height: '60px',
+                  flex: 1,
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  border: '0.5px solid',
+                  borderColor: '#e3e7f1',
+                  px: '20px',
+                  py: '8px',
+                  ...(index === 0 ? { borderTopLeftRadius: '14px', borderBottomLeftRadius: '14px' } : {}),
+                  ...(index === stats.length - 1 ? { borderTopRightRadius: '14px', borderBottomRightRadius: '14px' } : {}),
+                  ...(index > 0 ? { borderLeft: 0 } : {}),
+                }}
               >
-                <strong className="text-[18px] font-medium text-[#18181a]">{stat.value}</strong>
-                <span className="text-[10px] text-[#464c5e]">{stat.label}</span>
-              </div>
+                <Box component="strong" sx={{ fontSize: '18px', fontWeight: 500, color: '#18181a' }}>{stat.value}</Box>
+                <Box component="span" sx={{ fontSize: '10px', color: '#464c5e' }}>{stat.label}</Box>
+              </Box>
             ))}
-          </div>
+          </Box>
 
-          <div className="grid grid-cols-2 gap-[10px]">
-            <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
-              <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">{platformTitle}</strong>
-            </div>
-            <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
-              <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">{role}</strong>
-            </div>
-          </div>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                minHeight: '60px',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '14px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                px: '16px',
+                py: '8px',
+              }}
+            >
+              <Box component="span" sx={{ fontSize: '10px', lineHeight: '13px', color: '#464c5e' }}>分类</Box>
+              <Box
+                component="strong"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '16px', fontWeight: 500, color: '#18181a' }}
+              >
+                {platformTitle}
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                minHeight: '60px',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '14px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                px: '16px',
+                py: '8px',
+              }}
+            >
+              <Box component="span" sx={{ fontSize: '10px', lineHeight: '13px', color: '#464c5e' }}>分类</Box>
+              <Box
+                component="strong"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '16px', fontWeight: 500, color: '#18181a' }}
+              >
+                {role}
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-[8px]">
-            <span className="text-[12px] capitalize text-[#464c5e]">说明</span>
-            <div className="flex min-h-0 flex-1 flex-col gap-[10px]">
+          <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '8px' }}>
+            <Box component="span" sx={{ fontSize: '12px', textTransform: 'capitalize', color: '#464c5e' }}>说明</Box>
+            <Box sx={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', gap: '10px' }}>
               {workStyles.length > 0 && (
-                <div className="flex flex-wrap gap-[10px]">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                   {workStyles.slice(0, 3).map((tag) => (
-                    <span
+                    <Box
                       key={tag}
-                      className="rounded-[10px] bg-[#f6f6f6] px-[12px] py-[4px] text-[12px] text-[#757f9c]"
+                      component="span"
+                      sx={{ borderRadius: '10px', bgcolor: '#f6f6f6', px: '12px', py: '4px', fontSize: '12px', color: '#757f9c' }}
                     >
                       {tag}
-                    </span>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               )}
-              <p className="text-[12px] leading-[20px] text-[#757f9c]">
+              <Box component="p" sx={{ fontSize: '12px', lineHeight: '20px', color: '#757f9c' }}>
                 {detailText}
-              </p>
-            </div>
-          </div>
-        </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
 
         <DrawerDivider />
 
-        <div className="flex shrink-0 justify-end gap-[10px]">
+        <Box sx={{ display: 'flex', flexShrink: 0, justifyContent: 'flex-end', gap: '10px' }}>
           {canManage && onDelete && (
-            <button
+            <Box
+              component="button"
               type="button"
               disabled={deleting}
               onClick={onDelete}
-              className="inline-flex h-[34px] w-[80px] items-center justify-center gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#757f9c] transition-colors hover:border-[#d20b0b] hover:text-[#d20b0b] disabled:cursor-not-allowed disabled:opacity-50"
+              sx={{
+                display: 'inline-flex',
+                height: '34px',
+                width: '80px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                borderRadius: '10px',
+                border: '0.5px solid',
+                borderColor: '#e3e7f1',
+                bgcolor: '#fff',
+                fontSize: '12px',
+                color: '#757f9c',
+                transition: 'background-color 0.15s, color 0.15s, border-color 0.15s',
+                '&:hover': { borderColor: '#d20b0b', color: '#d20b0b' },
+                '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+              }}
             >
-              <Trash2 className="size-[14px]" />
+              <Trash2 size={14} />
               删除
-            </button>
+            </Box>
           )}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={onUse}
-            className="inline-flex h-[34px] w-[80px] items-center justify-center rounded-[10px] bg-[#18181a] text-[12px] text-white transition-colors hover:bg-[#2a2a2e]"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...staffTokens.primaryButton,
+              height: '34px',
+              width: '80px',
+            }}
           >
             使用员工
-          </button>
-        </div>
+          </Box>
+        </Box>
       </SheetContent>
     </Sheet>
   );
