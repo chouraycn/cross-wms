@@ -158,6 +158,59 @@ export function getHostname(): string {
   return os.hostname();
 }
 
+// ===================== Gateway discovery helpers =====================
+
+export type NetworkInterfacesSnapshot = ReturnType<typeof os.networkInterfaces>;
+
+export function readNetworkInterfaces(
+  networkInterfaces: () => NetworkInterfacesSnapshot = os.networkInterfaces,
+): NetworkInterfacesSnapshot {
+  return networkInterfaces();
+}
+
+export function safeNetworkInterfaces(
+  networkInterfaces: () => NetworkInterfacesSnapshot = os.networkInterfaces,
+): NetworkInterfacesSnapshot | undefined {
+  try {
+    return readNetworkInterfaces(networkInterfaces);
+  } catch {
+    return undefined;
+  }
+}
+
+export function pickMatchingExternalInterfaceAddress(
+  snapshot: NetworkInterfacesSnapshot | undefined,
+  params: {
+    family: 'IPv4' | 'IPv6';
+    preferredNames?: string[];
+    matches?: (address: string) => boolean;
+  },
+): string | undefined {
+  const { family, preferredNames = [], matches = () => true } = params;
+  const addresses: { name: string; address: string; family: 'IPv4' | 'IPv6' }[] = [];
+
+  if (snapshot) {
+    for (const [name, entries] of Object.entries(snapshot)) {
+      if (!entries) continue;
+      for (const entry of entries) {
+        if (!entry || entry.internal) continue;
+        const address = entry.address?.trim();
+        if (!address) continue;
+        const entryFamily = entry.family === 'IPv4' || entry.family === 4 ? 'IPv4' : entry.family === 'IPv6' || entry.family === 6 ? 'IPv6' : undefined;
+        if (!entryFamily || entryFamily !== family) continue;
+        addresses.push({ name, address, family: entryFamily });
+      }
+    }
+  }
+
+  for (const name of preferredNames) {
+    const preferred = addresses.find((entry) => entry.name === name && matches(entry.address));
+    if (preferred) return preferred.address;
+  }
+
+  return addresses.find((entry) => matches(entry.address))?.address;
+}
+
 export function getNetworkSummary(): {
   hostname: string;
   interfaces: number;

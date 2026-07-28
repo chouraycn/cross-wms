@@ -185,6 +185,32 @@ cd "$ROOT_DIR"
     --external:tr46 \
     --external:whatwg-url \
     --external:sqlite-vec \
+    --external:@larksuiteoapi/node-sdk \
+    --external:@cdf-know/plugin-sdk/extension-shared \
+    --external:../../packages/gateway-protocol/src/client-info.js \
+    --external:../../packages/gateway-protocol/src/version.js \
+    --external:../infra/tls/gateway.js \
+    --external:../../packages/gateway-client/src/event-loop-ready.js \
+    --external:@openclaw/fs-safe/atomic \
+    --external:@openclaw/fs-safe/config \
+    --external:@openclaw/fs-safe/advanced \
+    --external:@openclaw/fs-safe/json \
+    --external:@openclaw/fs-safe/path \
+    --external:@openclaw/fs-safe/root \
+    --external:@openclaw/fs-safe/errors \
+    --external:@openclaw/fs-safe/secure-file \
+    --external:@openclaw/fs-safe/walk \
+    --external:@openclaw/fs-safe/file-lock \
+    --external:@openclaw/fs-safe/temp \
+    --external:partial-json \
+    --external:tslog \
+    --external:kysely \
+    --external:@google/genai \
+    --external:openai \
+    --external:@openclaw/fs-safe/archive \
+    --external:dotenv \
+    --external:@anthropic-ai/sdk \
+    --external:@mistralai/mistralai \
     --sourcemap=inline \
     2>&1
 
