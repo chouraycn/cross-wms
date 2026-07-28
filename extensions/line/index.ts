@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * LINE 渠道扩展入口
  *

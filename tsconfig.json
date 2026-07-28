@@ -21,6 +21,6 @@
     }
   },
   "include": ["src", "shared"],
-  "exclude": ["src/ot"],
+  "exclude": ["src/ot", "openclaw", "node_modules"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

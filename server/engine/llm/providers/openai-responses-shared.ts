@@ -260,7 +260,7 @@ export async function processResponsesStream(
 ): Promise<void> {
   const blocks = output.content;
   const blockIndex = () => blocks.length - 1;
-  let currentBlock: TextContent | ThinkingContent | null = null;
+  const currentBlock: TextContent | ThinkingContent | null = null;
 
   const finishCurrentBlock = (block: TextContent | ThinkingContent | null) => {
     if (!block) return;

@@ -236,7 +236,7 @@ export function getTaskRegistryMaintenanceDiagnostics(): TaskRegistryMaintenance
 
 async function runTaskRegistryMaintenanceSweep(): Promise<TaskRegistryMaintenanceSummary> {
   const now = Date.now();
-  let reconciled = 0;
+  const reconciled = 0;
   let lost = 0;
   let pruned = 0;
 

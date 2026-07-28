@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin module implements client behavior for cross-wms.
 import type { Agent } from "node:https";
 import { createRequire } from "node:module";

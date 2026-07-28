@@ -114,18 +114,13 @@ export async function describeImagesWithModel(
   const controller = new AbortController();
   const configuredTimeoutMs = resolveImageDescriptionTimeoutMs(params.timeoutMs);
 
-  try {
-    const result = await withImageDescriptionTimeout({
-      controller,
-      timeoutMs: configuredTimeoutMs,
-      createTimeoutError: (timeoutMs) =>
-        buildImageDescriptionTimeoutError({ phase: "request", timeoutMs }),
-      task: Promise.resolve({ text: prompt, model: params.model }),
-    });
-    return result;
-  } catch (err) {
-    throw err;
-  }
+  return withImageDescriptionTimeout({
+    controller,
+    timeoutMs: configuredTimeoutMs,
+    createTimeoutError: (timeoutMs) =>
+      buildImageDescriptionTimeoutError({ phase: "request", timeoutMs }),
+    task: Promise.resolve({ text: prompt, model: params.model }),
+  });
 }
 
 export async function describeImagesWithModelPayloadTransform(

@@ -120,7 +120,7 @@ export function parseStreamingJson(partialJson: string | undefined): Record<stri
     return asStreamingJsonRecord(parseJsonWithRepair(partialJson));
   } catch {
     try {
-      let trimmed = partialJson.trim();
+      const trimmed = partialJson.trim();
       let depth = 0;
       let inString = false;
       let escapeNext = false;

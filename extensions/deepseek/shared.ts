@@ -17,11 +17,11 @@ export const DEEPSEEK_DEFAULT_MODEL = 'deepseek-v4-flash';
 // ===================== 类型定义 =====================
 
 /** 消息内容类型 */
-export type MessageContent = string | Array&lt;{
+export type MessageContent = string | Array<{
   type: 'text' | 'image_url';
   text?: string;
   image_url?: { url: string; detail?: 'auto' | 'low' | 'high' };
-}&gt;;
+}>;
 
 /** 通用聊天消息 */
 export interface ChatMessage {
@@ -38,7 +38,7 @@ export interface ToolDefinition {
   function: {
     name: string;
     description: string;
-    parameters: Record&lt;string, unknown&gt;;
+    parameters: Record<string, unknown>;
   };
 }
 
@@ -69,10 +69,10 @@ export interface AIResponse {
 
 /** 流式回调 */
 export interface StreamCallbacks {
-  onChunk: (text: string) =&gt; void;
-  onThinking?: (text: string) =&gt; void;
-  onToolCall?: (toolCall: ToolCall) =&gt; void;
-  onUsage?: (usage: AIResponse['usage']) =&gt; void;
+  onChunk: (text: string) => void;
+  onThinking?: (text: string) => void;
+  onToolCall?: (toolCall: ToolCall) => void;
+  onUsage?: (usage: AIResponse['usage']) => void;
 }
 
 /** API 调用配置 */
@@ -96,13 +96,13 @@ export interface DeepSeekCallConfig {
 export interface DeepSeekCompatConfig {
   supportsSystemMessage?: boolean;
   systemMessageFallback?: 'user' | 'none';
-  roleMap?: Record&lt;string, string&gt;;
+  roleMap?: Record<string, string>;
   maxImages?: number;
   supportsUsageInStreaming?: boolean;
   supportsReasoningEffort?: boolean;
   maxTokensField?: string;
-  extraHeaders?: Record&lt;string, string&gt;;
-  extraBodyParams?: Record&lt;string, unknown&gt;;
+  extraHeaders?: Record<string, string>;
+  extraBodyParams?: Record<string, unknown>;
   apiVersion?: string;
 }
 
@@ -126,7 +126,7 @@ export class DeepSeekAPIError extends Error {
 /**
  * 解析配置的 DeepSeek Base URL
  */
-export function resolveConfiguredDeepSeekBaseUrl(config: Record&lt;string, unknown&gt;): string {
+export function resolveConfiguredDeepSeekBaseUrl(config: Record<string, unknown>): string {
   const baseUrl = config.baseUrl as string | undefined;
   return baseUrl || DEEPSEEK_API_BASE_URL;
 }
@@ -137,7 +137,7 @@ export function resolveConfiguredDeepSeekBaseUrl(config: Record&lt;string, unkno
 export function isThinkingEnabled(thinkingLevel?: string): boolean {
   if (!thinkingLevel) return false;
   const lower = thinkingLevel.toLowerCase();
-  return lower !== 'off' &amp;&amp; lower !== 'disabled' &amp;&amp; lower !== 'none';
+  return lower !== 'off' && lower !== 'disabled' && lower !== 'none';
 }
 
 /**
@@ -160,10 +160,10 @@ export function normalizeThinkingEffort(thinkingLevel?: string): string | undefi
  */
 export function applyRoleMapping(
   messages: ChatMessage[],
-  roleMap?: Record&lt;string, string&gt;,
+  roleMap?: Record<string, string>,
 ): ChatMessage[] {
   if (!roleMap || Object.keys(roleMap).length === 0) return messages;
-  return messages.map(msg =&gt; {
+  return messages.map(msg => {
     const mappedRole = roleMap[msg.role];
     if (mappedRole) {
       return { ...msg, role: mappedRole };
@@ -194,7 +194,7 @@ export function handleSystemMessageFallback(
     }
   }
 
-  if (systemAccumulated &amp;&amp; result.length &gt; 0) {
+  if (systemAccumulated && result.length > 0) {
     const firstMsg = result[0];
     const firstContent = typeof firstMsg.content === 'string' ? firstMsg.content : '';
     result[0] = {
@@ -226,7 +226,7 @@ export function classifyError(statusCode: number, errorText: string): string {
   if (statusCode === 429) {
     return 'rate-limit';
   }
-  if (statusCode &gt;= 500) {
+  if (statusCode >= 500) {
     return 'server';
   }
   if (/context.*length|too.*long|token.*limit|max.*tokens/i.test(errorText)) {

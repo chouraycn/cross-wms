@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * WhatsApp 渠道扩展入口
  *

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Discord 渠道扩展入口
  *

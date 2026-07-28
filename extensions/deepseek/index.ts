@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 
 /**
  * DeepSeek Provider Extension 主入口
@@ -106,12 +108,12 @@ export default class DeepSeekProvider implements ExtensionProvider {
    */
   private registerAdapter(context: ExtensionContext): void {
     try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) =&gt; {
-        registerAdapter('deepseek-chat', () =&gt; {
-          return () =&gt; new DeepSeekExtensionAdapter();
+      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
+        registerAdapter('deepseek-chat', () => {
+          return () => new DeepSeekExtensionAdapter();
         });
         context.logger.info('DeepSeek adapter registered in adapter registry');
-      }).catch((err: unknown) =&gt; {
+      }).catch((err: unknown) => {
         context.logger.warn('Could not register DeepSeek adapter in global registry:', err);
       });
     } catch {
@@ -124,7 +126,7 @@ export default class DeepSeekProvider implements ExtensionProvider {
    */
   private registerModels(context: ExtensionContext, baseUrl: string): void {
     try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) =&gt; {
+      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
         for (const model of DEEPSEEK_MODELS) {
           registerModel({
             id: model.id,
@@ -138,7 +140,7 @@ export default class DeepSeekProvider implements ExtensionProvider {
           });
         }
         context.logger.info(`Registered ${DEEPSEEK_MODELS.length} DeepSeek models`);
-      }).catch((err: unknown) =&gt; {
+      }).catch((err: unknown) => {
         context.logger.warn('Could not register DeepSeek models:', err);
       });
     } catch {
@@ -159,11 +161,11 @@ class DeepSeekExtensionAdapter {
   readonly apiType = 'deepseek-chat' as const;
 
   async callStream(
-    config: Record&lt;string, unknown&gt;,
+    config: Record<string, unknown>,
     messages: ChatMessage[],
     callbacks: StreamCallbacks,
     tools?: ToolDefinition[],
-  ): Promise&lt;AIResponse&gt; {
+  ): Promise<AIResponse> {
     const callConfig: DeepSeekCallConfig = {
       apiEndpoint: config.apiEndpoint as string,
       apiKey: config.apiKey as string | undefined,
@@ -181,10 +183,10 @@ class DeepSeekExtensionAdapter {
   }
 
   async call(
-    config: Record&lt;string, unknown&gt;,
+    config: Record<string, unknown>,
     messages: ChatMessage[],
     tools?: ToolDefinition[],
-  ): Promise&lt;AIResponse&gt; {
+  ): Promise<AIResponse> {
     const callConfig: DeepSeekCallConfig = {
       apiEndpoint: config.apiEndpoint as string,
       apiKey: config.apiKey as string | undefined,

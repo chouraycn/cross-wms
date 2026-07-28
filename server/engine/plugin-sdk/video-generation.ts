@@ -44,7 +44,7 @@ export type VideoGenerationResolution =
   | "720P"
   | "768P"
   | "1080P"
-  | (string & {});
+  | (string & Record<never, never>);
 
 /**
  * Canonical semantic role hints for reference assets (first/last frame,
@@ -69,7 +69,7 @@ export type VideoGenerationSourceAsset = {
    * come from `VideoGenerationAssetRole`; plain strings are accepted for
    * provider-specific extensions.
    */
-  role?: VideoGenerationAssetRole | (string & {});
+  role?: VideoGenerationAssetRole | (string & Record<never, never>);
   metadata?: Record<string, unknown>;
 };
 

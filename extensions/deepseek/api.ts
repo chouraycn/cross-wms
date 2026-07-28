@@ -35,7 +35,7 @@ export async function callDeepSeekStream(
   messages: ChatMessage[],
   callbacks: StreamCallbacks,
   tools?: ToolDefinition[],
-): Promise&lt;AIResponse&gt; {
+): Promise<AIResponse> {
   const {
     apiEndpoint,
     apiKey,
@@ -54,7 +54,7 @@ export async function callDeepSeekStream(
 
   let processedMessages = applyRoleMapping(messages, compat?.roleMap);
 
-  if (compat?.supportsSystemMessage === false &amp;&amp; compat?.systemMessageFallback) {
+  if (compat?.supportsSystemMessage === false && compat?.systemMessageFallback) {
     processedMessages = handleSystemMessageFallback(processedMessages, compat.systemMessageFallback);
   }
 
@@ -63,10 +63,10 @@ export async function callDeepSeekStream(
     endpoint += '/chat/completions';
   }
 
-  const headers: Record&lt;string, string&gt; = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (apiKey &amp;&amp; apiKey.trim()) {
+  if (apiKey && apiKey.trim()) {
     const mode = authMode || 'api-key';
     if (mode === 'api-key' || mode === 'bearer' || mode === 'token') {
       headers['Authorization'] = `Bearer ${apiKey}`;
@@ -76,9 +76,9 @@ export async function callDeepSeekStream(
     Object.assign(headers, compat.extraHeaders);
   }
 
-  const body: Record&lt;string, unknown&gt; = {
+  const body: Record<string, unknown> = {
     model: modelId,
-    messages: processedMessages.map(msg =&gt; messageToOpenAIFormat(msg)),
+    messages: processedMessages.map(msg => messageToOpenAIFormat(msg)),
     stream: true,
   };
   if (temperature !== undefined) {
@@ -92,11 +92,11 @@ export async function callDeepSeekStream(
 
   const supportsReasoning = compat?.supportsReasoningEffort ?? false;
   const reasoningEffort = normalizeThinkingEffort(thinkingLevel);
-  if (supportsReasoning &amp;&amp; reasoningEffort &amp;&amp; isThinkingEnabled(thinkingLevel)) {
+  if (supportsReasoning && reasoningEffort && isThinkingEnabled(thinkingLevel)) {
     body.reasoning_effort = reasoningEffort;
   }
 
-  if (tools &amp;&amp; tools.length &gt; 0) {
+  if (tools && tools.length > 0) {
     if (!isLocalEndpoint(apiEndpoint)) {
       body.tools = tools;
     }
@@ -158,7 +158,7 @@ export async function callDeepSeekStream(
   let usageData: AIResponse['usage'];
 
   const toolCalls: ToolCall[] = [];
-  const toolCallByIndex = new Map&lt;number, ToolCall&gt;();
+  const toolCallByIndex = new Map<number, ToolCall>();
 
   try {
     while (true) {
@@ -184,38 +184,38 @@ export async function callDeepSeekStream(
 
         if (dataStr === '[DONE]' || dataStr === 'DONE') continue;
 
-        let parsed: Record&lt;string, unknown&gt;;
+        let parsed: Record<string, unknown>;
         try {
-          parsed = JSON.parse(dataStr) as Record&lt;string, unknown&gt;;
+          parsed = JSON.parse(dataStr) as Record<string, unknown>;
         } catch {
           continue;
         }
 
-        const choices = parsed.choices as Array&lt;Record&lt;string, unknown&gt;&gt; | undefined;
+        const choices = parsed.choices as Array<Record<string, unknown>> | undefined;
         if (!choices || choices.length === 0) continue;
 
         const choice = choices[0];
-        const delta = choice.delta as Record&lt;string, unknown&gt; | undefined;
+        const delta = choice.delta as Record<string, unknown> | undefined;
 
         if (delta) {
           const content = delta.content as string | undefined;
-          if (content &amp;&amp; typeof content === 'string') {
+          if (content && typeof content === 'string') {
             fullContent += content;
             onChunk(content);
           }
 
           const reasoningContentDelta = delta.reasoning_content as string | undefined;
-          if (reasoningContentDelta &amp;&amp; typeof reasoningContentDelta === 'string') {
+          if (reasoningContentDelta && typeof reasoningContentDelta === 'string') {
             reasoningContent += reasoningContentDelta;
             if (onThinking) onThinking(reasoningContentDelta);
           }
 
-          const toolCallsDelta = delta.tool_calls as Array&lt;Record&lt;string, unknown&gt;&gt; | undefined;
-          if (toolCallsDelta &amp;&amp; toolCallsDelta.length &gt; 0) {
+          const toolCallsDelta = delta.tool_calls as Array<Record<string, unknown>> | undefined;
+          if (toolCallsDelta && toolCallsDelta.length > 0) {
             for (const tcDelta of toolCallsDelta) {
               const index = tcDelta.index as number;
               const id = tcDelta.id as string | undefined;
-              const functionDelta = tcDelta.function as Record&lt;string, unknown&gt; | undefined;
+              const functionDelta = tcDelta.function as Record<string, unknown> | undefined;
               const name = functionDelta?.name as string | undefined;
               const args = functionDelta?.arguments as string | undefined;
 
@@ -237,17 +237,17 @@ export async function callDeepSeekStream(
         }
 
         if (choice.finish_reason) {
-          const usage = parsed.usage as Record&lt;string, unknown&gt; | undefined;
+          const usage = parsed.usage as Record<string, unknown> | undefined;
           if (usage) {
             usageData = {
               promptTokens: usage.prompt_tokens as number | undefined,
               completionTokens: usage.completion_tokens as number | undefined,
-              thinkingTokens: (usage as Record&lt;string, unknown&gt;).prompt_cache_hit_tokens
-                ? ((usage as Record&lt;string, unknown&gt;).prompt_cache_hit_tokens as number)
+              thinkingTokens: (usage as Record<string, unknown>).prompt_cache_hit_tokens
+                ? ((usage as Record<string, unknown>).prompt_cache_hit_tokens as number)
                 : undefined,
               totalTokens: usage.total_tokens as number | undefined,
             };
-            if (onUsage &amp;&amp; usageData) {
+            if (onUsage && usageData) {
               onUsage(usageData);
             }
           }
@@ -260,7 +260,7 @@ export async function callDeepSeekStream(
 
   return {
     content: fullContent,
-    toolCalls: toolCalls.length &gt; 0 ? toolCalls : undefined,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent: reasoningContent || undefined,
     thinkingSignature,
     redacted: redacted || undefined,
@@ -275,7 +275,7 @@ export async function callDeepSeek(
   config: DeepSeekCallConfig,
   messages: ChatMessage[],
   tools?: ToolDefinition[],
-): Promise&lt;AIResponse&gt; {
+): Promise<AIResponse> {
   const {
     apiEndpoint,
     apiKey,
@@ -292,7 +292,7 @@ export async function callDeepSeek(
 
   let processedMessages = applyRoleMapping(messages, compat?.roleMap);
 
-  if (compat?.supportsSystemMessage === false &amp;&amp; compat?.systemMessageFallback) {
+  if (compat?.supportsSystemMessage === false && compat?.systemMessageFallback) {
     processedMessages = handleSystemMessageFallback(processedMessages, compat.systemMessageFallback);
   }
 
@@ -301,10 +301,10 @@ export async function callDeepSeek(
     endpoint += '/chat/completions';
   }
 
-  const headers: Record&lt;string, string&gt; = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (apiKey &amp;&amp; apiKey.trim()) {
+  if (apiKey && apiKey.trim()) {
     const mode = authMode || 'api-key';
     if (mode === 'api-key' || mode === 'bearer' || mode === 'token') {
       headers['Authorization'] = `Bearer ${apiKey}`;
@@ -314,9 +314,9 @@ export async function callDeepSeek(
     Object.assign(headers, compat.extraHeaders);
   }
 
-  const body: Record&lt;string, unknown&gt; = {
+  const body: Record<string, unknown> = {
     model: modelId,
-    messages: processedMessages.map(msg =&gt; messageToOpenAIFormat(msg)),
+    messages: processedMessages.map(msg => messageToOpenAIFormat(msg)),
     stream: false,
   };
   if (temperature !== undefined) {
@@ -330,11 +330,11 @@ export async function callDeepSeek(
 
   const supportsReasoning = compat?.supportsReasoningEffort ?? false;
   const reasoningEffort = normalizeThinkingEffort(thinkingLevel);
-  if (supportsReasoning &amp;&amp; reasoningEffort &amp;&amp; isThinkingEnabled(thinkingLevel)) {
+  if (supportsReasoning && reasoningEffort && isThinkingEnabled(thinkingLevel)) {
     body.reasoning_effort = reasoningEffort;
   }
 
-  if (tools &amp;&amp; tools.length &gt; 0) {
+  if (tools && tools.length > 0) {
     if (!isLocalEndpoint(apiEndpoint)) {
       body.tools = tools;
     }
@@ -384,31 +384,31 @@ export async function callDeepSeek(
     );
   }
 
-  const data = (await response.json()) as Record&lt;string, unknown&gt;;
-  const choices = data.choices as Array&lt;Record&lt;string, unknown&gt;&gt; | undefined;
+  const data = (await response.json()) as Record<string, unknown>;
+  const choices = data.choices as Array<Record<string, unknown>> | undefined;
   const choice = choices?.[0];
-  const message = choice?.message as Record&lt;string, unknown&gt; | undefined;
+  const message = choice?.message as Record<string, unknown> | undefined;
 
   const content = (message?.content as string) || '';
   const reasoningContent = (message?.reasoning_content as string) || undefined;
 
-  const toolCallsData = message?.tool_calls as Array&lt;Record&lt;string, unknown&gt;&gt; | undefined;
-  const toolCalls: ToolCall[] | undefined = toolCallsData?.map(tc =&gt; ({
+  const toolCallsData = message?.tool_calls as Array<Record<string, unknown>> | undefined;
+  const toolCalls: ToolCall[] | undefined = toolCallsData?.map(tc => ({
     id: (tc.id as string) || 'tool_call',
     type: 'function',
     function: {
-      name: ((tc.function as Record&lt;string, unknown&gt;)?.name as string) || '',
-      arguments: ((tc.function as Record&lt;string, unknown&gt;)?.arguments as string) || '',
+      name: ((tc.function as Record<string, unknown>)?.name as string) || '',
+      arguments: ((tc.function as Record<string, unknown>)?.arguments as string) || '',
     },
   }));
 
-  const usage = data.usage as Record&lt;string, unknown&gt; | undefined;
+  const usage = data.usage as Record<string, unknown> | undefined;
   const usageData: AIResponse['usage'] | undefined = usage
     ? {
         promptTokens: usage.prompt_tokens as number | undefined,
         completionTokens: usage.completion_tokens as number | undefined,
-        thinkingTokens: (usage as Record&lt;string, unknown&gt;).prompt_cache_hit_tokens
-          ? ((usage as Record&lt;string, unknown&gt;).prompt_cache_hit_tokens as number)
+        thinkingTokens: (usage as Record<string, unknown>).prompt_cache_hit_tokens
+          ? ((usage as Record<string, unknown>).prompt_cache_hit_tokens as number)
           : undefined,
         totalTokens: usage.total_tokens as number | undefined,
       }
@@ -416,7 +416,7 @@ export async function callDeepSeek(
 
   return {
     content,
-    toolCalls: toolCalls &amp;&amp; toolCalls.length &gt; 0 ? toolCalls : undefined,
+    toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent,
     usage: usageData,
   };
@@ -425,13 +425,13 @@ export async function callDeepSeek(
 /**
  * 将消息转换为 OpenAI 格式
  */
-function messageToOpenAIFormat(msg: ChatMessage): Record&lt;string, unknown&gt; {
-  const result: Record&lt;string, unknown&gt; = {
+function messageToOpenAIFormat(msg: ChatMessage): Record<string, unknown> {
+  const result: Record<string, unknown> = {
     role: msg.role,
     content: msg.content,
   };
 
-  if (msg.tool_calls &amp;&amp; msg.tool_calls.length &gt; 0) {
+  if (msg.tool_calls && msg.tool_calls.length > 0) {
     result.tool_calls = msg.tool_calls;
   }
   if (msg.tool_call_id) {

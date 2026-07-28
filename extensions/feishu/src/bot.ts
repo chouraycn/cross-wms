@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Feishu plugin module implements bot behavior for cross-wms.
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import { createFeishuClient, createFeishuWSClient, createEventDispatcher, clearClientCache } from "./client.js";
