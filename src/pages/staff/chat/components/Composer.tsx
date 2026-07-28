@@ -157,7 +157,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                 aria-label="员工信息"
                 sx={[chatTokens.composerAvatar, { display: 'block', cursor: 'pointer', outline: 'none' }]}
               >
-                <EmployeeAvatar profile={displayedProfile} size={44} className="size-full" />
+                <EmployeeAvatar profile={displayedProfile} size={44} />
               </Box>
             </HoverCardTrigger>
             <HoverCardContent
@@ -449,13 +449,12 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                     <StaffdeckIcon
                       name="clock"
                       size={14}
-                      className={scheduleIntentHovered ? 'opacity-0' : 'opacity-100'}
+                      style={{ opacity: scheduleIntentHovered ? 0 : 1 }}
                     />
                     <StaffdeckIcon
                       name="close"
                       size={9}
-                      className={scheduleIntentHovered ? 'opacity-100' : 'opacity-0'}
-                      style={{ width: 9, height: 9 }}
+                      style={{ width: 9, height: 9, opacity: scheduleIntentHovered ? 1 : 0 }}
                     />
                   </Box>
                   <span>定时任务</span>

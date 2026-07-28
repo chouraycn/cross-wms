@@ -22,7 +22,7 @@ export default function ChatEmptyState({ chat }: { chat: UseChatSession }) {
                 radius={0}
                 fit="cover"
                 objectPosition="bottom"
-                className="bg-transparent!"
+                style={{ background: 'transparent' }}
               />
             </Box>
           </Box>

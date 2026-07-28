@@ -64,7 +64,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
       />
 
       <Dialog open={showHandoffInbox} onOpenChange={(open) => !open && setShowHandoffInbox(false)}>
-        <DialogContent className="max-w-[min(920px,calc(100vw-40px))] sm:max-w-[920px]">
+        <DialogContent sx={{ position: 'relative', maxWidth: 'min(920px, calc(100vw - 40px))', '@media (min-width: 640px)': { maxWidth: '920px' } }}>
           <DialogHeader>
             <DialogTitle>待回答</DialogTitle>
           </DialogHeader>
@@ -126,7 +126,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
       </Dialog>
 
       <Dialog open={Boolean(activeCitation)} onOpenChange={(open) => !open && setActiveCitation(null)}>
-        <DialogContent className="max-w-[min(1160px,calc(100vw-40px))] sm:max-w-[1160px]">
+        <DialogContent sx={{ position: 'relative', maxWidth: 'min(1160px, calc(100vw - 40px))', '@media (min-width: 640px)': { maxWidth: '1160px' } }}>
           <DialogHeader>
             <DialogTitle>引用详情</DialogTitle>
           </DialogHeader>
@@ -185,9 +185,9 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
           }
         }}
       >
-        <DialogContent className="gap-0 overflow-hidden p-0">
-          <DialogHeader className="px-[16px] pt-[16px] pb-[12px]">
-            <DialogTitle className="text-[14px] leading-[normal] font-medium text-[#18181a]">
+        <DialogContent sx={{ position: 'relative', gap: 0, overflow: 'hidden', p: 0 }}>
+          <DialogHeader sx={{ px: '16px', pt: '16px', pb: '12px' }}>
+            <DialogTitle sx={{ fontSize: '14px', lineHeight: 'normal', fontWeight: 500, color: '#18181a' }}>
               重命名
             </DialogTitle>
           </DialogHeader>

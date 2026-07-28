@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
 import { AlertCircleIcon, CheckCircleIcon } from 'lucide-react';
 
-import { cn } from './utils';
+import Box from '@mui/material/Box';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 // NOTE: SVG imports replaced with lucide-react icons
 // (original used @/assets/icons/error-fill.svg?react and success-fill.svg?react)
@@ -13,34 +14,57 @@ type ToastVariant = 'success' | 'error';
 // (success node 281:3334, error node 281:3342).
 const VARIANTS: Record<
   ToastVariant,
-  { container: string; icon: string; Icon: typeof CheckCircleIcon }
+  { container: SxProps<Theme>; iconColor: string; Icon: typeof CheckCircleIcon }
 > = {
   success: {
-    container: 'border-[#96d9b0] bg-[#e9f7ef] text-[#018434]',
-    icon: 'text-[#2cb360]',
+    container: { borderColor: '#96d9b0', bgcolor: '#e9f7ef', color: '#018434' },
+    iconColor: '#2cb360',
     Icon: CheckCircleIcon,
   },
   error: {
-    container: 'border-[#f38989] bg-[#fce7e7] text-[#d20b0b]',
-    icon: 'text-[#d20b0b]',
+    container: { borderColor: '#f38989', bgcolor: '#fce7e7', color: '#d20b0b' },
+    iconColor: '#d20b0b',
     Icon: AlertCircleIcon,
   },
 };
 
 function ToastPill({ variant, message }: { variant: ToastVariant; message: ReactNode }) {
-  const { container, icon, Icon } = VARIANTS[variant];
+  const { container, iconColor, Icon } = VARIANTS[variant];
   return (
-    <div
+    <Box
       role="status"
       aria-live="polite"
-      className={cn(
-        'pointer-events-auto flex max-w-full items-center gap-[12px] rounded-[14px] border border-solid px-[24px] py-[10px] shadow-[0px_12px_32px_rgba(0,0,0,0.12)]',
-        container,
-      )}
+      sx={{
+        pointerEvents: 'auto',
+        display: 'flex',
+        maxWidth: '100%',
+        alignItems: 'center',
+        gap: '12px',
+        borderRadius: '14px',
+        border: '1px solid',
+        ...container,
+        px: '24px',
+        py: '10px',
+        boxShadow: '0px 12px 32px rgba(0,0,0,0.12)',
+      }}
     >
-      <Icon className={cn('size-[16px] shrink-0', icon)} aria-hidden="true" />
-      <span className="text-[14px] leading-[normal] wrap-anywhere">{message}</span>
-    </div>
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          color: iconColor,
+          '& svg': { width: '16px', height: '16px', flexShrink: 0 },
+        }}
+      >
+        <Icon />
+      </Box>
+      <Box
+        component="span"
+        sx={{ fontSize: '14px', lineHeight: 'normal', overflowWrap: 'anywhere' }}
+      >
+        {message}
+      </Box>
+    </Box>
   );
 }
 

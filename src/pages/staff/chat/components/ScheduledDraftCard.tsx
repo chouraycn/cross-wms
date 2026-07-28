@@ -14,7 +14,6 @@ import {
 } from '../../../../components/staff/ui/select.js';
 import { notify } from '../../../../components/staff/ui/app-toast.js';
 import { getClientTimeZone } from '../../../../components/staff/lib/timezone.js';
-import { cn } from '../../../../components/staff/lib/utils.js';
 import type { ScheduledTaskDraftRead, ScheduledTaskRead } from '../../../../components/staff/types/index.js';
 
 import { chatTokens } from '../chatTokens.js';
@@ -122,7 +121,7 @@ export default function ScheduledDraftCard({
             <Box sx={chatTokens.draftKicker}>{created ? '定时任务已创建' : '定时任务草案'}</Box>
             {editing ? (
               <Input
-                className="h-[30px]"
+                style={{ height: '30px' }}
                 value={editableDraft.title}
                 onChange={(event) => updateDraft({ title: event.target.value })}
               />
@@ -167,7 +166,7 @@ export default function ScheduledDraftCard({
           <label>
             <span>计划类型</span>
             <Select value={editableDraft.schedule_type} onValueChange={updateScheduleType}>
-              <SelectTrigger className="h-[32px] w-full">
+              <SelectTrigger style={{ height: '32px' }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -181,7 +180,6 @@ export default function ScheduledDraftCard({
           <label>
             <span>执行计划</span>
             <Input
-              className="h-[32px]"
               value={scheduleValue}
               placeholder={editableDraft.schedule_type === 'once' ? 'YYYY-MM-DDTHH:mm:ss+08:00' : 'HH:mm'}
               onChange={(event) => updateScheduleValue(event.target.value)}
@@ -190,7 +188,6 @@ export default function ScheduledDraftCard({
           <label>
             <span>时区</span>
             <Input
-              className="h-[32px]"
               value={editableDraft.timezone || currentTimezone}
               onChange={(event) => updateDraft({ timezone: event.target.value })}
             />

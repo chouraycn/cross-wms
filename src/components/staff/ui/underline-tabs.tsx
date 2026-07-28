@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { cn } from './utils';
+import Box from '@mui/material/Box';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 export type UnderlineTabItem<T extends string = string> = {
   value: T;
@@ -23,6 +24,7 @@ export type UnderlineTabsProps<T extends string = string> = {
   /** Extra classes for each tab button (e.g. override the default fixed width). */
   tabClassName?: string;
   'aria-label'?: string;
+  sx?: SxProps<Theme>;
 };
 
 /**
@@ -38,52 +40,89 @@ export function UnderlineTabs<T extends string = string>({
   className,
   tabClassName,
   'aria-label': ariaLabel,
+  sx,
 }: UnderlineTabsProps<T>) {
   const isLine = variant === 'line';
   return (
-    <div
+    <Box
       role="tablist"
       aria-label={ariaLabel}
-      className={cn(
-        'flex items-start',
-        isLine && 'border-b-[0.5px] border-[#e3e7f1]',
-        className,
-      )}
+      className={className}
+      sx={[
+        {
+          display: 'flex',
+          alignItems: 'flex-start',
+        },
+        ...(isLine ? [{ borderBottom: '0.5px solid', borderColor: '#e3e7f1' }] : []),
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ]}
     >
       {items.map((item) => {
         const active = item.value === value;
         return (
-          <button
+          <Box
             key={item.value}
+            component="button"
             type="button"
             role="tab"
             aria-selected={active}
             disabled={item.disabled}
             onClick={() => onChange(item.value)}
-            className={cn(
-              'relative flex w-[120px] items-start justify-center px-[16px] text-[14px] capitalize transition-colors outline-none',
-              isLine ? 'pt-[6px] pb-[8px] mb-[-0.5px] border-b-2' : 'py-[6px]',
-              isLine
+            className={tabClassName}
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              width: '120px',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              px: '16px',
+              fontSize: '14px',
+              textTransform: 'capitalize',
+              transition: 'background-color 0.15s, color 0.15s',
+              outline: 'none',
+              ...(isLine
+                ? { pt: '6px', pb: '8px', mb: '-0.5px', borderBottom: '2px solid' }
+                : { py: '6px' }),
+              ...(isLine
                 ? active
-                  ? 'border-[#18181a] font-medium text-[#18181a]'
-                  : 'border-transparent font-normal text-[#4f5669] hover:text-[#18181a]'
+                  ? { borderColor: '#18181a', fontWeight: 500, color: '#18181a' }
+                  : {
+                      borderColor: 'transparent',
+                      fontWeight: 400,
+                      color: '#4f5669',
+                      '&:hover': { color: '#18181a' },
+                    }
                 : active
-                  ? 'font-medium text-[#18181A]'
-                  : 'font-normal text-[#858B9C] hover:text-[#18181A]',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-              tabClassName,
-            )}
+                  ? { fontWeight: 500, color: '#18181A' }
+                  : {
+                      fontWeight: 400,
+                      color: '#858B9C',
+                      '&:hover': { color: '#18181A' },
+                    }),
+              '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+            }}
           >
             {item.label}
             {!isLine && active && (
-              <span
+              <Box
+                component="span"
                 aria-hidden="true"
-                className="absolute top-[33px] left-1/2 h-[3px] w-[10px] -translate-x-1/2 rounded-[4px] bg-[#18181A] max-[560px]:top-auto max-[560px]:bottom-0"
+                sx={{
+                  position: 'absolute',
+                  top: '33px',
+                  left: '50%',
+                  width: '10px',
+                  height: '3px',
+                  transform: 'translateX(-50%)',
+                  borderRadius: '4px',
+                  bgcolor: '#18181A',
+                  '@media (max-width: 560px)': { top: 'auto', bottom: 0 },
+                }}
               />
             )}
-          </button>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }

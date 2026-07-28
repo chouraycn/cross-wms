@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
 
 import { DataTable, type DataTableColumn } from '../../../components/staff/DataTable.js';
 import { Paginator } from '../../../components/staff/Paginator.js';
@@ -55,26 +56,51 @@ export function TaskSection<TFilter extends string, TRow>({
 }: TaskSectionProps<TFilter, TRow>) {
   return (
     <section aria-label={title}>
-      <div className="mb-[16px] flex items-center gap-[6px] px-[12px] text-[#757f9c]">
+      <Box
+        sx={{
+          mb: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          px: '12px',
+          color: '#757f9c',
+        }}
+      >
         {icon}
-        <span className="text-[14px] font-normal leading-none">{title}</span>
-      </div>
-      <UnderlineTabs
-        aria-label={`${title}筛选`}
-        variant="line"
-        className="mb-[16px]"
-        value={filter}
-        onChange={onFilterChange}
-        items={filterTabs}
-      />
-      <div className="grid gap-[10px] md:hidden">
+        <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1 }}>
+          {title}
+        </Box>
+      </Box>
+      <Box sx={{ mb: '16px' }}>
+        <UnderlineTabs
+          aria-label={`${title}筛选`}
+          variant="line"
+          value={filter}
+          onChange={onFilterChange}
+          items={filterTabs}
+        />
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: '10px',
+          '@media (min-width: 768px)': { display: 'none' },
+        }}
+      >
         {rows.length ? (
           rows.map(renderMobileCard)
         ) : (
-          <div className="py-[40px] text-center text-[13px] text-[#858b9c]">{emptyText}</div>
+          <Box sx={{ py: '40px', textAlign: 'center', fontSize: '13px', color: '#858b9c' }}>
+            {emptyText}
+          </Box>
         )}
-      </div>
-      <div className="hidden md:block">
+      </Box>
+      <Box
+        sx={{
+          display: 'none',
+          '@media (min-width: 768px)': { display: 'block' },
+        }}
+      >
         <DataTable
           aria-label={title}
           columns={columns}
@@ -94,7 +120,7 @@ export function TaskSection<TFilter extends string, TRow>({
             onChange={onPageChange}
           />
         )}
-      </div>
+      </Box>
     </section>
   );
 }

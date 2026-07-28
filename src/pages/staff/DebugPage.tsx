@@ -1,4 +1,5 @@
 import { Send } from 'lucide-react';
+import Box from '@mui/material/Box';
 import { useState } from 'react';
 import {
   Accordion,
@@ -55,7 +56,8 @@ export default function DebugPage() {
       <div className="page-title">
         <h3>Agent 调试</h3>
         <Input
-          className="page-field w-[240px]"
+          className="page-field"
+          sx={{ width: '240px' }}
           value={sessionId}
           onChange={(event) => setSessionId(event.target.value)}
           placeholder="Session ID"
@@ -72,7 +74,7 @@ export default function DebugPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-[8px]">
+              <Box sx={{ display: 'flex', gap: '8px' }}>
                 <Input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -88,7 +90,7 @@ export default function DebugPage() {
                   <Send />
                   发送
                 </Button>
-              </div>
+              </Box>
             </div>
           </CardContent>
         </Card>
