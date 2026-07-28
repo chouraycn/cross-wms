@@ -50,37 +50,52 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
       <Box sx={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: '8px' }}>
         <LanguageSwitcher />
         <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label="账户菜单"
-            className="flex shrink-0 items-center gap-[10px] rounded-[10px] py-[4px] pl-[6px] pr-[10px] outline-none transition-colors"
-          >
+          <DropdownMenuTrigger asChild>
             <Box
-              component="span"
+              component="button"
+              type="button"
+              aria-label="账户菜单"
               sx={{
-                display: 'grid',
-                width: '32px',
-                height: '32px',
+                display: 'flex',
                 flexShrink: 0,
-                placeItems: 'center',
-                overflow: 'hidden',
-                borderRadius: '9999px',
-                bgcolor: '#eef1fb',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#7e96dc',
+                alignItems: 'center',
+                gap: '10px',
+                borderRadius: '10px',
+                py: '4px',
+                pl: '6px',
+                pr: '10px',
+                outline: 'none',
+                transition: 'background-color 0.15s',
               }}
             >
-              {initial}
+              <Box
+                component="span"
+                sx={{
+                  display: 'grid',
+                  width: '32px',
+                  height: '32px',
+                  flexShrink: 0,
+                  placeItems: 'center',
+                  overflow: 'hidden',
+                  borderRadius: '9999px',
+                  bgcolor: '#eef1fb',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#7e96dc',
+                }}
+              >
+                {initial}
+              </Box>
+              <ChevronDown className="size-[14px] shrink-0 text-[#757F9C]" />
             </Box>
-            <ChevronDown className="size-[14px] shrink-0 text-[#757F9C]" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-fit min-w-[160px] rounded-[14px] border-0 bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 [--accent:#F6F6F6] [--accent-foreground:#18181A]"
+            sx={{ minWidth: '160px', width: 'fit-content' }}
           >
             <DropdownMenuItem
               onSelect={logout}
-              className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
+              sx={chatTokens.menuItem}
             >
               <LogOut className="size-[16px]" />
               退出登录

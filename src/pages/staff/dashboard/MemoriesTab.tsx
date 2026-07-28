@@ -9,14 +9,14 @@ import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/staff/ui/index.js';
 import { notify } from '../../../components/staff/ui/app-toast.js';
 import { Box } from '@mui/material';
-import { cn } from '../../../components/staff/lib/utils.js';
+import type { SxProps } from '@mui/material/styles';
 import { formatDateTime } from '../../../components/staff/lib/enterprise-ui.js';
 import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import type { MemoryRead } from '../../../components/staff/types/index.js';
 import { StatusBadge } from '../scheduled-tasks/StatusBadge.js';
 import type { BadgeTone } from '../scheduled-tasks/shared.js';
 
-const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
+const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag-enterprise-agent-scope';
 const MEMORY_PAGE_SIZE = 10;
 
 type MemoryFilter = {
@@ -43,12 +43,34 @@ const MEMORY_KIND_TONE: Record<string, BadgeTone> = {
   event: 'orange',
   feedback: 'red',
 };
-const MEMORY_KIND_TONE_CLASS: Record<BadgeTone, string> = {
-  blue: 'bg-[#e8f0ff] text-[#1a71ff]',
-  orange: 'bg-[#fff2e5] text-[#ff7f00]',
-  green: 'bg-[#e9f7ef] text-[#2cb360]',
-  red: 'bg-[#fce7e7] text-[#d20b0b]',
-  gray: 'bg-[#f2f3f7] text-[#858b9c]',
+const MEMORY_KIND_TONE_SX: Record<BadgeTone, SxProps> = {
+  blue: { bgcolor: '#e8f0ff', color: '#1a71ff' },
+  orange: { bgcolor: '#fff2e5', color: '#ff7f00' },
+  green: { bgcolor: '#e9f7ef', color: '#2cb360' },
+  red: { bgcolor: '#fce7e7', color: '#d20b0b' },
+  gray: { bgcolor: '#f2f3f7', color: '#858b9c' },
+};
+
+const MEMORY_BADGE_BASE_SX: SxProps = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: '9999px',
+  px: '12px',
+  py: '4px',
+  fontSize: '12px',
+  lineHeight: 'none',
+  textTransform: 'capitalize',
+  whiteSpace: 'nowrap',
+};
+
+const LINK_BUTTON_SX: SxProps = {
+  height: 'auto',
+  p: 0,
+  fontSize: '12px',
+  fontWeight: 400,
+  color: '#1a71ff',
+  textTransform: 'none',
+  '&:hover': { color: '#4a8dff', textDecoration: 'none' },
 };
 
 export default function MemoriesTab() {
@@ -138,24 +160,24 @@ export default function MemoriesTab() {
       title: '用户名',
       width: 160,
       className: 'text-[#18181a]',
-      render: (row) => <span className="truncate">{row.username || '-'}</span>,
+      render: (row) => <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.username || '-'}</Box>,
     },
     {
       key: 'user_id',
       title: '用户ID',
       width: 180,
-      render: (row) => <span className="block truncate">{row.user_id}</span>,
+      render: (row) => <Box component="span" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.user_id}</Box>,
     },
     {
       key: 'kinds',
       title: '类型',
       width: 120,
       render: (row) => (
-        <div className="flex flex-wrap gap-[4px]">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {row.kinds.map((kind) => (
             <MemoryKindBadge key={kind} kind={kind} />
           ))}
-        </div>
+        </Box>
       ),
     },
     {
@@ -174,7 +196,7 @@ export default function MemoriesTab() {
       key: 'preview',
       title: '摘要',
       className: 'whitespace-normal',
-      render: (row) => <span className="wrap-break-word">{row.preview || '-'}</span>,
+      render: (row) => <Box component="span" sx={{ wordBreak: 'break-word' }}>{row.preview || '-'}</Box>,
     },
     {
       key: 'actions',
@@ -184,7 +206,7 @@ export default function MemoriesTab() {
         <UIButton
           variant="link"
           onClick={() => setDetail(row)}
-          className="h-auto p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline"
+          sx={LINK_BUTTON_SX}
         >
           查看
         </UIButton>
@@ -194,45 +216,63 @@ export default function MemoriesTab() {
 
   const renderMobileCard = (row: MemoryUserGroup) => (
     <Box component="article" sx={staffTokens.mobileCard} key={row.key}>
-      <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <strong className="min-w-0 truncate text-[14px] font-semibold text-[#18181a]">
+      <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+        <Box component="strong" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>
           {row.username || row.user_id}
-        </strong>
+        </Box>
         <UIButton
           variant="link"
           onClick={() => setDetail(row)}
-          className="h-auto shrink-0 p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline"
+          sx={LINK_BUTTON_SX}
         >
           查看
         </UIButton>
-      </div>
-      <div className="mt-[8px] flex flex-wrap gap-[4px]">
+      </Box>
+      <Box sx={{ mt: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
         {row.kinds.map((kind) => (
           <MemoryKindBadge key={kind} kind={kind} />
         ))}
-      </div>
-      <p className="mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]">{row.preview || '-'}</p>
-      <div className="mt-[10px] flex items-center justify-between text-[12px] text-[#858b9c]">
-        <span>{row.memories.length} 条记忆</span>
-        <span>{formatDateTime(row.latest_at)}</span>
-      </div>
+      </Box>
+      <Box component="p" sx={{ mt: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: '12px', lineHeight: 1.55, color: 'text.secondary' }}>{row.preview || '-'}</Box>
+      <Box sx={{ mt: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'text.secondary' }}>
+        <Box component="span">{row.memories.length} 条记忆</Box>
+        <Box component="span">{formatDateTime(row.latest_at)}</Box>
+      </Box>
     </Box>
   );
 
   return (
     <>
-      <section
+      <Box
+        component="section"
         aria-busy={loading}
-        className="relative mt-[-2px] flex w-full min-w-0 max-w-full flex-col gap-[24px] overflow-hidden rounded-[18px] bg-white p-[14px] shadow-[0_20px_42px_rgba(21,26,38,0.045)] min-[521px]:p-[18px]"
+        sx={{
+          position: 'relative',
+          mt: '-2px',
+          display: 'flex',
+          width: '100%',
+          minWidth: 0,
+          maxWidth: '100%',
+          flexDirection: 'column',
+          gap: '24px',
+          overflow: 'hidden',
+          borderRadius: '18px',
+          bgcolor: 'background.paper',
+          p: '14px',
+          boxShadow: '0 20px 42px rgba(21,26,38,0.045)',
+          '& > *': { minWidth: 0 },
+          '@media (min-width:521px)': { p: '18px' },
+        }}
       >
-        <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <History className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">记忆查询</span>
-          </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+            <History size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1 }}>记忆查询</Box>
+          </Box>
 
-          <form
-            className="flex flex-wrap items-center gap-[16px]"
+          <Box
+            component="form"
+            sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px' }}
             onSubmit={(event) => {
               event.preventDefault();
               setPage(1);
@@ -260,9 +300,9 @@ export default function MemoriesTab() {
             <UIButton
               type="submit"
               disabled={loading}
-              className="h-[34px] w-[80px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
+              sx={[staffTokens.primaryButton, { width: '80px' }] as SxProps}
             >
-              <Search className="size-[14px]" />
+              <Search size={14} />
               查询
             </UIButton>
             <UIButton
@@ -270,9 +310,9 @@ export default function MemoriesTab() {
               variant="outline"
               onClick={resetFilter}
               disabled={loading}
-              className="h-[34px] w-[80px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
+              sx={[staffTokens.outlineActionButton, { width: '80px' }] as SxProps}
             >
-              <RefreshCw className={cn('size-[14px]', loading && 'animate-spin')} />
+              <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} />
               重置
             </UIButton>
             <UIButton
@@ -280,21 +320,34 @@ export default function MemoriesTab() {
               variant="outline"
               onClick={clearOwnMemories}
               disabled={loading || clearing}
-              className="h-[34px] w-[112px] rounded-[10px] border-[0.5px] border-[#f0d3d3] bg-white px-[16px] text-[12px] font-normal text-[#c43d3d] hover:border-[#e1a8a8] hover:bg-[#fff7f7] hover:text-[#a92d2d]"
+              sx={{
+                height: '34px',
+                width: '112px',
+                borderRadius: '10px',
+                border: '0.5px solid',
+                borderColor: '#f0d3d3',
+                bgcolor: 'background.paper',
+                px: '16px',
+                fontSize: '12px',
+                fontWeight: 400,
+                color: '#c43d3d',
+                textTransform: 'none',
+                '&:hover': { borderColor: '#e1a8a8', bgcolor: '#fff7f7', color: '#a92d2d' },
+              }}
             >
               {clearing ? '清空中' : '清空我的记忆'}
             </UIButton>
-          </form>
+          </Box>
 
-          <div className="grid gap-[10px] md:hidden">
+          <Box sx={{ display: 'grid', gap: '10px', '@media (min-width:768px)': { display: 'none' } }}>
             {groups.length ? (
               pagedItems.map(renderMobileCard)
             ) : (
-              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">{emptyText}</div>
+              <Box sx={{ py: '40px', textAlign: 'center', fontSize: '13px', color: 'text.secondary' }}>{emptyText}</Box>
             )}
-          </div>
+          </Box>
 
-          <div className="hidden md:block">
+          <Box sx={{ display: 'none', '@media (min-width:768px)': { display: 'block' } }}>
             <DataTable
               aria-label="员工记忆"
               columns={columns}
@@ -303,19 +356,18 @@ export default function MemoriesTab() {
               loading={loading}
               emptyText={emptyText}
             />
-          </div>
+          </Box>
 
           {groups.length > 0 && (
             <Paginator
               aria-label="员工记忆分页"
-              className="mt-0 mb-[6px]"
               page={page}
               pageCount={pageCount}
               onChange={setPage}
             />
           )}
-        </div>
-      </section>
+        </Box>
+      </Box>
 
       <MemoryDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </>
@@ -334,31 +386,72 @@ function PrefixInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex h-[34px] w-[260px] items-center overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
-      <span className="flex h-full w-[58px] shrink-0 items-center justify-center border-r-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] text-[12px] text-[#858b9c]">
+    <Box
+      component="label"
+      sx={{
+        display: 'flex',
+        height: '34px',
+        width: '260px',
+        alignItems: 'center',
+        overflow: 'hidden',
+        borderRadius: '10px',
+        border: '0.5px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        transition: 'border-color 0.15s',
+        '&:focus-within': { borderColor: 'text.primary' },
+        '@media (max-width:900px)': { width: '100%' },
+      }}
+    >
+      <Box
+        component="span"
+        sx={{
+          display: 'flex',
+          height: '100%',
+          width: '58px',
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRight: '0.5px solid',
+          borderColor: 'divider',
+          bgcolor: '#f6f6f6',
+          fontSize: '12px',
+          color: 'text.secondary',
+        }}
+      >
         {label}
-      </span>
-      <input
+      </Box>
+      <Box
+        component="input"
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="h-full min-w-0 flex-1 bg-transparent px-[12px] text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
+        sx={{
+          height: '100%',
+          minWidth: 0,
+          flex: 1,
+          bgcolor: 'transparent',
+          px: '12px',
+          fontSize: '12px',
+          color: '#17191f',
+          outline: 'none',
+          border: 0,
+          '&::placeholder': { color: '#c0c6d4' },
+        }}
       />
-    </label>
+    </Box>
   );
 }
 
 function MemoryKindBadge({ kind }: { kind: string }) {
   const tone = MEMORY_KIND_TONE[kind] ?? 'gray';
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-[12px] py-[4px] text-[12px] leading-none capitalize whitespace-nowrap',
-        MEMORY_KIND_TONE_CLASS[tone],
-      )}
+    <Box
+      component="span"
+      sx={[MEMORY_BADGE_BASE_SX, MEMORY_KIND_TONE_SX[tone]] as SxProps}
     >
       {kind}
-    </span>
+    </Box>
   );
 }
 
@@ -373,49 +466,60 @@ function MemoryDetailDialog({
     <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[720px]"
+        sx={{
+          display: 'flex',
+          maxHeight: 'calc(100dvh - 4rem)',
+          width: 'calc(100% - 2rem)',
+          flexDirection: 'column',
+          gap: '16px',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          px: '20px',
+          py: '16px',
+          '@media (min-width:640px)': { maxWidth: '720px' },
+        }}
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-          <List className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+          <List size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: 'text.secondary' }}>
             员工记忆详情
           </DialogTitle>
-        </div>
+        </Box>
 
         {detail && (
-          <div className="flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto px-[12px]">
-            <div className="grid grid-cols-2 gap-[10px] max-[520px]:grid-cols-1">
+          <Box sx={{ minHeight: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', px: '12px' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', '@media (max-width:520px)': { gridTemplateColumns: '1fr' } }}>
               <DetailField label="用户名">{detail.username || '-'}</DetailField>
               <DetailField label="用户ID">{detail.user_id}</DetailField>
               <DetailField label="记忆数">{detail.memories.length} 条</DetailField>
               <DetailField label="类型">
-                <div className="flex flex-wrap gap-[4px]">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                   {detail.kinds.map((kind) => (
                     <MemoryKindBadge key={kind} kind={kind} />
                   ))}
-                </div>
+                </Box>
               </DetailField>
-            </div>
+            </Box>
 
-            <div className="flex flex-col gap-[12px]">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {detail.memories.map((item) => (
-                <article
+                <Box
                   key={item.id}
-                  className="rounded-[12px] border border-[#eef0f4] bg-[#fafbfc] px-[16px] py-[12px]"
+                  sx={{ borderRadius: '12px', border: '1px solid', borderColor: '#eef0f4', bgcolor: '#fafbfc', px: '16px', py: '12px' }}
                 >
-                  <div className="flex flex-wrap items-center gap-[8px] text-[12px] text-[#858b9c]">
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'text.secondary' }}>
                     <StatusBadge tone={MEMORY_KIND_TONE[item.kind] ?? 'gray'}>{item.kind}</StatusBadge>
-                    <span>重要度 {item.importance}</span>
-                    <span>·</span>
-                    <span>{formatDateTime(item.created_at)}</span>
-                  </div>
-                  <p className="mt-[8px] text-[13px] leading-[1.6] text-[#18181a] [word-break:break-word]">
+                    <Box component="span">重要度 {item.importance}</Box>
+                    <Box component="span">·</Box>
+                    <Box component="span">{formatDateTime(item.created_at)}</Box>
+                  </Box>
+                  <Box component="p" sx={{ mt: '8px', fontSize: '13px', lineHeight: 1.6, color: 'text.primary', wordBreak: 'break-word' }}>
                     {item.content}
-                  </p>
-                </article>
+                  </Box>
+                </Box>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
         )}
       </DialogContent>
     </Dialog>

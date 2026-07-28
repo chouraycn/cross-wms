@@ -293,7 +293,7 @@ function DropdownMenuLabel({ className, inset, ...props }: React.ComponentProps<
   )
 }
 
-function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<'div'>) {
+function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
   return <MuiDivider data-slot="dropdown-menu-separator" className={cn(className)} {...(props as Record<string, unknown>)} />
 }
 

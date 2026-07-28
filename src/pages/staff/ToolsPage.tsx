@@ -1399,14 +1399,14 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
               rows={6}
               className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
             />
-            <button
+            <UIButton
               type="button"
-              className="min-w-[80px] h-[32px] gap-[6px] rounded-[10px] bg-[#18181a] px-[12px] text-[12px] text-white border-0 hover:bg-[#303030] disabled:opacity-50"
+              sx={{ ...staffTokens.primaryButton, minWidth: '80px', gap: '6px', px: '12px', '&:disabled': { opacity: 0.5 } }}
               onClick={() => void runTest()}
               disabled={testing}
             >
               {testing ? '测试中…' : '运行测试'}
-            </button>
+            </UIButton>
             {resultText ? (
               <pre className="max-h-[300px] overflow-auto rounded-[10px] bg-[#f6f6f6] p-[12px] font-mono text-[12px] text-[#18181a]">
                 {resultText}

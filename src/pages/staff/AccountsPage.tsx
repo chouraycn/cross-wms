@@ -23,8 +23,10 @@ import {
 } from '../../components/staff/ui/index.js';
 import { Button as UIButton } from '../../components/staff/ui/button.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
-import { cn } from '../../components/staff/lib/utils.js';
 import { MENU_CONTENT_CLASS, MENU_ITEM_CLASS, MENU_ITEM_DANGER_CLASS, MOBILE_CARD_CLASS, formatDateTime } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
+import { Box } from '@mui/material';
+import type { SxProps } from '@mui/material/styles';
 
 import { api, TENANT_ID } from '../../components/staff/api/client.js';
 import type { EnterpriseAuthUser } from '../../components/staff/auth.js';
@@ -190,18 +192,34 @@ export default function AccountsPage({
     const isProtected = row.role === 'admin';
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="账号操作"
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
-        >
-          <MoreHorizontal className="size-3.5" />
+        <DropdownMenuTrigger asChild>
+          <Box
+            component="button"
+            type="button"
+            aria-label="账号操作"
+            sx={{
+              ml: 'auto',
+              display: 'grid',
+              width: '28px',
+              height: '28px',
+              placeItems: 'center',
+              borderRadius: '8px',
+              color: '#1a71ff',
+              transition: 'background-color 0.15s',
+              outline: 'none',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', color: '#4a8dff' },
+              '&:focus-visible': { bgcolor: 'rgba(0,0,0,0.05)' },
+            }}
+          >
+            <MoreHorizontal size={14} />
+          </Box>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEdit(row)}>
             <Pencil />
             编辑
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
+          <DropdownMenuSeparator sx={{ my: '2px', borderColor: '#eef0f4' }} />
           <DropdownMenuItem
             variant="destructive"
             className={MENU_ITEM_DANGER_CLASS}
@@ -223,25 +241,25 @@ export default function AccountsPage({
       width: 220,
       className: 'text-[#18181a]',
       render: (row) => (
-        <span className="flex min-w-0 items-center gap-[8px]">
-          <span className="grid size-[24px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc]">
-            <User className="size-[14px]" />
-          </span>
-          <span className="truncate font-medium">{row.username}</span>
-        </span>
+        <Box component="span" sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '8px' }}>
+          <Box component="span" sx={{ display: 'grid', width: '24px', height: '24px', flexShrink: 0, placeItems: 'center', borderRadius: '9999px', bgcolor: '#eef1fb', color: '#7e96dc' }}>
+            <User size={14} />
+          </Box>
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: 'text.primary' }}>{row.username}</Box>
+        </Box>
       ),
     },
     {
       key: 'display_name',
       title: '显示名',
       width: 200,
-      render: (row) => <span className="block truncate">{row.display_name || row.username}</span>,
+      render: (row) => <Box component="span" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.display_name || row.username}</Box>,
     },
     {
       key: 'role',
       title: '角色',
       width: 120,
-      render: (row) => <span>{row.role === 'admin' ? '管理员' : '普通成员'}</span>,
+      render: (row) => <Box component="span">{row.role === 'admin' ? '管理员' : '普通成员'}</Box>,
     },
     { key: 'created', title: '创建时间', width: 180, render: (row) => formatDateTime(row.created_at) },
     { key: 'updated', title: '最近更新', width: 180, render: (row) => formatDateTime(row.updated_at) },
@@ -255,85 +273,127 @@ export default function AccountsPage({
   ];
 
   const renderMobileCard = (row: EmployeeAccount) => (
-    <article className={MOBILE_CARD_CLASS} key={row.id}>
-      <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <span className="flex min-w-0 items-center gap-[8px]">
-          <span className="grid size-[28px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc]">
-            <User className="size-[15px]" />
-          </span>
-          <span className="min-w-0">
-            <strong className="block truncate text-[14px] font-semibold text-[#18181a]">{row.username}</strong>
-            <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.display_name || row.username}</span>
-          </span>
-        </span>
+    <Box component="article" className={MOBILE_CARD_CLASS} key={row.id}>
+      <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+        <Box component="span" sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '8px' }}>
+          <Box component="span" sx={{ display: 'grid', width: '28px', height: '28px', flexShrink: 0, placeItems: 'center', borderRadius: '9999px', bgcolor: '#eef1fb', color: '#7e96dc' }}>
+            <User size={15} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Box component="strong" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{row.username}</Box>
+            <Box component="span" sx={{ mt: '2px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'text.secondary' }}>{row.display_name || row.username}</Box>
+          </Box>
+        </Box>
         {renderActions(row)}
-      </div>
-      <div className="mt-[10px] flex items-center justify-between gap-[10px] text-[12px] text-[#858b9c]">
-        <span>创建 {formatDateTime(row.created_at)}</span>
-        <span>更新 {formatDateTime(row.updated_at)}</span>
-      </div>
-    </article>
+      </Box>
+      <Box sx={{ mt: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '12px', color: 'text.secondary' }}>
+        <Box component="span">创建 {formatDateTime(row.created_at)}</Box>
+        <Box component="span">更新 {formatDateTime(row.updated_at)}</Box>
+      </Box>
+    </Box>
   );
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
+    <Box sx={{ minHeight: '100%', boxSizing: 'border-box', px: '48px', pt: '32px', pb: '43px', '@media (max-width:900px)': { px: '16px' } }} aria-busy={loading}>
       <AppHeader onLogout={onLogout} userName={currentUser?.username} title="账号管理" />
 
-      <div className="mt-[20px] mb-[16px] flex items-center justify-end gap-[12px]">
+      <Box sx={{ mt: '20px', mb: '16px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
         <UIButton
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
+          sx={staffTokens.outlineActionButton}
         >
-          <RefreshCw className={cn('size-[14px]', loading && 'animate-spin')} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} />
           刷新
         </UIButton>
         <UIButton
           onClick={openCreate}
-          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
+          sx={staffTokens.primaryButton}
         >
-          <Plus className="size-[14px]" />
+          <Plus size={14} />
           新建账号
         </UIButton>
-      </div>
+      </Box>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <User className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">账号列表</span>
-          </div>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '24px', borderRadius: '20px 20px 0 0', bgcolor: 'background.paper', padding: '18px 18px 24px 18px', boxShadow: '0 -4px 16px 0 rgba(0,0,0,0.05)' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+            <User size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1 }}>账号列表</Box>
+          </Box>
 
-          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
-            <Search className="size-[14px] shrink-0 text-[#858b9c]" />
-            <input
+          <Box
+            component="label"
+            sx={{
+              display: 'flex',
+              height: '34px',
+              width: '300px',
+              alignItems: 'center',
+              gap: '8px',
+              overflow: 'hidden',
+              borderRadius: '10px',
+              border: '0.5px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              px: '12px',
+              transition: 'border-color 0.15s',
+              '&:focus-within': { borderColor: 'text.primary' },
+              '@media (max-width:900px)': { width: '100%' },
+            }}
+          >
+            <Search size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <Box
+              component="input"
               value={searchText}
               placeholder="搜索用户名或显示名"
               onChange={(event) => setSearchText(event.target.value)}
-              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
+              sx={{
+                height: '100%',
+                minWidth: 0,
+                flex: 1,
+                bgcolor: 'transparent',
+                px: '14px',
+                fontSize: '12px',
+                color: '#17191f',
+                outline: 'none',
+                border: 0,
+                '&::placeholder': { color: '#c0c6d4' },
+              }}
             />
             {searchText && (
-              <button
+              <Box
+                component="button"
                 type="button"
                 aria-label="清除搜索"
                 onClick={() => setSearchText('')}
-                className="grid size-[16px] shrink-0 place-items-center text-[#c0c6d4] hover:text-[#858b9c]"
+                sx={{
+                  display: 'grid',
+                  width: '16px',
+                  height: '16px',
+                  flexShrink: 0,
+                  placeItems: 'center',
+                  color: '#c0c6d4',
+                  cursor: 'pointer',
+                  border: 0,
+                  bgcolor: 'transparent',
+                  '&:hover': { color: '#858b9c' },
+                }}
               >
-                <X className="size-[14px]" />
-              </button>
+                <X size={14} />
+              </Box>
             )}
-          </label>
+          </Box>
 
-          <div className="grid gap-[10px] md:hidden">
+          <Box sx={{ display: 'grid', gap: '10px', '@media (min-width:768px)': { display: 'none' } }}>
             {filteredRows.length ? (
               pagedItems.map(renderMobileCard)
             ) : (
-              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无账号</div>
+              <Box sx={{ py: '40px', textAlign: 'center', fontSize: '13px', color: 'text.secondary' }}>暂无账号</Box>
             )}
-          </div>
+          </Box>
 
-          <div className="hidden md:block">
+          <Box sx={{ display: 'none', '@media (min-width:768px)': { display: 'block' } }}>
             <DataTable
               aria-label="账号列表"
               columns={columns}
@@ -342,19 +402,18 @@ export default function AccountsPage({
               loading={loading}
               emptyText="暂无账号"
             />
-          </div>
+          </Box>
 
           {filteredRows.length > 0 && (
             <Paginator
               aria-label="账号分页"
-              className="mt-0 mb-[6px]"
               page={page}
               pageCount={pageCount}
               onChange={setPage}
             />
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <AccountDialog
         open={createOpen}
@@ -400,7 +459,7 @@ export default function AccountsPage({
         description="删除后该账号无法登录，但其创建的数字员工仍然保留。"
         onConfirm={() => void confirmDelete()}
       />
-    </div>
+    </Box>
   );
 }
 
@@ -443,16 +502,26 @@ function AccountDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[440px]"
+        sx={{
+          display: 'flex',
+          width: 'calc(100% - 2rem)',
+          flexDirection: 'column',
+          gap: '16px',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          px: '20px',
+          py: '16px',
+          '@media (min-width:640px)': { maxWidth: '440px' },
+        }}
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-          <User className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+          <User size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: 'text.secondary' }}>
             {title}
           </DialogTitle>
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-[14px] px-[12px]">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '14px', px: '12px' }}>
           {username && (
             <LabeledField label="用户名">
               <Input
@@ -483,7 +552,7 @@ function AccountDialog({
               disabled={roleDisabled}
               onValueChange={(value) => onRoleChange(value as 'admin' | 'member')}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger sx={{ width: '100%' }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -492,25 +561,25 @@ function AccountDialog({
               </SelectContent>
             </Select>
           </LabeledField>
-        </div>
+        </Box>
 
-        <div className="flex items-center justify-end gap-[8px] px-[12px]">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', px: '12px' }}>
           <UIButton
             variant="outline"
             disabled={loading}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+            sx={staffTokens.dialogCancelButton}
           >
             取消
           </UIButton>
           <UIButton
             disabled={loading}
             onClick={onSubmit}
-            className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            sx={[staffTokens.primaryButton, { width: '80px' }] as SxProps}
           >
             {submitText}
           </UIButton>
-        </div>
+        </Box>
       </DialogContent>
     </Dialog>
   );
@@ -518,9 +587,9 @@ function AccountDialog({
 
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
+    <Box component="label" sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.primary' }}>{label}</Box>
       {children}
-    </label>
+    </Box>
   );
 }

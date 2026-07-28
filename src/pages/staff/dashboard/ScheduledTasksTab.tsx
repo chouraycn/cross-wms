@@ -10,6 +10,7 @@ import { StatCard } from '../../../components/staff/StatCard.js';
 import { Button as UIButton } from '../../../components/staff/ui/button.js';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/staff/ui/index.js';
 import { Box } from '@mui/material';
+import type { SxProps } from '@mui/material/styles';
 import { notify } from '../../../components/staff/ui/app-toast.js';
 import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 import type { AgentProfileRead, ScheduledTaskRead, ScheduledTaskRunRead } from '../../../components/staff/types/index.js';
@@ -29,11 +30,63 @@ import {
   type TaskListFilter,
 } from '../scheduled-tasks/shared.js';
 
-const MOBILE_CARD_HEAD_CLASS = 'flex min-w-0 items-start justify-between gap-[10px]';
-const MOBILE_META_CLASS =
-  'mt-[12px] grid grid-cols-2 gap-[8px] max-[520px]:grid-cols-1 [&>span]:min-w-0 [&>span]:rounded-[10px] [&>span]:border [&>span]:border-[#eef0f4] [&>span]:bg-[#fafbfc] [&>span]:px-[10px] [&>span]:py-[9px] [&>span]:text-[12px] [&>span]:leading-[1.45] [&>span]:text-[#18181a] [&>span]:[overflow-wrap:anywhere] [&_b]:mb-[3px] [&_b]:block [&_b]:text-[11px] [&_b]:font-semibold [&_b]:text-[#858b9c]';
-const MOBILE_TITLE_CLASS = 'min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a]';
-const MOBILE_SUMMARY_CLASS = 'mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]';
+const MOBILE_CARD_HEAD_SX: SxProps = {
+  display: 'flex',
+  minWidth: 0,
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: '10px',
+};
+const MOBILE_META_SX: SxProps = {
+  mt: '12px',
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '8px',
+  '@media (max-width:520px)': { gridTemplateColumns: '1fr' },
+  '& > span': {
+    minWidth: 0,
+    borderRadius: '10px',
+    border: '1px solid',
+    borderColor: '#eef0f4',
+    bgcolor: '#fafbfc',
+    px: '10px',
+    py: '9px',
+    fontSize: '12px',
+    lineHeight: 1.45,
+    color: 'text.primary',
+    overflowWrap: 'anywhere',
+  },
+  '& b': { mb: '3px', display: 'block', fontSize: '11px', fontWeight: 600, color: 'text.secondary' },
+};
+const MOBILE_TITLE_SX: SxProps = {
+  minWidth: 0,
+  wordBreak: 'break-word',
+  fontSize: '14px',
+  fontWeight: 600,
+  color: 'text.primary',
+};
+const MOBILE_SUMMARY_SX: SxProps = {
+  mt: '8px',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  fontSize: '12px',
+  lineHeight: 1.55,
+  color: 'text.secondary',
+};
+
+const LINK_BUTTON_SX: SxProps = {
+  height: 'auto',
+  p: 0,
+  fontSize: '12px',
+  fontWeight: 400,
+  color: '#1a71ff',
+  textTransform: 'none',
+  gap: '4px',
+  '&:hover': { color: '#4a8dff', textDecoration: 'none' },
+  '&:disabled': { color: '#c0c6d4', pointerEvents: 'none' },
+};
 
 function usePagination<T>(items: T[], pageSize: number, resetKey?: unknown) {
   const [page, setPage] = useState(1);
@@ -221,10 +274,10 @@ export default function ScheduledTasksTab() {
       title: '定时任务',
       className: 'whitespace-normal',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[4px]">
-          <span className="font-medium leading-[18px] text-[#18181a]">{row.title}</span>
-          <span className="truncate">{row.prompt}</span>
-        </div>
+        <Box sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '4px' }}>
+          <Box component="span" sx={{ fontWeight: 500, lineHeight: '18px', color: 'text.primary' }}>{row.title}</Box>
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'text.secondary' }}>{row.prompt}</Box>
+        </Box>
       ),
     },
     {
@@ -245,7 +298,7 @@ export default function ScheduledTasksTab() {
         row.last_status ? (
           <TaskRunResultBadge status={row.last_status} />
         ) : (
-          <span>暂无</span>
+          <Box component="span">暂无</Box>
         ),
     },
     { key: 'actions', title: '操作', width: 100, render: renderTaskActions },
@@ -258,10 +311,10 @@ export default function ScheduledTasksTab() {
       width: 240,
       className: 'whitespace-normal',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate">{row.task_title || row.scheduled_task_id}</span>
+        <Box sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '2px' }}>
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.task_title || row.scheduled_task_id}</Box>
           {row.task_status === 'archived' && <ArchivedTag />}
-        </div>
+        </Box>
       ),
     },
     { key: 'status', title: '状态', width: 120, render: (row) => <TaskRunResultBadge status={row.status} /> },
@@ -282,7 +335,7 @@ export default function ScheduledTasksTab() {
       title: '结果',
       className: 'whitespace-normal',
       render: (row) => (
-        <span className="wrap-break-word">{row.result_summary || row.error || '暂无'}</span>
+        <Box component="span" sx={{ wordBreak: 'break-word' }}>{row.result_summary || row.error || '暂无'}</Box>
       ),
     },
     {
@@ -294,7 +347,7 @@ export default function ScheduledTasksTab() {
           variant="link"
           disabled={!row.session_id}
           onClick={() => openChatSession(row.session_id)}
-          className="h-auto p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
+          sx={LINK_BUTTON_SX}
         >
           查看会话
         </UIButton>
@@ -317,13 +370,29 @@ export default function ScheduledTasksTab() {
       className: 'whitespace-normal',
       render: (row) =>
         row.session_id ? (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => openChatSession(row.session_id)}
-            className="max-w-full truncate text-left text-[#1a71ff] transition-colors hover:text-[#4a8dff]"
+            sx={{
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              textAlign: 'left',
+              color: '#1a71ff',
+              transition: 'color 0.15s',
+              border: 0,
+              bgcolor: 'transparent',
+              p: 0,
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              cursor: 'pointer',
+              '&:hover': { color: '#4a8dff' },
+            }}
           >
             {row.session_id}
-          </button>
+          </Box>
         ) : (
           '未生成'
         ),
@@ -333,105 +402,105 @@ export default function ScheduledTasksTab() {
       title: '结果',
       className: 'whitespace-normal',
       render: (row) => (
-        <span className="wrap-break-word">{row.result_summary || row.error || '暂无'}</span>
+        <Box component="span" sx={{ wordBreak: 'break-word' }}>{row.result_summary || row.error || '暂无'}</Box>
       ),
     },
   ];
 
   const renderTaskMobileCard = (row: ScheduledTaskRead) => (
     <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
-      <div className={MOBILE_CARD_HEAD_CLASS}>
-        <strong className={MOBILE_TITLE_CLASS}>{row.title}</strong>
+      <Box sx={MOBILE_CARD_HEAD_SX}>
+        <Box component="strong" sx={MOBILE_TITLE_SX}>{row.title}</Box>
         <TaskStatusBadge status={row.status} />
-      </div>
-      <p className={MOBILE_SUMMARY_CLASS}>{row.prompt}</p>
-      <div className={MOBILE_META_CLASS}>
-        <span>
+      </Box>
+      <Box component="p" sx={MOBILE_SUMMARY_SX}>{row.prompt}</Box>
+      <Box sx={MOBILE_META_SX}>
+        <Box component="span">
           <b>计划</b>
           {formatSchedule(row)}
-        </span>
-        <span>
+        </Box>
+        <Box component="span">
           <b>下次</b>
           {formatTime(row.next_run_at)}
-        </span>
-        <span>
+        </Box>
+        <Box component="span">
           <b>已执行</b>
           {row.run_count || 0} 次
-        </span>
-        <span>
+        </Box>
+        <Box component="span">
           <b>最近</b>
           {row.last_status ? <TaskRunResultBadge status={row.last_status} /> : '暂无'}
-        </span>
-      </div>
-      <div className="mt-[12px] flex justify-end">{renderTaskActions(row)}</div>
+        </Box>
+      </Box>
+      <Box sx={{ mt: '12px', display: 'flex', justifyContent: 'flex-end' }}>{renderTaskActions(row)}</Box>
     </Box>
   );
 
   const renderRunMobileCard = (row: ScheduledTaskRunRead) => (
     <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
-      <div className={MOBILE_CARD_HEAD_CLASS}>
-        <strong className={MOBILE_TITLE_CLASS}>{row.task_title || row.scheduled_task_id}</strong>
+      <Box sx={MOBILE_CARD_HEAD_SX}>
+        <Box component="strong" sx={MOBILE_TITLE_SX}>{row.task_title || row.scheduled_task_id}</Box>
         <TaskRunResultBadge status={row.status} />
-      </div>
+      </Box>
       {row.task_status === 'archived' && (
-        <div className="mt-[10px]">
+        <Box sx={{ mt: '10px' }}>
           <ArchivedTag />
-        </div>
+        </Box>
       )}
-      <div className={MOBILE_META_CLASS}>
-        <span>
+      <Box sx={MOBILE_META_SX}>
+        <Box component="span">
           <b>计划时间</b>
           {formatTime(row.scheduled_for)}
-        </span>
-        <span>
+        </Box>
+        <Box component="span">
           <b>完成时间</b>
           {formatTime(row.finished_at)}
-        </span>
-      </div>
-      <p className={MOBILE_SUMMARY_CLASS}>{row.result_summary || row.error || '暂无结果'}</p>
-      <div className="mt-[12px] flex justify-end">
+        </Box>
+      </Box>
+      <Box component="p" sx={MOBILE_SUMMARY_SX}>{row.result_summary || row.error || '暂无结果'}</Box>
+      <Box sx={{ mt: '12px', display: 'flex', justifyContent: 'flex-end' }}>
         <UIButton
           variant="link"
           disabled={!row.session_id}
           onClick={() => openChatSession(row.session_id)}
-          className="h-auto gap-1 p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
+          sx={LINK_BUTTON_SX}
         >
-          <Search className="size-3.5" />
+          <Search size={14} />
           查看会话
         </UIButton>
-      </div>
+      </Box>
     </Box>
   );
 
   const actionButtons = (
-    <div className="flex justify-end gap-[16px]">
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
       <UIButton
         data-guide-target="scheduled-task-create"
         onClick={() => navigate('/staff/scheduled-tasks/new')}
         disabled={createDisabled}
-        className="h-8 w-[100px] gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]"
+        sx={[staffTokens.primaryButton, { width: '100px' }] as SxProps}
       >
-        <Plus className="size-3.5" />
+        <Plus size={14} />
         新增任务
       </UIButton>
-    </div>
+    </Box>
   );
 
   const scheduledBody = selectedAgent?.is_overall ? (
-    <div className="flex min-h-[200px] items-center justify-center rounded-[14px] bg-[#f6f6f6] text-[13px] text-[#858b9c]">
+    <Box sx={{ display: 'flex', minHeight: '200px', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', bgcolor: '#f6f6f6', fontSize: '13px', color: 'text.secondary' }}>
       请先选择一个数字员工再配置定时任务。
-    </div>
+    </Box>
   ) : (
     <>
-      <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="定时任务统计">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px' }} aria-label="定时任务统计">
         <StatCard label="待完成" value={activeRows.length} className="basis-[220px]" />
         <StatCard label="已完成" value={completedCount} className="basis-[220px]" />
         <StatCard label="执行记录" value={allRunRows.length} className="basis-[220px]" />
-      </div>
+      </Box>
 
-      <div className="flex flex-col gap-[24px]">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <TaskSection
-          icon={<AlarmClock className="size-[14px] shrink-0" />}
+          icon={<AlarmClock size={14} style={{ flexShrink: 0, color: '#858b9c' }} />}
           title="任务列表"
           filterTabs={TASK_FILTER_TABS}
           filter={taskFilter}
@@ -449,7 +518,7 @@ export default function ScheduledTasksTab() {
         />
 
         <TaskSection
-          icon={<AlignJustify className="size-[14px] shrink-0" />}
+          icon={<AlignJustify size={14} style={{ flexShrink: 0, color: '#858b9c' }} />}
           title="执行记录"
           filterTabs={RUN_FILTER_TABS}
           filter={runFilter}
@@ -468,32 +537,60 @@ export default function ScheduledTasksTab() {
           onPageChange={runPagination.setPage}
           renderMobileCard={renderRunMobileCard}
         />
-      </div>
+      </Box>
     </>
   );
 
   return (
     <>
-      <section
+      <Box
+        component="section"
         aria-busy={loading}
-        className="relative mt-[-2px] flex w-full min-w-0 max-w-full flex-col gap-[24px] overflow-hidden rounded-[18px] bg-white p-[14px] shadow-[0_20px_42px_rgba(21,26,38,0.045)] *:min-w-0 min-[521px]:p-[18px]"
+        sx={{
+          position: 'relative',
+          mt: '-2px',
+          display: 'flex',
+          width: '100%',
+          minWidth: 0,
+          maxWidth: '100%',
+          flexDirection: 'column',
+          gap: '24px',
+          overflow: 'hidden',
+          borderRadius: '18px',
+          bgcolor: 'background.paper',
+          p: '14px',
+          boxShadow: '0 20px 42px rgba(21,26,38,0.045)',
+          '& > *': { minWidth: 0 },
+          '@media (min-width:521px)': { p: '18px' },
+        }}
       >
         {actionButtons}
         {scheduledBody}
-      </section>
+      </Box>
 
       <Dialog open={runsOpen} onOpenChange={setRunsOpen}>
         <DialogContent
           aria-describedby={undefined}
-          className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[920px]"
+          sx={{
+            display: 'flex',
+            maxHeight: 'calc(100dvh - 4rem)',
+            width: 'calc(100% - 2rem)',
+            flexDirection: 'column',
+            gap: '16px',
+            overflow: 'hidden',
+            borderRadius: '14px',
+            px: '20px',
+            py: '16px',
+            '@media (min-width:640px)': { maxWidth: '920px' },
+          }}
         >
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <AlignJustify className="size-[14px] shrink-0" />
-            <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+            <AlignJustify size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: 'text.secondary' }}>
               执行记录
             </DialogTitle>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          </Box>
+          <Box sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
             <DataTable
               aria-label="执行记录"
               columns={runModalColumns}
@@ -505,11 +602,10 @@ export default function ScheduledTasksTab() {
               striped
               bordered
             />
-          </div>
+          </Box>
           {runRows.length > 0 && (
             <Paginator
               aria-label="执行记录分页"
-              className="mt-0"
               page={runsModalPagination.page}
               pageCount={runsModalPagination.pageCount}
               onChange={runsModalPagination.setPage}

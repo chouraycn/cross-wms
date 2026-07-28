@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Dialog as MuiDialog, Box, IconButton } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 import { X as XIcon } from 'lucide-react'
 
 import { cn } from './utils'
@@ -117,7 +118,7 @@ function DialogOverlay() {
 
 const DialogContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<'div'> & { showCloseButton?: boolean }
+  React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps }
 >(function DialogContent({ className, children, showCloseButton = true, ...props }, ref) {
   const { setOpen } = React.useContext(DialogContext)
   return (
@@ -143,7 +144,7 @@ const DialogContent = React.forwardRef<
   )
 })
 
-function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function DialogHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
     <Box
       data-slot="dialog-header"
@@ -158,7 +159,7 @@ function DialogFooter({
   showCloseButton = false,
   children,
   ...props
-}: React.ComponentProps<'div'> & { showCloseButton?: boolean }) {
+}: React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps }) {
   const { setOpen } = React.useContext(DialogContext)
   return (
     <Box
@@ -179,7 +180,7 @@ function DialogFooter({
   )
 }
 
-const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps }>(
   function DialogTitle({ className, ...props }, ref) {
     return (
       <Box
@@ -192,7 +193,7 @@ const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>
   },
 )
 
-const DialogDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+const DialogDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps }>(
   function DialogDescription({ className, ...props }, ref) {
     return (
       <Box
