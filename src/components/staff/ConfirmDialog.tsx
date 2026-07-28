@@ -8,9 +8,9 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from './ui/index.js';
-import { Button } from './ui/button.js';
-import { cn } from './lib/utils.js';
 import StaffdeckIcon from './StaffdeckIcon.js';
+import { staffTokens } from './lib/staffTokens.js';
+import Box from '@mui/material/Box';
 
 export type ConfirmDialogProps = {
   open: boolean;
@@ -49,7 +49,12 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const leadingIcon =
     icon === undefined ? (
-      <StaffdeckIcon name="warning" size={16} className="mt-px size-[16px] shrink-0 text-[#ff7f00]" />
+      <Box
+        component={StaffdeckIcon}
+        name="warning"
+        size={16}
+        sx={{ mt: '1px', width: '16px', height: '16px', flexShrink: 0, color: '#ff7f00' }}
+      />
     ) : (
       icon
     );
@@ -62,48 +67,94 @@ export function ConfirmDialog({
         onOpenChange(next);
       }}
     >
-      <AlertDialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-        <div className="flex items-start gap-[8px] px-[16px] pt-[16px] pb-[12px]">
+      <AlertDialogContent
+        sx={{
+          position: 'relative',
+          maxWidth: 360,
+          mx: 'auto',
+          width: '100%',
+          borderRadius: '16px',
+          gap: 0,
+          overflow: 'hidden',
+          p: 0,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            px: '16px',
+            pt: '16px',
+            pb: '12px',
+          }}
+        >
           {leadingIcon}
-          <AlertDialogTitle className="min-w-0 flex-1 text-[14px] leading-[normal] font-medium text-[#18181a] [word-break:break-word]">
+          <AlertDialogTitle
+            sx={{
+              minWidth: 0,
+              flex: 1,
+              fontSize: '14px',
+              lineHeight: 'normal',
+              fontWeight: 500,
+              color: '#18181a',
+              wordBreak: 'break-word',
+            }}
+          >
             {title}
           </AlertDialogTitle>
-        </div>
+        </Box>
         {description != null && (
-          <div className="px-[24px] pb-[12px]">
-            <AlertDialogDescription className="text-[14px] leading-[20px] text-[#4f5669] [word-break:break-word]">
-              {description}
-            </AlertDialogDescription>
-          </div>
-        )}
-        <div className="flex items-center justify-end gap-[8px] pt-[12px] pr-[16px] pb-[16px] pl-[12px]">
-          <AlertDialogCancel asChild>
-            <Button
-              variant="outline"
-              disabled={loading}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
-            >
-              {cancelText}
-            </Button>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button
-              disabled={loading}
-              className={cn(
-                'h-[32px] w-[80px] rounded-[10px] px-[12px] py-[8px] text-[14px] font-normal',
-                destructive
-                  ? 'bg-[#d20b0b] text-white hover:bg-[#b80909]'
-                  : 'bg-[#18181a] text-white hover:bg-[#303030]',
-              )}
-              onClick={(event) => {
-                event.preventDefault();
-                onConfirm();
+          <Box sx={{ px: '24px', pb: '12px' }}>
+            <AlertDialogDescription
+              sx={{
+                fontSize: '14px',
+                lineHeight: '20px',
+                color: '#4f5669',
+                wordBreak: 'break-word',
               }}
             >
-              {confirmText}
-            </Button>
+              {description}
+            </AlertDialogDescription>
+          </Box>
+        )}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '8px',
+            pt: '12px',
+            pr: '16px',
+            pb: '16px',
+            pl: '12px',
+          }}
+        >
+          <AlertDialogCancel
+            disabled={loading}
+            sx={staffTokens.dialogCancelButton}
+          >
+            {cancelText}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            disabled={loading}
+            onClick={(event) => {
+              event.preventDefault();
+              onConfirm();
+            }}
+            sx={
+              destructive
+                ? {
+                    ...staffTokens.dialogPrimaryButton,
+                    bgcolor: '#d20b0b',
+                    '&:hover': { bgcolor: '#b80909' },
+                  }
+                : staffTokens.dialogPrimaryButton
+            }
+          >
+            {confirmText}
           </AlertDialogAction>
-        </div>
+        </Box>
       </AlertDialogContent>
     </AlertDialog>
   );

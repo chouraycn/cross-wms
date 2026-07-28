@@ -10,8 +10,14 @@ import {
 } from './ui/popover.js'
 import { Button } from './ui/button.js'
 import { X as XIcon } from 'lucide-react'
+import Box from '@mui/material/Box'
+import type { ReactType } from 'react'
 import { EnterpriseRoute } from './enums/routes.js'
 import { OPEN_QUICK_START_EVENT } from './OnboardingGuide.js'
+
+// PopoverContent applies className to the paper but exposes no sx slot; route the
+// card styles to the MUI Popover paper via slotProps (cast keeps us from editing popover.tsx).
+const PopoverContentSx = PopoverContent as unknown as ReactType
 
 const ONBOARDING_SEEN_KEY = 'staffdeck_onboarding_guide_seen'
 export const QUICK_START_SEEN_KEY = 'staffdeck_quick_start_guide_seen'
@@ -232,68 +238,152 @@ export default function QuickStartGuide({ isAdmin }: QuickStartGuideProps) {
   return (
     <Popover open={open} onOpenChange={(next) => !next && finish()} modal>
       {open && (
-        <div
+        <Box
           aria-hidden="true"
-          className="fixed inset-0 z-40 cursor-default bg-transparent"
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 40,
+            cursor: 'default',
+            bgcolor: 'transparent',
+          }}
         />
       )}
       <PopoverAnchor asChild>
-        <span
+        <Box
           aria-hidden="true"
-          className="pointer-events-none fixed z-40"
+          sx={{ pointerEvents: 'none', position: 'fixed', zIndex: 40 }}
           style={anchorRect}
         />
       </PopoverAnchor>
-      <PopoverContent
+      <PopoverContentSx
         side={current.side || 'bottom'}
         align="center"
         sideOffset={16}
         collisionPadding={12}
         avoidCollisions
-        onInteractOutside={(event) => event.preventDefault()}
-        className={`z-50 flex w-[434px] max-w-[calc(100vw-24px)] flex-col gap-[16px] rounded-[20px] border-0 bg-[rgba(24,24,26,0.8)] p-[24px] text-white shadow-[0_18px_60px_rgba(0,0,0,0.24)] ring-0 ${anchorReady ? 'visible' : 'invisible pointer-events-none'}`}
+        onInteractOutside={(event: Event) => event.preventDefault()}
+        slotProps={{
+          paper: {
+            sx: {
+              zIndex: 50,
+              display: 'flex',
+              width: '434px',
+              maxWidth: 'calc(100vw - 24px)',
+              flexDirection: 'column',
+              gap: '16px',
+              borderRadius: '20px',
+              border: 0,
+              bgcolor: 'rgba(24,24,26,0.8)',
+              p: '24px',
+              color: '#fff',
+              boxShadow: '0 18px 60px rgba(0,0,0,0.24)',
+              ...(anchorReady
+                ? { visibility: 'visible' }
+                : { visibility: 'hidden', pointerEvents: 'none' }),
+            },
+            style: { overflow: 'visible' },
+          } as Record<string, unknown>,
+        }}
       >
-        <PopoverArrow width={22} height={11} className="fill-[rgba(24,24,26,0.8)]" />
+        <PopoverArrow width={22} height={11} />
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
           aria-label="关闭引导"
           onClick={finish}
-          className="absolute top-[18px] right-[18px] text-white hover:bg-white/10 hover:text-white"
+          sx={{
+            position: 'absolute',
+            top: '18px',
+            right: '18px',
+            color: '#fff',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' },
+          }}
         >
-          <XIcon className="size-[18px]" />
+          <Box component={XIcon} sx={{ width: '18px', height: '18px' }} />
         </Button>
-        <div className="flex min-h-[86px] flex-col gap-[4px] pb-[32px]">
-          <PopoverTitle className="text-[14px] leading-[22px] font-medium text-white">
+        <Box
+          sx={{
+            display: 'flex',
+            minHeight: '86px',
+            flexDirection: 'column',
+            gap: '4px',
+            pb: '32px',
+          }}
+        >
+          <PopoverTitle
+            sx={{ fontSize: '14px', lineHeight: '22px', fontWeight: 500, color: '#fff' }}
+          >
             {current.title}
           </PopoverTitle>
-          <PopoverDescription className="text-[14px] leading-[22px] font-normal text-[#f6f6f6]">
+          <PopoverDescription
+            sx={{ fontSize: '14px', lineHeight: '22px', fontWeight: 400, color: '#f6f6f6' }}
+          >
             {current.description}
           </PopoverDescription>
-        </div>
+        </Box>
 
-        <div className="flex items-center justify-between gap-[16px]">
-          <span className="shrink-0 py-[3px] text-[14px] leading-normal text-[#858b9c]">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <Box
+            component="span"
+            sx={{ flexShrink: 0, py: '3px', fontSize: '14px', lineHeight: 'normal', color: '#858b9c' }}
+          >
             {step + 1} / {steps.length}
-          </span>
-          <div className="flex min-w-0 items-center gap-[16px] max-[420px]:gap-[8px]">
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              minWidth: 0,
+              alignItems: 'center',
+              gap: '16px',
+              '@media (max-width: 420px)': { gap: '8px' },
+            }}
+          >
             <Button
               variant="outline"
               onClick={step === 0 ? runAction : goPrev}
-              className="h-[34px] min-w-[100px] rounded-[10px] border-[0.5px] border-[#6d6d6d] bg-black/20 px-[20px] text-[14px] leading-[22px] font-normal whitespace-nowrap text-white hover:bg-white/10 hover:text-white"
+              sx={{
+                height: '34px',
+                minWidth: '100px',
+                borderRadius: '10px',
+                border: '0.5px solid',
+                borderColor: '#6d6d6d',
+                bgcolor: 'rgba(0,0,0,0.2)',
+                px: '20px',
+                fontSize: '14px',
+                lineHeight: '22px',
+                fontWeight: 400,
+                whiteSpace: 'nowrap',
+                color: '#fff',
+                textTransform: 'none',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' },
+              }}
             >
               {step === 0 ? '立即添加' : '上一步'}
             </Button>
             <Button
               onClick={goNext}
-              className="h-[34px] min-w-[100px] rounded-[8px] bg-white px-[16px] text-[14px] leading-[22px] font-normal whitespace-nowrap text-[#29282d] hover:bg-[#f0f0f0] hover:text-[#29282d]"
+              sx={{
+                height: '34px',
+                minWidth: '100px',
+                borderRadius: '8px',
+                bgcolor: '#fff',
+                px: '16px',
+                fontSize: '14px',
+                lineHeight: '22px',
+                fontWeight: 400,
+                whiteSpace: 'nowrap',
+                color: '#29282d',
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#f0f0f0', color: '#29282d' },
+              }}
             >
               {current.nextLabel || (isLast ? '完成' : '下一步')}
             </Button>
-          </div>
-        </div>
-      </PopoverContent>
+          </Box>
+        </Box>
+      </PopoverContentSx>
     </Popover>
   )
 }

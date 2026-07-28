@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Box from '@mui/material/Box';
 import AppHeader from '../../components/staff/AppHeader.js';
 import { Button as UIButton } from '../../components/staff/ui/button.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
@@ -264,93 +265,129 @@ export default function EmployeeChatPage(): JSX.Element {
   }, [sessionId]);
 
   return (
-    <div className="flex h-full flex-col bg-[#f7f8fa]">
+    <Box sx={{ display: 'flex', height: '100%', flexDirection: 'column', bgcolor: '#f7f8fa' }}>
       <AppHeader
         title={agent ? `与「${agent.name}」对话` : '数字员工对话'}
         showBack
         onBack={() => navigate('/enterprise/agents')}
       />
       {sessionId ? (
-        <div className="flex items-center justify-end bg-[#f7f8fa] px-4 pt-2">
-          <button
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', bgcolor: '#f7f8fa', px: '16px', pt: '8px' }}>
+          <Box
+            component="button"
             type="button"
             onClick={() => void openTrace()}
-            className="rounded-full border border-[#e0e3e8] bg-white px-3 py-1 text-[12px] text-[#4b5563] hover:border-[#2f6bff] hover:text-[#2f6bff]"
+            sx={{
+              borderRadius: '9999px',
+              border: '1px solid #e0e3e8',
+              bgcolor: 'background.paper',
+              px: '12px',
+              py: '4px',
+              fontSize: '12px',
+              color: '#4b5563',
+              '&:hover': { borderColor: '#2f6bff', color: '#2f6bff' },
+            }}
           >
             执行痕迹
-          </button>
-        </div>
+          </Box>
+        </Box>
       ) : null}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5">
-        <div className="mx-auto flex max-w-[760px] flex-col gap-4">
+      <Box ref={scrollRef} sx={{ flex: 1, overflowY: 'auto', px: '16px', py: '20px' }}>
+        <Box sx={{ mx: 'auto', display: 'flex', maxWidth: '760px', flexDirection: 'column', gap: '16px' }}>
           {messages.length === 0 && (
-            <div className="mt-10 text-center text-[13px] text-[#9aa0aa]">
+            <Box sx={{ mt: '40px', textAlign: 'center', fontSize: '13px', color: '#9aa0aa' }}>
               向「{agent?.name ?? '数字员工'}」提问，它将基于自身角色设定、绑定 SOP 与知识库作答。
-            </div>
+            </Box>
           )}
           {messages.map((m) => (
-            <div
+            <Box
               key={m.id}
-              className={`flex flex-col gap-1 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                ...(m.role === 'user' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }),
+              }}
             >
               {m.thinking ? (
-                <details open className="max-w-[90%] rounded-[10px] bg-[#eef0f4] px-3 py-2 text-[12px] leading-relaxed text-[#6b7280]">
-                  <summary className="mb-1 cursor-pointer select-none font-medium text-[#9aa0aa]">
+                <Box
+                  component="details"
+                  open
+                  sx={{
+                    maxWidth: '90%',
+                    borderRadius: '10px',
+                    bgcolor: '#eef0f4',
+                    px: '12px',
+                    py: '8px',
+                    fontSize: '12px',
+                    lineHeight: '1.625',
+                    color: '#6b7280',
+                  }}
+                >
+                  <Box component="summary" sx={{ mb: '4px', cursor: 'pointer', userSelect: 'none', fontWeight: 500, color: '#9aa0aa' }}>
                     思考{m.streaming ? '中…' : '过程'}
-                  </summary>
-                  <div className="whitespace-pre-wrap">{m.thinking}</div>
-                </details>
+                  </Box>
+                  <Box component="div" sx={{ whiteSpace: 'pre-wrap' }}>{m.thinking}</Box>
+                </Box>
               ) : null}
-              <div
-                className={`max-w-[90%] whitespace-pre-wrap rounded-[12px] px-3.5 py-2.5 text-[13.5px] leading-relaxed ${
-                  m.role === 'user'
-                    ? 'bg-[#2f6bff] text-white'
-                    : 'border border-[#eaecef] bg-white text-[#1f2329]'
-                }`}
+              <Box
+                sx={{
+                  maxWidth: '90%',
+                  whiteSpace: 'pre-wrap',
+                  borderRadius: '12px',
+                  px: '14px',
+                  py: '10px',
+                  fontSize: '13.5px',
+                  lineHeight: '1.625',
+                  ...(m.role === 'user'
+                    ? { bgcolor: '#2f6bff', color: '#fff' }
+                    : { border: '1px solid #eaecef', bgcolor: 'background.paper', color: '#1f2329' }),
+                }}
               >
                 {m.content || (m.streaming ? '思考中…' : '')}
-                {m.mock ? <span className="ml-2 text-[11px] text-[#b0b6bf]">（演示模式）</span> : null}
-              </div>
+                {m.mock ? <Box component="span" sx={{ ml: '8px', fontSize: '11px', color: '#b0b6bf' }}>（演示模式）</Box> : null}
+              </Box>
               {m.tools && m.tools.length > 0 ? (
-                <div className="flex max-w-[92%] flex-col gap-1.5">
+                <Box sx={{ display: 'flex', maxWidth: '92%', flexDirection: 'column', gap: '6px' }}>
                   {m.tools.map((t, i) => (
-                    <details
+                    <Box
+                      component="details"
                       key={i}
-                      className="overflow-hidden rounded-[10px] border border-[#e6e8ec] bg-white text-[12px]"
+                      sx={{ overflow: 'hidden', borderRadius: '10px', border: '1px solid #e6e8ec', bgcolor: 'background.paper', fontSize: '12px' }}
                     >
-                      <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-[#4b5563]">
+                      <Box component="summary" sx={{ display: 'flex', cursor: 'pointer', alignItems: 'center', gap: '8px', px: '12px', py: '8px', color: '#4b5563' }}>
                         <span>🛠</span>
-                        <span className="font-medium text-[#1f2329]">{t.name}</span>
-                        <span className="ml-auto rounded-full bg-[#eef2ff] px-2 py-0.5 text-[10px] text-[#2f6bff]">
+                        <Box component="span" sx={{ fontWeight: 500, color: '#1f2329' }}>{t.name}</Box>
+                        <Box component="span" sx={{ ml: 'auto', borderRadius: '9999px', bgcolor: '#eef2ff', px: '8px', py: '2px', fontSize: '10px', color: '#2f6bff' }}>
                           已调用
-                        </span>
-                      </summary>
-                      <div className="border-t border-[#f0f1f4] px-3 py-2">
+                        </Box>
+                      </Box>
+                      <Box sx={{ borderTop: '1px solid #f0f1f4', px: '12px', py: '8px' }}>
                         {t.args ? (
-                          <div className="mb-2">
-                            <div className="mb-1 text-[11px] font-medium text-[#9aa0aa]">参数</div>
+                          <Box sx={{ mb: '8px' }}>
+                            <Box sx={{ mb: '4px', fontSize: '11px', fontWeight: 500, color: '#9aa0aa' }}>参数</Box>
                             <CodeBlock code={t.args} language="json" />
-                          </div>
+                          </Box>
                         ) : null}
                         {t.result ? (
-                          <div>
-                            <div className="mb-1 text-[11px] font-medium text-[#9aa0aa]">返回</div>
+                          <Box>
+                            <Box sx={{ mb: '4px', fontSize: '11px', fontWeight: 500, color: '#9aa0aa' }}>返回</Box>
                             <CodeBlock code={t.result} language="json" />
-                          </div>
+                          </Box>
                         ) : null}
-                      </div>
-                    </details>
+                      </Box>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               ) : null}
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-      <div className="border-t border-[#eaecef] bg-white px-4 py-3">
-        <div className="mx-auto flex max-w-[760px] items-end gap-2">
-          <textarea
-            className="max-h-[140px] min-h-[42px] flex-1 resize-none rounded-[10px] border border-[#e0e3e8] px-3 py-2 text-[13.5px] outline-none focus:border-[#2f6bff]"
+        </Box>
+      </Box>
+      <Box sx={{ borderTop: '1px solid #eaecef', bgcolor: 'background.paper', px: '16px', py: '12px' }}>
+        <Box sx={{ mx: 'auto', display: 'flex', maxWidth: '760px', alignItems: 'flex-end', gap: '8px' }}>
+          <Box
+            component="textarea"
             placeholder="输入消息，Enter 发送，Shift+Enter 换行"
             value={input}
             rows={1}
@@ -361,54 +398,71 @@ export default function EmployeeChatPage(): JSX.Element {
                 void send();
               }
             }}
+            sx={{
+              maxHeight: '140px',
+              minHeight: '42px',
+              flex: 1,
+              resize: 'none',
+              borderRadius: '10px',
+              border: '1px solid #e0e3e8',
+              px: '12px',
+              py: '8px',
+              fontSize: '13.5px',
+              outline: 'none',
+              '&:focus': { borderColor: '#2f6bff' },
+            }}
           />
           {busy ? (
-            <UIButton onClick={stop} className="shrink-0">停止</UIButton>
+            <UIButton onClick={stop} sx={{ flexShrink: 0 }}>停止</UIButton>
           ) : (
-            <UIButton onClick={() => void send()} className="shrink-0">发送</UIButton>
+            <UIButton onClick={() => void send()} sx={{ flexShrink: 0 }}>发送</UIButton>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
       {showTrace ? (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowTrace(false)} />
-          <div className="relative h-full w-[380px] overflow-y-auto bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#eaecef] px-4 py-3">
-              <span className="font-medium text-[#1f2329]">执行痕迹</span>
-              <button
+        <Box sx={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)' }} onClick={() => setShowTrace(false)} />
+          <Box sx={{ position: 'relative', height: '100%', width: '380px', overflowY: 'auto', bgcolor: 'background.paper', boxShadow: '0 20px 25px rgba(0,0,0,0.1)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #eaecef', px: '16px', py: '12px' }}>
+              <Box component="span" sx={{ fontWeight: 500, color: '#1f2329' }}>执行痕迹</Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => setShowTrace(false)}
-                className="text-[13px] text-[#9aa0aa] hover:text-[#1f2329]"
+                sx={{ fontSize: '13px', color: '#9aa0aa', '&:hover': { color: '#1f2329' } }}
               >
                 关闭
-              </button>
-            </div>
-            <div className="p-3">
+              </Box>
+            </Box>
+            <Box sx={{ p: '12px' }}>
               {traceLoading ? (
-                <div className="py-10 text-center text-[12px] text-[#9aa0aa]">加载中…</div>
+                <Box sx={{ py: '40px', textAlign: 'center', fontSize: '12px', color: '#9aa0aa' }}>加载中…</Box>
               ) : traceEvents.length === 0 ? (
-                <div className="py-10 text-center text-[12px] text-[#9aa0aa]">暂无执行记录</div>
+                <Box sx={{ py: '40px', textAlign: 'center', fontSize: '12px', color: '#9aa0aa' }}>暂无执行记录</Box>
               ) : (
-                <div className="flex flex-col gap-2">
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {traceEvents.map((e) => (
-                    <div key={e.id} className="rounded-[10px] border border-[#eaecef] p-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded bg-[#eef2ff] px-1.5 py-0.5 text-[10px] text-[#2f6bff]">
+                    <Box key={e.id} sx={{ borderRadius: '10px', border: '1px solid #eaecef', p: '10px' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Box component="span" sx={{ borderRadius: '4px', bgcolor: '#eef2ff', px: '6px', py: '2px', fontSize: '10px', color: '#2f6bff' }}>
                           {e.event_type}
-                        </span>
-                        <span className="text-[11px] text-[#9aa0aa]">{fmtTraceTime(e.created_at)}</span>
-                      </div>
-                      <pre className="mt-1.5 max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-[#4b5563]">
+                        </Box>
+                        <Box component="span" sx={{ fontSize: '11px', color: '#9aa0aa' }}>{fmtTraceTime(e.created_at)}</Box>
+                      </Box>
+                      <Box
+                        component="pre"
+                        sx={{ mt: '6px', maxHeight: '180px', overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: '11px', lineHeight: '1.625', color: '#4b5563' }}
+                      >
                         {summarizePayload(e.payload)}
-                      </pre>
-                    </div>
+                      </Box>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               )}
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   );
 }

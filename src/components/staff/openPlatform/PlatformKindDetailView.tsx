@@ -296,7 +296,9 @@ export default function PlatformKindDetailView({
         }}
       >
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px' }} aria-label={`${title}统计`}>
-          <StatCard value={items.length} label={countLabel} className="max-w-[220px]" />
+          <Box sx={{ maxWidth: '220px' }}>
+            <StatCard value={items.length} label={countLabel} />
+          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
