@@ -11,27 +11,10 @@ import {
 
 import CodeBlock from '../../../../components/staff/CodeBlock.js';
 import StaffdeckIcon from '../../../../components/staff/StaffdeckIcon.js';
+import { Box } from '@mui/material';
 import { cn } from '../../../../components/staff/lib/utils.js';
 
-import {
-  CHAT_TRACE_CHEVRON_CLASS,
-  CHAT_TRACE_CHEVRON_EXPANDED_CLASS,
-  CHAT_TRACE_CODE_BLOCK_CLASS,
-  CHAT_TRACE_CODE_DETAILS_CLASS,
-  CHAT_TRACE_CODE_SUMMARY_CLASS,
-  CHAT_TRACE_DETAILS_CLASS,
-  CHAT_TRACE_FLOW_TEXT_CLASS,
-  CHAT_TRACE_ICON_CLASS,
-  CHAT_TRACE_LINE_CLASS,
-  CHAT_TRACE_LINE_CONTENT_CLASS,
-  CHAT_TRACE_LINE_DETAIL_CLASS,
-  CHAT_TRACE_LINE_TEXT_CLASS,
-  CHAT_TRACE_LINE_TEXT_FAILED_CLASS,
-  CHAT_TRACE_SUMMARY_CLASS,
-  CHAT_TRACE_SUMMARY_FAILED_CLASS,
-  CHAT_TRACE_SUMMARY_RUNNING_CLASS,
-  CHAT_TRACE_WRAP_CLASS,
-} from '../chatPageStyles.js';
+import { chatTokens } from '../chatTokens.js';
 import { traceLineIconName, traceSummaryIconName } from '../chatHelpers.js';
 import type { CotTraceIconName, TraceLine } from '../chatTypes.js';
 
@@ -48,9 +31,9 @@ const COT_ICON_MAP: Record<CotTraceIconName, ComponentType<SVGProps<SVGSVGElemen
 function CotTraceIcon({ name }: { name: CotTraceIconName }) {
   const Icon = COT_ICON_MAP[name];
   return (
-    <span className={CHAT_TRACE_ICON_CLASS} aria-hidden="true">
+    <Box component="span" sx={chatTokens.traceIcon} aria-hidden="true">
       <Icon />
-    </span>
+    </Box>
   );
 }
 
@@ -70,59 +53,68 @@ export default function ExecutionRecord({
   onToggle,
 }: ExecutionRecordProps) {
   return (
-    <div className={CHAT_TRACE_WRAP_CLASS}>
-      <button
+    <Box sx={chatTokens.traceWrap}>
+      <Box
+        component="button"
         type="button"
-        className={cn(
-          CHAT_TRACE_SUMMARY_CLASS,
-          summary.state === 'running' && CHAT_TRACE_SUMMARY_RUNNING_CLASS,
-          summary.state === 'failed' && CHAT_TRACE_SUMMARY_FAILED_CLASS,
-        )}
+        sx={[
+          chatTokens.traceSummary,
+          ...(summary.state === 'running' ? [chatTokens.traceSummaryRunning] : []),
+          ...(summary.state === 'failed' ? [chatTokens.traceSummaryFailed] : []),
+        ]}
         onClick={() => onToggle(traceTurnId, expanded)}
       >
         <CotTraceIcon name={traceSummaryIconName(summary)} />
-        <span className={cn(summary.state === 'running' && CHAT_TRACE_FLOW_TEXT_CLASS)}>{summary.text}</span>
+        <Box
+          component="span"
+          sx={[...(summary.state === 'running' ? [chatTokens.traceFlowText] : [])]}
+        >
+          {summary.text}
+        </Box>
         {details.length > 0 && (
-          <StaffdeckIcon
-            name="arrow"
-            size={14}
-            className={cn(CHAT_TRACE_CHEVRON_CLASS, expanded && CHAT_TRACE_CHEVRON_EXPANDED_CLASS)}
-          />
+          <Box sx={[chatTokens.traceChevron, ...(expanded ? [chatTokens.traceChevronExpanded] : [])]}>
+            <StaffdeckIcon name="arrow" size={14} />
+          </Box>
         )}
-      </button>
+      </Box>
       {expanded && details.length > 0 && (
-        <div className={CHAT_TRACE_DETAILS_CLASS}>
+        <Box sx={chatTokens.traceDetails}>
           {details.map((line) => (
-            <div key={line.id} className={CHAT_TRACE_LINE_CLASS}>
+            <Box key={line.id} sx={chatTokens.traceLine}>
               <CotTraceIcon name={traceLineIconName(line)} />
-              <span className={CHAT_TRACE_LINE_CONTENT_CLASS}>
-                <span
-                  className={cn(
-                    CHAT_TRACE_LINE_TEXT_CLASS,
-                    line.state === 'running' && CHAT_TRACE_FLOW_TEXT_CLASS,
-                    line.state === 'failed' && CHAT_TRACE_LINE_TEXT_FAILED_CLASS,
-                  )}
+              <Box component="span" sx={chatTokens.traceLineContent}>
+                <Box
+                  component="span"
+                  sx={[
+                    chatTokens.traceLineText,
+                    ...(line.state === 'running' ? [chatTokens.traceFlowText] : []),
+                    ...(line.state === 'failed' ? [chatTokens.traceLineTextFailed] : []),
+                  ]}
                 >
                   {line.text}
-                </span>
-                {line.detail && <span className={CHAT_TRACE_LINE_DETAIL_CLASS}>{line.detail}</span>}
+                </Box>
+                {line.detail && <Box component="span" sx={chatTokens.traceLineDetail}>{line.detail}</Box>}
                 {line.code && (
-                  <details open className={CHAT_TRACE_CODE_DETAILS_CLASS}>
-                    <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>查看代码</summary>
-                    <CodeBlock className={CHAT_TRACE_CODE_BLOCK_CLASS} code={line.code} language={line.language || 'python'} />
-                  </details>
+                  <Box component="details" open sx={chatTokens.traceCodeDetails}>
+                    <Box component="summary" sx={chatTokens.traceCodeSummary}>查看代码</Box>
+                    <Box sx={chatTokens.traceCodeBlock}>
+                      <CodeBlock code={line.code} language={line.language || 'python'} />
+                    </Box>
+                  </Box>
                 )}
                 {line.output && (
-                  <details open className={CHAT_TRACE_CODE_DETAILS_CLASS}>
-                    <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>{line.outputTitle || '查看输出'}</summary>
-                    <CodeBlock className={CHAT_TRACE_CODE_BLOCK_CLASS} code={line.output} language={line.outputLanguage || 'text'} />
-                  </details>
+                  <Box component="details" open sx={chatTokens.traceCodeDetails}>
+                    <Box component="summary" sx={chatTokens.traceCodeSummary}>{line.outputTitle || '查看输出'}</Box>
+                    <Box sx={chatTokens.traceCodeBlock}>
+                      <CodeBlock code={line.output} language={line.outputLanguage || 'text'} />
+                    </Box>
+                  </Box>
                 )}
-              </span>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

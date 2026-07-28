@@ -1,8 +1,6 @@
-import {
-  CHAT_DEBUG_PANEL_CLASS,
-  CHAT_MESSAGES_CLASS,
-  CHAT_MESSAGE_STACK_CLASS,
-} from '../chatPageStyles.js';
+import { Box } from '@mui/material';
+
+import { chatTokens } from '../chatTokens.js';
 import {
   CHAT_TRACE_RECOVERY_WINDOW_MS,
   createdScheduledTaskForMessage,
@@ -48,10 +46,10 @@ export default function MessageList({ chat }: { chat: UseChatSession }) {
   const renderMessages = placeQueuedMessagesLast(displayedMessages);
 
   return (
-    <div className={CHAT_MESSAGES_CLASS} ref={chatMessagesRef} onScroll={handleChatMessagesScroll}>
+    <Box sx={chatTokens.messages} ref={chatMessagesRef} onScroll={handleChatMessagesScroll}>
       {renderMessages.length === 0 && <ChatEmptyState chat={chat} />}
 
-      <div className={CHAT_MESSAGE_STACK_CLASS}>
+      <Box sx={chatTokens.messageStack}>
         {renderMessages.map((item, itemIndex) => {
           const turnId = item.turnId || item.id;
           const fallbackTraceId = item.role === 'assistant' && item.isStreaming
@@ -152,22 +150,22 @@ export default function MessageList({ chat }: { chat: UseChatSession }) {
 
           return <MessageBubble key={`${item.id}:message`} chat={chat} item={item} render={render} />;
         })}
-      </div>
+      </Box>
 
       {currentScheduledDraft && !hasVisibleMessageScheduledDraft && (
-        <div className={CHAT_MESSAGE_STACK_CLASS}>
+        <Box sx={chatTokens.messageStack}>
           <ScheduledDraftCard
             draft={currentScheduledDraft}
             createdTask={activeConversationId ? createdScheduledTasks[`session:${activeConversationId}`] : undefined}
             onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft)}
             onDismiss={() => dismissScheduledTaskDraft()}
           />
-        </div>
+        </Box>
       )}
 
       {SHOW_DEBUG && lastTurn && (
-        <pre className={CHAT_DEBUG_PANEL_CLASS}>{JSON.stringify(lastTurn.session_state, null, 2)}</pre>
+        <Box component="pre" sx={chatTokens.debugPanel}>{JSON.stringify(lastTurn.session_state, null, 2)}</Box>
       )}
-    </div>
+    </Box>
   );
 }
