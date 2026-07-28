@@ -116,11 +116,11 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                         打开原会话
                       </Button>
                       <Button onClick={() => submitHandoffReply(handoff)}>回复并恢复</Button>
-                    </div>
-                  </article>
+                    </Box>
+                  </Box>
                 );
               })}
-            </div>
+            </Box>
           )}
         </DialogContent>
       </Dialog>
@@ -131,23 +131,23 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
             <DialogTitle>引用详情</DialogTitle>
           </DialogHeader>
           {activeCitation && (
-            <div className={CHAT_CITATION_DETAIL_CLASS}>
-              <div className={CHAT_CITATION_DETAIL_EYEBROW_CLASS}>{citationKindLabel(activeCitation)}</div>
-              <h3 className={CHAT_CITATION_DETAIL_TITLE_CLASS}>{citationDisplayTitle(activeCitation)}</h3>
+            <Box sx={chatTokens.citationDetail}>
+              <Box sx={chatTokens.citationDetailEyebrow}>{citationKindLabel(activeCitation)}</Box>
+              <Box component="h3" sx={chatTokens.citationDetailTitle}>{citationDisplayTitle(activeCitation)}</Box>
               {citationDetailExcerpt(activeCitation) && (
-                <div className={CHAT_CITATION_DETAIL_SECTION_CLASS}>
+                <Box sx={chatTokens.citationDetailSection}>
                   <span>引用片段</span>
                   <CitationMarkdown content={citationDetailExcerpt(activeCitation)} />
-                </div>
+                </Box>
               )}
               {citationDetailSummary(activeCitation) && (
-                <div className={CHAT_CITATION_DETAIL_SECTION_CLASS}>
+                <Box sx={chatTokens.citationDetailSection}>
                   <span>片段摘要</span>
                   <CitationMarkdown content={citationDetailSummary(activeCitation)} />
-                </div>
+                </Box>
               )}
               {(activeCitation.source_path || activeCitation.section_path || activeCitation.concept_id) && (
-                <div className={CHAT_CITATION_DETAIL_GRID_CLASS}>
+                <Box sx={chatTokens.citationDetailGrid}>
                   {activeCitation.source_path && (
                     <div>
                       <span>来源</span>
@@ -166,12 +166,12 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                       <strong>{activeCitation.concept_id}</strong>
                     </div>
                   )}
-                </div>
+                </Box>
               )}
               {activeCitation.confidence_reason && (
-                <div className={CHAT_CITATION_DETAIL_NOTE_CLASS}>{activeCitation.confidence_reason}</div>
+                <Box sx={chatTokens.citationDetailNote}>{activeCitation.confidence_reason}</Box>
               )}
-            </div>
+            </Box>
           )}
         </DialogContent>
       </Dialog>
@@ -191,7 +191,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
               重命名
             </DialogTitle>
           </DialogHeader>
-          <div className="px-[16px] pb-[4px]">
+          <Box sx={{ px: '16px', pb: '4px' }}>
             <Input
               autoFocus
               maxLength={80}
@@ -205,8 +205,8 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
               }}
               placeholder="输入会话名称"
             />
-          </div>
-          <div className="flex items-center justify-end gap-[8px] pt-[12px] pr-[16px] pb-[16px] pl-[12px]">
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', pt: '12px', pr: '16px', pb: '16px', pl: '12px' }}>
             <Button
               variant="outline"
               className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
@@ -223,7 +223,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
             >
               保存
             </Button>
-          </div>
+          </Box>
         </DialogContent>
       </Dialog>
 
@@ -240,9 +240,9 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
 
 function CitationMarkdown({ content }: { content: string }) {
   return (
-    <div className={CHAT_CITATION_DETAIL_MARKDOWN_CLASS}>
+    <Box sx={chatTokens.citationDetailMarkdown}>
       <MarkdownMessage content={content} preserveLineBreaks={false} />
-    </div>
+    </Box>
   );
 }
 

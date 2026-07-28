@@ -195,8 +195,8 @@ export default function QuickStartGuide({ isAdmin }: QuickStartGuideProps) {
     let fallbackAllowed = false
     setAnchorReady(false)
     const updateAnchor = () => {
-      window.cancelAnimationFrame(frame)
-      frame = window.requestAnimationFrame(() => {
+      window.clearTimeout(frame)
+      frame = window.setTimeout(() => {
         const target =
           findVisibleTarget(current.target)
           || (fallbackAllowed && current.fallbackTarget
@@ -206,7 +206,7 @@ export default function QuickStartGuide({ isAdmin }: QuickStartGuideProps) {
         const rect = target.getBoundingClientRect()
         setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height })
         setAnchorReady(true)
-      })
+      }, 16)
     }
 
     updateAnchor()
@@ -222,7 +222,7 @@ export default function QuickStartGuide({ isAdmin }: QuickStartGuideProps) {
     return () => {
       window.clearTimeout(delayed)
       window.clearTimeout(fallbackDelay)
-      window.cancelAnimationFrame(frame)
+      window.clearTimeout(frame)
       observer.disconnect()
       window.removeEventListener('resize', updateAnchor)
       window.removeEventListener('scroll', updateAnchor, true)
