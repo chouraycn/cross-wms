@@ -162,6 +162,8 @@ fi
 # 后端类型检查 (server/ 走独立 tsconfig, 根 tsconfig 不 include server, 必须单独 gate)
 if [[ -f "server/tsconfig.json" ]]; then
   SERVER_TSC_OUTPUT=$(npx tsc --noEmit -p server/tsconfig.json 2>&1) || true
+  # 过滤 openclaw submodule 的错误（submodule 独立维护，不影响主项目）
+  SERVER_TSC_OUTPUT=$(echo "$SERVER_TSC_OUTPUT" | grep -v "^openclaw/" || true)
   SERVER_TS_ERROR_COUNT=$(echo "$SERVER_TSC_OUTPUT" | grep -c "error TS" || true)
   SERVER_TS_ERROR_COUNT=$(echo "$SERVER_TS_ERROR_COUNT" | tr -d '[:space:]')
 

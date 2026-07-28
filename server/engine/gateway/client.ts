@@ -1,5 +1,13 @@
 import { logger } from '../../logger.js';
 
+/** Check if an error is a gateway connect assembly error. */
+export function isGatewayConnectAssemblyError(err: unknown): boolean {
+  if (err instanceof Error) {
+    return err.message.includes('gateway connect') || err.message.includes('assembly');
+  }
+  return false;
+}
+
 export type GatewayClientRequestOptions = {
   expectFinal?: boolean;
   timeoutMs?: number;
