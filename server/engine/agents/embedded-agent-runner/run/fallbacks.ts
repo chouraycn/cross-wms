@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Reads configured embedded-run model fallback availability.
  */

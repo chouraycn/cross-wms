@@ -1,93 +1,88 @@
 import * as React from 'react'
+import { Card as MuiCard, Box, Typography } from '@mui/material'
 
 import { cn } from './utils'
 
+// 表面统一为 MUI Card（outlined，圆角/描边与主程序一致）；内部子件保留 shadcn 的
+// data-slot 标记 + Tailwind 布局类，确保消费组件 className 透传行为不变。
 function Card({
   className,
   size = 'default',
   ...props
 }: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
   return (
-    <div
+    <MuiCard
+      variant="outlined"
       data-slot="card"
       data-size={size}
-      className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
-        className,
-      )}
-      {...props}
+      className={cn(className)}
+      sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
       data-slot="card-header"
-      className={cn(
-        'group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)',
-        className,
-      )}
-      {...props}
+      className={cn('flex flex-col gap-1 px-4 pt-4', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Typography
       data-slot="card-title"
-      className={cn(
-        'font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm',
-        className,
-      )}
-      {...props}
+      className={cn(className)}
+      variant="subtitle1"
+      sx={{ fontWeight: 600, lineHeight: 1.3 }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Typography
       data-slot="card-description"
-      className={cn('text-sm text-muted-foreground', className)}
-      {...props}
+      className={cn(className)}
+      variant="body2"
+      color="text.secondary"
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
       data-slot="card-action"
-      className={cn(
-        'col-start-2 row-span-2 row-start-1 self-start justify-self-end',
-        className,
-      )}
-      {...props}
+      className={cn('col-start-2 row-span-2 row-start-1 self-start justify-self-end', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
       data-slot="card-content"
-      className={cn('px-(--card-spacing)', className)}
-      {...props}
+      className={cn('px-4 py-3', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
       data-slot="card-footer"
-      className={cn(
-        'flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)',
-        className,
-      )}
-      {...props}
+      className={cn('flex items-center gap-2 border-t px-4 py-3', className)}
+      sx={{ borderColor: 'divider' }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }

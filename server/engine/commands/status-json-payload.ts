@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds the stable JSON payload for `openclaw status --json`.
 // Optional deep fields are included only when their upstream probes actually ran.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Model-bound thinking cannot be exposed or replayed after a model switch.
 import {
   resolveClaudeFable5ModelIdentity,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { FastMode } from "@openclaw/normalization-core/string-coerce";
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 

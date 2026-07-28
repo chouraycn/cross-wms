@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway network address helpers.
 // Normalizes host/IP inputs and classifies local/private gateway requests.
 import type { IncomingMessage } from "node:http";

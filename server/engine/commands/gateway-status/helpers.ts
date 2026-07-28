@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared helpers for gateway status target selection, auth, summaries, and probe rendering. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";

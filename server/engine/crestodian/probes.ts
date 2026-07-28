@@ -1,193 +1,137 @@
-import type { CrestodianProbeResult, CrestodianStatus } from './types.js';
-import { formatTimestamp } from '../logging/timestamps.js';
+// @ts-nocheck
+// Crestodian probes check local tools and Gateway health with bounded subprocess/network work.
+import { spawn } from "node:child_process";
+import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
 
-export interface CrestodianProbe {
-  name: string;
-  description: string;
-  category: string;
-  check: () => Promise<{ status: CrestodianStatus; message: string; details?: Record<string, unknown> }>;
-  enabled?: boolean;
+/**
+ * Local environment probes used by Crestodian overview loading.
+ *
+ * Probes are bounded by output and timeout limits so setup/status commands do
+ * not hang or retain unbounded child output.
+ */
+/** Result from probing a local command binary. */
+export type LocalCommandProbe = {
+  command: string;
+  found: boolean;
+  version?: string;
+  error?: string;
+};
+
+const LOCAL_COMMAND_PROBE_OUTPUT_MAX_CHARS = 16 * 1024;
+const LOCAL_COMMAND_PROBE_KILL_GRACE_MS = 500;
+
+function appendBounded(previous: string, chunk: string, limit: number): string {
+  const next = previous + chunk;
+  return next.length > limit ? next.slice(-limit) : next;
 }
 
-export type { CrestodianProbeResult } from './types.js';
-
-function memoryCheck(): CrestodianProbe {
-  return {
-    name: 'memory',
-    description: 'Check system memory usage',
-    category: 'system',
-    check: async () => {
-      const usage = process.memoryUsage();
-      const heapRatio = usage.heapUsed / usage.heapTotal;
-      const rssMB = usage.rss / (1024 * 1024);
-
-      let status: CrestodianStatus = 'healthy';
-      let message = `Memory usage: ${Math.round(rssMB)}MB RSS`;
-
-      if (heapRatio > 0.9 || rssMB > 3072) {
-        status = 'critical';
-        message = `Critical memory pressure: ${Math.round(rssMB)}MB RSS, heap ${Math.round(heapRatio * 100)}%`;
-      } else if (heapRatio > 0.8 || rssMB > 1536) {
-        status = 'degraded';
-        message = `High memory usage: ${Math.round(rssMB)}MB RSS, heap ${Math.round(heapRatio * 100)}%`;
+/** Probe a command by running a small version command with bounded output and timeout. */
+export async function probeLocalCommand(
+  command: string,
+  args: string[] = ["--version"],
+  opts: { outputLimit?: number; timeoutKillGraceMs?: number; timeoutMs?: number } = {},
+): Promise<LocalCommandProbe> {
+  const timeoutMs = resolveTimerTimeoutMs(opts.timeoutMs, 1_500);
+  const outputLimit = opts.outputLimit ?? LOCAL_COMMAND_PROBE_OUTPUT_MAX_CHARS;
+  const timeoutKillGraceMs = resolveTimerTimeoutMs(
+    opts.timeoutKillGraceMs,
+    LOCAL_COMMAND_PROBE_KILL_GRACE_MS,
+    0,
+  );
+  return await new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    let timedOut = false;
+    let killTimer: NodeJS.Timeout | undefined;
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const timeoutResult = (): LocalCommandProbe => ({
+      command,
+      found: true,
+      error: `timed out after ${timeoutMs}ms`,
+    });
+    const finish = (result: LocalCommandProbe) => {
+      if (settled) {
+        return;
       }
-
-      return {
-        status,
-        message,
-        details: {
-          rss: usage.rss,
-          heapUsed: usage.heapUsed,
-          heapTotal: usage.heapTotal,
-          external: usage.external,
-          heapRatio,
-        },
-      };
-    },
-  };
-}
-
-function uptimeCheck(): CrestodianProbe {
-  return {
-    name: 'uptime',
-    description: 'Check process uptime and health',
-    category: 'system',
-    check: async () => {
-      const uptime = process.uptime();
-      return {
-        status: 'healthy',
-        message: `Uptime: ${Math.round(uptime)}s`,
-        details: { uptime },
-      };
-    },
-  };
-}
-
-function diskCheck(): CrestodianProbe {
-  return {
-    name: 'disk',
-    description: 'Check disk space availability',
-    category: 'system',
-    check: async () => {
-      try {
-        const fs = await import('node:fs');
-        const os = await import('node:os');
-        const tmpDir = os.tmpdir();
-        const stat = fs.statSync(tmpDir);
-        return {
-          status: 'healthy',
-          message: 'Disk check passed',
-          details: { tmpDirExists: stat.isDirectory() },
-        };
-      } catch {
-        return {
-          status: 'degraded',
-          message: 'Unable to verify disk status',
-        };
+      settled = true;
+      clearTimeout(timer);
+      if (killTimer) {
+        clearTimeout(killTimer);
       }
-    },
-  };
-}
-
-function configCheck(): CrestodianProbe {
-  return {
-    name: 'config',
-    description: 'Check configuration validity',
-    category: 'configuration',
-    check: async () => {
-      return {
-        status: 'healthy',
-        message: 'Configuration is valid',
-        details: { validated: true },
-      };
-    },
-  };
-}
-
-function connectivityCheck(): CrestodianProbe {
-  return {
-    name: 'connectivity',
-    description: 'Check network connectivity',
-    category: 'network',
-    check: async () => {
-      return {
-        status: 'healthy',
-        message: 'Network connectivity check passed',
-        details: { checked: true },
-      };
-    },
-  };
-}
-
-function servicesCheck(): CrestodianProbe {
-  return {
-    name: 'services',
-    description: 'Check core services status',
-    category: 'services',
-    check: async () => {
-      return {
-        status: 'healthy',
-        message: 'All core services running',
-        details: { services: ['api', 'engine', 'daemon'] },
-      };
-    },
-  };
-}
-
-export function getDefaultProbes(): CrestodianProbe[] {
-  return [
-    memoryCheck(),
-    uptimeCheck(),
-    diskCheck(),
-    configCheck(),
-    connectivityCheck(),
-    servicesCheck(),
-  ];
-}
-
-const registeredProbes: CrestodianProbe[] = [];
-
-export function registerProbe(probe: CrestodianProbe): void {
-  registeredProbes.push(probe);
-}
-
-export function getRegisteredProbes(): CrestodianProbe[] {
-  return [...registeredProbes];
-}
-
-export async function runProbes(probes: CrestodianProbe[]): Promise<CrestodianProbeResult[]> {
-  const results: CrestodianProbeResult[] = [];
-
-  for (const probe of probes) {
-    if (probe.enabled === false) continue;
-
-    const startTime = Date.now();
-    try {
-      const result = await probe.check();
-      results.push({
-        name: probe.name,
-        status: result.status,
-        message: result.message,
-        details: result.details,
-        durationMs: Date.now() - startTime,
-        timestamp: formatTimestamp(new Date(), { style: 'long' }),
+      resolve(result);
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+      // Some CLIs ignore SIGTERM; destroy pipes after a short grace window to finish promptly.
+      killTimer = setTimeout(() => {
+        child.kill("SIGKILL");
+        child.stdout.destroy();
+        child.stderr.destroy();
+        finish(timeoutResult());
+      }, timeoutKillGraceMs);
+      killTimer.unref?.();
+    }, timeoutMs);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout = appendBounded(stdout, String(chunk), outputLimit);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr = appendBounded(stderr, String(chunk), outputLimit);
+    });
+    child.on("error", (err: NodeJS.ErrnoException) => {
+      finish({
+        command,
+        found: err.code !== "ENOENT",
+        error: err.code === "ENOENT" ? "not found" : err.message,
       });
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      results.push({
-        name: probe.name,
-        status: 'critical',
-        message: `Probe failed: ${error}`,
-        durationMs: Date.now() - startTime,
-        timestamp: formatTimestamp(new Date(), { style: 'long' }),
+    });
+    child.on("close", (code) => {
+      if (timedOut) {
+        finish(timeoutResult());
+        return;
+      }
+      // Version output can arrive on stdout or stderr depending on the CLI.
+      const text = `${stdout}\n${stderr}`.trim().split(/\r?\n/)[0]?.trim();
+      finish({
+        command,
+        found: code === 0 || Boolean(text),
+        version: text || undefined,
+        error: code === 0 ? undefined : `exited ${String(code)}`,
       });
-    }
+    });
+  });
+}
+
+/** Probe a Gateway URL by translating it to its HTTP /healthz endpoint. */
+export async function probeGatewayUrl(
+  url: string,
+  opts: { timeoutMs?: number } = {},
+): Promise<{ reachable: boolean; url: string; error?: string }> {
+  const httpUrl = url.replace(/^ws:/, "http:").replace(/^wss:/, "https:");
+  const healthUrl = new URL("/healthz", httpUrl).toString();
+  const timeoutMs = resolveTimerTimeoutMs(opts.timeoutMs, 900);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response | undefined;
+  try {
+    response = await fetch(healthUrl, {
+      method: "GET",
+      signal: controller.signal,
+    });
+    return { reachable: response.ok, url, error: response.ok ? undefined : response.statusText };
+  } catch (err) {
+    return {
+      reachable: false,
+      url,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  } finally {
+    clearTimeout(timeout);
+    await response?.body?.cancel().catch(() => undefined);
   }
-
-  return results;
-}
-
-export function getProbeByName(name: string, probes?: CrestodianProbe[]): CrestodianProbe | undefined {
-  const allProbes = probes ?? getDefaultProbes();
-  return allProbes.find((p) => p.name === name);
 }

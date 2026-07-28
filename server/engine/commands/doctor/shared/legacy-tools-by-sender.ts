@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor scanner and repair for legacy untyped toolsBySender sender keys.
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

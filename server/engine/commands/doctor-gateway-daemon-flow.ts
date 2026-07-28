@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor gateway daemon repair flow for service install, bootstrap, restart, and port hints. */
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

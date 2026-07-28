@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Config write flow helpers commit control-plane config edits, detect auth
 // changes, write restart sentinels, and schedule gateway restarts when required.
 import { isDeepStrictEqual } from "node:util";

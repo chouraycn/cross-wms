@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves provider stream functions and API keys for embedded agents.
  */

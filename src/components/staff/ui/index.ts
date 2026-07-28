@@ -6,6 +6,8 @@ export {
 } from './accordion';
 export { Alert, AlertAction, AlertDescription, AlertTitle } from './alert';
 export { notify, type AppToastOptions } from './app-toast';
+export { OutlineActionButton } from './outline-action-button';
+export { SearchCombo } from './search-combo';
 export {
   AlertDialog,
   AlertDialogAction,

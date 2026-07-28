@@ -1,0 +1,10 @@
+{
+  "id": "device-pair",
+  "name": "device-pair",
+  "description": "device-pair extension ported from openclaw",
+  "version": "1.0.0",
+  "kind": "utility",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

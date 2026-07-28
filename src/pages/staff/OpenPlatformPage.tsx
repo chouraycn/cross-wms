@@ -18,6 +18,8 @@ import { ConfirmDialog } from '../../components/staff/ConfirmDialog.js';
 import EmployeeAvatar from '../../components/staff/EmployeeAvatar.js';
 import { Button as UIButton } from '../../components/staff/ui/button.js';
 import {
+  OutlineActionButton,
+  SearchCombo,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -25,9 +27,7 @@ import {
   SheetTitle,
 } from '../../components/staff/ui/index.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
-import {
-  OUTLINE_ACTION_BUTTON_CLASS,
-} from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
 import {
   AGENT_SCOPE_CHANGE_EVENT,
   ENTERPRISE_AGENT_STORAGE_KEY,
@@ -446,23 +446,21 @@ export default function OpenPlatformPage({
           userName={currentUser?.display_name || currentUser?.username}
           right={
             <div className="flex items-center gap-[8px]">
-              <button
+              <OutlineActionButton
                 type="button"
-                className={OUTLINE_ACTION_BUTTON_CLASS}
                 onClick={() => void loadPlatformData()}
                 disabled={loading}
               >
                 <RefreshCw className="size-[14px]" />
                 刷新
-              </button>
-              <button
+              </OutlineActionButton>
+              <OutlineActionButton
                 type="button"
-                className={OUTLINE_ACTION_BUTTON_CLASS}
                 onClick={() => navigate('/enterprise/platform')}
               >
                 <ArrowLeft className="size-[14px]" />
                 返回广场
-              </button>
+              </OutlineActionButton>
             </div>
           }
         />
@@ -549,15 +547,14 @@ export default function OpenPlatformPage({
         title="开放广场平台"
         description="浏览广场上的数字员工、知识库、技能、SOP 与工具。"
         right={
-          <button
+          <OutlineActionButton
             type="button"
-            className={OUTLINE_ACTION_BUTTON_CLASS}
             onClick={() => void loadPlatformData()}
             disabled={loading}
           >
             <RefreshCw className="size-[14px]" />
             刷新
-          </button>
+          </OutlineActionButton>
         }
       />
       <div className="mx-auto grid w-full grid-cols-1 gap-[12px] sm:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-5 xl:grid-rows-1">
@@ -762,7 +759,7 @@ export default function OpenPlatformPage({
                 </button>
               ) : null}
               <UIButton
-                className="h-[32px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                sx={staffTokens.primaryButton}
                 onClick={() => {
                   setDetailItem(null);
                   void usePlatformItem(detailItem.kind, item.id);

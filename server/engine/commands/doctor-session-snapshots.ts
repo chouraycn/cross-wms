@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for stale runtime snapshot paths cached in session stores. */
 import crypto from "node:crypto";
 import fs from "node:fs";

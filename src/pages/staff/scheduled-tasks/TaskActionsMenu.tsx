@@ -8,11 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '../../../components/staff/ui/index.js';
 import type { ScheduledTaskRead } from '../../../components/staff/types/index.js';
-
-const MENU_ITEM_CLASS =
-  'w-[110px] cursor-pointer gap-[4px] rounded-[10px] px-[12px] py-[6px] text-[12px] text-[#858b9c] focus:text-[#18181a] [&_svg]:size-[14px]';
-const MENU_ITEM_DANGER_CLASS =
-  'w-[110px] cursor-pointer gap-[4px] rounded-[10px] px-[12px] py-[6px] text-[12px] text-[#d20b0b] focus:bg-[#fce7e7] focus:text-[#d20b0b] focus:[&_svg]:text-[#d20b0b]! [&_svg]:size-[14px]';
+import { staffTokens } from '../../../components/staff/lib/staffTokens.js';
 
 export type TaskActionsMenuProps = {
   task: ScheduledTaskRead;
@@ -42,26 +38,23 @@ export function TaskActionsMenu({
       >
         <MoreHorizontal className="size-3.5" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="flex w-auto min-w-0 flex-col gap-[4px] rounded-[14px] border-0 bg-white p-[4px] shadow-[0px_0px_8px_rgba(0,0,0,0.1)] ring-0 [--accent:#F6F6F6] [--accent-foreground:#18181A]"
-      >
-        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onViewRuns(task)}>
+      <DropdownMenuContent align="end" sx={staffTokens.menuContent}>
+        <DropdownMenuItem onSelect={() => onViewRuns(task)}>
           <List />
           查看记录
         </DropdownMenuItem>
         {!isArchived && (
           <>
-            <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onEdit(task)}>
+            <DropdownMenuItem onSelect={() => onEdit(task)}>
               <Pencil />
               编辑
             </DropdownMenuItem>
-            <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onRunNow(task)}>
+            <DropdownMenuItem onSelect={() => onRunNow(task)}>
               <Play />
               立即执行
             </DropdownMenuItem>
             {!isCompleted && (
-              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onToggleStatus(task)}>
+              <DropdownMenuItem onSelect={() => onToggleStatus(task)}>
                 {task.status === 'active' ? <Pause /> : <Play />}
                 {task.status === 'active' ? '暂停' : '启用'}
               </DropdownMenuItem>
@@ -69,7 +62,6 @@ export function TaskActionsMenu({
             <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
             <DropdownMenuItem
               variant="destructive"
-              className={MENU_ITEM_DANGER_CLASS}
               onSelect={() => onDelete(task)}
             >
               <Trash2 />

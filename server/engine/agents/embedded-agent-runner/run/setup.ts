@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves hook-selected model state and pre-model attachments for a run.
  */

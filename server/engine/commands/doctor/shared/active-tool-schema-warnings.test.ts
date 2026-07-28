@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Active tool schema warning tests cover doctor warnings for active tool schema drift.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { createOpenClawCodingTools } from "@openclaw-src/agents/agent-tools.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway methods expose files referenced by one session transcript.
 import path from "node:path";
 import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";

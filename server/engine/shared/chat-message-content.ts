@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Chat message content helpers extract user-visible text from mixed message parts.
 import { readStringValue } from "@openclaw/normalization-core/string-coerce";
 

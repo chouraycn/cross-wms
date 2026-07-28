@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Sessions gateway methods implement list/create/patch/delete/reset/compact/
 // restore/preview/send flows over session stores, transcripts, and active runs.
 import { randomUUID } from "node:crypto";

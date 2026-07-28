@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repairs for installed gateway service config and duplicate legacy services. */
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";

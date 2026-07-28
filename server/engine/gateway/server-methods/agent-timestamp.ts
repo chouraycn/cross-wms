@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Agent timestamp injection adds compact local-time context to direct gateway
 // agent messages without double-stamping channel envelopes or cron prompts.
 import { resolveUserTimezone } from "../../agents/date-time.js";

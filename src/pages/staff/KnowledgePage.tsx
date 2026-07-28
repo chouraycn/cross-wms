@@ -7,7 +7,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Search,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -28,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Input,
+  OutlineActionButton,
+  SearchCombo,
   Select,
   SelectContent,
   SelectItem,
@@ -41,13 +42,9 @@ import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_DANGER_CLASS,
-  OUTLINE_ACTION_BUTTON_CLASS,
-  SEARCH_COMBO_BUTTON_CLASS,
-  SEARCH_COMBO_CLASS,
-  SEARCH_COMBO_INPUT_CLASS,
-  SELECT_TRIGGER_CLASS,
   formatDateTime,
 } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
 import {
   ENTERPRISE_AGENT_STORAGE_KEY,
   AGENT_SCOPE_CHANGE_EVENT,
@@ -816,28 +813,26 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         userName={currentUser?.display_name || currentUser?.username}
         right={
           <div className="flex items-center gap-[8px]">
-            <button
+            <OutlineActionButton
               type="button"
-              className={OUTLINE_ACTION_BUTTON_CLASS}
               onClick={() => void refresh()}
               disabled={loading}
             >
               <RefreshCw className="size-[14px]" />
               刷新
-            </button>
+            </OutlineActionButton>
             {canManageCurrentScope && effectiveAgentId ? (
-              <button
+              <OutlineActionButton
                 type="button"
-                className={OUTLINE_ACTION_BUTTON_CLASS}
                 onClick={() => setImportOpen(true)}
               >
                 <Download className="size-[14px]" />
                 导入
-              </button>
+              </OutlineActionButton>
             ) : null}
             {canManageCurrentScope ? (
               <UIButton
-                className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                sx={staffTokens.primaryButton}
                 onClick={openCreateKb}
               >
                 <Plus className="size-[14px]" />
@@ -861,27 +856,14 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           <span className="text-[12px] text-[#858b9c]">跨知识库向量检索（all-MiniLM-L6-v2）</span>
         </div>
         <div className="flex flex-wrap items-center gap-[8px]">
-          <div className={SEARCH_COMBO_CLASS}>
-            <Input
-              className={SEARCH_COMBO_INPUT_CLASS}
-              placeholder="输入问题，检索相关文档片段…"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void runKnowledgeSearch();
-              }}
-            />
-            <button
-              type="button"
-              className={SEARCH_COMBO_BUTTON_CLASS}
-              aria-label="检索"
-              onClick={() => void runKnowledgeSearch()}
-            >
-              <Search className="size-[14px]" />
-            </button>
-          </div>
+          <SearchCombo
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onSubmit={() => void runKnowledgeSearch()}
+            placeholder="输入问题，检索相关文档片段…"
+          />
           <UIButton
-            className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+            sx={staffTokens.primaryButton}
             onClick={() => void runKnowledgeSearch()}
             disabled={searchLoading}
           >
@@ -914,7 +896,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           <h3 className="text-[14px] font-medium text-[#18181a]">{listLabel}</h3>
           <div className="flex flex-wrap items-center gap-[8px]">
             <Select value={knowledgeBaseFilter} onValueChange={selectKnowledgeBase}>
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[180px]`}>
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="全部知识库" />
               </SelectTrigger>
               <SelectContent>
@@ -926,20 +908,14 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 ))}
               </SelectContent>
             </Select>
-            <div className={SEARCH_COMBO_CLASS}>
-              <Input
-                className={SEARCH_COMBO_INPUT_CLASS}
-                placeholder="搜索知识库名称 / 描述"
-                value={documentSearch}
-                onChange={(event) => setDocumentSearch(event.target.value)}
-              />
-              <button type="button" className={SEARCH_COMBO_BUTTON_CLASS} aria-label="搜索">
-                <Search className="size-[14px]" />
-              </button>
-            </div>
+            <SearchCombo
+              value={documentSearch}
+              onChange={setDocumentSearch}
+              placeholder="搜索知识库名称 / 描述"
+            />
             {canManageCurrentScope ? (
               <UIButton
-                className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+                sx={staffTokens.primaryButton}
                 onClick={() => {
                   setDocKbId(knowledgeBaseFilter !== '__all__' ? knowledgeBaseFilter : '');
                   setDocTitle('');
@@ -1060,7 +1036,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   setKnowledgeBaseDraft((prev) => ({ ...prev, status: value as 'active' | 'archived' }))
                 }
               >
-                <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="请选择状态" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1080,7 +1056,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               取消
             </UIButton>
             <UIButton
-              className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void saveKb()}
               disabled={savingKb}
             >
@@ -1118,7 +1094,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   setDocumentDraft((prev) => ({ ...prev, status: value as 'ready' | 'archived' }))
                 }
               >
-                <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="请选择状态" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1137,7 +1113,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               取消
             </UIButton>
             <UIButton
-              className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void saveDocument()}
             >
               保存
@@ -1155,7 +1131,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
             <label className="flex flex-col gap-[6px]">
               <span className="text-[12px] text-[#464c5e]">目标知识库</span>
               <Select value={docKbId} onValueChange={setDocKbId}>
-                <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="请选择知识库" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1195,7 +1171,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               取消
             </UIButton>
             <UIButton
-              className="h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={async () => {
                 const title = docTitle.trim();
                 const text = docContent.trim();
@@ -1266,7 +1242,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           <div className="flex flex-col gap-[12px] px-[24px] pb-[8px]">
             <p className="text-[12px] text-[#858b9c]">选择一个历史版本，将知识库回滚至该版本的快照。</p>
             <Select value={rollbackKbVersion} onValueChange={setRollbackKbVersion}>
-              <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-full`}>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="选择版本" />
               </SelectTrigger>
               <SelectContent>
@@ -1288,7 +1264,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               取消
             </UIButton>
             <UIButton
-              className="h-[34px] rounded-[10px] bg-[#18181a] px-[16px] text-[12px] text-white hover:bg-[#303030]"
+              sx={staffTokens.primaryButton}
               onClick={() => void confirmRollbackKb()}
               disabled={rollingBackKb || !rollbackKbVersion}
             >

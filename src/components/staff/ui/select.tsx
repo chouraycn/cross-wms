@@ -1,179 +1,147 @@
-'use client'
-
 import * as React from 'react'
-import { Select as SelectPrimitive } from 'radix-ui'
-
-import { cn } from './utils'
+import { Select as MuiSelect, MenuItem as MuiMenuItem, Divider as MuiDivider, Box } from '@mui/material'
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react'
 
-function Select({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+import { cn } from './utils'
+import { staffTokens } from '../lib/staffTokens.js'
+
+// 统一到 MUI：Select 映射为 MUI Select（context 受控）。
+// SelectContent 将其 items 注册到 context，SelectTrigger 渲染 MUI Select + renderValue 显示选中标签。
+type SelectCtxValue = {
+  value: unknown
+  setValue: (v: unknown) => void
+  items: React.ReactNode
+  setItems: (n: React.ReactNode) => void
+  placeholder: React.ReactNode
+  setPlaceholder: (p: React.ReactNode) => void
+  disabled: boolean
+}
+const SelectCtx = React.createContext<SelectCtxValue | null>(null)
+
+function renderDisplay(val: unknown, items: React.ReactNode, placeholder: React.ReactNode) {
+  if (val == null || val === '') return <span className="text-muted-foreground">{placeholder}</span>
+  const arr = React.Children.toArray(items) as React.ReactElement[]
+  const found = arr.find((it) => (it as React.ReactElement)?.props?.value === val)
+  return found ? (found.props as { children?: React.ReactNode }).children : (val as React.ReactNode)
 }
 
-function SelectGroup({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return (
-    <SelectPrimitive.Group
-      data-slot="select-group"
-      className={cn('scroll-my-1 p-1', className)}
-      {...props}
-    />
-  )
-}
-
-function SelectValue({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Value>) {
-  return <SelectPrimitive.Value data-slot="select-value" {...props} />
-}
-
-function SelectTrigger({
-  className,
-  size = 'default',
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: 'sm' | 'default'
+function Select({ value, defaultValue, onValueChange, disabled, children }: {
+  value?: string
+  defaultValue?: string
+  onValueChange?: (v: string) => void
+  disabled?: boolean
+  children?: React.ReactNode
 }) {
+  const [internal, setInternal] = React.useState<string | undefined>(defaultValue)
+  const current = value !== undefined ? value : internal
+  const setValue = React.useCallback(
+    (v: unknown) => {
+      if (value === undefined) setInternal(v as string)
+      onValueChange?.(v as string)
+    },
+    [value, onValueChange],
+  )
+  const [items, setItems] = React.useState<React.ReactNode>(null)
+  const [placeholder, setPlaceholder] = React.useState<React.ReactNode>(null)
   return (
-    <SelectPrimitive.Trigger
-      data-slot="select-trigger"
-      data-size={size}
-      className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
-      {...props}
-    >
+    <SelectCtx.Provider value={{ value: current, setValue, items, setItems, placeholder, setPlaceholder, disabled: !!disabled }}>
       {children}
-      <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
-      </SelectPrimitive.Icon>
-    </SelectPrimitive.Trigger>
+    </SelectCtx.Provider>
   )
 }
 
-function SelectContent({
-  className,
-  children,
-  position = 'item-aligned',
-  align = 'center',
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+function SelectGroup({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        data-slot="select-content"
-        data-align-trigger={position === 'item-aligned'}
-        className={cn('relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95', position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1', className)}
-        position={position}
-        align={align}
-        {...props}
+    <Box component="div" data-slot="select-group" className={cn('scroll-my-1 p-1', className)} {...(props as Record<string, unknown>)}>
+      {children}
+    </Box>
+  )
+}
+
+function SelectValue({ placeholder, children }: { placeholder?: React.ReactNode; children?: React.ReactNode }) {
+  const ctx = React.useContext(SelectCtx)
+  React.useEffect(() => {
+    ctx?.setPlaceholder(placeholder ?? children ?? null)
+  }, [ctx, placeholder, children])
+  return null
+}
+
+function SelectTrigger({ className, size = 'default', children, ...props }: { size?: 'sm' | 'default' } & React.ComponentProps<'button'>) {
+  const ctx = React.useContext(SelectCtx)
+  if (!ctx) return null
+  return (
+    <Box className="w-fit">
+      <MuiSelect
+        value={ctx.value ?? ''}
+        onChange={(e) => ctx.setValue(e.target.value)}
+        displayEmpty
+        disabled={ctx.disabled}
+        IconComponent={ChevronDownIcon}
+        size={size === 'sm' ? 'small' : 'medium'}
+        data-slot="select-trigger"
+        data-size={size}
+        sx={staffTokens.selectTrigger}
+        className={className}
+        renderValue={(v) => renderDisplay(v, ctx.items, ctx.placeholder)}
+        {...(props as Record<string, unknown>)}
       >
-        <SelectScrollUpButton />
-        <SelectPrimitive.Viewport
-          data-position={position}
-          className={cn(
-            'data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)',
-            position === 'popper' && '',
-          )}
-        >
-          {children}
-        </SelectPrimitive.Viewport>
-        <SelectScrollDownButton />
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
+        {ctx.items}
+      </MuiSelect>
+      <Box sx={{ display: 'none' }}>{children}</Box>
+    </Box>
   )
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Label>) {
+function SelectContent({ children, ...props }: React.ComponentProps<'div'>) {
+  const ctx = React.useContext(SelectCtx)
+  React.useEffect(() => {
+    ctx?.setItems(children)
+    return () => ctx?.setItems(null)
+  }, [ctx, children])
+  void props
+  return null
+}
+
+function SelectLabel({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <SelectPrimitive.Label
-      data-slot="select-label"
-      className={cn('px-1.5 py-1 text-xs text-muted-foreground', className)}
-      {...props}
-    />
+    <MuiMenuItem disabled data-slot="select-label" className={cn('px-1.5 py-1 text-xs text-muted-foreground', className)} {...(props as Record<string, unknown>)}>
+      {children}
+    </MuiMenuItem>
   )
 }
 
-function SelectItem({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+function SelectItem({ className, children, value, ...props }: { value: string } & React.ComponentProps<'div'>) {
+  const ctx = React.useContext(SelectCtx)
+  const selected = ctx?.value === value
   return (
-    <SelectPrimitive.Item
+    <MuiMenuItem
+      value={value}
+      selected={!!selected}
       data-slot="select-item"
-      className={cn(
-        'relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2',
-        className,
-      )}
-      {...props}
+      className={cn('relative flex w-full items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm', className)}
+      {...(props as Record<string, unknown>)}
     >
-      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
-        <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="pointer-events-none" />
-        </SelectPrimitive.ItemIndicator>
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="select-item-indicator">
+        {selected ? <CheckIcon className="pointer-events-none" /> : null}
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    </SelectPrimitive.Item>
+      {children}
+    </MuiMenuItem>
   )
 }
 
-function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn('pointer-events-none -mx-1 my-1 h-px bg-border', className)}
-      {...props}
-    />
-  )
+function SelectSeparator({ className, ...props }: React.ComponentProps<'div'>) {
+  return <MuiDivider data-slot="select-separator" className={cn(className)} {...(props as Record<string, unknown>)} />
 }
 
-function SelectScrollUpButton({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
-  return (
-    <SelectPrimitive.ScrollUpButton
-      data-slot="select-scroll-up-button"
-      className={cn(
-        'z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*=size-])]:size-4',
-        className,
-      )}
-      {...props}
-    >
-      <ChevronUpIcon />
-    </SelectPrimitive.ScrollUpButton>
-  )
+function SelectScrollUpButton({ className, ...props }: React.ComponentProps<'button'>) {
+  void className
+  void props
+  return null
 }
-
-function SelectScrollDownButton({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
-  return (
-    <SelectPrimitive.ScrollDownButton
-      data-slot="select-scroll-down-button"
-      className={cn(
-        'z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*=size-])]:size-4',
-        className,
-      )}
-      {...props}
-    >
-      <ChevronDownIcon />
-    </SelectPrimitive.ScrollDownButton>
-  )
+function SelectScrollDownButton({ className, ...props }: React.ComponentProps<'button'>) {
+  void className
+  void props
+  return null
 }
 
 export {

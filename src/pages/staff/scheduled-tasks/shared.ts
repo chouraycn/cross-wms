@@ -1,3 +1,5 @@
+import type { SxProps } from '@mui/material/styles';
+
 import type { UnderlineTabItem } from '../../../components/staff/ui/index.js';
 import { formatClientDateTime, parseBackendDateTime } from '../../../components/staff/lib/timezone.js';
 import type { ScheduledTaskRead, ScheduledTaskRunRead } from '../../../components/staff/types/index.js';
@@ -79,12 +81,12 @@ export function matchesRunFilter(row: ScheduledTaskRunRead, filter: RunListFilte
 }
 
 export type BadgeTone = 'blue' | 'orange' | 'green' | 'red' | 'gray';
-export const BADGE_TONE_CLASS: Record<BadgeTone, string> = {
-  blue: 'bg-[#e8f0ff] text-[#1a71ff]',
-  orange: 'bg-[#fff2e5] text-[#ff7f00]',
-  green: 'bg-[#e9f7ef] text-[#2cb360]',
-  red: 'bg-[#fce7e7] text-[#d20b0b]',
-  gray: 'bg-[#f2f3f7] text-[#858b9c]',
+export const BADGE_TONE_SX: Record<BadgeTone, SxProps> = {
+  blue: { bgcolor: '#e8f0ff', color: '#1a71ff' },
+  orange: { bgcolor: '#fff2e5', color: '#ff7f00' },
+  green: { bgcolor: '#e9f7ef', color: '#2cb360' },
+  red: { bgcolor: '#fce7e7', color: '#d20b0b' },
+  gray: { bgcolor: '#f2f3f7', color: '#858b9c' },
 };
 export const TASK_STATUS_BADGE: Record<string, { tone: BadgeTone; text: string }> = {
   active: { tone: 'blue', text: '启用' },

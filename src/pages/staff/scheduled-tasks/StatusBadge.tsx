@@ -1,19 +1,42 @@
 import type { ReactNode } from 'react';
 
-import { cn } from '../../../components/staff/lib/utils.js';
+import { Box } from '@mui/material';
+import type { SxProps } from '@mui/material/styles';
 
-import { BADGE_TONE_CLASS, RUN_STATUS_BADGE, TASK_STATUS_BADGE, type BadgeTone } from './shared.js';
+import { BADGE_TONE_SX, RUN_STATUS_BADGE, TASK_STATUS_BADGE, type BadgeTone } from './shared.js';
 
-export function StatusBadge({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
+export function StatusBadge({
+  tone,
+  children,
+  className,
+  sx,
+}: {
+  tone: BadgeTone;
+  children: ReactNode;
+  className?: string;
+  sx?: SxProps;
+}) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-[12px] py-[4px] text-[10px] leading-none whitespace-nowrap capitalize',
-        BADGE_TONE_CLASS[tone],
-      )}
+    <Box
+      className={className}
+      sx={[
+        {
+          display: 'inline-flex',
+          alignItems: 'center',
+          borderRadius: '9999px',
+          px: '12px',
+          py: '4px',
+          fontSize: 10,
+          lineHeight: 0,
+          textTransform: 'capitalize',
+          whiteSpace: 'nowrap',
+        },
+        BADGE_TONE_SX[tone],
+        ...(sx ? [sx] : []),
+      ] as SxProps}
     >
       {children}
-    </span>
+    </Box>
   );
 }
 

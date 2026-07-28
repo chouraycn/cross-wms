@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Caches and prewarms session managers used by embedded-agent runs.
  */

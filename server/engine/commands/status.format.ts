@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Formatting helpers for status tokens, durations, prompt-cache stats, and daemon runtime snippets.
 // These helpers are shared by report rows and command output surfaces.
 

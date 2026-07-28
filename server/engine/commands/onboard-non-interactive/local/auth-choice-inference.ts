@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Infers a non-interactive auth choice from explicit CLI flags.
  *

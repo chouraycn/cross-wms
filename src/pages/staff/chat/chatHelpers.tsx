@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Box } from '@mui/material';
 
 import CodeBlock from '../../../components/staff/CodeBlock.js';
 import { ApiError } from '../../../components/staff/api/client.js';
@@ -14,11 +15,7 @@ import type {
   UIConfigRead,
 } from '../../../components/staff/types/index.js';
 
-import {
-  CHAT_MARKDOWN_CLASS,
-  CHAT_MD_TABLE_CLASS,
-  CHAT_MD_TABLE_SCROLL_CLASS,
-} from './chatPageStyles.js';
+import { chatTokens } from './chatTokens.js';
 import type {
   ComposerAttachment,
   CotTraceIconName,
@@ -310,8 +307,8 @@ function renderMarkdownTable(lines: string[], startIndex: number, key: string): 
   return {
     nextIndex: index,
     node: (
-      <div key={key} className={CHAT_MD_TABLE_SCROLL_CLASS}>
-        <table className={CHAT_MD_TABLE_CLASS}>
+      <Box key={key} sx={chatTokens.mdTableScroll}>
+        <Box component="table" sx={chatTokens.mdTable}>
           <thead>
             <tr>
               {Array.from({ length: columnCount }, (_, cellIndex) => (
@@ -326,8 +323,8 @@ function renderMarkdownTable(lines: string[], startIndex: number, key: string): 
               <tr key={`${key}-row-${rowIndex}`}>{renderCells(row, `${key}-row-${rowIndex}`)}</tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </Box>
+      </Box>
     ),
   };
 }
@@ -469,7 +466,7 @@ export function MarkdownMessage({
   content: string;
   preserveLineBreaks?: boolean;
 }) {
-  return <div className={CHAT_MARKDOWN_CLASS}>{renderMarkdownBlocks(content, preserveLineBreaks)}</div>;
+  return <Box sx={chatTokens.markdown}>{renderMarkdownBlocks(content, preserveLineBreaks)}</Box>;
 }
 
 export function traceSummaryIconName(_summary: { state: TraceLine['state'] }): CotTraceIconName {

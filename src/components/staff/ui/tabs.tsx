@@ -1,25 +1,17 @@
-'use client'
-
 import * as React from 'react'
+import { Box, type SxProps } from '@mui/material'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { Tabs as TabsPrimitive } from 'radix-ui'
 
 import { cn } from './utils'
 
-function Tabs({
-  className,
-  orientation = 'horizontal',
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
-  return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      data-orientation={orientation}
-      className={cn('group/tabs flex gap-2 data-horizontal:flex-col', className)}
-      {...props}
-    />
-  )
-}
+// 统一到 MUI 设计系统的 Tabs 实现。
+// 保留 Radix 的 API 语义（role=tablist/tab/tabpanel、data-state、context 受控），
+// 颜色/间距路由到 MUI 主题 token；active 视觉交由 data-state + 调用方 className 控制。
+type TabsContextValue = { value?: string; setValue: (v: string) => void }
+const TabsContext = React.createContext<TabsContextValue>({
+  value: undefined,
+  setValue: () => {},
+})
 
 const tabsListVariants = cva(
   'group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none',
@@ -36,51 +28,131 @@ const tabsListVariants = cva(
   },
 )
 
+function Tabs({
+  className,
+  orientation = 'horizontal',
+  value: controlledValue,
+  defaultValue,
+  onValueChange,
+  children,
+  ...props
+}: {
+  className?: string
+  orientation?: 'horizontal' | 'vertical'
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+  children?: React.ReactNode
+} & Omit<React.ComponentProps<'div'>, 'value' | 'defaultValue' | 'onChange'>) {
+  const [internal, setInternal] = React.useState<string | undefined>(defaultValue)
+  const value = controlledValue !== undefined ? controlledValue : internal
+  const setValue = React.useCallback(
+    (v: string) => {
+      if (controlledValue === undefined) setInternal(v)
+      onValueChange?.(v)
+    },
+    [controlledValue, onValueChange],
+  )
+  return (
+    <TabsContext.Provider value={{ value, setValue }}>
+      <Box
+        data-slot="tabs"
+        data-orientation={orientation}
+        className={cn('group/tabs flex gap-2', orientation === 'horizontal' ? 'flex-col' : 'flex-row', className)}
+        {...(props as Record<string, unknown>)}
+      >
+        {children}
+      </Box>
+    </TabsContext.Provider>
+  )
+}
+
 function TabsList({
   className,
   variant = 'default',
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
+}: React.ComponentProps<'div'> & VariantProps<typeof tabsListVariants>) {
   return (
-    <TabsPrimitive.List
+    <Box
+      role="tablist"
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
-      {...props}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 2,
+        p: '3px',
+        gap: 0.5,
+        bgcolor: variant === 'default' ? 'action.hover' : 'transparent',
+      }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
 function TabsTrigger({
   className,
+  value,
+  disabled,
+  onClick,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<'button'> & { value: string }) {
+  const { value: current, setValue } = React.useContext(TabsContext)
+  const active = current === value
   return (
-    <TabsPrimitive.Trigger
+    <Box
+      component="button"
+      type="button"
+      role="tab"
+      aria-selected={active}
+      disabled={disabled}
       data-slot="tabs-trigger"
-      className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        'group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent',
-        'data-active:bg-background data-active:text-foreground',
-        'after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100',
-        className,
-      )}
-      {...props}
-    />
+      data-state={active ? 'active' : 'inactive'}
+      onClick={(e) => {
+        onClick?.(e as React.MouseEvent<HTMLButtonElement>)
+        if (!disabled) setValue(value)
+      }}
+      className={cn(className)}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        border: 'none',
+        cursor: 'pointer',
+        bgcolor: 'transparent',
+        color: active ? 'text.primary' : 'text.secondary',
+        fontWeight: 500,
+        px: 1.5,
+        py: 0.5,
+        borderRadius: 1,
+        transition: 'background-color 0.2s, color 0.2s',
+        '&[data-state=active]': { boxShadow: 1 },
+        '&:disabled': { opacity: 0.5, cursor: 'default' },
+        '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </Box>
   )
 }
 
-function TabsContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+function TabsContent({ className, value, children, ...props }: React.ComponentProps<'div'> & { value: string }) {
+  const { value: current } = React.useContext(TabsContext)
+  const active = current === value
   return (
-    <TabsPrimitive.Content
+    <Box
+      role="tabpanel"
       data-slot="tabs-content"
+      hidden={!active}
       className={cn('flex-1 text-sm outline-none', className)}
-      {...props}
-    />
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </Box>
   )
 }
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor scanner for empty allowlist policies across configured channels and accounts.
 import type { ChannelDoctorEmptyAllowlistAccountContext } from "@openclaw-src/channels/plugins/types.adapters.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

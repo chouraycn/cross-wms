@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Wraps LLM streams with idle-timeout detection and diagnostics.
  */

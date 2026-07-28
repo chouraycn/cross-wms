@@ -1,3 +1,5 @@
+import { Box, Typography } from '@mui/material';
+
 import { Button } from './ui/index.js';
 import StaffdeckIcon from './StaffdeckIcon.js';
 
@@ -14,28 +16,100 @@ export default function EmptyEmployeeState({
   onBrowsePlatform,
 }: EmptyEmployeeStateProps) {
   return (
-    <div className="min-h-full w-full min-w-0 max-w-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]">
-      <div className="mx-auto flex min-h-[calc(100vh-220px)] max-w-[560px] flex-col items-center justify-center text-center">
-        <div className="relative flex size-[96px] items-center justify-center rounded-[28px] border border-[#e7dfd3] bg-white shadow-[0_12px_30px_rgba(37,32,24,0.08)]">
+    <Box
+      sx={{
+        minHeight: '100%',
+        width: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        px: '48px',
+        pt: '32px',
+        pb: '43px',
+        '@media (max-width:900px)': { px: '16px' },
+      }}
+    >
+      <Box
+        sx={{
+          mx: 'auto',
+          display: 'flex',
+          minHeight: 'calc(100vh - 220px)',
+          maxWidth: 560,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            display: 'flex',
+            width: 96,
+            height: 96,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '28px',
+            border: '1px solid #e7dfd3',
+            bgcolor: '#fff',
+            boxShadow: '0 12px 30px rgba(37,32,24,0.08)',
+          }}
+        >
           <StaffdeckIcon name="user" size={40} className="text-[#858b9c]" />
-          <span className="absolute bottom-[-8px] right-[-8px] flex size-[34px] items-center justify-center rounded-full bg-[#29282d] text-white shadow-[0_6px_16px_rgba(0,0,0,0.22)]">
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: -8,
+              right: -8,
+              display: 'flex',
+              width: 34,
+              height: 34,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              bgcolor: '#29282d',
+              color: '#fff',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.22)',
+            }}
+          >
             <StaffdeckIcon name="plus" size={18} className="text-white" />
-          </span>
-        </div>
+          </Box>
+        </Box>
 
-        <h2 className="mt-[24px] text-[22px] font-semibold leading-tight text-[#18181a]">
+        <Typography sx={{ mt: '24px', fontSize: 22, fontWeight: 600, lineHeight: 1.2, color: '#18181a' }}>
           还没有数字员工
-        </h2>
-        <p className="mt-[10px] text-[14px] leading-[22px] text-[#757f9c]">
+        </Typography>
+        <Typography sx={{ mt: '10px', fontSize: 14, lineHeight: '22px', color: '#757f9c' }}>
           {isAdmin
             ? '创建你的第一位数字员工，为它配置知识库、技能与工具，即可开始接管对话与任务。'
             : '当前还没有可管理的数字员工，创建一位或从开放广场复制已发布的配置作为起点。'}
-        </p>
+        </Typography>
 
-        <div className="mt-[28px] flex flex-wrap items-center justify-center gap-[12px]">
+        <Box
+          sx={{
+            mt: '28px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+          }}
+        >
           <Button
             onClick={onCreate}
-            className="inline-flex h-[42px] items-center gap-[8px] rounded-[14px] bg-[#29282d] px-[22px] text-[14px] font-medium text-white hover:bg-[#3a3940]"
+            sx={{
+              height: 42,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              borderRadius: '14px',
+              bgcolor: '#29282d',
+              px: '22px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#fff',
+              '&:hover': { bgcolor: '#3a3940' },
+            }}
           >
             <StaffdeckIcon name="plus" size={16} className="text-white" />
             新建数字员工
@@ -43,13 +117,26 @@ export default function EmptyEmployeeState({
           <Button
             variant="outline"
             onClick={onBrowsePlatform}
-            className="inline-flex h-[42px] items-center gap-[8px] rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-white px-[22px] text-[14px] font-normal text-[#464c5e] hover:bg-[#f6f6f6] hover:text-[#464c5e]"
+            sx={{
+              height: 42,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              borderRadius: '14px',
+              border: '0.5px solid #e3e7f1',
+              bgcolor: '#fff',
+              px: '22px',
+              fontSize: 14,
+              fontWeight: 400,
+              color: '#464c5e',
+              '&:hover': { bgcolor: '#f6f6f6', color: '#464c5e' },
+            }}
           >
             <StaffdeckIcon name="globe" size={16} />
             浏览开放广场
           </Button>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

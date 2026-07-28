@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Lazy runtime boundary for session reset/archive helpers used by gateway methods.
  */

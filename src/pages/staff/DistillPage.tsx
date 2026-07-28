@@ -34,9 +34,6 @@ import {
   ENTERPRISE_AGENT_STORAGE_KEY,
 } from '../../components/staff/lib/agent-scope-storage.js';
 import {
-  SELECT_TRIGGER_CLASS,
-} from '../../components/staff/lib/enterprise-ui.js';
-import {
   CHAT_ACTIONS_CLASS,
   CHAT_ACTIONS_GROUP_CLASS,
   CHAT_BUBBLE_ASSISTANT_CLASS,
@@ -420,7 +417,7 @@ export default function DistillPage({
 
       <div className={DISTILL_ACTIONS_CLASS}>
         <Select value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-          <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[140px]`}>
+          <SelectTrigger className="w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -435,7 +432,7 @@ export default function DistillPage({
             window.localStorage.setItem(`${DISTILL_REWRITE_MODEL_STORAGE_KEY}:${TENANT_ID}`, value);
           }}
         >
-          <SelectTrigger className={`${SELECT_TRIGGER_CLASS} w-[200px]`}>
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
           <SelectContent>

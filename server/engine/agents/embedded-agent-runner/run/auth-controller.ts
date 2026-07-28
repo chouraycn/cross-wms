@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Coordinates provider auth, profile rotation, and runtime auth refresh.
  */

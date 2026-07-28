@@ -1,0 +1,10 @@
+{
+  "id": "open-prose",
+  "name": "open-prose",
+  "description": "open-prose extension ported from openclaw",
+  "version": "1.0.0",
+  "kind": "utility",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

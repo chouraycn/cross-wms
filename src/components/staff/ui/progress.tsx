@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Progress as ProgressPrimitive } from 'radix-ui'
+import { LinearProgress } from '@mui/material'
 
 import { cn } from './utils'
 
@@ -8,22 +8,19 @@ function Progress({
   indicatorClassName,
   value,
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root> & { indicatorClassName?: string }) {
+}: React.ComponentProps<'div'> & {
+  indicatorClassName?: string
+  value?: number
+}) {
   return (
-    <ProgressPrimitive.Root
+    <LinearProgress
       data-slot="progress"
-      className={cn(
-        'relative h-2 w-full overflow-hidden rounded-full bg-primary/20',
-        className,
-      )}
-      {...props}
-    >
-      <ProgressPrimitive.Indicator
-        data-slot="progress-indicator"
-        className={cn('h-full w-full flex-1 bg-primary transition-all', indicatorClassName)}
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-      />
-    </ProgressPrimitive.Root>
+      variant="determinate"
+      value={value ?? 0}
+      className={cn(className)}
+      sx={{ borderRadius: 999, ...(indicatorClassName ? null : {}) }}
+      {...(props as Record<string, unknown>)}
+    />
   )
 }
 

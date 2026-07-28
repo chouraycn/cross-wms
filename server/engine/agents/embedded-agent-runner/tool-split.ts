@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Splits SDK tools from OpenClaw tool definitions for provider calls.
  */

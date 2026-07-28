@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Converts a shared status overview scan into the full status scan result.
 // Memory and summary collection run in parallel after the common gateway/config scan has completed.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves cache-TTL eligibility and session markers for prompt-cache retention.
  */

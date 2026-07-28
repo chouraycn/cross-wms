@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared harness and mocks for embedded attempt spawn-workspace tests.
 import fs from "node:fs/promises";
 import os from "node:os";

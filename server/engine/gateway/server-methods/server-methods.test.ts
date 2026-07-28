@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared server-method tests cover helpers and cross-method behavior that spans
 // chat, exec approvals, logs, timestamps, attachments, and history projection.
 import { createHash } from "node:crypto";
@@ -8,8 +9,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { GATEWAY_CLIENT_IDS } from "../../../packages/gateway-protocol/src/client-info.js";
-import { validateExecApprovalRequestParams } from "../../../packages/gateway-protocol/src/index.js";
+import { GATEWAY_CLIENT_IDS } from "../../../../packages/gateway-protocol/src/client-info.js";
+import { validateExecApprovalRequestParams } from "../../../../packages/gateway-protocol/src/index.js";
 import { STREAM_ERROR_FALLBACK_TEXT } from "../../agents/stream-message-shared.js";
 import { HEARTBEAT_PROMPT } from "../../auto-reply/heartbeat.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";

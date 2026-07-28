@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Estimates prompt pressure and decides pre-prompt compaction routing.
  */

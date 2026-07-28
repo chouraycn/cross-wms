@@ -1,70 +1,142 @@
-import type { CrestodianAssistantPlan, CrestodianOverview, CrestodianOperationType } from './types.js';
+// @ts-nocheck
+// Crestodian assistant prompts constrain fuzzy requests to one validated command.
+import type { CrestodianOverview } from "./overview.js";
 
-export const CRESTODIAN_ASSISTANT_MAX_TOKENS = 500;
-export const CRESTODIAN_ASSISTANT_TIMEOUT_MS = 15000;
+/**
+ * Prompt construction and response parsing for Crestodian assistant planning.
+ *
+ * The assistant is constrained to return one safe Crestodian command as JSON;
+ * parsing stays deliberately narrow so free-form model text does not execute.
+ */
+/** Timeout for one assistant planner call. */
+export const CRESTODIAN_ASSISTANT_TIMEOUT_MS = 10_000;
+/** Maximum assistant planner response budget. */
+export const CRESTODIAN_ASSISTANT_MAX_TOKENS = 512;
 
-export const CRESTODIAN_ASSISTANT_SYSTEM_PROMPT = `You are Crestodian, a system guardian and diagnostic assistant.
-Your job is to analyze system health and recommend appropriate operations.
+/** System prompt that limits the assistant to Crestodian's command vocabulary. */
+export const CRESTODIAN_ASSISTANT_SYSTEM_PROMPT = [
+  "You are Crestodian, OpenClaw's ring-zero setup helper.",
+  "Turn the user's request into exactly one safe OpenClaw Crestodian command.",
+  "Return only compact JSON with keys reply and command.",
+  "Do not invent commands. Do not claim a write was applied.",
+  "Do not use tools, shell commands, file edits, or network lookups; plan only from the supplied overview.",
+  "Use the provided OpenClaw docs/source references when the user's request needs behavior, config, or architecture details.",
+  "If local source is available, prefer inspecting it. Otherwise point to GitHub and strongly recommend reviewing source when docs are not enough.",
+  "Allowed commands:",
+  "- setup",
+  "- status",
+  "- health",
+  "- doctor",
+  "- doctor fix",
+  "- gateway status",
+  "- restart gateway",
+  "- start gateway",
+  "- stop gateway",
+  "- agents",
+  "- models",
+  "- plugins list",
+  "- plugins search <query>",
+  "- plugin install <npm-or-clawhub-spec>",
+  "- plugin uninstall <id>",
+  "- audit",
+  "- validate config",
+  "- set default model <provider/model>",
+  "- config set <path> <value>",
+  "- config set-ref <path> env <ENV_VAR>",
+  "- create agent <id> workspace <path> model <provider/model>",
+  "- talk to <id> agent",
+  "- talk to agent",
+  "If unsure, choose overview.",
+].join("\n");
 
-Available operations:
-- inspect: Check system status and health
-- repair: Fix identified issues
-- restart: Restart services
-- reset: Reset to default state
-- backup: Create data backup
-- restore: Restore from backup
-- cleanup: Remove stale data
-- migrate: Migrate data
-- validate: Validate configuration
-- diagnose: Run diagnostic tests
+/** Parsed assistant plan before it is re-validated as a Crestodian operation. */
+export type CrestodianAssistantPlan = {
+  command: string;
+  reply?: string;
+  modelLabel?: string;
+};
 
-Always respond with a JSON object containing:
-{
-  "operation": "<operation-type>",
-  "target": "<optional-target>",
-  "reason": "<reason-for-operation>",
-  "confidence": 0.0-1.0,
-  "steps": ["step1", "step2"],
-  "risks": ["risk1", "risk2"]
-}`;
-
+/** Build the overview-grounded user prompt supplied to assistant planners. */
 export function buildCrestodianAssistantUserPrompt(params: {
   input: string;
   overview: CrestodianOverview;
 }): string {
-  const { input, overview } = params;
-  return `System Status:
-- Overall Status: ${overview.status}
-- Uptime: ${Math.round(overview.uptimeMs / 1000)}s
-- Healthy Probes: ${overview.summary.healthy}/${overview.summary.total}
-- Degraded Probes: ${overview.summary.degraded}/${overview.summary.total}
-- Critical Probes: ${overview.summary.critical}/${overview.summary.total}
-- Active Rescues: ${overview.activeRescues}
-
-User Request: ${input}
-
-What operation should be performed? Respond with JSON only.`;
+  const agents = params.overview.agents
+    .map((agent) => {
+      const fields = [
+        `id=${agent.id}`,
+        agent.name ? `name=${agent.name}` : undefined,
+        agent.workspace ? `workspace=${agent.workspace}` : undefined,
+        agent.model ? `model=${agent.model}` : undefined,
+        agent.isDefault ? "default=true" : undefined,
+      ].filter(Boolean);
+      return `- ${fields.join(", ")}`;
+    })
+    .join("\n");
+  return [
+    `User request: ${params.input}`,
+    "",
+    `Default agent: ${params.overview.defaultAgentId}`,
+    `Default model: ${params.overview.defaultModel ?? "not configured"}`,
+    `Config valid: ${params.overview.config.valid}`,
+    `Gateway reachable: ${params.overview.gateway.reachable}`,
+    `Codex binary: ${params.overview.tools.codex.found ? "found" : "not found"}`,
+    `Claude Code CLI: ${params.overview.tools.claude.found ? "found" : "not found"}`,
+    `OpenAI API key: ${params.overview.tools.apiKeys.openai ? "found" : "not found"}`,
+    `Anthropic API key: ${params.overview.tools.apiKeys.anthropic ? "found" : "not found"}`,
+    `OpenClaw docs: ${params.overview.references.docsPath ?? params.overview.references.docsUrl}`,
+    `OpenClaw source: ${
+      params.overview.references.sourcePath ?? params.overview.references.sourceUrl
+    }`,
+    params.overview.references.sourcePath
+      ? "Source mode: local git checkout; inspect source directly when docs are insufficient."
+      : "Source mode: package/install; use GitHub source when docs are insufficient.",
+    "",
+    "Agents:",
+    agents || "- none",
+  ].join("\n");
 }
 
-export function parseCrestodianAssistantPlanText(text: string): CrestodianAssistantPlan | null {
+/** Parse compact assistant JSON while ignoring surrounding explanatory text. */
+export function parseCrestodianAssistantPlanText(
+  rawText: string | undefined,
+): CrestodianAssistantPlan | null {
+  const text = rawText?.trim();
+  if (!text) {
+    return null;
+  }
+  // Model output may wrap JSON in prose; extraction stays narrow and validation happens after.
+  const jsonText = extractFirstJsonObject(text);
+  if (!jsonText) {
+    return null;
+  }
+  let parsed: unknown;
   try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return null;
-    }
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (!parsed.operation || typeof parsed.operation !== 'string') {
-      return null;
-    }
-    return {
-      operation: parsed.operation as CrestodianOperationType,
-      target: parsed.target,
-      reason: parsed.reason ?? '',
-      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
-      steps: Array.isArray(parsed.steps) ? parsed.steps : [],
-      risks: Array.isArray(parsed.risks) ? parsed.risks : [],
-    };
+    parsed = JSON.parse(jsonText);
   } catch {
     return null;
   }
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+  const record = parsed as Record<string, unknown>;
+  const command = typeof record.command === "string" ? record.command.trim() : "";
+  if (!command) {
+    return null;
+  }
+  const reply = typeof record.reply === "string" ? record.reply.trim() : undefined;
+  return {
+    command,
+    ...(reply ? { reply } : {}),
+  };
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  // Planner output must be JSON, but this tolerates model wrappers before re-validating fields.
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) {
+    return null;
+  }
+  return text.slice(start, end + 1);
 }

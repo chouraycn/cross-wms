@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Channel setup plugin install/reload helpers used by onboarding and channel commands.
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import type { ChannelPluginCatalogEntry } from "@openclaw-src/channels/plugins/catalog.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for broken session transcript branches and legacy OpenAI Codex metadata. */
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";

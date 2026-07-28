@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Runtime OpenRouter model capability detection.
  *

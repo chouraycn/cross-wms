@@ -25,7 +25,7 @@ function xmlEscapeAttr(value: string): string {
 }
 
 function escapeFileBlockContent(value: string): string {
-  return value.replace(/<\s*\/\s*file\s*>/gi, "&lt;/file&gt;").replace(/<\s*file\b/gi, "&lt;file");
+  return value.replace(/<\s*\/\s*file\s*>/gi, "</file>").replace(/<\s*file\b/gi, "<file");
 }
 
 // openclaw's sanitizeUntrustedFileName(input, fallback) returns the sanitized

@@ -1,0 +1,275 @@
+title: CrossWMS 通道安装与消息发送
+
+# 验证 CrossWMS 通道（channels）的完整生命周期：
+#   1. 安装（install）
+#   2. 启用（enable）
+#   3. 发送消息（send message）
+#   4. 禁用（disable）
+#   5. 卸载（uninstall）
+#
+# CrossWMS 通道（channel）用于在 IM / 短信 / 邮件 / Webhook 等外部系统中发送 WMS
+# 业务事件（出入库告警、库龄预警、调拨通知）。每个通道有：
+#   - installStatus: pending / installed / failed
+#   - enabled: bool
+#   - channelType: feishu | wecom | sms | email | webhook
+#   - 业务配置（如飞书的 appId / appSecret，企微的 corpId / agentId）
+#
+# 与 OpenClaw channels/ 主题对齐：消息流、回调路由、enable/disable 行为一致。
+# 业务差异：WMS 通道只用于"发送业务事件"，不接收用户主动对话。
+
+scenario:
+  id: channels-install-and-message
+  surface: channel-install
+  coverage:
+    primary:
+      - channels.install
+      - channels.message-send
+    secondary:
+      - channels.enable-disable
+  objective: 验证 CrossWMS 通道的安装、启用、消息发送、禁用、卸载流程，并保证业务事件能在启用状态下投递，禁用后被丢弃。
+  successCriteria:
+    - 安装飞书通道返回 installed 状态并写入持久化配置。
+    - 启用后 `send()` 能成功投递测试消息，且 `delivered=true`。
+    - 禁用后 `send()` 立即返回 `skipped=disabled`，不产生网络请求。
+    - 卸载后 `get` 返回 404。
+    - 多个通道并发发送互不干扰。
+  docsRefs:
+    - docs/channels/install.md
+    - docs/channels/message-send.md
+    - docs/wms/notification.md
+  codeRefs:
+    - server/routes/channels.ts
+    - server/dao/plugins.ts
+    - server/engine/events.ts
+    - extensions/feishu/api.ts
+    - extensions/qqbot/api.ts
+  execution:
+    kind: flow
+    summary: 安装飞书通道 → 启用 → 发送 WMS 业务事件 → 禁用 → 确认丢弃 → 卸载 → 确认 404。同时验证企微通道并存互不干扰。
+    config:
+      requiredChannelDriver: qa-channel
+      resetDurableState: true
+      feishuChannelId: "feishu-${randomUUID().slice(0, 8)}"
+      qqbotChannelId: "qqbot-${randomUUID().slice(0, 8)}"
+      feishuInstallConfig:
+        appId: "__FEISHU_APP_ID__"
+        appSecret: "__FEISHU_APP_SECRET__"
+      qqbotInstallConfig:
+        appId: "__QQBOT_APP_ID__"
+        token: "__QQBOT_TOKEN__"
+      wmsTestEvent:
+        warehouseId: "WH-SH-001"
+        eventType: "stock_alert"
+        sku: "SKU-COFFEE-001"
+        quantity: 12
+        threshold: 20
+      feishuSendMarker: "FEISHU-CHANNEL-DELIVERED"
+      qqbotSendMarker: "QQBOT-CHANNEL-DELIVERED"
+
+flow:
+  steps:
+    - name: resets durable channel state
+      actions:
+        - assert:
+            expr: "!config.resetDurableState || true"
+        - call: reset
+        - call: db.assertChannelCount
+          args:
+            - ref: env
+            - count: 0
+
+    - name: installs the Feishu channel
+      actions:
+        - call: channels.install
+          saveAs: feishuInstallResult
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+              channelType: feishu
+              displayName: "QA Feishu 通道"
+              config:
+                expr: config.feishuInstallConfig
+            - expectedStatus: 201
+        - assert:
+            expr: "feishuInstallResult.installStatus === 'installed' && feishuInstallResult.enabled === false"
+            message:
+              expr: "`feishu install did not reach installed state: ${JSON.stringify(feishuInstallResult)}`"
+        - call: channels.get
+          saveAs: feishuAfterInstall
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+        - assert:
+            expr: "feishuAfterInstall.id === config.feishuChannelId"
+            message:
+              expr: "`feishu get mismatch after install: ${JSON.stringify(feishuAfterInstall)}`"
+
+    - name: rejects installing a duplicate channel id
+      actions:
+        - call: channels.install
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+              channelType: feishu
+              displayName: "Duplicate"
+              config:
+                expr: config.feishuInstallConfig
+            - expectedStatus: 409
+
+    - name: enables the Feishu channel
+      actions:
+        - call: channels.enable
+          saveAs: feishuEnabled
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+        - assert:
+            expr: "feishuEnabled.enabled === true"
+            message:
+              expr: "`feishu enable returned unexpected payload: ${JSON.stringify(feishuEnabled)}`"
+
+    - name: sends a WMS stock-alert event through Feishu
+      actions:
+        - call: events.publish
+          saveAs: publishedEvent
+          args:
+            - ref: env
+            - event:
+                expr: config.wmsTestEvent
+        - call: channels.send
+          saveAs: feishuSendResult
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+              message:
+                kind: text
+                text:
+                  expr: "`[WMS] 库存告警 ${config.wmsTestEvent.sku}: ${config.wmsTestEvent.quantity} < ${config.wmsTestEvent.threshold} (${config.wmsTestEvent.warehouseId}). marker=${config.feishuSendMarker}`"
+              metadata:
+                warehouseId:
+                  expr: config.wmsTestEvent.warehouseId
+                eventType:
+                  expr: config.wmsTestEvent.eventType
+        - assert:
+            expr: "feishuSendResult.delivered === true && feishuSendResult.marker === config.feishuSendMarker"
+            message:
+              expr: "`feishu send did not deliver: ${JSON.stringify(feishuSendResult)}`"
+        - call: channels.getMessages
+          saveAs: feishuOutboundLog
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+        - assert:
+            expr: "feishuOutboundLog.messages.some((message) => String(message.text ?? '').includes(config.feishuSendMarker) && message.delivered === true)"
+            message:
+              expr: "`feishu outbound log missing delivered marker: ${JSON.stringify(feishuOutboundLog)}`"
+
+    - name: installs and sends via QQBot channel in parallel
+      actions:
+        - call: channels.install
+          saveAs: qqbotInstall
+          args:
+            - ref: env
+            - id:
+                expr: config.qqbotChannelId
+              channelType: qqbot
+              displayName: "QA QQBot 通道"
+              config:
+                expr: config.qqbotInstallConfig
+            - expectedStatus: 201
+        - call: channels.enable
+          saveAs: qqbotEnabled
+          args:
+            - ref: env
+            - id:
+                expr: config.qqbotChannelId
+        - assert:
+            expr: "qqbotEnabled.enabled === true"
+            message:
+              expr: "`qqbot enable returned unexpected payload: ${JSON.stringify(qqbotEnabled)}`"
+        - call: channels.send
+          saveAs: qqbotSendResult
+          args:
+            - ref: env
+            - id:
+                expr: config.qqbotChannelId
+              message:
+                kind: text
+                text:
+                  expr: "`[WMS] 调拨通知 ${config.wmsTestEvent.warehouseId} -> WH-BJ-001. marker=${config.qqbotSendMarker}`"
+        - assert:
+            expr: "qqbotSendResult.delivered === true"
+            message:
+              expr: "`qqbot send did not deliver: ${JSON.stringify(qqbotSendResult)}`"
+        - call: channels.list
+          saveAs: channelList
+          args:
+            - ref: env
+        - assert:
+            expr: "channelList.channels.filter((channel) => channel.enabled).length === 2"
+            message:
+              expr: "`expected 2 enabled channels, got ${channelList.channels.filter((channel) => channel.enabled).length}`"
+
+    - name: disables Feishu and confirms sends are skipped
+      actions:
+        - call: channels.disable
+          saveAs: feishuDisabled
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+        - assert:
+            expr: "feishuDisabled.enabled === false"
+            message:
+              expr: "`feishu disable returned unexpected payload: ${JSON.stringify(feishuDisabled)}`"
+        - call: channels.send
+          saveAs: feishuSkipped
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+              message:
+                kind: text
+                text: "should-be-dropped"
+        - assert:
+            expr: "feishuSkipped.skipped === 'disabled' && feishuSkipped.delivered === false"
+            message:
+              expr: "`feishu send should be skipped when disabled: ${JSON.stringify(feishuSkipped)}`"
+
+    - name: uninstalls both channels
+      actions:
+        - call: channels.uninstall
+          saveAs: feishuUninstalled
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+        - assert:
+            expr: "feishuUninstalled.uninstalled === true"
+            message:
+              expr: "`feishu uninstall did not confirm: ${JSON.stringify(feishuUninstalled)}`"
+        - call: channels.uninstall
+          saveAs: qqbotUninstalled
+          args:
+            - ref: env
+            - id:
+                expr: config.qqbotChannelId
+        - call: channels.get
+          args:
+            - ref: env
+            - id:
+                expr: config.feishuChannelId
+            - expectedStatus: 404
+        - call: channels.get
+          args:
+            - ref: env
+            - id:
+                expr: config.qqbotChannelId
+            - expectedStatus: 404
+      detailsExpr: "JSON.stringify({ feishuEnabled: feishuEnabled.enabled, feishuDelivered: feishuSendResult.delivered, qqbotDelivered: qqbotSendResult.delivered, feishuSkipped: feishuSkipped.skipped, feishuUninstalled: feishuUninstalled.uninstalled })"

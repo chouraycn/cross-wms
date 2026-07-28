@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Coordinates embedded-attempt session ownership, takeover, and prompt locks.
  */

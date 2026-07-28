@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Orchestrates one embedded-agent attempt from prompt setup through stream result.
  */

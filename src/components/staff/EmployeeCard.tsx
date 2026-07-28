@@ -6,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/index.js';
 import { cn } from './lib/utils.js';
+import { staffTokens } from './lib/staffTokens.js';
 
 import StaffdeckIcon from './StaffdeckIcon.js';
 import { isGalleryEmployee } from './auth.js';
@@ -13,12 +14,8 @@ import { employeeDisplayNameWithCreator, employeeProfile, resourceCount } from '
 import type { AgentProfileRead } from './types/index.js';
 import EmployeeAvatar from './EmployeeAvatar.js';
 
-// Hover colors come from the scoped --accent / --accent-foreground overrides on
-// DropdownMenuContent (see below), so items only need layout + default color here.
-const MENU_ITEM_CLASS =
-  'cursor-pointer gap-[4px] rounded-[10px] px-[12px] py-[6px] text-[12px] text-[#858b9c] focus:text-[#18181a]';
-const MENU_ITEM_DANGER_CLASS =
-  'cursor-pointer gap-[4px] rounded-[10px] px-[12px] py-[6px] text-[12px] text-[#d20b0b] focus:bg-[#fce7e7] focus:text-[#d20b0b] focus:[&_svg]:text-[#d20b0b]!';
+// 菜单项/容器样式已集中到 DropdownMenuXxx wrapper（staffTokens.menuItem / menuContent），
+// 此处无需再传 className。
 
 export type EmployeeCardProps = {
   employee: AgentProfileRead;
@@ -149,11 +146,10 @@ export default function EmployeeCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="flex w-auto min-w-[128px] flex-col gap-[4px] rounded-[14px] border-0 bg-white p-[4px] shadow-[0px_0px_8px_rgba(0,0,0,0.1)] ring-0 [--accent:#F6F6F6] [--accent-foreground:#18181A]"
+              sx={staffTokens.menuContent}
               onCloseAutoFocus={(event) => event.preventDefault()}
             >
               <DropdownMenuItem
-                className={MENU_ITEM_CLASS}
                 disabled={!online || busy}
                 onClick={(event) => event.stopPropagation()}
                 onSelect={() => onChat()}
@@ -162,18 +158,16 @@ export default function EmployeeCard({
                 发起对话
               </DropdownMenuItem>
               {online ? (
-                <DropdownMenuItem
-                  className={MENU_ITEM_CLASS}
-                  disabled={!canManage || busy}
-                  onClick={(event) => event.stopPropagation()}
-                  onSelect={() => onStatus('archived')}
+              <DropdownMenuItem
+                disabled={!canManage || busy}
+                onClick={(event) => event.stopPropagation()}
+                onSelect={() => onStatus('archived')}
                 >
                   <StaffdeckIcon name="pause" size={16} />
                   下线
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
-                  className={MENU_ITEM_CLASS}
                   disabled={!canManage || busy}
                   onClick={(event) => event.stopPropagation()}
                   onSelect={() => onStatus('active')}
@@ -183,7 +177,6 @@ export default function EmployeeCard({
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
-                className={MENU_ITEM_CLASS}
                 disabled={!canManage || busy}
                 onClick={(event) => event.stopPropagation()}
                 onSelect={() => onGallery(!galleryPublished)}
@@ -192,7 +185,6 @@ export default function EmployeeCard({
                 {galleryPublished ? '从广场下架' : '发布到广场'}
               </DropdownMenuItem>
               <DropdownMenuItem
-                className={MENU_ITEM_CLASS}
                 disabled={!canManage || busy}
                 onClick={(event) => event.stopPropagation()}
                 onSelect={() => onEdit()}
@@ -201,7 +193,6 @@ export default function EmployeeCard({
                 编辑资料
               </DropdownMenuItem>
               <DropdownMenuItem
-                className={MENU_ITEM_CLASS}
                 disabled={!canManage || busy}
                 onClick={(event) => event.stopPropagation()}
                 onSelect={() => onAvatar()}
@@ -212,7 +203,6 @@ export default function EmployeeCard({
               <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
               <DropdownMenuItem
                 variant="destructive"
-                className={MENU_ITEM_DANGER_CLASS}
                 disabled={!canManage || busy}
                 onClick={(event) => event.stopPropagation()}
                 onSelect={() => onDelete()}

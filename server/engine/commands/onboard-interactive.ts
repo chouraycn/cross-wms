@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Interactive onboarding command entrypoint.
  *

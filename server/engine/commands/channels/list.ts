@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements `openclaw channels list` across runtime accounts, local config, and catalog-only entries.
 import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
 import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";

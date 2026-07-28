@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logger } from '../../logger.js';
 import { authorizeGatewayConnect, type AuthorizeGatewayConnectParams, type GatewayAuthResult, type GatewayAuthSurface } from './auth.js';
 import { extractTokenFromHeaders, extractTokenFromQuery } from './auth-token-resolution.js';

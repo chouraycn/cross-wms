@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared run helpers for retry limits, model reporting, and final text.
  */

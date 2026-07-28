@@ -15,7 +15,6 @@ import {
 } from './ui/index.js'
 import { Button } from './ui/button.js'
 import { cn } from './lib/utils.js'
-import { SELECT_TRIGGER_CLASS } from './lib/enterprise-ui.js'
 
 export type ImportSourceOption = { value: string; label: string }
 export type ImportChoiceItem = { id: string; label: ReactNode }
@@ -114,7 +113,7 @@ export function ResourceImportDialog({
             <div className="flex flex-col gap-[6px]">
               <span className="text-[11px] font-semibold text-[#858b9c]">{targetLabel}</span>
               <Select value={targetId || undefined} onValueChange={onTargetChange}>
-                <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={targetPlaceholder || targetLabel} />
                 </SelectTrigger>
                 <SelectContent>
@@ -135,7 +134,6 @@ export function ResourceImportDialog({
                 value={effectiveSourceId}
                 onChange={(event) => onSourceChange(event.target.value)}
                 className={cn(
-                  SELECT_TRIGGER_CLASS,
                   'w-full appearance-none px-3 pr-9 outline-none disabled:cursor-not-allowed disabled:opacity-60',
                 )}
               >

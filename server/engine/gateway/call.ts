@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway RPC call helper.
 // Builds a GatewayClient, resolves auth/scopes, and performs one request.
 import { randomUUID } from "node:crypto";

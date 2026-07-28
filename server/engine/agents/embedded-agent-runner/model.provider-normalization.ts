@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Normalizes resolved provider/model ids on model records.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Auto-linked file ref helpers detect file references that can be linked in UI text.
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 

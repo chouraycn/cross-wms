@@ -1,28 +1,21 @@
 import * as React from 'react'
-import { ScrollArea as ScrollAreaPrimitive } from 'radix-ui'
+import { Box } from '@mui/material'
 
 import { cn } from './utils'
 
-function ScrollArea({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+// 统一到 MUI：以原生滚动容器（overflow:auto）替代 Radix ScrollArea，
+// 保留 data-slot 与 className 透传；原自定义滚动条（ScrollBar）降级为占位，由原生滚动条呈现。
+function ScrollArea({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <ScrollAreaPrimitive.Root
+    <Box
+      component="div"
       data-slot="scroll-area"
       className={cn('relative', className)}
-      {...props}
+      sx={{ position: 'relative', overflow: 'auto' }}
+      {...(props as Record<string, unknown>)}
     >
-      <ScrollAreaPrimitive.Viewport
-        data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
-      >
-        {children}
-      </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
-      <ScrollAreaPrimitive.Corner />
-    </ScrollAreaPrimitive.Root>
+      {children}
+    </Box>
   )
 }
 
@@ -30,24 +23,12 @@ function ScrollBar({
   className,
   orientation = 'vertical',
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
-  return (
-    <ScrollAreaPrimitive.ScrollAreaScrollbar
-      data-slot="scroll-area-scrollbar"
-      data-orientation={orientation}
-      orientation={orientation}
-      className={cn(
-        'flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent',
-        className,
-      )}
-      {...props}
-    >
-      <ScrollAreaPrimitive.ScrollAreaThumb
-        data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-border"
-      />
-    </ScrollAreaPrimitive.ScrollAreaScrollbar>
-  )
+}: React.ComponentProps<'div'> & { orientation?: 'vertical' | 'horizontal' }) {
+  // 占位组件：原生滚动条已由 ScrollArea 的 overflow:auto 提供，无需渲染独立元素。
+  void className
+  void orientation
+  void props
+  return null
 }
 
 export { ScrollArea, ScrollBar }

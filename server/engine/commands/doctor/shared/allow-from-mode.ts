@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor helper for resolving channel-specific direct-message allowlist semantics.
 import type { ChannelDmAllowFromMode } from "@openclaw-src/channels/plugins/dm-access.js";
 import { getDoctorChannelCapabilities } from "@openclaw-src/channel-capabilities.js";

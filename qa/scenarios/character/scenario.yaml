@@ -1,0 +1,37 @@
+title: character QA Scenario
+scenario:
+  id: character
+  surface: core
+  coverage:
+    primary: [character]
+    secondary: []
+  objective: |
+    Verify character subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/character.md
+  codeRefs:
+    - server/engine/character/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: character
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: character
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: character
+detailsExpr: |
+  character scenario completed

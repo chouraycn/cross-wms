@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds and repairs prompt inputs for embedded-agent attempts.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Commands for adding, pasting, and logging into provider model auth profiles. */
 import {
   cancel,

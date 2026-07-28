@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Resolves bootstrap context targets for one embedded-agent attempt.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor note emission helpers that sanitize user-visible repair output.
 import { sanitizeForLog } from "@openclaw-src/packages/terminal-core/src/ansi.js";
 

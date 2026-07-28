@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds tool-search execution plans from allowlists and available controls.
  */

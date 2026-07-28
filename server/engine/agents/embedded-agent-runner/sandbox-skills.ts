@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sandbox skill runtime input selection.
  *

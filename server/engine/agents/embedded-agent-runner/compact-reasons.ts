@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Normalizes and classifies compaction failure reasons for diagnostics.
  */

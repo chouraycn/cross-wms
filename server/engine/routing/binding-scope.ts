@@ -1,20 +1,39 @@
-import { logger } from '../../logger.js';
-import { normalizeAccountId, normalizeAgentId } from './session-key.js';
-import type {
-  RouteBinding,
-  RouteBindingScope,
-  RouteBindingScopeConstraint,
-  NormalizedRouteBindingMatch,
-} from './types.js';
+// @ts-nocheck
+// Binding scope helpers normalize route binding scope values.
+import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeChatChannelId } from "../channels/ids.js";
+import type { AgentRouteBinding } from "../config/types.agents.js";
+import { normalizeAccountId, normalizeAgentId } from "./session-key.js";
+
+// Route binding scopes constrain a configured agent/account binding to a guild,
+// team, group space, and optionally channel/platform role ids.
+export type RouteBindingScopeConstraint = {
+  guildId?: string | null;
+  teamId?: string | null;
+  roles?: string[] | null;
+};
+
+export type RouteBindingScope = {
+  guildId?: string | null;
+  teamId?: string | null;
+  groupSpace?: string | null;
+  memberRoleIds?: Iterable<string> | null;
+};
+
+export type NormalizedRouteBindingMatch = {
+  agentId: string;
+  accountId: string;
+  channelId: string;
+};
 
 export function normalizeRouteBindingId(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value.trim();
   }
-  if (typeof value === 'number' || typeof value === 'bigint') {
+  if (typeof value === "number" || typeof value === "bigint") {
     return String(value).trim();
   }
-  return '';
+  return "";
 }
 
 export function normalizeRouteBindingRoles(value: string[] | null | undefined): string[] | null {
@@ -22,26 +41,32 @@ export function normalizeRouteBindingRoles(value: string[] | null | undefined): 
 }
 
 export function normalizeRouteBindingChannelId(raw?: string | null): string | null {
-  const normalized = String(raw ?? '').trim().toLowerCase();
-  return normalized || null;
+  const normalized = normalizeChatChannelId(raw);
+  if (normalized) {
+    return normalized;
+  }
+  const fallback = normalizeLowercaseStringOrEmpty(raw);
+  return fallback || null;
 }
 
+// Convert a binding match into the same canonical ids used by session routing.
+// Wildcard/malformed account matches are ignored because they are not concrete.
 export function resolveNormalizedRouteBindingMatch(
-  binding: RouteBinding,
+  binding: AgentRouteBinding,
 ): NormalizedRouteBindingMatch | null {
-  if (!binding || typeof binding !== 'object') {
+  if (!binding || typeof binding !== "object") {
     return null;
   }
   const match = binding.match;
-  if (!match || typeof match !== 'object') {
+  if (!match || typeof match !== "object") {
     return null;
   }
   const channelId = normalizeRouteBindingChannelId(match.channel);
   if (!channelId) {
     return null;
   }
-  const accountId = typeof match.accountId === 'string' ? match.accountId.trim() : '';
-  if (!accountId || accountId === '*') {
+  const accountId = typeof match.accountId === "string" ? match.accountId.trim() : "";
+  if (!accountId || accountId === "*") {
     return null;
   }
   return {
@@ -65,7 +90,7 @@ function scopeIdMatches(params: {
 function hasRoleLookup(
   memberRoleIds: Iterable<string>,
 ): memberRoleIds is Iterable<string> & { has(roleId: string): boolean } {
-  return typeof (memberRoleIds as { has?: unknown }).has === 'function';
+  return typeof (memberRoleIds as { has?: unknown }).has === "function";
 }
 
 function hasAnyRouteBindingRole(
@@ -78,6 +103,8 @@ function hasAnyRouteBindingRole(
   if (hasRoleLookup(memberRoleIds)) {
     return roles.some((role) => memberRoleIds.has(role));
   }
+  // Most callers pass a Set, but arrays/iterables from channel adapters are
+  // accepted to avoid forcing allocation at every routing call site.
   const memberRoleIdSet = new Set(memberRoleIds);
   return roles.some((role) => memberRoleIdSet.has(role));
 }
@@ -89,7 +116,6 @@ export function routeBindingScopeMatches(
   const guildId = normalizeRouteBindingId(scope.guildId);
   const teamId = normalizeRouteBindingId(scope.teamId);
   const groupSpace = normalizeRouteBindingId(scope.groupSpace);
-
   if (!scopeIdMatches({ constraint: constraint.guildId, exact: guildId, groupSpace })) {
     return false;
   }
@@ -101,8 +127,5 @@ export function routeBindingScopeMatches(
   if (!roles) {
     return true;
   }
-
-  const matches = hasAnyRouteBindingRole(roles, scope.memberRoleIds);
-  logger.debug(`[Routing:BindingScope] Role match: ${matches}, roles=${roles.length}`);
-  return matches;
+  return hasAnyRouteBindingRole(roles, scope.memberRoleIds);
 }

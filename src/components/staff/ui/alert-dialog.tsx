@@ -1,189 +1,189 @@
-'use client'
-
 import * as React from 'react'
-import { AlertDialog as AlertDialogPrimitive } from 'radix-ui'
+import { Dialog as MuiDialog, Box } from '@mui/material'
 
 import { cn } from './utils'
 import { Button } from './button'
 
+type AlertDialogContextValue = { open: boolean; setOpen: (o: boolean) => void }
+const AlertDialogContext = React.createContext<AlertDialogContextValue>({
+  open: false,
+  setOpen: () => {},
+})
+
+interface AlertDialogProps {
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  children?: React.ReactNode
+  className?: string
+  [key: string]: unknown
+}
+
 function AlertDialog({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
-}
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  children,
+  ...rest
+}: AlertDialogProps) {
+  const [internalOpen, setInternalOpen] = React.useState<boolean>(defaultOpen)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? (controlledOpen as boolean) : internalOpen
 
-function AlertDialogTrigger({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+  const setOpen = React.useCallback(
+    (o: boolean) => {
+      if (!isControlled) setInternalOpen(o)
+      onOpenChange?.(o)
+    },
+    [isControlled, onOpenChange],
+  )
+
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogContext.Provider value={{ open, setOpen }}>
+      <MuiDialog open={open} onClose={(_e, _r) => setOpen(false)} {...rest}>
+        {children}
+      </MuiDialog>
+    </AlertDialogContext.Provider>
   )
 }
 
-function AlertDialogPortal({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
+function AlertDialogTrigger({ asChild = false, children, ...props }: { asChild?: boolean } & React.ComponentProps<'button'>) {
+  const { setOpen } = React.useContext(AlertDialogContext)
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement
+    return React.cloneElement(child, {
+      onClick: (e: React.MouseEvent) => {
+        ;(child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(e)
+        setOpen(true)
+      },
+    } as Record<string, unknown>)
+  }
   return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+    <button type="button" onClick={() => setOpen(true)} {...props}>
+      {children}
+    </button>
   )
 }
 
-function AlertDialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
-  return (
-    <AlertDialogPrimitive.Overlay
-      data-slot="alert-dialog-overlay"
-      className={cn(
-        'fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
-        className,
-      )}
-      {...props}
-    />
-  )
+// MUI Dialog 自身已 portal 到 body 并提供 backdrop，Portal/Overlay 仅作 API 兼容占位。
+function AlertDialogPortal({ children }: { children?: React.ReactNode }) {
+  return <>{children}</>
+}
+function AlertDialogOverlay() {
+  return null
 }
 
 function AlertDialogContent({
   className,
   size = 'default',
-  onEscapeKeyDown,
+  children,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
-  size?: 'default' | 'sm'
-}) {
+}: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
   return (
-    <AlertDialogPortal>
-      <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
-        data-slot="alert-dialog-content"
-        data-size={size}
-        onEscapeKeyDown={(event) => {
-          event.preventDefault()
-          onEscapeKeyDown?.(event)
-        }}
-        className={cn(
-          'group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
-          className,
-        )}
-        {...props}
-      />
-    </AlertDialogPortal>
+    <Box
+      data-slot="alert-dialog-content"
+      data-size={size}
+      className={cn('p-4', className)}
+      sx={{
+        position: 'relative',
+        borderRadius: 3,
+        maxWidth: size === 'sm' ? 320 : 360,
+        mx: 'auto',
+        width: '100%',
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
+    </Box>
   )
 }
 
-function AlertDialogHeader({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
+      component="div"
       data-slot="alert-dialog-header"
-      className={cn(
-        'grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-4 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-left sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]',
-        className,
-      )}
-      {...props}
+      className={cn('flex flex-col gap-1.5 text-center sm:text-left', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function AlertDialogFooter({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
+      component="div"
       data-slot="alert-dialog-footer"
-      className={cn(
-        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end',
-        className,
-      )}
-      {...props}
+      className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function AlertDialogMedia({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
+    <Box
+      component="div"
       data-slot="alert-dialog-media"
-      className={cn(
-        'mb-2 inline-flex size-10 items-center justify-center rounded-md bg-muted sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*=size-])]:size-6',
-        className,
-      )}
-      {...props}
+      className={cn('mb-2 inline-flex size-10 items-center justify-center rounded-md bg-muted', className)}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function AlertDialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <AlertDialogPrimitive.Title
+    <Box
+      component="div"
       data-slot="alert-dialog-title"
-      className={cn(
-        'font-heading text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2',
-        className,
-      )}
-      {...props}
+      className={cn('text-base font-medium', className)}
+      sx={{ fontWeight: 500 }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function AlertDialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+function AlertDialogDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <AlertDialogPrimitive.Description
+    <Box
+      component="div"
       data-slot="alert-dialog-description"
-      className={cn(
-        'text-sm text-balance text-muted-foreground md:text-pretty *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground',
-        className,
-      )}
-      {...props}
+      className={cn('text-sm', className)}
+      sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
 
-function AlertDialogAction({
-  className,
-  variant = 'default',
-  size = 'default',
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
-  Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
+function AlertDialogAction({ className, onClick, children, ...props }: React.ComponentProps<typeof Button>) {
+  const { setOpen } = React.useContext(AlertDialogContext)
   return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Action
-        data-slot="alert-dialog-action"
-        className={cn(className)}
-        {...props}
-      />
+    <Button
+      className={cn(className)}
+      onClick={(e) => {
+        onClick?.(e as unknown as React.MouseEvent<HTMLButtonElement>)
+        setOpen(false)
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
     </Button>
   )
 }
 
-function AlertDialogCancel({
-  className,
-  variant = 'outline',
-  size = 'default',
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
-  Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
+function AlertDialogCancel({ className, onClick, children, ...props }: React.ComponentProps<typeof Button>) {
+  const { setOpen } = React.useContext(AlertDialogContext)
   return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Cancel
-        data-slot="alert-dialog-cancel"
-        className={cn(className)}
-        {...props}
-      />
+    <Button
+      variant="outline"
+      className={cn(className)}
+      onClick={(e) => {
+        onClick?.(e as unknown as React.MouseEvent<HTMLButtonElement>)
+        setOpen(false)
+      }}
+      {...(props as Record<string, unknown>)}
+    >
+      {children}
     </Button>
   )
 }

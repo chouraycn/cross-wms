@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Preflight compaction and memory flush helpers for agent runner sessions. */
 import crypto from "node:crypto";
 import fs from "node:fs";

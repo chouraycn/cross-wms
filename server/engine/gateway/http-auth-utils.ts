@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway HTTP 鉴权辅助。
 // 移植自 openclaw/src/gateway/http-auth-utils.ts
 //

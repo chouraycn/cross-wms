@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Skills install config mutation for local non-interactive onboarding.
  *

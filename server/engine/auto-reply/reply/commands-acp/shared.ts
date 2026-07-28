@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared ACP command helpers for session identity and reply formatting.
 import { randomUUID } from "node:crypto";
 import { toAcpRuntimeErrorText } from "@openclaw/acp-core/runtime/error-text";

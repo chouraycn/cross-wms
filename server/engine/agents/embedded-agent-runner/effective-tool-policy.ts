@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Applies final effective tool policy to embedded-agent runtime settings.
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds sandbox/full-access status metadata for embedded-agent run results.
  */

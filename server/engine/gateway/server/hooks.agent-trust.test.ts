@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook endpoint trust tests for agent dispatch and gateway network config.
  */

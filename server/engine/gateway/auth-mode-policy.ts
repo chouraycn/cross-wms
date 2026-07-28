@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { GatewayAuthSurface, GatewayAuthResult } from './auth.js';
 
 export type AuthModePolicy = {

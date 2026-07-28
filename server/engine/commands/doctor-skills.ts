@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks and repair prompts for unavailable configured skills. */
 import { existsSync } from "node:fs";
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";

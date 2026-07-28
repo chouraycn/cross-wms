@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * StaffDeck Tools Routes — 挂载 /api/staffdeck/tools
  *

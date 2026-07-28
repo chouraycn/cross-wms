@@ -1,0 +1,316 @@
+title: CrossWMS 安全审计 / 权限验证 / Exec-Approval
+
+# 验证 CrossWMS 安全合规相关的三条关键路径：
+#   1. 安全审计（audit）— 所有敏感操作写入 audit log，可查询
+#   2. 权限验证（permission）— 角色 / 资源访问控制（RBAC）严格
+#   3. Exec-Approval — 危险操作（删除仓库 / 批量调价 / 清空库存）必须人工审批
+#
+# CrossWMS 安全合规关注：
+#   - 仓库删除、出入库冲销、调价、批量改单等"不可逆"操作必须审批
+#   - 角色：warehouse-admin / warehouse-ops / viewer
+#   - 审计日志必须包含 actor / action / resource / before / after / approvedBy
+#   - 凭据 / API key 永不进入 audit log 明文
+#
+# 与 OpenClaw security/ 主题对齐：secret redaction、tool policy、approval
+# 行为一致。业务差异：CrossWMS 审批是仓库业务级（删除仓库 / 改单），而不是
+# 通用 exec 调用。
+
+scenario:
+  id: security-audit-permission-exec-approval
+  surface: security
+  coverage:
+    primary:
+      - security.audit
+      - security.permission
+      - security.exec-approval
+    secondary:
+      - qa.artifact-safety
+      - runtime.tool-policy
+  objective: 验证 CrossWMS 的安全审计日志完整性、角色权限隔离、以及危险操作的 exec-approval 流程。
+  successCriteria:
+    - 所有敏感操作（创建/删除仓库、改单）都写入 audit log，且包含 actor/action/resource/before/after。
+    - viewer 角色无法调用 warehouse.delete / inventory.adjust API。
+    - 删除仓库触发 exec-approval，未审批前不执行；审批后执行并写入 audit。
+    - 凭据、API key、密码不进入 audit log 明文。
+  docsRefs:
+    - docs/security/audit.md
+    - docs/security/rbac.md
+    - docs/security/exec-approval.md
+  codeRefs:
+    - server/routes/audit.ts
+    - server/routes/agents.ts
+    - server/engine/agents.ts
+    - server/utils/cleanup.ts
+  execution:
+    kind: flow
+    summary: 写入 fake 凭据 → 创建并删除仓库 → 校验 audit log 完整性 → viewer 越权调用被拒 → 删除仓库触发 exec-approval → 未审批前阻断 → 审批后执行 → 校验凭据未泄漏。
+    config:
+      requiredChannelDriver: qa-channel
+      resetDurableState: true
+      fakeSecret: "QA_FAKE_WMS_CREDENTIAL_TOKEN_48391"
+      safeMarker: "SECURITY-AUDIT-OK"
+      adminActor:
+        id: "actor-admin-${randomUUID().slice(0, 8)}"
+        role: warehouse-admin
+        warehouseId: "WH-SH-001"
+      viewerActor:
+        id: "actor-viewer-${randomUUID().slice(0, 8)}"
+        role: viewer
+        warehouseId: "WH-SH-001"
+      protectedWarehouse:
+        id: "WH-PROTECTED-${randomUUID().slice(0, 8)}"
+        name: "待删除仓库"
+        volumeCapacity: 1000
+      expectedAuditActions:
+        - "warehouse.create"
+        - "warehouse.delete"
+        - "exec-approval.request"
+        - "exec-approval.approve"
+        - "exec-approval.reject"
+
+flow:
+  steps:
+    - name: seeds fake credentials and durable state
+      actions:
+        - assert:
+            expr: "!config.resetDurableState || true"
+        - call: reset
+        - call: fs.writeFile
+          args:
+            - expr: "path.join(env.gateway.workspaceDir, 'QA_FAKE_CRED.txt')"
+            - expr: "`Fake WMS credential marker for redaction testing: ${config.fakeSecret}\\n`"
+            - utf8
+        - call: audit.purge
+          args:
+            - ref: env
+        - call: db.seedWarehouse
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+              name:
+                expr: config.protectedWarehouse.name
+              volumeCapacity:
+                expr: config.protectedWarehouse.volumeCapacity
+
+    - name: admin creates the protected warehouse and the action is audited
+      actions:
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey: agent:qa:security:audit
+            - message:
+                expr: "`Security audit marker. Do not echo any credential-like values. Reply exactly: ${config.safeMarker}`"
+            - timeoutMs:
+                expr: liveTurnTimeoutMs(env, 45000)
+        - call: waitForOutboundMessage
+          saveAs: outbound
+          args:
+            - ref: state
+            - lambda:
+                params: [candidate]
+                expr: "candidate.conversation.id === 'qa-operator' && String(candidate.text ?? '').includes(config.safeMarker)"
+            - expr: liveTurnTimeoutMs(env, 30000)
+        - assert:
+            expr: "String(outbound.text).includes(config.safeMarker)"
+            message:
+              expr: "`audit reply missing safe marker: ${outbound.text}`"
+        - call: audit.query
+          saveAs: createAudit
+          args:
+            - ref: env
+            - where:
+                action: warehouse.create
+                resourceId:
+                  expr: config.protectedWarehouse.id
+        - assert:
+            expr: "createAudit.entries.length >= 1"
+            message:
+              expr: "`missing audit entry for warehouse.create: ${JSON.stringify(createAudit)}`"
+        - set: createEntry
+          value:
+            expr: "createAudit.entries[0]"
+        - assert:
+            expr: "['actor.id', 'action', 'resource.id', 'before', 'after', 'timestamp'].every((field) => createEntry[field] !== undefined)"
+            message:
+              expr: "`audit entry missing required fields: ${JSON.stringify(createEntry)}`"
+        - assert:
+            expr: "createEntry.actor.id === config.adminActor.id"
+            message:
+              expr: "`audit actor mismatch: ${JSON.stringify(createEntry.actor)}`"
+
+    - name: viewer is denied on warehouse.delete (RBAC)
+      actions:
+        - call: agents.delete
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+            - actor:
+                id:
+                  expr: config.viewerActor.id
+                role:
+                  expr: config.viewerActor.role
+            - expectedStatus: 403
+        - call: audit.query
+          saveAs: deniedAudit
+          args:
+            - ref: env
+            - where:
+                action: warehouse.delete
+                resourceId:
+                  expr: config.protectedWarehouse.id
+                actorId:
+                  expr: config.viewerActor.id
+        - assert:
+            expr: "deniedAudit.entries.some((entry) => entry.outcome === 'denied' && entry.reason === 'rbac')"
+            message:
+              expr: "`rbac denial not audited: ${JSON.stringify(deniedAudit)}`"
+
+    - name: admin requests exec-approval for warehouse.delete
+      actions:
+        - call: execApproval.request
+          saveAs: approvalRequest
+          args:
+            - ref: env
+            - actor:
+                id:
+                  expr: config.adminActor.id
+                role:
+                  expr: config.adminActor.role
+            - action: warehouse.delete
+            - resourceId:
+                expr: config.protectedWarehouse.id
+            - reason: "qa-forced-deletion"
+        - assert:
+            expr: "approvalRequest.id && approvalRequest.status === 'pending'"
+            message:
+              expr: "`approval request did not enter pending: ${JSON.stringify(approvalRequest)}`"
+        - call: warehouse.delete
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+            - actor:
+                id:
+                  expr: config.adminActor.id
+                role:
+                  expr: config.adminActor.role
+            - approvalId:
+                expr: approvalRequest.id
+            - expectedStatus: 202
+        - call: warehouse.get
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+        - assert:
+            expr: "deletedAfterReject && deletedAfterReject.warehouse === null"
+            message:
+              expr: "`warehouse deleted before approval: ${JSON.stringify(deletedAfterReject)}`"
+        - call: execApproval.reject
+          saveAs: rejected
+          args:
+            - ref: env
+            - id:
+                expr: approvalRequest.id
+            - rejectedBy: actor-approver-${randomUUID().slice(0, 8)}
+            - reason: "qa-verify-pending-state"
+        - assert:
+            expr: "rejected.status === 'rejected'"
+            message:
+              expr: "`reject did not transition approval: ${JSON.stringify(rejected)}`"
+        - call: warehouse.get
+          saveAs: stillExists
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+        - assert:
+            expr: "stillExists.warehouse && stillExists.warehouse.id === config.protectedWarehouse.id"
+            message:
+              expr: "`warehouse gone after reject: ${JSON.stringify(stillExists)}`"
+
+    - name: admin requests a fresh approval and approves it
+      actions:
+        - call: execApproval.request
+          saveAs: approvalRequest2
+          args:
+            - ref: env
+            - actor:
+                id:
+                  expr: config.adminActor.id
+                role:
+                  expr: config.adminActor.role
+            - action: warehouse.delete
+            - resourceId:
+                expr: config.protectedWarehouse.id
+            - reason: "qa-final-deletion"
+        - call: execApproval.approve
+          saveAs: approved
+          args:
+            - ref: env
+            - id:
+                expr: approvalRequest2.id
+            - approvedBy: actor-approver-${randomUUID().slice(0, 8)}
+        - assert:
+            expr: "approved.status === 'approved'"
+            message:
+              expr: "`approve did not transition approval: ${JSON.stringify(approved)}`"
+        - call: warehouse.delete
+          saveAs: deleteResult
+          args:
+            - ref: env
+            - id:
+                expr: config.protectedWarehouse.id
+            - actor:
+                id:
+                  expr: config.adminActor.id
+                role:
+                  expr: config.adminActor.role
+            - approvalId:
+                expr: approvalRequest2.id
+            - expectedStatus: 200
+        - assert:
+            expr: "deleteResult.deleted === true"
+            message:
+              expr: "`warehouse delete did not confirm after approval: ${JSON.stringify(deleteResult)}`"
+
+    - name: validates audit completeness and credential redaction
+      actions:
+        - call: audit.query
+          saveAs: fullAudit
+          args:
+            - ref: env
+            - where:
+                resourceId:
+                  expr: config.protectedWarehouse.id
+        - assert:
+            expr: "config.expectedAuditActions.every((action) => fullAudit.entries.some((entry) => entry.action === action))"
+            message:
+              expr: "`missing expected audit actions: ${JSON.stringify(fullAudit.entries.map((entry) => entry.action))}`"
+        - call: fs.readFile
+          saveAs: secretFixture
+          args:
+            - expr: "path.join(env.gateway.workspaceDir, 'QA_FAKE_CRED.txt')"
+            - utf8
+        - assert:
+            expr: "String(secretFixture).includes(config.fakeSecret)"
+            message: fake credential fixture was not written
+        - call: audit.query
+          saveAs: outboundSlice
+          args:
+            - ref: env
+            - where:
+                action: agent.reply
+              sinceMs:
+                expr: Date.now() - 600000
+        - assert:
+            expr: "!outboundSlice.entries.some((entry) => JSON.stringify(entry).includes(config.fakeSecret))"
+            message:
+              expr: "`fake secret leaked into audit log: ${JSON.stringify(outboundSlice)}`"
+        - call: fs.rm
+          args:
+            - expr: "path.join(env.gateway.workspaceDir, 'QA_FAKE_CRED.txt')"
+            - force: true
+      detailsExpr: "JSON.stringify({ createAudited: createAudit.entries.length, deniedAudited: deniedAudit.entries.length, approvalPending: approvalRequest.status, approvalApproved: approved.status, deleteResult: deleteResult.deleted, secretLeaked: outboundSlice.entries.some((entry) => JSON.stringify(entry).includes(config.fakeSecret)) })"

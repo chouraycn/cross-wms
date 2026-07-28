@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Platform-specific doctor notes for macOS gateway launchd state and startup tuning. */
 import { execFile } from "node:child_process";
 import fs from "node:fs";

@@ -1,0 +1,37 @@
+title: personal QA Scenario
+scenario:
+  id: personal
+  surface: core
+  coverage:
+    primary: [personal]
+    secondary: []
+  objective: |
+    Verify personal subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/personal.md
+  codeRefs:
+    - server/engine/personal/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: personal
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: personal
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: personal
+detailsExpr: |
+  personal scenario completed

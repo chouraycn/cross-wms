@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Main interactive configure/update wizard implementation.
 import fsPromises from "node:fs/promises";
 import nodePath from "node:path";

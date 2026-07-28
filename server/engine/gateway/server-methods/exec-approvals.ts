@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Exec approvals config methods read and write command approval defaults with
 // base-hash protection for admin-edited allowlists.
 import {

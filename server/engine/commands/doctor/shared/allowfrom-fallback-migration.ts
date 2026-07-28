@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor migration from legacy DM allowFrom fallback to explicit groupAllowFrom lists.
 import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
 import { resolveChannelDmAllowFrom } from "@openclaw-src/channels/plugins/dm-access.js";

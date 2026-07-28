@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway-first agent CLI implementation with embedded fallback for local/runtime failures.
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";

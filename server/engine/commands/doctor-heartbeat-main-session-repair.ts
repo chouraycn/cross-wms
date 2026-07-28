@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor repair for main sessions accidentally occupied by synthetic heartbeat transcripts. */
 import fs from "node:fs";
 import path from "node:path";

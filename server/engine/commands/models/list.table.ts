@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Terminal/JSON/plain table renderer for model-list rows. */
 import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
 import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";

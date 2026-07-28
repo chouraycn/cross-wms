@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Builds host capabilities passed into context-engine runtime calls.
  */

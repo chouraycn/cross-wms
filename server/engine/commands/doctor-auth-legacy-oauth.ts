@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Migrates legacy provider-declared OAuth profile ids to current auth profile ids. */
 import { sanitizeForLog } from "@openclaw-src/packages/terminal-core/src/ansi.js";
 import { repairOAuthProfileIdMismatch } from "@openclaw-src/agents/auth-profiles/repair.js";

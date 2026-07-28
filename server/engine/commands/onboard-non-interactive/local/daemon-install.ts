@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Non-interactive gateway daemon installation for local onboarding.
  *

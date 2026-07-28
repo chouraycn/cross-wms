@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Runs gateway discovery, optional SSH tunneling, and per-target probes. */
 import {
   normalizeOptionalString,

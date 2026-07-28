@@ -1,0 +1,10 @@
+{
+  "id": "codex-supervisor",
+  "name": "codex-supervisor",
+  "description": "codex-supervisor extension ported from openclaw",
+  "version": "1.0.0",
+  "kind": "utility",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

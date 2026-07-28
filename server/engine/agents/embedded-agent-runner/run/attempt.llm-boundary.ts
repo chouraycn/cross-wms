@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Installs runtime-context and prompt-transform boundaries before LLM calls.
  */

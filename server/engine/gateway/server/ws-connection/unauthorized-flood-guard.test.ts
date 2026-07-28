@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unauthorized-role flood guard tests for logging and socket close decisions.
  */

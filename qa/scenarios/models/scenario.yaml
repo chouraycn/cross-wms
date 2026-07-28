@@ -1,0 +1,237 @@
+title: CrossWMS 模型切换 / Failover / 能力检测
+
+# 验证 CrossWMS 模型管理（models）的三条关键路径：
+#   1. 模型切换（switching）— 同一会话内切换到备用模型，工具调用与上下文保持
+#   2. Failover — 主模型不可用时自动降级到备用模型
+#   3. 能力检测（capability-detection）— 模型注册时按能力标签（tool / vision / long-context）做能力矩阵
+#
+# CrossWMS 模型管理负责：
+#   - 维护可用模型清单（OpenAI / Anthropic / 国产大模型）
+#   - 在 keyRotator 中做 key 轮换
+#   - 在 failover 策略中按 health 切到备用模型
+#   - 暴露 `models.capabilities` 供 UI 灰度
+#
+# 与 OpenClaw models/ 主题对齐：model-switch-tool-continuity、capability
+# detection 等行为一致。业务差异：CrossWMS 的模型选择会参考 WMS 业务 tag
+# （如 wms-tool / wms-vision）。
+
+scenario:
+  id: models-switch-failover-capabilities
+  surface: models
+  coverage:
+    primary:
+      - models.switching
+      - models.failover
+      - models.capability-detection
+    secondary:
+      - runtime.tool-continuity
+  objective: 验证 CrossWMS 模型切换的会话连续性、failover 自动降级、模型能力检测。
+  successCriteria:
+    - 模型切换后下一次回复仍能基于当前会话上下文（不丢失）。
+    - 切换后仍能继续调用工具（如 read / search）而不回退到纯文本。
+    - 主模型标记为不可用时，下一次请求自动降级到 failover 模型。
+    - 能力矩阵正确反映每个模型的 tool / vision / long-context 能力。
+  docsRefs:
+    - docs/models/model-switch.md
+    - docs/models/failover.md
+    - docs/models/capability-detection.md
+  codeRefs:
+    - server/routes/models.ts
+    - server/engine/models.ts
+    - server/modelsStore.ts
+    - server/keyRotator.ts
+  execution:
+    kind: flow
+    summary: 写入 WMS 业务上下文 → 主模型首轮回答 → 切换到备用模型 → 验证工具调用与上下文连续 → 主模型标记不可用 → 触发 failover → 验证自动降级 → 校验能力矩阵。
+    config:
+      requiredChannelDriver: qa-channel
+      primaryModel: "openai/gpt-4o"
+      secondaryModel: "anthropic/claude-3-5-sonnet"
+      failoverModel: "openai/gpt-4o-mini"
+      businessContext: "Q3 中秋备货方案要求 WH-SH-001 的咖啡 SKU 安全库存 >= 25 件，库龄 < 45 天。"
+      businessContextNeedle: "Q3 中秋备货"
+      continuityPrompt: "Tool continuity check: use the read tool to reread the current WMS plan, then in one short sentence mention the model handoff and the Q3 plan."
+      continuityNeedle: "Tool continuity check"
+      failoverMarker: "FAILOVER-OK"
+      capabilitiesExpectedAll:
+        - "tool"
+        - "long-context"
+      visionRequired:
+        - "openai/gpt-4o"
+        - "anthropic/claude-3-5-sonnet"
+      visionNotRequired:
+        - "openai/gpt-4o-mini"
+
+flow:
+  steps:
+    - name: seeds the WMS plan context and verifies the primary model
+      actions:
+        - call: reset
+        - call: models.list
+          saveAs: modelList
+          args:
+            - ref: env
+        - assert:
+            expr: "modelList.models.some((model) => model.id === config.primaryModel)"
+            message:
+              expr: "`primary model not registered: ${JSON.stringify(modelList)}`"
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey: agent:qa:models:continuity
+            - message:
+                expr: "`Read the WMS plan context (${config.businessContext}) and summarize in one clause before any model switch.`"
+            - timeoutMs:
+                expr: liveTurnTimeoutMs(env, 30000)
+        - set: switchBeforeCursor
+          value:
+            expr: state.getSnapshot().messages.length
+        - call: models.usage
+          saveAs: primaryUsage
+          args:
+            - ref: env
+            - id:
+                expr: config.primaryModel
+
+    - name: switches to the secondary model and preserves tool continuity
+      actions:
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey: agent:qa:models:continuity
+            - message:
+                expr: config.continuityPrompt
+            - provider: anthropic
+            - model:
+                expr: config.secondaryModel
+            - timeoutMs:
+                expr: resolveQaLiveTurnTimeoutMs(env, 30000, config.secondaryModel)
+        - call: waitForCondition
+          saveAs: continuityOutbound
+          args:
+            - lambda:
+                expr: "state.getSnapshot().messages.slice(switchBeforeCursor).filter((candidate) => candidate.direction === 'outbound' && candidate.conversation.id === 'qa-operator' && String(candidate.text ?? '').includes(config.continuityNeedle) && String(candidate.text ?? '').includes(config.businessContextNeedle)).at(-1)"
+            - expr: resolveQaLiveTurnTimeoutMs(env, 20000, config.secondaryModel)
+        - assert:
+            expr: "String(continuityOutbound.text).includes(config.continuityNeedle) && String(continuityOutbound.text).includes(config.businessContextNeedle)"
+            message:
+              expr: "`switch reply lost kickoff context: ${continuityOutbound.text}`"
+        - if:
+            expr: "Boolean(env.mock)"
+            then:
+              - set: switchDebugRequests
+                value:
+                  expr: "await fetchJson(`${env.mock.baseUrl}/debug/requests`)"
+              - set: switchRequest
+                value:
+                  expr: "switchDebugRequests.find((request) => String(request.allInputText ?? '').includes(config.continuityNeedle))"
+              - assert:
+                  expr: "switchRequest?.plannedToolName === 'read'"
+                  message:
+                    expr: "`expected read after switch, got ${String(switchRequest?.plannedToolName ?? '')}`"
+              - assert:
+                  expr: "String(switchRequest?.model ?? '') === String(config.secondaryModel)"
+                  message:
+                    expr: "`expected secondary model after switch, got ${String(switchRequest?.model ?? '')}`"
+
+    - name: marks primary model unavailable and triggers failover
+      actions:
+        - call: models.markUnhealthy
+          saveAs: unhealthyResult
+          args:
+            - ref: env
+            - id:
+                expr: config.primaryModel
+            - reason: "qa-forced-failover"
+        - assert:
+            expr: "unhealthyResult.healthy === false"
+            message:
+              expr: "`mark unhealthy failed: ${JSON.stringify(unhealthyResult)}`"
+        - call: models.failover
+          saveAs: failoverResult
+          args:
+            - ref: env
+            - from:
+                expr: config.primaryModel
+              to:
+                expr: config.failoverModel
+            - reason: "primary-unhealthy"
+        - assert:
+            expr: "failoverResult.activatedModel === config.failoverModel"
+            message:
+              expr: "`failover did not activate target: ${JSON.stringify(failoverResult)}`"
+        - call: runAgentPrompt
+          args:
+            - ref: env
+            - sessionKey: agent:qa:models:failover
+            - message:
+                expr: "`Failover QA marker. Reply exactly: ${config.failoverMarker}`"
+            - timeoutMs:
+                expr: liveTurnTimeoutMs(env, 30000)
+        - call: waitForOutboundMessage
+          saveAs: failoverOutbound
+          args:
+            - ref: state
+            - lambda:
+                params: [candidate]
+                expr: "candidate.conversation.id === 'qa-operator' && String(candidate.text ?? '').includes(config.failoverMarker)"
+            - expr: liveTurnTimeoutMs(env, 30000)
+        - if:
+            expr: "Boolean(env.mock)"
+            then:
+              - set: failoverDebugRequests
+                value:
+                  expr: "await fetchJson(`${env.mock.baseUrl}/debug/requests`)"
+              - set: failoverRequest
+                value:
+                  expr: "failoverDebugRequests.find((request) => String(request.allInputText ?? '').includes(config.failoverMarker))"
+              - assert:
+                  expr: "String(failoverRequest?.model ?? '') === String(config.failoverModel)"
+                  message:
+                    expr: "`failover did not route to target model: ${String(failoverRequest?.model ?? '')}`"
+
+    - name: validates model capability matrix
+      actions:
+        - call: models.capabilities
+          saveAs: capabilities
+          args:
+            - ref: env
+        - set: visionRequiredSet
+          value:
+            expr: new Set(config.visionRequired)
+        - set: visionNotRequiredSet
+          value:
+            expr: new Set(config.visionNotRequired)
+        - forEach:
+            items:
+              expr: capabilities.models
+            item: model
+            actions:
+              - assert:
+                  expr: "Array.isArray(model.capabilities)"
+                  message:
+                    expr: "`model ${model.id} missing capabilities array`"
+              - assert:
+                  expr: "config.capabilitiesExpectedAll.every((needle) => model.capabilities.includes(needle))"
+                  message:
+                    expr: "`model ${model.id} missing required capability: ${JSON.stringify(model.capabilities)}`"
+              - if:
+                  expr: "visionRequiredSet.has(model.id)"
+                  then:
+                    - assert:
+                        expr: "model.capabilities.includes('vision')"
+                        message:
+                          expr: "`model ${model.id} should support vision: ${JSON.stringify(model.capabilities)}`"
+              - if:
+                  expr: "visionNotRequiredSet.has(model.id)"
+                  then:
+                    - assert:
+                        expr: "!model.capabilities.includes('vision')"
+                        message:
+                          expr: "`model ${model.id} should NOT advertise vision: ${JSON.stringify(model.capabilities)}`"
+        - call: models.restore
+          args:
+            - ref: env
+            - id:
+                expr: config.primaryModel
+      detailsExpr: "JSON.stringify({ primary: config.primaryModel, secondary: config.secondaryModel, failover: config.failoverModel, continuityHit: String(continuityOutbound.text).includes(config.continuityNeedle), failoverActivated: failoverResult.activatedModel, capabilityCount: capabilities.models.length })"

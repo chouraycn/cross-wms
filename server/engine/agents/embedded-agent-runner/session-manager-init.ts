@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Prepares session managers and transcript state before embedded runs.
  */

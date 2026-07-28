@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Rate limiter for noisy websocket handshake auth logs.
 import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
 

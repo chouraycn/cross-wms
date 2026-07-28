@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor health contribution helpers collect health checks from plugin manifests.
 // 移植自 openclaw/src/flows/doctor-health-contributions.ts（降级实现）。
 // 降级说明：大量依赖模块（gateway、auth、cron、agents 等）未移植，

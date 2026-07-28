@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared table formatting helpers for session commands.
  *

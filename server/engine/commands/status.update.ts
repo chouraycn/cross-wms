@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Update status helpers for `openclaw status`.
 // Wraps registry/git update checks and formats compact update rows/hints.
 

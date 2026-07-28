@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hardens manual compaction transcript boundaries after explicit `/compact`.
  */

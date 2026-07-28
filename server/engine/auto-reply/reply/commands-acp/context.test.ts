@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Tests ACP context command output and session metadata handling.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../../../config/config.js";

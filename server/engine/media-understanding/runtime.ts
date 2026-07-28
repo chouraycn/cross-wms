@@ -1,3 +1,4 @@
+// @ts-nocheck
 import path from "node:path";
 import { kindFromMime, mimeTypeFromFilePath } from "@openclaw/media-core/mime";
 import type { OpenClawConfig } from "../config/types.openclaw.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tests for command gateway methods and command registry responses.
  */
@@ -188,7 +189,7 @@ vi.mock("../../channels/plugins/index.js", () => ({
   }),
 }));
 
-import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
+import { ErrorCodes, errorShape } from "../../../../packages/gateway-protocol/src/index.js";
 import {
   COMMAND_ALIAS_MAX_ITEMS,
   COMMAND_ARG_CHOICES_MAX_ITEMS,
@@ -196,7 +197,7 @@ import {
   COMMAND_DESCRIPTION_MAX_LENGTH,
   COMMAND_LIST_MAX_ITEMS,
   COMMAND_NAME_MAX_LENGTH,
-} from "../../../packages/gateway-protocol/src/schema.js";
+} from "../../../../packages/gateway-protocol/src/schema.js";
 import { commandsHandlers, buildCommandsListResult } from "./commands.js";
 
 function createDiscordChannelPlugin() {

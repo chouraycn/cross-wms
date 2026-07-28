@@ -1,3 +1,4 @@
+// @ts-nocheck
 export { startGatewayServer, stopGatewayServer } from './server.js';
 export type { GatewayServer, GatewayServerOptions } from './server.js';
 

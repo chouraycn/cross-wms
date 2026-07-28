@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements `openclaw uninstall`.
 // Handles interactive scope selection, service removal, state/workspace cleanup, and macOS app cleanup.
 

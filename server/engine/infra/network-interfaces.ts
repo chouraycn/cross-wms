@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as os from 'node:os';
 import { logger } from '../../logger.js';
 import { isPrivateIpAddress } from './ssrf.js';

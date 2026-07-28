@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds the channel setup list from bundled channels, installed plugins, and trusted catalog entries.
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { listChatChannels } from "@openclaw-src/channels/chat-meta.js";

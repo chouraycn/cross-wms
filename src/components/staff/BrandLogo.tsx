@@ -1,4 +1,4 @@
-import { cn } from './lib/utils.js';
+import { Box, Typography } from '@mui/material';
 
 export type BrandLogoProps = {
   /** Hide the "StaffDeck" wordmark and only render the logo mark. */
@@ -18,11 +18,22 @@ export default function BrandLogo({
   wordmarkClassName,
 }: BrandLogoProps) {
   return (
-    <span className={cn('flex items-center gap-[8px] overflow-hidden p-[4px]', className)}>
-      <span
+    <Box
+      className={className}
+      sx={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', p: '4px' }}
+    >
+      <Box
         aria-label="StaffDeck"
-        className="grid shrink-0 place-items-center rounded-[6px] bg-gradient-to-br from-[#527aff] to-[#105acf] text-white"
-        style={{ width: markSize, height: markSize }}
+        sx={{
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '6px',
+          width: markSize,
+          height: markSize,
+          background: 'linear-gradient(135deg, #527aff 0%, #105acf 100%)',
+          color: '#fff',
+          flexShrink: 0,
+        }}
       >
         <svg
           width={markSize * 0.6}
@@ -40,14 +51,17 @@ export default function BrandLogo({
           <path d="M12 12v8" />
           <path d="M12 12L5 8" />
         </svg>
-      </span>
+      </Box>
       {!markOnly && (
-        <span className={cn('flex flex-col items-center gap-[2px] leading-none', wordmarkClassName)}>
-          <strong className="text-[17px] font-semibold leading-none text-[#18181a]">
+        <Box
+          className={wordmarkClassName}
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', lineHeight: 0 }}
+        >
+          <Typography component="strong" sx={{ fontSize: 17, fontWeight: 600, lineHeight: 0, color: '#18181a' }}>
             StaffDeck
-          </strong>
-        </span>
+          </Typography>
+        </Box>
       )}
-    </span>
+    </Box>
   );
 }

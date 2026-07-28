@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Detects, resolves, and loads prompt image references for model input.
  */

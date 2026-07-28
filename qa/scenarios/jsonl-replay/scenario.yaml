@@ -1,0 +1,37 @@
+title: jsonl-replay QA Scenario
+scenario:
+  id: jsonl-replay
+  surface: core
+  coverage:
+    primary: [jsonl-replay]
+    secondary: []
+  objective: |
+    Verify jsonl-replay subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/jsonl-replay.md
+  codeRefs:
+    - server/engine/jsonl-replay/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: jsonl-replay
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: jsonl-replay
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: jsonl-replay
+detailsExpr: |
+  jsonl-replay scenario completed

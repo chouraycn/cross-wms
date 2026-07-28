@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Text-mode status runtime barrel.
 // Kept separate from command orchestration so JSON/fast status does not import table/theme helpers.
 

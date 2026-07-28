@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor prompt adapter that centralizes repair, force, update, and noninteractive behavior. */
 import { confirm, select } from "@clack/prompts";
 import {

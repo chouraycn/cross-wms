@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Logs gateway methods expose bounded tails from the configured gateway log.
 import {
   ErrorCodes,

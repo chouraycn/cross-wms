@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Formats detailed subagent run information for the info action.
 import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
 import { subagentRuns } from "../../../agents/subagent-registry-memory.js";

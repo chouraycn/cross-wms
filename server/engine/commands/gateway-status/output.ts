@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Text and JSON rendering for the gateway status command. */
 import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";

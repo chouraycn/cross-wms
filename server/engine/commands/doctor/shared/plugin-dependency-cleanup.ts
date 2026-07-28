@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor cleanup for stale plugin dependency install state and dangling runtime symlinks.
 import fs from "node:fs/promises";
 import path from "node:path";

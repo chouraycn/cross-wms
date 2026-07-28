@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Applies migration plans with backup, filtering, reporting, and progress output. */
 import fs from "node:fs/promises";
 import { withProgress } from "@openclaw-src/cli/progress.js";

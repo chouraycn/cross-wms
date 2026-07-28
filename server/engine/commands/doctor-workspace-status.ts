@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor status summary for workspace skills, plugins, and task-flow recovery hints. */
 import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";

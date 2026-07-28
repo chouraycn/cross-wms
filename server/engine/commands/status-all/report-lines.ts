@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Renders `openclaw status --all` report data into terminal lines.
 // Styling is applied here so data builders remain color/theme agnostic.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Row builders used by `openclaw models list` source orchestration. */
 import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";

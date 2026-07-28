@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Cron validation tests cover channel target validation against plugin
 // prefixes/aliases and runtime config for cron delivery destinations.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

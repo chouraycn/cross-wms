@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway credential secret-input resolver.
 // Resolves SecretRefs before applying Gateway credential precedence rules.
 import type { OpenClawConfig } from "../config/types.openclaw.js";

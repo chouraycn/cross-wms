@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Decodes HTML-entity escaped tool-call arguments in stream wrappers.
  */

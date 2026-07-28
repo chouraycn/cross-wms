@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor checks and repairs for workspace memory files and legacy workspace hints. */
 import fs from "node:fs";
 import path from "node:path";

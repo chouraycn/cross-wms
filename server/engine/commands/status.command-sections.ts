@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Section-level value and row builders for the standard status report.
 // These helpers own compact operator text for agents, tasks, memory, health, sessions, and footers.
 

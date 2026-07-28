@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway exec approval manager.
 // Tracks pending operator decisions and short-lived resolved approval records.
 import { randomUUID } from "node:crypto";

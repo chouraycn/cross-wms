@@ -1,0 +1,37 @@
+title: scheduling QA Scenario
+scenario:
+  id: scheduling
+  surface: core
+  coverage:
+    primary: [scheduling]
+    secondary: []
+  objective: |
+    Verify scheduling subsystem behavior in CrossWMS context.
+  successCriteria:
+    - All steps execute without errors
+    - Expected outputs match assertions
+    - WMS business data integrity preserved
+  docsRefs:
+    - docs/concepts/scheduling.md
+  codeRefs:
+    - server/engine/scheduling/
+  execution:
+    mode: automated
+    timeout: 300
+    retries: 2
+flow:
+  steps:
+    - name: Setup
+      actions:
+        - action: init
+          target: scheduling
+    - name: Core Operation
+      actions:
+        - action: verify
+          target: scheduling
+    - name: Teardown
+      actions:
+        - action: cleanup
+          target: scheduling
+detailsExpr: |
+  scheduling scenario completed

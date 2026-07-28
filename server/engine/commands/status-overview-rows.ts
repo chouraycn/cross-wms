@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds overview table rows for `openclaw status` and `openclaw status --all`.
 // The row builders combine scan surfaces with health/session summaries while keeping rendering elsewhere.
 

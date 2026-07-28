@@ -1,24 +1,32 @@
-import { logger } from '../../logger.js';
-import { listBindings } from './bindings.js';
-import { resolveAgentRoute } from './resolve-route.js';
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeAgentId } from './session-key.js';
-import type { ChannelRouteTarget, RouteBinding } from './types.js';
+// @ts-nocheck
+// Channel route target helpers normalize channel route targets for delivery.
+import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeChatChannelId } from "../channels/ids.js";
+import { listRouteBindings } from "../config/bindings.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveAgentRoute } from "./resolve-route.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeAgentId } from "./session-key.js";
 
-export interface ChannelConfig {
-  channels?: Record<string, { enabled?: boolean; accounts?: Record<string, { enabled?: boolean }> }>;
-  bindings?: RouteBinding[];
-  agents?: { list?: { id: string }[]; defaultAgentId?: string };
-  session?: { dmScope?: string };
-}
+// Agent-to-channel coverage summary for diagnostics and background checks. It
+// samples configured channels/accounts and explicit bindings.
+export type ChannelRouteTarget = {
+  agentId: string;
+  channels: string[];
+};
 
-const CHANNELS_CONFIG_META_KEYS = new Set(['defaults', 'modelByChannel']);
+const CHANNELS_CONFIG_META_KEYS = new Set(["defaults", "modelByChannel"]);
 
 function normalizeConfiguredChannelKey(raw?: string | null): string {
-  return String(raw ?? '').trim().toLowerCase();
+  return normalizeChatChannelId(raw) ?? normalizeLowercaseStringOrEmpty(raw);
 }
 
-function listConfiguredChannelIds(cfg: ChannelConfig): string[] {
-  if (!cfg.channels || typeof cfg.channels !== 'object') {
+function normalizeRouteBindingChannelKey(raw?: string | null): string {
+  return normalizeLowercaseStringOrEmpty(raw);
+}
+
+function listConfiguredChannelIds(cfg: OpenClawConfig): string[] {
+  if (!hasRecord(cfg.channels)) {
     return [];
   }
   return Object.entries(cfg.channels)
@@ -26,28 +34,28 @@ function listConfiguredChannelIds(cfg: ChannelConfig): string[] {
       if (CHANNELS_CONFIG_META_KEYS.has(id)) {
         return false;
       }
-      return !(value && typeof value === 'object' && value.enabled === false);
+      return !(hasRecord(value) && value.enabled === false);
     })
     .map(([id]) => normalizeConfiguredChannelKey(id))
     .filter(Boolean)
-    .sort();
+    .toSorted();
 }
 
-function listConfiguredChannelAccountIds(cfg: ChannelConfig, channelId: string): string[] {
-  if (!cfg.channels || typeof cfg.channels !== 'object') {
+function listConfiguredChannelAccountIds(cfg: OpenClawConfig, channelId: string): string[] {
+  if (!hasRecord(cfg.channels)) {
     return [];
   }
   const channel = Object.entries(cfg.channels).find(
     ([id]) => normalizeConfiguredChannelKey(id) === channelId,
   )?.[1];
-  if (!channel || !channel.accounts || typeof channel.accounts !== 'object') {
+  if (!hasRecord(channel) || !hasRecord(channel.accounts)) {
     return [];
   }
   return Object.entries(channel.accounts)
-    .filter(([, value]) => !(value && typeof value === 'object' && value.enabled === false))
+    .filter(([, value]) => !(hasRecord(value) && value.enabled === false))
     .map(([accountId]) => normalizeAccountId(accountId))
     .filter(Boolean)
-    .sort();
+    .toSorted();
 }
 
 function addTarget(byAgent: Map<string, Set<string>>, agentId: string, channel: string): void {
@@ -61,22 +69,21 @@ function addTarget(byAgent: Map<string, Set<string>>, agentId: string, channel: 
   byAgent.set(normalizedAgentId, channels);
 }
 
-export function collectChannelRouteTargets(cfg: ChannelConfig): ChannelRouteTarget[] {
+export function collectChannelRouteTargets(cfg: OpenClawConfig): ChannelRouteTarget[] {
   const byAgent = new Map<string, Set<string>>();
 
-  for (const binding of listBindings()) {
-    addTarget(byAgent, binding.agentId, normalizeConfiguredChannelKey(binding.match.channel));
+  for (const binding of listRouteBindings(cfg)) {
+    addTarget(byAgent, binding.agentId, normalizeRouteBindingChannelKey(binding.match.channel));
   }
 
   for (const channel of listConfiguredChannelIds(cfg)) {
     const accountIds = listConfiguredChannelAccountIds(cfg, channel);
+    // Channels with no explicit accounts still have an implicit default account
+    // route, so sample it to discover the effective agent target.
     const sampledAccountIds = accountIds.length > 0 ? accountIds : [DEFAULT_ACCOUNT_ID];
     for (const accountId of sampledAccountIds) {
       const route = resolveAgentRoute({
-        cfg: cfg as {
-          agents?: { list?: { id: string }[]; defaultAgentId?: string };
-          session?: { dmScope?: 'main' | 'per-peer' | 'per-channel-peer' | 'per-account-channel-peer' };
-        },
+        cfg,
         channel,
         accountId,
       });
@@ -84,14 +91,11 @@ export function collectChannelRouteTargets(cfg: ChannelConfig): ChannelRouteTarg
     }
   }
 
-  const result = Array.from(byAgent.entries())
+  return Array.from(byAgent.entries())
     .map(([agentId, channels]) => ({
       agentId,
-      channels: Array.from(channels).sort(),
+      channels: Array.from(channels).toSorted(),
     }))
     .filter((target) => target.channels.length > 0)
-    .sort((a, b) => a.agentId.localeCompare(b.agentId));
-
-  logger.debug(`[Routing:ChannelRouteTargets] Collected ${result.length} targets`);
-  return result;
+    .toSorted((a, b) => a.agentId.localeCompare(b.agentId));
 }

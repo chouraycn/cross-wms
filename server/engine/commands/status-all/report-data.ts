@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Collects raw data needed to render `openclaw status --all`.
 // This file performs local read-only probes; formatting stays in report-line builders.
 

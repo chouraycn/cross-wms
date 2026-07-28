@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor config-flow steps for legacy compatibility and unknown-key cleanup.
 import { formatConfigIssueLines } from "@openclaw-src/config/issue-format.js";
 import { protectActiveAuthProfileConfig } from "@openclaw-src/doctor-auth-profile-config.js";

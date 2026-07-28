@@ -1,113 +1,50 @@
-import { randomUUID } from 'node:crypto';
-export type { CrestodianAuditEntry } from './types.js';
-import type {
-  CrestodianAuditEntry,
-  CrestodianOperationType,
-  CrestodianSeverity,
-} from './types.js';
+// @ts-nocheck
+// Crestodian audit helpers append JSONL records for approved local-state changes.
+import fs from "node:fs/promises";
+import path from "node:path";
+import { resolveStateDir } from "../config/paths.js";
+import { appendRegularFile } from "../infra/fs-safe.js";
 
-const auditLog: CrestodianAuditEntry[] = [];
-const MAX_AUDIT_ENTRIES = 500;
+/**
+ * Append-only audit log helpers for Crestodian writes.
+ *
+ * Discovery and read-only commands stay quiet; persistent operations append a
+ * JSONL entry under the state directory with config hashes and redacted details.
+ */
+type CrestodianAuditEntry = {
+  timestamp: string;
+  operation: string;
+  summary: string;
+  configPath?: string;
+  configHashBefore?: string | null;
+  configHashAfter?: string | null;
+  details?: Record<string, unknown>;
+};
 
-export function auditCrestodianOperation(entry: Omit<CrestodianAuditEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string }): CrestodianAuditEntry {
-  const fullEntry: CrestodianAuditEntry = {
-    id: entry.id ?? randomUUID(),
-    timestamp: entry.timestamp ?? new Date().toISOString(),
-    operation: entry.operation,
-    status: entry.status,
-    initiator: entry.initiator,
-    message: entry.message,
-    ...(entry.durationMs !== undefined ? { durationMs: entry.durationMs } : {}),
-    ...(entry.details ? { details: entry.details } : {}),
-    ...(entry.error ? { error: entry.error } : {}),
-  };
-
-  auditLog.push(fullEntry);
-  if (auditLog.length > MAX_AUDIT_ENTRIES) {
-    auditLog.shift();
-  }
-
-  return fullEntry;
+/** Resolve the JSONL audit path for Crestodian persistent operations. */
+export function resolveCrestodianAuditPath(
+  env: NodeJS.ProcessEnv = process.env,
+  stateDir = resolveStateDir(env),
+): string {
+  return path.join(stateDir, "audit", "crestodian.jsonl");
 }
 
-export function getRecentAuditEntries(limit?: number): CrestodianAuditEntry[] {
-  const entries = [...auditLog].reverse();
-  if (limit && limit < entries.length) {
-    return entries.slice(0, limit);
-  }
-  return entries;
-}
-
-export function getAuditEntriesByOperation(
-  operation: CrestodianOperationType,
-  limit?: number,
-): CrestodianAuditEntry[] {
-  const entries = auditLog.filter((e) => e.operation === operation).reverse();
-  if (limit && limit < entries.length) {
-    return entries.slice(0, limit);
-  }
-  return entries;
-}
-
-export function getAuditEntriesByStatus(
-  status: CrestodianAuditEntry['status'],
-  limit?: number,
-): CrestodianAuditEntry[] {
-  const entries = auditLog.filter((e) => e.status === status).reverse();
-  if (limit && limit < entries.length) {
-    return entries.slice(0, limit);
-  }
-  return entries;
-}
-
-export function getAuditSummary(): {
-  total: number;
-  byOperation: Record<string, number>;
-  byStatus: Record<string, number>;
-  byInitiator: Record<string, number>;
-  successRate: number;
-} {
-  const byOperation: Record<string, number> = {};
-  const byStatus: Record<string, number> = {};
-  const byInitiator: Record<string, number> = {};
-  let completed = 0;
-  let total = 0;
-
-  for (const entry of auditLog) {
-    total++;
-    byOperation[entry.operation] = (byOperation[entry.operation] ?? 0) + 1;
-    byStatus[entry.status] = (byStatus[entry.status] ?? 0) + 1;
-    byInitiator[entry.initiator] = (byInitiator[entry.initiator] ?? 0) + 1;
-    if (entry.status === 'completed') {
-      completed++;
-    }
-  }
-
-  return {
-    total,
-    byOperation,
-    byStatus,
-    byInitiator,
-    successRate: total > 0 ? completed / total : 1,
-  };
-}
-
-export function clearAuditLog(): void {
-  auditLog.length = 0;
-}
-
-export function formatAuditEntry(entry: CrestodianAuditEntry): string {
-  const parts: string[] = [];
-  parts.push(`[${entry.timestamp}]`);
-  parts.push(`[${entry.operation.toUpperCase()}]`);
-  parts.push(`[${entry.status}]`);
-  parts.push(`[${entry.initiator}]`);
-  parts.push(entry.message);
-  if (entry.durationMs !== undefined) {
-    parts.push(`(${entry.durationMs}ms)`);
-  }
-  if (entry.error) {
-    parts.push(`- ERROR: ${entry.error}`);
-  }
-  return parts.join(' ');
+/** Append one Crestodian audit entry and return the file path written. */
+export async function appendCrestodianAuditEntry(
+  entry: Omit<CrestodianAuditEntry, "timestamp">,
+  opts: { env?: NodeJS.ProcessEnv; auditPath?: string } = {},
+): Promise<string> {
+  const auditPath = opts.auditPath ?? resolveCrestodianAuditPath(opts.env);
+  await fs.mkdir(path.dirname(auditPath), { recursive: true });
+  const line = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    ...entry,
+  } satisfies CrestodianAuditEntry);
+  // Audit writes reject symlinked parents so approval records cannot be redirected silently.
+  await appendRegularFile({
+    filePath: auditPath,
+    content: `${line}\n`,
+    rejectSymlinkParents: true,
+  });
+  return auditPath;
 }

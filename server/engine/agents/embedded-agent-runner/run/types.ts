@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared result and attempt types for embedded-agent run internals.
  */

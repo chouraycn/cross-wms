@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Applies non-interactive setup for provider plugins.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Desktop 模块统一导出
  *

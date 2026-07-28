@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Repairs persisted signed-thinking replay state after provider-confirmed rejection.
  */

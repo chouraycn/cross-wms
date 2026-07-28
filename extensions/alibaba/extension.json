@@ -1,0 +1,10 @@
+{
+  "id": "alibaba",
+  "name": "alibaba",
+  "description": "alibaba extension ported from openclaw",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": false,
+  "authType": "none"
+}

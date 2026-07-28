@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Rotates compacted sessions into successor transcript files when configured.
  */

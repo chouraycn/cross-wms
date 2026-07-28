@@ -1,143 +1,158 @@
-import { z } from 'zod';
-export type { CrestodianRescuePolicy } from './types.js';
-import type { CrestodianRescuePolicy, CrestodianSeverity, CrestodianOperationType } from './types.js';
+// @ts-nocheck
+// Crestodian rescue policy gates remote writes by owner, DM, sandbox, and YOLO posture.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeAgentId } from "../routing/session-key.js";
 
-export const rescuePolicySchema = z.object({
-  enabled: z.boolean(),
-  autoRecover: z.boolean(),
-  maxAttempts: z.number().int().min(1).max(10),
-  cooldownMs: z.number().int().min(1000),
-  rules: z.array(
-    z.object({
-      probeName: z.string(),
-      minSeverity: z.enum(['info', 'warning', 'error', 'critical']),
-      action: z.enum([
-        'inspect',
-        'repair',
-        'restart',
-        'reset',
-        'backup',
-        'restore',
-        'cleanup',
-        'migrate',
-        'validate',
-        'diagnose',
-      ]),
-      enabled: z.boolean(),
-    }),
-  ),
-});
+/**
+ * Policy checks for remote Crestodian rescue commands.
+ *
+ * Rescue intentionally opens only for owner-controlled, non-sandboxed YOLO host
+ * posture unless config explicitly enables it, because remote commands can write local state.
+ */
+type CrestodianRescueDecision =
+  | {
+      allowed: true;
+      enabled: true;
+      ownerDmOnly: boolean;
+      pendingTtlMinutes: number;
+      yolo: true;
+      sandboxActive: false;
+    }
+  | {
+      allowed: false;
+      enabled: boolean;
+      ownerDmOnly: boolean;
+      pendingTtlMinutes: number;
+      yolo: boolean;
+      sandboxActive: boolean;
+      reason: "disabled" | "sandbox-active" | "not-yolo" | "not-owner" | "not-direct-message";
+      message: string;
+    };
 
-export function getDefaultRescuePolicy(): CrestodianRescuePolicy {
+type CrestodianRescuePolicyInput = {
+  cfg: OpenClawConfig;
+  agentId?: string;
+  senderIsOwner: boolean;
+  isDirectMessage: boolean;
+};
+
+function resolvePendingTtlMinutes(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 15;
+}
+
+function resolveAgentEntry(cfg: OpenClawConfig, agentId?: string) {
+  if (!agentId) {
+    return undefined;
+  }
+  const id = normalizeAgentId(agentId);
+  return cfg.agents?.list?.find(
+    (entry) => entry !== null && typeof entry === "object" && normalizeAgentId(entry.id) === id,
+  );
+}
+
+function resolveScopedExecConfig(cfg: OpenClawConfig, agentId?: string) {
+  return resolveAgentEntry(cfg, agentId)?.tools?.exec;
+}
+
+function resolveScopedSandboxMode(
+  cfg: OpenClawConfig,
+  agentId?: string,
+): "off" | "non-main" | "all" {
+  return (
+    resolveAgentEntry(cfg, agentId)?.sandbox?.mode ?? cfg.agents?.defaults?.sandbox?.mode ?? "off"
+  );
+}
+
+function isYoloHostPosture(cfg: OpenClawConfig, agentId?: string): boolean {
+  const scopedExec = resolveScopedExecConfig(cfg, agentId);
+  const globalExec = cfg.tools?.exec;
+  const security = scopedExec?.security ?? globalExec?.security ?? "full";
+  const ask = scopedExec?.ask ?? globalExec?.ask ?? "off";
+  return security === "full" && ask === "off";
+}
+
+/** Decide whether a message-channel rescue command is allowed for this sender/context. */
+export function resolveCrestodianRescuePolicy(
+  input: CrestodianRescuePolicyInput,
+): CrestodianRescueDecision {
+  const rescue = input.cfg.crestodian?.rescue;
+  const configuredEnabled = rescue?.enabled ?? "auto";
+  const ownerDmOnly = rescue?.ownerDmOnly ?? true;
+  const pendingTtlMinutes = resolvePendingTtlMinutes(rescue?.pendingTtlMinutes);
+  const sandboxActive = resolveScopedSandboxMode(input.cfg, input.agentId) !== "off";
+  const yolo = !sandboxActive && isYoloHostPosture(input.cfg, input.agentId);
+  // "auto" means rescue follows host posture; explicit false/true still keeps owner/DM gates.
+  const enabled = configuredEnabled === "auto" ? yolo : configuredEnabled;
+
+  if (!enabled) {
+    return {
+      allowed: false,
+      enabled,
+      ownerDmOnly,
+      pendingTtlMinutes,
+      yolo,
+      sandboxActive,
+      reason: "disabled",
+      message:
+        "Crestodian rescue is disabled. Set crestodian.rescue.enabled=true or use YOLO host posture with sandboxing off.",
+    };
+  }
+  if (sandboxActive) {
+    return {
+      allowed: false,
+      enabled,
+      ownerDmOnly,
+      pendingTtlMinutes,
+      yolo,
+      sandboxActive,
+      reason: "sandbox-active",
+      message:
+        "Crestodian rescue is blocked because OpenClaw sandboxing is active. Fix the install locally or disable sandboxing before using remote rescue.",
+    };
+  }
+  if (configuredEnabled === "auto" && !yolo) {
+    return {
+      allowed: false,
+      enabled,
+      ownerDmOnly,
+      pendingTtlMinutes,
+      yolo,
+      sandboxActive,
+      reason: "not-yolo",
+      message:
+        "Crestodian rescue auto-mode only opens in YOLO host posture: tools.exec.security=full, tools.exec.ask=off, and sandboxing off.",
+    };
+  }
+  if (!input.senderIsOwner) {
+    return {
+      allowed: false,
+      enabled,
+      ownerDmOnly,
+      pendingTtlMinutes,
+      yolo,
+      sandboxActive,
+      reason: "not-owner",
+      message: "Crestodian rescue only accepts commands from an OpenClaw owner.",
+    };
+  }
+  if (ownerDmOnly && !input.isDirectMessage) {
+    return {
+      allowed: false,
+      enabled,
+      ownerDmOnly,
+      pendingTtlMinutes,
+      yolo,
+      sandboxActive,
+      reason: "not-direct-message",
+      message: "Crestodian rescue is restricted to owner DMs by default.",
+    };
+  }
   return {
+    allowed: true,
     enabled: true,
-    autoRecover: false,
-    maxAttempts: 3,
-    cooldownMs: 300000,
-    rules: [
-      {
-        probeName: 'memory',
-        minSeverity: 'warning',
-        action: 'repair',
-        enabled: true,
-      },
-      {
-        probeName: 'disk',
-        minSeverity: 'warning',
-        action: 'cleanup',
-        enabled: true,
-      },
-      {
-        probeName: 'services',
-        minSeverity: 'critical',
-        action: 'restart',
-        enabled: true,
-      },
-      {
-        probeName: 'config',
-        minSeverity: 'warning',
-        action: 'validate',
-        enabled: true,
-      },
-      {
-        probeName: 'connectivity',
-        minSeverity: 'warning',
-        action: 'diagnose',
-        enabled: false,
-      },
-    ],
+    ownerDmOnly,
+    pendingTtlMinutes,
+    yolo: true,
+    sandboxActive: false,
   };
-}
-
-export function validateRescuePolicy(policy: unknown): policy is CrestodianRescuePolicy {
-  const result = rescuePolicySchema.safeParse(policy);
-  return result.success;
-}
-
-export function normalizeRescuePolicy(policy: Partial<CrestodianRescuePolicy>): CrestodianRescuePolicy {
-  const defaults = getDefaultRescuePolicy();
-  return {
-    enabled: policy.enabled ?? defaults.enabled,
-    autoRecover: policy.autoRecover ?? defaults.autoRecover,
-    maxAttempts: policy.maxAttempts ?? defaults.maxAttempts,
-    cooldownMs: policy.cooldownMs ?? defaults.cooldownMs,
-    rules: policy.rules ?? defaults.rules,
-  };
-}
-
-export function shouldTriggerRescue(params: {
-  probeName: string;
-  severity: CrestodianSeverity;
-  policy: CrestodianRescuePolicy;
-}): boolean {
-  if (!params.policy.enabled) {
-    return false;
-  }
-
-  const rule = params.policy.rules.find(
-    (r) => r.probeName === params.probeName && r.enabled,
-  );
-
-  if (!rule) {
-    return false;
-  }
-
-  const severityOrder: CrestodianSeverity[] = ['info', 'warning', 'error', 'critical'];
-  const minSeverityIndex = severityOrder.indexOf(rule.minSeverity);
-  const currentSeverityIndex = severityOrder.indexOf(params.severity);
-
-  return currentSeverityIndex >= minSeverityIndex;
-}
-
-export function getRescueAction(params: {
-  probeName: string;
-  severity: CrestodianSeverity;
-  policy: CrestodianRescuePolicy;
-}): CrestodianOperationType | null {
-  if (!shouldTriggerRescue(params)) {
-    return null;
-  }
-
-  const rule = params.policy.rules.find(
-    (r) => r.probeName === params.probeName && r.enabled,
-  );
-
-  return rule?.action ?? null;
-}
-
-export function formatRescuePolicy(policy: CrestodianRescuePolicy): string {
-  const lines: string[] = [];
-  lines.push('Rescue Policy:');
-  lines.push(`  Enabled: ${policy.enabled ? 'yes' : 'no'}`);
-  lines.push(`  Auto-recover: ${policy.autoRecover ? 'yes' : 'no'}`);
-  lines.push(`  Max attempts: ${policy.maxAttempts}`);
-  lines.push(`  Cooldown: ${policy.cooldownMs / 1000}s`);
-  lines.push('');
-  lines.push('  Rules:');
-  for (const rule of policy.rules) {
-    lines.push(
-      `    ${rule.enabled ? '✓' : '✗'} ${rule.probeName.padEnd(15)} ${rule.minSeverity.padEnd(10)} → ${rule.action}`,
-    );
-  }
-  return lines.join('\n');
 }

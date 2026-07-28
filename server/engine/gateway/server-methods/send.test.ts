@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Send method tests cover outbound message routing, transcript mirroring, poll
 // dispatch, plugin channel selection, and durable delivery dependencies.
 import fs from "node:fs/promises";

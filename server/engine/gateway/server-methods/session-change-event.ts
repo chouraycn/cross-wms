@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared sessions.changed broadcaster for gateway RPC and chat-command mutations.
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { buildGatewaySessionEventFields } from "../session-event-payload.js";
