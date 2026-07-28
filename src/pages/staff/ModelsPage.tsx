@@ -26,8 +26,10 @@ import {
 } from '../../components/staff/ui/index.js';
 import { Button as UIButton } from '../../components/staff/ui/button.js';
 import { notify } from '../../components/staff/ui/app-toast.js';
-import { cn } from '../../components/staff/lib/utils.js';
 import { MENU_CONTENT_CLASS, MENU_ITEM_CLASS } from '../../components/staff/lib/enterprise-ui.js';
+import { staffTokens } from '../../components/staff/lib/staffTokens.js';
+import { Box } from '@mui/material';
+import type { SxProps } from '@mui/material/styles';
 import { StatusBadge } from './scheduled-tasks/StatusBadge.js';
 import type { ModelConfigRead } from '../../components/staff/types/index.js';
 
@@ -262,11 +264,27 @@ export default function ModelsPage({
     const isTesting = testingModelIds.has(row.id);
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label={isTesting ? `${row.name} 正在测试` : '模型操作'}
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
-        >
-          {isTesting ? <LoaderCircle className="size-3.5 animate-spin" /> : <MoreHorizontal className="size-3.5" />}
+        <DropdownMenuTrigger asChild>
+          <Box
+            component="button"
+            type="button"
+            aria-label={isTesting ? `${row.name} 正在测试` : '模型操作'}
+            sx={{
+              ml: 'auto',
+              display: 'grid',
+              width: '28px',
+              height: '28px',
+              placeItems: 'center',
+              borderRadius: '8px',
+              color: '#1a71ff',
+              transition: 'background-color 0.15s',
+              outline: 'none',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', color: '#4a8dff' },
+              '&:focus-visible': { bgcolor: 'rgba(0,0,0,0.05)' },
+            }}
+          >
+            {isTesting ? <LoaderCircle size={14} className="animate-spin" /> : <MoreHorizontal size={14} />}
+          </Box>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
           <DropdownMenuItem className={MENU_ITEM_CLASS} disabled={isTesting} onSelect={() => edit(row)}>
@@ -297,29 +315,37 @@ export default function ModelsPage({
       width: 240,
       className: 'text-[#18181a]',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="flex min-w-0 items-center gap-[6px]">
-            <span className="truncate font-medium leading-[18px] text-[#18181a]">{row.name}</span>
+        <Box sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '2px' }}>
+          <Box component="span" sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '6px' }}>
+            <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, lineHeight: '18px', color: 'text.primary' }}>{row.name}</Box>
             {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
-          </span>
-          <span className="truncate text-[#858b9c]">
+          </Box>
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'text.secondary' }}>
             {row.enabled ? '已启用' : '已停用'} · {row.api_protocol}
-          </span>
-        </div>
+          </Box>
+        </Box>
       ),
     },
-    { key: 'model', title: '模型', width: 180, render: (row) => <span className="block truncate">{row.model}</span> },
+    { key: 'model', title: '模型', width: 180, render: (row) => <Box component="span" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.model}</Box> },
     {
       key: 'base_url',
       title: 'Base URL',
       className: 'whitespace-normal',
-      render: (row) => <span className="line-clamp-1 wrap-break-word text-[#858b9c]">{row.base_url || '-'}</span>,
+      render: (row) => (
+        <Box component="span" sx={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', fontSize: '12px', color: 'text.secondary' }}>
+          {row.base_url || '-'}
+        </Box>
+      ),
     },
     {
       key: 'api_key',
       title: 'API Key',
       width: 180,
-      render: (row) => <span className="block truncate font-mono text-[#858b9c]">{row.api_key_masked || '-'}</span>,
+      render: (row) => (
+        <Box component="span" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '12px', color: 'text.secondary' }}>
+          {row.api_key_masked || '-'}
+        </Box>
+      ),
     },
     {
       key: 'actions',
@@ -331,96 +357,135 @@ export default function ModelsPage({
   ];
 
   const renderMobileCard = (row: ModelConfigRead) => (
-    <article
-      className="min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px]"
-      key={row.id}
-    >
-      <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <div className="min-w-0">
-          <span className="flex min-w-0 items-center gap-[6px]">
-            <strong className="truncate text-[14px] font-semibold text-[#18181a]">{row.name}</strong>
+    <Box component="article" sx={staffTokens.mobileCard} key={row.id}>
+      <Box sx={{ display: 'flex', minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '6px' }}>
+            <Box component="strong" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{row.name}</Box>
             {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
-          </span>
-          <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">
+          </Box>
+          <Box component="span" sx={{ mt: '2px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'text.secondary' }}>
             {row.enabled ? '已启用' : '已停用'} · {row.api_protocol}
-          </span>
-        </div>
+          </Box>
+        </Box>
         {renderActions(row)}
-      </div>
-      <p className="mt-[8px] line-clamp-1 wrap-break-word text-[12px] text-[#858b9c]">{row.model}</p>
-      <p className="mt-[4px] line-clamp-1 wrap-break-word font-mono text-[12px] text-[#858b9c]">
+      </Box>
+      <Box component="p" sx={{ mt: '8px', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', fontSize: '12px', color: 'text.secondary' }}>{row.model}</Box>
+      <Box component="p" sx={{ mt: '4px', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '12px', color: 'text.secondary' }}>
         {row.api_key_masked || '-'}
-      </p>
-    </article>
+      </Box>
+    </Box>
   );
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]">
+    <Box sx={{ minHeight: '100%', boxSizing: 'border-box', px: '48px', pt: '32px', pb: '43px', '@media (max-width:900px)': { px: '16px' } }}>
       <AppHeader onLogout={onLogout} userName={currentUser?.username} title="模型" />
 
-      <div className="mt-[20px] mb-[16px] flex items-center justify-end gap-[12px]">
+      <Box sx={{ mt: '20px', mb: '16px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
         <UIButton
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
+          sx={staffTokens.outlineActionButton}
         >
-          <RefreshCw className={cn('size-[14px]', loading && 'animate-spin')} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : undefined} />
           刷新
         </UIButton>
         <UIButton
           data-guide-target="models-create"
           onClick={createBlank}
-          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
+          sx={staffTokens.primaryButton}
         >
-          <Plus className="size-[14px]" />
+          <Plus size={14} />
           新建模型
         </UIButton>
-      </div>
+      </Box>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="模型统计">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '24px', borderRadius: '20px 20px 0 0', bgcolor: 'background.paper', padding: '18px 18px 24px 18px', boxShadow: '0 -4px 16px 0 rgba(0,0,0,0.05)' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '20px' }} aria-label="模型统计">
           <StatCard label="模型" value={rows.length} />
           <StatCard label="已启用" value={enabledCount} tone="green" />
           <StatCard label="默认模型" value={defaultRow?.name || '-'} valueClassName="text-[18px]" />
           <StatCard label="API 协议" value={providerCount} />
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <FlaskConical className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">模型列表</span>
-          </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+            <FlaskConical size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <Box component="span" sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1 }}>模型列表</Box>
+          </Box>
 
-          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
-            <Search className="size-[14px] shrink-0 text-[#858b9c]" />
-            <input
+          <Box
+            component="label"
+            sx={{
+              display: 'flex',
+              height: '34px',
+              width: '300px',
+              alignItems: 'center',
+              gap: '8px',
+              overflow: 'hidden',
+              borderRadius: '10px',
+              border: '0.5px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              px: '12px',
+              transition: 'border-color 0.15s',
+              '&:focus-within': { borderColor: 'text.primary' },
+              '@media (max-width:900px)': { width: '100%' },
+            }}
+          >
+            <Search size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <Box
+              component="input"
               value={searchText}
               placeholder="搜索名称、模型、API 协议或 Base URL"
               onChange={(event) => setSearchText(event.target.value)}
-              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
+              sx={{
+                height: '100%',
+                minWidth: 0,
+                flex: 1,
+                bgcolor: 'transparent',
+                px: '14px',
+                fontSize: '12px',
+                color: '#17191f',
+                outline: 'none',
+                border: 0,
+                '&::placeholder': { color: '#c0c6d4' },
+              }}
             />
             {searchText && (
-              <button
+              <Box
+                component="button"
                 type="button"
                 aria-label="清除搜索"
                 onClick={() => setSearchText('')}
-                className="grid size-[16px] shrink-0 place-items-center text-[#c0c6d4] hover:text-[#858b9c]"
+                sx={{
+                  display: 'grid',
+                  width: '16px',
+                  height: '16px',
+                  flexShrink: 0,
+                  placeItems: 'center',
+                  color: '#c0c6d4',
+                  cursor: 'pointer',
+                  border: 0,
+                  bgcolor: 'transparent',
+                  '&:hover': { color: '#858b9c' },
+                }}
               >
-                <X className="size-[14px]" />
-              </button>
+                <X size={14} />
+              </Box>
             )}
-          </label>
+          </Box>
 
-          <div className="grid gap-[10px] md:hidden">
+          <Box sx={{ display: 'grid', gap: '10px', '@media (min-width:768px)': { display: 'none' } }}>
             {filteredRows.length ? (
               pagedItems.map(renderMobileCard)
             ) : (
-              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无模型</div>
+              <Box sx={{ py: '40px', textAlign: 'center', fontSize: '13px', color: 'text.secondary' }}>暂无模型</Box>
             )}
-          </div>
+          </Box>
 
-          <div className="hidden md:block">
+          <Box sx={{ display: 'none', '@media (min-width:768px)': { display: 'block' } }}>
             <DataTable
               aria-label="模型列表"
               columns={columns}
@@ -429,34 +494,44 @@ export default function ModelsPage({
               loading={loading}
               emptyText="暂无模型，点击「新建模型」添加一个吧"
             />
-          </div>
+          </Box>
 
           {filteredRows.length > 0 && (
             <Paginator
               aria-label="模型分页"
-              className="mt-0 mb-[6px]"
               page={page}
               pageCount={pageCount}
               onChange={setPage}
             />
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Dialog open={editorOpen} onOpenChange={(next) => !next && closeEditor()}>
         <DialogContent
           aria-describedby={undefined}
-          className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[640px]"
+          sx={{
+            display: 'flex',
+            maxHeight: 'calc(100dvh - 4rem)',
+            width: 'calc(100% - 2rem)',
+            flexDirection: 'column',
+            gap: '16px',
+            overflow: 'hidden',
+            borderRadius: '14px',
+            px: '20px',
+            py: '16px',
+            '@media (min-width:640px)': { maxWidth: '640px' },
+          }}
         >
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
-            <FlaskConical className="size-[14px] shrink-0" />
-            <DialogTitle className="min-w-0 truncate text-[14px] font-normal leading-none text-[#757f9c]">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'text.secondary' }}>
+            <FlaskConical size={14} style={{ flexShrink: 0, color: '#858b9c' }} />
+            <DialogTitle sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: 'text.secondary' }}>
               {selected ? `编辑模型：${selected.name}` : '新建模型'}
             </DialogTitle>
-          </div>
+          </Box>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
-            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+          <Box sx={{ minHeight: 0, flex: 1, overflowY: 'auto', px: '12px' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px', '@media (min-width:640px)': { gridTemplateColumns: '1fr 1fr' } }}>
               <LabeledField label="名称">
                 <Input value={form.name} placeholder="例如 GPT-4o" onChange={(event) => updateForm('name', event.target.value)} />
               </LabeledField>
@@ -499,7 +574,7 @@ export default function ModelsPage({
                   onChange={(event) => updateForm('api_key', event.target.value)}
                 />
               </LabeledField>
-              <div className="grid grid-cols-2 gap-[14px]">
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <LabeledField label="Temperature">
                   <Input
                     type="number"
@@ -519,59 +594,61 @@ export default function ModelsPage({
                     onChange={(event) => updateForm('max_output_tokens', event.target.value)}
                   />
                 </LabeledField>
-              </div>
-              {form.api_protocol === 'openai_chat_completions' && <div className="sm:col-span-2">
-                <LabeledField label="额外请求参数（extra_body JSON）">
-                  <Textarea
-                    rows={5}
-                    value={form.extra_body}
-                    placeholder={'{\n  "thinking": {\n    "type": "disabled"\n  }\n}'}
-                    className="min-h-[116px] resize-y font-mono text-[12px]"
-                    onChange={(event) => updateForm('extra_body', event.target.value)}
-                  />
-                </LabeledField>
-              </div>}
-            </div>
-            <div className="mt-[16px] flex flex-wrap items-center gap-[24px]">
-              <label className="flex cursor-pointer items-center gap-[8px]">
+              </Box>
+              {form.api_protocol === 'openai_chat_completions' && (
+                <Box sx={{ '@media (min-width:640px)': { gridColumn: 'span 2' } }}>
+                  <LabeledField label="额外请求参数（extra_body JSON）">
+                    <Textarea
+                      rows={5}
+                      value={form.extra_body}
+                      placeholder={'{\n  "thinking": {\n    "type": "disabled"\n  }\n}'}
+                      sx={{ minHeight: '116px', resize: 'vertical', fontFamily: 'monospace', fontSize: '12px' }}
+                      onChange={(event) => updateForm('extra_body', event.target.value)}
+                    />
+                  </LabeledField>
+                </Box>
+              )}
+            </Box>
+            <Box sx={{ mt: '16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '24px' }}>
+              <Box component="label" sx={{ display: 'flex', cursor: 'pointer', alignItems: 'center', gap: '8px' }}>
                 <Switch checked={form.is_default} onCheckedChange={(next) => updateForm('is_default', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e]">设为默认</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-[8px]">
+                <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.primary' }}>设为默认</Box>
+              </Box>
+              <Box component="label" sx={{ display: 'flex', cursor: 'pointer', alignItems: 'center', gap: '8px' }}>
                 <Switch checked={form.enabled} onCheckedChange={(next) => updateForm('enabled', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e]">启用</span>
-              </label>
-            </div>
-          </div>
+                <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.primary' }}>启用</Box>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="flex items-center justify-end gap-[8px] px-[12px]">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', px: '12px' }}>
             <UIButton
               variant="outline"
               disabled={saving}
               onClick={closeEditor}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+              sx={staffTokens.dialogCancelButton}
             >
               取消
             </UIButton>
             <UIButton
               disabled={saving}
               onClick={() => void save()}
-              className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+              sx={[staffTokens.primaryButton, { width: '80px' }] as SxProps}
             >
               保存
             </UIButton>
-          </div>
+          </Box>
         </DialogContent>
       </Dialog>
-    </div>
+    </Box>
   );
 }
 
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
+    <Box component="label" sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.primary' }}>{label}</Box>
       {children}
-    </label>
+    </Box>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, ExternalLink, FlaskConical, Settings2 } from 'lucide-react';
+import { Box } from '@mui/material';
 
 import { api } from '../../../../components/staff/api/client.js';
 import {
@@ -155,9 +156,20 @@ export default function ModelSetupDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-[680px]">
         <DialogHeader>
-          <div className="mb-[8px] grid size-[40px] place-items-center rounded-[8px] bg-[#f2f6ff] text-[#1a71ff]">
+          <Box
+            sx={{
+              mb: '8px',
+              display: 'grid',
+              width: '40px',
+              height: '40px',
+              placeItems: 'center',
+              borderRadius: '8px',
+              bgcolor: '#f2f6ff',
+              color: '#1a71ff',
+            }}
+          >
             <Settings2 className="size-[20px]" />
-          </div>
+          </Box>
           <DialogTitle>需要先配置模型</DialogTitle>
           <DialogDescription>
             当前没有可用模型。完成配置并通过连通性测试后，才能发送对话和执行任务。
@@ -235,23 +247,55 @@ export default function ModelSetupDialog({
             </div>
           </div>
         ) : (
-          <div className="flex items-start gap-[10px] rounded-[8px] border border-[#f0d9a8] bg-[#fffaf0] p-[12px] text-[13px] text-[#7b5c16]">
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              borderRadius: '8px',
+              border: '1px solid #f0d9a8',
+              bgcolor: '#fffaf0',
+              p: '12px',
+              fontSize: '13px',
+              color: '#7b5c16',
+            }}
+          >
             <AlertCircle className="mt-[1px] size-[16px] shrink-0" />
             <span>当前账号没有模型管理权限，请联系管理员完成模型配置和连通性测试。</span>
-          </div>
+          </Box>
         )}
 
         {testResult && (
-          <div
-            className={testResult.success
-              ? 'flex items-start gap-[10px] rounded-[8px] border border-[#b7e4c7] bg-[#f0fbf4] p-[12px] text-[13px] text-[#247447]'
-              : 'flex items-start gap-[10px] rounded-[8px] border border-[#f2c4c4] bg-[#fff5f5] p-[12px] text-[13px] text-[#b42318]'}
+          <Box
+            sx={testResult.success
+              ? {
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                borderRadius: '8px',
+                border: '1px solid #b7e4c7',
+                bgcolor: '#f0fbf4',
+                p: '12px',
+                fontSize: '13px',
+                color: '#247447',
+              }
+              : {
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                borderRadius: '8px',
+                border: '1px solid #f2c4c4',
+                bgcolor: '#fff5f5',
+                p: '12px',
+                fontSize: '13px',
+                color: '#b42318',
+              }}
           >
             {testResult.success
               ? <CheckCircle2 className="mt-[1px] size-[16px] shrink-0" />
               : <AlertCircle className="mt-[1px] size-[16px] shrink-0" />}
             <span className="min-w-0 wrap-break-word">{testResult.message}</span>
-          </div>
+          </Box>
         )}
 
         <DialogFooter className={`gap-[8px] ${canConfigure ? 'sm:justify-between' : 'sm:justify-end'}`}>
@@ -265,7 +309,7 @@ export default function ModelSetupDialog({
               打开模型管理
             </Button>
           )}
-          <div className="flex justify-end gap-[8px]">
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {testResult?.success ? '返回对话' : '稍后配置'}
             </Button>
@@ -275,7 +319,7 @@ export default function ModelSetupDialog({
                 {testing ? '正在测试' : savedModelId ? '保存并重新测试' : '保存并测试'}
               </Button>
             )}
-          </div>
+          </Box>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -284,9 +328,9 @@ export default function ModelSetupDialog({
 
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex min-w-0 flex-col gap-[6px]">
+    <Box component="label" sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: '6px' }}>
       <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       {children}
-    </label>
+    </Box>
   );
 }

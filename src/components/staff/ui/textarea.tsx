@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { Box } from '@mui/material'
+import type { SxProps } from '@mui/material/styles'
 
 import { cn } from './utils'
 
-function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
+function Textarea({ className, ...props }: React.ComponentProps<'textarea'> & { sx?: SxProps }) {
   return (
     <Box
       component="textarea"

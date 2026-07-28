@@ -164,7 +164,6 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
               side="left"
               align="end"
               sideOffset={10}
-              className="flex w-[220px] flex-col items-start gap-[8px] rounded-[20px] border-0 bg-white p-0 py-[4px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0"
             >
               <Box
                 sx={{

@@ -185,7 +185,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
           }
         }}
       >
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
+        <DialogContent className="gap-0 overflow-hidden p-0">
           <DialogHeader className="px-[16px] pt-[16px] pb-[12px]">
             <DialogTitle className="text-[14px] leading-[normal] font-medium text-[#18181a]">
               重命名
@@ -209,7 +209,23 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', pt: '12px', pr: '16px', pb: '16px', pl: '12px' }}>
             <Button
               variant="outline"
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
+              sx={{
+                height: '32px',
+                width: '80px',
+                borderRadius: '10px',
+                border: '1px solid #e3e7f1',
+                bgcolor: 'background.paper',
+                px: '12px',
+                py: '8px',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: '#464c5e',
+                '&:hover': {
+                  borderColor: '#e3e7f1',
+                  bgcolor: '#f6f6f6',
+                  color: '#18181a',
+                },
+              }}
               onClick={() => {
                 setRenameSession(null);
                 setRenameTitle('');
@@ -218,7 +234,18 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
               取消
             </Button>
             <Button
-              className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] py-[8px] text-[14px] font-normal text-white hover:bg-[#303030]"
+              sx={{
+                height: '32px',
+                width: '80px',
+                borderRadius: '10px',
+                bgcolor: '#18181a',
+                px: '12px',
+                py: '8px',
+                fontSize: '14px',
+                fontWeight: 400,
+                color: '#fff',
+                '&:hover': { bgcolor: '#303030' },
+              }}
               onClick={() => void saveRename()}
             >
               保存

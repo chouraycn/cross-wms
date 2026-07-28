@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Select as MuiSelect, MenuItem as MuiMenuItem, Divider as MuiDivider, Box } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react'
 
 import { cn } from './utils'
@@ -66,7 +67,7 @@ function SelectValue({ placeholder, children }: { placeholder?: React.ReactNode;
   return null
 }
 
-function SelectTrigger({ className, size = 'default', children, ...props }: { size?: 'sm' | 'default' } & React.ComponentProps<'button'>) {
+function SelectTrigger({ className, size = 'default', children, ...props }: { size?: 'sm' | 'default' } & React.ComponentProps<'button'> & { sx?: SxProps<Theme> }) {
   const ctx = React.useContext(SelectCtx)
   if (!ctx) return null
   return (
