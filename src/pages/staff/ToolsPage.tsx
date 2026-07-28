@@ -1401,7 +1401,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
             />
             <button
               type="button"
-              sx={staffTokens.primaryButton}
+              className="min-w-[80px] h-[32px] gap-[6px] rounded-[10px] bg-[#18181a] px-[12px] text-[12px] text-white border-0 hover:bg-[#303030] disabled:opacity-50"
               onClick={() => void runTest()}
               disabled={testing}
             >
