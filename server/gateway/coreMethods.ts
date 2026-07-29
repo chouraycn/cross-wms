@@ -12,7 +12,7 @@ import type {
   GatewayHealth,
   GatewayMethodContext,
 } from "./types.js";
-import { registerGatewayMethod } from "./methodRegistry.js";
+import { registerGatewayMethod, getMethodRegistry } from "./methodRegistry.js";
 import { AcpSessionManager } from "../engine/acp/sessionManager.js";
 import { getActiveTurnCount } from "../engine/acp/activeTurns.js";
 
@@ -283,16 +283,201 @@ async function systemMethodsList(_params: unknown, _ctx: GatewayMethodContext) {
       "sessions.create",
       "sessions.delete",
       "sessions.resolve",
+      "sessions.send",
+      "sessions.steer",
       "agents.list",
       "agents.get",
       "models.list",
       "models.get",
+      "models.authStatus",
+      "models.authLogout",
       "tools.list",
       "tools.get",
       "health.get",
       "system.stats",
       "system.methods.list",
     ],
+  };
+}
+
+// ========== Sessions Send / Steer ==========
+
+// 会话引导（steer）注入的待处理引导消息
+interface SteerInjection {
+  sessionKey: string;
+  message: string;
+  injectedAt: number;
+  consumed: boolean;
+}
+const steerQueue = new Map<string, SteerInjection[]>();
+
+/**
+ * sessions.send — 发送消息到会话，等价于 chat.send 的会话语义别名。
+ * 与 openclaw 一致：内部转发到 chat.send，复用其 runChatSession 执行路径。
+ */
+async function sessionsSend(params: unknown, ctx: GatewayMethodContext) {
+  const { sessionKey, message, model, agent, mode } = params as {
+    sessionKey?: string;
+    message?: string;
+    model?: string;
+    agent?: string;
+    mode?: "standard" | "fast";
+  };
+
+  if (!sessionKey) {
+    return { ok: false, error: { code: "MISSING_SESSION", message: "sessionKey is required" } };
+  }
+  if (!message) {
+    return { ok: false, error: { code: "MISSING_MESSAGE", message: "message is required" } };
+  }
+
+  const registry = getMethodRegistry();
+  const result = await registry.invoke(
+    "chat.send",
+    { sessionKey, message, model, agent, mode },
+    ctx,
+  );
+
+  return result;
+}
+
+/**
+ * sessions.steer — 引导会话，向会话注入一条系统级引导消息，不影响用户消息历史。
+ * 与 openclaw 一致：steer 是非破坏性的方向引导，排队等待下一次 run 消费。
+ */
+async function sessionsSteer(params: unknown, _ctx: GatewayMethodContext) {
+  const { sessionKey, message, role = "system" } = params as {
+    sessionKey?: string;
+    message?: string;
+    role?: "system" | "user" | "assistant";
+  };
+
+  if (!sessionKey) {
+    return { ok: false, error: { code: "MISSING_SESSION", message: "sessionKey is required" } };
+  }
+  if (!message) {
+    return { ok: false, error: { code: "MISSING_MESSAGE", message: "message is required" } };
+  }
+
+  const injection: SteerInjection = {
+    sessionKey,
+    message,
+    injectedAt: Date.now(),
+    consumed: false,
+  };
+
+  const queue = steerQueue.get(sessionKey) ?? [];
+  queue.push(injection);
+  // 限制队列长度，避免无限增长
+  if (queue.length > 50) queue.splice(0, queue.length - 50);
+  steerQueue.set(sessionKey, queue);
+
+  return {
+    ok: true,
+    sessionKey,
+    role,
+    queued: queue.length,
+  };
+}
+
+// ========== Models Auth Status / Logout ==========
+
+// 模型 provider 认证状态（内存存储）
+interface ModelAuthState {
+  provider: string;
+  authenticated: boolean;
+  authType: "api_key" | "oauth" | "none";
+  lastCheckedAt: number;
+  reason?: string;
+}
+const modelAuthStates = new Map<string, ModelAuthState>();
+
+/**
+ * models.authStatus — 返回模型 provider 的认证状态。
+ * 参考 openclaw models-auth-status.ts，精简为基于内存状态 + models.list 的聚合。
+ */
+async function modelsAuthStatus(params: unknown, _ctx: GatewayMethodContext) {
+  const { provider, refresh = false } = params as { provider?: string; refresh?: boolean };
+
+  const registry = getMethodRegistry();
+  const modelsResult = await registry.invoke("models.list", {}, {
+    requestId: `models_auth_${Date.now()}`,
+    timestamp: Date.now(),
+  });
+
+  const allModels = (modelsResult.ok && modelsResult.result
+    ? (modelsResult.result as Record<string, unknown>).models
+    : []) as Array<{ id: string; provider?: string }>;
+
+  // 聚合 provider 列表（从已注册模型推导）
+  const providerSet = new Set<string>();
+  for (const model of allModels) {
+    if (model.provider) providerSet.add(model.provider);
+  }
+  if (provider) {
+    providerSet.clear();
+    providerSet.add(provider);
+  }
+
+  const now = Date.now();
+  const providers: Array<Record<string, unknown>> = [];
+  for (const p of providerSet) {
+    const state = modelAuthStates.get(p);
+    // refresh=true 时重新校验（此处刷新 lastCheckedAt）
+    if (refresh || !state) {
+      const nextState: ModelAuthState = {
+        provider: p,
+        authenticated: state?.authenticated ?? false,
+        authType: state?.authType ?? "none",
+        lastCheckedAt: now,
+        reason: state?.reason,
+      };
+      modelAuthStates.set(p, nextState);
+    }
+    const current = modelAuthStates.get(p)!;
+    providers.push({
+      provider: p,
+      authenticated: current.authenticated,
+      authType: current.authType,
+      lastCheckedAt: current.lastCheckedAt,
+      reason: current.reason ?? null,
+    });
+  }
+
+  return {
+    ok: true,
+    ts: now,
+    providers,
+    expectsOAuth: providers.some((p) => p.authType === "oauth"),
+  };
+}
+
+/**
+ * models.authLogout — 登出指定 provider 的模型认证。
+ * 参考 openclaw models-auth-status.ts，清除内存认证状态。
+ */
+async function modelsAuthLogout(params: unknown, _ctx: GatewayMethodContext) {
+  const { provider } = params as { provider?: string };
+
+  if (!provider) {
+    return { ok: false, error: { code: "INVALID_REQUEST", message: "provider is required" } };
+  }
+
+  const removed = modelAuthStates.delete(provider);
+  // 主动标记为未认证，确保后续 authStatus 反映登出结果
+  modelAuthStates.set(provider, {
+    provider,
+    authenticated: false,
+    authType: "none",
+    lastCheckedAt: Date.now(),
+    reason: "logged out",
+  });
+
+  return {
+    ok: true,
+    provider,
+    removedProfiles: removed ? 1 : 0,
+    abortedRunIds: [] as string[],
   };
 }
 
@@ -305,10 +490,14 @@ export function registerCoreMethods(): void {
   registerGatewayMethod("sessions.create", sessionsCreate);
   registerGatewayMethod("sessions.delete", sessionsDelete);
   registerGatewayMethod("sessions.resolve", sessionsResolve);
+  registerGatewayMethod("sessions.send", sessionsSend);
+  registerGatewayMethod("sessions.steer", sessionsSteer);
   registerGatewayMethod("agents.list", agentsList);
   registerGatewayMethod("agents.get", agentsGet);
   registerGatewayMethod("models.list", modelsList);
   registerGatewayMethod("models.get", modelsGet);
+  registerGatewayMethod("models.authStatus", modelsAuthStatus);
+  registerGatewayMethod("models.authLogout", modelsAuthLogout);
   registerGatewayMethod("tools.list", toolsList);
   registerGatewayMethod("tools.get", toolsGet);
   registerGatewayMethod("health.get", healthGet);

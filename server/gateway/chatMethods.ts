@@ -14,7 +14,7 @@
  */
 
 import type { GatewayMethodContext } from "./types.js";
-import { registerGatewayMethod } from "./methodRegistry.js";
+import { registerGatewayMethod, getMethodRegistry } from "./methodRegistry.js";
 import { getSessionMessages, addMessage, getSessions, deleteSession } from "../dao/chat.js";
 import type { Message } from "../db-chat.js";
 import { runChatSession } from "../engine/runChatSession.js";
@@ -330,6 +330,64 @@ async function chatSearch(params: unknown, _ctx: GatewayMethodContext) {
   };
 }
 
+// ========== Chat Startup ==========
+
+async function chatStartup(params: unknown, ctx: GatewayMethodContext) {
+  const { sessionKey, limit = 50 } = params as { sessionKey?: string; limit?: number };
+
+  // 聚合初始状态：会话历史 + agent 列表 + 统计元数据
+  const registry = getMethodRegistry();
+
+  // 并行拉取 agents 列表与统计
+  const [agentsResult, statsResult] = await Promise.all([
+    registry.invoke("agents.list", {}, {
+      requestId: `chat_startup_agents_${Date.now()}`,
+      timestamp: Date.now(),
+    }),
+    registry.invoke("chat.stats", {}, {
+      requestId: `chat_startup_stats_${Date.now()}`,
+      timestamp: Date.now(),
+    }),
+  ]);
+
+  const startup: Record<string, unknown> = {
+    ts: Date.now(),
+    agents: (agentsResult.ok && agentsResult.result
+      ? (agentsResult.result as Record<string, unknown>).agents
+      : []) ?? [],
+    stats: statsResult.ok ? statsResult.result : null,
+    sessionKey: sessionKey ?? null,
+  };
+
+  // 若指定了 sessionKey，附带最近历史消息
+  if (sessionKey) {
+    const allMessages = getSessionMessages(sessionKey);
+    const total = allMessages.length;
+    const startIdx = Math.max(0, total - limit);
+    const messages = allMessages.slice(startIdx);
+    startup.messages = messages;
+    startup.total = total;
+    startup.hasMore = total > limit;
+  } else {
+    // 未指定 sessionKey 时返回最近会话列表
+    const sessions = getSessions();
+    startup.sessions = sessions.slice(-limit);
+    startup.totalSessions = sessions.length;
+  }
+
+  // 附带当前请求上下文
+  startup.context = {
+    requestId: ctx.requestId,
+    sessionKey: ctx.sessionKey ?? null,
+    userId: ctx.userId ?? null,
+  };
+
+  return {
+    ok: true,
+    ...startup,
+  };
+}
+
 /**
  * 注册所有 Chat 服务方法
  */
@@ -342,6 +400,7 @@ export function registerChatMethods(): void {
   registerGatewayMethod("chat.clear", chatClear);
   registerGatewayMethod("chat.stats", chatStats);
   registerGatewayMethod("chat.search", chatSearch);
+  registerGatewayMethod("chat.startup", chatStartup);
 }
 
 export function appendChatMessage(

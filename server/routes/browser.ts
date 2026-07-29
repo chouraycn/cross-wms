@@ -13,6 +13,9 @@
  *   POST /api/browser/type           — 输入文本
  *   POST /api/browser/screenshot    — 截图
  *   POST /api/browser/close          — 关闭浏览器
+ *   GET  /api/browser/cookies        — 获取 Cookie 列表
+ *   GET  /api/browser/pages          — 获取标签页列表
+ *   POST /api/browser/new-page       — 新建标签页
  */
 
 import { Router } from 'express';
@@ -188,6 +191,80 @@ router.post('/stop-host', async (_req, res) => {
   try {
     await stopBrowserHost();
     res.json({ ok: true, data: { status: 'stopped' } });
+  } catch (err) {
+    res.json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+/**
+ * GET /api/browser/cookies
+ * 获取当前浏览器上下文的 Cookie 列表
+ * Query: ?name=xxx&domain=xxx （可选过滤）
+ */
+router.get('/cookies', async (req, res) => {
+  try {
+    const { name, domain } = req.query;
+    const response = await sendCommand('browser_cookies', {
+      action: 'get',
+      ...(name ? { name: String(name) } : {}),
+      ...(domain ? { domain: String(domain) } : {}),
+    });
+    res.json({
+      ok: response.ok,
+      data: response.output?.cookies ?? [],
+      error: response.error,
+    });
+  } catch (err) {
+    res.json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+/**
+ * GET /api/browser/pages
+ * 获取当前浏览器上下文中所有标签页列表
+ */
+router.get('/pages', async (_req, res) => {
+  try {
+    const response = await sendCommand('browser_tab_list');
+    const tabs = response.output?.tabs ?? [];
+    // 映射为前端 PageInfo 结构：以 index 作为 id
+    const pages = tabs.map((t: any) => ({
+      id: String(t.index),
+      url: t.url,
+      title: t.title,
+      active: !!t.active,
+    }));
+    res.json({
+      ok: response.ok,
+      data: { pages, activeIndex: response.output?.activeIndex ?? -1 },
+      error: response.error,
+    });
+  } catch (err) {
+    res.json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+/**
+ * POST /api/browser/new-page
+ * 新建标签页并可选导航到 URL
+ * Body: { url?: string }
+ */
+router.post('/new-page', async (req, res) => {
+  try {
+    const { url } = req.body;
+    const response = await sendCommand('browser_tab_new', { url });
+    const tabs = response.output?.tabs ?? [];
+    const pages = tabs.map((t: any) => ({
+      id: String(t.index),
+      url: t.url,
+      title: t.title,
+      active: !!t.active,
+    }));
+    res.json({
+      ok: response.ok,
+      data: { pages, activeIndex: response.output?.activeIndex ?? -1 },
+      error: response.error,
+    });
   } catch (err) {
     res.json({ ok: false, error: err instanceof Error ? err.message : String(err) });
   }

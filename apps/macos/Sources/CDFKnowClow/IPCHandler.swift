@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import CDFKnowIPC
 import OSLog
+import UserNotifications
 
 let ipcLogger = Logger(subsystem: "com.cdf.knowclow", category: "ipc")
 
@@ -47,6 +48,25 @@ final class IPCHandler: NSObject, WKScriptMessageHandler {
 
         case "pickFolder":
             return await handlePickFolder()
+
+        case "openFile":
+            guard let path = body["path"] as? String else {
+                return Response(ok: false, message: "Missing file path")
+            }
+            return handleOpenFile(path)
+
+        case "showInFinder":
+            guard let path = body["path"] as? String else {
+                return Response(ok: false, message: "Missing path")
+            }
+            return handleShowInFinder(path)
+
+        case "notification":
+            guard let title = body["title"] as? String,
+                  let notifBody = body["body"] as? String else {
+                return Response(ok: false, message: "Missing title or body")
+            }
+            return handleNotification(title: title, body: notifBody)
 
         default:
             ipcLogger.warning("Unknown IPC request type: \(type, privacy: .public)")
@@ -102,6 +122,49 @@ final class IPCHandler: NSObject, WKScriptMessageHandler {
                 return Response(ok: false, message: "Encoding error: \(error.localizedDescription)")
             }
         }
+    }
+
+    // MARK: - Open File
+
+    private func handleOpenFile(_ path: String) -> Response {
+        let url = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: path) else {
+            return Response(ok: false, message: "File not found: \(path)")
+        }
+        NSWorkspace.shared.open(url)
+        return Response(ok: true)
+    }
+
+    // MARK: - Show in Finder
+
+    private func handleShowInFinder(_ path: String) -> Response {
+        guard FileManager.default.fileExists(atPath: path) else {
+            return Response(ok: false, message: "Path not found: \(path)")
+        }
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+        return Response(ok: true)
+    }
+
+    // MARK: - Notification
+
+    private func handleNotification(title: String, body: String) -> Response {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            if granted {
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = body
+                content.sound = .default
+
+                let request = UNNotificationRequest(
+                    identifier: "cdf-\(Date().timeIntervalSince1970)",
+                    content: content,
+                    trigger: nil
+                )
+                center.add(request, withCompletionHandler: nil)
+            }
+        }
+        return Response(ok: true)
     }
 
     // MARK: - Response Sending

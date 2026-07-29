@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Media store persists loaded media files and metadata for later references.
 import "../infra/fs-safe-defaults.js";
 import crypto from "node:crypto";

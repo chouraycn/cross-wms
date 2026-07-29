@@ -34,6 +34,8 @@
     "paste": "貼り付け",
     "undo": "元に戻す",
     "redo": "やり直し",
+    "selectAll": "すべて選択",
+    "deselectAll": "選択を解除",
     "next": "次へ",
     "previous": "前へ",
     "finish": "完了",
@@ -41,15 +43,22 @@
     "continue": "続ける",
     "ok": "OK",
     "apply": "適用",
+    "discard": "破棄",
     "download": "ダウンロード",
     "upload": "アップロード",
     "view": "表示",
     "details": "詳細",
     "more": "もっと見る",
+    "less": "表示を減らす",
+    "expand": "展開",
+    "collapse": "折りたたむ",
     "settings": "設定",
     "about": "バージョン情報",
     "help": "ヘルプ",
-    "version": "バージョン"
+    "feedback": "フィードバック",
+    "version": "バージョン",
+    "itemCount_one": "{{count}} 件",
+    "itemCount_other": "{{count}} 件"
   },
   "sidebar": {
     "dashboard": "ダッシュボード",
@@ -59,13 +68,21 @@
     "inbound": "入庫管理",
     "outbound": "出庫管理",
     "transfer": "移管管理",
+    "partners": "パートナー",
+    "reports": "レポート",
     "settings": "設定",
     "skills": "スキル管理",
     "plugins": "プラグイン管理",
     "automation": "オートメーション",
     "projects": "プロジェクト管理",
     "models": "モデル管理",
-    "search": "検索"
+    "memory": "メモリ管理",
+    "workflow": "ワークフロー",
+    "wiki": "ナレッジベース",
+    "files": "ファイル管理",
+    "search": "検索",
+    "collapse": "サイドバーを折りたたむ",
+    "expand": "サイドバーを展開"
   },
   "chat": {
     "inputPlaceholder": "メッセージを入力...",
@@ -75,12 +92,21 @@
     "thinking": "考え中...",
     "expert": "エキスパート",
     "selectExpert": "エキスパートを選択",
+    "selectExpertDesc": "AI エキスパートを選択してタスクの支援を受けられます",
     "welcomeMessage": "こんにちは！今日はどのようにお手伝いしましょうか？",
+    "messageTooLong": "メッセージが長すぎます",
     "emptyChat": "メッセージはまだありません。会話を始めましょう！",
     "copyMessage": "メッセージをコピー",
     "deleteMessage": "メッセージを削除",
     "regenerate": "再生成",
-    "clearChat": "チャットをクリア"
+    "editMessage": "メッセージを編集",
+    "typing": "入力中...",
+    "attachFile": "添付ファイルを追加",
+    "uploadImage": "画像をアップロード",
+    "clearChat": "チャットをクリア",
+    "exportChat": "チャットをエクスポート",
+    "messageCount_one": "{{count}} 件のメッセージ",
+    "messageCount_other": "{{count}} 件のメッセージ"
   },
   "models": {
     "title": "モデル管理",
@@ -88,6 +114,7 @@
     "addModel": "モデルを追加",
     "modelName": "モデル名",
     "modelProvider": "プロバイダー",
+    "modelType": "モデルタイプ",
     "status": "ステータス",
     "active": "アクティブ",
     "inactive": "非アクティブ",
@@ -96,10 +123,15 @@
     "enable": "有効にする",
     "disable": "無効にする",
     "delete": "モデルを削除",
+    "edit": "モデルを編集",
     "confirmDelete": "このモデルを削除してもよろしいですか？",
     "noModels": "モデルがありません",
     "defaultModel": "デフォルトモデル",
-    "temperature": "温度"
+    "temperature": "温度",
+    "maxTokens": "最大トークン数",
+    "topP": "Top P",
+    "frequencyPenalty": "頻度ペナルティ",
+    "presencePenalty": "存在ペナルティ"
   },
   "settings": {
     "title": "設定",
@@ -112,7 +144,9 @@
     "systemMode": "システムに従う",
     "notifications": "通知",
     "enableNotifications": "通知を有効にする",
+    "soundEnabled": "効果音",
     "autoSave": "自動保存",
+    "autoSaveInterval": "自動保存間隔",
     "privacy": "プライバシー",
     "security": "セキュリティ",
     "account": "アカウント",
@@ -139,6 +173,8 @@
     "invalidInput": "無効な入力です。",
     "requiredField": "このフィールドは必須です。",
     "invalidEmail": "無効なメールアドレスです。",
+    "passwordTooShort": "パスワードが短すぎます。",
+    "confirmPasswordMismatch": "入力したパスワードが一致しません。",
     "fileTooLarge": "ファイルが大きすぎます。",
     "unsupportedFormat": "サポートされていないファイル形式です。",
     "uploadFailed": "アップロードに失敗しました。",
@@ -184,12 +220,14 @@
     "batch": "バッチ",
     "lot": "ロット",
     "expiryDate": "有効期限",
+    "manufactureDate": "製造日",
     "supplier": "サプライヤー",
     "customer": "顧客",
     "orderNo": "注文番号",
     "trackingNo": "追跡番号",
     "weight": "重量",
     "volume": "体積",
+    "dimensions": "寸法",
     "category": "カテゴリ",
     "description": "説明",
     "remarks": "備考",
@@ -197,5 +235,239 @@
     "updatedAt": "更新日時",
     "status": "ステータス",
     "actions": "操作"
+  },
+  "skills": {
+    "title": "スキル管理",
+    "searchPlaceholder": "スキルを検索...",
+    "categories": {
+      "core": "コア機能",
+      "data": "データ管理",
+      "auto": "自動化",
+      "tool": "ツール",
+      "communication": "コミュニケーション",
+      "document": "ドキュメント処理",
+      "design": "デザイン制作",
+      "development": "開発ツール",
+      "media": "メディア処理",
+      "finance": "財務分析",
+      "productivity": "生産性向上",
+      "ai-agent": "AI エージェント"
+    },
+    "status": {
+      "active": "有効",
+      "inactive": "無効",
+      "loading": "読み込み中",
+      "error": "読み込み失敗"
+    },
+    "actions": {
+      "enable": "有効化",
+      "disable": "無効化",
+      "install": "インストール",
+      "uninstall": "アンインストール",
+      "update": "更新",
+      "refresh": "再読み込み",
+      "scan": "セキュリティスキャン"
+    },
+    "install": {
+      "title": "スキルのインストール",
+      "downloading": "ダウンロード中",
+      "extracting": "解凍中",
+      "installing": "インストール中",
+      "scanning": "セキュリティスキャン中",
+      "completed": "インストール完了",
+      "failed": "インストール失敗",
+      "cancelled": "キャンセル済み",
+      "startInstall": "インストールを開始",
+      "cancelInstall": "インストールをキャンセル",
+      "source": "ソース",
+      "progress": "進捗",
+      "eta": "残り時間",
+      "warnings": "警告",
+      "errors": "エラー"
+    },
+    "scan": {
+      "title": "セキュリティスキャン結果",
+      "critical": "重大",
+      "warning": "警告",
+      "info": "情報",
+      "noIssues": "問題は見つかりませんでした",
+      "viewDetails": "詳細を表示",
+      "groupByRule": "ルールでグループ化",
+      "filterBySeverity": "重大度で絞り込み",
+      "exportResults": "結果をエクスポート",
+      "copyResults": "結果をコピー"
+    },
+    "chain": {
+      "title": "スキルチェーン",
+      "newChain": "新規チェーン",
+      "editChain": "チェーンを編集",
+      "deleteChain": "チェーンを削除",
+      "duplicateChain": "チェーンを複製",
+      "executeChain": "チェーンを実行",
+      "chainName": "チェーン名",
+      "chainDescription": "説明",
+      "failStrategy": "失敗時の戦略",
+      "failStrategies": {
+        "stop": "エラー時に停止",
+        "skip": "エラー時にスキップ",
+        "retry": "リトライして続行"
+      },
+      "nodes": "ステップ",
+      "addNode": "スキルノードを追加",
+      "removeNode": "ノードを削除",
+      "moveUp": "上に移動",
+      "moveDown": "下に移動",
+      "preview": "プレビュー",
+      "edit": "編集",
+      "executionPreview": "実行プレビュー",
+      "emptyState": "ステップがありません。スキルノードを追加してください"
+    },
+    "trigger": {
+      "keyword": "キーワードトリガー",
+      "intent": "インテントトリガー",
+      "schedule": "スケジュールトリガー",
+      "event": "イベントトリガー",
+      "autoTriggered": "自動トリガー",
+      "matchedKeywords": "一致したキーワード",
+      "matchScore": "一致スコア",
+      "status": {
+        "pending": "実行待ち",
+        "running": "実行中",
+        "completed": "完了",
+        "failed": "失敗"
+      },
+      "execute": "実行",
+      "retry": "リトライ",
+      "history": "実行履歴",
+      "recentExecutions": "最近の実行履歴"
+    },
+    "dependency": {
+      "title": "スキルの依存関係",
+      "dependencies": "依存関係",
+      "dependents": "被依存",
+      "conflicts": "競合",
+      "noDependencies": "依存関係なし",
+      "noDependents": "このスキルに依存しているスキルはありません",
+      "noConflicts": "競合なし",
+      "circularDependency": "循環依存",
+      "circularWarning": "循環依存が検出されました",
+      "required": "必須",
+      "optional": "オプション",
+      "dependencyGraph": "依存グラフ",
+      "viewGraph": "グラフを表示",
+      "edgeTypes": {
+        "required": "必須依存",
+        "optional": "オプション依存",
+        "conflict": "競合",
+        "plugin": "プラグイン拡張"
+      }
+    },
+    "health": {
+      "title": "スキルヘルス",
+      "overall": "総合スコア",
+      "metadata": "メタデータ完全性",
+      "dependencies": "依存宣言",
+      "documentation": "ドキュメント品質",
+      "security": "セキュリティコンプライアンス",
+      "score": "スコア",
+      "healthy": "正常",
+      "warning": "警告",
+      "critical": "重大",
+      "checking": "確認中",
+      "summary": {
+        "totalSkills": "スキル総数",
+        "healthySkills": "正常なスキル",
+        "warningSkills": "警告スキル",
+        "criticalSkills": "重大スキル",
+        "avgScore": "平均スコア"
+      },
+      "detail": {
+        "metaCompleteness": "メタデータ完全性",
+        "depDeclarations": "依存宣言",
+        "docQuality": "ドキュメント品質",
+        "securityCompliance": "セキュリティコンプライアンス"
+      }
+    },
+    "docQuality": {
+      "title": "ドキュメント品質チェック",
+      "overallScore": "総合スコア",
+      "level": {
+        "excellent": "優秀",
+        "good": "良好",
+        "fair": "普通",
+        "poor": "不良"
+      },
+      "checks": {
+        "structure": "構造の完全性",
+        "readability": "可読性",
+        "examples": "例の完全性",
+        "parameters": "パラメータ説明",
+        "formatting": "フォーマット規範"
+      },
+      "summary": {
+        "total": "合計",
+        "excellent": "優秀",
+        "good": "良好",
+        "fair": "普通",
+        "poor": "不良",
+        "avgScore": "平均スコア"
+      },
+      "issues": "問題",
+      "suggestions": "提案"
+    },
+    "usage": {
+      "title": "使用分析",
+      "trend": "呼び出し推移",
+      "topSkills": "トップスキル",
+      "cooccurrence": "共起組合せ",
+      "statusDistribution": "ステータス分布",
+      "timeRange": {
+        "7days": "過去7日間",
+        "14days": "過去14日間",
+        "30days": "過去30日間",
+        "90days": "過去90日間"
+      },
+      "totalCalls": "総呼び出し回数",
+      "avgDaily": "1日平均呼び出し",
+      "successRate": "成功率",
+      "errorRate": "エラー率"
+    },
+    "recommendations": {
+      "title": "スマートレコメンド",
+      "related": "関連レコメンド",
+      "basedOn": "あなたの利用習慣に基づく",
+      "noData": "レコメンドデータがありません（スキルを利用するとパーソナライズされたレコメンドが生成されます）",
+      "reason": {
+        "cooccurrence": "関連利用",
+        "similarity": "内容が類似",
+        "trending": "トレンド",
+        "collaborative": "協調フィルタリング"
+      }
+    },
+    "search": {
+      "hasDependencies": "依存あり",
+      "noDependencies": "依存なし",
+      "healthy": "正常",
+      "warning": "警告",
+      "critical": "重大",
+      "sortBy": {
+        "score": "スコア順",
+        "name": "名前順",
+        "recent": "新着順",
+        "health": "ヘルス順"
+      }
+    }
+  },
+  "slashCommands": {
+    "title": "スラッシュコマンド",
+    "search": "コマンドを検索...",
+    "categories": {
+      "system": "システム",
+      "skill": "スキル",
+      "navigation": "ナビゲーション",
+      "settings": "設定"
+    },
+    "notFound": "一致するコマンドが見つかりません",
+    "tryOther": "別のキーワードを試してください"
   }
 }

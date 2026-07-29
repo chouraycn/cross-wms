@@ -64,6 +64,9 @@ public enum Request: Sendable {
     case window(action: WindowAction)
     case openExternal(url: String)
     case pickFolder
+    case openFile(path: String)
+    case showInFinder(path: String)
+    case notification(title: String, body: String)
 }
 
 // MARK: - Responses
@@ -126,12 +129,18 @@ extension Request: Codable {
         case type
         case action
         case url
+        case path
+        case title
+        case body
     }
 
     private enum Kind: String, Codable {
         case window
         case openExternal
         case pickFolder
+        case openFile
+        case showInFinder
+        case notification
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -147,6 +156,19 @@ extension Request: Codable {
 
         case .pickFolder:
             try container.encode(Kind.pickFolder, forKey: .type)
+
+        case let .openFile(path):
+            try container.encode(Kind.openFile, forKey: .type)
+            try container.encode(path, forKey: .path)
+
+        case let .showInFinder(path):
+            try container.encode(Kind.showInFinder, forKey: .type)
+            try container.encode(path, forKey: .path)
+
+        case let .notification(title, body):
+            try container.encode(Kind.notification, forKey: .type)
+            try container.encode(title, forKey: .title)
+            try container.encode(body, forKey: .body)
         }
     }
 
@@ -164,6 +186,19 @@ extension Request: Codable {
 
         case .pickFolder:
             self = .pickFolder
+
+        case .openFile:
+            let path = try container.decode(String.self, forKey: .path)
+            self = .openFile(path: path)
+
+        case .showInFinder:
+            let path = try container.decode(String.self, forKey: .path)
+            self = .showInFinder(path: path)
+
+        case .notification:
+            let title = try container.decode(String.self, forKey: .title)
+            let body = try container.decode(String.self, forKey: .body)
+            self = .notification(title: title, body: body)
         }
     }
 }

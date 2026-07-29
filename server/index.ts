@@ -426,6 +426,10 @@ app.use('/api/inventory-transactions', lazyRouter(() => import('./routes/invento
 
 // ========== v3.0+: 低频路由延迟加载（参照 openclaw 轻量入口设计） ==========
 // 这些路由在首次请求时才动态 import，减少启动时间和内存占用
+// P2 安全加固：插件路由认证中间件（仅对写操作/敏感路径强制认证，需在 lazyRouter 之前注册）
+import { pluginRouteAuthMiddleware } from './gateway/pluginRouteAuth.js';
+app.use('/api/plugins', pluginRouteAuthMiddleware);
+app.use('/api/extensions', pluginRouteAuthMiddleware);
 app.use('/api/plugins', lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
 app.use('/api/extensions', lazyRouter(() => import('./routes/extensions.js'), undefined, 'extensions'));
 app.use('/api/message-lifecycle', lazyRouter(() => import('./routes/message-lifecycle.js'), undefined, 'message-lifecycle'));

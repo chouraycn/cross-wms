@@ -361,28 +361,40 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
     }
   }, []);
 
-  /** 模拟获取 Cookies（实际需要后端支持） */
+  /** 获取 Cookies（调用后端 API） */
   const fetchCookies = useCallback(async () => {
-    // TODO: 调用后端 API 获取 cookies
-    // 目前使用模拟数据
-    setCookies([
-      { name: 'session_id', value: 'abc123', domain: 'example.com', path: '/', secure: true },
-      { name: 'user_token', value: 'xyz789', domain: 'example.com', path: '/', secure: false },
-    ]);
+    try {
+      const res = await fetch('/api/browser/cookies');
+      const json = await res.json();
+      if (json.ok && Array.isArray(json.data)) {
+        setCookies(json.data);
+      } else {
+        // 浏览器未启动或无上下文时清空，不弹错误提示（初始加载场景）
+        setCookies([]);
+      }
+    } catch {
+      setCookies([]);
+    }
   }, []);
 
-  /** 模拟获取标签页列表（实际需要后端支持） */
+  /** 获取标签页列表（调用后端 API） */
   const fetchPages = useCallback(async () => {
-    // TODO: 调用后端 API 获取页面列表
-    // 目前使用模拟数据
-    const health = await fetchHealth();
-    if (health.hasPage && health.url) {
-      setPages([
-        { id: 'page-1', url: health.url, title: snapshot?.title || '当前页面', active: true },
-      ]);
-      setActivePageId('page-1');
+    try {
+      const res = await fetch('/api/browser/pages');
+      const json = await res.json();
+      if (json.ok && json.data && Array.isArray(json.data.pages)) {
+        setPages(json.data.pages);
+        const activePage = json.data.pages.find((p: PageInfo) => p.active);
+        setActivePageId(activePage ? activePage.id : null);
+      } else {
+        setPages([]);
+        setActivePageId(null);
+      }
+    } catch {
+      setPages([]);
+      setActivePageId(null);
     }
-  }, [fetchHealth, snapshot]);
+  }, []);
 
   // ===== Effects =====
 
@@ -424,6 +436,41 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
   const handleDeleteCookie = (name: string) => {
     setCookies((prev) => prev.filter((c) => c.name !== name));
   };
+
+  /** 新建标签页（可选 URL，调用后端 API） */
+  const handleNewPage = useCallback(async () => {
+    // 询问可选 URL（留空则新建空白标签页）
+    let targetUrl = '';
+    try {
+      targetUrl = window.prompt('请输入新标签页的 URL（留空则新建空白页）', '') || '';
+    } catch {
+      targetUrl = '';
+    }
+    targetUrl = targetUrl.trim();
+
+    setOperationLoading('new-page');
+    setError(null);
+    try {
+      const res = await fetch('/api/browser/new-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetUrl ? { url: targetUrl } : {}),
+      });
+      const json = await res.json();
+      if (json.ok && json.data && Array.isArray(json.data.pages)) {
+        setPages(json.data.pages);
+        const activePage = json.data.pages.find((p: PageInfo) => p.active);
+        setActivePageId(activePage ? activePage.id : null);
+        setSuccessMsg(targetUrl ? `已新建标签页并导航到 ${targetUrl}` : '已新建空白标签页');
+      } else {
+        setError(json.error || '新建标签页失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '网络错误');
+    } finally {
+      setOperationLoading(null);
+    }
+  }, []);
 
   // ===== Render =====
 
@@ -867,10 +914,8 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
               <Button
                 size="small"
                 startIcon={<AddIcon />}
-                onClick={() => {
-                  // TODO: 新建标签页
-                  setSuccessMsg('新建标签页功能需要后端支持');
-                }}
+                onClick={handleNewPage}
+                disabled={operationLoading === 'new-page'}
                 sx={{ fontSize: '0.75rem' }}
               >
                 新建
@@ -924,7 +969,7 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
             </List>
 
             <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 1 }}>
-              多标签页功能需要后端支持
+              点击「新建」可创建标签页，并可选填 URL
             </Typography>
           </Box>
         )}

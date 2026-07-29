@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Box, type SxProps } from '@mui/material'
+import { Box } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from './utils'
@@ -27,7 +28,7 @@ const badgeVariants = cva(
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>
 
-const VARIANT_STYLE: Record<BadgeVariant, SxProps> = {
+const VARIANT_STYLE: Record<BadgeVariant, SxProps<Theme>> = {
   default: { bgcolor: 'primary.main', color: 'primary.contrastText' },
   secondary: { bgcolor: 'secondary.main', color: 'secondary.contrastText' },
   destructive: { bgcolor: 'error.main', color: 'error.contrastText' },
@@ -40,10 +41,11 @@ function Badge({
   className,
   variant = 'default',
   asChild = false,
+  sx,
   children,
   ...props
 }: React.ComponentProps<'span'> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  VariantProps<typeof badgeVariants> & { asChild?: boolean; sx?: SxProps<Theme> }) {
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement
     return React.cloneElement(child, {
@@ -57,18 +59,21 @@ function Badge({
       data-slot="badge"
       data-variant={variant}
       className={cn(className)}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 0.5,
-        height: 20,
-        borderRadius: 999,
-        px: 1,
-        fontSize: 12,
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-        ...VARIANT_STYLE[(variant ?? 'default') as BadgeVariant],
-      }}
+      sx={[
+        {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          height: 20,
+          borderRadius: 999,
+          px: 1,
+          fontSize: 12,
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          ...VARIANT_STYLE[(variant ?? 'default') as BadgeVariant],
+        },
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ]}
       {...(props as Record<string, unknown>)}
     >
       {children}

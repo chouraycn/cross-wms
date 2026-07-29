@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Memory Host SDK module implements sqlite vec platform variant behavior.
 import { createRequire } from "node:module";
 

@@ -27,6 +27,7 @@ import {
   type ChannelType,
   type ChannelStatus,
 } from '../engine/channelSystem.js';
+import { randomBytes } from 'node:crypto';
 import { logger } from '../logger.js';
 
 const router: Router = Router();
@@ -338,6 +339,132 @@ router.delete('/:name/accounts/:accountId', (req, res) => {
   } catch (err) {
     logger.error('[ChannelsRoute] DELETE /:name/accounts/:accountId failed:', err);
     res.status(500).json({ error: 'Failed to remove account' });
+  }
+});
+
+/**
+ * ============== 微信 / 企业微信 扫码绑定二维码流 ==============
+ *
+ * 本桌面应用不内置微信 ilink 网关，二维码绑定采用本地会话模型：
+ *  - 后端生成一次性绑定 token（进程内内存存储，重启即失效），返回 token + 绑定内容；
+ *  - 前端用 qrcode 库把内容渲染成二维码图片展示；
+ *  - 轮询 qrcode-status 获取状态（wait → confirmed / expired）；
+ *  - qrcode-confirm 是「扫码确认」入口：真实环境由微信回调调用，
+ *    本地演示 / 调试由前端「模拟扫码确认」按钮调用。
+ *
+ * 路由：
+ *   GET  /api/channels/:name/wechat/qrcode          — 生成绑定二维码
+ *   GET  /api/channels/:name/wechat/qrcode-status   — 轮询绑定状态
+ *   POST /api/channels/:name/wechat/qrcode-confirm  — 确认绑定（微信回调 / 演示）
+ */
+
+type WechatBindStatus = 'wait' | 'confirmed' | 'expired';
+interface WechatBindSession {
+  token: string;
+  channelName: string;
+  content: string;
+  createdAt: number;
+  expiresAt: number;
+  status: WechatBindStatus;
+}
+
+const WECHAT_BIND_TTL_MS = 120_000;
+const wechatBindSessions = new Map<string, WechatBindSession>();
+
+/** 惰性清理过期会话，避免内存无限增长 */
+function purgeExpiredWechatSessions(now: number): void {
+  for (const [token, session] of wechatBindSessions) {
+    if (now > session.expiresAt) wechatBindSessions.delete(token);
+  }
+}
+
+/** 仅当通道存在且为微信 / 企业微信时返回配置 */
+function findWechatChannel(name: string) {
+  const manager = getChannelManager();
+  const channel = manager.getChannels().find(c => c.name === name);
+  return channel && (channel.type === 'wechat' || channel.type === 'wechat_work') ? channel : null;
+}
+
+/**
+ * GET /api/channels/:name/wechat/qrcode
+ * 生成一次性绑定 token 与二维码内容；返回 { qrcode, qrcode_img_content, qrcode_img_url }
+ */
+router.get('/:name/wechat/qrcode', (req, res) => {
+  try {
+    const { name } = req.params;
+    const channel = findWechatChannel(name);
+    if (!channel) {
+      res.status(404).json({ error: `WeChat channel '${name}' not found` });
+      return;
+    }
+    const now = Date.now();
+    purgeExpiredWechatSessions(now);
+    const token = randomBytes(16).toString('hex');
+    const content = `cdfknow://wechat/bind?token=${token}&channel=${encodeURIComponent(name)}&ts=${now}`;
+    wechatBindSessions.set(token, {
+      token,
+      channelName: name,
+      content,
+      createdAt: now,
+      expiresAt: now + WECHAT_BIND_TTL_MS,
+      status: 'wait',
+    });
+    logger.info(`[ChannelsRoute] WeChat bind qrcode issued for channel '${name}' (token=${token.slice(0, 8)}…)`);
+    res.json({ qrcode: token, qrcode_img_content: content, qrcode_img_url: null });
+  } catch (err) {
+    logger.error('[ChannelsRoute] GET /:name/wechat/qrcode failed:', err);
+    res.status(500).json({ error: 'Failed to issue WeChat bind qrcode' });
+  }
+});
+
+/**
+ * GET /api/channels/:name/wechat/qrcode-status?qrcode=xxx
+ * 轮询绑定状态；返回 { status }
+ */
+router.get('/:name/wechat/qrcode-status', (req, res) => {
+  try {
+    const { name } = req.params;
+    const qrcode = String(req.query.qrcode || '');
+    const session = wechatBindSessions.get(qrcode);
+    if (!session || session.channelName !== name) {
+      res.status(404).json({ error: 'Invalid or unknown qrcode' });
+      return;
+    }
+    const now = Date.now();
+    if (session.status === 'wait' && now > session.expiresAt) {
+      session.status = 'expired';
+    }
+    res.json({ status: session.status });
+  } catch (err) {
+    logger.error('[ChannelsRoute] GET /:name/wechat/qrcode-status failed:', err);
+    res.status(500).json({ error: 'Failed to query WeChat bind status' });
+  }
+});
+
+/**
+ * POST /api/channels/:name/wechat/qrcode-confirm?qrcode=xxx
+ * 确认绑定（真实环境由微信回调调用；本地演示由前端「模拟扫码确认」触发）。
+ * 返回 { ok, status }
+ */
+router.post('/:name/wechat/qrcode-confirm', (req, res) => {
+  try {
+    const { name } = req.params;
+    const qrcode = String(req.query.qrcode || '');
+    const session = wechatBindSessions.get(qrcode);
+    if (!session || session.channelName !== name) {
+      res.status(404).json({ error: 'Invalid or unknown qrcode' });
+      return;
+    }
+    if (session.status === 'expired') {
+      res.status(409).json({ error: 'Qrcode expired, please refresh' });
+      return;
+    }
+    session.status = 'confirmed';
+    logger.info(`[ChannelsRoute] WeChat bind confirmed for channel '${name}' (token=${qrcode.slice(0, 8)}…)`);
+    res.json({ ok: true, status: 'confirmed' });
+  } catch (err) {
+    logger.error('[ChannelsRoute] POST /:name/wechat/qrcode-confirm failed:', err);
+    res.status(500).json({ error: 'Failed to confirm WeChat bind' });
   }
 });
 

@@ -1,8 +1,12 @@
 // @ts-nocheck
 // Bridges OpenClaw-managed proxy TLS trust into Undici EnvHttpProxyAgent and
 // explicit ProxyAgent options without changing unrelated operator proxies.
-import { isRecord as isProxyTlsRecord } from "@openclaw/normalization-core/record-coerce";
 import type { EnvHttpProxyAgent } from "undici";
+
+// Inline isRecord to avoid bundling @openclaw/normalization-core (not installed)
+function isProxyTlsRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 import { resolveEnvHttpProxyAgentOptions, resolveEnvHttpProxyUrl } from "../proxy-env.js";
 import { getActiveManagedProxyTlsOptions, getActiveManagedProxyUrl } from "./active-proxy-state.js";
 import {

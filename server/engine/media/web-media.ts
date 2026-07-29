@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Web media helpers load local and remote media for web-facing surfaces.
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";

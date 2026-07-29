@@ -53,13 +53,22 @@ export type InboundMentionFacts = {
 export type ChatChannelId = string;
 
 /**
- * 内置聊天通道顺序（降级占位）。
+ * 内置聊天通道顺序（移植自 openclaw/src/channels/ids.ts）。
  *
  * openclaw 中 CHAT_CHANNEL_ORDER 是生成代码列出的内置聊天通道 id 顺序；
- * cross-wms 的 ids.ts 不导出此常量。这里给出空数组占位，保持调用方
- * 在没有内置聊天通道元数据时优雅降级。
+ * cross-wms 的 ids.ts 不导出此常量。这里按 channel-providers/index.ts 导出
+ * 的通道提供者列出 cross-wms 实际支持的通道 id，按字母序排序后冻结。
  */
-export const CHAT_CHANNEL_ORDER: readonly ChatChannelId[] = [];
+export const CHAT_CHANNEL_ORDER: readonly ChatChannelId[] = Object.freeze([
+  "discord",
+  "dingtalk",
+  "email",
+  "feishu",
+  "slack",
+  "telegram",
+  "wechat",
+  "webhook",
+]);
 
 // ============================================================================
 // ../config/types.access-groups.js —— AccessGroupConfig
@@ -215,18 +224,32 @@ export type PluginPackageChannel = {
 // ./plugins/bundled.js / registry.js —— 通道插件注册查询
 // ============================================================================
 //
-// 降级原因：cross-wms 的 registry.ts 实现不同，未提供 openclaw 的
-// getBundledChannelAccountInspector / getLoadedChannelPlugin / getChannelPlugin 等访问器。
-// 这里返回 undefined，让 read-only-account-inspect / route-projection 等调用方优雅降级。
+// 复用 cross-wms 的 plugins/runtime-channel-state.ts 真实实现读取活动注册表。
+// 移植自 openclaw/src/channels/plugins/registry-loaded-read.ts 的查找逻辑。
 
-/** 取已加载的通道插件（降级：始终返回 undefined）。 */
-export function getLoadedChannelPlugin(_channelId: string): ChannelPlugin | undefined {
+/** 取已加载的通道插件（复用真实注册表快照）。 */
+export function getLoadedChannelPlugin(channelId: string): ChannelPlugin | undefined {
+  const resolvedId = channelId?.trim().toLowerCase();
+  if (!resolvedId) {
+    return undefined;
+  }
+  const registry = getActivePluginChannelRegistryFromStateImpl();
+  if (!registry || !Array.isArray(registry.channels)) {
+    return undefined;
+  }
+  for (const entry of registry.channels) {
+    const plugin = entry?.plugin as ChannelPlugin | null | undefined;
+    const pluginId = plugin?.id?.trim().toLowerCase();
+    if (plugin && pluginId === resolvedId) {
+      return plugin;
+    }
+  }
   return undefined;
 }
 
-/** 取通道插件（降级：始终返回 undefined）。 */
-export function getChannelPlugin(_channelId: string): ChannelPlugin | undefined {
-  return undefined;
+/** 取通道插件（复用真实注册表快照，与 getLoadedChannelPlugin 一致）。 */
+export function getChannelPlugin(channelId: string): ChannelPlugin | undefined {
+  return getLoadedChannelPlugin(channelId);
 }
 
 /** 规范化通道 id（降级：返回原值或 undefined）。 */
@@ -238,45 +261,144 @@ export function normalizeChannelId(raw?: string | null): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-/** 取 bundled 通道账户检查器（降级：始终返回 undefined）。 */
+/**
+ * 取 bundled 通道账户检查器（移植自 openclaw channels/plugins/registry）。
+ *
+ * 优先返回已加载通道插件的 config.inspectAccount；
+ * 当插件未声明 inspectAccount 时返回 undefined（调用方按降级处理）。
+ */
 export function getBundledChannelAccountInspector(
-  _channelId: string,
+  channelId: string,
 ): ((cfg: unknown, accountId?: string | null) => Promise<unknown> | unknown) | undefined {
-  return undefined;
+  const plugin = getLoadedChannelPlugin(channelId);
+  const inspectAccount = plugin?.config?.inspectAccount;
+  if (typeof inspectAccount !== "function") {
+    return undefined;
+  }
+  return inspectAccount as (cfg: unknown, accountId?: string | null) => Promise<unknown> | unknown;
 }
 
-/** 解析 bundled 通道 thread-binding 默认放置（降级：始终返回 undefined）。 */
+/**
+ * 解析 bundled 通道 thread-binding 默认放置（移植自 openclaw channels/plugins/thread-binding-api）。
+ *
+ * 优先读取已加载通道插件的 conversationBindings.defaultTopLevelPlacement；
+ * 当插件未加载或未声明时回退到 "current"（openclaw 默认值）。
+ */
 export function resolveBundledChannelThreadBindingDefaultPlacement(
-  _channelId: string,
+  channelId: string,
 ): "current" | "child" | undefined {
-  return undefined;
+  const plugin = getLoadedChannelPlugin(channelId);
+  const placement = plugin?.conversationBindings?.defaultTopLevelPlacement;
+  return placement === "child" ? "child" : "current";
 }
 
-/** 列出 bundled 通道 id（降级：返回空数组）。 */
+/**
+ * 列出 bundled 通道 id（移植自 openclaw/src/channels/plugins/bundled-ids.ts）。
+ *
+ * 使用 cross-wms 的 listChannelCatalogEntries 读取 bundled 通道目录，
+ * 返回排序后的通道 id 列表。
+ */
 export function listBundledChannelIds(
-  _env?: NodeJS.ProcessEnv,
-  _discovery?: unknown,
+  env?: NodeJS.ProcessEnv,
+  discovery?: unknown,
 ): readonly string[] {
-  return [];
+  try {
+    // 延迟导入以避免循环依赖
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { listChannelCatalogEntries } = require("../plugins/channel-catalog-registry.js") as {
+      listChannelCatalogEntries: (params: {
+        origin?: string;
+        env?: NodeJS.ProcessEnv;
+        discovery?: unknown;
+      }) => Array<{ channel?: { id?: string } }>;
+    };
+    return listChannelCatalogEntries({
+      origin: "bundled",
+      env,
+      discovery,
+    })
+      .map((entry) => entry.channel?.id)
+      .filter((id): id is string => Boolean(id))
+      .sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
 }
 
 // ============================================================================
 // ./plugins/persisted-auth-state.js
 // ============================================================================
 
-/** 列出带持久化认证状态的 bundled 通道 id（降级：返回空数组）。 */
+/**
+ * 列出带持久化认证状态的 bundled 通道 id（移植自 openclaw channels/plugins/persisted-auth-state.ts）。
+ *
+ * openclaw 中通过读取通道包元数据的 persistedAuthState 字段判断；
+ * cross-wms 降级为：检查已加载通道插件是否声明了 token 相关配置来源
+ * （tokenSource / botTokenSource / appTokenSource / signingSecretSource）。
+ */
 export function listBundledChannelIdsWithPersistedAuthState(_discovery?: unknown): readonly string[] {
-  return [];
+  const result: string[] = [];
+  for (const channelId of CHAT_CHANNEL_ORDER) {
+    const plugin = getLoadedChannelPlugin(channelId);
+    if (!plugin?.config) {
+      continue;
+    }
+    const cfg = plugin.config;
+    if (
+      cfg.tokenSource ||
+      cfg.botTokenSource ||
+      cfg.appTokenSource ||
+      cfg.signingSecretSource
+    ) {
+      result.push(channelId);
+    }
+  }
+  return result;
 }
 
-/** 检查 bundled 通道是否带持久化认证状态（降级：始终返回 false）。 */
-export function hasBundledChannelPersistedAuthState(_params: {
+/**
+ * 检查 bundled 通道是否带持久化认证状态（移植自 openclaw channels/plugins/persisted-auth-state.ts）。
+ *
+ * 降级策略：检查已加载通道插件是否声明了 token 相关配置来源，
+ * 或环境变量中是否存在该通道对应的 token 配置。
+ */
+export function hasBundledChannelPersistedAuthState(params: {
   channelId: string;
   cfg: unknown;
-  env: NodeJS.ProcessEnv;
+  env?: NodeJS.ProcessEnv;
   discovery?: unknown;
 }): boolean {
-  return false;
+  const channelId = params.channelId?.trim().toLowerCase();
+  if (!channelId) {
+    return false;
+  }
+  // 优先检查已加载通道插件的 token 来源声明
+  const plugin = getLoadedChannelPlugin(channelId);
+  if (plugin?.config) {
+    const cfg = plugin.config;
+    if (
+      cfg.tokenSource ||
+      cfg.botTokenSource ||
+      cfg.appTokenSource ||
+      cfg.signingSecretSource
+    ) {
+      return true;
+    }
+  }
+  // 检查环境变量中是否有该通道的 token 配置（大写通道 id 前缀）
+  const env = params.env ?? process.env;
+  const upperChannel = channelId.toUpperCase();
+  const tokenEnvKeys = [
+    `${upperChannel}_TOKEN`,
+    `${upperChannel}_BOT_TOKEN`,
+    `${upperChannel}_APP_TOKEN`,
+    `${upperChannel}_SIGNING_SECRET`,
+    `${upperChannel}_API_KEY`,
+    `${upperChannel}_API_SECRET`,
+  ];
+  return tokenEnvKeys.some(
+    (key) => typeof env[key] === "string" && env[key]!.trim().length > 0,
+  );
 }
 
 // ============================================================================
@@ -290,12 +412,27 @@ export type PluginDiscoveryResult = unknown;
 // ../plugins/official-external-plugin-catalog.js
 // ============================================================================
 
-/** 列出官方外部通道 env vars（降级：返回空数组）。 */
+/**
+ * 列出官方外部通道 env vars（移植自 openclaw/src/plugins/official-external-plugin-catalog.ts）。
+ *
+ * openclaw 中从 official-external-channel-catalog.json 读取通道清单的 envVars 字段；
+ * cross-wms 未携带该 JSON 目录，这里按 cross-wms 已知通道的常见 env vars 降级返回。
+ */
 export function listOfficialExternalChannelEnvVars(): ReadonlyArray<{
   channelId: string;
   envVars: string[];
 }> {
-  return [];
+  // cross-wms 已知通道的常见环境变量（按 channel-providers 对齐）
+  return [
+    { channelId: "discord", envVars: ["DISCORD_TOKEN", "DISCORD_BOT_TOKEN"] },
+    { channelId: "dingtalk", envVars: ["DINGTALK_TOKEN", "DINGTALK_APP_KEY", "DINGTALK_APP_SECRET"] },
+    { channelId: "email", envVars: ["EMAIL_SMTP_HOST", "EMAIL_SMTP_USER", "EMAIL_SMTP_PASS", "EMAIL_IMAP_HOST", "EMAIL_IMAP_USER", "EMAIL_IMAP_PASS"] },
+    { channelId: "feishu", envVars: ["FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_VERIFICATION_TOKEN"] },
+    { channelId: "slack", envVars: ["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_SIGNING_SECRET"] },
+    { channelId: "telegram", envVars: ["TELEGRAM_BOT_TOKEN"] },
+    { channelId: "wechat", envVars: ["WECHAT_TOKEN", "WECHAT_APP_ID", "WECHAT_APP_SECRET"] },
+    { channelId: "webhook", envVars: ["WEBHOOK_SECRET", "WEBHOOK_TOKEN"] },
+  ];
 }
 
 // ============================================================================
@@ -334,15 +471,32 @@ export type ChannelProgressDraftLine = {
   [key: string]: unknown;
 };
 
-/** 解析通道流式预览块大小（降级：返回 undefined）。 */
+/** 解析通道流式预览块大小（移植自 openclaw channels/streaming.ts）。 */
 export function resolveChannelStreamingPreviewChunk(
-  _entry: unknown,
+  entry: unknown,
 ): StreamingCompatEntry | undefined {
-  return undefined;
+  if (!entry || typeof entry !== "object") {
+    return undefined;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  const configChunk =
+    streaming && streaming.preview && typeof streaming.preview === "object"
+      ? (streaming.preview as Record<string, unknown>).chunk
+      : undefined;
+  const draftChunk = record.draftChunk;
+  const chunk = configChunk ?? draftChunk;
+  if (!chunk || typeof chunk !== "object") {
+    return undefined;
+  }
+  return chunk as StreamingCompatEntry;
 }
 
-/** 创建进度草稿门控（降级：no-op）。 */
-export function createChannelProgressDraftGate(_params: {
+/** 创建进度草稿门控（移植自 openclaw channels/streaming.ts）。 */
+export function createChannelProgressDraftGate(params: {
   onStart: () => Promise<void> | void;
 }): {
   hasStarted: boolean;
@@ -350,96 +504,351 @@ export function createChannelProgressDraftGate(_params: {
   noteWork: () => Promise<boolean>;
   cancel: () => void;
 } {
+  const initialDelayMs = 5_000;
+  let started = false;
+  let disposed = false;
+  let workEvents = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let startPromise: Promise<void> | undefined;
+
+  const clearTimer = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+  };
+
+  const start = (): Promise<void> => {
+    if (disposed || started) {
+      return startPromise ?? Promise.resolve();
+    }
+    if (startPromise) {
+      return startPromise;
+    }
+    clearTimer();
+    started = true;
+    const nextStart = Promise.resolve()
+      .then(params.onStart)
+      .then(() => {
+        if (disposed) {
+          started = false;
+        }
+        if (startPromise === nextStart) {
+          startPromise = undefined;
+        }
+      })
+      .catch((error: unknown) => {
+        if (startPromise === nextStart) {
+          startPromise = undefined;
+        }
+        started = false;
+        throw error;
+      });
+    startPromise = nextStart;
+    return startPromise;
+  };
+
+  const schedule = () => {
+    if (timer || started || disposed || initialDelayMs < 0) {
+      return;
+    }
+    timer = setTimeout(() => {
+      timer = undefined;
+      void start().catch((error: unknown) => {
+        // 定时器启动失败没有等待的调用方，在此 SDK 边界报告
+        console.warn(`[progress-draft] channel progress draft failed to start: ${String(error)}`);
+      });
+    }, initialDelayMs);
+  };
+
   return {
-    hasStarted: false,
-    async startNow() {
+    get hasStarted() {
+      return started;
+    },
+    async noteWork(): Promise<boolean> {
+      if (disposed) {
+        return false;
+      }
+      workEvents += 1;
+      if (startPromise) {
+        await startPromise;
+        return started;
+      }
+      if (started) {
+        return true;
+      }
+      // 第二个工作事件立即启动
+      if (workEvents > 1) {
+        await start();
+        return started;
+      }
+      schedule();
       return false;
     },
-    async noteWork() {
-      return false;
+    async startNow(): Promise<boolean> {
+      await start();
+      return started;
     },
-    cancel() {},
+    cancel(): void {
+      disposed = true;
+      started = false;
+      clearTimer();
+    },
   };
 }
 
-/** 格式化进度草稿文本（降级：返回空字符串）。 */
-export function formatChannelProgressDraftText(_params: {
+/** 格式化进度草稿文本（移植自 openclaw channels/streaming.ts）。 */
+export function formatChannelProgressDraftText(params: {
   entry?: StreamingCompatEntry | null;
   lines?: ReadonlyArray<string | ChannelProgressDraftLine>;
   seed?: string;
   formatLine?: (line: string) => string;
 }): string {
-  return "";
+  const lines = params.lines ?? [];
+  if (lines.length === 0) {
+    return "";
+  }
+  const maxLineChars = resolveChannelProgressDraftMaxLineChars(params.entry);
+  const formatLine = params.formatLine ?? ((line: string) => line);
+  const bullet = "•";
+
+  const renderedLines = lines
+    .map((line) => {
+      const rawText = typeof line === "string" ? line : (line.text ?? line.label ?? "");
+      const text = rawText.replace(/\s+/g, " ").trim();
+      if (!text) {
+        return undefined;
+      }
+      // 超长行截断
+      const chars = Array.from(text);
+      const compacted =
+        chars.length <= maxLineChars
+          ? text
+          : `${chars.slice(0, maxLineChars - 1).join("").trimEnd()}…`;
+      return formatLine(compacted);
+    })
+    .filter((line): line is string => Boolean(line));
+
+  if (renderedLines.length === 0) {
+    return "";
+  }
+  return renderedLines.join("\n");
 }
 
-/** 判断是否为工作类型工具名（降级：返回 false）。 */
-export function isChannelProgressDraftWorkToolName(_toolName: string): boolean {
-  return false;
+/** 非工作类工具名集合（移植自 openclaw channels/streaming.ts）。 */
+const NON_WORK_PROGRESS_TOOL_NAMES = new Set([
+  "message",
+  "messages",
+  "reply",
+  "send",
+  "reaction",
+  "react",
+  "typing",
+]);
+
+/** 判断是否为工作类型工具名（移植自 openclaw channels/streaming.ts）。 */
+export function isChannelProgressDraftWorkToolName(toolName: string): boolean {
+  const normalized = toolName?.trim().toLowerCase();
+  return Boolean(normalized && !NON_WORK_PROGRESS_TOOL_NAMES.has(normalized));
 }
 
-/** 合并进度草稿行（降级：返回原数组）。 */
+/** 合并进度草稿行（移植自 openclaw channels/streaming.ts）。 */
 export function mergeChannelProgressDraftLine<TLine>(
   lines: TLine[],
-  _line: ChannelProgressDraftLine | string,
-  _options?: { maxLines?: number },
+  line: ChannelProgressDraftLine | string,
+  options?: { maxLines?: number },
 ): TLine[] {
-  return lines;
+  const normalized = normalizeChannelProgressDraftLineIdentity(line);
+  if (!normalized) {
+    return lines;
+  }
+  const maxLines = Math.max(1, options?.maxLines ?? 8);
+  // 检查是否有可匹配的 id（用于原地更新）
+  if (typeof line === "object" && line.id) {
+    const lineId = line.id;
+    const existingIndex = lines.findIndex((entry) => {
+      if (typeof entry === "object" && entry !== null) {
+        const entryId = (entry as ChannelProgressDraftLine).id;
+        return entryId === lineId;
+      }
+      return false;
+    });
+    if (existingIndex >= 0) {
+      const next = [...lines];
+      next[existingIndex] = line as unknown as TLine;
+      return next.slice(-maxLines);
+    }
+  }
+  // 去重：与最后一行相同则不追加
+  const previous = lines.at(-1);
+  if (previous && normalizeChannelProgressDraftLineIdentity(previous) === normalized) {
+    return lines;
+  }
+  return [...lines, line as unknown as TLine].slice(-maxLines);
 }
 
-/** 规范化进度草稿行身份（降级：返回 undefined）。 */
+/** 规范化进度草稿行身份（移植自 openclaw channels/streaming.ts）。 */
 export function normalizeChannelProgressDraftLineIdentity(
-  _line: unknown,
+  line: unknown,
 ): string | undefined {
-  return undefined;
+  if (!line) {
+    return undefined;
+  }
+  const text = typeof line === "string"
+    ? line
+    : typeof line === "object" && line !== null
+      ? ((line as ChannelProgressDraftLine).text ?? (line as ChannelProgressDraftLine).label ?? "")
+      : "";
+  return (
+    text
+      ?.replace(/`([^`]+)`/gu, "$1")
+      .replace(/\s+/g, " ")
+      .trim() ?? ""
+  );
 }
 
-/** 解析进度草稿最大行字符数（降级：返回 0）。 */
-export function resolveChannelProgressDraftMaxLineChars(_entry: unknown): number {
-  return 0;
+/** 解析进度草稿最大行字符数（移植自 openclaw channels/streaming.ts）。 */
+export function resolveChannelProgressDraftMaxLineChars(entry: unknown): number {
+  const defaultChars = 120;
+  if (!entry || typeof entry !== "object") {
+    return defaultChars;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  const progress =
+    streaming && streaming.progress && typeof streaming.progress === "object"
+      ? (streaming.progress as Record<string, unknown>)
+      : null;
+  const configured = progress?.maxLineChars;
+  return typeof configured === "number" && Number.isInteger(configured) && configured > 0
+    ? configured
+    : defaultChars;
 }
 
-/** 解析进度草稿最大行数（降级：返回 0）。 */
-export function resolveChannelProgressDraftMaxLines(_entry: unknown): number {
-  return 0;
+/** 解析进度草稿最大行数（移植自 openclaw channels/streaming.ts）。 */
+export function resolveChannelProgressDraftMaxLines(entry: unknown): number {
+  const defaultLines = 8;
+  if (!entry || typeof entry !== "object") {
+    return defaultLines;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  const progress =
+    streaming && streaming.progress && typeof streaming.progress === "object"
+      ? (streaming.progress as Record<string, unknown>)
+      : null;
+  const configured = progress?.maxLines;
+  return typeof configured === "number" && Number.isInteger(configured) && configured > 0
+    ? configured
+    : defaultLines;
 }
 
-/** 解析通道流式进度评论开关（降级：返回 false）。 */
-export function resolveChannelStreamingProgressCommentary(_entry: unknown): boolean {
+/** 解析通道流式进度评论开关（移植自 openclaw channels/streaming.ts）。 */
+export function resolveChannelStreamingProgressCommentary(entry: unknown): boolean {
+  if (!entry || typeof entry !== "object") {
+    return false;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  // 仅 progress 模式下才可能开启评论
+  const mode = streaming?.mode ?? record.streamMode;
+  if (mode !== "progress") {
+    return false;
+  }
+  const progress =
+    streaming && streaming.progress && typeof streaming.progress === "object"
+      ? (streaming.progress as Record<string, unknown>)
+      : null;
+  const commentary = progress?.commentary;
+  if (typeof commentary === "boolean") {
+    return commentary;
+  }
   return false;
 }
 
-/** 解析通道流式预览工具进度开关（降级：返回 false）。 */
-export function resolveChannelStreamingPreviewToolProgress(_entry: unknown): boolean {
-  return false;
+/** 解析通道流式预览工具进度开关（移植自 openclaw channels/streaming.ts）。 */
+export function resolveChannelStreamingPreviewToolProgress(entry: unknown): boolean {
+  if (!entry || typeof entry !== "object") {
+    return true;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  const preview =
+    streaming && streaming.preview && typeof streaming.preview === "object"
+      ? (streaming.preview as Record<string, unknown>)
+      : null;
+  const toolProgress = preview?.toolProgress;
+  return typeof toolProgress === "boolean" ? toolProgress : true;
 }
 
-/** 解析通道流式抑制默认工具进度消息（降级：返回 false）。 */
+/** 解析通道流式抑制默认工具进度消息（移植自 openclaw channels/streaming.ts）。 */
 export function resolveChannelStreamingSuppressDefaultToolProgressMessages(
-  _entry: unknown,
-  _options?: { draftStreamActive?: boolean; previewToolProgressEnabled?: boolean },
+  entry: unknown,
+  options?: { draftStreamActive?: boolean; previewToolProgressEnabled?: boolean },
 ): boolean {
-  return false;
+  if (options?.draftStreamActive === false) {
+    return false;
+  }
+  if (!entry || typeof entry !== "object") {
+    return false;
+  }
+  const record = entry as Record<string, unknown>;
+  const streaming =
+    record.streaming && typeof record.streaming === "object"
+      ? (record.streaming as Record<string, unknown>)
+      : null;
+  const mode = streaming?.mode ?? record.streamMode;
+  if (mode === "off" || !mode) {
+    return false;
+  }
+  if (mode === "progress") {
+    return true;
+  }
+  if (options?.draftStreamActive === true) {
+    return true;
+  }
+  return options?.previewToolProgressEnabled ?? resolveChannelStreamingPreviewToolProgress(entry);
 }
 
 // ============================================================================
 // ./message/live.js —— LivePreviewFinalizer*
 // ============================================================================
 
-/** 实时预览最终器草稿（降级占位）。 */
+/** 实时预览最终器草稿（移植自 openclaw channels/message/live.ts）。 */
 export type LivePreviewFinalizerDraft<TId = unknown> = {
-  id?: TId;
-  editId?: unknown;
-  [key: string]: unknown;
+  flush: () => Promise<void>;
+  id: () => TId | undefined;
+  seal?: () => Promise<void>;
+  discardPending?: () => Promise<void>;
+  clear: () => Promise<void>;
 };
 
-/** 实时预览最终器结果种类（降级占位）。 */
+/** 实时预览最终器结果种类（移植自 openclaw channels/message/live.ts）。 */
 export type LivePreviewFinalizerResultKind =
-  | "delivered"
+  | "normal-delivered"
+  | "normal-skipped"
   | "preview-finalized"
   | "preview-retained";
 
 /**
- * 投递可最终化的实时预览（降级：直接调用 deliverNormally）。
+ * 投递可最终化的实时预览（移植自 openclaw channels/message/live.ts）。
+ *
+ * 流程：
+ *  1. kind !== "final" 或无 draft → 直接 deliverNormally
+ *  2. kind === "final" 且有 draft → 尝试 buildFinalEdit + editFinal 最终化预览
+ *  3. 最终化失败 → 降级为 discardPending/clear + deliverNormally
  */
 export async function deliverFinalizableLivePreview<TPayload, TId, TEdit>(params: {
   kind: "tool" | "block" | "final";
@@ -452,9 +861,60 @@ export async function deliverFinalizableLivePreview<TPayload, TId, TEdit>(params
   onNormalDelivered?: () => Promise<void> | void;
   logPreviewEditFailure?: (error: unknown) => void;
 }): Promise<{ kind: LivePreviewFinalizerResultKind }> {
-  await params.deliverNormally(params.payload);
-  await params.onNormalDelivered?.();
-  return { kind: "delivered" };
+  // 非 final 或无 draft 时直接正常投递
+  if (params.kind !== "final" || !params.draft) {
+    const delivered = await params.deliverNormally(params.payload);
+    if (delivered === false) {
+      return { kind: "normal-skipped" };
+    }
+    await params.onNormalDelivered?.();
+    return { kind: "normal-delivered" };
+  }
+
+  const draft = params.draft;
+  // 尝试构建最终编辑
+  const edit = params.buildFinalEdit(params.payload);
+  if (edit !== undefined) {
+    await draft.flush();
+    const previewId = draft.id();
+    if (previewId !== undefined) {
+      await draft.seal?.();
+      let editSucceeded = false;
+      try {
+        await params.editFinal(previewId, edit);
+        editSucceeded = true;
+      } catch (err) {
+        params.logPreviewEditFailure?.(err);
+        // 编辑失败时降级为正常投递
+      }
+      if (editSucceeded) {
+        await params.onPreviewFinalized?.(previewId);
+        return { kind: "preview-finalized" };
+      }
+    }
+  }
+
+  // 最终化失败或不可行：丢弃待处理内容后正常投递
+  if (draft.discardPending) {
+    await draft.discardPending();
+  } else {
+    await draft.clear();
+  }
+
+  let delivered = false;
+  try {
+    const result = await params.deliverNormally(params.payload);
+    delivered = result !== false;
+    if (delivered) {
+      await params.onNormalDelivered?.();
+    }
+  } finally {
+    if (delivered) {
+      await draft.clear();
+    }
+  }
+
+  return { kind: delivered ? "normal-delivered" : "normal-skipped" };
 }
 
 // ============================================================================
@@ -491,7 +951,7 @@ export function buildManifestChannelMeta(params: {
 // ../plugin-sdk/access-groups.js —— AccessGroupMembershipResolver
 // ============================================================================
 
-/** 访问组成员关系解析器（降级占位）。 */
+/** 访问组成员关系解析器（降级占位，与 openclaw plugin-sdk/access-groups 兼容）。 */
 export type AccessGroupMembershipResolver = (params: {
   cfg: unknown;
   channel: string;
@@ -500,7 +960,13 @@ export type AccessGroupMembershipResolver = (params: {
   groupId: string;
 }) => Promise<readonly string[] | undefined> | readonly string[] | undefined;
 
-/** 扩展 allowFrom 列表（降级：直接返回原始 allowFrom 字符串化）。 */
+/**
+ * 扩展 allowFrom 列表（移植自 openclaw/src/plugin-sdk/access-groups.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（plugin-sdk/access-groups.ts），
+ * 该文件已完整移植自 openclaw：合并 allowFrom 与 accessGroup:<name> 匹配的
+ * 具体发送者条目。延迟 require 避免循环依赖。
+ */
 export async function expandAllowFromWithAccessGroups(params: {
   cfg: unknown;
   allowFrom?: Array<string | number> | null;
@@ -510,7 +976,35 @@ export async function expandAllowFromWithAccessGroups(params: {
   isSenderAllowed: (senderId: string, allowFrom: string[]) => boolean;
   resolveMembership?: AccessGroupMembershipResolver;
 }): Promise<string[]> {
-  return (params.allowFrom ?? []).map((entry) => String(entry));
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { expandAllowFromWithAccessGroups: expandImpl } = require("../plugin-sdk/access-groups.js") as {
+      expandAllowFromWithAccessGroups: (params: {
+        cfg?: unknown;
+        allowFrom?: Array<string | number> | null;
+        channel: string;
+        accountId: string;
+        senderId: string;
+        senderAllowEntry?: string;
+        isSenderAllowed?: (senderId: string, allowFrom: string[]) => boolean;
+        resolveMembership?: unknown;
+      }) => Promise<string[]>;
+    };
+    return await expandImpl({
+      cfg: params.cfg,
+      allowFrom: params.allowFrom,
+      channel: params.channel,
+      accountId: params.accountId,
+      senderId: params.senderId,
+      isSenderAllowed: params.isSenderAllowed,
+      // resolveMembership 类型与真实实现不同，这里传递 undefined 以触发
+      // 真实实现中的静态 message.senders 组降级逻辑
+      resolveMembership: undefined,
+    });
+  } catch {
+    // 降级：直接返回 allowFrom 字符串化
+    return (params.allowFrom ?? []).map((entry) => String(entry));
+  }
 }
 
 // ============================================================================
@@ -532,18 +1026,102 @@ export type DmGroupAccessReasonCode =
   | "dm_policy_pairing_required"
   | "dm_policy_not_allowlisted";
 
-/** 读取 store allowFrom（降级：返回空数组）。 */
-export async function readStoreAllowFromForDmPolicy(_params: {
+/** 读取 store allowFrom（移植自 openclaw message-access/store-allow-from.js）。 */
+export async function readStoreAllowFromForDmPolicy(params: {
   provider: string;
   accountId: string;
   dmPolicy?: string | null;
   readStore?: (provider: string, accountId: string) => Promise<string[]>;
 }): Promise<string[]> {
-  return [];
+  // allowlist/open 策略下不读取 pairing store
+  if (params.dmPolicy === "allowlist" || params.dmPolicy === "open") {
+    return [];
+  }
+  const readStore = params.readStore;
+  if (!readStore) {
+    return [];
+  }
+  try {
+    return await readStore(params.provider, params.accountId);
+  } catch {
+    return [];
+  }
 }
 
-/** 解析 DM 组访问（降级：返回最保守决策）。 */
-export function resolveDmGroupAccessWithLists(_params: {
+// ----------------------------------------------------------------------------
+// DM 组访问决策辅助（移植自 openclaw allow-from.js / dm-policy-shared.js /
+// plugin-sdk/group-access.js 的最小内联实现）
+// ----------------------------------------------------------------------------
+
+/** 规范化字符串条目列表（移植自 @openclaw/normalization-core/string-normalization）。 */
+function normalizeStringEntries(entries: Array<string | number> | null | undefined): string[] {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      entries
+        .map((entry) => String(entry ?? "").trim())
+        .filter((entry) => entry.length > 0),
+    ),
+  );
+}
+
+/** 合并 DM allowFrom 与 pairing-store 条目（移植自 channels/allow-from.js）。 */
+function mergeDmAllowFromSources(params: {
+  allowFrom?: Array<string | number>;
+  storeAllowFrom?: Array<string | number>;
+  dmPolicy?: string;
+}): string[] {
+  const storeEntries =
+    params.dmPolicy === "allowlist" || params.dmPolicy === "open"
+      ? []
+      : (params.storeAllowFrom ?? []);
+  return normalizeStringEntries([...(params.allowFrom ?? []), ...storeEntries]);
+}
+
+/** 解析群组 allowFrom 来源（移植自 channels/allow-from.js）。 */
+function resolveGroupAllowFromSources(params: {
+  allowFrom?: Array<string | number>;
+  groupAllowFrom?: Array<string | number>;
+  fallbackToAllowFrom?: boolean;
+}): string[] {
+  const explicitGroupAllowFrom =
+    Array.isArray(params.groupAllowFrom) && params.groupAllowFrom.length > 0
+      ? params.groupAllowFrom
+      : undefined;
+  const scoped = explicitGroupAllowFrom
+    ? explicitGroupAllowFrom
+    : params.fallbackToAllowFrom === false
+      ? []
+      : (params.allowFrom ?? []);
+  return normalizeStringEntries(scoped);
+}
+
+type GroupPolicy = "open" | "disabled" | "allowlist";
+
+/** 评估匹配的群组访问决策（移植自 plugin-sdk/group-access.js）。 */
+function evaluateMatchedGroupAccessForPolicy(params: {
+  groupPolicy: GroupPolicy;
+  allowlistConfigured: boolean;
+  allowlistMatched: boolean;
+}): { allowed: boolean; reason: "allowed" | "disabled" | "empty_allowlist" | "not_allowlisted" | "missing_match_input" } {
+  if (params.groupPolicy === "disabled") {
+    return { allowed: false, reason: "disabled" };
+  }
+  if (params.groupPolicy === "allowlist") {
+    if (!params.allowlistConfigured) {
+      return { allowed: false, reason: "empty_allowlist" };
+    }
+    if (!params.allowlistMatched) {
+      return { allowed: false, reason: "not_allowlisted" };
+    }
+  }
+  return { allowed: true, reason: "allowed" };
+}
+
+/** 解析 DM 组访问（移植自 openclaw security/dm-policy-shared.js resolveDmGroupAccessWithLists）。 */
+export function resolveDmGroupAccessWithLists(params: {
   isGroup: boolean;
   dmPolicy: string;
   allowFrom: string[];
@@ -556,11 +1134,103 @@ export function resolveDmGroupAccessWithLists(_params: {
   reason: string;
   effectiveAllowFrom: string[];
 } {
+  const dmPolicy = params.dmPolicy ?? "pairing";
+
+  // 合并 effective allowFrom 与 effectiveGroupAllowFrom
+  const effectiveAllowFrom = normalizeStringEntries(
+    mergeDmAllowFromSources({
+      allowFrom: params.allowFrom,
+      storeAllowFrom: params.storeAllowFrom,
+      dmPolicy,
+    }),
+  );
+  const effectiveGroupAllowFrom = normalizeStringEntries(
+    resolveGroupAllowFromSources({
+      allowFrom: params.allowFrom,
+      fallbackToAllowFrom: params.groupAllowFromFallbackToAllowFrom ?? undefined,
+    }),
+  );
+
+  // 群组消息先评估群组策略
+  if (params.isGroup) {
+    const groupPolicy: GroupPolicy = "allowlist";
+    const groupAccess = evaluateMatchedGroupAccessForPolicy({
+      groupPolicy,
+      allowlistConfigured: effectiveGroupAllowFrom.length > 0,
+      allowlistMatched: params.isSenderAllowed(effectiveGroupAllowFrom),
+    });
+    if (groupAccess.allowed) {
+      return {
+        decision: "allow",
+        reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_ALLOWLISTED,
+        reason: `groupPolicy=${groupPolicy}`,
+        effectiveAllowFrom,
+      };
+    }
+    return {
+      decision: "block",
+      reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_NOT_ALLOWLISTED,
+      reason: `groupPolicy=${groupPolicy} (${groupAccess.reason})`,
+      effectiveAllowFrom,
+    };
+  }
+
+  // DM 策略决策
+  if (dmPolicy === "disabled") {
+    return {
+      decision: "block",
+      reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_DISABLED,
+      reason: "dmPolicy=disabled",
+      effectiveAllowFrom,
+    };
+  }
+  if (dmPolicy === "open") {
+    // open 策略下 * 表示完全开放，否则仍需 allowlist 匹配
+    if (effectiveAllowFrom.includes("*")) {
+      return {
+        decision: "allow",
+        reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_OPEN,
+        reason: "dmPolicy=open",
+        effectiveAllowFrom,
+      };
+    }
+    if (params.isSenderAllowed(effectiveAllowFrom)) {
+      return {
+        decision: "allow",
+        reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_ALLOWLISTED,
+        reason: "dmPolicy=open (allowlisted)",
+        effectiveAllowFrom,
+      };
+    }
+    return {
+      decision: "block",
+      reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_NOT_ALLOWLISTED,
+      reason: "dmPolicy=open (not allowlisted)",
+      effectiveAllowFrom,
+    };
+  }
+  // pairing / allowlist / 其他
+  if (params.isSenderAllowed(effectiveAllowFrom)) {
+    return {
+      decision: "allow",
+      reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_ALLOWLISTED,
+      reason: `dmPolicy=${dmPolicy} (allowlisted)`,
+      effectiveAllowFrom,
+    };
+  }
+  if (dmPolicy === "pairing") {
+    return {
+      decision: "pairing",
+      reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_PAIRING_REQUIRED,
+      reason: "dmPolicy=pairing (not allowlisted)",
+      effectiveAllowFrom,
+    };
+  }
   return {
     decision: "block",
     reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_NOT_ALLOWLISTED,
-    reason: "Direct-DM access resolver is degraded in cross-wms.",
-    effectiveAllowFrom: [],
+    reason: `dmPolicy=${dmPolicy} (not allowlisted)`,
+    effectiveAllowFrom,
   };
 }
 
@@ -623,96 +1293,196 @@ export type ActivePluginChannelRegistration = {
   [key: string]: unknown;
 };
 
-/** 活动插件通道注册表（降级占位）。 */
+/** 活动插件通道注册表（与 PluginRegistry 结构兼容）。 */
 export type ActivePluginChannelRegistry = {
   channels?: ActivePluginChannelRegistration[];
   [key: string]: unknown;
 };
 
-/** 取活动插件通道注册表快照（降级：返回空）。 */
+/** 取活动插件通道注册表快照（复用真实实现）。 */
 export function getActivePluginChannelRegistrySnapshotFromState(): {
   registry: ActivePluginChannelRegistry | null;
   version: number;
 } {
-  return { registry: null, version: 0 };
+  return getActivePluginChannelRegistrySnapshotFromStateImpl() as {
+    registry: ActivePluginChannelRegistry | null;
+    version: number;
+  };
 }
 
 // ============================================================================
 // ../auto-reply/{envelope,chunk,command-detection,commands-registry,inbound-debounce}.js
 // ============================================================================
 
-/** 解析 envelope 格式选项（降级：返回空对象）。 */
-export function resolveEnvelopeFormatOptions(_cfg: unknown): Record<string, unknown> {
-  return {};
+/**
+ * 解析 envelope 格式选项（移植自 openclaw/src/auto-reply/envelope.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（auto-reply/envelope.ts），
+ * 该文件已完整移植自 openclaw。延迟 require 避免循环依赖。
+ */
+export function resolveEnvelopeFormatOptions(cfg: unknown): Record<string, unknown> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { resolveEnvelopeFormatOptions: resolveImpl } = require("../auto-reply/envelope.js") as {
+      resolveEnvelopeFormatOptions: (cfg?: {
+        envelopeTimezone?: string;
+        envelopeTimestamp?: string;
+        envelopeElapsed?: string;
+        userTimezone?: string;
+      }) => Record<string, unknown>;
+    };
+    // cross-wms 的 agents.defaults 子结构包含 envelope 相关字段
+    const defaults = (cfg as { agents?: { defaults?: Record<string, unknown> } })?.agents?.defaults;
+    return resolveImpl(
+      defaults as Parameters<typeof resolveImpl>[0],
+    );
+  } catch {
+    return {};
+  }
 }
 
-/** 读取会话 updatedAt（降级：返回 undefined）。 */
-export function readSessionUpdatedAt(_params: {
+/** 读取会话 updatedAt（移植自 openclaw config/sessions/store.ts，最小实现）。 */
+export function readSessionUpdatedAt(params: {
   storePath?: string;
   sessionKey: string;
 }): number | undefined {
+  if (!params.storePath || !params.sessionKey) {
+    return undefined;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const fs = require("node:fs") as typeof import("node:fs");
+    if (!fs.existsSync(params.storePath)) {
+      return undefined;
+    }
+    const content = fs.readFileSync(params.storePath, "utf-8");
+    const store = JSON.parse(content) as { entries?: Record<string, { updatedAt?: number }> };
+    const entry = store?.entries?.[params.sessionKey];
+    return entry?.updatedAt;
+  } catch {
+    return undefined;
+  }
+}
+
+/** 解析 store 路径（移植自 openclaw config/sessions/paths.ts，最小实现）。 */
+export function resolveStorePath(
+  storeCfg: unknown,
+  opts?: { agentId?: string },
+): string | undefined {
+  if (typeof storeCfg === "string" && storeCfg.trim()) {
+    // 支持 {agentId} 模板展开
+    const agentId = opts?.agentId ?? "default";
+    return storeCfg.replaceAll("{agentId}", agentId);
+  }
   return undefined;
 }
 
-/** 解析 store 路径（降级：返回 undefined）。 */
-export function resolveStorePath(_storeCfg: unknown, _opts?: { agentId?: string }): string | undefined {
-  return undefined;
-}
-
-/** 解析文本块大小限制（降级：返回 fallbackLimit）。 */
+/** 解析文本块大小限制（移植自 openclaw auto-reply/chunk.ts）。 */
 export function resolveTextChunkLimit(
-  _cfg: unknown,
-  _channelId: string,
-  _accountId: string | null | undefined,
+  cfg: unknown,
+  channelId: string,
+  accountId: string | null | undefined,
   opts: { fallbackLimit: number },
 ): number {
-  return opts.fallbackLimit;
+  const fallback =
+    typeof opts.fallbackLimit === "number" && opts.fallbackLimit > 0
+      ? opts.fallbackLimit
+      : 3800;
+  if (!cfg || typeof cfg !== "object" || !channelId) {
+    return fallback;
+  }
+  const cfgRecord = cfg as Record<string, unknown>;
+  const channelsConfig = cfgRecord.channels as Record<string, unknown> | undefined;
+  const providerConfig = channelsConfig?.[channelId] as Record<string, unknown> | undefined;
+  if (!providerConfig) {
+    return fallback;
+  }
+  // 检查 account 级别覆盖
+  if (accountId) {
+    const accounts = providerConfig.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accountCfg = accounts?.[accountId];
+    const accountLimit = accountCfg?.chunkLimit ?? accountCfg?.textChunkLimit;
+    if (typeof accountLimit === "number" && accountLimit > 0) {
+      return accountLimit;
+    }
+  }
+  // 检查 provider 级别覆盖
+  const providerLimit = providerConfig.chunkLimit ?? providerConfig.textChunkLimit;
+  if (typeof providerLimit === "number" && providerLimit > 0) {
+    return providerLimit;
+  }
+  return fallback;
 }
 
-/** 解析入站去抖动毫秒（降级：返回 0）。 */
-export function resolveInboundDebounceMs(_params: {
+// 活动插件通道注册表快照：复用 cross-wms 已有的真实实现（plugins/runtime-channel-state.ts）
+// 该文件已移植自 openclaw/src/plugins/runtime-channel-state.ts
+import {
+  getActivePluginChannelRegistrySnapshotFromState as getActivePluginChannelRegistrySnapshotFromStateImpl,
+  getActivePluginChannelRegistryFromState as getActivePluginChannelRegistryFromStateImpl,
+} from "../plugins/runtime-channel-state.js";
+
+// 入站去抖动器：复用 cross-wms 已有的真实实现（auto-reply/inbound-debounce.ts）
+// 该文件已完整移植自 openclaw/src/auto-reply/inbound-debounce.ts
+import {
+  createInboundDebouncer as createInboundDebouncerImpl,
+  resolveInboundDebounceMs as resolveInboundDebounceMsImpl,
+  type InboundDebounceCreateParams as InboundDebounceCreateParamsImpl,
+} from "../auto-reply/inbound-debounce.js";
+
+/** 解析入站去抖动毫秒（复用真实实现）。 */
+export function resolveInboundDebounceMs(params: {
   cfg: unknown;
   channel: string;
   overrideMs?: number;
 }): number {
-  return 0;
+  return resolveInboundDebounceMsImpl(params as Parameters<typeof resolveInboundDebounceMsImpl>[0]);
 }
 
-/** 入站去抖动创建参数（降级占位）。 */
-export type InboundDebounceCreateParams<T> = {
-  debounceMs: number;
-  onFlush: (items: T[]) => Promise<void> | void;
+/** 入站去抖动创建参数（保留索引签名以兼容调用方解构）。 */
+export type InboundDebounceCreateParams<T> = InboundDebounceCreateParamsImpl<T> & {
   [key: string]: unknown;
 };
 
-/** 入站去抖动器（降级占位）。 */
-export type InboundDebouncer<T> = {
-  push: (item: T) => void;
-  flush: () => Promise<void>;
-  cancel: () => void;
-};
+/** 入站去抖动器（与 openclaw 真实实现一致）。 */
+export type InboundDebouncer<T> = ReturnType<typeof createInboundDebouncerImpl<T>>;
 
-/** 创建入站去抖动器（降级：返回 no-op）。 */
+/** 创建入站去抖动器（复用真实实现）。 */
 export function createInboundDebouncer<T>(
-  _params: InboundDebounceCreateParams<T>,
+  params: InboundDebounceCreateParams<T>,
 ): InboundDebouncer<T> {
-  return {
-    push() {},
-    async flush() {},
-    cancel() {},
-  };
+  return createInboundDebouncerImpl<T>(params as InboundDebounceCreateParamsImpl<T>);
 }
 
-/** 命令规范化选项（降级占位）。 */
-export type CommandNormalizeOptions = unknown;
+/** 命令规范化选项（移植自 openclaw commands-registry.types.ts）。 */
+export type CommandNormalizeOptions = {
+  /** Bot 用户名，用于从斜杠命令中去除 @mention 后缀。 */
+  botUsername?: string;
+};
 
-/** 判断是否为控制命令消息（降级：返回 false）。 */
+/**
+ * 判断是否为控制命令消息（移植自 openclaw/src/auto-reply/command-detection.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（auto-reply/command-detection.ts），
+ * 该文件已完整移植自 openclaw。延迟 require 避免循环依赖。
+ */
 export function isControlCommandMessage(
-  _text: string,
-  _cfg: unknown,
-  _options?: CommandNormalizeOptions,
+  text: string,
+  cfg: unknown,
+  options?: CommandNormalizeOptions,
 ): boolean {
-  return false;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { isControlCommandMessage: detectImpl } = require("../auto-reply/command-detection.js") as {
+      isControlCommandMessage: (
+        text?: string,
+        cfg?: unknown,
+        options?: { botUsername?: string },
+      ) => boolean;
+    };
+    return detectImpl(text, cfg, options);
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -727,34 +1497,103 @@ export function normalizeAccountId(value?: string | null): string {
   return value.trim();
 }
 
-/** 解析账户条目（降级：返回 undefined）。 */
+/**
+ * 解析账户条目（移植自 openclaw/src/routing/account-lookup.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（routing/account-lookup.ts），
+ * 该文件已完整移植自 openclaw，支持大小写不敏感的账户 id 查找。
+ * 延迟 require 避免循环依赖。
+ */
 export function resolveAccountEntry(
-  _accounts?: Record<string, unknown>,
-  _accountId?: string,
+  accounts?: Record<string, unknown>,
+  accountId?: string,
 ): unknown {
-  return undefined;
+  if (!accounts || typeof accounts !== "object" || !accountId) {
+    return undefined;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { resolveAccountEntry: lookupImpl } = require("../routing/account-lookup.js") as {
+      resolveAccountEntry: <T>(
+        accounts: Record<string, T> | undefined,
+        accountId: string,
+      ) => T | undefined;
+    };
+    return lookupImpl(accounts, accountId);
+  } catch {
+    // 降级：基础查找（直接 key 匹配 + 大小写不敏感）
+    if (Object.hasOwn(accounts, accountId)) {
+      return accounts[accountId];
+    }
+    const normalized = accountId.trim().toLowerCase();
+    const matchKey = Object.keys(accounts).find(
+      (key) => key.trim().toLowerCase() === normalized,
+    );
+    return matchKey ? accounts[matchKey] : undefined;
+  }
 }
 
 // ============================================================================
 // ../shared/thread-binding-lifecycle.js
 // ============================================================================
 
-/** 线程绑定生命周期记录（降级占位）。 */
+/** 线程绑定生命周期记录（移植自 openclaw shared/thread-binding-lifecycle.ts）。 */
 export type ThreadBindingLifecycleRecord = {
+  /** 绑定创建时间（epoch 毫秒）。兼容 openclaw 字段名 boundAt。 */
+  boundAt?: number;
+  /** 绑定创建时间（epoch 毫秒）。兼容旧字段名 createdAt。 */
   createdAt?: number;
-  lastActivityAt?: number;
+  /** 最近活动时间（epoch 毫秒）。 */
+  lastActivityAt: number;
+  /** 可选的空闲超时覆盖（毫秒）；0 表示禁用空闲过期。 */
   idleTimeoutMs?: number;
+  /** 可选的最大存活时间覆盖（毫秒）；0 表示禁用最大存活过期。 */
   maxAgeMs?: number;
   [key: string]: unknown;
 };
 
-/** 解析线程绑定生命周期（降级：返回原记录）。 */
-export function resolveSharedThreadBindingLifecycle(_params: {
+/**
+ * 解析线程绑定生命周期（移植自 openclaw/src/shared/thread-binding-lifecycle.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（shared/thread-binding-lifecycle.ts），
+ * 该文件已完整移植自 openclaw，基于 lastActivityAt + idleTimeoutMs
+ * 及 boundAt + maxAgeMs 计算最早过期时间。延迟 require 避免循环依赖。
+ */
+export function resolveSharedThreadBindingLifecycle(params: {
   record: ThreadBindingLifecycleRecord;
   defaultIdleTimeoutMs?: number;
   defaultMaxAgeMs?: number;
-}): { expiresAt?: number } {
-  return { expiresAt: undefined };
+}): { expiresAt?: number; reason?: "idle-expired" | "max-age-expired" } {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { resolveThreadBindingLifecycle: resolveImpl } = require("../shared/thread-binding-lifecycle.js") as {
+      resolveThreadBindingLifecycle: (params: {
+        record: {
+          boundAt: number;
+          lastActivityAt: number;
+          idleTimeoutMs?: number;
+          maxAgeMs?: number;
+        };
+        defaultIdleTimeoutMs: number;
+        defaultMaxAgeMs: number;
+      }) => { expiresAt?: number; reason?: "idle-expired" | "max-age-expired" };
+    };
+    // 兼容 createdAt / boundAt 两种字段名
+    const record = params.record;
+    const boundAt = record.boundAt ?? record.createdAt ?? record.lastActivityAt;
+    return resolveImpl({
+      record: {
+        boundAt,
+        lastActivityAt: record.lastActivityAt,
+        idleTimeoutMs: record.idleTimeoutMs,
+        maxAgeMs: record.maxAgeMs,
+      },
+      defaultIdleTimeoutMs: params.defaultIdleTimeoutMs ?? 0,
+      defaultMaxAgeMs: params.defaultMaxAgeMs ?? 0,
+    });
+  } catch {
+    return { expiresAt: undefined };
+  }
 }
 
 // ============================================================================
@@ -763,23 +1602,66 @@ export function resolveSharedThreadBindingLifecycle(_params: {
 
 export type CodeRegion = { start: number; end: number };
 
-/** 查找代码区域（降级：返回空数组）。 */
-export function findCodeRegions(_text: string): CodeRegion[] {
-  return [];
+/** 查找代码区域（移植自 openclaw shared/text/code-regions.js）。 */
+export function findCodeRegions(text: string): CodeRegion[] {
+  if (!text) {
+    return [];
+  }
+  const regions: CodeRegion[] = [];
+  // 匹配围栏代码块 ```...```
+  const fenceRegex = /```[^\n]*\n[\s\S]*?```/g;
+  let match: RegExpExecArray | null;
+  while ((match = fenceRegex.exec(text)) !== null) {
+    regions.push({ start: match.index, end: match.index + match[0].length });
+  }
+  // 匹配行内代码 `...`
+  const inlineRegex = /`[^`\n]+`/g;
+  while ((match = inlineRegex.exec(text)) !== null) {
+    // 跳过已在围栏代码块内的部分
+    const start = match.index;
+    const end = match.index + match[0].length;
+    if (!regions.some((r) => start >= r.start && end <= r.end)) {
+      regions.push({ start, end });
+    }
+  }
+  return regions;
 }
 
-/** 判断偏移量是否在代码区域内（降级：返回 false）。 */
-export function isInsideCode(_offset: number, _regions: CodeRegion[]): boolean {
-  return false;
+/** 判断偏移量是否在代码区域内（移植自 openclaw shared/text/code-regions.js）。 */
+export function isInsideCode(offset: number, regions: CodeRegion[]): boolean {
+  return regions.some((r) => offset >= r.start && offset < r.end);
 }
 
 // ============================================================================
 // ../agents/embedded-agent-utils.js
 // ============================================================================
 
-/** 格式化推理消息（降级：返回原值）。 */
+/**
+ * 格式化推理消息（移植自 openclaw/src/agents/embedded-agent-utils.ts）。
+ *
+ * 复用 cross-wms 已有的真实实现（agents/embedded-agent-utils.ts），
+ * 该文件已完整移植自 openclaw：为每行添加斜体标记并加 "Thinking" 前缀。
+ * 延迟 require 避免循环依赖。
+ */
 export function formatReasoningMessage(text: string): string {
-  return text;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const { formatReasoningMessage: formatImpl } = require("../agents/embedded-agent-utils.js") as {
+      formatReasoningMessage: (text: string) => string;
+    };
+    return formatImpl(text);
+  } catch {
+    // 降级：最小实现（与 openclaw 一致）
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return "";
+    }
+    const italicLines = trimmed
+      .split("\n")
+      .map((line) => (line ? `_${line}_` : line))
+      .join("\n");
+    return `Thinking\n\n${italicLines}`;
+  }
 }
 
 // ============================================================================
@@ -821,9 +1703,28 @@ export function asBoolean(value: unknown): boolean | undefined {
 // ../utils/directive-tags.js
 // ============================================================================
 
-/** 移除投递用内联指令标签（降级：返回原文本）。 */
-export function stripInlineDirectiveTagsForDelivery(text: string): { text: string } {
-  return { text };
+/**
+ * 移除投递用内联指令标签（移植自 openclaw/src/utils/directive-tags.ts）。
+ *
+ * 用单个空格替换 `[[audio_as_voice]]`、`[[reply_to_current]]`、
+ * `[[reply_to: id]]` 及其周边空白。若文本未变化，原样返回。
+ */
+const INLINE_DIRECTIVE_TAG_WITH_PADDING_RE =
+  /\s*(?:\[\[\s*audio_as_voice\s*\]\]|\[\[\s*(?:reply_to_current|reply_to\s*:\s*[^\]\n]+)\s*\]\])\s*/gi;
+
+export function stripInlineDirectiveTagsForDelivery(text: string): {
+  text: string;
+  changed: boolean;
+} {
+  if (!text) {
+    return { text, changed: false };
+  }
+  const stripped = text.replace(INLINE_DIRECTIVE_TAG_WITH_PADDING_RE, " ");
+  const changed = stripped !== text;
+  return {
+    text: changed ? stripped.trim() : text,
+    changed,
+  };
 }
 
 // ============================================================================
@@ -846,11 +1747,88 @@ export function tryReadJsonSync<T>(filePath: string): T | null {
 // ../infra/openclaw-root.js —— resolveOpenClawPackageRootSync
 // ============================================================================
 
-/** 解析 openclaw 包根目录（降级：返回 null）。 */
-export function resolveOpenClawPackageRootSync(_params?: {
+/**
+ * 解析 cross-wms 包根目录（移植自 openclaw/src/infra/openclaw-root.ts）。
+ *
+ * openclaw 中通过查找 package.json name === "openclaw" 的目录确定包根；
+ * cross-wms 降级为：从给定候选目录或当前模块位置向上查找包含
+ * pnpm-workspace.yaml / package.json 的目录。带缓存避免重复 IO。
+ */
+const packageRootCache = new Map<string, string | null>();
+
+function readPackageNameSync(dir: string): string | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const packageJsonPath = path.join(path.resolve(dir), "package.json");
+    if (!fs.existsSync(packageJsonPath)) {
+      return null;
+    }
+    const content = fs.readFileSync(packageJsonPath, "utf-8");
+    const parsed = JSON.parse(content) as { name?: unknown };
+    return typeof parsed.name === "string" ? parsed.name : null;
+  } catch {
+    return null;
+  }
+}
+
+function findPackageRootSync(startDir: string, maxDepth = 12): string | null {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const path = require("node:path") as typeof import("node:path");
+  let current = path.resolve(startDir);
+  for (let i = 0; i < maxDepth; i += 1) {
+    const name = readPackageNameSync(current);
+    if (name && (name === "cross-wms" || name === "openclaw")) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return null;
+}
+
+export function resolveOpenClawPackageRootSync(params?: {
   cwd?: string;
   moduleUrl?: string;
+  argv1?: string;
 }): string | null {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const path = require("node:path") as typeof import("node:path");
+  const candidates: string[] = [];
+  if (params?.moduleUrl) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+      const { fileURLToPath } = require("node:url") as typeof import("node:url");
+      candidates.push(path.dirname(fileURLToPath(params.moduleUrl)));
+    } catch {
+      // 忽略无效 file:// URL
+    }
+  }
+  if (params?.argv1) {
+    candidates.push(path.dirname(path.resolve(params.argv1)));
+  }
+  if (params?.cwd) {
+    candidates.push(params.cwd);
+  }
+  // 默认从 __dirname 向上查找
+  candidates.push(__dirname);
+
+  const cacheKey = candidates.join("\0");
+  if (packageRootCache.has(cacheKey)) {
+    return packageRootCache.get(cacheKey) ?? null;
+  }
+  for (const candidate of candidates) {
+    const found = findPackageRootSync(candidate);
+    if (found) {
+      packageRootCache.set(cacheKey, found);
+      return found;
+    }
+  }
+  packageRootCache.set(cacheKey, null);
   return null;
 }
 
@@ -858,21 +1836,133 @@ export function resolveOpenClawPackageRootSync(_params?: {
 // ../plugins/bundled-dir.js
 // ============================================================================
 
-/** 解析 bundled 插件目录（降级：返回 null）。 */
-export function resolveBundledPluginsDir(): string | null {
+/**
+ * 解析 bundled 插件目录（移植自 openclaw/src/plugins/bundled-dir.ts）。
+ *
+ * openclaw 中根据包根目录查找 dist/extensions、dist-runtime/extensions、
+ * extensions 等候选目录，支持环境变量覆盖与禁用开关。
+ * cross-wms 降级为：复用 resolveOpenClawPackageRootSync 查找包根，
+ * 再按同样的优先级查找 extensions 子目录。带缓存避免重复 IO。
+ */
+const bundledPluginsDirCache = new Map<string, string | null>();
+
+function hasUsableBundledPluginTree(pluginsDir: string): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+    const fs = require("node:fs") as typeof import("node:fs");
+    if (!fs.existsSync(pluginsDir)) {
+      return false;
+    }
+    return fs
+      .readdirSync(pluginsDir, { withFileTypes: true })
+      .some((entry) => {
+        if (!entry.isDirectory()) {
+          return false;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+        const path = require("node:path") as typeof import("node:path");
+        const pluginDir = path.join(pluginsDir, entry.name);
+        return (
+          fs.existsSync(path.join(pluginDir, "package.json")) ||
+          fs.existsSync(path.join(pluginDir, "openclaw.plugin.json"))
+        );
+      });
+  } catch {
+    return false;
+  }
+}
+
+function resolveBundledPluginsDirUncached(env: NodeJS.ProcessEnv): string | null {
+  // 禁用开关
+  const disabled = env.OPENCLAW_DISABLE_BUNDLED_PLUGINS?.trim().toLowerCase();
+  if (disabled === "1" || disabled === "true") {
+    return null;
+  }
+  // 环境变量覆盖
+  const override = env.OPENCLAW_BUNDLED_PLUGINS_DIR?.trim();
+  if (override) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+      const fs = require("node:fs") as typeof import("node:fs");
+      const resolvedOverride = override.replace(/^~/, env.HOME ?? "");
+      if (fs.existsSync(resolvedOverride)) {
+        return resolvedOverride;
+      }
+    } catch {
+      // 忽略
+    }
+  }
+  // 从包根查找
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const path = require("node:path") as typeof import("node:path");
+  const packageRoot = resolveOpenClawPackageRootSync({ argv1: process.argv[1] });
+  const roots = [packageRoot, resolveOpenClawPackageRootSync({})].filter(
+    (entry): entry is string => Boolean(entry),
+  );
+  for (const root of roots) {
+    const candidates = [
+      path.join(root, "dist", "extensions"),
+      path.join(root, "dist-runtime", "extensions"),
+      path.join(root, "extensions"),
+    ];
+    for (const candidate of candidates) {
+      if (hasUsableBundledPluginTree(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  // 从当前模块向上查找
+  try {
+    let cursor = __dirname;
+    for (let i = 0; i < 6; i += 1) {
+      const candidate = path.join(cursor, "extensions");
+      if (hasUsableBundledPluginTree(candidate)) {
+        return candidate;
+      }
+      const parent = path.dirname(cursor);
+      if (parent === cursor) {
+        break;
+      }
+      cursor = parent;
+    }
+  } catch {
+    // 忽略
+  }
   return null;
+}
+
+export function resolveBundledPluginsDir(env: NodeJS.ProcessEnv = process.env): string | null {
+  const cacheKey = env.OPENCLAW_DISABLE_BUNDLED_PLUGINS ?? "" + "|" + (env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? "");
+  if (bundledPluginsDirCache.has(cacheKey)) {
+    return bundledPluginsDirCache.get(cacheKey) ?? null;
+  }
+  const resolved = resolveBundledPluginsDirUncached(env);
+  bundledPluginsDirCache.set(cacheKey, resolved);
+  return resolved;
 }
 
 // ============================================================================
 // ../config/paths.js —— resolveStateDir
 // ============================================================================
 
-/** 解析状态目录（降级：返回默认 ~/.openclaw）。 */
+/**
+ * 解析 cross-wms 状态目录（移植自 openclaw/src/config/paths.ts）。
+ *
+ * openclaw 中优先使用 OPENCLAW_STATE_DIR 环境变量覆盖，否则回退到 ~/.openclaw；
+ * cross-wms 降级为：优先使用 OPENCLAW_STATE_DIR（兼容 cross-wms config/paths.ts），
+ * 否则回退到 ~/.cross-wms。
+ */
 export function resolveStateDir(
-  _env: NodeJS.ProcessEnv,
+  env: NodeJS.ProcessEnv,
   homeDir: string,
 ): string {
-  return `${homeDir}/.openclaw`;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const path = require("node:path") as typeof import("node:path");
+  const override = env.OPENCLAW_STATE_DIR?.trim();
+  if (override) {
+    return path.resolve(override);
+  }
+  return path.join(homeDir, ".cross-wms");
 }
 
 // ============================================================================

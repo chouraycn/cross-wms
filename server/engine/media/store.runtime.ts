@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Media store runtime facade loads filesystem-safe store implementation.
 import "../infra/fs-safe-defaults.js";
 import {

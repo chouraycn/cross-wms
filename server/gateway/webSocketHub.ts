@@ -10,8 +10,21 @@
  */
 
 import type { Server as HttpServer } from "node:http";
+import type { IncomingMessage } from "node:http";
 import type { GatewayMethodContext, GatewayMethodResult } from "./types.js";
 import { invokeGatewayMethod } from "./methodRegistry.js";
+import {
+  authenticateWs,
+  authenticateWebSocket,
+  checkFloodGuard,
+  configureWsAuth,
+  getWsAuthConfig,
+  releaseFloodGuard,
+  type WsAuthConfig,
+} from "./wsAuth.js";
+
+export { configureWsAuth, getWsAuthConfig, authenticateWebSocket };
+export type { WsAuthConfig };
 
 export interface WebSocketClient {
   id: string;
@@ -19,17 +32,23 @@ export interface WebSocketClient {
     send: (data: string) => void;
     close: (code?: number, reason?: string) => void;
     readyState: number;
+    on?: (event: string, handler: (...args: unknown[]) => void) => void;
+    off?: (event: string, handler: (...args: unknown[]) => void) => void;
   };
   sessionKeys: Set<string>;
   userId?: string;
   connectedAt: number;
   lastActiveAt: number;
+  /** 是否已完成 WS 独立认证 */
+  authenticated: boolean;
+  /** 客户端 IP（用于 flood guard 释放） */
+  remoteIp?: string;
   context: GatewayMethodContext;
   metadata: Record<string, unknown>;
 }
 
 export interface WebSocketMessage {
-  type: "request" | "response" | "event" | "error";
+  type: "request" | "response" | "event" | "error" | "auth";
   id?: string;
   method?: string;
   params?: unknown;
@@ -41,6 +60,16 @@ export interface WebSocketMessage {
   };
   event?: string;
   data?: unknown;
+  /** 认证字段，仅 type=auth 时使用 */
+  auth?: {
+    mode?: "token" | "password" | "tailscale" | "device-token" | "bootstrap-token" | "trusted-proxy";
+    token?: string;
+    password?: string;
+    /** device-token 模式凭证（device.<deviceId>.<token>） */
+    deviceToken?: string;
+    /** bootstrap-token 模式凭证 */
+    bootstrapToken?: string;
+  };
   timestamp: number;
 }
 
@@ -52,8 +81,9 @@ export interface SessionSyncEvent {
   timestamp: number;
 }
 
-export type WebSocketHubEvent = 
+export type WebSocketHubEvent =
   | "client:connected"
+  | "client:authenticated"
   | "client:disconnected"
   | "session:subscribed"
   | "session:unsubscribed"
@@ -104,11 +134,43 @@ class WebSocketHub {
       this.wss = new WebSocketServer({
         server: httpServer,
         path: "/gateway/ws",
+        // 在 handleUpgrade 之前执行预认证：flood guard + token/password 校验
+        verifyClient: (
+          info: { req: IncomingMessage },
+          cb: (allowed: boolean, code?: number, reason?: string) => void,
+        ) => {
+          const req = info.req;
+          const remoteIp = resolveRemoteIp(req);
+
+          // 1) Flood guard：限制单 IP 每分钟连接数
+          const flood = checkFloodGuard(remoteIp);
+          if (!flood.allowed) {
+            console.warn(
+              `[gateway] WS flood guard rejected ip=${remoteIp} retry=${flood.retryAfterSec ?? 60}s`,
+            );
+            cb(false, 429, `flood guard: retry after ${flood.retryAfterSec ?? 60}s`);
+            return;
+          }
+
+          // 2) 预认证：验证 token / password / device-token / bootstrap-token
+          //    authenticateWebSocket 现为 async（device-token/tailscale 需异步校验）
+          void authenticateWebSocket(req).then((auth) => {
+            if (!auth.authenticated) {
+              console.warn(
+                `[gateway] WS auth rejected ip=${remoteIp} reason=${auth.reason ?? "unknown"}`,
+              );
+              cb(false, 401, auth.reason ?? "unauthorized");
+              return;
+            }
+
+            cb(true);
+          });
+        },
       });
 
-      (this.wss as { on: (event: string, handler: (ws: unknown) => void) => void }).on(
+      (this.wss as { on: (event: string, handler: (ws: unknown, req: IncomingMessage) => void) => void }).on(
         "connection",
-        (ws: unknown) => this.handleConnection(ws),
+        (ws: unknown, req: IncomingMessage) => void this.handleConnection(ws, req),
       );
       console.log("[gateway] WebSocket server started on /gateway/ws");
     } catch {
@@ -152,9 +214,15 @@ class WebSocketHub {
     }
   }
 
-  private handleConnection(ws: unknown): void {
+  private async handleConnection(ws: unknown, req: IncomingMessage): Promise<void> {
     const clientId = this.generateClientId();
     const now = Date.now();
+    const authConfig = getWsAuthConfig();
+    const remoteIp = resolveRemoteIp(req);
+
+    // verifyClient 已在升级前完成 flood guard 与预认证；
+    // 此处复用 authenticateWebSocket 解析认证状态（与 verifyClient 逻辑一致）
+    const initialAuth = await authenticateWebSocket(req);
 
     const client: WebSocketClient = {
       id: clientId,
@@ -162,12 +230,20 @@ class WebSocketHub {
       sessionKeys: new Set(),
       connectedAt: now,
       lastActiveAt: now,
+      // 已禁用认证 或 HTTP 升级时已通过认证 → 视为已认证；否则等待握手消息
+      authenticated: !authConfig.enabled || initialAuth.authenticated,
+      remoteIp,
       context: {
         requestId: clientId,
         timestamp: now,
       },
       metadata: {},
     };
+
+    // 连接成功日志
+    console.log(
+      `[gateway] WS connected client=${clientId} ip=${remoteIp} authenticated=${client.authenticated}`,
+    );
 
     this.clients.set(clientId, client);
 
@@ -180,22 +256,57 @@ class WebSocketHub {
     });
 
     wsAny.on("close", () => {
+      // 释放 flood guard 计数，避免正常短连接被误伤
+      releaseFloodGuard(remoteIp);
       this.handleDisconnect(client);
     });
 
     wsAny.on("error", () => {
+      releaseFloodGuard(remoteIp);
       this.handleDisconnect(client);
     });
 
+    // 3) 发送 connect.challenge：客户端需在 handshakeTimeoutMs 内回 auth 消息（启用认证时）
     this.sendToClient(client, {
       type: "event",
-      event: "connected",
-      data: { 
+      event: "connect.challenge",
+      data: {
         clientId,
-        supportedMethods: ["session.subscribe", "session.unsubscribe", "session.sync", "task-monitor.subscribe", "task-monitor.unsubscribe"],
+        authRequired: authConfig.enabled,
+        modes: authConfig.enabled
+          ? [
+              ...(authConfig.tokens.length > 0 ? (["token"] as const) : []),
+              ...(authConfig.passwords.length > 0 ? (["password"] as const) : []),
+            ]
+          : [],
+        handshakeTimeoutMs: authConfig.handshakeTimeoutMs,
+        supportedMethods: [
+          "session.subscribe",
+          "session.unsubscribe",
+          "session.sync",
+          "task-monitor.subscribe",
+          "task-monitor.unsubscribe",
+        ],
       },
       timestamp: Date.now(),
     });
+
+    // 4) 启用认证时设置握手超时定时器
+    if (authConfig.enabled && !client.authenticated) {
+      const timer = setTimeout(() => {
+        if (!client.authenticated) {
+          try {
+            client.socket.close(1008, "auth handshake timeout");
+          } catch {
+            // ignore
+          }
+        }
+      }, authConfig.handshakeTimeoutMs);
+      // socket 关闭后清理定时器
+      const cleanup = () => clearTimeout(timer);
+      wsAny.on?.("close", cleanup);
+      wsAny.on?.("error", cleanup);
+    }
 
     this.emit("client:connected", client);
   }
@@ -220,6 +331,26 @@ class WebSocketHub {
     }
 
     this.emit("message:received", client, message);
+
+    // 1) 认证消息：先处理，不需要 authenticated 前置
+    if (message.type === "auth") {
+      void this.handleAuthMessage(client, message);
+      return;
+    }
+
+    // 2) 已启用认证但客户端未通过认证 → 除 auth 外其余消息一律拒绝
+    if (getWsAuthConfig().enabled && !client.authenticated) {
+      this.sendToClient(client, {
+        type: "error",
+        id: message.id,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Authentication required. Send type=auth message first.",
+        },
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     if (message.type === "request" && message.method) {
       if (message.method === "session.subscribe") {
@@ -454,7 +585,58 @@ class WebSocketHub {
     }
   }
 
+  /**
+   * 处理 WS 认证握手消息。
+ * - 已认证：直接回 ok
+ * - 认证成功：标记 authenticated=true，回 auth.success
+ * - 认证失败：回 auth.failed，客户端可重试或断开
+ */
+  private async handleAuthMessage(client: WebSocketClient, message: WebSocketMessage): Promise<void> {
+    if (client.authenticated) {
+      this.sendToClient(client, {
+        type: "response",
+        id: message.id,
+        result: { authenticated: true, mode: "already" },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+    const input = message.auth ?? {};
+    const result = await authenticateWs({
+      mode: input.mode,
+      token: input.token,
+      password: input.password,
+      deviceToken: input.deviceToken,
+      bootstrapToken: input.bootstrapToken,
+    });
+    if (result.ok) {
+      client.authenticated = true;
+      this.sendToClient(client, {
+        type: "response",
+        id: message.id,
+        result: { authenticated: true, mode: result.mode },
+        timestamp: Date.now(),
+      });
+      this.emit("client:authenticated", client);
+    } else {
+      this.sendToClient(client, {
+        type: "response",
+        id: message.id,
+        error: {
+          code: "AUTH_FAILED",
+          message: result.reason ?? "authentication failed",
+          data: { mode: result.mode, retryAfterSec: result.retryAfterSec },
+        },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
   private handleDisconnect(client: WebSocketClient): void {
+    // 连接断开日志
+    console.log(
+      `[gateway] WS disconnected client=${client.id} ip=${client.remoteIp ?? "unknown"}`,
+    );
     this.clients.delete(client.id);
 
     for (const sessionKey of client.sessionKeys) {
@@ -721,4 +903,33 @@ export async function startGatewayWebSocket(httpServer: HttpServer): Promise<voi
 
 export function stopGatewayWebSocket(): void {
   WS_HUB_INSTANCE.stop();
+}
+
+// ==================== 辅助函数 ====================
+
+function extractHeader(req: IncomingMessage, name: string): string | undefined {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+/** 从 Authorization 头中剥离 "Bearer " 前缀，返回纯 token */
+function stripBearer(header: string): string {
+  const parts = header.split(" ");
+  if (parts.length === 2 && parts[0].toLowerCase() === "bearer") {
+    return parts[1].trim();
+  }
+  return header.trim();
+}
+
+/** 解析客户端真实 IP（x-forwarded-for > x-real-ip > socket.remoteAddress） */
+function resolveRemoteIp(req: IncomingMessage): string {
+  const xff = extractHeader(req, "x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0].trim();
+    if (first) return first;
+  }
+  const xri = extractHeader(req, "x-real-ip");
+  if (xri) return xri;
+  return req.socket?.remoteAddress ?? "unknown";
 }

@@ -55,7 +55,13 @@ final class WebViewManager: NSObject {
 
     private func makeConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
+        // 仅在 Debug 构建或通过环境变量 CDF_DEBUG=1 启用时开启开发者工具
+        #if DEBUG
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        #else
+        let debugEnv = ProcessInfo.processInfo.environment["CDF_DEBUG"] == "1"
+        config.preferences.setValue(debugEnv, forKey: "developerExtrasEnabled")
+        #endif
         config.mediaTypesRequiringUserActionForPlayback = []
         config.allowsAirPlayForMediaPlayback = true
 
@@ -212,6 +218,9 @@ final class WebViewManager: NSObject {
                     window_maximize: () => window.__cdfIPC.request('window', { action: 'maximize' }),
                 },
                 pickFolder: () => window.__cdfIPC.request('pickFolder').then(r => r ? r.path : null),
+                openFile: (path) => window.__cdfIPC.request('openFile', { path }),
+                showInFinder: (path) => window.__cdfIPC.request('showInFinder', { path }),
+                notification: (title, body) => window.__cdfIPC.request('notification', { title, body }),
             };
 
             Object.defineProperty(window, 'pywebview', {

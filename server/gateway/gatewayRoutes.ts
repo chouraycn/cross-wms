@@ -9,6 +9,17 @@ import { registerCoreMethods } from "./coreMethods.js";
 import { registerChatMethods } from "./chatMethods.js";
 import { registerCronMethods } from "./cronMethods.js";
 import { registerWorkboardMethods } from "./workboardMethods.js";
+import { registerDevicesMethods } from "./devicesMethods.js";
+import { registerDiagnosticsMethods } from "./diagnosticsMethods.js";
+import { registerDoctorMethods } from "./doctorMethods.js";
+import { registerExecApprovalsMethods } from "./execApprovalsMethods.js";
+import { registerPluginApprovalMethods } from "./pluginApprovalMethods.js";
+import { registerChannelsMethods } from "./channelsMethods.js";
+import { registerNodeMethods } from "./nodeMethods.js";
+import { registerAgentIdentityMethods } from "./agentIdentityMethods.js";
+import { registerSkillsProposalsMethods } from "./skillsProposalsMethods.js";
+import { registerConfigMethods } from "./configMethods.js";
+import { registerSecretsMethods } from "./secretsMethods.js";
 import { initSessionSync } from "./sessionSync.js";
 
 // 确保所有方法已注册
@@ -16,6 +27,27 @@ registerCoreMethods();
 registerChatMethods();
 registerCronMethods();
 registerWorkboardMethods();
+
+// 注册设备 / 诊断 / doctor / 审批方法（接收 registry 参数）
+{
+  const registry = getMethodRegistry();
+  registerDevicesMethods(registry);
+  registerDiagnosticsMethods(registry);
+  registerDoctorMethods(registry);
+  registerExecApprovalsMethods(registry);
+  registerPluginApprovalMethods(registry);
+}
+
+// 注册新增的 WS RPC 方法
+{
+  const registry = getMethodRegistry();
+  registerChannelsMethods(registry);
+  registerNodeMethods(registry);
+  registerAgentIdentityMethods(registry);
+  registerSkillsProposalsMethods(registry);
+  registerConfigMethods(registry);
+  registerSecretsMethods(registry);
+}
 
 // 初始化会话同步
 initSessionSync();

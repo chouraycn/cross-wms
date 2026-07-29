@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Command } from "commander";
 import { logger } from "../../logger.js";
 import { getSessionBindingService } from "../../engine/bindings/session-binding-service.js";

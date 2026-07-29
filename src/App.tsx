@@ -142,6 +142,8 @@ const StaffDistillPage = React.lazy(() => import('./pages/staff/DistillPage').th
 const StaffTutorialPage = React.lazy(() => import('./pages/staff/TutorialPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffEmployeeChatPage = React.lazy(() => import('./pages/staff/EmployeeChatPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffChatPage = React.lazy(() => import('./pages/staff/chat/ChatPage'));
+const StaffChatGalleryPage = React.lazy(() => import('./pages/staff/chat/ChatGalleryPage'));
+const StaffLoginPage = React.lazy(() => import('./pages/staff/LoginPage'));
 const StaffScheduledTaskEditorPage = React.lazy(() =>
   import('./pages/staff/scheduled-tasks/ScheduledTaskEditorPage').then(m => ({ default: wrapStaffAuth(m.ScheduledTaskNewPage) })),
 );
@@ -1078,6 +1080,11 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/chat" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
                     <Route path="/staff/chat/:sessionId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
                     <Route path="/staff/chat/draft/:agentId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
+                    {/* 工作区对话画廊（复刻 StaffDeck ChatGalleryPage：会话侧栏 + 员工画廊） */}
+                    <Route path="/staff/chat-gallery" element={<StaffLayout><StaffChatGalleryPage /></StaffLayout>} />
+                    <Route path="/enterprise/gallery" element={<StaffLayout><StaffChatGalleryPage /></StaffLayout>} />
+                    {/* 登录页（复刻 StaffDeck LoginPage，可路由的独立登录入口） */}
+                    <Route path="/staff/login" element={<StaffLoginPage />} />
 
                     {/* /workspace/* 路径 — StaffDeck chat 与 gallery */}
                     <Route path="/workspace" element={<Navigate to="/enterprise/dashboard" replace />} />

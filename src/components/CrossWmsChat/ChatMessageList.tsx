@@ -86,6 +86,8 @@ export interface ChatMessageListProps {
   hasMoreMessages?: boolean;
   /** 外部搜索查询（由顶部搜索按钮控制） */
   externalSearchQuery?: string;
+  /** 调试模式：开启后在消息下方显示 Token 用量和耗时 */
+  debugMode?: boolean;
 }
 
 export interface ChatMessageListRef {
@@ -116,6 +118,7 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
   isLoadingOlder = false,
   hasMoreMessages = false,
   externalSearchQuery,
+  debugMode = false,
 }, ref) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -688,8 +691,41 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
           onPermissionRespond={onPermissionRespond}
         />
       )}
+
+      {/* 调试模式：显示 Token 用量和耗时 */}
+      {debugMode && (msg.usage || msg.thinkingDuration || msg.model) && (
+        <Box sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1,
+          px: 1.5,
+          py: 0.5,
+          mt: 0.5,
+          maxWidth: '85%',
+          alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+        }}>
+          {msg.model && (
+            <Chip label={`模型: ${msg.model}`} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: gs.bgHover, color: gs.textMuted }} />
+          )}
+          {msg.usage?.totalTokens != null && (
+            <Chip label={`Tokens: ${msg.usage.totalTokens}`} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: gs.bgHover, color: gs.textMuted }} />
+          )}
+          {msg.usage?.promptTokens != null && (
+            <Chip label={`Prompt: ${msg.usage.promptTokens}`} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: gs.bgHover, color: gs.textMuted }} />
+          )}
+          {msg.usage?.completionTokens != null && (
+            <Chip label={`Completion: ${msg.usage.completionTokens}`} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: gs.bgHover, color: gs.textMuted }} />
+          )}
+          {msg.thinkingDuration != null && msg.thinkingDuration > 0 && (
+            <Chip label={`思考: ${(msg.thinkingDuration / 1000).toFixed(1)}s`} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: gs.bgHover, color: gs.textMuted }} />
+          )}
+          {msg.cacheHit != null && (
+            <Chip label={msg.cacheHit ? '缓存命中' : '缓存未命中'} size="small" sx={{ fontSize: '0.7rem', height: 20, bgcolor: msg.cacheHit ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: msg.cacheHit ? '#10b981' : '#ef4444' }} />
+          )}
+        </Box>
+      )}
     </Box>
-  ), [gs, isDark, botName, isEditingBotName, editingBotName, settings, updateSettings, copiedId, onCopy, onRegenerate, onEdit, onDelete, onQuote, onUndo, toggleBookmark, bookmarkedMessages, toggleSelectMessage, isSelectionMode, selectedMessages, onConfirmReplenishment, onPermissionRespond, showRegenerate]);
+  ), [gs, isDark, botName, isEditingBotName, editingBotName, settings, updateSettings, copiedId, onCopy, onRegenerate, onEdit, onDelete, onQuote, onUndo, toggleBookmark, bookmarkedMessages, toggleSelectMessage, isSelectionMode, selectedMessages, onConfirmReplenishment, onPermissionRespond, showRegenerate, debugMode]);
 
   const renderChatItem = useCallback((index: number, item: ChatItem) => {
     if (isMessageItem(item)) {

@@ -32,6 +32,26 @@ export function authHeader(): Record<string, string> {
   return session?.token ? { Authorization: `Bearer ${session.token}` } : {}
 }
 
+/**
+ * 后端统一响应包裹为 { code, data, message }。此处归一化解包，
+ * 让所有 api.* 调用方直接拿到 `data`，避免页面层契约不一致
+ * （部分页面当裸数组、部分手动 .data 解包）导致列表渲染崩溃/恒空。
+ * 非包裹结构（裸数组、SSE 之外的普通对象）原样返回。
+ */
+function unwrapEnvelope<T>(payload: unknown): T {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload) &&
+    'code' in payload &&
+    'data' in payload &&
+    'message' in payload
+  ) {
+    return (payload as { data: unknown }).data as T
+  }
+  return payload as T
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
@@ -45,7 +65,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const text = await response.text()
     throw new ApiError(response.status, text, response.statusText)
   }
-  return response.json() as Promise<T>
+  const json = (await response.json()) as unknown
+  return unwrapEnvelope<T>(json)
 }
 
 async function keepalivePost<T>(path: string, body?: unknown): Promise<T> {
@@ -63,7 +84,7 @@ async function keepalivePost<T>(path: string, body?: unknown): Promise<T> {
     throw new ApiError(response.status, text, response.statusText)
   }
   const text = await response.text()
-  return (text ? JSON.parse(text) : {}) as T
+  return unwrapEnvelope<T>(text ? JSON.parse(text) : {})
 }
 
 export const api = {

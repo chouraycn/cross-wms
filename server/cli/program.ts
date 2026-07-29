@@ -35,6 +35,38 @@ import { registerResetCommand } from "./commands/reset.js";
 import { registerHealthCommand } from "./commands/health.js";
 import { registerDocsCommand } from "./commands/docs.js";
 import { registerTasksCommand } from "./commands/tasks.js";
+// 高优先级命令
+import { registerSecurityCommand } from "./commands/security.js";
+import { registerLogsCommand } from "./commands/logs.js";
+import { registerWebhooksCommand } from "./commands/webhooks.js";
+import { registerMessageCommand } from "./commands/message.js";
+import { registerTranscriptsCommand } from "./commands/transcripts.js";
+import { registerMigrateCommand } from "./commands/migrate.js";
+import { registerFlowsCommand } from "./commands/flows.js";
+import { registerProxyCommand } from "./commands/proxy.js";
+import { registerDevicesCommand } from "./commands/devices.js";
+// 中优先级命令
+import { registerApprovalsCommand } from "./commands/approvals.js";
+import { registerBrowserCommand } from "./commands/browser.js";
+import { registerWorkboardCommand } from "./commands/workboard.js";
+import { registerSetupCommand } from "./commands/setup.js";
+import { registerOnboardCommand } from "./commands/onboard.js";
+import { registerUninstallCommand } from "./commands/uninstall.js";
+import { registerSystemCommand } from "./commands/system.js";
+import { registerNodeCommand } from "./commands/node.js";
+import { registerDirectoryCommand } from "./commands/directory.js";
+import { registerPolicyCommand } from "./commands/policy.js";
+// 低优先级命令
+import { registerCommitmentsCommand } from "./commands/commitments.js";
+import { registerDnsCommand } from "./commands/dns.js";
+import { registerVoicecallCommand } from "./commands/voicecall.js";
+import { registerQrCommand } from "./commands/qr.js";
+import { registerCrestodianCommand } from "./commands/crestodian.js";
+import { registerDashboardCommand } from "./commands/dashboard.js";
+import { registerCompletionCommand } from "./commands/completion.js";
+import { registerPathCommand } from "./commands/path.js";
+import { registerConfigureCommand } from "./commands/configure.js";
+import { registerInferCommand } from "./commands/infer.js";
 import { logger } from "../logger.js";
 
 /**
@@ -87,6 +119,38 @@ export function buildCLIProgram(): Command {
     "health",
     "docs",
     "tasks",
+    // 高优先级命令
+    "security",
+    "logs",
+    "webhooks",
+    "message",
+    "transcripts",
+    "migrate",
+    "flows",
+    "proxy",
+    "devices",
+    // 中优先级命令
+    "approvals",
+    "browser",
+    "workboard",
+    "setup",
+    "onboard",
+    "uninstall",
+    "system",
+    "node",
+    "directory",
+    "policy",
+    // 低优先级命令
+    "commitments",
+    "dns",
+    "voicecall",
+    "qr",
+    "crestodian",
+    "dashboard",
+    "completion",
+    "path",
+    "configure",
+    "infer",
   ]);
   for (const descriptor of descriptors) {
     if (DIRECTLY_REGISTERED.has(descriptor.name)) {
@@ -183,6 +247,41 @@ export function buildCLIProgram(): Command {
 
   // 注册 tasks 命令
   registerTasksCommand(program);
+
+  // 高优先级命令
+  registerSecurityCommand(program);
+  registerLogsCommand(program);
+  registerWebhooksCommand(program);
+  registerMessageCommand(program);
+  registerTranscriptsCommand(program);
+  registerMigrateCommand(program);
+  registerFlowsCommand(program);
+  registerProxyCommand(program);
+  registerDevicesCommand(program);
+
+  // 中优先级命令
+  registerApprovalsCommand(program);
+  registerBrowserCommand(program);
+  registerWorkboardCommand(program);
+  registerSetupCommand(program);
+  registerOnboardCommand(program);
+  registerUninstallCommand(program);
+  registerSystemCommand(program);
+  registerNodeCommand(program);
+  registerDirectoryCommand(program);
+  registerPolicyCommand(program);
+
+  // 低优先级命令
+  registerCommitmentsCommand(program);
+  registerDnsCommand(program);
+  registerVoicecallCommand(program);
+  registerQrCommand(program);
+  registerCrestodianCommand(program);
+  registerDashboardCommand(program);
+  registerCompletionCommand(program);
+  registerPathCommand(program);
+  registerConfigureCommand(program);
+  registerInferCommand(program);
 
   return program;
 }

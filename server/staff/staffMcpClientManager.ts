@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * 数字员工（per-tenant）隔离 MCP 客户端管理器构建器。
  *

@@ -14,6 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log.git", from: "1.10.1"),
+        .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.7.1"),
     ],
     targets: [
         .executableTarget(
@@ -21,6 +22,7 @@ let package = Package(
             dependencies: [
                 "CDFKnowIPC",
                 .product(name: "Logging", package: "swift-log"),
+                .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/CDFKnowClow",
             linkerSettings: [

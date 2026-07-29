@@ -275,6 +275,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const [focusedMessage, setFocusedMessage] = useState<Message | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ open: false, position: null, message: null });
 
+  // 调试模式：通过 /debug 命令切换，开启后在消息下方显示 Token 用量和耗时
+  const [debugMode, setDebugMode] = useState<boolean>(false);
+
   const [currentAgent, setCurrentAgent] = useState<AgentIdentity>(
     AGENT_SCENARIOS.find(a => a.isDefault) || AGENT_SCENARIOS[0]
   );
@@ -503,13 +506,31 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         return true;
       }
       case 'debug': {
-        showToast('调试模式切换功能开发中', 'info', 2000);
+        const newDebugMode = !debugMode;
+        setDebugMode(newDebugMode);
+        showToast(`调试模式已${newDebugMode ? '开启' : '关闭'}`, 'success', 2000);
+        // 在对话中插入一条调试状态消息
+        const debugMsg: Message = {
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: newDebugMode
+            ? `**调试模式已开启**\n\n当前会话调试信息：\n- 消息数量: ${currentSession.messages.length}\n- 当前模型: ${currentSession.model || 'auto'}\n- 会话 ID: ${currentSession.id}\n- 调试面板已展开，可在消息下方查看 Token 用量和耗时`
+            : `**调试模式已关闭**`,
+          model: currentSession?.model || '',
+          timestamp: new Date(),
+          thinking: '',
+          thinkingDone: false,
+        };
+        handleSessionUpdate({
+          ...currentSession,
+          messages: [...currentSession.messages, debugMsg],
+        });
         return true;
       }
       default:
         return false;
     }
-  }, [handleSessionUpdate, handleNewChat, showToast, updateSessionModel, compactSession, setSkillCreateOpen, setSkillCreateName, setSkillCreateDesc]);
+  }, [handleSessionUpdate, handleNewChat, showToast, updateSessionModel, compactSession, setSkillCreateOpen, setSkillCreateName, setSkillCreateDesc, debugMode]);
 
   // 包装 sendMessage，先处理斜杠命令
   const handleSendMessage = useCallback((content: string, options?: SendAgentMessageOptions) => {
@@ -584,16 +605,63 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
   // ===================== 新增消息操作回调 =====================
 
-  /** 分享消息 */
+  /** 分享消息 — 导出为 Markdown 文件并复制到剪贴板 */
   const handleShare = useCallback((msg: Message) => {
-    // TODO: 实现分享逻辑（生成分享链接）
-    showToast('分享功能开发中', 'info', 2000);
+    const roleLabel = msg.role === 'user' ? '用户' : 'AI 助手';
+    const ts = msg.timestamp instanceof Date
+      ? msg.timestamp.toLocaleString('zh-CN', { hour12: false })
+      : String(msg.timestamp || '');
+    const content = cleanAIDisclaimer(msg.content || '');
+    const md = [
+      `# 对话分享`,
+      ``,
+      `**角色**: ${roleLabel}`,
+      ...(msg.model ? [`**模型**: ${msg.model}`] : []),
+      ...(ts ? [`**时间**: ${ts}`] : []),
+      ``,
+      `---`,
+      ``,
+      content,
+    ].join('\n');
+
+    // 1. 复制到剪贴板
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).catch(() => { /* 静默 */ });
+      }
+    } catch { /* 静默 */ }
+
+    // 2. 触发 Markdown 文件下载
+    try {
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `message-${msg.id || Date.now()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { /* 静默 */ }
+
+    showToast('已导出为 Markdown 并复制到剪贴板', 'success', 2000);
   }, [showToast]);
 
-  /** 翻译消息 */
+  /** 翻译消息 — 打开 Google Translate 链接 */
   const handleTranslate = useCallback((msg: Message) => {
-    // TODO: 实现翻译逻辑
-    showToast('翻译功能开发中', 'info', 2000);
+    const text = (msg.content || '').trim();
+    if (!text) {
+      showToast('消息内容为空，无法翻译', 'info', 2000);
+      return;
+    }
+    // 自动检测源语言，目标语言为中文
+    const translateUrl = `https://translate.google.com/?sl=auto&tl=zh-CN&op=translate&text=${encodeURIComponent(text)}`;
+    try {
+      window.open(translateUrl, '_blank', 'noopener,noreferrer');
+      showToast('已打开 Google 翻译', 'success', 2000);
+    } catch {
+      showToast('无法打开翻译页面，请检查浏览器弹窗设置', 'error', 3000);
+    }
   }, [showToast]);
 
   // ===================== 快捷键支持 =====================
@@ -1141,6 +1209,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 onPermissionRespond={handlePermissionRespond}
                 items={chatItems}
                 externalSearchQuery={searchOpen ? searchQuery : ''}
+                debugMode={debugMode}
               />
 
               {pendingMessages.length > 0 && (
@@ -1417,6 +1486,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             maxHeight="calc(70vh - 130px)"
             items={chatItems}
             externalSearchQuery={searchOpen ? searchQuery : ''}
+            debugMode={debugMode}
           />
         )}
 

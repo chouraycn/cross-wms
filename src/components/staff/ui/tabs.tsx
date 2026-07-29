@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Box, type SxProps } from '@mui/material'
+import { Box } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from './utils'
@@ -28,12 +29,18 @@ const tabsListVariants = cva(
   },
 )
 
+const mergeSx = (base: SxProps<Theme>, sx?: SxProps<Theme>): SxProps<Theme> => [
+  base,
+  ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+]
+
 function Tabs({
   className,
   orientation = 'horizontal',
   value: controlledValue,
   defaultValue,
   onValueChange,
+  sx,
   children,
   ...props
 }: {
@@ -42,6 +49,7 @@ function Tabs({
   value?: string
   defaultValue?: string
   onValueChange?: (value: string) => void
+  sx?: SxProps<Theme>
   children?: React.ReactNode
 } & Omit<React.ComponentProps<'div'>, 'value' | 'defaultValue' | 'onChange'>) {
   const [internal, setInternal] = React.useState<string | undefined>(defaultValue)
@@ -59,6 +67,7 @@ function Tabs({
         data-slot="tabs"
         data-orientation={orientation}
         className={cn('group/tabs flex gap-2', orientation === 'horizontal' ? 'flex-col' : 'flex-row', className)}
+        sx={sx}
         {...(props as Record<string, unknown>)}
       >
         {children}
@@ -70,23 +79,27 @@ function Tabs({
 function TabsList({
   className,
   variant = 'default',
+  sx,
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof tabsListVariants>) {
+}: React.ComponentProps<'div'> & VariantProps<typeof tabsListVariants> & { sx?: SxProps<Theme> }) {
   return (
     <Box
       role="tablist"
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 2,
-        p: '3px',
-        gap: 0.5,
-        bgcolor: variant === 'default' ? 'action.hover' : 'transparent',
-      }}
+      sx={mergeSx(
+        {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 2,
+          p: '3px',
+          gap: 0.5,
+          bgcolor: variant === 'default' ? 'action.hover' : 'transparent',
+        },
+        sx,
+      )}
       {...(props as Record<string, unknown>)}
     />
   )
@@ -97,9 +110,10 @@ function TabsTrigger({
   value,
   disabled,
   onClick,
+  sx,
   children,
   ...props
-}: React.ComponentProps<'button'> & { value: string }) {
+}: React.ComponentProps<'button'> & { value: string; sx?: SxProps<Theme> }) {
   const { value: current, setValue } = React.useContext(TabsContext)
   const active = current === value
   return (
@@ -116,23 +130,26 @@ function TabsTrigger({
         if (!disabled) setValue(value)
       }}
       className={cn(className)}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 1,
-        border: 'none',
-        cursor: 'pointer',
-        bgcolor: 'transparent',
-        color: active ? 'text.primary' : 'text.secondary',
-        fontWeight: 500,
-        px: 1.5,
-        py: 0.5,
-        borderRadius: 1,
-        transition: 'background-color 0.2s, color 0.2s',
-        '&[data-state=active]': { boxShadow: 1 },
-        '&:disabled': { opacity: 0.5, cursor: 'default' },
-        '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
-      }}
+      sx={mergeSx(
+        {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 1,
+          border: 'none',
+          cursor: 'pointer',
+          bgcolor: 'transparent',
+          color: active ? 'text.primary' : 'text.secondary',
+          fontWeight: 500,
+          px: 1.5,
+          py: 0.5,
+          borderRadius: 1,
+          transition: 'background-color 0.2s, color 0.2s',
+          '&[data-state=active]': { boxShadow: 1 },
+          '&:disabled': { opacity: 0.5, cursor: 'default' },
+          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
+        },
+        sx,
+      )}
       {...(props as Record<string, unknown>)}
     >
       {children}

@@ -455,7 +455,7 @@ export default function DashboardPage({
         onClose={() => setProfileEditorOpen(false)}
         onSaved={(saved) => setAgents((current) => current.map((item) => (item.id === saved.id ? saved : item)))}
       />
-    </div>
+    </Box>
   );
 }
 

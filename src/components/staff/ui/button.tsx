@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Button as MuiButton } from '@mui/material'
-import type { SxProps } from '@mui/material/styles'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from './utils'
@@ -104,7 +104,7 @@ const Button = React.forwardRef<
   React.ComponentProps<'button'> &
     VariantProps<typeof buttonVariants> & {
       asChild?: boolean
-      sx?: SxProps
+      sx?: SxProps<Theme>
     }
 >(function Button(
   { className, variant = 'default', size = 'default', asChild = false, children, sx, ...props },

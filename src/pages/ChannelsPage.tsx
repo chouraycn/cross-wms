@@ -69,6 +69,29 @@ import {
   type ChannelListItem,
   type ChannelDetail as ChannelDetailType,
 } from '../services/channelsApi';
+import FeishuSetup from './channels/FeishuSetup';
+import WechatSetup from './channels/WechatSetup';
+import WecomSetup from './channels/WecomSetup';
+
+// 飞书/微信/企业微信走专属配置流；其余类型（webhook/dingtalk/email）保留通用 JSON 凭证框
+const PROVIDER_SETUP_TYPES: ChannelType[] = ['feishu', 'wechat', 'wechat_work'];
+
+function renderProviderSetup(
+  type: ChannelType | undefined,
+  credentials: Record<string, string>,
+  onChange: (next: Record<string, string>) => void,
+  channelName?: string,
+) {
+  switch (type) {
+    case 'feishu':
+      return <FeishuSetup credentials={credentials} onChange={onChange} />;
+    case 'wechat':
+    case 'wechat_work':
+      return <WechatSetup channelName={channelName} credentials={credentials} onChange={onChange} />;
+    default:
+      return null;
+  }
+}
 import {
   listManagedChannels,
   broadcastMessage,
@@ -415,24 +438,33 @@ const ChannelsPage: React.FC = () => {
             }}
           />
         </Box>
-        <TextField
-          fullWidth
-          label="凭证（JSON）"
-          multiline
-          rows={4}
-          value={JSON.stringify(editingChannel?.credentials || {}, null, 2)}
-          onChange={(e) => {
-            if (!editingChannel) return;
-            try {
-              const parsed = JSON.parse(e.target.value);
-              setEditingChannel({ ...editingChannel, credentials: parsed });
-            } catch {
-            // ignore parse errors
-          }
-        }}
-          margin="normal"
-          placeholder='{"webhookUrl": "https://..."}'
-        />
+        {editingChannel && PROVIDER_SETUP_TYPES.includes(editingChannel.type) ? (
+          renderProviderSetup(
+            editingChannel.type,
+            editingChannel.credentials || {},
+            (next) => setEditingChannel({ ...editingChannel, credentials: next }),
+            editingChannel.name,
+          )
+        ) : (
+          <TextField
+            fullWidth
+            label="凭证（JSON）"
+            multiline
+            rows={4}
+            value={JSON.stringify(editingChannel?.credentials || {}, null, 2)}
+            onChange={(e) => {
+              if (!editingChannel) return;
+              try {
+                const parsed = JSON.parse(e.target.value);
+                setEditingChannel({ ...editingChannel, credentials: parsed });
+              } catch {
+              // ignore parse errors
+            }
+          }}
+            margin="normal"
+            placeholder='{"webhookUrl": "https://..."}'
+          />
+        )}
         <TextField
           fullWidth
           label="选项（JSON）"

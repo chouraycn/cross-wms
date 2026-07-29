@@ -1,21 +1,19 @@
 /**
- * 移植自 openclaw/src/agents/sessions/extensions/runner.ts
+ * ExtensionRunner 入口
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 完整实现已移植自 openclaw/src/agents/sessions/extensions/runner.ts，
+ * 位于 ./sessions/extensions/runner.ts。本文件作为顶层 agents 模块的
+ * 转发入口，让旧调用方可以从 agents/runner 直接导入 ExtensionRunner
+ * 及其周边类型与函数。
  */
 
-export type ExtensionErrorListener = unknown;
-export type NewSessionHandler = unknown;
-export type ForkHandler = unknown;
-export type NavigateTreeHandler = unknown;
-export type SwitchSessionHandler = unknown;
-export type ReloadHandler = unknown;
-export type ShutdownHandler = unknown;
-export class ExtensionRunner {
-  // Stub: not fully ported
-}
-export function emitSessionShutdownEvent(..._args: unknown[]): unknown {
-  return undefined;
-}
+export type {
+  ExtensionErrorListener,
+  ForkHandler,
+  NavigateTreeHandler,
+  NewSessionHandler,
+  ReloadHandler,
+  ShutdownHandler,
+  SwitchSessionHandler,
+} from "./sessions/extensions/runner.js";
+export { ExtensionRunner, emitSessionShutdownEvent } from "./sessions/extensions/runner.js";

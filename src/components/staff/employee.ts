@@ -5,6 +5,7 @@ import {
   isGalleryEmployee,
   type EnterpriseAuthUser,
 } from './auth.js'
+import { staffdeckContent } from '../../assets/staffdeck-assets.js'
 
 export type EmployeeProfile = {
   roleKey: string
@@ -57,10 +58,17 @@ export const EMPLOYEE_AVATAR_PRESETS: EmployeeAvatarPreset[] = [
 
 export const DEFAULT_AVATAR_PRESET = 'service-orbit'
 
-// Preset avatar images are bundled by the app shell; we keep an empty fallback
-// here so this module stays free of asset imports. Consumers may override
-// `avatarImage` via agent metadata.
-const PRESET_AVATAR_IMAGES: Record<string, string> = {}
+// Preset avatar illustrations — 100% 迁移自 StaffDeck-main（staffdeck-avatar-*.png）。
+// 映射到 staffdeck-assets.ts 中央索引，保证图片进入生产 bundle 且被全局 EmployeeAvatar 复用。
+const PRESET_AVATAR_IMAGES: Record<string, string> = {
+  'service-orbit': staffdeckContent.staffdeckAvatarService,
+  'after-sales-seal': staffdeckContent.staffdeckAvatarAfterSales,
+  'knowledge-node': staffdeckContent.staffdeckAvatarKnowledge,
+  'commerce-compass': staffdeckContent.staffdeckAvatarCommerce,
+  'ops-grid': staffdeckContent.staffdeckAvatarOps,
+  'quality-star': staffdeckContent.staffdeckAvatarQuality,
+  overall: staffdeckContent.staffdeckAvatarOverall,
+}
 
 type AvatarSource = Pick<EmployeeProfile, 'avatarKind' | 'avatarImage' | 'avatarPreset'>
 
@@ -71,7 +79,7 @@ export function isUploadedAvatar(profile: AvatarSource): boolean {
 /** Resolve the image URL for an employee avatar (uploaded image or preset illustration). */
 export function employeeAvatarImage(profile: AvatarSource): string {
   if (isUploadedAvatar(profile)) return profile.avatarImage
-  return PRESET_AVATAR_IMAGES[profile.avatarPreset || DEFAULT_AVATAR_PRESET] || ''
+  return PRESET_AVATAR_IMAGES[profile.avatarPreset || DEFAULT_AVATAR_PRESET] || staffdeckContent.staffdeckAvatarDefault
 }
 
 export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [

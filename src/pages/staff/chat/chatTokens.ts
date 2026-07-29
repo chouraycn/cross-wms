@@ -3,9 +3,9 @@ import type { SxProps, Theme } from '@mui/material/styles';
 /**
  * MUI `sx` translation of the chat conversation page styles.
  *
- * Every key is the camelCased equivalent of a `CHAT_*` export from the old
- * `chatPageStyles.ts` Tailwind class module. Colors are kept literal so the
- * visual design is byte-for-byte identical to the Tailwind version.
+ * Every key is the camelCased equivalent of the old `CHAT_*` Tailwind class
+ * exports. Colors are kept literal so the visual design is byte-for-byte
+ * identical to the Tailwind version.
  */
 
 export const chatTokens = {

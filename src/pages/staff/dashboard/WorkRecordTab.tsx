@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { staffdeckDisplayText } from '../../../components/staff/employee.js';
+import { staffdeckContent } from '../../../assets/staffdeck-assets';
 import type {
   AgentProfileRead,
   AgentWorkRecordEventRead,
@@ -200,6 +201,7 @@ export default function WorkRecordTab({
       body: activeTools.slice(0, 3).map((item) => staffdeckDisplayText(item.display_name || item.name)).join(' / ') || '暂无启用工具',
       icon: <Box sx={capabilityGlyphSx}><Briefcase size={14} /></Box>,
       dark: true,
+      preview: staffdeckContent.capabilitytools,
     },
     {
       route: '/staff/scheduled-tasks',
@@ -208,6 +210,7 @@ export default function WorkRecordTab({
       body: activeScheduledTasks.slice(0, 2).map((item) => staffdeckDisplayText(item.title)).join(' / ') || '暂无启用定时任务',
       icon: <Box sx={capabilityGlyphSx}><Calendar size={14} /></Box>,
       dark: true,
+      preview: staffdeckContent.capabilitytasks,
     },
     {
       route: `/staff/feedback?agent_id=${encodeURIComponent(selectedAgent.id)}`,
@@ -216,6 +219,7 @@ export default function WorkRecordTab({
       body: staffdeckDisplayText(employeeSessions[0]?.summary || employeeSessions[0]?.last_agent_question || '暂无对话任务'),
       icon: <Box sx={capabilityGlyphSx}><MessageSquare size={14} /></Box>,
       dark: true,
+      preview: staffdeckContent.capabilitylogs,
     },
   ];
 
@@ -285,6 +289,26 @@ export default function WorkRecordTab({
                 </Box>
               </Box>
               <Box component="span" sx={capabilityDescSx}>{item.body}</Box>
+              {item.preview && (
+                <Box
+                  component="img"
+                  src={item.preview}
+                  alt=""
+                  aria-hidden="true"
+                  sx={{
+                    position: 'absolute',
+                    right: '10px',
+                    bottom: '10px',
+                    width: '84px',
+                    height: '84px',
+                    objectFit: 'cover',
+                    borderRadius: '12px',
+                    opacity: 0.9,
+                    pointerEvents: 'none',
+                    '[data-tone="dark"] &': { opacity: 0.78 },
+                  }}
+                />
+              )}
             </Box>
           ))}
         </Box>

@@ -46,6 +46,7 @@ import {
   employeeProfile,
   resourceDisplayNameWithCreator,
 } from '../../components/staff/employee.js';
+import { staffdeckContent } from '../../assets/staffdeck-assets';
 import type {
   AgentProfileRead,
   GeneralSkillRead,
@@ -65,6 +66,8 @@ type PlatformConfig = {
   metricLabel: string;
   signals: string[];
   icon: typeof Users;
+  /** 广场预览截图（迁移自 StaffDeck plaza-*.png），无则留空。 */
+  preview?: string;
 };
 
 type PlatformItem = {
@@ -97,6 +100,7 @@ const PLATFORM_CONFIGS: PlatformConfig[] = [
     metricLabel: '知识库',
     signals: ['知识图谱', '引用来源', '可复制'],
     icon: FolderOpen,
+    preview: staffdeckContent.plazaKnowledge,
   },
   {
     kind: 'general-skills',
@@ -107,6 +111,7 @@ const PLATFORM_CONFIGS: PlatformConfig[] = [
     metricLabel: '技能',
     signals: ['运行测试', 'MCP/浏览器', '能力复用'],
     icon: Wand2,
+    preview: staffdeckContent.plazaSkill,
   },
   {
     kind: 'skills',
@@ -117,6 +122,7 @@ const PLATFORM_CONFIGS: PlatformConfig[] = [
     metricLabel: '业务 SOP',
     signals: ['流程推进', '执行规范', '可复制'],
     icon: ClipboardList,
+    preview: staffdeckContent.plazaSop,
   },
   {
     kind: 'tools',
@@ -127,6 +133,7 @@ const PLATFORM_CONFIGS: PlatformConfig[] = [
     metricLabel: '工具能力',
     signals: ['调用权限', '测试可用', '工具配置'],
     icon: Briefcase,
+    preview: staffdeckContent.plazaTool,
   },
 ];
 
@@ -569,6 +576,14 @@ export default function OpenPlatformPage({
               key={platform.kind}
              
              sx={{"display":"flex","minHeight":0,"flexDirection":"column","borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'14px'}}>
+              {platform.preview && (
+                <Box
+                  component="img"
+                  src={platform.preview}
+                  alt={platform.title}
+                  sx={{ width: '100%', height: '96px', objectFit: 'cover', borderRadius: '10px', mb: '10px', bgcolor: '#f3f4f6' }}
+                />
+              )}
               <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px',"pb":'10px'}}>
                 <Box component="span" sx={{"display":"grid","width":'26px',"height":'26px',"placeItems":"center","borderRadius":'8px',"bgcolor":"#f3f4f6","color":"#464c5e"}}>
                   <PlatformIcon  size={14} />

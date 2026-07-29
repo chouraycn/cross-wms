@@ -30,13 +30,13 @@ function Pagination({ className, ...props }: Omit<React.ComponentProps<'nav'>, '
   )
 }
 
-function PaginationContent({ className, ...props }: Omit<React.ComponentProps<'ul'>, 'ref'>) {
+function PaginationContent({ className, sx, ...props }: Omit<React.ComponentProps<'ul'>, 'ref'> & { sx?: SxProps<Theme> }) {
   return (
     <Box
       component="ul"
       data-slot="pagination-content"
       className={className}
-      sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}
+      sx={[{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
       {...props}
     />
   )

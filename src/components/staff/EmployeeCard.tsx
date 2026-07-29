@@ -240,7 +240,7 @@ export default function EmployeeCard({
             >
               <DropdownMenuItem
                 disabled={!online || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onChat()}
               >
                 <StaffdeckIcon name="chat" size={16} />
@@ -249,7 +249,7 @@ export default function EmployeeCard({
               {online ? (
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onStatus('archived')}
                 >
                   <StaffdeckIcon name="pause" size={16} />
@@ -258,7 +258,7 @@ export default function EmployeeCard({
               ) : (
                 <DropdownMenuItem
                   disabled={!canManage || busy}
-                  onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                  onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                   onSelect={() => onStatus('active')}
                 >
                   <StaffdeckIcon name="play" size={16} />
@@ -267,7 +267,7 @@ export default function EmployeeCard({
               )}
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onGallery(!galleryPublished)}
               >
                 <StaffdeckIcon name="globe" size={16} />
@@ -275,7 +275,7 @@ export default function EmployeeCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onEdit()}
               >
                 <StaffdeckIcon name="edit" size={16} />
@@ -283,7 +283,7 @@ export default function EmployeeCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onAvatar()}
               >
                 <StaffdeckIcon name="image" size={16} />
@@ -293,7 +293,7 @@ export default function EmployeeCard({
               <DropdownMenuItem
                 variant="destructive"
                 disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                 onSelect={() => onDelete()}
               >
                 <StaffdeckIcon name="trash" size={16} />

@@ -137,7 +137,7 @@ export default function EmployeeAvatarEditor({
         }
       >
         <DialogHeader sx={{ px: '12px' } as SxProps<Theme>}>
-          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: '#757f9c' } as SxProps<Theme>>
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: '#757f9c' } as SxProps<Theme>}>
             {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
           </DialogTitle>
         </DialogHeader>
