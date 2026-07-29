@@ -291,6 +291,16 @@ class WebSocketHub {
       timestamp: Date.now(),
     });
 
+    // 3.5) 如果认证未启用，立即发送 connected 事件
+    if (!authConfig.enabled) {
+      this.sendToClient(client, {
+        type: "event",
+        event: "connected",
+        data: { clientId },
+        timestamp: Date.now(),
+      });
+    }
+
     // 4) 启用认证时设置握手超时定时器
     if (authConfig.enabled && !client.authenticated) {
       const timer = setTimeout(() => {

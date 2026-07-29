@@ -10,7 +10,6 @@
  *   { "exitCode": 0 }
  */
 import { Router, type Request, type Response } from 'express';
-import { runCLI } from '../cli/index.js';
 import { logger } from '../logger.js';
 
 const router = Router();
@@ -25,6 +24,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
+    const { runCLI } = await import('../cli/index.js');
     const exitCode = await runCLI(argv as string[]);
     return res.json({ exitCode: typeof exitCode === 'number' ? exitCode : 0 });
   } catch (error) {
