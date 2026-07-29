@@ -21,10 +21,18 @@
  * - SSE 响应头设置参考 cross-wms 既有 chat.ts / soul.ts 实现。
  */
 import { Router, type Request, type Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as chatDao from '../../dao/staff/staffChatDao.js';
 import * as traceDao from '../../dao/staff/staffTraceDao.js';
 import * as agentDao from '../../dao/staff/staffAgentDao.js';
+import {
+  upsertMessageFeedback,
+  deleteMessageFeedback,
+} from '../../dao/staff/staffFeedbackDao.js';
+import { parseMultipartFiles, ensureUploadsDir, UPLOADS_DIR } from '../../routes/upload.js';
 import { runStaffChatTurn, abortStaffChat } from '../../staff/staffChatExecutor.js';
 import type { StaffStreamEvent } from '../../types/staff.js';
 import { logger } from '../../logger.js';
@@ -47,18 +55,37 @@ function writeSseEvent(res: Response, event: StaffStreamEvent): void {
 }
 
 /**
- * 落 Trace 的节点级事件白名单（跳过高频增量 delta，避免 sd_agent_events 膨胀）。
- * 仅这些事件会经 recordTrace 写入 sd_agent_events，供 /sessions/:id/events 回放。
+ * 落 Trace 的节点级事件白名单。
+ * 关键点：这里存的是**前端 useChatSession 期望的事件名**（session_created /
+ * user_message_received / stream_delta / stream_end / done / error 等），而非
+ * 后端 StaffStreamEvent 的原始名（session.created / text.delta / message.saved）。
+ * /sessions/:id/events 回放会被前端轮询恢复（beginRelayRecovery →
+ * pollScheduledSessionEvents）走 normalizeSessionEventForStream，只有存前端事件名
+ * 才能被正确 hydrate，否则断流恢复会失配。
  */
 const TRACE_EVENT_TYPES = new Set<string>([
-  'session.created',
-  'message.saved',
-  'thinking.end',
-  'text.end',
-  'tool.call',
-  'error',
+  'session_created',
+  'user_message_received',
+  'status',
+  'assistant_message_created',
+  'stream_end',
   'done',
+  'error',
 ]);
+
+/** 同时写 SSE（实时）与 Trace（持久化，供断流恢复）；res 已结束时只写 trace。 */
+function emitEvent(
+  res: Response,
+  tenantId: string,
+  sessionId: string,
+  type: string,
+  data: Record<string, unknown>,
+): void {
+  if (res.writable && !res.writableEnded) {
+    writeSse(res, type, data);
+  }
+  recordTrace(tenantId, sessionId, type, data);
+}
 
 function recordTrace(
   tenantId: string,
@@ -161,6 +188,11 @@ router.post('/turn', async (req: Request, res: Response) => {
 });
 
 // ===================== POST /stream — SSE 流式 chat =====================
+// 协议对齐说明：原前端 useChatSession 期望的是 StaffDeck 原生事件名
+// （session_created / user_message_received / stream_delta / stream_end / done /
+// error），而非本仓 StaffStreamEvent 的原始名（session.created / text.delta /
+// message.saved）。此处把后端发射与 trace 存储统一为前端契约，否则聊天 UI 会因
+// 事件名/字段不匹配而「假死」（不流式、用户气泡不出现，仅末尾 done）。
 router.post('/stream', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const { session_id, agent_id, user_id, message, model } = req.body ?? {};
@@ -184,22 +216,23 @@ router.post('/stream', async (req: Request, res: Response) => {
       title: message.slice(0, 50),
     });
   }
-  writeSse(res, 'session.created', { session_id: session.id });
-  recordTrace(tenantId, session.id, 'session.created', { session_id: session.id });
+  const sid = session.id;
+  // 前端 session_created 读 newSessionId || sessionId（见 useChatSession 2947）
+  emitEvent(res, tenantId, sid, 'session_created', { newSessionId: sid, sessionId: sid });
 
   // 2. 持久化 user message
   const userMsg = chatDao.createMessage({
     tenant_id: tenantId,
-    session_id: session.id,
+    session_id: sid,
     role: 'user',
     content: message,
   });
-  writeSse(res, 'message.saved', { message_id: userMsg.id, role: 'user' });
-  recordTrace(tenantId, session.id, 'message.saved', { message_id: userMsg.id, role: 'user' });
+  // 前端 user_message_received 读 message_id 并 bindRealtimeUserToServerMessage
+  emitEvent(res, tenantId, sid, 'user_message_received', { message_id: userMsg.id, sessionId: sid });
 
   // 3. 历史（最多最近 20 条）
   const history = chatDao
-    .listMessages(tenantId, session.id, 20)
+    .listMessages(tenantId, sid, 20)
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
     .slice(0, -1); // 去掉刚写入的当前 user 消息
@@ -207,21 +240,42 @@ router.post('/stream', async (req: Request, res: Response) => {
   let finalContent = '';
   try {
     const out = await runStaffChatTurn(
-      { tenantId, sessionId: session.id, agentId: agent_id, message, history, model },
+      { tenantId, sessionId: sid, agentId: agent_id, message, history, model },
       (ev) => {
         const d = ev.data as Record<string, unknown>;
-        writeSse(res, ev.type as StaffStreamEvent['type'], d);
-        recordTrace(tenantId, session.id, ev.type, d);
-        if (ev.type === 'text.delta') finalContent += (d?.text as string) || '';
+        // 只把前端能消费的事件映射到前端契约，其余（thinking.* / text.end）忽略。
+        if (ev.type === 'text.delta') {
+          // 前端 useChatSession 读 event.data.text（兼容 stream_delta / text.delta / token）
+          emitEvent(res, tenantId, sid, 'stream_delta', {
+            text: typeof d.text === 'string' ? d.text : '',
+            sessionId: sid,
+          });
+          finalContent += (d?.text as string) || '';
+        } else if (ev.type === 'thinking.delta') {
+          // 前端 useChatSession 读 event.data.text 追加到 trace.thinking 行
+          emitEvent(res, tenantId, sid, 'thinking.delta', {
+            text: typeof d.text === 'string' ? d.text : '',
+            sessionId: sid,
+          });
+        } else if (ev.type === 'tool.call') {
+          // 前端 status(phase=tool) 展示「正在调用 X」运行态 trace 行
+          const toolName = typeof d.toolName === 'string' && d.toolName ? d.toolName : '工具';
+          emitEvent(res, tenantId, sid, 'status', {
+            phase: 'tool',
+            tool_name: toolName,
+            tool_call_id: toolName,
+            sessionId: sid,
+          });
+        }
       },
     );
     finalContent = out.content;
   } catch (err) {
     logger.error('[StaffChat] stream 执行失败:', err);
-    writeSse(res, 'error', { message: err instanceof Error ? err.message : '对话执行失败' });
-    recordTrace(tenantId, session.id, 'error', { message: err instanceof Error ? err.message : '对话执行失败' });
-    writeSse(res, 'done', { session_id: session.id, error: true });
-    recordTrace(tenantId, session.id, 'done', { session_id: session.id, error: true });
+    const errMsg = err instanceof Error ? err.message : '对话执行失败';
+    emitEvent(res, tenantId, sid, 'error', { message: errMsg, sessionId: sid });
+    // 发 done(error:true) 让前端 markStreamTerminal 不再触发 relayRecovery
+    emitEvent(res, tenantId, sid, 'done', { session_id: sid, error: true });
     res.end();
     return;
   }
@@ -229,15 +283,21 @@ router.post('/stream', async (req: Request, res: Response) => {
   // 4. 持久化 assistant message
   const assistantMsg = chatDao.createMessage({
     tenant_id: tenantId,
-    session_id: session.id,
+    session_id: sid,
     role: 'assistant',
     content: finalContent,
     metadata: { mock: finalContent.startsWith('（演示模式') },
   });
-  writeSse(res, 'message.saved', { message_id: assistantMsg.id, role: 'assistant' });
-  recordTrace(tenantId, session.id, 'message.saved', { message_id: assistantMsg.id, role: 'assistant' });
-  writeSse(res, 'done', { session_id: session.id, message_id: assistantMsg.id });
-  recordTrace(tenantId, session.id, 'done', { session_id: session.id, message_id: assistantMsg.id });
+  // assistant_message_created 仅入 trace（供断流恢复经 normalizeSessionEventForStream
+  // → stream_replace 重放），不进实时流，避免 stream_delta 后重复替换造成闪烁。
+  recordTrace(tenantId, sid, 'assistant_message_created', {
+    message_id: assistantMsg.id,
+    sessionId: sid,
+    role: 'assistant',
+    reply: finalContent,
+  });
+  emitEvent(res, tenantId, sid, 'stream_end', { sessionId: sid });
+  emitEvent(res, tenantId, sid, 'done', { session_id: sid, message_id: assistantMsg.id });
   res.end();
 });
 
@@ -385,6 +445,207 @@ router.get('/messages/:messageId', (req: Request, res: Response) => {
     return;
   }
   res.json({ code: 0, data: chatDao.toMessageRead(row), message: 'ok' });
+});
+
+// ===================== POST /attachments — 聊天附件上传 =====================
+// 前端 uploadChatAttachments 以 multipart/form-data 发送字段 files（可多文件），
+// 期望返回 ChatAttachmentRead[]。此端点补全原缺失 handler，避免聊天传文件死链。
+router.post('/attachments', async (req: Request, res: Response) => {
+  try {
+    const files = await parseMultipartFiles(req);
+    if (!files.length) {
+      res.status(400).json({ code: 400, data: null, message: '未检测到上传文件' });
+      return;
+    }
+    ensureUploadsDir();
+    const chatDir = path.join(UPLOADS_DIR, 'chat');
+    if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
+
+    const data = files.map((f) => {
+      const ext = path.extname(f.fileName).toLowerCase().replace('.', '') || 'bin';
+      const fileId = uuidv4();
+      const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : 'bin';
+      const savedName = `${fileId}.${safeExt}`;
+      fs.writeFileSync(path.join(chatDir, savedName), f.data);
+      const isImage = f.mimeType.startsWith('image/');
+      const kind: 'text' | 'pdf' | 'image' | 'binary' = isImage
+        ? 'image'
+        : f.mimeType === 'application/pdf'
+          ? 'pdf'
+          : f.mimeType.startsWith('text/')
+            ? 'text'
+            : 'binary';
+      return {
+        id: fileId,
+        filename: f.fileName,
+        content_type: f.mimeType,
+        size: f.data.length,
+        kind,
+        text: null,
+        preview: null,
+        data_url: null,
+        python_summary: null,
+        error: null,
+      };
+    });
+    res.json({ code: 0, data, message: 'ok' });
+  } catch (err) {
+    logger.error('[StaffChat] 附件上传失败:', err);
+    res.status(500).json({
+      code: 500,
+      data: null,
+      message: err instanceof Error ? err.message : '附件上传失败',
+    });
+  }
+});
+
+// ===================== GET /sessions/:sessionId/trace — 会话 Trace 时间线 =====================
+// 前端 useChatSession.loadTraces / ConversationLogsTab 期望 TurnTraceRead[]（按 turn 分组）。
+// 由 sd_agent_events 中已存的前端事件名（session_created / user_message_received /
+// stream_delta / status / assistant_message_created / done / error）分组重建。
+function toIso(sec: number | undefined): string {
+  return sec ? new Date(sec * 1000).toISOString() : new Date().toISOString();
+}
+
+function buildTurnTraces(
+  tenantId: string,
+  sessionId: string,
+): Array<{
+  turn_id: string;
+  user_message_id: string | null;
+  started_at: string;
+  completed_at: string | null;
+  lines: Array<{
+    id: string;
+    kind: 'thinking' | 'decision' | 'skill' | 'tool' | 'code' | 'knowledge';
+    text: string;
+    detail?: string | null;
+    code?: string | null;
+    language?: string | null;
+    output?: string | null;
+    outputLanguage?: string | null;
+    outputTitle?: string | null;
+    state: 'running' | 'completed' | 'failed';
+    collapsible?: boolean | null;
+  }>;
+}> {
+  const events = traceDao.listEventsBySession(tenantId, sessionId); // 升序
+  const turns: Array<{
+    turn_id: string;
+    user_message_id: string | null;
+    started_at: string;
+    completed_at: string | null;
+    lines: Array<{
+      id: string;
+      kind: 'thinking' | 'decision' | 'skill' | 'tool' | 'code' | 'knowledge';
+      text: string;
+      detail?: string | null;
+      code?: string | null;
+      language?: string | null;
+      output?: string | null;
+      outputLanguage?: string | null;
+      outputTitle?: string | null;
+      state: 'running' | 'completed' | 'failed';
+      collapsible?: boolean | null;
+    }>;
+  }> = [];
+  let current: (typeof turns)[number] | null = null;
+
+  const startTurn = (userMessageId: string | null, startedAt: number | undefined) => {
+    current = {
+      turn_id: userMessageId || `turn-${turns.length}`,
+      user_message_id: userMessageId,
+      started_at: toIso(startedAt),
+      completed_at: null,
+      lines: [],
+    };
+    turns.push(current);
+  };
+
+  for (const ev of events) {
+    const p = (ev.payload ?? {}) as Record<string, unknown>;
+    if (ev.event_type === 'user_message_received') {
+      startTurn(typeof p.message_id === 'string' ? p.message_id : null, ev.created_at);
+      continue;
+    }
+    if (ev.event_type === 'session_created' && !current) {
+      startTurn(null, ev.created_at);
+      continue;
+    }
+    if (!current) startTurn(null, ev.created_at);
+    const cur = current!;
+
+    if (ev.event_type === 'status' && p.phase === 'tool') {
+      cur.lines.push({
+        id: ev.id,
+        kind: 'tool',
+        text: `调用工具：${typeof p.tool_name === 'string' ? p.tool_name : '工具'}`,
+        detail: typeof p.tool_call_id === 'string' ? p.tool_call_id : null,
+        state: 'completed',
+        collapsible: true,
+      });
+    } else if (ev.event_type === 'assistant_message_created') {
+      cur.lines.push({
+        id: ev.id,
+        kind: 'decision',
+        text: '生成回复完成',
+        state: 'completed',
+      });
+    } else if (ev.event_type === 'error') {
+      cur.lines.push({
+        id: ev.id,
+        kind: 'decision',
+        text: typeof p.message === 'string' ? p.message : '执行出错',
+        state: 'failed',
+      });
+      cur.completed_at = toIso(ev.created_at);
+    } else if (ev.event_type === 'done' || ev.event_type === 'stream_end') {
+      cur.completed_at = toIso(ev.created_at);
+    }
+  }
+  // 未显式收尾的 turn 标记完成
+  for (const t of turns) if (!t.completed_at) t.completed_at = t.started_at;
+  return turns;
+}
+
+router.get('/sessions/:sessionId/trace', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const turns = buildTurnTraces(tenantId, req.params.sessionId);
+  res.json({ code: 0, data: turns, message: 'ok' });
+});
+
+// ===================== POST /messages/:messageId/feedback — 消息反馈 👍/👎 =====================
+// 前端 rateMessage：POST { tenant_id, rating:'up'|'down' }；取消时 DELETE ?tenant_id。
+// sd_message_feedback 唯一约束 (tenant, message, user)；user 取 default（桌面嵌入登录态）。
+router.post('/messages/:messageId/feedback', async (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const { rating, tenant_id: bodyTenant } = req.body ?? {};
+  const messageId = req.params.messageId;
+  if (rating !== 'up' && rating !== 'down') {
+    res.status(400).json({ code: 400, data: null, message: 'rating 仅支持 up / down' });
+    return;
+  }
+  const msg = chatDao.getMessageById(tenantId, messageId);
+  if (!msg) {
+    res.status(404).json({ code: 404, data: null, message: '消息不存在' });
+    return;
+  }
+  const row = upsertMessageFeedback({
+    tenant_id: bodyTenant || tenantId,
+    session_id: msg.session_id,
+    message_id: messageId,
+    user_id: 'default',
+    rating,
+  });
+  res.json({ code: 0, data: row, message: 'ok' });
+});
+
+// ===================== DELETE /messages/:messageId/feedback — 取消反馈 =====================
+router.delete('/messages/:messageId/feedback', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const messageId = req.params.messageId;
+  const ok = deleteMessageFeedback(tenantId, messageId, 'default');
+  res.json({ code: 0, data: { deleted: ok }, message: 'ok' });
 });
 
 // ===================== POST /agents/:agentId/use =====================
