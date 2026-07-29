@@ -98,3 +98,4 @@ apps/macos/Package.resolved
 # Package lock
 # package-lock.json
 .wip-unfinished/
+.dev-data/

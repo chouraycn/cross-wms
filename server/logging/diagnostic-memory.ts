@@ -11,9 +11,9 @@ import { logger } from '../logger.js';
 
 const MB = 1024 * 1024;
 
-// 默认阈值（适配 --max-old-space-size=512）
-const DEFAULT_RSS_WARNING_BYTES = 400 * MB;    // 400MB
-const DEFAULT_RSS_CRITICAL_BYTES = 480 * MB;   // 480MB
+// 默认阈值（适配 --max-old-space-size=512，RSS 含 native 模块）
+const DEFAULT_RSS_WARNING_BYTES = 512 * MB;    // 512MB
+const DEFAULT_RSS_CRITICAL_BYTES = 640 * MB;   // 640MB
 const DEFAULT_HEAP_WARNING_BYTES = 300 * MB;   // 300MB
 const DEFAULT_HEAP_CRITICAL_BYTES = 450 * MB;  // 450MB
 const DEFAULT_RSS_GROWTH_WARNING_BYTES = 100 * MB;   // 10分钟增长100MB
