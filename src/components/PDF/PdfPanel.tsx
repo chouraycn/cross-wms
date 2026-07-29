@@ -9,7 +9,7 @@
  * - 转换格式（图片/Markdown/HTML）
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -123,6 +123,9 @@ const PdfPanel: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 隐藏的文件选择 input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Tool-specific parameters
   const [extractParams, setExtractParams] = useState({
     mode: 'text' as PdfExtractMode,
@@ -156,8 +159,45 @@ const PdfPanel: React.FC = () => {
 
   // File selection handler
   const handleFileSelect = useCallback(() => {
-    // TODO: Implement file selection dialog (Electron dialog or web input)
-    showToast('文件选择功能待实现', 'info');
+    fileInputRef.current?.click();
+  }, []);
+
+  // 处理文件选择结果
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles: PdfFileInfo[] = [];
+    const rejected: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      // 仅接受 PDF 文件
+      const isPdf =
+        file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        rejected.push(file.name);
+        continue;
+      }
+      // Electron 环境下 File 对象携带真实文件系统路径；其他环境回退到文件名
+      const filePath = (file as any).path || file.name;
+      newFiles.push({
+        path: filePath,
+        name: file.name,
+        size: file.size,
+      });
+    }
+
+    if (newFiles.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+      showToast(`已选择 ${newFiles.length} 个 PDF 文件`, 'success');
+    }
+    if (rejected.length > 0) {
+      showToast(`已忽略非 PDF 文件: ${rejected.join(', ')}`, 'warning');
+    }
+
+    // 重置 input value 以便同一文件可重复选择
+    e.target.value = '';
   }, [showToast]);
 
   const handleFileRemove = useCallback((index: number) => {
@@ -714,6 +754,16 @@ const PdfPanel: React.FC = () => {
             >
               选择 PDF 文件
             </Button>
+
+            {/* 隐藏的文件选择 input，支持多选 PDF */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileInputChange}
+            />
 
             {selectedFiles.length > 0 && (
               <Button

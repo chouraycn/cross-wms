@@ -26,6 +26,10 @@
 
 import os from "node:os";
 import path from "node:path";
+import { assertSafeUrl } from "../infra/ssrf.js";
+import {
+  isToolAllowedByPolicies as isToolAllowedByPoliciesFromMatch,
+} from "../agents/tool-policy-match.js";
 
 // ============================================================================
 // Opaque config type — openclaw config types are not ported.
@@ -94,11 +98,42 @@ export function resolvePreferredOpenClawTmpDir(): string {
 // openclaw/src/agents/agent-scope.ts — agent workspace resolution
 // ============================================================================
 
-/** Resolves an agent's workspace directory. Cross-wms stub returns undefined. */
+/** Resolves an agent's workspace directory.
+ * 基础实现：从 cfg.agents.list 按 agentId 查找 workspace，回退到 defaults.workspace。
+ * 参考 openclaw/src/agents/agent-scope-config.ts resolveAgentWorkspaceDir。 */
 export function resolveAgentWorkspaceDir(
-  _cfg: OpenClawConfig,
-  _agentId: string,
+  cfg: OpenClawConfig,
+  agentId: string,
 ): string | undefined {
+  if (!cfg || !agentId) {
+    return undefined;
+  }
+  const agents = (cfg as Record<string, unknown>).agents as
+    | Record<string, unknown>
+    | undefined;
+  if (!agents) {
+    return undefined;
+  }
+  // 查找指定 agent 的 workspace 配置
+  const list = agents.list as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(list)) {
+    for (const entry of list) {
+      const id = entry?.id;
+      if (typeof id === "string" && id === agentId) {
+        const workspace = entry.workspace;
+        if (typeof workspace === "string" && workspace.trim()) {
+          return workspace.trim();
+        }
+        break;
+      }
+    }
+  }
+  // 回退到 defaults.workspace
+  const defaults = agents.defaults as Record<string, unknown> | undefined;
+  const defaultWorkspace = defaults?.workspace;
+  if (typeof defaultWorkspace === "string" && defaultWorkspace.trim()) {
+    return defaultWorkspace.trim();
+  }
   return undefined;
 }
 
@@ -131,8 +166,10 @@ export type GroupToolPolicy = {
   deny?: string[];
 };
 
-/** Resolves group tool policy. Cross-wms stub returns undefined (no override). */
-export function resolveGroupToolPolicy(_params: {
+/** Resolves group tool policy.
+ * 基础实现：从 config.tools.groups 按 groupId 查找工具策略（allow/deny）。
+ * 参考 openclaw/src/agents/agent-tools.policy.ts resolveGroupToolPolicy。 */
+export function resolveGroupToolPolicy(params: {
   config: OpenClawConfig;
   sessionKey?: string;
   messageProvider?: string;
@@ -145,19 +182,56 @@ export function resolveGroupToolPolicy(_params: {
   senderUsername?: string | null;
   senderE164?: string | null;
 }): GroupToolPolicy | undefined {
-  return undefined;
+  if (!params.config || !params.groupId) {
+    return undefined;
+  }
+  // 基础实现：从 config.tools.groups 按 groupId 查找工具策略
+  const tools = (params.config as Record<string, unknown>).tools as
+    | Record<string, unknown>
+    | undefined;
+  if (!tools) {
+    return undefined;
+  }
+  const groups = tools.groups as Record<string, unknown> | undefined;
+  if (!groups) {
+    return undefined;
+  }
+  const groupPolicy = groups[params.groupId] as
+    | { allow?: unknown; deny?: unknown }
+    | undefined;
+  if (!groupPolicy) {
+    return undefined;
+  }
+  const allow = Array.isArray(groupPolicy.allow)
+    ? (groupPolicy.allow as string[])
+    : undefined;
+  const deny = Array.isArray(groupPolicy.deny)
+    ? (groupPolicy.deny as string[])
+    : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return {
+    ...(allow ? { allow } : {}),
+    ...(deny ? { deny } : {}),
+  };
 }
 
 // ============================================================================
 // openclaw/src/agents/tool-policy-match.ts — tool policy matching
 // ============================================================================
 
-/** Whether a tool is allowed by the given policies. Cross-wms stub defaults to allow. */
+/** Whether a tool is allowed by the given policies.
+ * 委托给 ../agents/tool-policy-match.ts（deny 优先，空 allow 列表表示放行）。
+ * 参考 openclaw/src/agents/tool-policy-match.ts isToolAllowedByPolicies。 */
 export function isToolAllowedByPolicies(
-  _tool: string,
-  _policies: GroupToolPolicy[],
+  tool: string,
+  policies: GroupToolPolicy[],
 ): boolean {
-  return true;
+  return isToolAllowedByPoliciesFromMatch(
+    tool,
+    policies as Array<{ allow?: string[]; deny?: string[] } | undefined>,
+  );
 }
 
 // ============================================================================
@@ -218,7 +292,10 @@ export type GuardedFetchResult = {
   release: () => Promise<void>;
 };
 
-/** Fetches a URL through SSRF/redirect/timeout guards. Cross-wms simplified stub. */
+/** Fetches a URL through SSRF/redirect/timeout guards.
+ * 集成 ../infra/ssrf.ts 的 assertSafeUrl，在每次请求（含重定向）前校验 URL 安全性。
+ * 手动跟随重定向，对每个 Location 重新做 SSRF 校验，防止重定向到内网。
+ * 参考 openclaw/src/infra/net/fetch-guard.ts fetchWithSsrFGuard。 */
 export async function fetchWithSsrFGuard(params: {
   url: string;
   maxRedirects?: number;
@@ -227,19 +304,77 @@ export async function fetchWithSsrFGuard(params: {
   auditContext?: string;
   init?: RequestInit;
 }): Promise<GuardedFetchResult> {
+  const maxRedirects =
+    typeof params.maxRedirects === "number" && Number.isFinite(params.maxRedirects)
+      ? Math.max(0, Math.floor(params.maxRedirects))
+      : 10;
+  const timeoutMs = params.timeoutMs ?? 10_000;
   const controller = new AbortController();
-  const timeout = params.timeoutMs ?? 10_000;
-  const timer = setTimeout(() => controller.abort(), timeout);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  // 如果调用方提供了 signal，转发 abort 到 controller
+  if (params.init?.signal) {
+    const callerSignal = params.init.signal;
+    if (callerSignal.aborted) {
+      controller.abort();
+    } else {
+      callerSignal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+  }
+
+  let currentUrl = params.url;
+  let currentInit = params.init ? { ...params.init } : undefined;
+  const visited = new Set<string>();
+
   try {
-    const response = await fetch(params.url, {
-      ...params.init,
-      signal: params.init?.signal ?? controller.signal,
-      redirect: "follow",
-    });
-    return {
-      response,
-      release: async () => {},
-    };
+    for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
+      // 请求前用 assertSafeUrl 校验 URL（含 DNS 解析，防止 DNS rebinding）
+      await assertSafeUrl(currentUrl, params.auditContext, params.policy);
+
+      // 重定向循环检测
+      const visitKey = `${currentInit?.method?.toUpperCase() ?? "GET"} ${currentUrl}`;
+      if (visited.has(visitKey)) {
+        throw new Error("Redirect loop detected");
+      }
+      visited.add(visitKey);
+
+      const response = await fetch(currentUrl, {
+        ...currentInit,
+        signal: controller.signal,
+        redirect: "manual",
+      });
+
+      // 检查是否为重定向（301/302/303/307/308）
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) {
+          throw new Error(`Redirect missing location header (${response.status})`);
+        }
+        if (redirectCount >= maxRedirects) {
+          throw new Error(`Too many redirects (limit: ${maxRedirects})`);
+        }
+        // 解析相对重定向 URL
+        currentUrl = new URL(location, currentUrl).toString();
+        // 303 → GET；301/302 POST → GET（与 openclaw fetch-guard 一致）
+        const method = currentInit?.method?.toUpperCase() ?? "GET";
+        if (
+          response.status === 303 ||
+          ((response.status === 301 || response.status === 302) && method === "POST")
+        ) {
+          currentInit = currentInit
+            ? { ...currentInit, method: "GET", body: undefined }
+            : { method: "GET" };
+        }
+        void response.body?.cancel();
+        continue;
+      }
+
+      return {
+        response,
+        release: async () => {},
+      };
+    }
+    throw new Error(`Too many redirects (limit: ${maxRedirects})`);
   } finally {
     clearTimeout(timer);
   }

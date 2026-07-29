@@ -6,6 +6,9 @@ import './index.css'
 // StaffDeck 数字员工模块主题（CSS 变量 + 作用域 .sd-root 样式）。
 // 必须引入，否则 bg-background / text-accent / sidebar-* 等工具类无变量来源，UI 样式悬空。
 import './styles/staffdeck.css'
+// StaffDeck-main 全量样式源（6079 行 v4→v3 移植，含全部 class 选择器 + keyframes + Semantic UI 段）。
+// 作用域收敛到 .sd-root，避免污染主程序；class 选择器仅对用到对应 className 的元素生效。
+import './styles/staffdeck-source.css'
 // Inter 可变字体（本地资源）— 让数字员工模块 UI 西文使用 Inter，对齐 StaffDeck-main 设计
 import './assets/fonts/inter/inter.css'
 import { checkAndMigrate } from './services/migration'

@@ -213,6 +213,182 @@ const CORE_COMMAND_DESCRIPTORS = defineCommandDescriptorCatalog([
     description: "Background task management (list/show/cancel/notify/audit/maintenance)",
     hasSubcommands: true,
   },
+  // 高优先级命令
+  {
+    name: "security",
+    description: "安全审计 (audit/fix)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "logs",
+    description: "日志查看与过滤 (tail/search/levels)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "webhooks",
+    description: "Webhook 管理 (list/add/remove/test)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "message",
+    description: "消息操作 (send/broadcast/edit/list)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "transcripts",
+    description: "转录查看 (list/show/export)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "migrate",
+    description: "迁移工具 (list/run/status)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "flows",
+    description: "工作流编排 (list/show/run/cancel)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "proxy",
+    description: "代理管理 (list/add/remove/test)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "devices",
+    description: "设备管理 (list/pair/remove/info)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  // 中优先级命令
+  {
+    name: "approvals",
+    description: "审批管理 (list/approve/reject/show)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "browser",
+    description: "浏览器自动化 (open/screenshot/navigate/list)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "workboard",
+    description: "工作板管理 (list/show/create/update)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "setup",
+    description: "引导安装 (init/verify)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "onboard",
+    description: "入门引导 (start/tour/status)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "uninstall",
+    description: "卸载 cross-wms 并清理文件",
+    hasSubcommands: false,
+  },
+  {
+    name: "system",
+    description: "系统信息 (info/resources/platform)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "node",
+    description: "单节点操作 (list/show/invoke/status)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "directory",
+    description: "目录服务 (list/lookup/register)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "policy",
+    description: "策略管理 (list/show/apply/validate)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  // 低优先级命令
+  {
+    name: "commitments",
+    description: "承诺跟踪 (list/show/create/fulfill)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "dns",
+    description: "DNS 配置 (resolve/flush/list)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "voicecall",
+    description: "语音通话 (start/join/end/list)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "qr",
+    description: "二维码生成 (generate/scan)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "crestodian",
+    description: "守护进程管理 (start/stop/status/restart)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "dashboard",
+    description: "仪表板 (summary/widgets/metrics)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "completion",
+    description: "Shell 补全 (install/uninstall/list/generate)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "path",
+    description: "路径查询 (config/data/logs/bin/cache)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "configure",
+    description: "配置向导 (wizard/set/get/list)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "infer",
+    description: "能力推断 (capabilities/probe/match)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
 ] as const satisfies ReadonlyArray<CoreCommandDescriptor>);
 
 /** 核心 CLI 命令描述符 */

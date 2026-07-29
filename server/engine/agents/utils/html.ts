@@ -86,3 +86,52 @@ export function stripHtml(text: string): string {
   }
   return text.replace(/<[^>]*>/g, '');
 }
+
+/**
+ * 在指定下标处解码单个 HTML 实体（命名实体或十进制/十六进制数字实体）。
+ *
+ * 仅当 html[index] 为 '&' 且其后构成合法实体时才返回解码结果；
+ * 否则返回 null，调用方可据此将 '&' 当作字面量原样输出。
+ * 与 decodeHtmlEntityAt 的调用约定保持一致：返回实体解码后的文本及其总长度。
+ *
+ * @param html 源 HTML 字符串
+ * @param index 必须指向 '&' 的位置
+ * @returns 包含解码文本（text）与实体总长度（length）的对象，或无实体时返回 null
+ */
+export function decodeHtmlEntityAt(
+  html: string,
+  index: number,
+): { text: string; length: number } | null {
+  if (typeof html !== 'string' || html[index] !== '&') {
+    return null;
+  }
+  const slice = html.slice(index);
+  const match = /^&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/.exec(slice);
+  if (!match) {
+    return null;
+  }
+  const entity = match[0];
+  const body = match[1];
+
+  if (body.startsWith('#x') || body.startsWith('#X')) {
+    const code = Number.parseInt(body.slice(2), 16);
+    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) {
+      return null;
+    }
+    return { text: String.fromCodePoint(code), length: entity.length };
+  }
+
+  if (body.startsWith('#')) {
+    const code = Number.parseInt(body.slice(1), 10);
+    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) {
+      return null;
+    }
+    return { text: String.fromCodePoint(code), length: entity.length };
+  }
+
+  const named = NAMED_ENTITIES[body];
+  if (named === undefined) {
+    return null;
+  }
+  return { text: named, length: entity.length };
+}

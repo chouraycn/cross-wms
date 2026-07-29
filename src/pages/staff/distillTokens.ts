@@ -1,4 +1,4 @@
-// MUI `sx` 翻译版 —— 对应 distillPageStyles.ts 中每个常量 / helper。
+// MUI `sx` 翻译版 —— 蒸馏页样式集中定义（原 Tailwind 模块 distillPageStyles.ts 已废弃删除）。
 // 设计约束：蒸馏页使用近黑配色（#18181a 等），因此所有颜色保持字面色值，
 // 不映射到主程序靛蓝主题 token。可直接消费：
 //   <Box sx={distillTokens.CHAT_CARD_CLASS} />

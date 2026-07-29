@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Memory Host SDK module implements session files behavior.
 import fsSync from "node:fs";
 import path from "node:path";

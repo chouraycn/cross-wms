@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -123,24 +124,24 @@ function resolveAgentScope(
   return visibleEmployeeAgents(rows, currentUser, { activeOnly: true })[0]?.id || '';
 }
 
-// ---------------------------------------------------------------------------
-// Markdown 实时预览（浅色 Tailwind 样式，避免引入 MUI 链路）
-// ---------------------------------------------------------------------------
+//
+//
+//
 function MarkdownPreview({ markdown }: { markdown: string }) {
   return (
-    <div className="skill-md-preview h-full overflow-auto rounded-[10px] border border-[#eef0f5] bg-[#fcfcfd] p-[14px] text-[13px] leading-[1.7] text-[#2b2f38] [&_h1]:mb-[8px] [&_h1]:mt-[4px] [&_h1]:text-[17px] [&_h1]:font-semibold [&_h2]:mb-[6px] [&_h2]:mt-[10px] [&_h2]:text-[15px] [&_h2]:font-semibold [&_h3]:mb-[4px] [&_h3]:mt-[8px] [&_h3]:text-[14px] [&_h3]:font-semibold [&_p]:my-[6px] [&_ul]:my-[6px] [&_ul]:list-disc [&_ul]:pl-[20px] [&_ol]:my-[6px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_li]:my-[2px] [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded-[4px] [&_code]:bg-[#eef1f6] [&_code]:px-[4px] [&_code]:py-[1px] [&_code]:text-[12px] [&_code]:text-[#c0392b] [&_pre]:my-[8px] [&_pre]:overflow-auto [&_pre]:rounded-[8px] [&_pre]:bg-[#1e1e1e] [&_pre]:p-[10px] [&_pre]:text-[12px] [&_blockquote]:border-l-[3px] [&_blockquote]:border-[#d8dde8] [&_blockquote]:pl-[12px] [&_blockquote]:text-[#6b7280] [&_table]:my-[8px] [&_table]:w-full [&_th]:border [&_th]:border-[#e5e7eb] [&_th]:bg-[#f6f7fb] [&_th]:px-[8px] [&_th]:py-[4px] [&_th]:text-left [&_td]:border [&_td]:border-[#e5e7eb] [&_td]:px-[8px] [&_td]:py-[4px]">
+    <Box sx={{"height":'100%',"overflow":"auto","borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fcfcfd","p":'14px',"fontSize":'13px',"lineHeight":1.7,"color":"#2b2f38"}} className="skill-md-preview [&_h1]:mb-[8px] [&_h1]:mt-[4px] [&_h1]:text-[17px] [&_h1]:font-semibold [&_h2]:mb-[6px] [&_h2]:mt-[10px] [&_h2]:text-[15px] [&_h2]:font-semibold [&_h3]:mb-[4px] [&_h3]:mt-[8px] [&_h3]:text-[14px] [&_h3]:font-semibold [&_p]:my-[6px] [&_ul]:my-[6px] [&_ul]:list-disc [&_ul]:pl-[20px] [&_ol]:my-[6px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_li]:my-[2px] [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded-[4px] [&_code]:bg-[#eef1f6] [&_code]:px-[4px] [&_code]:py-[1px] [&_code]:text-[12px] [&_code]:text-[#c0392b] [&_pre]:my-[8px] [&_pre]:overflow-auto [&_pre]:rounded-[8px] [&_pre]:bg-[#1e1e1e] [&_pre]:p-[10px] [&_pre]:text-[12px] [&_blockquote]:border-l-[3px] [&_blockquote]:border-[#d8dde8] [&_blockquote]:pl-[12px] [&_blockquote]:text-[#6b7280] [&_table]:my-[8px] [&_table]:w-full [&_th]:border [&_th]:border-[#e5e7eb] [&_th]:bg-[#f6f7fb] [&_th]:px-[8px] [&_th]:py-[4px] [&_th]:text-left [&_td]:border [&_td]:border-[#e5e7eb] [&_td]:px-[8px] [&_td]:py-[4px]">
       {markdown && markdown.trim() ? (
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
       ) : (
-        <span className="text-[12px] text-[#c0c6d4]">在左侧编写技能文档，这里会实时预览渲染效果。</span>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#c0c6d4"}}>在左侧编写技能文档，这里会实时预览渲染效果。</Box>
       )}
-    </div>
+    </Box>
   );
 }
 
-// ---------------------------------------------------------------------------
-// RunCodePanel — 折叠代码/结果展示（搬自 StaffDeck-main，使用 cross CodeBlock）
-// ---------------------------------------------------------------------------
+//
+//
+//
 function RunCodePanel({
   title,
   code,
@@ -155,21 +156,21 @@ function RunCodePanel({
   className?: string;
 }) {
   return (
-    <details className={`group rounded-[10px] border border-[#eef0f5] bg-white ${className || ''}`} open={defaultOpen}>
-      <summary className="flex cursor-pointer list-none items-center justify-between px-[12px] py-[8px] text-[12px] font-medium text-[#464c5e] [&::-webkit-details-marker]:hidden">
+    <Box component="details" sx={{"borderRadius":'10px',"border":'1px solid',"borderColor":'divider',"bgcolor":'background.paper'}} className={`group ${className || ''}`} open={defaultOpen}>
+      <Box component="summary" sx={{"display":"flex","cursor":"pointer","listStyleType":"none","alignItems":"center","justifyContent":"space-between","px":'12px',"py":'8px',"fontSize":'12px',"fontWeight":500,"color":"#464c5e"}} className="[&::-webkit-details-marker]:hidden">
         <span>{title}</span>
-        <span className="text-[11px] text-[#9aa1b2] transition-transform group-open:rotate-90">▶</span>
-      </summary>
-      <div className="border-t border-[#eef0f5] p-[8px]">
-        <CodeBlock code={code} language={language} />
-      </div>
-    </details>
+        <Box component="span" sx={{"fontSize":'11px',"color":"#9aa1b2","transition":"transform 0.2s"}} className="group-open:rotate-90">▶</Box>
+      </Box>
+      <Box component="div" sx={{"borderTop":"1px solid","borderColor":'divider',"p":'8px'}}>
+        <CodeBlock code={code} language={language}  />
+      </Box>
+    </Box>
   );
 }
 
-// ---------------------------------------------------------------------------
-// ClawHub 导入对话框（复用软件既有 ui/dialog 组件，调 /import-skillhub 真实导入）
-// ---------------------------------------------------------------------------
+//
+//
+//
 function ClawHubDialog({
   open,
   loading,
@@ -187,30 +188,30 @@ function ClawHubDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(value) => { if (!value) onClose(); }}>
-      <DialogContent className="flex w-full max-w-[560px] flex-col gap-[16px] overflow-hidden rounded-[14px] bg-white px-[20px] py-[16px] shadow-xl">
+      <DialogContent sx={{"position":"relative","display":"flex","width":'100%',"maxWidth":'560px',"flexDirection":"column","gap":'16px',"overflow":"hidden","borderRadius":'14px',"bgcolor":'background.paper',"px":'20px',"py":'16px',"boxShadow":"0 20px 25px rgba(0,0,0,0.15)"}}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-[6px] text-[14px] font-normal leading-none text-[#757f9c]">
-            <Download className="size-[14px] shrink-0" />
+          <DialogTitle sx={{"display":"flex","alignItems":"center","gap":'6px',"fontSize":'14px',"fontWeight":400,"lineHeight":1,"color":"#757f9c"}}>
+            <Download  size={14} style={{ flexShrink: 0 }} />
             从开源平台导入技能
           </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-[12px]">
-          <p className="text-[12px] leading-[1.6] text-[#858b9c]">
+        <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'12px'}}>
+          <Box component="p" sx={{"fontSize":'12px',"lineHeight":1.6,"color":"#858b9c"}}>
             支持开源平台地址、GitHub repo/tree/raw SKILL.md 或 owner/repo 形式。提交后将真实抓取并创建为草稿技能。
-          </p>
+          </Box>
           <Input
             value={source}
             onChange={(event) => onSourceChange(event.target.value)}
             placeholder="例如 alchaincyf/nuwa-skill 或 https://github.com/owner/repo/tree/main/skill"
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] text-[12px] text-[#17191f] outline-none focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </div>
-        <DialogFooter className="flex items-center justify-end gap-[8px]">
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'12px',"color":"#17191f","outline":"none","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <DialogFooter sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px'}}>
           <DialogClose asChild>
             <UIButton
               variant="outline"
               disabled={loading}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"width":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"fontWeight":400,"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
             >
               取消
             </UIButton>
@@ -347,7 +348,7 @@ export default function GeneralSkillsPage({
         `/general-skills?tenant_id=${TENANT_ID}${agentQuery}`,
       );
       setRows(rowsData);
-      // 执行链路接入状态（单一事实来源，tenant 级）
+      //
       try {
         const rt = await api.get<ExecutionRuntimeResponse>(`/execution-runtime?tenant_id=${TENANT_ID}`);
         setRuntimeConnected(rt?.data?.generalSkills || {});
@@ -385,15 +386,18 @@ export default function GeneralSkillsPage({
     setClawhubLoading(true);
     try {
       const result = await api.post<{
-        code: number;
-        data?: { implemented?: boolean; imported?: boolean; skill?: { name?: string }; message?: string; error?: string };
+        implemented?: boolean;
+        imported?: boolean;
+        skill?: { name?: string };
+        message?: string;
+        error?: string;
       }>(`/general-skills/import-skillhub`, { tenant_id: TENANT_ID, source: clawhubSource });
-      if (result?.data?.implemented === false) {
-        notify.warning(result.data.message || 'SkillHub 导入尚未实现');
-      } else if (result?.data?.imported === false) {
-        notify.warning(result.data.error || result.data.message || '导入失败');
+      if (result?.implemented === false) {
+        notify.warning(result.message || 'SkillHub 导入尚未实现');
+      } else if (result?.imported === false) {
+        notify.warning(result.error || result.message || '导入失败');
       } else {
-        notify.success('已导入技能：' + (result?.data?.skill?.name ?? ''));
+        notify.success('已导入技能：' + (result?.skill?.name ?? ''));
         await load();
       }
     } catch (e) {
@@ -412,19 +416,19 @@ export default function GeneralSkillsPage({
       key: 'name',
       title: '技能',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate text-[13px] font-medium text-[#18181a]">{row.name}</span>
-          <span className="truncate text-[12px] text-[#858b9c]">{row.slug}</span>
-        </div>
+        <Box component="div" sx={{"display":"flex","minWidth":0,"flexDirection":"column","gap":'2px'}}>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>{row.name}</Box>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{row.slug}</Box>
+        </Box>
       ),
     },
     {
       key: 'description',
       title: '描述',
       render: (row) => (
-        <span className="line-clamp-2 text-[12px] text-[#858b9c]">
+        <Box component="span" sx={{"display":"-webkit-box","WebkitBoxOrient":"vertical","WebkitLineClamp":2,"overflow":"hidden","fontSize":'12px',"color":"#858b9c"}}>
           {row.description || '暂无描述'}
-        </span>
+        </Box>
       ),
     },
     {
@@ -432,9 +436,9 @@ export default function GeneralSkillsPage({
       title: '来源',
       width: 100,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>
           {row.homepage ? '外部' : '内置'}
-        </span>
+        </Box>
       ),
     },
     {
@@ -452,18 +456,19 @@ export default function GeneralSkillsPage({
       width: 170,
       render: (row) => {
         const connected = !!runtimeConnected[row.slug];
-        if (connected) return <ExecutionBadge connected={true} />;
+        if (connected) return <ExecutionBadge connected={true}  />;
         return (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => navigate(`/staff/general-skills/${row.slug}`)}
             title="未接入执行链路：需发布且技能文档非空。点击前往编辑技能。"
-            className="group inline-flex cursor-pointer items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-[2px] text-[11px] font-medium text-[#858b9c] transition-colors hover:bg-[#eaf2ff] hover:text-[#2563eb]"
+            sx={{"display":"inline-flex","cursor":"pointer","alignItems":"center","gap":'4px',"borderRadius":'50%',"bgcolor":'divider',"px":'8px',"py":'2px',"fontSize":'11px',"fontWeight":500,"color":"#858b9c","transition":"background-color 0.2s","&:hover":{"bgcolor":"#eaf2ff","color":"#2563eb"},"&:hover .reveal":{"opacity":1}}} className="group"
           >
-            <span className="size-[5px] rounded-full bg-[#cbd2e0]" />
+            <Box component="span"  sx={{"width":'5px',"height":'5px',"borderRadius":'50%',"bgcolor":"#cbd2e0"}} />
             未接入
-            <span className="opacity-0 transition-opacity group-hover:opacity-100">· 去处理</span>
-          </button>
+            <Box component="span" className="reveal" sx={{"opacity":0,"transition":"opacity 0.2s"}}>· 去处理</Box>
+          </Box>
         );
       },
     },
@@ -471,7 +476,7 @@ export default function GeneralSkillsPage({
       key: 'updated_at',
       title: '更新时间',
       width: 160,
-      render: (row) => <span className="text-[12px] text-[#858b9c]">{formatDateTime(row.updated_at)}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>{formatDateTime(row.updated_at)}</Box>,
     },
     {
       key: 'actions',
@@ -482,25 +487,25 @@ export default function GeneralSkillsPage({
         canManageCurrentScope ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Box component="button"
                 type="button"
-                className="ml-auto flex size-[24px] items-center justify-center rounded-[6px] text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
+               
                 aria-label="更多操作"
-              >
-                <MoreHorizontal className="size-[14px]" />
-              </button>
+               sx={{"ml":"auto","display":"flex","width":'24px',"height":'24px',"alignItems":"center","justifyContent":"center","borderRadius":'6px',"color":"#858b9c","&:hover":{"bgcolor":"#f2f3f7","color":"#18181a"}}}>
+                <MoreHorizontal  size={14} />
+              </Box>
             </DropdownMenuTrigger>
             <DropdownMenuContent className={MENU_CONTENT_CLASS} align="end">
               <DropdownMenuItem
                 className={MENU_ITEM_CLASS}
                 onSelect={async () => {
                   try {
-                    const result = await api.post<{ code: number; data?: SkillRunResult }>(
+                    const result = await api.post<SkillRunResult>(
                       `/general-skills/${row.slug}/run?tenant_id=${TENANT_ID}`,
                       { query: '' },
                     );
-                    if (result?.data?.success === false) {
-                      notify.warning(result.data.error || '技能未发布或无指令内容');
+                    if (result?.success === false) {
+                      notify.warning(result.error || '技能未发布或无指令内容');
                     } else {
                       notify.success('已运行通用技能');
                     }
@@ -509,15 +514,15 @@ export default function GeneralSkillsPage({
                   }
                 }}
               >
-                <Wrench className="size-[14px]" />
+                <Wrench  size={14} />
                 运行
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+              <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
               <DropdownMenuItem
                 className={MENU_ITEM_DANGER_CLASS}
                 onSelect={() => setDeleteTarget(row)}
               >
-                <Trash2 className="size-[14px]" />
+                <Trash2  size={14} />
                 删除
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -527,20 +532,20 @@ export default function GeneralSkillsPage({
   ];
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
+    <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={pageTitle}
         description="管理可复用的通用技能（浏览器、MCP、查询工具等）。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <div className="flex items-center gap-[8px]">
+          <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
             <OutlineActionButton
               type="button"
               onClick={() => void load()}
               disabled={loading}
             >
-              <RefreshCw className="size-[14px]" />
+              <RefreshCw  size={14} />
               刷新
             </OutlineActionButton>
             {canManageCurrentScope ? (
@@ -549,49 +554,49 @@ export default function GeneralSkillsPage({
                   type="button"
                   onClick={openClawHubImport}
                 >
-                  <Download className="size-[14px]" />
+                  <Download  size={14} />
                   导入技能
                 </OutlineActionButton>
                 <UIButton
                   sx={staffTokens.primaryButton}
                   onClick={() => navigate('/staff/general-skills/new')}
                 >
-                  <Plus className="size-[14px]" />
+                  <Plus  size={14} />
                   新增技能
                 </UIButton>
               </>
             ) : null}
-          </div>
+          </Box>
         }
-      />
+       />
 
-      <div className="flex flex-wrap gap-[12px]">
-        <StatCard value={stats.total} label="技能总数" />
-        <StatCard value={stats.published} label="已启用" tone="green" />
-        <StatCard value={stats.draft} label="草稿" />
-        <StatCard value={stats.archived} label="已停用" tone="red" />
-        <StatCard value={stats.connected} label="已接入执行链路" tone="green" />
-      </div>
+      <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'12px'}}>
+        <StatCard value={stats.total} label="技能总数"  />
+        <StatCard value={stats.published} label="已启用" tone="green"  />
+        <StatCard value={stats.draft} label="草稿"  />
+        <StatCard value={stats.archived} label="已停用" tone="red"  />
+        <StatCard value={stats.connected} label="已接入执行链路" tone="green"  />
+      </Box>
 
       {stats.total > 0 ? (
-        <div className="flex items-center gap-[8px] rounded-[12px] border border-[#e3e7f1] bg-[#fafbfc] px-[14px] py-[10px] text-[12px] text-[#464c5e]">
-          <span className="size-[6px] rounded-full bg-[#12b76a]" />
+        <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px',"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fafbfc","px":'14px',"py":'10px',"fontSize":'12px',"color":"#464c5e"}}>
+          <Box component="span"  sx={{"width":'6px',"height":'6px',"borderRadius":'50%',"bgcolor":"#12b76a"}} />
           {stats.connected > 0
             ? `已有 ${stats.connected} 个通用技能接入员工执行链路，员工会话中可被真实调用。`
             : '暂无通用技能接入执行链路；发布且填写技能文档的技能会自动接入。'}
-        </div>
+        </Box>
       ) : null}
 
-      <section className="flex flex-col gap-[16px]">
-        <div className="flex flex-wrap items-center justify-between gap-[12px]">
-          <h3 className="text-[14px] font-medium text-[#18181a]">{listLabel}</h3>
-          <div className="flex flex-wrap items-center gap-[8px]">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px'}}>
+        <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","justifyContent":"space-between","gap":'12px'}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>{listLabel}</Box>
+          <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":'8px'}}>
             <Select
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value as 'all' | GeneralSkillRead['status'])}
             >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="全部状态" />
+              <SelectTrigger sx={{"width":'140px'}}>
+                <SelectValue placeholder="全部状态"  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
@@ -604,9 +609,9 @@ export default function GeneralSkillsPage({
               value={searchText}
               onChange={setSearchText}
               placeholder="搜索技能名称 / Slug"
-            />
-          </div>
-        </div>
+             />
+          </Box>
+        </Box>
 
         <DataTable
           columns={columns}
@@ -615,12 +620,12 @@ export default function GeneralSkillsPage({
           loading={loading}
           emptyText="暂无技能，点击「新增」创建一个吧"
           aria-label={listLabel}
-        />
+         />
 
         {totalPages > 1 ? (
-          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage} />
+          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage}  />
         ) : null}
-      </section>
+      </Box>
 
       <ConfirmDialog
         open={deleteTarget !== null}
@@ -628,7 +633,7 @@ export default function GeneralSkillsPage({
         title={
           deleteTarget ? (
             <>
-              删除技能 <strong className="ml-[4px]">{deleteTarget.name}</strong>
+              删除技能 <Box component="strong" sx={{"ml":'4px'}}>{deleteTarget.name}</Box>
             </>
           ) : (
             '删除技能'
@@ -638,7 +643,7 @@ export default function GeneralSkillsPage({
         confirmText="删除"
         loading={deleting}
         onConfirm={() => void confirmDelete()}
-      />
+       />
 
       <ClawHubDialog
         open={clawhubModalOpen}
@@ -647,14 +652,14 @@ export default function GeneralSkillsPage({
         onSourceChange={setClawhubSource}
         onClose={() => setClawhubModalOpen(false)}
         onSubmit={() => void importClawHubSource()}
-      />
-    </div>
+       />
+    </Box>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Editor page (new / edit)
-// ---------------------------------------------------------------------------
+//
+//
+//
 
 type EditorProps = {
   mode: 'new' | 'edit';
@@ -681,7 +686,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
     () => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '',
   );
 
-  // 调试运行
+  //
   const [runQuery, setRunQuery] = useState('');
   const [runLoading, setRunLoading] = useState(false);
   const [runResult, setRunResult] = useState<SkillRunResult | null>(null);
@@ -775,14 +780,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
     setRunLoading(true);
     setRunResult(null);
     try {
-      const result = await api.post<{ code: number; data?: SkillRunResult }>(`/general-skills/${slug}/run`, {
+      const result = await api.post<SkillRunResult>(`/general-skills/${slug}/run`, {
         tenant_id: TENANT_ID,
         agent_id: agentId || undefined,
         query: runQuery,
       });
-      setRunResult(result?.data ?? null);
-      if (result?.data?.success) notify.success('运行完成');
-      else if (result?.data?.success === false) notify.warning(result.data.error || '运行失败');
+      setRunResult(result ?? null);
+      if (result?.success) notify.success('运行完成');
+      else if (result?.success === false) notify.warning(result.error || '运行失败');
     } catch (e) {
       notify.error(e instanceof Error ? e.message : '运行失败');
     } finally {
@@ -797,7 +802,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
   const runConnected = isEdit && values.enabled && (values.skill_markdown || '').trim().length > 0;
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]" aria-busy={loading}>
+    <Box component="div" aria-busy={loading} sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={isEdit ? '编辑技能' : '新建技能'}
         description="编写技能文档，配置 Slug 与状态，并可调试运行。"
@@ -811,144 +816,144 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
             返回列表
           </OutlineActionButton>
         }
-      />
+       />
 
-      <section className="flex flex-col gap-[16px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-        <div className="grid grid-cols-2 gap-[12px]">
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">名称</span>
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+        <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>名称</Box>
             <Input
               value={values.name}
               onChange={(e) => set('name', e.target.value)}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
-          </label>
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">Slug</span>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
+          </Box>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>Slug</Box>
             <Input
               value={values.slug}
               onChange={(e) => set('slug', e.target.value)}
               placeholder="留空将自动生成"
               disabled={isEdit}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0 disabled:opacity-60"
-            />
-          </label>
-        </div>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">描述</span>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"},"&:disabled":{"opacity":0.6}}}
+             />
+          </Box>
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>描述</Box>
           <Textarea
             value={values.description}
             onChange={(e) => set('description', e.target.value)}
             rows={2}
-            className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">主页 URL（可选）</span>
+            sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>主页 URL（可选）</Box>
           <Input
             value={values.homepage}
             onChange={(e) => set('homepage', e.target.value)}
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <label className="flex items-center gap-[8px]">
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="label" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
           <Switch
             checked={values.enabled}
             onCheckedChange={(checked) => set('enabled', checked)}
-          />
-          <span className="text-[12px] text-[#464c5e]">启用技能（发布后接入员工执行链路）</span>
-        </label>
-      </section>
+           />
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>启用技能（发布后接入员工执行链路）</Box>
+        </Box>
+      </Box>
 
       {/* 技能文档：编辑 + 实时预览 分栏 */}
-      <section className="flex flex-col gap-[10px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] font-medium text-[#18181a]">技能文档 (Markdown)</span>
-          <span className="text-[11px] text-[#9aa1b2]">左侧编辑 · 右侧实时预览</span>
-        </div>
-        <div className="grid min-h-[320px] grid-cols-1 gap-[12px] lg:grid-cols-2">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'10px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+        <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"space-between"}}>
+          <Box component="span" sx={{"fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>技能文档 (Markdown)</Box>
+          <Box component="span" sx={{"fontSize":'11px',"color":"#9aa1b2"}}>左侧编辑 · 右侧实时预览</Box>
+        </Box>
+        <Box component="div" sx={{"display":"grid","minHeight":'320px',"gridTemplateColumns":"repeat(1, minmax(0,1fr))","gap":'12px',"lg":{"gridTemplateColumns":"repeat(2, minmax(0,1fr))"}}}>
           <Textarea
             value={values.skill_markdown}
             onChange={(e) => set('skill_markdown', e.target.value)}
-            className="min-h-[320px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[12px] font-mono text-[12px] leading-[1.6] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-          <MarkdownPreview markdown={values.skill_markdown} />
-        </div>
-      </section>
+            sx={{"minHeight":'320px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'12px',"fontFamily":"monospace","fontSize":'12px',"lineHeight":1.6,"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+          <MarkdownPreview markdown={values.skill_markdown}  />
+        </Box>
+      </Box>
 
       {/* 调试运行面板 */}
-      <section className="flex flex-col gap-[12px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-        <div className="flex items-center gap-[8px]">
-          <Play className="size-[14px] text-[#757f9c]" />
-          <span className="text-[13px] font-medium text-[#18181a]">调试运行</span>
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'12px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+        <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+          <Play  size={14} color="#757f9c" />
+          <Box component="span" sx={{"fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>调试运行</Box>
           {isEdit ? (
             runConnected ? (
-              <span className="inline-flex items-center gap-[4px] rounded-full bg-[#eafbf0] px-[8px] py-px text-[11px] font-medium text-[#018434]">
+              <Box component="span" sx={{"display":"inline-flex","alignItems":"center","gap":'4px',"borderRadius":'50%',"bgcolor":"#eafbf0","px":'8px',"py":'1px',"fontSize":'11px',"fontWeight":500,"color":"#018434"}}>
                 已接入执行链路
-              </span>
+              </Box>
             ) : (
-              <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-px text-[11px] font-medium text-[#858b9c]">
+              <Box component="span" sx={{"display":"inline-flex","alignItems":"center","gap":'4px',"borderRadius":'50%',"bgcolor":"#f2f3f7","px":'8px',"py":'1px',"fontSize":'11px',"fontWeight":500,"color":"#858b9c"}}>
                 未接入（需发布且文档非空）
-              </span>
+              </Box>
             )
           ) : (
-            <span className="inline-flex items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-px text-[11px] font-medium text-[#858b9c]">
+            <Box component="span" sx={{"display":"inline-flex","alignItems":"center","gap":'4px',"borderRadius":'50%',"bgcolor":"#f2f3f7","px":'8px',"py":'1px',"fontSize":'11px',"fontWeight":500,"color":"#858b9c"}}>
               保存后可运行
-            </span>
+            </Box>
           )}
-        </div>
-        <div className="flex flex-col gap-[8px]">
+        </Box>
+        <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'8px'}}>
           <Textarea
             value={runQuery}
             onChange={(e) => setRunQuery(e.target.value)}
             placeholder="输入测试问题，例如：帮我查询最近一笔退款订单的状态"
             rows={2}
-            className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[12px] text-[13px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-          <div className="flex items-center justify-end">
+            sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'12px',"fontSize":'13px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+          <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end"}}>
             <UIButton
               sx={staffTokens.primaryButton}
               onClick={() => void runSkill()}
               disabled={runLoading || !isEdit}
             >
-              <Play className="size-[13px]" />
+              <Play  size={13} />
               {runLoading ? '运行中…' : '运行'}
             </UIButton>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {runResult ? (
-          <div className="flex flex-col gap-[10px]">
+          <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'10px'}}>
             {runResult.success ? (
               <RunCodePanel
                 title="生成的技能指令 (prompt)"
                 code={(runInstructions.length ? runInstructions.join('\n\n') : '（无指令内容）')}
                 language="markdown"
                 defaultOpen
-              />
+               />
             ) : (
-              <div className="rounded-[10px] border border-[#fce3e3] bg-[#fff5f5] px-[12px] py-[10px] text-[12px] text-[#d20b0b]">
+              <Box component="div" sx={{"borderRadius":'10px',"border":"1px solid","borderColor":"#fce3e3","bgcolor":"#fff5f5","px":'12px',"py":'10px',"fontSize":'12px',"color":"#d20b0b"}}>
                 {runResult.error || '运行失败'}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
         ) : (
-          <div className="rounded-[10px] border border-dashed border-[#e5e7ec] bg-[#fafbfc] px-[12px] py-[16px] text-center text-[12px] text-[#aab0bf]">
+          <Box component="div" sx={{"borderRadius":'10px',"border":"1px solid","borderStyle":"dashed","borderColor":'divider',"bgcolor":"#fafbfc","px":'12px',"py":'16px',"textAlign":"center","fontSize":'12px',"color":"#aab0bf"}}>
             运行后将在这里显示生成的技能指令与结果
-          </div>
+          </Box>
         )}
-      </section>
+      </Box>
 
-      <div className="flex items-center justify-end gap-[8px]">
+      <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px'}}>
         <UIButton
           variant="outline"
-          className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+          sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
           onClick={() => navigate('/staff/general-skills')}
         >
           取消
         </UIButton>
         <UIButton
-          className="h-[32px] min-w-[80px] rounded-[10px] border border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+          sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
           onClick={() => void save({ keepOpen: true })}
           disabled={saving}
         >
@@ -961,15 +966,15 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: EditorProps) {
         >
           {saving ? '保存中…' : '保存'}
         </UIButton>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
 export function GeneralSkillNewPage(props: GeneralSkillPageProps = {}) {
-  return <GeneralSkillEditorPage mode="new" {...props} />;
+  return <GeneralSkillEditorPage mode="new" {...props}  />;
 }
 
 export function GeneralSkillEditPage(props: GeneralSkillPageProps = {}) {
-  return <GeneralSkillEditorPage mode="edit" {...props} />;
+  return <GeneralSkillEditorPage mode="edit" {...props}  />;
 }

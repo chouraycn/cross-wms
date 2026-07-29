@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -20,6 +20,7 @@ import {
 } from '../../../components/staff/lib/agent-scope-storage.js';
 import { getClientTimeZone } from '../../../components/staff/lib/timezone.js';
 import {
+  agentResourceCount,
   employeeDisplayName,
   employeeProfile,
 } from '../../../components/staff/employee.js';
@@ -44,8 +45,10 @@ import {
   sessionReadStorageKey,
 } from './chatHelpers.js';
 import {
+  clipboardContainsComposerImage,
   computeMergedMessages,
   effectiveMessageTurnId,
+  extractPastedComposerFiles,
 } from './chatHelpers.js';
 import {
   createEmptySlot,
@@ -67,11 +70,6 @@ import {
 
 const CHAT_BASE_PATH = '/staff/chat';
 const ENTERPRISE_SIDEBAR_STORAGE_KEY = 'ultrarag_enterprise_sidebar_expanded';
-const DEFAULT_EMPTY_STATS = [
-  { label: '今日会话', value: '0' },
-  { label: '工具', value: '0' },
-  { label: 'SOP', value: '0' },
-];
 
 export type UseChatSessionOptions = {
   /**
@@ -152,6 +150,10 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isChatProgrammaticScrollRef = useRef(false);
+  const isChatStickyToBottomRef = useRef(true);
+  const lastActiveConversationIdRef = useRef<string | null>(null);
+  const lastDisplayedMessageCountRef = useRef(0);
   const storeRef = useRef(new Map<string, SessionSlot>());
   const streamRef = useRef(new Map<string, StreamSlot>());
   const turnTraceRef = useRef(new Map<string, TurnTrace>());
@@ -300,15 +302,24 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [displayedAgent]);
 
   const emptyProfileTags = useMemo(() => {
-    if (!displayedAgent) return [];
-    // TODO: 完整移植 agentResourceCount + visibleChatEmployees 能力标签
-    return [];
-  }, [displayedAgent]);
+    return displayedProfile?.workStyles.length
+      ? displayedProfile.workStyles.slice(0, 3)
+      : ['结构化整理', '可追溯', '可追溯'];
+  }, [displayedProfile]);
 
   const emptyStats = useMemo(() => {
-    // TODO: 完整移植员工统计信息（今日会话/工具/SOP）
-    return DEFAULT_EMPTY_STATS;
-  }, []);
+    return displayedAgent
+      ? [
+        { label: '资料', value: agentResourceCount(displayedAgent, 'knowledge_base') },
+        { label: '技能', value: agentResourceCount(displayedAgent, 'general_skill') },
+        { label: 'SOP', value: agentResourceCount(displayedAgent, 'skill') },
+      ]
+      : [
+        { label: '资料', value: 0 },
+        { label: '技能', value: 0 },
+        { label: 'SOP', value: 0 },
+      ];
+  }, [displayedAgent]);
 
   // --- Messages merge ------------------------------------------------------
   const displayedMessages = useMemo(() => {
@@ -772,9 +783,14 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     if (files.length) void uploadComposerFiles(files);
   }, [uploadComposerFiles]);
 
-  const handleComposerPaste = useCallback((_event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    // TODO: 完整移植粘贴图片处理逻辑（clipboardContainsComposerImage + extractPastedComposerFiles）
-  }, []);
+  const handleComposerPaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const clipboardData = event.clipboardData;
+    if (!clipboardData || !clipboardContainsComposerImage(clipboardData)) return;
+    event.preventDefault();
+    void extractPastedComposerFiles(clipboardData).then((files) => {
+      if (files.length) uploadComposerFiles(files);
+    });
+  }, [uploadComposerFiles]);
 
   const handleComposerPlusAction = useCallback((action: 'upload' | 'scheduled_task') => {
     setComposerPlusOpen(false);
@@ -785,9 +801,45 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     setComposerIntent('scheduled_task');
   }, []);
 
-  const handleChatMessagesScroll = useCallback(() => {
-    // TODO: 完整移植 sticky-to-bottom 滚动行为
+  const updateChatStickiness = useCallback(() => {
+    const element = chatMessagesRef.current;
+    if (!element) return;
+    const remainingScroll = element.scrollHeight - element.clientHeight - element.scrollTop;
+    isChatStickyToBottomRef.current = remainingScroll <= 96;
   }, []);
+
+  const finishProgrammaticChatScroll = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      updateChatStickiness();
+      isChatProgrammaticScrollRef.current = false;
+    });
+  }, [updateChatStickiness]);
+
+  const scrollChatToBottom = useCallback((options?: { preserveShortContentTop?: boolean; force?: boolean }) => {
+    const element = chatMessagesRef.current;
+    if (!element) return;
+    if (!options?.force && !isChatStickyToBottomRef.current) return;
+    const targetScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+    const shortContentGuard = Math.min(520, element.clientHeight * 0.72);
+    isChatProgrammaticScrollRef.current = true;
+    if (options?.preserveShortContentTop && targetScrollTop <= shortContentGuard) {
+      element.scrollTop = 0;
+      finishProgrammaticChatScroll();
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      element.scrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+      window.requestAnimationFrame(() => {
+        element.scrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+        finishProgrammaticChatScroll();
+      });
+    });
+  }, [finishProgrammaticChatScroll]);
+
+  const handleChatMessagesScroll = useCallback(() => {
+    if (isChatProgrammaticScrollRef.current) return;
+    updateChatStickiness();
+  }, [updateChatStickiness]);
 
   // --- Effects -------------------------------------------------------------
   useEffect(() => {
@@ -826,6 +878,27 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     setSessionReadTimes(readTimes);
     persistSessionReadTimes(userId, readTimes);
   }, [activeConversationId, auth, sessionReadTimes, userId]);
+
+  useLayoutEffect(() => {
+    const conversationChanged = activeConversationId !== lastActiveConversationIdRef.current;
+    lastActiveConversationIdRef.current = activeConversationId;
+    const messageCountChanged = displayedMessages.length !== lastDisplayedMessageCountRef.current;
+    lastDisplayedMessageCountRef.current = displayedMessages.length;
+    if (conversationChanged) {
+      isChatStickyToBottomRef.current = true;
+      scrollChatToBottom({ preserveShortContentTop: !currentSessionRunning, force: true });
+      return;
+    }
+    if (messageCountChanged && isChatStickyToBottomRef.current) {
+      scrollChatToBottom();
+    }
+  }, [activeConversationId, currentSessionRunning, displayedMessages.length, scrollChatToBottom]);
+
+  useEffect(() => {
+    if (!currentSessionRunning) return;
+    if (!isChatStickyToBottomRef.current) return;
+    scrollChatToBottom();
+  }, [currentSessionRunning, scrollChatToBottom, streamTick, traceTick]);
 
   const readyComposerAttachments = useMemo(
     () => composerAttachments.filter((attachment) => attachment.uploadStatus === 'ready'),

@@ -23,6 +23,19 @@ import {
   visibleEmployeeAgents,
 } from '../../components/staff/employee.js';
 import type { AgentProfileRead } from '../../components/staff/types/index.js';
+import { staffdeckContent } from '../../assets/staffdeck-assets';
+
+const SD1_SHOWCASE: Array<{ src: string; label: string }> = [
+  { src: staffdeckContent.sd1CardLogs, label: '对话日志' },
+  { src: staffdeckContent.sd1CardScheduled, label: '定时任务' },
+  { src: staffdeckContent.sd1CardTools, label: '工具调用' },
+  { src: staffdeckContent.sd1Node18360, label: '执行节点' },
+  { src: staffdeckContent.sd1Node18409, label: '检索节点' },
+  { src: staffdeckContent.sd1Node18506, label: '技能节点' },
+  { src: staffdeckContent.sd1Node18604, label: '反思节点' },
+  { src: staffdeckContent.sd1Node18627, label: '生成节点' },
+  { src: staffdeckContent.sd1Node18645, label: '结果节点' },
+];
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
@@ -254,6 +267,21 @@ export default function EmployeeGalleryPage({
         items={galleryTabs}
         tabClassName="max-[560px]:min-h-[54px] max-[560px]:w-auto max-[560px]:flex-1 max-[560px]:px-[6px] max-[560px]:text-[12px] max-[560px]:leading-[16px]"
       />
+
+      <Box sx={{ mb: '28px' }}>
+        <Box component="h2" sx={{ m: 0, mb: '12px', fontSize: '16px', fontWeight: 600, color: '#18181a' }}>能力演示</Box>
+        <Box sx={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(200px, 1fr)', gap: '14px', overflowX: 'auto', pb: '6px' }}>
+          {SD1_SHOWCASE.map((shot) => (
+            <Box
+              key={shot.label}
+              sx={{ borderRadius: '12px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', overflow: 'hidden', flexShrink: 0 }}
+            >
+              <Box component="img" src={shot.src} alt={shot.label} sx={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block', bgcolor: '#f3f4f6' }} />
+              <Box component="span" sx={{ display: 'block', px: '10px', py: '8px', fontSize: '12px', color: '#464c5e' }}>{shot.label}</Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
 
       <Box
         sx={{

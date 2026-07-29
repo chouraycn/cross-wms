@@ -192,7 +192,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
             </Tabs>
           )}
 
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
             {activeSubTab === 'model' && (
               <>
                 {isLoading && (
@@ -226,7 +226,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
             )}
 
             {activeSubTab === 'chat' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, pb: 2 }}>
                 <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
                 <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
                   选择 AI 工具执行的策略模式

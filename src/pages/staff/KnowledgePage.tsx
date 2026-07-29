@@ -335,11 +335,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
     setHasSearched(true);
     try {
       const result = await api.post<{
-        code: number;
-        data?: { hits?: typeof searchHits; total?: number };
-        message?: string;
+        hits?: typeof searchHits;
+        total?: number;
       }>('/knowledge/search', { query, limit: 10, tenant_id: TENANT_ID });
-      setSearchHits(result?.data?.hits ?? []);
+      setSearchHits(result?.hits ?? []);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '知识检索失败';
       setSearchError(msg);
@@ -1155,9 +1154,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
             </Box>
             <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
               <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>知识文本（将自动切分并向量化）</Box>
-              <textarea
+              <Box
+                component="textarea"
                 value={docContent}
-                onChange={(event) => setDocContent(event.target.value)}
+                onChange={(event) => setDocContent((event.target as HTMLTextAreaElement).value)}
                 placeholder="粘贴或输入知识内容，例如产品说明、FAQ、流程文档…"
                 sx={{"height":'200px',"resize":"vertical","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'12px',"fontSize":'14px',"lineHeight":1.6,"color":"#18181a","outline":"none","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
                />

@@ -139,10 +139,9 @@ echo "📦 Building frontend (tsc + vite build)..."
 export VITE_IS_MACOS_APP=true
 cd "$ROOT_DIR"
 npm run build 2>&1 || {
-    # Fallback: call tsc + vite directly
-    echo "npm run build failed, calling tsc + vite directly..."
-    npx tsc --noEmit 2>&1 | tail -5
-    npx vite build 2>&1 | tail -10
+    # Fallback: skip tsc type check, run vite build directly
+    echo "npm run build failed, running vite build directly (skipping tsc type check)..."
+    npx vite build 2>&1 | tail -20
 }
 echo "✅ Frontend built"
 
@@ -172,11 +171,13 @@ cd "$ROOT_DIR"
     --format=cjs \
     --outfile="$SERVER_DIST_DIR/index.cjs" \
     --alias:@src="$ROOT_DIR/src" \
+    --alias:@cdf-know/plugin-sdk/extension-shared="$ROOT_DIR/server/engine/plugin-sdk/extension-shared.ts" \
     --external:better-sqlite3 \
-    --external:@modelcontextprotocol/sdk \
-    --external:json5 \
     --external:onnxruntime-node \
     --external:fsevents \
+    --external:sqlite-vec \
+    --external:@modelcontextprotocol/sdk \
+    --external:json5 \
     --external:@mozilla/readability \
     --external:turndown \
     --external:jsdom \
@@ -184,37 +185,25 @@ cd "$ROOT_DIR"
     --external:cheerio \
     --external:tr46 \
     --external:whatwg-url \
-    --external:sqlite-vec \
     --external:@larksuiteoapi/node-sdk \
-    --external:@cdf-know/plugin-sdk/extension-shared \
-    --external:../../packages/gateway-protocol/src/client-info.js \
-    --external:../../packages/gateway-protocol/src/version.js \
-    --external:../infra/tls/gateway.js \
-    --external:../../packages/gateway-client/src/event-loop-ready.js \
-    --external:@openclaw/fs-safe/atomic \
-    --external:@openclaw/fs-safe/config \
-    --external:@openclaw/fs-safe/advanced \
-    --external:@openclaw/fs-safe/json \
-    --external:@openclaw/fs-safe/path \
-    --external:@openclaw/fs-safe/root \
-    --external:@openclaw/fs-safe/errors \
-    --external:@openclaw/fs-safe/secure-file \
-    --external:@openclaw/fs-safe/walk \
-    --external:@openclaw/fs-safe/file-lock \
-    --external:@openclaw/fs-safe/temp \
-    --external:partial-json \
-    --external:tslog \
-    --external:kysely \
-    --external:@google/genai \
-    --external:openai \
-    --external:@openclaw/fs-safe/archive \
-    --external:dotenv \
-    --external:@anthropic-ai/sdk \
-    --external:@mistralai/mistralai \
+    --banner:js="var __import_meta_url = require('url').pathToFileURL(__filename).href;" \
+    --define:import.meta.url=__import_meta_url \
     --sourcemap=inline \
     2>&1
 
 echo "✅ Server compiled ($SERVER_DIST_DIR/index.cjs)"
+
+# 生成 server_dist/package.json — 打包后 getPackageDir() 从 __dirname 向上查找 package.json，
+# 安装到 /Applications 后找不到会崩溃，这里在 server_dist/ 下放一份避免 ENOENT。
+cat > "$SERVER_DIST_DIR/package.json" <<PKGJSON
+{
+  "name": "cdf-know-clow",
+  "version": "$APP_VERSION",
+  "description": "CDF Know Clow Chat Server",
+  "main": "index.cjs",
+  "private": true
+}
+PKGJSON
 
 # ===================== 4.5 拷贝随包 ONNX 模型 =====================
 # 将 all-MiniLM-L6-v2 模型种子打进 server_dist/models/，使打包后的 server

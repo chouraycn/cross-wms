@@ -503,6 +503,7 @@ function AccountDialog({
       <DialogContent
         aria-describedby={undefined}
         sx={{
+          position: 'relative',
           display: 'flex',
           width: 'calc(100% - 2rem)',
           flexDirection: 'column',

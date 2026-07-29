@@ -65,3 +65,27 @@ export function isProxyEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const config = readProxyFromEnv(env);
   return !!(config.httpProxy || config.httpsProxy || config.allProxy);
 }
+
+// Stub implementations for openclaw-managed proxy bridge compatibility.
+// These are referenced by managed-proxy-undici.ts but the real implementations
+// live in undici-global-dispatcher.ts. Here we provide minimal stubs so esbuild
+// can resolve the imports during bundling without runtime errors.
+export function resolveEnvHttpProxyUrl(
+  protocol: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const config = readProxyFromEnv(env);
+  if (protocol === 'https') {
+    return config.httpsProxy ?? config.httpProxy ?? config.allProxy;
+  }
+  return config.httpProxy ?? config.allProxy;
+}
+
+export function resolveEnvHttpProxyAgentOptions(
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, unknown> | undefined {
+  const config = readProxyFromEnv(env);
+  const proxyUrl = config.httpsProxy ?? config.httpProxy ?? config.allProxy;
+  if (!proxyUrl) return undefined;
+  return { proxyUrl };
+}

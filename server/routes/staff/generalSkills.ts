@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * StaffDeck General Skills Routes — 挂载于 /api/staffdeck/general-skills
  *

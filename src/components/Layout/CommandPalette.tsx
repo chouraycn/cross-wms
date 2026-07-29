@@ -94,11 +94,11 @@ const QUICK_ACTIONS: CommandResult[] = [
 ];
 
 const NAVIGATION_PAGES: CommandResult[] = [
-  { id: 'dashboard', type: 'page', title: '仪表盘', subtitle: '查看仓库 KPI 和统计', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => {} },
-  { id: 'inventory', type: 'page', title: '库存管理', subtitle: '管理仓库库存', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => {} },
-  { id: 'skills', type: 'page', title: '技能中心', subtitle: '管理和发现技能', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => {} },
-  { id: 'memory', type: 'page', title: '记忆管理', subtitle: '管理会话记忆', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => {} },
-  { id: 'settings', type: 'page', title: '设置', subtitle: '配置应用选项', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => {} },
+  { id: 'dashboard', type: 'page', title: '仪表盘', subtitle: '查看仓库 KPI 和统计', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => { window.location.hash = '#/dashboard'; } },
+  { id: 'inventory', type: 'page', title: '库存管理', subtitle: '管理仓库库存', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => { window.location.hash = '#/inventory'; } },
+  { id: 'skills', type: 'page', title: '技能中心', subtitle: '管理和发现技能', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => { window.location.hash = '#/skills'; } },
+  { id: 'memory', type: 'page', title: '记忆管理', subtitle: '管理会话记忆', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => { window.location.hash = '#/memory'; } },
+  { id: 'settings', type: 'page', title: '设置', subtitle: '配置应用选项', icon: <LayersIcon sx={{ fontSize: 16, color: '#3b82f6' }} />, action: () => { window.location.hash = '#/settings'; } },
 ];
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {

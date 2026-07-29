@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Channel inbound root helpers resolve media roots for channel-delivered files.
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
 import type { MsgContext } from "../auto-reply/templating.js";

@@ -124,7 +124,7 @@ export function DataTable<T>({
                     HEAD_CELL_SX,
                     bordered && CELL_BORDER_SX,
                     ALIGN_SX[column.align ?? 'left'],
-                  ].filter(Boolean) as SxProps<Theme>[]
+                  ].filter(Boolean) as SxProps<Theme>
                 }
                 className={column.headClassName}
               >
@@ -162,7 +162,7 @@ export function DataTable<T>({
                         BODY_HEIGHT_SX[size],
                         bordered && CELL_BORDER_SX,
                         ALIGN_SX[column.align ?? 'left'],
-                      ].filter(Boolean) as SxProps<Theme>[]
+                      ].filter(Boolean) as SxProps<Theme>
                     }
                     className={column.className}
                   >

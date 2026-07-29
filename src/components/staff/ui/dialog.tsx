@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Dialog as MuiDialog, Box, IconButton } from '@mui/material'
-import type { SxProps } from '@mui/material/styles'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { X as XIcon } from 'lucide-react'
 
 import { cn } from './utils'
@@ -66,7 +66,7 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, React.ComponentProps<'
       return React.cloneElement(child, {
         ref,
         onClick: (e: React.MouseEvent) => {
-          ;(child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(
+          (child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(
             e as React.MouseEvent<HTMLButtonElement>,
           )
           setOpen(true)
@@ -118,7 +118,7 @@ function DialogOverlay() {
 
 const DialogContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps }
+  React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps<Theme> }
 >(function DialogContent({ className, children, showCloseButton = true, ...props }, ref) {
   const { setOpen } = React.useContext(DialogContext)
   return (
@@ -144,7 +144,7 @@ const DialogContent = React.forwardRef<
   )
 })
 
-function DialogHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
+function DialogHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
   return (
     <Box
       data-slot="dialog-header"
@@ -159,7 +159,7 @@ function DialogFooter({
   showCloseButton = false,
   children,
   ...props
-}: React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps }) {
+}: React.ComponentProps<'div'> & { showCloseButton?: boolean; sx?: SxProps<Theme> }) {
   const { setOpen } = React.useContext(DialogContext)
   return (
     <Box
@@ -180,7 +180,7 @@ function DialogFooter({
   )
 }
 
-const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps }>(
+const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps<Theme> }>(
   function DialogTitle({ className, ...props }, ref) {
     return (
       <Box
@@ -193,7 +193,7 @@ const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>
   },
 )
 
-const DialogDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps }>(
+const DialogDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { sx?: SxProps<Theme> }>(
   function DialogDescription({ className, ...props }, ref) {
     return (
       <Box

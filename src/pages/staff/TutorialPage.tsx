@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import { useEffect, useRef, useState } from 'react';
+import { staffdeckContent, staffdeckIcons } from '../../assets/staffdeck-assets';
 
 type TocGroup = {
   title: string;
@@ -93,6 +94,19 @@ const QUICK_STEPS: QuickStep[] = [
     body: '进入工作台与员工对话，查看执行 Trace；在「员工档案」查看工作记录、定时任务与对话日志。',
     outcome: '形成「执行—观测—优化」的运营闭环。',
   },
+];
+
+type CotStep = { icon: string; label: string };
+
+const COT_STEPS: CotStep[] = [
+  { icon: staffdeckIcons.advance, label: '推进' },
+  { icon: staffdeckIcons.select, label: '选择' },
+  { icon: staffdeckIcons.tool, label: '工具' },
+  { icon: staffdeckIcons.execute, label: '执行' },
+  { icon: staffdeckIcons.judge, label: '判断' },
+  { icon: staffdeckIcons.generated, label: '生成' },
+  { icon: staffdeckIcons.loading, label: '加载' },
+  { icon: staffdeckContent.reference, label: '引用' },
 ];
 
 export default function TutorialPage() {
@@ -193,6 +207,12 @@ export default function TutorialPage() {
             StaffDeck 是一个数字员工运营平台：把大模型、技能、知识库与工具组合成可独立运营的「数字员工」，
             覆盖从对话执行到反馈治理的完整闭环。本教程帮助你在几分钟内完成首次部署并理解核心概念。
           </Box>
+          <Box
+            component="img"
+            src={staffdeckContent.onboardingProfile}
+            alt="数字员工平台概览"
+            sx={{ mt: '20px', width: '100%', maxHeight: '300px', objectFit: 'contain', borderRadius: '12px', bgcolor: '#f7f8fa', p: '8px' }}
+          />
         </Box>
 
         <Box component="section" id="install" sx={{ mb: '40px', scrollMarginTop: '40px' }}>
@@ -248,6 +268,14 @@ export default function TutorialPage() {
             <li><strong>工具调用</strong>：在需要时使用已绑定的工具（HTTP / MCP / 浏览器等）。</li>
             <li><strong>反思</strong>：反思轮数内检查技能与工具结果质量，必要时重试或换路径。</li>
             <li><strong>知识引用</strong>：开启知识库后，检索结果以向量余弦相似度排序并注入上下文。</li>
+          </Box>
+          <Box sx={{ mt: '16px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {COT_STEPS.map((step) => (
+              <Box key={step.label} sx={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '10px', border: '1px solid #eef0f4', bgcolor: 'background.paper', px: '12px', py: '8px' }}>
+                <Box component="img" src={step.icon} alt={step.label} sx={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+                <Box component="span" sx={{ fontSize: '13px', color: '#464c5e' }}>{step.label}</Box>
+              </Box>
+            ))}
           </Box>
           <Box component="p" sx={{ mt: '12px', fontSize: '13px', lineHeight: '20px', color: '#858b9c' }}>
             未配置可用模型时，闭环以占位流式响应运行，用于验证链路连通性，不会返回真实推理结果。
@@ -320,6 +348,12 @@ export default function TutorialPage() {
             <li><strong>内部知识助手</strong>：以通用技能检索文档，配合反思校验提升答案准确率。</li>
             <li><strong>定时运营播报</strong>：用定时任务周期性触发对话闭环，自动产出日报并留存工作记录。</li>
           </Box>
+          <Box
+            component="img"
+            src={staffdeckContent.onboardingGallery}
+            alt="案例展示"
+            sx={{ mt: '20px', width: '100%', borderRadius: '12px', border: '1px solid #eef0f4', bgcolor: 'background.paper' }}
+          />
         </Box>
 
         <Box component="section" id="faq" sx={{ mb: '40px', scrollMarginTop: '40px' }}>

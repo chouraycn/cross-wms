@@ -207,10 +207,11 @@ export default function ConversationLogsTab() {
     setReanalyzingId(feedbackId);
     try {
       const result = await api.post<{
-        code: number;
-        data?: { implemented?: boolean; analysis_status?: string; message?: string };
+        implemented?: boolean;
+        analysis_status?: string;
+        message?: string;
       }>(`/feedback/${feedbackId}/reanalyze?tenant_id=${TENANT_ID}`);
-      const implemented = result?.data?.implemented;
+      const implemented = result?.implemented;
       if (implemented === false) {
         notify.warning('分析未完成：当前未配置可用模型，无法执行真实归因分析');
       } else {

@@ -76,6 +76,9 @@ export function useMessageActionShortcuts({
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!enabled) return;
 
+    // 中文输入法组合中（拼音正在输入）时忽略所有快捷键，避免误触
+    if (event.isComposing || (event as KeyboardEvent & { keyCode?: number }).keyCode === 229) return;
+
     // 忽略输入框中的快捷键
     const target = event.target as HTMLElement;
     if (

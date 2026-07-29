@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Box } from '@mui/material';
 import {
   MoreHorizontal,
   Pencil,
@@ -294,11 +295,11 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     try {
       const rowsData = await api.get<ToolRead[]>(`/tools?tenant_id=${TENANT_ID}${agentQuery}`);
       setRows(rowsData);
-      // 员工 MCP 执行链路接入状态（单一事实来源，tenant 级）
+      //
       try {
         const rt = await api.get<ExecutionRuntimeResponse>(`/execution-runtime?tenant_id=${TENANT_ID}`);
         const map: Record<string, boolean> = {};
-        (rt?.data?.mcpServers || []).forEach((s) => {
+        (rt?.data?.mcpServers || []).forEach((s: { id: string; connected: boolean }) => {
           map[s.id] = s.connected;
         });
         setMcpRuntime(map);
@@ -429,35 +430,35 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       key: 'name',
       title: '工具',
       render: (row) => (
-        <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate text-[13px] font-medium text-[#18181a]">
+        <Box component="div" sx={{"display":"flex","minWidth":0,"flexDirection":"column","gap":'2px'}}>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'13px',"fontWeight":500,"color":"#18181a"}}>
             {row.display_name || row.name}
-          </span>
-          <span className="truncate text-[12px] text-[#858b9c]">{row.name}</span>
-        </div>
+          </Box>
+          <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#858b9c"}}>{row.name}</Box>
+        </Box>
       ),
     },
     {
       key: 'bucket',
       title: '分桶',
       width: 120,
-      render: (row) => <span className="text-[12px] text-[#464c5e]">{row.bucket || '未分桶'}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>{row.bucket || '未分桶'}</Box>,
     },
     {
       key: 'tool_type',
       title: '类型',
       width: 80,
       render: (row) => (
-        <span className="text-[12px] text-[#464c5e]">
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>
           {row.tool_type === 'skill' ? '程序技能' : row.tool_type === 'mcp' ? 'MCP' : 'HTTP'}
-        </span>
+        </Box>
       ),
     },
     {
       key: 'method',
       title: '调用',
       width: 140,
-      render: (row) => <span className="truncate text-[12px] text-[#464c5e]">{row.method} {row.url}</span>,
+      render: (row) => <Box component="span" sx={{"overflow":"hidden","textOverflow":"ellipsis","whiteSpace":"nowrap","fontSize":'12px',"color":"#464c5e"}}>{row.method} {row.url}</Box>,
     },
     {
       key: 'enabled',
@@ -474,19 +475,20 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       width: 170,
       render: (row) => {
         const connected = toolConnected(row, mcpRuntime);
-        if (connected) return <ExecutionBadge connected={true} />;
+        if (connected) return <ExecutionBadge connected={true}  />;
         const reason = row.tool_type === 'mcp' ? '父 MCP 服务器未启用' : '工具未启用';
         return (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => navigate(`/staff/tools/${row.id}/test`)}
             title={`未接入执行链路：${reason}。点击前往工具页处理。`}
-            className="group inline-flex cursor-pointer items-center gap-[4px] rounded-full bg-[#f2f3f7] px-[8px] py-[2px] text-[11px] font-medium text-[#858b9c] transition-colors hover:bg-[#eaf2ff] hover:text-[#2563eb]"
+            sx={{"display":"inline-flex","cursor":"pointer","alignItems":"center","gap":'4px',"borderRadius":'50%',"bgcolor":'divider',"px":'8px',"py":'2px',"fontSize":'11px',"fontWeight":500,"color":"#858b9c","transition":"background-color 0.2s","&:hover":{"bgcolor":"#eaf2ff","color":"#2563eb"},"&:hover .reveal":{"opacity":1}}} className="group"
           >
-            <span className="size-[5px] rounded-full bg-[#cbd2e0]" />
+            <Box component="span"  sx={{"width":'5px',"height":'5px',"borderRadius":'50%',"bgcolor":"#cbd2e0"}} />
             未接入
-            <span className="opacity-0 transition-opacity group-hover:opacity-100">· 去处理</span>
-          </button>
+            <Box component="span" className="reveal" sx={{"opacity":0,"transition":"opacity 0.2s"}}>· 去处理</Box>
+          </Box>
         );
       },
     },
@@ -494,7 +496,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       key: 'updated_at',
       title: '更新时间',
       width: 160,
-      render: (row) => <span className="text-[12px] text-[#858b9c]">{formatDateTime(row.updated_at)}</span>,
+      render: (row) => <Box component="span" sx={{"fontSize":'12px',"color":"#858b9c"}}>{formatDateTime(row.updated_at)}</Box>,
     },
     {
       key: 'actions',
@@ -505,32 +507,32 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
         canManageCurrentScope ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Box component="button"
                 type="button"
-                className="ml-auto flex size-[24px] items-center justify-center rounded-[6px] text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
+               
                 aria-label="更多操作"
-              >
-                <MoreHorizontal className="size-[14px]" />
-              </button>
+               sx={{"ml":"auto","display":"flex","width":'24px',"height":'24px',"alignItems":"center","justifyContent":"center","borderRadius":'6px',"color":"#858b9c","&:hover":{"bgcolor":"#f2f3f7","color":"#18181a"}}}>
+                <MoreHorizontal  size={14} />
+              </Box>
             </DropdownMenuTrigger>
             <DropdownMenuContent className={MENU_CONTENT_CLASS} align="end">
               <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEdit(row)}>
-                <Pencil className="size-[14px]" />
+                <Pencil  size={14} />
                 编辑
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={MENU_ITEM_CLASS}
                 onSelect={() => navigate(`/staff/tools/${row.id}/test`)}
               >
-                <Wrench className="size-[14px]" />
+                <Wrench  size={14} />
                 测试
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-[2px] bg-[#f2f3f7]" />
+              <DropdownMenuSeparator sx={{"my":'2px',"bgcolor":'divider'}}  />
               <DropdownMenuItem
                 className={MENU_ITEM_DANGER_CLASS}
                 onSelect={() => setDeleteTarget(row)}
               >
-                <Trash2 className="size-[14px]" />
+                <Trash2  size={14} />
                 删除
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -540,21 +542,21 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
   ];
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]">
+    <Box component="div" sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={pageTitle}
         description="管理 HTTP 工具、MCP 服务器与程序技能。"
         onLogout={onLogout}
         userName={currentUser?.display_name || currentUser?.username}
         right={
-          <div className="flex items-center gap-[8px]">
+          <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
             <OutlineActionButton type="button" onClick={() => void load()} disabled={loading}>
-              <RefreshCw className="size-[14px]" />
+              <RefreshCw  size={14} />
               刷新
             </OutlineActionButton>
             {canManageCurrentScope ? (
             <OutlineActionButton type="button" onClick={() => void syncProgramSkills()} disabled={syncing || loading}>
-              <RefreshCw className="size-[14px]" />
+              <RefreshCw  size={14} />
               {syncing ? '同步中…' : '同步程序技能'}
             </OutlineActionButton>
             ) : null}
@@ -563,35 +565,35 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
                 sx={staffTokens.primaryButton}
                 onClick={openCreate}
               >
-                <Plus className="size-[14px]" />
+                <Plus  size={14} />
                 新增工具
               </UIButton>
             ) : null}
-          </div>
+          </Box>
         }
-      />
+       />
 
-      <div className="flex flex-wrap gap-[12px]">
-        <StatCard value={stats.total} label="工具总数" />
-        <StatCard value={stats.enabled} label="已启用" tone="green" />
-        <StatCard value={stats.buckets} label="分桶数" />
-        <StatCard value={stats.connected} label="已接入执行链路" tone="green" />
-      </div>
+      <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'12px'}}>
+        <StatCard value={stats.total} label="工具总数"  />
+        <StatCard value={stats.enabled} label="已启用" tone="green"  />
+        <StatCard value={stats.buckets} label="分桶数"  />
+        <StatCard value={stats.connected} label="已接入执行链路" tone="green"  />
+      </Box>
 
-      <div className="flex items-center gap-[8px] rounded-[12px] border border-[#e3e7f1] bg-[#fafbfc] px-[14px] py-[10px] text-[12px] text-[#464c5e]">
-        <span className="size-[6px] rounded-full bg-[#12b76a]" />
+      <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px',"borderRadius":'12px',"border":"1px solid","borderColor":'divider',"bgcolor":"#fafbfc","px":'14px',"py":'10px',"fontSize":'12px',"color":"#464c5e"}}>
+        <Box component="span"  sx={{"width":'6px',"height":'6px',"borderRadius":'50%',"bgcolor":"#12b76a"}} />
         {stats.connected > 0
           ? `已有 ${stats.connected} 个工具接入员工执行链路（启用且员工 MCP 服务器已激活的工具可真实调用，隔离于主程序 MCP）。`
           : '暂无工具接入执行链路；启用工具并确保其员工 MCP 服务器已启用即可接入。'}
-      </div>
+      </Box>
 
-      <section className="flex flex-col gap-[16px]">
-        <div className="flex flex-wrap items-center justify-between gap-[12px]">
-          <h3 className="text-[14px] font-medium text-[#18181a]">工具列表</h3>
-          <div className="flex flex-wrap items-center gap-[8px]">
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px'}}>
+        <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","justifyContent":"space-between","gap":'12px'}}>
+          <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>工具列表</Box>
+          <Box component="div" sx={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":'8px'}}>
             <Select value={bucketFilter} onValueChange={setBucketFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="全部分桶" />
+              <SelectTrigger sx={{"width":'160px'}}>
+                <SelectValue placeholder="全部分桶"  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">全部分桶</SelectItem>
@@ -606,9 +608,9 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
               value={searchText}
               onChange={setSearchText}
               placeholder="搜索工具名称 / URL"
-            />
-          </div>
-        </div>
+             />
+          </Box>
+        </Box>
 
         <DataTable
           columns={columns}
@@ -617,82 +619,82 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
           loading={loading}
           emptyText="暂无工具，点击「新增」创建一个吧"
           aria-label="工具列表"
-        />
+         />
 
         {totalPages > 1 ? (
-          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage} />
+          <Paginator page={currentPage} pageCount={totalPages} onChange={setPage}  />
         ) : null}
-      </section>
+      </Box>
 
       <Dialog open={createOpen} onOpenChange={(open) => !saving && setCreateOpen(open)}>
-        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
-          <DialogTitle className="px-[24px] pt-[20px] pb-[12px] text-[16px] font-medium text-[#18181a]">
+        <DialogContent sx={{"position":"relative","gap":0,"overflow":"hidden","borderRadius":'16px',"p":0}}>
+          <DialogTitle sx={{"px":'24px',"pt":'20px',"pb":'12px',"fontSize":'16px',"fontWeight":500,"color":"#18181a"}}>
             {editingTool ? '编辑工具' : '新建工具'}
           </DialogTitle>
-          <div className="flex max-h-[60vh] flex-col gap-[16px] overflow-y-auto px-[24px] pb-[20px]">
-            <div className="grid grid-cols-2 gap-[12px]">
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">名称</span>
+          <Box component="div" sx={{"display":"flex","maxHeight":'60vh',"flexDirection":"column","gap":'16px',"overflowY":"auto","px":'24px',"pb":'20px'}}>
+            <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>名称</Box>
                 <Input
                   value={formValues.name}
                   onChange={(e) => setFormValues((prev) => ({ ...prev, name: e.target.value }))}
-                  className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-                />
-              </label>
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">显示名</span>
+                  sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+                 />
+              </Box>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>显示名</Box>
                 <Input
                   value={formValues.display_name}
                   onChange={(e) => setFormValues((prev) => ({ ...prev, display_name: e.target.value }))}
-                  className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-                />
-              </label>
-            </div>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">描述</span>
+                  sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+                 />
+              </Box>
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>描述</Box>
               <Textarea
                 value={formValues.description}
                 onChange={(e) => setFormValues((prev) => ({ ...prev, description: e.target.value }))}
                 rows={2}
-                className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <div className="grid grid-cols-2 gap-[12px]">
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">分桶</span>
+                sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>分桶</Box>
                 <Input
                   value={formValues.bucket}
                   onChange={(e) => setFormValues((prev) => ({ ...prev, bucket: e.target.value }))}
-                  className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-                />
-              </label>
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">类型</span>
+                  sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+                 />
+              </Box>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>类型</Box>
                 <Select
                   value={formValues.tool_type}
                   onValueChange={(value) =>
                     setFormValues((prev) => ({ ...prev, tool_type: value as 'http' | 'mcp' }))
                   }
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择类型" />
+                  <SelectTrigger sx={{"width":'100%'}}>
+                    <SelectValue placeholder="选择类型"  />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="http">HTTP 工具</SelectItem>
                     <SelectItem value="mcp">MCP 工具</SelectItem>
                   </SelectContent>
                 </Select>
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-[12px]">
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">HTTP 方法</span>
+              </Box>
+            </Box>
+            <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>HTTP 方法</Box>
                 <Select
                   value={formValues.method}
                   onValueChange={(value) => setFormValues((prev) => ({ ...prev, method: value }))}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择方法" />
+                  <SelectTrigger sx={{"width":'100%'}}>
+                    <SelectValue placeholder="选择方法"  />
                   </SelectTrigger>
                   <SelectContent>
                     {['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((m) => (
@@ -700,55 +702,55 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
                     ))}
                   </SelectContent>
                 </Select>
-              </label>
-              <label className="flex flex-col gap-[6px]">
-                <span className="text-[12px] text-[#464c5e]">URL</span>
+              </Box>
+              <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+                <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>URL</Box>
                 <Input
                   value={formValues.url}
                   onChange={(e) => setFormValues((prev) => ({ ...prev, url: e.target.value }))}
-                  className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-                />
-              </label>
-            </div>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">请求头 (JSON)</span>
+                  sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+                 />
+              </Box>
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>请求头 (JSON)</Box>
               <Textarea
                 value={formValues.headers}
                 onChange={(e) => setFormValues((prev) => ({ ...prev, headers: e.target.value }))}
                 rows={3}
-                className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">Input Schema (JSON)</span>
+                sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>Input Schema (JSON)</Box>
               <Textarea
                 value={formValues.input_schema}
                 onChange={(e) => setFormValues((prev) => ({ ...prev, input_schema: e.target.value }))}
                 rows={3}
-                className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">Output Schema (JSON)</span>
+                sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>Output Schema (JSON)</Box>
               <Textarea
                 value={formValues.output_schema}
                 onChange={(e) => setFormValues((prev) => ({ ...prev, output_schema: e.target.value }))}
                 rows={3}
-                className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex items-center gap-[8px]">
+                sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
               <Switch
                 checked={formValues.enabled}
                 onCheckedChange={(checked) => setFormValues((prev) => ({ ...prev, enabled: checked }))}
-              />
-              <span className="text-[12px] text-[#464c5e]">启用工具</span>
-            </label>
-          </div>
-          <DialogFooter className="flex items-center justify-end gap-[8px] border-t border-[#f2f3f7] px-[24px] py-[12px]">
+               />
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>启用工具</Box>
+            </Box>
+          </Box>
+          <DialogFooter sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px',"borderTop":"1px solid","borderColor":'divider',"px":'24px',"py":'12px'}}>
             <UIButton
               variant="outline"
-              className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => setCreateOpen(false)}
               disabled={saving}
             >
@@ -768,19 +770,19 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !deleting && !open && setDeleteTarget(null)}
-        title={deleteTarget ? <>删除工具 <strong className="ml-[4px]">{deleteTarget.name}</strong></> : '删除工具'}
+        title={deleteTarget ? <>删除工具 <Box component="strong" sx={{"ml":'4px'}}>{deleteTarget.name}</Box></> : '删除工具'}
         description="删除后该工具将无法被员工调用。"
         confirmText="删除"
         loading={deleting}
         onConfirm={() => void confirmDelete()}
-      />
-    </div>
+       />
+    </Box>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sub pages: ToolEditorPage (new/edit), McpServerEditorPage, ToolTestPage
-// ---------------------------------------------------------------------------
+//
+//
+//
 
 type ToolEditorProps = {
   mode: 'new' | 'edit';
@@ -876,7 +878,7 @@ function ToolEditorPage({ mode, currentUser, onLogout }: ToolEditorProps) {
   }
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]" aria-busy={loading}>
+    <Box component="div" aria-busy={loading} sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={isEdit ? '编辑工具' : '新建工具'}
         description="配置 HTTP 工具的调用地址、参数与 schema。"
@@ -887,15 +889,15 @@ function ToolEditorPage({ mode, currentUser, onLogout }: ToolEditorProps) {
             返回列表
           </OutlineActionButton>
         }
-      />
+       />
       <ToolForm
         values={values}
         onChange={setValues}
         onCancel={() => navigate('/staff/tools')}
         onSave={() => void save()}
         saving={saving}
-      />
-    </div>
+       />
+    </Box>
   );
 }
 
@@ -919,65 +921,65 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
   const set = <K extends keyof ToolFormValues>(key: K, value: ToolFormValues[K]) =>
     onChange({ ...values, [key]: value });
   return (
-    <section className="flex flex-col gap-[16px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-      <div className="grid grid-cols-2 gap-[12px]">
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">名称</span>
+    <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+      <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>名称</Box>
           <Input
             value={values.name}
             onChange={(e) => set('name', e.target.value)}
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">显示名</span>
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>显示名</Box>
           <Input
             value={values.display_name}
             onChange={(e) => set('display_name', e.target.value)}
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-      </div>
-      <label className="flex flex-col gap-[6px]">
-        <span className="text-[12px] text-[#464c5e]">描述</span>
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+      </Box>
+      <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>描述</Box>
         <Textarea
           value={values.description}
           onChange={(e) => set('description', e.target.value)}
           rows={2}
-          className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-        />
-      </label>
-      <div className="grid grid-cols-2 gap-[12px]">
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">分桶</span>
+          sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+         />
+      </Box>
+      <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>分桶</Box>
           <Input
             value={values.bucket}
             onChange={(e) => set('bucket', e.target.value)}
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">类型</span>
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>类型</Box>
           <Select
             value={values.tool_type}
             onValueChange={(value) => set('tool_type', value as 'http' | 'mcp')}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue />
+            <SelectTrigger sx={{"width":'100%'}}>
+              <SelectValue  />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="http">HTTP 工具</SelectItem>
               <SelectItem value="mcp">MCP 工具</SelectItem>
             </SelectContent>
           </Select>
-        </label>
-      </div>
-      <div className="grid grid-cols-2 gap-[12px]">
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">HTTP 方法</span>
+        </Box>
+      </Box>
+      <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>HTTP 方法</Box>
           <Select value={values.method} onValueChange={(value) => set('method', value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
+            <SelectTrigger sx={{"width":'100%'}}>
+              <SelectValue  />
             </SelectTrigger>
             <SelectContent>
               {['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((m) => (
@@ -985,42 +987,42 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
               ))}
             </SelectContent>
           </Select>
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">URL</span>
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>URL</Box>
           <Input
             value={values.url}
             onChange={(e) => set('url', e.target.value)}
-            className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-      </div>
-      <label className="flex flex-col gap-[6px]">
-        <span className="text-[12px] text-[#464c5e]">Input Schema (JSON)</span>
+            sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+      </Box>
+      <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>Input Schema (JSON)</Box>
         <Textarea
           value={values.input_schema}
           onChange={(e) => set('input_schema', e.target.value)}
           rows={4}
-          className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-        />
-      </label>
-      <label className="flex flex-col gap-[6px]">
-        <span className="text-[12px] text-[#464c5e]">Output Schema (JSON)</span>
+          sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+         />
+      </Box>
+      <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>Output Schema (JSON)</Box>
         <Textarea
           value={values.output_schema}
           onChange={(e) => set('output_schema', e.target.value)}
           rows={4}
-          className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-        />
-      </label>
-      <label className="flex items-center gap-[8px]">
-        <Switch checked={values.enabled} onCheckedChange={(checked) => set('enabled', checked)} />
-        <span className="text-[12px] text-[#464c5e]">启用工具</span>
-      </label>
-      <div className="flex items-center justify-end gap-[8px]">
+          sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+         />
+      </Box>
+      <Box component="label" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+        <Switch checked={values.enabled} onCheckedChange={(checked) => set('enabled', checked)}  />
+        <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>启用工具</Box>
+      </Box>
+      <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px'}}>
         <UIButton
           variant="outline"
-          className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+          sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
           onClick={onCancel}
         >
           取消
@@ -1032,8 +1034,8 @@ function ToolForm({ values, onChange, onCancel, onSave, saving }: ToolFormProps)
         >
           {saving ? '保存中…' : '保存'}
         </UIButton>
-      </div>
-    </section>
+      </Box>
+    </Box>
   );
 }
 
@@ -1104,10 +1106,10 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
         tools: number;
         error?: string;
       };
-      const res = await api.post<{ code: number; data: McpSyncData; message: string }>(
+      const res = await api.post<McpSyncData>(
         `/mcp-servers/${toolId}/sync?tenant_id=${TENANT_ID}`,
       );
-      const data = res?.data;
+      const data = res;
       if (data?.implemented === false) {
         notify.warning(data.error || 'MCP 工具同步尚未实现');
         return;
@@ -1170,7 +1172,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
     setValues((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]" aria-busy={loading}>
+    <Box component="div" aria-busy={loading} sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title={isEdit ? '编辑 MCP 服务器' : '新建 MCP 服务器'}
         description="配置 MCP Server 连接信息，保存后可「发现并同步工具」将远端工具导入数字员工工具目录。"
@@ -1181,52 +1183,52 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
             返回列表
           </OutlineActionButton>
         }
-      />
-      <section className="flex flex-col gap-[16px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-        <div className="grid grid-cols-2 gap-[12px]">
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">名称</span>
+       />
+      <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'16px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+        <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>名称</Box>
             <Input
               value={values.name}
               onChange={(e) => set('name', e.target.value)}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
-          </label>
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">显示名</span>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
+          </Box>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>显示名</Box>
             <Input
               value={values.display_name}
               onChange={(e) => set('display_name', e.target.value)}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
-          </label>
-        </div>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">描述</span>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
+          </Box>
+        </Box>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>描述</Box>
           <Textarea
             value={values.description}
             onChange={(e) => set('description', e.target.value)}
             rows={2}
-            className="rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <div className="grid grid-cols-2 gap-[12px]">
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">分桶</span>
+            sx={{"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>分桶</Box>
             <Input
               value={values.bucket}
               onChange={(e) => set('bucket', e.target.value)}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
-          </label>
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">传输方式</span>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
+          </Box>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>传输方式</Box>
             <Select
               value={values.transport}
               onValueChange={(value) => set('transport', value as MCPTransport)}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
+              <SelectTrigger sx={{"width":'100%'}}>
+                <SelectValue  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="streamable_http">Streamable HTTP</SelectItem>
@@ -1235,55 +1237,55 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
                 <SelectItem value="builtin">内置 Demo</SelectItem>
               </SelectContent>
             </Select>
-          </label>
-        </div>
+          </Box>
+        </Box>
         {values.transport === 'stdio' ? (
-          <div className="grid grid-cols-2 gap-[12px]">
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">命令</span>
+          <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(2, minmax(0,1fr))","gap":'12px'}}>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>命令</Box>
               <Input
                 value={values.command}
                 onChange={(e) => set('command', e.target.value)}
-                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-            <label className="flex flex-col gap-[6px]">
-              <span className="text-[12px] text-[#464c5e]">参数（空格分隔）</span>
+                sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+            <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+              <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>参数（空格分隔）</Box>
               <Input
                 value={values.args}
                 onChange={(e) => set('args', e.target.value)}
-                className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-              />
-            </label>
-          </div>
+                sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+               />
+            </Box>
+          </Box>
         ) : (
-          <label className="flex flex-col gap-[6px]">
-            <span className="text-[12px] text-[#464c5e]">URL</span>
+          <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+            <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>URL</Box>
             <Input
               value={values.url}
               onChange={(e) => set('url', e.target.value)}
-              className="h-[34px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[14px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
-          </label>
+              sx={{"height":'34px',"borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'14px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
+          </Box>
         )}
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] text-[#464c5e]">环境变量 (JSON)</span>
+        <Box component="label" sx={{"display":"flex","flexDirection":"column","gap":'6px'}}>
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>环境变量 (JSON)</Box>
           <Textarea
             value={values.env}
             onChange={(e) => set('env', e.target.value)}
             rows={4}
-            className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-          />
-        </label>
-        <label className="flex items-center gap-[8px]">
-          <Switch checked={values.enabled} onCheckedChange={(checked) => set('enabled', checked)} />
-          <span className="text-[12px] text-[#464c5e]">启用 MCP 服务器</span>
-        </label>
-        <div className="flex items-center justify-end gap-[8px]">
+            sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+           />
+        </Box>
+        <Box component="label" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+          <Switch checked={values.enabled} onCheckedChange={(checked) => set('enabled', checked)}  />
+          <Box component="span" sx={{"fontSize":'12px',"color":"#464c5e"}}>启用 MCP 服务器</Box>
+        </Box>
+        <Box component="div" sx={{"display":"flex","alignItems":"center","justifyContent":"flex-end","gap":'8px'}}>
           {isEdit && toolId ? (
             <UIButton
               variant="outline"
-              className="h-[32px] min-w-[120px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+              sx={{"height":'32px',"minWidth":'120px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => void syncNow()}
               disabled={syncing || saving}
             >
@@ -1292,7 +1294,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
           ) : null}
           <UIButton
             variant="outline"
-            className="h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] text-[#464c5e] hover:bg-[#f6f6f6]"
+            sx={{"height":'32px',"minWidth":'80px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
             onClick={() => navigate('/staff/tools')}
           >
             取消
@@ -1304,26 +1306,26 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
           >
             {saving ? '保存中…' : '保存'}
           </UIButton>
-        </div>
-      </section>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
 export function ToolNewPage(props: ToolPageProps = {}) {
-  return <ToolEditorPage mode="new" {...props} />;
+  return <ToolEditorPage mode="new" {...props}  />;
 }
 
 export function ToolEditPage(props: ToolPageProps = {}) {
-  return <ToolEditorPage mode="edit" {...props} />;
+  return <ToolEditorPage mode="edit" {...props}  />;
 }
 
 export function McpServerNewPage(props: ToolPageProps = {}) {
-  return <McpServerEditorPage mode="new" {...props} />;
+  return <McpServerEditorPage mode="new" {...props}  />;
 }
 
 export function McpServerEditPage(props: ToolPageProps = {}) {
-  return <McpServerEditorPage mode="edit" {...props} />;
+  return <McpServerEditorPage mode="edit" {...props}  />;
 }
 
 export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
@@ -1363,7 +1365,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
   }
 
   return (
-    <div className="flex flex-col gap-[20px] px-[24px] py-[20px]" aria-busy={loading}>
+    <Box component="div" aria-busy={loading} sx={{"display":"flex","flexDirection":"column","gap":'20px',"px":'24px',"py":'20px'}}>
       <AppHeader
         title="工具测试"
         description="用测试参数直接调用已保存工具。"
@@ -1374,31 +1376,31 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
             返回列表
           </OutlineActionButton>
         }
-      />
+       />
       {tool ? (
-        <div className="grid grid-cols-1 gap-[20px] xl:grid-cols-2">
-          <section className="flex flex-col gap-[12px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-            <div className="flex items-center gap-[8px]">
-              <Wrench className="size-[16px] text-[#858b9c]" />
-              <h3 className="text-[14px] font-medium text-[#18181a]">{tool.display_name || tool.name}</h3>
-            </div>
-            <p className="text-[12px] text-[#858b9c]">{tool.description || '暂无描述'}</p>
-            <div className="flex flex-wrap gap-[8px] text-[12px] text-[#464c5e]">
+        <Box component="div" sx={{"display":"grid","gridTemplateColumns":"repeat(1, minmax(0,1fr))","gap":'20px',"xl":{"gridTemplateColumns":"repeat(2, minmax(0,1fr))"}}}>
+          <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'12px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+            <Box component="div" sx={{"display":"flex","alignItems":"center","gap":'8px'}}>
+              <Wrench  size={16} color="#858b9c" />
+              <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>{tool.display_name || tool.name}</Box>
+            </Box>
+            <Box component="p" sx={{"fontSize":'12px',"color":"#858b9c"}}>{tool.description || '暂无描述'}</Box>
+            <Box component="div" sx={{"display":"flex","flexWrap":"wrap","gap":'8px',"fontSize":'12px',"color":"#464c5e"}}>
               <span>分桶：{tool.bucket || '未分桶'}</span>
               <span>·</span>
               <span>类型：{tool.tool_type === 'mcp' ? 'MCP' : 'HTTP'}</span>
               <span>·</span>
               <span>调用：{tool.method} {tool.url}</span>
-            </div>
-          </section>
-          <section className="flex flex-col gap-[12px] rounded-[14px] border border-[#f2f3f7] bg-white p-[20px]">
-            <h3 className="text-[14px] font-medium text-[#18181a]">测试参数 (JSON)</h3>
+            </Box>
+          </Box>
+          <Box component="section" sx={{"display":"flex","flexDirection":"column","gap":'12px',"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'20px'}}>
+            <Box component="h3" sx={{"fontSize":'14px',"fontWeight":500,"color":"#18181a"}}>测试参数 (JSON)</Box>
             <Textarea
               value={argumentsText}
               onChange={(e) => setArgumentsText(e.target.value)}
               rows={6}
-              className="font-mono rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#18181a] focus-visible:border-[#18181a] focus-visible:ring-0"
-            />
+              sx={{"fontFamily":"monospace","borderRadius":'10px',"border":"0.5px solid","borderColor":'divider',"bgcolor":'background.paper',"fontSize":'12px',"color":"#18181a","&:focus-visible":{"borderColor":"#18181a","boxShadow":"none"}}}
+             />
             <UIButton
               type="button"
               sx={{ ...staffTokens.primaryButton, minWidth: '80px', gap: '6px', px: '12px', '&:disabled': { opacity: 0.5 } }}
@@ -1408,17 +1410,17 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
               {testing ? '测试中…' : '运行测试'}
             </UIButton>
             {resultText ? (
-              <pre className="max-h-[300px] overflow-auto rounded-[10px] bg-[#f6f6f6] p-[12px] font-mono text-[12px] text-[#18181a]">
+              <Box component="pre" sx={{"maxHeight":'300px',"overflow":"auto","borderRadius":'10px',"bgcolor":"#f6f6f6","p":'12px',"fontFamily":"monospace","fontSize":'12px',"color":"#18181a"}}>
                 {resultText}
-              </pre>
+              </Box>
             ) : null}
-          </section>
-        </div>
+          </Box>
+        </Box>
       ) : (
-        <div className="rounded-[14px] border border-[#f2f3f7] bg-white p-[24px] text-center text-[12px] text-[#858b9c]">
+        <Box component="div" sx={{"borderRadius":'14px',"border":"1px solid","borderColor":'divider',"bgcolor":'background.paper',"p":'24px',"textAlign":"center","fontSize":'12px',"color":"#858b9c"}}>
           {loading ? '加载中…' : '工具不存在或已删除'}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

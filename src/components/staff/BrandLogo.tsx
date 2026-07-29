@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import { staffdeckContent } from '../../assets/staffdeck-assets';
 
 export type BrandLogoProps = {
   /** Hide the "StaffDeck" wordmark and only render the logo mark. */
@@ -24,34 +25,18 @@ export default function BrandLogo({
     >
       <Box
         aria-label="StaffDeck"
+        component="img"
+        src={staffdeckContent.staffdeckLogoMark}
+        alt="StaffDeck"
         sx={{
-          display: 'grid',
-          placeItems: 'center',
-          borderRadius: '6px',
           width: markSize,
           height: markSize,
-          background: 'linear-gradient(135deg, #527aff 0%, #105acf 100%)',
-          color: '#fff',
+          borderRadius: '6px',
+          objectFit: 'contain',
           flexShrink: 0,
+          bgcolor: '#f3f4f6',
         }}
-      >
-        <svg
-          width={markSize * 0.6}
-          height={markSize * 0.6}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M12 4l7 4v8l-7 4-7-4V8l7-4Z" />
-          <path d="M12 12l7-4" />
-          <path d="M12 12v8" />
-          <path d="M12 12L5 8" />
-        </svg>
-      </Box>
+      />
       {!markOnly && (
         <Box
           className={wordmarkClassName}

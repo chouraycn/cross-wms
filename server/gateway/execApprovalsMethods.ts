@@ -141,4 +141,10 @@ export function registerExecApprovalsMethods(registry: GatewayMethodRegistry): v
   registry.register('execApprovals.approve', execApprovalsApprove);
   registry.register('execApprovals.deny', execApprovalsDeny);
   registry.register('execApprovals.getPolicy', execApprovalsGetPolicy);
+
+  // 命名对齐别名：exec.approvals.* 与 execApprovals.* 等价
+  registry.register('exec.approvals.list', execApprovalsList);
+  registry.register('exec.approvals.approve', execApprovalsApprove);
+  registry.register('exec.approvals.deny', execApprovalsDeny);
+  registry.register('exec.approvals.getPolicy', execApprovalsGetPolicy);
 }

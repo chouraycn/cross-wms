@@ -108,4 +108,9 @@ export function registerPluginApprovalMethods(registry: GatewayMethodRegistry): 
   registry.register('pluginApproval.list', pluginApprovalList);
   registry.register('pluginApproval.approve', pluginApprovalApprove);
   registry.register('pluginApproval.deny', pluginApprovalDeny);
+
+  // 命名对齐别名：plugin.approval.* 与 pluginApproval.* 等价
+  registry.register('plugin.approval.list', pluginApprovalList);
+  registry.register('plugin.approval.approve', pluginApprovalApprove);
+  registry.register('plugin.approval.deny', pluginApprovalDeny);
 }

@@ -6,11 +6,14 @@
  *    （kysely-sync.ts 的 executeSqliteQuerySync 返回空结果集，无法使用）
  *  - task-registry 查询函数直接从 SQLite 读取，无需维护进程内索引
  *  - 写操作在事务中执行，保证原子性
- *  - 尚未移植的模块（task-flow-registry、task-executor 等）保留 stub 占位
+ *  - task-executor 函数提供最小可用实现（创建/更新任务记录，不含运行时取消）
+ *  - task-flow-registry 函数委托给 ./task-flow-registry.ts（含 SQLite 持久化）
+ *  - task-flow-registry.audit 函数委托给 ./task-flow-registry.audit.ts
  *
  * 参考 openclaw/src/tasks/{task-registry,task-registry.store.sqlite,
  * runtime-internal,task-flow-registry,task-flow-registry.audit,task-executor}.ts
  */
+import crypto from "node:crypto";
 import {
   closeStateDatabase,
   openStateDatabase,
@@ -29,8 +32,11 @@ import {
   parseTaskScopeKind,
   parseTaskStatus,
   type TaskDeliveryState,
+  type TaskDeliveryStatus,
   type TaskNotifyPolicy,
   type TaskRecord,
+  type TaskRuntime,
+  type TaskScopeKind,
   type TaskStatus,
   type TaskTerminalOutcome,
 } from "./task-registry.types.js";
@@ -47,6 +53,19 @@ import type {
   DetachedRunningTaskCreateParams,
   DetachedTaskStartParams,
 } from "./detached-task-runtime-contract.js";
+import {
+  deleteTaskFlowRecordById as deleteTaskFlowRecordByIdFromRegistry,
+  getTaskFlowById as getTaskFlowByIdFromRegistry,
+  listTaskFlowRecords as listTaskFlowRecordsFromRegistry,
+  updateFlowRecordByIdExpectedRevision as updateFlowRecordByIdExpectedRevisionFromRegistry,
+  type TaskFlowUpdateResult,
+} from "./task-flow-registry.js";
+import {
+  listTaskFlowAuditFindings as listTaskFlowAuditFindingsFromAudit,
+  summarizeTaskFlowAuditFindings as summarizeTaskFlowAuditFindingsFromAudit,
+  type TaskFlowAuditFinding,
+  type TaskFlowAuditSummary,
+} from "./task-flow-registry.audit.js";
 
 // ============================================================================
 // 行类型与常量
@@ -512,19 +531,64 @@ export function updateTaskNotifyPolicyById(params: {
 }
 
 // ============================================================================
-// runtime-internal.ts — cancelTaskById stub（未移植）
+// runtime-internal.ts — cancelTaskById（移植自 openclaw/src/tasks/task-registry.ts）
 // ============================================================================
+// 简化实现：仅更新注册表状态为 cancelled，不执行运行时特定的取消操作
+// （ACP session 取消 / subagent kill / cron abort 等）。
+// 运行时取消由 detached-task-runtime.ts 注册的 lifecycle runtime 负责。
 
-/** 取消任务 stub：返回未找到。 */
+/** 取消任务：查找任务并标记为 cancelled。 */
 export async function cancelTaskById(
-  _params: DetachedTaskCancelParams,
+  params: DetachedTaskCancelParams,
 ): Promise<DetachedTaskCancelResult> {
-  return { found: false, cancelled: false, reason: "Task not found." };
+  const task = getTaskById(params.taskId);
+  if (!task) {
+    return { found: false, cancelled: false, reason: "Task not found." };
+  }
+  if (
+    task.status === "succeeded" ||
+    task.status === "failed" ||
+    task.status === "timed_out" ||
+    task.status === "lost" ||
+    task.status === "cancelled"
+  ) {
+    return {
+      found: true,
+      cancelled: false,
+      reason: "Task is already terminal.",
+      task,
+    };
+  }
+  const now = Date.now();
+  const updated = markTaskTerminalById({
+    taskId: task.taskId,
+    status: "cancelled",
+    endedAt: now,
+    lastEventAt: now,
+    error: params.reason?.trim() || "Cancelled by operator.",
+  });
+  if (!updated) {
+    return {
+      found: true,
+      cancelled: false,
+      reason: "Task persistence failed.",
+      task,
+    };
+  }
+  return {
+    found: true,
+    cancelled: true,
+    task: updated,
+  };
 }
 
 // ============================================================================
-// task-flow-registry.ts — 任务流程注册表 stub（未移植，792行）
+// task-flow-registry.ts — 任务流程注册表（委托给 ./task-flow-registry.ts）
 // ============================================================================
+// 真实实现在 ./task-flow-registry.ts（含 SQLite 持久化），此处仅做委托转发。
+// 参考 openclaw/src/tasks/task-flow-registry.ts。
+
+export type { TaskFlowUpdateResult } from "./task-flow-registry.js";
 
 export type FlowRecordPatch = Partial<
   Pick<
@@ -553,72 +617,46 @@ export type FlowRecordPatch = Partial<
   endedAt?: number | null;
 };
 
-export type TaskFlowUpdateResult =
-  | {
-      applied: true;
-      flow: TaskFlowRecord;
-    }
-  | {
-      applied: false;
-      reason: "not_found" | "revision_conflict" | "persist_failed";
-      current?: TaskFlowRecord;
-    };
-
-/** 获取流程记录 stub：返回 undefined。 */
-export function getTaskFlowById(_flowId: string): TaskFlowRecord | undefined {
-  return undefined;
+/** 获取流程记录：委托给 ./task-flow-registry.ts（含 SQLite 持久化）。 */
+export function getTaskFlowById(flowId: string): TaskFlowRecord | undefined {
+  return getTaskFlowByIdFromRegistry(flowId);
 }
 
-/** 列出所有流程记录 stub：返回空数组。 */
+/** 列出所有流程记录：委托给 ./task-flow-registry.ts。 */
 export function listTaskFlowRecords(): TaskFlowRecord[] {
-  return [];
+  return listTaskFlowRecordsFromRegistry();
 }
 
-/** 删除流程记录 stub：返回 false（未找到）。 */
-export function deleteTaskFlowRecordById(_flowId: string): boolean {
-  return false;
+/** 删除流程记录：委托给 ./task-flow-registry.ts。 */
+export function deleteTaskFlowRecordById(flowId: string): boolean {
+  return deleteTaskFlowRecordByIdFromRegistry(flowId);
 }
 
-/** 期望修订版更新流程记录 stub：返回 not_found。 */
-export function updateFlowRecordByIdExpectedRevision(_params: {
+/** 期望修订版更新流程记录（带乐观锁）：委托给 ./task-flow-registry.ts。 */
+export function updateFlowRecordByIdExpectedRevision(params: {
   flowId: string;
   expectedRevision: number;
   patch: FlowRecordPatch;
 }): TaskFlowUpdateResult {
-  return { applied: false, reason: "not_found" };
+  return updateFlowRecordByIdExpectedRevisionFromRegistry(
+    params as Parameters<typeof updateFlowRecordByIdExpectedRevisionFromRegistry>[0],
+  );
 }
 
 // ============================================================================
-// task-flow-registry.audit.ts — 任务流程审计 stub（未移植，288行）
+// task-flow-registry.audit.ts — 任务流程审计（委托给 ./task-flow-registry.audit.ts）
 // ============================================================================
+// 真实实现在 ./task-flow-registry.audit.ts，此处仅做委托转发。
+// 参考 openclaw/src/tasks/task-flow-registry.audit.ts。
 
-export type TaskFlowAuditCode =
-  | "restore_failed"
-  | "stale_running"
-  | "stale_waiting"
-  | "stale_blocked"
-  | "cancel_stuck"
-  | "missing_linked_tasks"
-  | "blocked_task_missing"
-  | "inconsistent_timestamps";
+export type {
+  TaskFlowAuditCode,
+  TaskFlowAuditFinding,
+  TaskFlowAuditSummary,
+} from "./task-flow-registry.audit.js";
 
-export type TaskFlowAuditFinding = {
-  severity: "warn" | "error";
-  code: TaskFlowAuditCode;
-  detail: string;
-  ageMs?: number;
-  flow?: TaskFlowRecord;
-};
-
-export type TaskFlowAuditSummary = {
-  total: number;
-  warnings: number;
-  errors: number;
-  byCode: Record<TaskFlowAuditCode, number>;
-};
-
-/** 列出流程审计发现 stub：返回空数组。 */
-export function listTaskFlowAuditFindings(_options?: {
+/** 列出流程审计发现：委托给 ./task-flow-registry.audit.ts。 */
+export function listTaskFlowAuditFindings(options?: {
   now?: number;
   flows?: TaskFlowRecord[];
   staleRunningMs?: number;
@@ -626,74 +664,344 @@ export function listTaskFlowAuditFindings(_options?: {
   staleBlockedMs?: number;
   cancelStuckMs?: number;
 }): TaskFlowAuditFinding[] {
-  return [];
+  return listTaskFlowAuditFindingsFromAudit(options);
 }
 
-/** 汇总流程审计发现 stub：返回空汇总。 */
+/** 汇总流程审计发现：委托给 ./task-flow-registry.audit.ts。 */
 export function summarizeTaskFlowAuditFindings(
-  _findings: Iterable<TaskFlowAuditFinding>,
+  findings: Iterable<TaskFlowAuditFinding>,
 ): TaskFlowAuditSummary {
-  return {
-    total: 0,
-    warnings: 0,
-    errors: 0,
-    byCode: {
-      restore_failed: 0,
-      stale_running: 0,
-      stale_waiting: 0,
-      stale_blocked: 0,
-      cancel_stuck: 0,
-      missing_linked_tasks: 0,
-      blocked_task_missing: 0,
-      inconsistent_timestamps: 0,
-    },
-  };
+  return summarizeTaskFlowAuditFindingsFromAudit(findings);
 }
 
 // ============================================================================
-// task-executor.ts — 分离任务执行器 stub（cross-wms task-executor.ts 实现不同）
+// task-executor.ts — 分离任务执行器（移植自 openclaw/src/tasks/task-executor.ts）
 // ============================================================================
+// 最小可用实现：创建/更新任务记录，通过 SQLite 持久化。
+// 不含运行时特定操作（ACP session 管理 / subagent kill / cron abort），
+// 这些由 detached-task-runtime.ts 注册的 lifecycle runtime 负责。
 
-/** 创建排队任务运行 stub：返回 null。 */
-export function createQueuedTaskRun(_params: DetachedTaskCreateParams): TaskRecord | null {
-  return null;
+/** 解析 ownerKey（移植自 openclaw task-registry.ts resolveTaskOwnerKey）。 */
+function resolveTaskOwnerKey(params: {
+  requesterSessionKey?: string;
+  ownerKey?: string;
+}): string {
+  const ownerKey = normalizeOptionalString(params.ownerKey);
+  if (ownerKey) {
+    return ownerKey;
+  }
+  const sessionKey = normalizeOptionalString(params.requesterSessionKey);
+  return sessionKey ?? "global";
 }
 
-/** 创建运行中任务运行 stub：返回 null。 */
-export function createRunningTaskRun(
-  _params: DetachedRunningTaskCreateParams,
+/** 解析 scopeKind（移植自 openclaw task-registry.ts resolveTaskScopeKind）。 */
+function resolveTaskScopeKind(params: {
+  scopeKind?: TaskScopeKind;
+  requesterSessionKey?: string;
+}): TaskScopeKind {
+  if (params.scopeKind === "system" || params.scopeKind === "session") {
+    return params.scopeKind;
+  }
+  const sessionKey = normalizeOptionalString(params.requesterSessionKey);
+  return sessionKey ? "session" : "system";
+}
+
+/** 从创建参数构建 TaskRecord 并持久化到 SQLite。 */
+function createTaskRecordFromParams(
+  params: DetachedTaskCreateParams & {
+    status?: TaskStatus;
+    startedAt?: number;
+    lastEventAt?: number;
+    progressSummary?: string | null;
+  },
 ): TaskRecord | null {
-  return null;
+  const now = Date.now();
+  const requesterSessionKey =
+    normalizeOptionalString(params.requesterSessionKey) ??
+    (params.scopeKind === "system" ? "" : undefined) ??
+    "";
+  const scopeKind = resolveTaskScopeKind({
+    scopeKind: params.scopeKind,
+    requesterSessionKey,
+  });
+  const ownerKey = resolveTaskOwnerKey({
+    requesterSessionKey,
+    ownerKey: params.ownerKey,
+  });
+  const status: TaskStatus = params.status ?? "queued";
+  const deliveryStatus: TaskDeliveryStatus =
+    params.deliveryStatus ?? (scopeKind === "system" ? "not_applicable" : "pending");
+  const notifyPolicy: TaskNotifyPolicy = params.notifyPolicy ?? "state_changes";
+  const lastEventAt = params.lastEventAt ?? params.startedAt ?? now;
+  const taskId = crypto.randomUUID();
+  const record: TaskRecord = {
+    taskId,
+    runtime: params.runtime,
+    ...(params.taskKind ? { taskKind: params.taskKind } : {}),
+    ...(params.sourceId ? { sourceId: params.sourceId } : {}),
+    requesterSessionKey,
+    ownerKey,
+    scopeKind,
+    ...(params.childSessionKey ? { childSessionKey: params.childSessionKey } : {}),
+    ...(params.parentFlowId ? { parentFlowId: params.parentFlowId } : {}),
+    ...(params.parentTaskId ? { parentTaskId: params.parentTaskId } : {}),
+    ...(params.agentId ? { agentId: params.agentId } : {}),
+    ...(params.requesterAgentId ? { requesterAgentId: params.requesterAgentId } : {}),
+    ...(params.runId ? { runId: params.runId } : {}),
+    ...(params.label ? { label: params.label } : {}),
+    task: params.task,
+    status,
+    deliveryStatus,
+    notifyPolicy,
+    createdAt: now,
+    ...(params.startedAt != null ? { startedAt: params.startedAt } : {}),
+    lastEventAt,
+    ...(params.progressSummary ? { progressSummary: params.progressSummary } : {}),
+  };
+  if (isTerminalTaskStatus(record.status) && typeof record.cleanupAfter !== "number") {
+    record.cleanupAfter = resolveTaskCleanupAfter(record);
+  }
+  try {
+    upsertTaskRegistryRecordToSqlite(record);
+  } catch {
+    return null;
+  }
+  // 持久化投递状态（如果有 requesterOrigin）
+  if (params.requesterOrigin) {
+    try {
+      upsertTaskDeliveryStateToSqlite({
+        taskId,
+        requesterOrigin: params.requesterOrigin,
+      });
+    } catch {
+      // 投递状态持久化失败不阻塞任务创建
+    }
+  }
+  return record;
 }
 
-/** 启动任务运行 stub：返回空数组。 */
-export function startTaskRunByRunId(_params: DetachedTaskStartParams): TaskRecord[] {
-  return [];
+/** 按 runId 查找并更新任务状态（移植自 openclaw task-registry.ts updateTaskStateByRunId）。 */
+function updateTaskStateByRunId(params: {
+  runId: string;
+  runtime?: TaskRuntime;
+  sessionKey?: string;
+  status?: TaskStatus;
+  startedAt?: number;
+  endedAt?: number;
+  lastEventAt?: number;
+  error?: string;
+  progressSummary?: string | null;
+  terminalSummary?: string | null;
+  terminalOutcome?: TaskTerminalOutcome | null;
+}): TaskRecord[] {
+  const runId = normalizeOptionalString(params.runId);
+  if (!runId) {
+    return [];
+  }
+  // 通过 SQLite 查找匹配 runId 的任务
+  const { db } = openStateDatabase();
+  const rows = db
+    .prepare(`SELECT ${TASK_RUN_COLUMNS} FROM task_runs WHERE run_id = ? ORDER BY created_at ASC`)
+    .all(runId) as TaskRegistryRow[];
+  let matches = rows.map(rowToTaskRecord);
+  // 按 runtime 过滤
+  if (params.runtime) {
+    matches = matches.filter((task) => task.runtime === params.runtime);
+  }
+  // 按 sessionKey 过滤
+  const sessionKey = normalizeOptionalString(params.sessionKey);
+  if (sessionKey) {
+    const childMatches = matches.filter(
+      (task) => normalizeOptionalString(task.childSessionKey) === sessionKey,
+    );
+    if (childMatches.length > 0) {
+      matches = childMatches;
+    } else {
+      const ownerMatches = matches.filter(
+        (task) => task.scopeKind === "session" && normalizeOptionalString(task.ownerKey) === sessionKey,
+      );
+      matches = ownerMatches;
+    }
+  }
+  if (matches.length === 0) {
+    return [];
+  }
+  const updated: TaskRecord[] = [];
+  for (const current of matches) {
+    const patch: Partial<TaskRecord> = {};
+    const nextStatus = params.status ?? current.status;
+    // 状态转换检查：终态任务不再更新
+    if (params.status && isTerminalTaskStatus(current.status) && current.status !== nextStatus) {
+      continue;
+    }
+    if (params.status) {
+      patch.status = nextStatus;
+    }
+    if (params.startedAt != null) {
+      patch.startedAt = params.startedAt;
+    }
+    if (params.endedAt != null) {
+      patch.endedAt = params.endedAt;
+    }
+    if (params.lastEventAt != null) {
+      patch.lastEventAt = params.lastEventAt;
+    }
+    if (params.error !== undefined) {
+      patch.error = params.error;
+    }
+    if (params.progressSummary !== undefined) {
+      patch.progressSummary = normalizeTaskSummary(params.progressSummary);
+    }
+    if (params.terminalSummary !== undefined) {
+      patch.terminalSummary = normalizeTaskSummary(params.terminalSummary);
+    }
+    if (params.terminalOutcome !== undefined) {
+      patch.terminalOutcome = resolveTaskTerminalOutcome({
+        status: nextStatus,
+        terminalOutcome: params.terminalOutcome,
+      });
+    }
+    const next = normalizeTaskTimestamps({ ...current, ...patch });
+    if (isTerminalTaskStatus(next.status) && typeof next.cleanupAfter !== "number") {
+      next.cleanupAfter = resolveTaskCleanupAfter(next);
+    }
+    try {
+      upsertTaskRegistryRecordToSqlite(next);
+      updated.push({ ...next });
+    } catch {
+      // 持久化失败跳过
+    }
+  }
+  return updated;
 }
 
-/** 记录任务进度 stub：返回空数组。 */
-export function recordTaskRunProgressByRunId(_params: DetachedTaskProgressParams): TaskRecord[] {
-  return [];
+/** 按 runId 查找并更新投递状态。 */
+function updateDeliveryStatusByRunId(params: {
+  runId: string;
+  runtime?: TaskRuntime;
+  sessionKey?: string;
+  deliveryStatus: TaskDeliveryStatus;
+  error?: string;
+}): TaskRecord[] {
+  const runId = normalizeOptionalString(params.runId);
+  if (!runId) {
+    return [];
+  }
+  const { db } = openStateDatabase();
+  const rows = db
+    .prepare(`SELECT ${TASK_RUN_COLUMNS} FROM task_runs WHERE run_id = ? ORDER BY created_at ASC`)
+    .all(runId) as TaskRegistryRow[];
+  let matches = rows.map(rowToTaskRecord);
+  if (params.runtime) {
+    matches = matches.filter((task) => task.runtime === params.runtime);
+  }
+  const sessionKey = normalizeOptionalString(params.sessionKey);
+  if (sessionKey) {
+    matches = matches.filter(
+      (task) =>
+        normalizeOptionalString(task.childSessionKey) === sessionKey ||
+        (task.scopeKind === "session" && normalizeOptionalString(task.ownerKey) === sessionKey),
+    );
+  }
+  const updated: TaskRecord[] = [];
+  for (const current of matches) {
+    const next: TaskRecord = {
+      ...current,
+      deliveryStatus: params.deliveryStatus,
+      lastEventAt: Date.now(),
+      ...(params.error !== undefined ? { error: params.error } : {}),
+    };
+    try {
+      upsertTaskRegistryRecordToSqlite(next);
+      updated.push({ ...next });
+    } catch {
+      // 持久化失败跳过
+    }
+  }
+  return updated;
 }
 
-/** 完成任务运行 stub：返回空数组。 */
-export function completeTaskRunByRunId(_params: DetachedTaskCompleteParams): TaskRecord[] {
-  return [];
+/** 创建排队任务运行。 */
+export function createQueuedTaskRun(params: DetachedTaskCreateParams): TaskRecord | null {
+  return createTaskRecordFromParams({ ...params, status: "queued" });
 }
 
-/** 失败任务运行 stub：返回空数组。 */
-export function failTaskRunByRunId(_params: DetachedTaskFailParams): TaskRecord[] {
-  return [];
+/** 创建运行中任务运行。 */
+export function createRunningTaskRun(
+  params: DetachedRunningTaskCreateParams,
+): TaskRecord | null {
+  return createTaskRecordFromParams({
+    ...params,
+    status: "running",
+    startedAt: params.startedAt ?? Date.now(),
+  });
 }
 
-/** 终结任务运行 stub：返回空数组。 */
-export function finalizeTaskRunByRunId(_params: DetachedTaskFinalizeParams): TaskRecord[] {
-  return [];
+/** 启动任务运行：标记为 running。 */
+export function startTaskRunByRunId(params: DetachedTaskStartParams): TaskRecord[] {
+  return updateTaskStateByRunId({
+    runId: params.runId,
+    runtime: params.runtime,
+    sessionKey: params.sessionKey,
+    status: "running",
+    startedAt: params.startedAt,
+    lastEventAt: params.lastEventAt,
+    progressSummary: params.progressSummary,
+  });
 }
 
-/** 设置分离任务投递状态 stub：返回空数组。 */
+/** 记录任务进度。 */
+export function recordTaskRunProgressByRunId(params: DetachedTaskProgressParams): TaskRecord[] {
+  return updateTaskStateByRunId({
+    runId: params.runId,
+    runtime: params.runtime,
+    sessionKey: params.sessionKey,
+    lastEventAt: params.lastEventAt,
+    progressSummary: params.progressSummary,
+  });
+}
+
+/** 完成任务运行：标记为 succeeded。 */
+export function completeTaskRunByRunId(params: DetachedTaskCompleteParams): TaskRecord[] {
+  return finalizeTaskRunByRunId({
+    ...params,
+    status: "succeeded",
+  });
+}
+
+/** 失败任务运行：标记为 failed/timed_out/cancelled。 */
+export function failTaskRunByRunId(params: DetachedTaskFailParams): TaskRecord[] {
+  return finalizeTaskRunByRunId({
+    ...params,
+    status: params.status ?? "failed",
+  });
+}
+
+/** 终结任务运行：应用终态状态。 */
+export function finalizeTaskRunByRunId(params: DetachedTaskFinalizeParams): TaskRecord[] {
+  return updateTaskStateByRunId({
+    runId: params.runId,
+    runtime: params.runtime,
+    sessionKey: params.sessionKey,
+    status: params.status,
+    endedAt: params.endedAt,
+    lastEventAt: params.lastEventAt,
+    error: params.error,
+    progressSummary: params.progressSummary,
+    terminalSummary: params.terminalSummary,
+    terminalOutcome: params.terminalOutcome,
+  });
+}
+
+/** 设置分离任务投递状态。 */
 export function setDetachedTaskDeliveryStatusByRunId(
-  _params: DetachedTaskDeliveryStatusParams,
+  params: DetachedTaskDeliveryStatusParams,
 ): TaskRecord[] {
-  return [];
+  return updateDeliveryStatusByRunId({
+    runId: params.runId,
+    runtime: params.runtime,
+    sessionKey: params.sessionKey,
+    deliveryStatus: params.deliveryStatus,
+    error: params.error,
+  });
 }

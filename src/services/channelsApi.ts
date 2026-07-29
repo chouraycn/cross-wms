@@ -115,3 +115,38 @@ export async function addChannelAccount(name: string, account: AddAccountPayload
 export async function removeChannelAccount(name: string, accountId: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>('DELETE', `/api/channels/${encodeURIComponent(name)}/accounts/${encodeURIComponent(accountId)}`);
 }
+
+/**
+ * 微信 / 企业微信 扫码绑定二维码流
+ * 后端生成一次性绑定 token（进程内存储），前端用 qrcode 库渲染图片并轮询状态。
+ */
+export interface WechatQrcodeResponse {
+  qrcode?: string;
+  qrcode_img_content?: string;
+  qrcode_img_url?: string;
+}
+
+export interface WechatQrcodeStatusResponse {
+  status?: string;
+}
+
+/** 获取微信绑定二维码（token + 二维码内容） */
+export async function getWechatQrcode(name: string): Promise<WechatQrcodeResponse> {
+  return request<WechatQrcodeResponse>('GET', `/api/channels/${encodeURIComponent(name)}/wechat/qrcode`);
+}
+
+/** 轮询微信绑定状态：wait / confirmed / expired */
+export async function getWechatQrcodeStatus(name: string, qrcode: string): Promise<WechatQrcodeStatusResponse> {
+  return request<WechatQrcodeStatusResponse>(
+    'GET',
+    `/api/channels/${encodeURIComponent(name)}/wechat/qrcode-status?qrcode=${encodeURIComponent(qrcode)}`
+  );
+}
+
+/** 确认微信绑定（真实环境由微信回调调用；本地演示由前端「模拟扫码确认」触发） */
+export async function confirmWechatQrcode(name: string, qrcode: string): Promise<{ ok: boolean; status: string }> {
+  return request<{ ok: boolean; status: string }>(
+    'POST',
+    `/api/channels/${encodeURIComponent(name)}/wechat/qrcode-confirm?qrcode=${encodeURIComponent(qrcode)}`
+  );
+}
