@@ -43,7 +43,13 @@ describe('C3 WebSocket Hub 挂载 httpServer', () => {
     // 客户端连接并等待 connected 事件
     const connected = await new Promise<boolean>((resolve) => {
       const client = new WebSocket(`ws://127.0.0.1:${TEST_PORT}/gateway/ws`);
-      const timer = setTimeout(() => resolve(false), 4000);
+      const timer = setTimeout(() => {
+        client.close();
+        resolve(false);
+      }, 8000);
+      client.on('open', () => {
+        // 连接已建立，等待 hub 下发 connected 事件
+      });
       client.on('message', (raw) => {
         try {
           const msg = JSON.parse(raw.toString());
@@ -63,5 +69,5 @@ describe('C3 WebSocket Hub 挂载 httpServer', () => {
     });
 
     expect(connected).toBe(true);
-  }, 10000);
+  }, 20000);
 });

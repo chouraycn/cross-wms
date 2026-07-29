@@ -53,16 +53,16 @@ jobs:
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
         with:
-          swift-version: '6.0'
+          swift-version: '6.0.3'
 
       - name: Cache Swift Package
         uses: actions/cache@v4
         with:
           path: apps/macos/.build
-          key: ${{ runner.os }}-swift-6.0-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
+          key: ${{ runner.os }}-swift-6.0.3-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-swift-6.0-spm-release-
-            ${{ runner.os }}-swift-6.0-spm-
+            ${{ runner.os }}-swift-6.0.3-spm-release-
+            ${{ runner.os }}-swift-6.0.3-spm-
 
       - name: Build macOS app + DMG
         run: bash scripts/package-mac-dist.sh --no-bump --skip-release
