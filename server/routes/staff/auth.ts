@@ -22,6 +22,8 @@ import {
   toUserRead,
   verifyPassword,
   createAccessToken,
+  isPasswordHashLegacy,
+  hashPassword,
   isAdminRole,
   type UserCreateInput,
   type UserUpdateInput,
@@ -52,6 +54,15 @@ router.post('/login', (req: Request, res: Response) => {
   if (!user || !verifyPassword(password, user.password_hash)) {
     res.status(401).json({ code: 401, data: null, message: 'Invalid username or password' });
     return;
+  }
+
+  // 旧 stub_sha256 哈希自动升级为 pbkdf2_sha256（登录时透明迁移）
+  if (isPasswordHashLegacy(user.password_hash)) {
+    try {
+      updateUser(tenantId, user.id, { password });
+    } catch {
+      // 升级失败不阻断登录，下次登录会再次尝试
+    }
   }
 
   const token = createAccessToken(user);

@@ -1,18 +1,20 @@
 /**
- * StaffDeck 鉴权中间件 — 简单 token 校验
+ * StaffDeck 鉴权中间件 — HMAC-SHA256 签名 token 校验
  *
  * 设计：
- * - 从 `Authorization: Bearer <token>` 头解析 stub JWT-like token
+ * - 从 `Authorization: Bearer <token>` 头解析 HMAC-SHA256 签名 token
  * - 验证通过注入 res.locals.staffContext = { tenantId, userId, username, role }
- * - 默认租户场景：未携带 token 时使用默认用户 default-user（admin 角色），保证开发期所有 API 可访问
- * - 生产期可通过 requireStaffAuth 强制校验
+ * - 桌面应用场景：未携带 token 时，若 isDefaultUserAllowed() 为 true，回退默认用户 default-user（admin 角色）
+ * - 生产场景：未携带 token 时返回 401，必须显式设置 STAFF_AUTH_ALLOW_DEFAULT=1 才启用兜底
+ * - requireStaffAuth 强制校验 token，不兜底默认用户
  *
- * 配合 dao/staff/staffAuthDao.ts 的 createAccessToken / decodeToken / getDefaultUser 使用
+ * 配合 dao/staff/staffAuthDao.ts 的 createAccessToken / decodeToken / getDefaultUser / isDefaultUserAllowed 使用
  */
 import type { Request, Response, NextFunction } from 'express';
 import {
   decodeToken,
   getDefaultUser,
+  isDefaultUserAllowed,
   DEFAULT_TENANT_ID,
   DEFAULT_USER_ID,
   DEFAULT_USERNAME,
@@ -35,10 +37,10 @@ function injectContext(res: Response, ctx: StaffRequestContext): void {
 
 /**
  * 宽松鉴权中间件（默认场景使用）：
- * - 有 token 且有效 → 注入 token 中的用户上下文
- * - 无 token 或 token 无效 → 使用默认用户 default-user（admin 角色）
+ * - 有 token 且签名有效 → 注入 token 中的用户上下文
+ * - 无 token 或 token 无效 → 若允许默认用户兜底则注入 default-user（admin），否则 401
  *
- * 这样开发期所有 API 都可访问，生产期可改用 requireStaffAuth。
+ * 桌面应用开发模式（NODE_ENV !== 'production' 或 STAFF_AUTH_ALLOW_DEFAULT=1）下所有 API 可访问
  */
 export function staffAuth(req: Request, res: Response, next: NextFunction): void {
   const token = extractBearerToken(req);
@@ -55,20 +57,26 @@ export function staffAuth(req: Request, res: Response, next: NextFunction): void
       return;
     }
   }
-  // 默认租户场景：使用默认用户
-  const defaultUser = getDefaultUser();
-  injectContext(res, {
-    tenantId: defaultUser.tenant_id,
-    userId: defaultUser.id,
-    username: defaultUser.username,
-    role: defaultUser.role === 'admin' ? 'admin' : 'member',
-  });
-  next();
+  // 无 token 或 token 无效：根据策略决定是否兜底默认用户
+  if (isDefaultUserAllowed()) {
+    const defaultUser = getDefaultUser();
+    injectContext(res, {
+      tenantId: defaultUser.tenant_id,
+      userId: defaultUser.id,
+      username: defaultUser.username,
+      role: defaultUser.role === 'admin' ? 'admin' : 'member',
+    });
+    next();
+    return;
+  }
+  // 生产环境且未启用默认用户兜底：拒绝访问
+  res.status(401).json({ code: 401, data: null, message: 'Not authenticated' });
 }
 
 /**
  * 严格鉴权中间件（生产期使用）：
- * - 必须携带有效 token，否则返回 401
+ * - 必须携带有效签名 token，否则返回 401
+ * - 不进行 default-user 兜底
  */
 export function requireStaffAuth(req: Request, res: Response, next: NextFunction): void {
   const token = extractBearerToken(req);
