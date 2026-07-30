@@ -947,6 +947,62 @@ export async function initDefaultTools(): Promise<void> {
   } catch (err) {
     logger.warn('[Tool Registry] skill 元工具未注册（技能数据链路）:', err instanceof Error ? err.message : String(err));
   }
+
+  // P1 快赢：Channel Gateway 复用 —— 主程序 agent/automation 可主动把执行结果推送到
+  // 企业微信/飞书/微信。复用数字员工已配好的渠道绑定（sd_channel_bindings），
+  // 与「渠道接入」页同源，桌面端为本地 demo 投递。
+  try {
+    const { deliverToChannel } = await import('../routes/staff/channels.js');
+    registerBuiltinTool({
+      definition: {
+        type: 'function',
+        function: {
+          name: 'deliver_to_channel',
+          description:
+            '将消息投递到已接入的 IM 渠道（企业微信/飞书/微信），用于把 Agent 执行结果、异常告警、汇总报告主动推送给用户或群组。' +
+            '需先在「数字员工 → 渠道接入」中完成对应渠道接入并激活。桌面端为本地 demo 投递（记录即视为已送达）。',
+          parameters: {
+            type: 'object',
+            properties: {
+              channel: {
+                type: 'string',
+                enum: ['wechat', 'wecom', 'feishu'],
+                description: '目标渠道：wecom=企业微信，feishu=飞书，wechat=微信',
+              },
+              content: { type: 'string', description: '要推送的消息正文' },
+              title: { type: 'string', description: '消息标题（可选，飞书/企微卡片用）' },
+              type: { type: 'string', enum: ['text', 'alert', 'card'], description: '消息类型，默认 text' },
+              bindingId: { type: 'string', description: '指定绑定 ID（可选，不填则自动选该渠道的激活绑定）' },
+              agentId: { type: 'string', description: '限定挂载员工（可选，配合 channel 使用）' },
+            },
+            required: ['channel', 'content'],
+          },
+        },
+      },
+      handler: async (args: Record<string, unknown>): Promise<string> => {
+        const channel = String(args.channel || '');
+        const content = String(args.content || '');
+        if (!['wechat', 'wecom', 'feishu'].includes(channel)) {
+          return JSON.stringify({ ok: false, error: 'channel 必须为 wechat/wecom/feishu' });
+        }
+        if (!content.trim()) {
+          return JSON.stringify({ ok: false, error: 'content 不能为空' });
+        }
+        const result = deliverToChannel({
+          channel,
+          bindingId: args.bindingId ? String(args.bindingId) : undefined,
+          agentId: args.agentId ? String(args.agentId) : undefined,
+          content,
+          title: args.title ? String(args.title) : undefined,
+          type: args.type ? (String(args.type) as 'text' | 'alert' | 'card') : 'text',
+        });
+        return JSON.stringify(result);
+      },
+    });
+    logger.debug('[Tool Registry] deliver_to_channel 工具已注册（Channel Gateway 复用）');
+  } catch (err) {
+    logger.warn('[Tool Registry] deliver_to_channel 工具未注册:', err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** 获取所有已注册内置工具的 definitions（用于传给 LLM） */

@@ -27,4 +27,8 @@ export function registerStaffRoutes(app: Express): void {
     lazyRouter(() => import('./knowledge.js'), undefined, 'staff-knowledge'),
   );
   app.use('/api/staffdeck/chat', lazyRouter(() => import('./chatStream.js'), undefined, 'staff-chat'));
+  app.use(
+    '/api/staffdeck/channels',
+    lazyRouter(() => import('./channels.js'), undefined, 'staff-channels'),
+  );
 }

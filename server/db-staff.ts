@@ -864,6 +864,74 @@ export function initStaffTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sd_stream_jobs_created ON sd_stream_jobs(created_at);
   `);
 
+  // ============================ 渠道接入（数字员工对外接入） ============================
+  // 移植自 StaffDeck-main/backend/app/api/channels.py：渠道绑定 / 挂载员工 / 身份绑定。
+  // 投递日志与对话记录(ChannelDelivery/ChannelConvState)在前端按绑定查询时返回空，
+  // 这里不建表，避免无外部渠道服务时的空表负担。
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sd_channel_bindings (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      agent_id TEXT,
+      channel TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      connected INTEGER NOT NULL DEFAULT 0,
+      credentials_enc TEXT,
+      config_json TEXT NOT NULL DEFAULT '{}',
+      external_account_key TEXT,
+      identity_scope_key TEXT,
+      config_revision INTEGER NOT NULL DEFAULT 0,
+      created_by_user_id TEXT,
+      created_by_name TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_bindings_tenant ON sd_channel_bindings(tenant_id);
+
+    CREATE TABLE IF NOT EXISTS sd_channel_binding_agents (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      binding_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      name TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_binding_agents_binding ON sd_channel_binding_agents(binding_id);
+
+    CREATE TABLE IF NOT EXISTS sd_channel_identities (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      staffdeck_user_id TEXT NOT NULL,
+      external_user_id TEXT,
+      display_name TEXT,
+      external_account_scope TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_identities_tenant_user
+      ON sd_channel_identities(tenant_id, staffdeck_user_id);
+
+    CREATE TABLE IF NOT EXISTS sd_channel_deliveries (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      binding_id TEXT,
+      channel TEXT NOT NULL,
+      agent_id TEXT,
+      title TEXT,
+      content TEXT,
+      type TEXT NOT NULL DEFAULT 'text',
+      status TEXT NOT NULL DEFAULT 'delivered',
+      delivered_at INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_deliveries_tenant ON sd_channel_deliveries(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_deliveries_binding ON sd_channel_deliveries(binding_id);
+    CREATE INDEX IF NOT EXISTS idx_sd_channel_deliveries_channel ON sd_channel_deliveries(channel);
+  `);
+
   // ============================ 默认租户与 UI 配置初始化 ============================
 
   const existingTenant = db.prepare('SELECT id FROM sd_tenants WHERE id = ?').get(DEFAULT_TENANT_ID);
@@ -934,4 +1002,7 @@ export const StaffIdPrefix = {
   event: 'evt',
   user: 'user',
   tenant: 'tenant',
+  channelBinding: 'chbind',
+  channelIdentity: 'chident',
+  channelDelivery: 'chdlv',
 } as const;

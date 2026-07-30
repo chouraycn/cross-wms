@@ -204,6 +204,11 @@
     "../src",
     "../openclaw",
     "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.test-helpers.ts",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
     "tui/**"
   ]
 }

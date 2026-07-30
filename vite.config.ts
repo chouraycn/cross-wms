@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
         // v1.9.3: 确保 multipart/form-data 请求正确转发
         configure: (proxy, _options) => {
@@ -79,9 +79,16 @@ export default defineConfig(({ mode }) => ({
           });
         },
       },
+      // 数字员工嵌入前端(dev)：把 /staffdeck-app 静态产物代理到 express(3001)，
+      // 使 iframe 与 vite 主程序同源，localStorage 共享且资源可加载。
+      '/staffdeck-app': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        // 资源已在 StaffDeck 构建时加 /staffdeck-app 前缀，无需 rewrite
+      },
       // v1.9.3: 代理 Ollama 本地 API，绕过浏览器 CORS 限制
       '/ollama-api': {
-        target: 'http://localhost:11434',
+        target: 'http://127.0.0.1:11434',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/ollama-api/, ''),
       },
