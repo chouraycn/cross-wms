@@ -52,11 +52,12 @@ export function initArchiveTables(db: Database.Database): void {
     const hasArchived = columns.some(c => c.name === 'archived');
     if (!hasArchived) {
       db.exec('ALTER TABLE messages ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_archived ON messages(archived, sessionId)');
       logger.info('[Archive] 已添加 messages.archived 列');
     }
+    // Index is always created (use IF NOT EXISTS so it's safe to call every time)
+    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_archived ON messages(archived, sessionId)');
   } catch {
-    // messages 表不存在，跳过列添加
+    // messages 表不存在，跳过列添加和索引创建
   }
 
   // 创建归档摘要表

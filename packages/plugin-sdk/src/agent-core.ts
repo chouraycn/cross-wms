@@ -92,7 +92,7 @@ export type AgentRunResult = AgentResponse & {
 
 /** 运行时适配器，使 agent-core 包能使用 OpenClaw LLM 辅助。 */
 export const openClawAgentCoreRuntime: AgentCoreRuntimeDeps = {
-  // TODO: 依赖模块未移植，暂用本地桩
+  // Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
   completeSimple: async () => ({}),
   streamSimple: async function* () {
     // 待 llm.js 移植后接入
@@ -108,7 +108,7 @@ export class Agent {
   }
 
   /** 运行 agent。 */
-  // TODO: 依赖模块未移植，暂用本地桩
+  // Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
   async run(_params: AgentRunParams): Promise<AgentRunResult> {
     return {
       output: "",
@@ -118,7 +118,7 @@ export class Agent {
   }
 
   /** 流式运行 agent。 */
-  // TODO: 依赖模块未移植，暂用本地桩
+  // Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
   async *stream(_params: AgentRunParams): AsyncIterable<AgentEvent> {
     // 待 agent-core 包移植后接入
   }
@@ -143,7 +143,7 @@ export type AgentProxyResolveResult = {
 };
 
 /** 解析 agent 代理。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveAgentProxy(
   _params: AgentProxyResolveParams,
 ): AgentProxyResolveResult | undefined {
@@ -158,7 +158,7 @@ export type AgentProxyRegisterParams = {
 };
 
 /** 注册 agent 代理。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function registerAgentProxy(_params: AgentProxyRegisterParams): void {
   // 待 agents/runtime/proxy.js 移植后接入
 }

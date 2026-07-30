@@ -134,7 +134,6 @@ export function parseFrontmatter(
 
   try {
     const parsed = yaml.load(frontmatterText, {
-      schema: yaml.DEFAULT_SCHEMA,
       json: true,
     });
 

@@ -16,7 +16,10 @@ function parseStrictNonNegativeInteger(value: string): number | null {
 }
 
 /** 解析 cron 表达式字段 */
-function parseCronFields(expr: string): string[] {
+function parseCronFields(expr: string | undefined | null): string[] {
+  if (!expr || typeof expr !== "string") {
+    return [];
+  }
   return expr.trim().split(/\s+/).filter(Boolean);
 }
 

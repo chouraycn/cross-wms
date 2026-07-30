@@ -3,9 +3,9 @@ import type { UnifiedModelCatalogEntry } from "@cdf-know/model-catalog-core/mode
 // import {
 //   normalizeStringEntries,
 //   uniqueStrings,
-// } from "../../packages/normalization-core/src/string-normalization.js"; // TODO: 依赖模块未移植
-// import { createProviderApiKeyAuthMethod } from "../plugins/provider-api-key-auth.js"; // TODO: 依赖模块未移植
-// import { projectProviderCatalogResultToUnifiedTextRows } from "../plugins/provider-catalog-unified-text.js"; // TODO: 依赖模块未移植
+// } from "../../packages/normalization-core/src/string-normalization.js"; // contract stub
+// import { createProviderApiKeyAuthMethod } from "../plugins/provider-api-key-auth.js"; // contract stub
+// import { projectProviderCatalogResultToUnifiedTextRows } from "../plugins/provider-catalog-unified-text.js"; // contract stub
 // import type {
 //   ProviderPlugin,
 //   ProviderCatalogContext,
@@ -14,8 +14,8 @@ import type { UnifiedModelCatalogEntry } from "@cdf-know/model-catalog-core/mode
 //   ProviderPluginCatalog,
 //   UnifiedModelCatalogProviderContext,
 //   ProviderPluginWizardSetup,
-// } from "../plugins/types.js"; // TODO: 依赖模块未移植
-// import { copyArrayEntries, isRecord, readRecordValue } from "../shared/safe-record.js"; // TODO: 依赖模块未移植
+// } from "../plugins/types.js"; // contract stub
+// import { copyArrayEntries, isRecord, readRecordValue } from "../shared/safe-record.js"; // contract stub
 import { definePluginEntry } from "./plugin-entry.js";
 import type { PluginApi as OpenClawPluginApi } from "./types";
 import type { PluginConfigSchema as OpenClawPluginConfigSchema } from "./types";
@@ -23,12 +23,12 @@ import type { PluginDefinition as OpenClawPluginDefinition } from "./types";
 
 // ==================== Local type stubs for unported dependencies ====================
 
-/** Normalizes string entries. TODO: 依赖模块未移植 */
+/** Normalizes string entries. Contract stub: upstream import. */
 function normalizeStringEntries(entries: unknown[]): string[] {
   return entries.filter((v): v is string => typeof v === "string");
 }
 
-/** Returns unique strings. TODO: 依赖模块未移植 */
+/** Returns unique strings. Contract stub: upstream import. */
 function uniqueStrings(entries: string[]): string[] {
   return [...new Set(entries)];
 }
@@ -88,7 +88,7 @@ type ProviderPluginWizardSetup = {
   modelAllowlist?: string[];
 };
 
-/** Creates provider API key auth method. TODO: 依赖模块未移植 */
+/** Creates provider API key auth method. Contract stub: upstream import. */
 function createProviderApiKeyAuthMethod(
   _options: {
     providerId: string;
@@ -106,7 +106,7 @@ function createProviderApiKeyAuthMethod(
 /** ApiKey auth method options derived from the provider api key auth method. */
 type ApiKeyAuthMethodOptions = Parameters<typeof createProviderApiKeyAuthMethod>[0];
 
-/** Builds single provider API key catalog. TODO: 依赖模块未移植 */
+/** Builds single provider API key catalog. Contract stub: upstream import. */
 async function buildSingleProviderApiKeyCatalog(
   _params: {
     ctx?: unknown;
@@ -119,12 +119,12 @@ async function buildSingleProviderApiKeyCatalog(
   throw new Error("buildSingleProviderApiKeyCatalog: not implemented (dependency not ported)");
 }
 
-/** Projects provider catalog result to unified text rows. TODO: 依赖模块未移植 */
+/** Projects provider catalog result to unified text rows. Contract stub: upstream import. */
 function projectProviderCatalogResultToUnifiedTextRows(_params: unknown): UnifiedModelCatalogEntry[] {
   return [];
 }
 
-/** Safe record helpers. TODO: 依赖模块未移植 */
+/** Safe record helpers. Contract stub: upstream import. */
 function copyArrayEntries(value: unknown): unknown[] {
   return Array.isArray(value) ? [...value] : [];
 }

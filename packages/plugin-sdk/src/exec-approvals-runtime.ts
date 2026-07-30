@@ -20,14 +20,14 @@ export type ExecApprovalsFile = {
   sourcePath?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function loadExecApprovals(
   _filePath?: string,
 ): Promise<ExecApprovalsFile> {
   return { rules: [] };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function resolveExecApprovalsFromFile(
   _filePath?: string,
 ): Promise<ExecApprovalsFile> {

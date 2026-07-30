@@ -224,11 +224,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       ref={sidebarRef}
       sx={{
         width,
-        height: 'calc(100vh - var(--pw-top, 0px))',
+        height: '100%',
         boxSizing: 'content-box',
         paddingTop: 'var(--pw-top, 0px)',
-        position: 'sticky',
-        top: 0,
         zIndex: 1200,
         flexShrink: 0,
         backgroundColor: SIDEBAR_BG,
@@ -249,7 +247,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       {!collapsed && <SidebarLogo collapsed={collapsed} />}
 
       {/* Navigation list (含历史对话) */}
-      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
         <NavList
           collapsed={collapsed}
           activePath={activePath}

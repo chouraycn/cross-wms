@@ -8,17 +8,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 /** Config type placeholder. */
 type OpenClawConfig = Record<string, unknown>;
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function ensureAuthProfileStore(_agentDir: string, _options: { config?: OpenClawConfig; readOnly?: boolean }): { profiles: Record<string, { provider?: string; type?: string; accountId?: string }> } {
   return { profiles: {} };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function normalizeProviderId(provider: string): string {
   return provider;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function resolveTimerTimeoutMs(value: number, _min: number): number {
   return value;
 }

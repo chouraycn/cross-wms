@@ -18,6 +18,7 @@ import { WarehouseCapabilityProvider } from './capabilities/warehouse/WarehouseC
 import { ProcessStatusProvider, ProcessStatusPanel } from './contexts/ProcessStatusContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
+import { I18nProvider } from './components/staff/i18n/index.js';
 import { automationEngine } from './services/automation';
 import { isWKWebView, isMacOSApp } from './utils/env';
 import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
@@ -144,6 +145,7 @@ const StaffEmployeeChatPage = React.lazy(() => import('./pages/staff/EmployeeCha
 const StaffChatPage = React.lazy(() => import('./pages/staff/chat/ChatPage'));
 const StaffChatGalleryPage = React.lazy(() => import('./pages/staff/chat/ChatGalleryPage'));
 const StaffLoginPage = React.lazy(() => import('./pages/staff/LoginPage'));
+const StaffDeckEmbedPage = React.lazy(() => import('./pages/staff/StaffDeckEmbedPage'));
 const StaffScheduledTaskEditorPage = React.lazy(() =>
   import('./pages/staff/scheduled-tasks/ScheduledTaskEditorPage').then(m => ({ default: wrapStaffAuth(m.ScheduledTaskNewPage) })),
 );
@@ -846,7 +848,7 @@ const MainLayout: React.FC = () => {
         collapsedWidth={SIDEBAR_WIDTH_COLLAPSED}
       />
       <ProcessStatusProvider>
-      <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: gs.bgSidebar }}>
+      <Box sx={{ display: 'flex', height: '100vh', backgroundColor: gs.bgSidebar, overflow: 'hidden' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
         {/* 统一设置弹窗 */}
@@ -860,6 +862,7 @@ const MainLayout: React.FC = () => {
 
       {/* Main content area */}
       {/* v1.7.15: 收起侧边栏后左边距也要保持，让灰色背景可见 */}
+      {/* 高度固定为视窗高度（与 StaffLayout 保持一致），让圆角永远可见 */}
       <Box
         component="main"
         sx={{
@@ -868,7 +871,7 @@ const MainLayout: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'background.paper',
-          minHeight: 'calc(100vh - 18px)',
+          height: 'calc(100vh - 18px)',
           margin: '9px 9px 9px 9px', // 内容区缩小3px，让灰色背景更多
           // v1.7.15: 描边颜色改为 #eeeeee
           border: '1px solid #eeeeee',
@@ -876,7 +879,7 @@ const MainLayout: React.FC = () => {
           position: 'relative',
           borderRadius: '12px',
           overflow: 'hidden',
-          transition: 'margin 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'margin 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           // v2.3.0: 内容区排除拖拽，允许文本选择/复制
           WebkitAppRegion: 'no-drag',
         }}
@@ -907,12 +910,13 @@ const MainLayout: React.FC = () => {
             flexDirection: 'column',
           }}
         >
-          {/* 可滚动的内容区域 — min-height:100% 让内容少时撑满可视区域，内容多时自然扩展 */}
+          {/* 可滚动的内容区域 — 严格固定为父容器高度，确保 main 容器圆角永远可见 */}
           <Box
             ref={scrollRef}
             sx={{
-              minHeight: '100%',
-              overflowY: 'scroll',
+              flex: '1 1 auto',
+              minHeight: 0,
+              overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
               // 滚动条默认隐藏，滚动时显示（通过 scrollbar-visible class）
@@ -1074,6 +1078,11 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/scheduled-tasks" element={<Navigate to="/enterprise/scheduled-tasks" replace />} />
                     <Route path="/staff/scheduled-tasks/new" element={<Navigate to="/enterprise/scheduled-tasks/new" replace />} />
                     <Route path="/staff/dashboard" element={<Navigate to="/enterprise/dashboard" replace />} />
+
+                    {/* ===================== 数字员工 100% 复刻入口 =====================
+                        iframe 加载已构建的 StaffDeck-main 原前端(/staffdeck-app/)，
+                        视觉与 StaffDeck-main 完全一致。后端经 Express 适配层转发。 */}
+                    <Route path="/staffdeck" element={<StaffDeckEmbedPage />} />
                     <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
 
                     {/* 数字员工对话大厅（缺失页面补齐） */}
@@ -1138,21 +1147,23 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <AppSettingsProvider>
-        <ModelsProvider>
-          <WarehouseCapabilityProvider>
-            <ChatProvider defaultModel="auto">
-              <ThemedApp>
-                <HashRouter>
-                  <PerformanceProfiler id="MainLayout">
-                    <MainLayout />
-                  </PerformanceProfiler>
-                </HashRouter>
-              </ThemedApp>
-            </ChatProvider>
-          </WarehouseCapabilityProvider>
-        </ModelsProvider>
-      </AppSettingsProvider>
+      <I18nProvider>
+        <AppSettingsProvider>
+          <ModelsProvider>
+            <WarehouseCapabilityProvider>
+              <ChatProvider defaultModel="auto">
+                <ThemedApp>
+                  <HashRouter>
+                    <PerformanceProfiler id="MainLayout">
+                      <MainLayout />
+                    </PerformanceProfiler>
+                  </HashRouter>
+                </ThemedApp>
+              </ChatProvider>
+            </WarehouseCapabilityProvider>
+          </ModelsProvider>
+        </AppSettingsProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 };

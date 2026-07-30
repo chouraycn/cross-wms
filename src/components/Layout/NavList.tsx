@@ -135,7 +135,7 @@ const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
-  { label: '数字员工', path: '/enterprise/dashboard', icon: <GroupsOutlinedIcon />, desc: 'StaffDeck 企业智能体平台' },
+  { label: '数字员工', path: '/staffdeck', icon: <GroupsOutlinedIcon />, desc: 'StaffDeck 企业智能体平台' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
   {
     label: '创作',

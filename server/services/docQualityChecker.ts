@@ -9,7 +9,7 @@
  * - 格式规范（markdown 正确性）
  */
 
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 // ===================== 类型定义 =====================
 

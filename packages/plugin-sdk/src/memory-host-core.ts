@@ -44,20 +44,20 @@ export type OpenClawConfigLike = {
   };
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function resolveMemoryDreamingWorkspaces(
   _cfg: OpenClawConfigLike,
 ): Promise<MemoryWorkspaceConfig[]> {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveMemoryHostEventLogPath(workspaceDir: string): string {
   return `${workspaceDir}/memory-events.jsonl`;
 }
 
 /** 列出单个工作区的公共记忆工件，包括笔记与事件日志。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function listMemoryWorkspacePublicArtifacts(params: {
   workspaceDir: string;
   agentIds: string[];
@@ -66,7 +66,7 @@ export async function listMemoryWorkspacePublicArtifacts(params: {
 }
 
 /** 列出所有已配置记忆工作区的公共工件。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function listMemoryHostPublicArtifacts(params: {
   cfg: OpenClawConfigLike;
 }): Promise<MemoryPluginPublicArtifact[]> {

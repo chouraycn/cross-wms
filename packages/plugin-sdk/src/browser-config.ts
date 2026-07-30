@@ -63,7 +63,7 @@ export const DEFAULT_OPENCLAW_BROWSER_ENABLED = false;
 export const DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME = "openclaw";
 export const DEFAULT_UPLOAD_DIR = "uploads";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveBrowserConfig(
   _input?: unknown,
 ): ResolvedBrowserConfig {
@@ -77,7 +77,7 @@ export function resolveBrowserConfig(
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProfile(
   name: string | undefined,
   _config?: ResolvedBrowserConfig,
@@ -107,17 +107,17 @@ export function redactCdpUrl(input: string): string {
   }
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function ensureBrowserControlAuth(_input?: unknown): BrowserControlAuth {
   return { required: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveBrowserControlAuth(_input?: unknown): BrowserControlAuth {
   return { required: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function movePathToTrash(
   _path: string,
   _options?: MovePathToTrashOptions,

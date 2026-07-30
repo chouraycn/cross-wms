@@ -5,7 +5,7 @@
  * 与前端版本（src/services/skill/skillMdParser.ts）功能对齐，使用 ESM 模块格式。
  */
 
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 // ===================== 类型定义 =====================
 
@@ -113,7 +113,7 @@ function parseFrontmatter(frontmatterText: string): {
   }
 
   try {
-    const parsed = yaml.load(frontmatterText, { schema: yaml.DEFAULT_SCHEMA, json: true });
+    const parsed = yaml.load(frontmatterText, { json: true });
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return {
         data: {},

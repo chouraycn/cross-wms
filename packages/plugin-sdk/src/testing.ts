@@ -123,7 +123,7 @@ export type TempHomeEnv = {
   restore(): void;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createTempHomeEnv(_prefix?: string): TempHomeEnv {
   const homeDir = `/tmp/openclaw-test-home-${Date.now()}`;
   return {
@@ -314,18 +314,18 @@ export type CapturedPluginRegistration = {
   manifest?: unknown;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function capturePluginRegistration(): CapturedPluginRegistration | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createCapturedPluginRegistration(pluginId: string): CapturedPluginRegistration {
   return { pluginId };
 }
 
 /** 构建插件 API。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function buildPluginApi(_runtime: unknown): unknown {
   return {};
 }
@@ -370,63 +370,63 @@ export function selectFirstWizardOption(_message: string, options: string[]): st
   return options[0] ?? "";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createSetupWizardAdapter(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPluginSetupWizardAdapter(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPluginSetupWizardConfigure(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPluginSetupWizardStatus(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function promptSetupWizardAllowFrom(_prompter: WizardPrompter): Promise<string[]> {
   return Promise.resolve([]);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSetupWizardAllowFromEntries(): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSetupWizardGroupAllowlist(): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runSetupWizardConfigure(_prompter: WizardPrompter): Promise<void> {}
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runSetupWizardFinalize(_prompter: WizardPrompter): Promise<void> {}
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runSetupWizardPrepare(_prompter: WizardPrompter): Promise<void> {}
 
 // ---- Mock 插件注册表 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createMockPluginRegistry(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createEmptyPluginRegistry(): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPluginRegistry(): unknown {
   return {};
 }
@@ -438,12 +438,12 @@ export type PluginRecord = {
   status?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPluginRecord(id: string): PluginRecord {
   return { id, status: "active" };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function addTestHook(_hook: unknown): () => void {
   return () => {};
 }

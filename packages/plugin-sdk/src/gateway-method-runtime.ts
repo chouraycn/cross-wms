@@ -40,7 +40,7 @@ type GatewayRequestScope = {
   pluginId?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function getPluginRuntimeGatewayRequestScope(): GatewayRequestScope | undefined {
   return undefined;
 }
@@ -52,7 +52,7 @@ type DispatchRawOptions = {
   timeoutMs?: number;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 async function dispatchGatewayMethodInProcessRaw(
   _method: string,
   _params: unknown,

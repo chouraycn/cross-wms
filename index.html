@@ -11,14 +11,131 @@
     <link rel="preconnect" href="https://api.openai.com" />
     <!-- 预加载关键字体 -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
+    <style>
+      /* 加载占位符：应用启动期间显示，React 渲染后会覆盖 root div 内容 */
+      #boot-placeholder {
+        position: fixed; inset: 0;
+        background: #f4ede4; /* 与 sd-root bg-background 一致 */
+        display: flex; align-items: center; justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+        z-index: 9999; user-select: none; -webkit-user-select: none;
+        transition: opacity 200ms ease-out;
+      }
+      #boot-placeholder.fade-out { opacity: 0; pointer-events: none; }
+      .boot-card {
+        text-align: center; max-width: 380px; padding: 40px 32px;
+      }
+      .boot-logo {
+        width: 72px; height: 72px; margin: 0 auto 24px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+        animation: boot-pulse 2s ease-in-out infinite;
+      }
+      .boot-logo svg { width: 36px; height: 36px; color: white; }
+      .boot-title {
+        font-size: 20px; font-weight: 600; color: #1f2937;
+        margin: 0 0 6px; letter-spacing: -0.01em;
+      }
+      .boot-subtitle {
+        font-size: 13px; color: #6b7280; margin: 0 0 28px;
+      }
+      .boot-progress {
+        width: 100%; height: 4px; background: #e5e7eb;
+        border-radius: 2px; overflow: hidden; margin-bottom: 14px;
+      }
+      .boot-progress-bar {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        border-radius: 2px;
+        animation: boot-progress 3s ease-in-out infinite;
+      }
+      .boot-status {
+        font-size: 12px; color: #9ca3af; min-height: 18px;
+        transition: opacity 300ms ease;
+      }
+      #root-error {
+        display: none; position: fixed; inset: 20%; z-index: 10000;
+        padding: 24px; background: #fff; border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        font-family: -apple-system, system-ui, sans-serif;
+        white-space: pre-wrap; word-break: break-all; font-size: 13px; color: #dc2626;
+        overflow: auto;
+      }
+      #root-error.show { display: block; }
+      @keyframes boot-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25); }
+        50% { transform: scale(1.03); box-shadow: 0 6px 30px rgba(99, 102, 241, 0.35); }
+      }
+      @keyframes boot-progress {
+        0%   { width: 0%;   margin-left: 0%; }
+        30%  { width: 55%;  margin-left: 0%; }
+        60%  { width: 35%;  margin-left: 40%; }
+        100% { width: 15%;  margin-left: 85%; }
+      }
+    </style>
   </head>
   <body>
+    <!-- 启动占位符：JS 执行/网络请求期间显示，React 挂载后自动被覆盖 -->
+    <div id="boot-placeholder" aria-hidden="true">
+      <div class="boot-card">
+        <div class="boot-logo" role="img" aria-label="CDF Know Claw">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h1 class="boot-title">CDF Know Claw</h1>
+        <p class="boot-subtitle">智能工作助手 · 正在启动</p>
+        <div class="boot-progress"><div class="boot-progress-bar"></div></div>
+        <div class="boot-status" id="boot-status">初始化应用资源...</div>
+      </div>
+    </div>
     <!-- React 应用挂载点 -->
     <div id="root"></div>
+    <!-- 错误显示区（main.tsx 渲染异常时填充） -->
+    <div id="root-error" role="alert"></div>
     <!-- 开发环境下 Vite 自动注入客户端脚本 -->
     <!-- 生产环境下构建产物中包含完整脚本 -->
     <script type="module" src="/src/main.tsx"></script>
-    
+    <script>
+      // 启动占位符状态机：更新文本以反映启动阶段
+      (function () {
+        var statusEl = document.getElementById('boot-status');
+        if (!statusEl) return;
+        var stages = [
+          '初始化应用资源...',
+          '加载界面组件...',
+          '建立后端连接...',
+          '加载用户数据...',
+          '准备完成'
+        ];
+        var idx = 0;
+        statusEl.textContent = stages[0];
+        var timer = setInterval(function () {
+          idx++;
+          if (idx >= stages.length - 1) { clearInterval(timer); }
+          statusEl.style.opacity = '0';
+          setTimeout(function () {
+            statusEl.textContent = stages[Math.min(idx, stages.length - 1)];
+            statusEl.style.opacity = '1';
+          }, 150);
+        }, 800);
+        // 暴露给 main.tsx 在 React 挂载完成后隐藏
+        window.__hideBootPlaceholder = function () {
+          clearInterval(timer);
+          var el = document.getElementById('boot-placeholder');
+          if (el) {
+            el.classList.add('fade-out');
+            setTimeout(function () {
+              if (el.parentNode) el.parentNode.removeChild(el);
+            }, 250);
+          }
+        };
+      })();
+    </script>
     <!-- 错误兜底：如果 JS 加载失败，显示提示信息 -->
     <noscript>
       <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui;">

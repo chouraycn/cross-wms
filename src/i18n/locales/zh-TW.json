@@ -56,7 +56,9 @@
     "about": "關於",
     "help": "說明",
     "feedback": "意見回饋",
-    "version": "版本"
+    "version": "版本",
+    "itemCount_one": "{{count}} 個項目",
+    "itemCount_other": "{{count}} 個項目"
   },
   "sidebar": {
     "dashboard": "儀表板",
@@ -78,7 +80,9 @@
     "workflow": "工作流程",
     "wiki": "知識庫",
     "files": "檔案管理",
-    "search": "搜尋"
+    "search": "搜尋",
+    "collapse": "收合側邊欄",
+    "expand": "展開側邊欄"
   },
   "chat": {
     "inputPlaceholder": "輸入訊息...",
@@ -90,6 +94,7 @@
     "selectExpert": "選擇專家",
     "selectExpertDesc": "選擇一位 AI 專家來協助您完成任務",
     "welcomeMessage": "您好！今天我能幫您做些什麼？",
+    "messageTooLong": "訊息太長",
     "emptyChat": "暫無訊息，開始對話吧！",
     "copyMessage": "複製訊息",
     "deleteMessage": "刪除訊息",
@@ -99,7 +104,9 @@
     "attachFile": "加入附件",
     "uploadImage": "上傳圖片",
     "clearChat": "清空對話",
-    "exportChat": "匯出對話"
+    "exportChat": "匯出對話",
+    "messageCount_one": "{{count}} 則訊息",
+    "messageCount_other": "{{count}} 則訊息"
   },
   "models": {
     "title": "模型管理",
@@ -121,7 +128,10 @@
     "noModels": "暫無模型",
     "defaultModel": "預設模型",
     "temperature": "溫度",
-    "maxTokens": "最大 Token 數"
+    "maxTokens": "最大 Token 數",
+    "topP": "Top P",
+    "frequencyPenalty": "頻率懲罰",
+    "presencePenalty": "存在懲罰"
   },
   "settings": {
     "title": "設定",
@@ -136,6 +146,7 @@
     "enableNotifications": "啟用通知",
     "soundEnabled": "聲音效果",
     "autoSave": "自動儲存",
+    "autoSaveInterval": "自動儲存間隔",
     "privacy": "隱私",
     "security": "安全性",
     "account": "帳戶",
@@ -163,6 +174,7 @@
     "requiredField": "此欄位為必填項。",
     "invalidEmail": "電子郵件地址無效。",
     "passwordTooShort": "密碼太短。",
+    "confirmPasswordMismatch": "兩次輸入的密碼不一致。",
     "fileTooLarge": "檔案太大。",
     "unsupportedFormat": "不支援的檔案格式。",
     "uploadFailed": "上傳失敗。",
@@ -255,6 +267,195 @@
       "update": "更新",
       "refresh": "重新整理",
       "scan": "安全性掃描"
+    },
+    "install": {
+      "title": "安裝技能",
+      "downloading": "下載中",
+      "extracting": "解壓縮中",
+      "installing": "安裝中",
+      "scanning": "安全性掃描中",
+      "completed": "安裝完成",
+      "failed": "安裝失敗",
+      "cancelled": "已取消",
+      "startInstall": "開始安裝",
+      "cancelInstall": "取消安裝",
+      "source": "來源",
+      "progress": "進度",
+      "eta": "預計剩餘時間",
+      "warnings": "警告",
+      "errors": "錯誤"
+    },
+    "scan": {
+      "title": "安全性掃描結果",
+      "critical": "嚴重",
+      "warning": "警告",
+      "info": "提示",
+      "noIssues": "未發現問題",
+      "viewDetails": "檢視詳情",
+      "groupByRule": "依規則分組",
+      "filterBySeverity": "依嚴重程度篩選",
+      "exportResults": "匯出結果",
+      "copyResults": "複製結果"
+    },
+    "chain": {
+      "title": "技能鏈",
+      "newChain": "新建鏈",
+      "editChain": "編輯鏈",
+      "deleteChain": "刪除鏈",
+      "duplicateChain": "複製鏈",
+      "executeChain": "執行鏈",
+      "chainName": "鏈名稱",
+      "chainDescription": "描述",
+      "failStrategy": "失敗策略",
+      "failStrategies": {
+        "stop": "遇錯停止",
+        "skip": "遇錯跳過",
+        "retry": "重試後繼續"
+      },
+      "nodes": "步驟",
+      "addNode": "新增技能節點",
+      "removeNode": "移除節點",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "preview": "預覽",
+      "edit": "編輯",
+      "executionPreview": "執行預覽",
+      "emptyState": "暫無步驟，請新增技能節點"
+    },
+    "trigger": {
+      "keyword": "關鍵字觸發",
+      "intent": "意圖觸發",
+      "schedule": "定時觸發",
+      "event": "事件觸發",
+      "autoTriggered": "自動觸發",
+      "matchedKeywords": "匹配關鍵字",
+      "matchScore": "匹配分數",
+      "status": {
+        "pending": "待執行",
+        "running": "執行中",
+        "completed": "已完成",
+        "failed": "失敗"
+      },
+      "execute": "執行",
+      "retry": "重試",
+      "history": "執行歷史",
+      "recentExecutions": "最近執行記錄"
+    },
+    "dependency": {
+      "title": "技能依賴關係",
+      "dependencies": "依賴項",
+      "dependents": "被依賴",
+      "conflicts": "衝突",
+      "noDependencies": "無依賴項",
+      "noDependents": "無依賴此技能的技能",
+      "noConflicts": "無衝突",
+      "circularDependency": "循環依賴",
+      "circularWarning": "偵測到循環依賴",
+      "required": "必需",
+      "optional": "可選",
+      "dependencyGraph": "依賴圖譜",
+      "viewGraph": "檢視圖譜",
+      "edgeTypes": {
+        "required": "必需依賴",
+        "optional": "可選依賴",
+        "conflict": "衝突",
+        "plugin": "外掛擴充"
+      }
+    },
+    "health": {
+      "title": "技能健康度",
+      "overall": "綜合評分",
+      "metadata": "元資料完整性",
+      "dependencies": "依賴宣告",
+      "documentation": "文件品質",
+      "security": "安全合規",
+      "score": "分數",
+      "healthy": "健康",
+      "warning": "警告",
+      "critical": "嚴重",
+      "checking": "檢查中",
+      "summary": {
+        "totalSkills": "技能總數",
+        "healthySkills": "健康技能",
+        "warningSkills": "警告技能",
+        "criticalSkills": "嚴重技能",
+        "avgScore": "平均分"
+      },
+      "detail": {
+        "metaCompleteness": "元資料完整性",
+        "depDeclarations": "依賴宣告",
+        "docQuality": "文件品質",
+        "securityCompliance": "安全合規"
+      }
+    },
+    "docQuality": {
+      "title": "文件品質檢查",
+      "overallScore": "綜合評分",
+      "level": {
+        "excellent": "優秀",
+        "good": "良好",
+        "fair": "一般",
+        "poor": "較差"
+      },
+      "checks": {
+        "structure": "結構完整性",
+        "readability": "可讀性",
+        "examples": "範例完整性",
+        "parameters": "參數說明",
+        "formatting": "格式規範"
+      },
+      "summary": {
+        "total": "總計",
+        "excellent": "優秀",
+        "good": "良好",
+        "fair": "一般",
+        "poor": "較差",
+        "avgScore": "平均分"
+      },
+      "issues": "問題",
+      "suggestions": "建議"
+    },
+    "usage": {
+      "title": "使用分析",
+      "trend": "呼叫趨勢",
+      "topSkills": "Top 技能",
+      "cooccurrence": "共現組合",
+      "statusDistribution": "狀態分佈",
+      "timeRange": {
+        "7days": "近 7 天",
+        "14days": "近 14 天",
+        "30days": "近 30 天",
+        "90days": "近 90 天"
+      },
+      "totalCalls": "總呼叫次數",
+      "avgDaily": "日均呼叫",
+      "successRate": "成功率",
+      "errorRate": "錯誤率"
+    },
+    "recommendations": {
+      "title": "智慧推薦",
+      "related": "相關推薦",
+      "basedOn": "基於您的使用習慣",
+      "noData": "暫無推薦資料（使用技能後將產生個人化推薦）",
+      "reason": {
+        "cooccurrence": "關聯使用",
+        "similarity": "內容相似",
+        "trending": "熱門趨勢",
+        "collaborative": "協同過濾"
+      }
+    },
+    "search": {
+      "hasDependencies": "有依賴",
+      "noDependencies": "無依賴",
+      "healthy": "健康",
+      "warning": "警告",
+      "critical": "嚴重",
+      "sortBy": {
+        "score": "依評分",
+        "name": "依名稱",
+        "recent": "依時間",
+        "health": "依健康度"
+      }
     }
   },
   "slashCommands": {

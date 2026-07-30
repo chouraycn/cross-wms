@@ -258,7 +258,7 @@ export type ClassifyChannelInboundEventParams = {
 
 // ---- 入站事件上下文构建 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function buildChannelInboundEventContext(
   params: BuildChannelInboundEventContextParams,
 ): BuiltChannelInboundEventContext {
@@ -269,24 +269,24 @@ export function buildChannelInboundEventContext(
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function finalizeChannelInboundContext(
   params: FinalizeChannelInboundContextParams,
 ): FinalizeChannelInboundContextResult {
   return buildChannelInboundEventContext(params);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function filterChannelInboundQuoteContext<T>(items: T[]): T[] {
   return items;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function filterChannelInboundSupplementalContext<T>(items: T[]): T[] {
   return items;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelInboundSupplementalContext(
   _params: unknown,
   _options?: ChannelInboundSupplementalResolutionOptions,
@@ -324,7 +324,7 @@ export type BuildMentionRegexesOptions = {
   customPatterns?: string[];
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function buildMentionRegexes(options?: BuildMentionRegexesOptions): RegExp[] {
   const patterns: RegExp[] = [];
   if (options?.botName) {
@@ -336,12 +336,12 @@ export function buildMentionRegexes(options?: BuildMentionRegexesOptions): RegEx
   return patterns;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function matchesMentionPatterns(text: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(text));
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function matchesMentionWithExplicit(
   text: string,
   patterns: RegExp[],
@@ -350,14 +350,14 @@ export function matchesMentionWithExplicit(
   return explicit || matchesMentionPatterns(text, patterns);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function normalizeMentionText(text: string): string {
   return text.trim().toLowerCase();
 }
 
 // ---- 提及门控 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveInboundMentionDecision(
   params: ResolveInboundMentionDecisionParams,
 ): InboundMentionDecision {
@@ -383,7 +383,7 @@ export function resolveMentionGatingWithBypass(
   return resolveInboundMentionDecision(params);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function implicitMentionKindWhen(_facts: InboundMentionFacts): InboundImplicitMentionKind {
   return "none";
 }
@@ -402,7 +402,7 @@ export type ResolvedMentionPatternPolicy = {
   requireExplicit: boolean;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveMentionPatternPolicy(
   params: ResolveMentionPatternPolicyParams,
 ): ResolvedMentionPatternPolicy {
@@ -414,7 +414,7 @@ export function resolveMentionPatternPolicy(
 
 // ---- 信封格式化 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function formatInboundEnvelope(
   text: string,
   _options?: EnvelopeFormatOptions,
@@ -422,19 +422,19 @@ export function formatInboundEnvelope(
   return text;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function formatInboundFromLabel(name: string): string {
   return name;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveEnvelopeFormatOptions(_input?: unknown): EnvelopeFormatOptions {
   return {};
 }
 
 // ---- 入站去抖 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveInboundDebounceMs(_input?: unknown): number {
   return 0;
 }
@@ -446,7 +446,7 @@ export type InboundDebouncer = {
   flush(key: string): void;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createInboundDebouncer(): InboundDebouncer {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   return {
@@ -474,19 +474,19 @@ export function createInboundDebouncer(): InboundDebouncer {
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createChannelInboundDebouncer(): InboundDebouncer {
   return createInboundDebouncer();
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function shouldDebounceTextInbound(_text: string): boolean {
   return false;
 }
 
 // ---- 位置 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function formatLocationText(location: NormalizedLocation): string {
   const parts: string[] = [];
   if (location.label) parts.push(location.label);
@@ -496,28 +496,28 @@ export function formatLocationText(location: NormalizedLocation): string {
   return parts.join(" ");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function toLocationContext(location: NormalizedLocation): Record<string, unknown> {
   return { ...location };
 }
 
 // ---- 日志 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function logInboundDrop(_channelId: string, _reason: string, _log?: LogFn): void {
   _log?.(`Inbound dropped: ${_reason}`);
 }
 
 // ---- 会话信封 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveInboundSessionEnvelopeContext(_input: unknown): unknown {
   return undefined;
 }
 
 // ---- 入站事件分类 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function classifyChannelInboundEvent(
   params: ClassifyChannelInboundEventParams,
 ): InboundEventKind {
@@ -526,82 +526,82 @@ export function classifyChannelInboundEvent(
   return "message";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveUnmentionedGroupInboundPolicy(): { ignore: boolean } {
   return { ignore: false };
 }
 
 // ---- 入站回复分发 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runChannelInboundEvent(
   _params: ChannelInboundEventRunnerParams,
 ): Promise<InboundReplyDispatchResult> {
   return { dispatched: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runPreparedInboundReply(
   _reply: PreparedInboundReply,
 ): Promise<InboundReplyDispatchResult> {
   return { dispatched: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function dispatchChannelInboundReply(
   _reply: PreparedInboundReply,
 ): Promise<InboundReplyDispatchResult> {
   return { dispatched: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function recordDroppedChannelInboundHistory(
   _channelId: string,
   _options?: ChannelInboundDroppedHistoryOptions,
 ): void {}
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function dispatchReplyFromConfigWithSettledDispatcher(
   _input: unknown,
 ): Promise<InboundReplyDispatchResult> {
   return { dispatched: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function hasFinalInboundReplyDispatch(_result: InboundReplyDispatchResult): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function hasVisibleInboundReplyDispatch(_result: InboundReplyDispatchResult): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function recordChannelBotPairLoopAndCheckSuppression(
   _facts: ChannelBotLoopProtectionFacts,
 ): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveInboundReplyDispatchCounts(_input: unknown): { final: number; visible: number } {
   return { final: 0, visible: 0 };
 }
 
 // ---- 入站媒体 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function toHistoryMediaEntries(_input: unknown): unknown[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function toInboundMediaFacts(_input: unknown): InboundMediaFacts {
   return { hasMedia: false, mediaCount: 0, mediaKinds: [] };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function buildChannelInboundMediaPayload(
   _inputs: ChannelInboundMediaInput[],
 ): ChannelInboundMediaPayload {
@@ -613,28 +613,28 @@ export const buildChannelTurnMediaPayload = buildChannelInboundMediaPayload;
 
 // ---- 命令回合上下文 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createCommandTurnContext(text: string): CommandTurnContext {
   const parts = text.split(/\s+/);
   return { command: parts[0] ?? "", args: parts.slice(1), isNative: text.startsWith("/") };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isAuthorizedTextSlashCommandTurn(_text: string): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isExplicitCommandTurn(text: string): boolean {
   return text.startsWith("/");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isNativeCommandTurn(text: string): boolean {
   return text.startsWith("/");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isTextSlashCommandTurn(text: string): boolean {
   return text.startsWith("/");
 }
@@ -661,24 +661,24 @@ export type ResolvedInboundDirectDmAccess = {
   reason?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createDirectDmPreCryptoGuardPolicy(
   _overrides?: DirectDmPreCryptoGuardPolicyOverrides,
 ): DirectDmPreCryptoGuardPolicy {
   return { authorize: () => true };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPreCryptoDirectDmAuthorizer(_policy?: DirectDmPreCryptoGuardPolicy): unknown {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function dispatchInboundDirectDmWithRuntime(_input: unknown): Promise<unknown> {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function resolveInboundDirectDmAccessWithRuntime(
   _input: unknown,
 ): Promise<ResolvedInboundDirectDmAccess> {
@@ -687,7 +687,7 @@ export async function resolveInboundDirectDmAccessWithRuntime(
 
 // ---- 入站路径根 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function mergeInboundPathRoots(..._roots: unknown[][]): unknown[] {
   return [];
 }

@@ -46,21 +46,24 @@ import { useToast } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
 import type { OutboundReview } from '../types/wms';
 import { API_BASE_URL } from '../constants/api';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const BASE_URL = API_BASE_URL;
-
-/** 复核状态映射 */
-const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success' | 'error' }> = {
-  pending: { label: '待复核', color: 'warning' },
-  passed: { label: '已通过', color: 'success' },
-  failed: { label: '未通过', color: 'error' },
-};
 
 const WmsOutboundPage: React.FC = () => {
   const { showToast } = useToast();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { t } = useI18n();
+  const dateLocale = getDateLocale();
+
+  /** 复核状态映射 */
+  const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success' | 'error' }> = {
+    pending: { label: t('待复核'), color: 'warning' },
+    passed: { label: t('已通过'), color: 'success' },
+    failed: { label: t('未通过'), color: 'error' },
+  };
 
   const [data, setData] = useState<OutboundReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,14 +87,14 @@ const WmsOutboundPage: React.FC = () => {
       if (json.code === 0 || json.success) {
         setData(json.data || []);
       } else {
-        showToast(json.message || json.message || json.error || '获取数据失败', 'error');
+        showToast(json.message || json.message || json.error || t('获取数据失败'), 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(t('网络错误'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => {
     fetchData();
@@ -130,13 +133,13 @@ const WmsOutboundPage: React.FC = () => {
       const res = await fetch(`${BASE_URL}/api/wms/outbound/${deletingId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
-        showToast('删除成功', 'success');
+        showToast(t('删除成功'), 'success');
         fetchData();
       } else {
-        showToast(json.message || json.error || '删除失败', 'error');
+        showToast(json.message || json.error || t('删除失败'), 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(t('网络错误'), 'error');
     } finally {
       setDeleteDialogOpen(false);
       setDeletingId(null);
@@ -151,13 +154,13 @@ const WmsOutboundPage: React.FC = () => {
       const res = await fetch(`${BASE_URL}/api/wms/outbound/${id}/scan`, { method: 'POST' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
-        showToast('扫描成功', 'success');
+        showToast(t('扫描成功'), 'success');
         fetchData();
       } else {
-        showToast(json.message || json.error || '扫描失败', 'error');
+        showToast(json.message || json.error || t('扫描失败'), 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(t('网络错误'), 'error');
     } finally {
       setScanningId(null);
     }
@@ -165,7 +168,7 @@ const WmsOutboundPage: React.FC = () => {
 
   const handleExport = () => {
     if (filteredData.length === 0) return;
-    const headers = ['ID', '出库单号', 'SKU', '商品名称', '预期数量', '已扫描数量', '复核状态', '复核人', '复核时间', '备注'];
+    const headers = ['ID', t('出库单号'), 'SKU', t('商品名称'), t('预期数量'), t('已扫描数量'), t('复核状态'), t('复核人'), t('复核时间'), t('备注')];
     const rows = filteredData.map((item) => [
       String(item.id ?? ''),
       item.outboundOrderId,
@@ -183,28 +186,28 @@ const WmsOutboundPage: React.FC = () => {
 
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '-';
-    try { return new Date(dateStr).toLocaleString('zh-CN'); } catch { return dateStr; }
+    try { return new Date(dateStr).toLocaleString(dateLocale); } catch { return dateStr; }
   };
 
   return (
     <Box>
       <PageHeader
-        title="出库复核"
-        subtitle="出库前商品扫描复核，确保发货准确"
-        summary={`共 ${filteredData.length} 条记录 · 通过 ${data.filter((i) => i.reviewStatus === 'passed').length} 条`}
+        title={t('出库复核')}
+        subtitle={t('出库前商品扫描复核，确保发货准确')}
+        summary={t('共 {total} 条记录 · 通过 {passed} 条', { total: filteredData.length, passed: data.filter((i) => i.reviewStatus === 'passed').length })}
         action={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>状态筛选</InputLabel>
+              <InputLabel>{t('状态筛选')}</InputLabel>
               <Select
                 value={filterStatus}
-                label="状态筛选"
+                label={t('状态筛选')}
                 onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
               >
-                <MenuItem value="all">全部</MenuItem>
-                <MenuItem value="pending">待复核</MenuItem>
-                <MenuItem value="passed">已通过</MenuItem>
-                <MenuItem value="failed">未通过</MenuItem>
+                <MenuItem value="all">{t('全部')}</MenuItem>
+                <MenuItem value="pending">{t('待复核')}</MenuItem>
+                <MenuItem value="passed">{t('已通过')}</MenuItem>
+                <MenuItem value="failed">{t('未通过')}</MenuItem>
               </Select>
             </FormControl>
             <Button
@@ -220,9 +223,9 @@ const WmsOutboundPage: React.FC = () => {
                 '&:hover': { backgroundColor: gs.textSecondary },
               }}
             >
-              新增复核
+              {t('新增复核')}
             </Button>
-            <Tooltip title="导出 CSV">
+            <Tooltip title={t('导出 CSV')}>
               <Button
                 variant="outlined"
                 size="small"
@@ -237,7 +240,7 @@ const WmsOutboundPage: React.FC = () => {
                   '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
                 }}
               >
-                导出
+                {t('导出')}
               </Button>
             </Tooltip>
           </Box>
@@ -247,11 +250,11 @@ const WmsOutboundPage: React.FC = () => {
       <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
+            <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
           </Box>
         ) : filteredData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">暂无复核记录</Typography>
+            <Typography variant="body2" color="text.secondary">{t('暂无复核记录')}</Typography>
           </Box>
         ) : (
           <>
@@ -260,16 +263,16 @@ const WmsOutboundPage: React.FC = () => {
                 <TableHead>
                   <TableRow sx={{ backgroundColor: gs.bgHover }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>出库单号</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('出库单号')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>商品名称</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>预期数量</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>已扫描</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>进度</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>复核状态</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>复核人</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>复核时间</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 140 }}>操作</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('商品名称')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('预期数量')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('已扫描')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('进度')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('复核状态')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('复核人')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('复核时间')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 140 }}>{t('操作')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

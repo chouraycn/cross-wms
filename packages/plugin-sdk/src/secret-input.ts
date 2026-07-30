@@ -1,7 +1,7 @@
 // Secret input helpers normalize credential prompt definitions for plugin setup flows.
 import { z } from "zod";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function buildSecretInputSchema(): z.ZodType<unknown> {
   return z.unknown();
 }

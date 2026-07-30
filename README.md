@@ -98,6 +98,36 @@ bash build-dmg-pywebview.sh
 | `api` | 外部 REST API |
 | `tencent-docs` | 腾讯文档 API 读取 |
 
+## 测试与覆盖率门禁
+
+```bash
+# 运行全部单元测试
+npm test
+
+# 运行测试并生成覆盖率报告（CI 使用）
+npm run test:coverage
+```
+
+覆盖率门禁在 CI（`.github/workflows/pr-quality-gate.yml` 的 `test` job）中强制执行：
+`vitest.config.ts` 的 `coverage.thresholds` 不满足时 vitest 直接以非 0 退出，构成主门禁。
+
+| 维度 | 当前阈值 | 当前基线 | 目标 |
+|------|---------|---------|------|
+| Lines | 2% | ~5% | 70% |
+| Functions | 40% | ~86% | 70% |
+| Branches | 35% | ~83% | 70% |
+| Statements | 2% | ~5% | 70% |
+
+> **说明**：Lines / Statements 基线偏低是 `@vitest/coverage-v8` 对被 import 的 TS 模块
+> 行级覆盖统计的已知限制（大量文件出现 0% lines / 100% functions）。因此 Functions / Branches
+> 是当前主要门禁信号。Lines / Statements 阈值设在基线之下以避免 CI 立即失败，同时阻止覆盖率回退。
+> 随覆盖率提升（见提升计划）将逐步上调阈值。
+
+**提升路线图**：
+1. 当前阶段：Functions 40% / Branches 35%（防止回退）
+2. 中期目标：Functions 60% / Branches 50%（补齐核心模块测试）
+3. 最终目标：全面 70%（含 Lines / Statements，需评估切换 istanbul provider 修复行级统计）
+
 ## 版本历史
 
 | 版本 | 日期 | 关键变更 |

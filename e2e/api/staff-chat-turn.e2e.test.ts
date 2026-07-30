@@ -7,9 +7,11 @@ import * as agentDao from '../../server/dao/staff/staffAgentDao.js';
 /**
  * 覆盖数字员工「演示模式 / 同步 turn / SSE 协议」冒烟：
  *  - /turn 在桌面默认无 API Key 时返回演示模式占位回答（验证接线正确）
- *  - /stream 的 SSE 事件顺序（session.created → message.saved(user) →
- *    thinking.delta → thinking.end → text.delta → text.end →
- *    message.saved(assistant) → done），且 done 必现收尾。
+ *  - /stream 的 SSE 事件顺序（对齐前端 useChatSession 契约）：
+ *    session_created → user_message_received →
+ *    stream_delta* → stream_end → done，且 done 必现收尾。
+ *    （后端 StaffStreamEvent 原始名 session.created/text.delta/message.saved
+ *     已统一重写为前端事件名，否则聊天 UI 会因事件名失配而假死。）
  *
  * 通过 mock loadModelsConfig 抛错强制走 mock 兜底分支（桌面默认路径），
  * 保证断言确定、不依赖测试环境是否有真实模型配置。
@@ -139,29 +141,143 @@ describe('员工聊天 /stream SSE 协议顺序（mock 演示模式）', () => {
     const types = events.map((e) => e.type);
     expect(events.length).toBeGreaterThan(0);
 
-    // 必现事件
-    expect(types).toContain('session.created');
-    expect(types).toContain('message.saved');
-    expect(types).toContain('thinking.delta');
-    expect(types).toContain('thinking.end');
-    expect(types).toContain('text.delta');
-    expect(types).toContain('text.end');
+    // 必现事件（前端 useChatSession 契约名，非后端原始名）
+    expect(types).toContain('session_created');
+    expect(types).toContain('user_message_received');
+    expect(types).toContain('stream_delta');
+    expect(types).toContain('stream_end');
     expect(types).toContain('done');
 
     // 顺序断言
-    const userMsg = orderOf(types, 'message.saved'); // 第一个是 user
-    const assistantMsg = types.lastIndexOf('message.saved'); // 最后一个是 assistant
-    const thinkingDelta = orderOf(types, 'thinking.delta');
-    const textEnd = orderOf(types, 'text.end');
+    const userMsg = orderOf(types, 'user_message_received');
+    const lastDelta = types.lastIndexOf('stream_delta');
+    const streamEnd = orderOf(types, 'stream_end');
     const done = orderOf(types, 'done');
 
-    expect(orderOf(types, 'session.created')).toBe(0); // 首个事件
-    expect(userMsg).toBeLessThan(thinkingDelta); // user 消息先于思考
-    expect(textEnd).toBeLessThan(assistantMsg); // 文本结束先于 assistant 落库
-    expect(assistantMsg).toBeLessThan(done); // assistant 落库先于 done
+    expect(orderOf(types, 'session_created')).toBe(0); // 首个事件
+    expect(userMsg).toBeGreaterThan(0); // user 消息在 session_created 之后
+    expect(userMsg).toBeLessThan(lastDelta); // user 消息先于流式文本
+    expect(lastDelta).toBeLessThan(streamEnd); // 文本增量先于 stream_end
+    expect(streamEnd).toBeLessThan(done); // stream_end 先于 done
     expect(done).toBe(types.length - 1); // done 必须是最后一个事件（铁律：error 走 sendSSE 后必现 done）
 
     // done 之后不得再有任何事件（防止前端卡「思考中」）
     expect(types.slice(done + 1).length).toBe(0);
+  });
+});
+
+describe('员工聊天 /attachments 附件上传（multipart）', () => {
+  const app = makeApp();
+  const tenant = `test-attach-${Date.now()}`;
+
+  it('上传 txt 文件返回 ChatAttachmentRead[]', async () => {
+    const res = await request(app)
+      .post('/chat/attachments?tenant_id=' + tenant)
+      .attach('files', Buffer.from('hello cross-wms'), 'hello.txt')
+      .expect(200);
+
+    expect(res.body.code).toBe(0);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    const att = res.body.data[0];
+    expect(att.id).toBeTruthy();
+    expect(att.filename).toBe('hello.txt');
+    expect(att.content_type).toBe('text/plain');
+    expect(att.size).toBe('hello cross-wms'.length);
+    expect(att.kind).toBe('text');
+  });
+
+  it('无文件时返回 400', async () => {
+    const res = await request(app)
+      .post('/chat/attachments?tenant_id=' + tenant)
+      .field('foo', 'bar')
+      .expect(400);
+    expect(res.body.code).toBe(400);
+  });
+});
+
+describe('员工聊天 /sessions/:id/trace 时间线分组', () => {
+  const app = makeApp();
+  const tenant = `test-trace-${Date.now()}`;
+
+  it('返回按 turn 分组的 TurnTraceRead[] 且含 tool/decision 行', async () => {
+    const agent = agentDao.createAgent({
+      tenant_id: tenant,
+      name: `agent-trace-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      persona_prompt: '你是测试数字员工。',
+    });
+    const session = await request(app)
+      .post('/chat/sessions')
+      .send({ tenant_id: tenant, agent_id: agent.id, title: 't' });
+    const sessionId = session.body.data.id;
+
+    await request(app)
+      .post('/chat/stream')
+      .send({ tenant_id: tenant, agent_id: agent.id, session_id: sessionId, message: '讲个笑话' })
+      .buffer(true)
+      .parse((r, cb) => {
+        let data = '';
+        r.on('data', (c) => (data += c));
+        r.on('end', () => cb(null, data));
+      })
+      .expect(200);
+
+    const trace = await request(app)
+      .get(`/chat/sessions/${sessionId}/trace?tenant_id=${tenant}`)
+      .expect(200);
+    expect(trace.body.code).toBe(0);
+    expect(Array.isArray(trace.body.data)).toBe(true);
+    const turns = trace.body.data as Array<{
+      turn_id: string;
+      lines: Array<{ id: string; kind: string; state: string }>;
+    }>;
+    expect(turns.length).toBeGreaterThan(0);
+    // 至少有一个 turn 含 decision 行（assistant_message_created 映射）
+    const hasDecision = turns.some((t) => t.lines.some((l) => l.kind === 'decision'));
+    expect(hasDecision).toBe(true);
+    // 每个 turn 都有 completed_at
+    expect(turns.every((t) => Boolean(t.turn_id))).toBe(true);
+  });
+});
+
+describe('员工聊天 /messages/:id/feedback 点赞点踩', () => {
+  const app = makeApp();
+  const tenant = `test-feedback-${Date.now()}`;
+
+  it('POST 创建 + DELETE 取消反馈', async () => {
+    const agent = agentDao.createAgent({
+      tenant_id: tenant,
+      name: `agent-fb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      persona_prompt: '你是测试数字员工。',
+    });
+    const session = await request(app)
+      .post('/chat/sessions')
+      .send({ tenant_id: tenant, agent_id: agent.id, title: 'f' });
+    const sessionId = session.body.data.id;
+    const msg = await request(app)
+      .post('/chat/messages')
+      .send({ tenant_id: tenant, session_id: sessionId, role: 'assistant', content: '回复' });
+    const messageId = msg.body.data.id;
+
+    const up = await request(app)
+      .post(`/chat/messages/${messageId}/feedback`)
+      .send({ tenant_id: tenant, rating: 'up' })
+      .expect(200);
+    expect(up.body.code).toBe(0);
+    expect(up.body.data.rating).toBe('up');
+
+    const del = await request(app)
+      .delete(`/chat/messages/${messageId}/feedback?tenant_id=${tenant}`)
+      .expect(200);
+    expect(del.body.code).toBe(0);
+    expect(del.body.data.deleted).toBe(true);
+  });
+
+  it('非法 rating 返回 400', async () => {
+    const res = await request(app)
+      .post('/chat/messages/whatever/feedback')
+      .send({ tenant_id: tenant, rating: 'sideways' })
+      .expect(400);
+    expect(res.body.code).toBe(400);
   });
 });

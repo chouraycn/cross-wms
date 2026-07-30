@@ -29,41 +29,75 @@ initPerformanceTelemetry();
 try {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
   root.render(<App />)
+  // React 首次渲染完成（下一帧绘制后）隐藏启动占位符
+  // 使用双重 rAF 确保首帧已绘制到屏幕，避免 placeholder 消失后短暂白屏
+  if (typeof (window as any).__hideBootPlaceholder === 'function') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => (window as any).__hideBootPlaceholder(), 30);
+      });
+    });
+  }
 } catch (e: any) {
   const errMsg = e?.message || String(e);
   const errStack = e?.stack || '';
   const errorEl = document.getElementById('root-error');
-  const loadingEl = document.getElementById('root-loading');
   if (errorEl) {
     errorEl.textContent = 'React 渲染异常: ' + errMsg + '\n' + errStack;
     errorEl.className = 'show';
   }
-  if (loadingEl) {
-    loadingEl.className = 'hide';
+  // 渲染异常时也需隐藏启动占位符，让用户看到错误信息
+  if (typeof (window as any).__hideBootPlaceholder === 'function') {
+    (window as any).__hideBootPlaceholder();
   }
   console.error('[CDFKnow] React 渲染异常:', errMsg, errStack);
 }
 
-// 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）
+// 启动阶段单任务最大等待时间（ms），避免后端不可达时长时间挂起
+const BOOTSTRAP_TASK_TIMEOUT_MS = 8000;
+
+/** 在启动阶段为 Promise 加超时包装：超时不抛错，降级继续，避免阻塞 */
+async function withBootstrapTimeout<T>(promise: Promise<T>, fallback: T, taskName: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      // 超时直接返回 fallback，不报错，让后续流程继续
+      // console.warn(`[Bootstrap] ${taskName} 超时 ${BOOTSTRAP_TASK_TIMEOUT_MS}ms，降级继续`);
+      resolve(fallback);
+    }, BOOTSTRAP_TASK_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } catch {
+    return fallback;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染，且每个阶段有超时保护）
 async function bootstrap() {
   markPhase('bootstrap:migration');
   try {
-    await checkAndMigrate();
+    await withBootstrapTimeout(checkAndMigrate(), true, '数据迁移');
     endPhase('bootstrap:migration');
 
     markPhase('bootstrap:warehouse');
-    await initWarehouseCapability();
+    await withBootstrapTimeout(initWarehouseCapability(), undefined, '仓库能力');
     endPhase('bootstrap:warehouse');
 
     markPhase('bootstrap:skills');
     setTimeout(() => {
-      initSkills()
+      withBootstrapTimeout(
+        initSkills() as unknown as Promise<undefined>,
+        undefined,
+        '技能配置',
+      )
         .then(() => endPhase('bootstrap:skills'))
         .catch(() => endPhase('bootstrap:skills', { error: true }));
-    }, 500);
-  } catch (e) {
+    }, 300);
+  } catch {
     endPhase('bootstrap:migration', { error: true });
-    // console.error('[Bootstrap] Store 初始化失败:', e)
   }
   endPhase('app:bootstrap:start', { completed: true });
 }

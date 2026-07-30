@@ -51,7 +51,7 @@ export type DraftStreamLoop = {
 // ---- 运行状态机 ----
 
 /** 创建运行状态机。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createRunStateMachine(initial: RunStateMachineState = "idle"): RunStateMachine {
   let state: RunStateMachineState = initial;
   const handlers: Array<(from: RunStateMachineState, to: RunStateMachineState) => void> = [];
@@ -89,7 +89,7 @@ export function createRunStateMachine(initial: RunStateMachineState = "idle"): R
 // ---- 停滞看门狗 ----
 
 /** 创建可武装的停滞看门狗。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createArmableStallWatchdog(options?: {
   timeoutMs?: number;
   onTimeout?: (meta: StallWatchdogTimeoutMeta) => void;
@@ -123,7 +123,7 @@ export function createArmableStallWatchdog(options?: {
 // ---- 草稿预览最终化器 ----
 
 /** 创建草稿预览最终化器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createDraftPreviewFinalizer(): DraftPreviewFinalizer {
   return {
     async finalize() {},
@@ -134,7 +134,7 @@ export function createDraftPreviewFinalizer(): DraftPreviewFinalizer {
 // ---- 草稿流控制 ----
 
 /** 创建可最终化草稿流控制。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createFinalizableDraftStreamControls(): FinalizableDraftStreamControls {
   let streaming = false;
   return {
@@ -151,7 +151,7 @@ export function createFinalizableDraftStreamControls(): FinalizableDraftStreamCo
 }
 
 /** 创建草稿流循环。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createDraftStreamLoop(): DraftStreamLoop {
   return {
     async start() {},

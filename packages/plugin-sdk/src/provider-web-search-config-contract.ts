@@ -50,7 +50,7 @@ export type ProviderWebSearchPluginConfig = {
   options?: Record<string, unknown>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function getScopedCredentialValue(
   _config: ProviderWebSearchPluginConfig | undefined,
   _scope: string,
@@ -59,7 +59,7 @@ export function getScopedCredentialValue(
   return _config?.scopedCredentials?.[_scope]?.[key];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function getTopLevelCredentialValue(
   config: ProviderWebSearchPluginConfig | undefined,
   key: string,
@@ -67,7 +67,7 @@ export function getTopLevelCredentialValue(
   return config?.credentials?.[key];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function mergeScopedSearchConfig(
   base: ProviderWebSearchPluginConfig | undefined,
   _scoped: ProviderWebSearchPluginConfig | undefined,
@@ -75,14 +75,14 @@ export function mergeScopedSearchConfig(
   return base ?? {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProviderWebSearchPluginConfig(
   _pluginId: string,
 ): ProviderWebSearchPluginConfig | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function setScopedCredentialValue(
   config: ProviderWebSearchPluginConfig,
   scope: string,
@@ -94,7 +94,7 @@ export function setScopedCredentialValue(
   return { ...config, scopedCredentials: scoped };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function setProviderWebSearchPluginConfigValue(
   config: ProviderWebSearchPluginConfig,
   key: string,
@@ -104,7 +104,7 @@ export function setProviderWebSearchPluginConfigValue(
   return { ...config, options: { ...options, [key]: value } };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function setTopLevelCredentialValue(
   config: ProviderWebSearchPluginConfig,
   key: string,

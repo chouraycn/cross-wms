@@ -88,6 +88,57 @@ export function getMessageFeedbackById(
     .get(tenantId, feedbackId) as MessageFeedbackRow | undefined;
 }
 
+/** 按 message_id + user_id 获取已有反馈（用于 upsert） */
+export function getMessageFeedbackByMessage(
+  tenantId: string,
+  messageId: string,
+  userId: string,
+): MessageFeedbackRow | undefined {
+  const db = initDb();
+  return db
+    .prepare(
+      'SELECT * FROM sd_message_feedback WHERE tenant_id = ? AND message_id = ? AND user_id = ?',
+    )
+    .get(tenantId, messageId, userId) as MessageFeedbackRow | undefined;
+}
+
+/**
+ * 消息反馈 upsert：同一 (tenant, message, user) 唯一约束下，
+ * 已存在则更新 rating，不存在则创建。供聊天 👍/👎 端点使用。
+ */
+export function upsertMessageFeedback(
+  input: MessageFeedbackCreateInput,
+): MessageFeedbackRow {
+  const tenantId = input.tenant_id ?? DEFAULT_TENANT_ID;
+  const existing = getMessageFeedbackByMessage(tenantId, input.message_id, input.user_id);
+  if (existing) {
+    const db = initDb();
+    const ts = now();
+    db.prepare('UPDATE sd_message_feedback SET rating = ?, updated_at = ? WHERE id = ?').run(
+      input.rating,
+      ts,
+      existing.id,
+    );
+    return db.prepare('SELECT * FROM sd_message_feedback WHERE id = ?').get(existing.id) as MessageFeedbackRow;
+  }
+  return createMessageFeedback(input);
+}
+
+/** 删除消息反馈（取消点踩/点赞） */
+export function deleteMessageFeedback(
+  tenantId: string,
+  messageId: string,
+  userId: string,
+): boolean {
+  const db = initDb();
+  const r = db
+    .prepare(
+      'DELETE FROM sd_message_feedback WHERE tenant_id = ? AND message_id = ? AND user_id = ?',
+    )
+    .run(tenantId, messageId, userId);
+  return r.changes > 0;
+}
+
 export interface MessageFeedbackCreateInput {
   tenant_id?: string;
   session_id: string;

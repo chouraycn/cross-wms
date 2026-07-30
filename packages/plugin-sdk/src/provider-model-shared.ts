@@ -14,8 +14,8 @@ import {
 //   buildStrictAnthropicReplayPolicy,
 //   resolveTaggedReasoningOutputMode,
 //   sanitizeGoogleGeminiReplayHistory,
-// } from "../plugins/provider-replay-helpers.js"; // TODO: 依赖模块未移植
-// import type { ProviderPlugin } from "../plugins/types.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-replay-helpers.js"; // contract stub
+// import type { ProviderPlugin } from "../plugins/types.js"; // contract stub
 import type {
   ProviderReasoningOutputModeContext,
   ProviderReplayPolicyContext,
@@ -25,7 +25,7 @@ import type {
 // export type {
 //   ModelApi,
 //   ModelProviderDeclarationConfig as ModelProviderConfig,
-// } from "../config/types.models.js"; // TODO: 依赖模块未移植
+// } from "../config/types.models.js"; // contract stub
 // export {
 //   resolveClaudeFable5ModelIdentity,
 //   resolveClaudeModelIdentity,
@@ -33,7 +33,7 @@ import type {
 //   supportsClaudeAdaptiveThinking,
 //   supportsClaudeNativeMaxEffort,
 //   supportsClaudeNativeXhighEffort,
-// } from "@openclaw/llm-core"; // TODO: 依赖模块未移植
+// } from "@openclaw/llm-core"; // contract stub
 export type {
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogKind,
@@ -43,18 +43,18 @@ export type {
 //   BedrockDiscoveryConfig,
 //   ModelCompatConfig,
 //   ModelDefinitionConfig,
-// } from "../config/types.models.js"; // TODO: 依赖模块未移植
+// } from "../config/types.models.js"; // contract stub
 // export type {
 //   ProviderEndpointClass,
 //   ProviderEndpointResolution,
-// } from "../agents/provider-attribution.js"; // TODO: 依赖模块未移植
+// } from "../agents/provider-attribution.js"; // contract stub
 // export type {
 //   ProviderPlugin,
 //   UnifiedModelCatalogProviderContext,
 //   UnifiedModelCatalogProviderPlugin,
-// } from "../plugins/types.js"; // TODO: 依赖模块未移植
+// } from "../plugins/types.js"; // contract stub
 
-// export { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js"; // TODO: 依赖模块未移植
+// export { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js"; // contract stub
 // export {
 //   GPT5_BEHAVIOR_CONTRACT,
 //   GPT5_FRIENDLY_CHAT_PROMPT_OVERLAY,
@@ -66,8 +66,8 @@ export type {
 //   resolveGpt5PromptOverlayMode,
 //   resolveGpt5SystemPromptContribution,
 //   type Gpt5PromptOverlayMode,
-// } from "../agents/gpt5-prompt-overlay.js"; // TODO: 依赖模块未移植
-// export { resolveProviderEndpoint } from "../agents/provider-attribution.js"; // TODO: 依赖模块未移植
+// } from "../agents/gpt5-prompt-overlay.js"; // contract stub
+// export { resolveProviderEndpoint } from "../agents/provider-attribution.js"; // contract stub
 // export {
 //   applyModelCompatPatch,
 //   hasToolSchemaProfile,
@@ -75,7 +75,7 @@ export type {
 //   normalizeModelCompat,
 //   resolveUnsupportedToolSchemaKeywords,
 //   resolveToolCallArgumentsEncoding,
-// } from "../plugins/provider-model-compat.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-model-compat.js"; // contract stub
 export {
   buildAnthropicReplayPolicyForModel,
   buildGoogleGeminiReplayPolicy,
@@ -98,12 +98,12 @@ type ProviderPlugin = {
   [key: string]: unknown;
 };
 
-/** Normalizes optional lowercase string. TODO: 依赖模块未移植 */
+/** Normalizes optional lowercase string. Contract stub: upstream import. */
 function normalizeOptionalLowercaseString(value: unknown): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function buildAnthropicReplayPolicyForModel(_modelId: string): unknown {
   return { type: "anthropic-by-model" };
 }
@@ -130,7 +130,7 @@ function buildStrictAnthropicReplayPolicy(): unknown {
   return { type: "strict-anthropic" };
 }
 
-/** Resolves provider endpoint. TODO: 依赖模块未移植 */
+/** Resolves provider endpoint. Contract stub: upstream import. */
 export function resolveProviderEndpoint(baseUrl: string): { endpointClass: string } {
   return { endpointClass: baseUrl ? "valid" : "invalid" };
 }
@@ -147,17 +147,17 @@ export function normalizeProviderId(
 // export {
 //   createMoonshotThinkingWrapper,
 //   resolveMoonshotThinkingType,
-// } from "../llm/providers/stream-wrappers/moonshot-thinking.js"; // TODO: 依赖模块未移植
+// } from "../llm/providers/stream-wrappers/moonshot-thinking.js"; // contract stub
 // export {
 //   cloneFirstTemplateModel,
 //   matchesExactOrPrefix,
-// } from "../plugins/provider-model-helpers.js"; // TODO: 依赖模块未移植
-// import { normalizeOptionalLowercaseString } from "../../packages/normalization-core/src/string-coerce.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-model-helpers.js"; // contract stub
+// import { normalizeOptionalLowercaseString } from "../../packages/normalization-core/src/string-coerce.js"; // contract stub
 
 // export {
 //   isClaudeAdaptiveThinkingDefaultModelId,
 //   resolveClaudeThinkingProfile,
-// } from "../plugins/provider-claude-thinking.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-claude-thinking.js"; // contract stub
 
 function getModelProviderHint(modelId: string): string | null {
   const trimmed = normalizeOptionalLowercaseString(modelId);

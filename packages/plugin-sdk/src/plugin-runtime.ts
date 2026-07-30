@@ -26,9 +26,17 @@ export type GatewayRequestScope = {
   pluginId?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
-export function getPluginRuntimeGatewayRequestScope(): GatewayRequestScope | undefined {
-  return undefined;
+// 动态导入 server/gateway 请求作用域；失败时回退到 undefined。
+export async function getPluginRuntimeGatewayRequestScope(): Promise<GatewayRequestScope | undefined> {
+  try {
+    const specifier: string = '../../../server/gateway/gatewayRequestScope.js';
+    const mod = (await import(specifier)) as {
+      getCurrentGatewayRequestScope?: () => GatewayRequestScope | undefined;
+    };
+    return mod.getCurrentGatewayRequestScope?.();
+  } catch {
+    return undefined;
+  }
 }
 
 /** 插件 HTTP 路径注册描述。 */
@@ -46,9 +54,17 @@ export type PluginHttpRegistry = {
   registrations: PluginHttpPathRegistration[];
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
-export function getPluginHttpRegistry(): PluginHttpRegistry {
-  return { registrations: [] };
+// 动态导入 server/gateway 插件 HTTP 路由注册表；失败时回退到空注册表。
+export async function getPluginHttpRegistry(): Promise<PluginHttpRegistry> {
+  try {
+    const specifier: string = '../../../server/gateway/pluginHttpRegistry.js';
+    const mod = (await import(specifier)) as {
+      getRegisteredPluginPaths?: () => PluginHttpPathRegistration[];
+    };
+    return { registrations: mod.getRegisteredPluginPaths?.() ?? [] };
+  } catch {
+    return { registrations: [] };
+  }
 }
 
 /** 全局钩子运行器句柄。 */
@@ -57,16 +73,43 @@ export type GlobalHookRunner = {
   run(type: string, context: unknown): Promise<unknown>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// 动态导入 server/engine/hooks 的 runHooks；失败时回退到 no-op。
 export function initializeGlobalHookRunner(_runner?: GlobalHookRunner): GlobalHookRunner {
   return {
-    run: async (_type: string, _context: unknown) => undefined,
+    run: async (type: string, context: unknown) => {
+      try {
+        const specifier: string = '../../../server/engine/hooks/hooks.js';
+        const mod = (await import(specifier)) as {
+          runHooks?: (event: unknown) => Promise<void>;
+          createHookEvent?: (
+            type: string,
+            action: string,
+            sessionKey: string,
+            context?: Record<string, unknown>,
+          ) => { messages?: unknown[] };
+        };
+        if (typeof mod.runHooks !== 'function' || typeof mod.createHookEvent !== 'function') {
+          return undefined;
+        }
+        const eventContext = (context ?? {}) as Record<string, unknown>;
+        const event = mod.createHookEvent(type, 'trigger', 'plugin-runtime', eventContext);
+        await mod.runHooks(event);
+        return event.messages;
+      } catch {
+        return undefined;
+      }
+    },
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// 动态导入 server/engine/hooks 的 clearInternalHooks；失败时静默回退。
 export function resetGlobalHookRunner(): void {
-  // 待 plugins/hook-runner-global.js 移植后接入
+  const specifier: string = '../../../server/engine/hooks/internal-hooks.js';
+  import(specifier)
+    .then((mod: { clearInternalHooks?: () => void }) => {
+      mod.clearInternalHooks?.();
+    })
+    .catch(() => {});
 }
 
 /** 交互式绑定辅助上下文。 */
@@ -75,7 +118,7 @@ export type InteractiveBindingContext = {
   prompt(message: string): Promise<string>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function runInteractiveBinding(
   _context: InteractiveBindingContext,
 ): Promise<void> {
@@ -87,7 +130,7 @@ export type LazyServiceModule<T = unknown> = {
   load(): Promise<T>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyServiceModule<T>(
   loader: () => Promise<T>,
 ): LazyServiceModule<T> {

@@ -129,7 +129,7 @@ export type SessionTranscriptWriteLockContext = {
 };
 
 /** 格式化会话 transcript 记忆命中键。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function formatSessionTranscriptMemoryHitKey(
   params: SessionTranscriptMemoryHitKeyParams,
 ): SessionTranscriptMemoryHitKey {
@@ -137,7 +137,7 @@ export function formatSessionTranscriptMemoryHitKey(
 }
 
 /** 解析会话 transcript 记忆命中键。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function parseSessionTranscriptMemoryHitKey(
   key: SessionTranscriptMemoryHitKey,
 ): SessionTranscriptMemoryHitKeyParams | undefined {
@@ -147,7 +147,7 @@ export function parseSessionTranscriptMemoryHitKey(
 }
 
 /** 将会话 transcript 记忆命中键解析为会话键列表。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionTranscriptMemoryHitKeyToSessionKeys(
   _params: ResolveSessionTranscriptMemoryHitKeyParams,
 ): string[] {
@@ -155,7 +155,7 @@ export function resolveSessionTranscriptMemoryHitKeyToSessionKeys(
 }
 
 /** 解析 transcript 公共身份（不返回文件路径）。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function resolveSessionTranscriptIdentity(
   params: SessionTranscriptReadParams,
 ): Promise<SessionTranscriptIdentity> {
@@ -172,7 +172,7 @@ export async function resolveSessionTranscriptIdentity(
 }
 
 /** 解析 transcript 操作的公共目标（不暴露存储路径作为身份）。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function resolveSessionTranscriptTarget(
   params: SessionTranscriptTargetParams,
 ): Promise<SessionTranscriptTarget> {
@@ -184,7 +184,7 @@ export async function resolveSessionTranscriptTarget(
 }
 
 /** 解析并持久化遗留文件目标（仍需 sessionFile 的插件命令调用）。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function resolveSessionTranscriptLegacyFileTarget(
   params: SessionTranscriptTargetParams,
 ): Promise<SessionTranscriptLegacyFileTarget> {
@@ -196,7 +196,7 @@ export async function resolveSessionTranscriptLegacyFileTarget(
 }
 
 /** 按公共会话身份读取 transcript 事件。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function readSessionTranscriptEvents(
   _params: SessionTranscriptTargetParams,
 ): Promise<SessionTranscriptEvent[]> {
@@ -204,7 +204,7 @@ export async function readSessionTranscriptEvents(
 }
 
 /** 按作用域身份读取最近可见助手文本。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function readLatestAssistantTextByIdentity(
   _params: SessionTranscriptTargetParams,
 ): Promise<LatestAssistantTranscriptText | undefined> {
@@ -212,7 +212,7 @@ export async function readLatestAssistantTextByIdentity(
 }
 
 /** 通过守护会话追加门面追加投递镜像助手消息。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function appendAssistantMirrorMessageByIdentity(
   _params: SessionTranscriptAssistantMirrorAppendParams,
 ): Promise<SessionTranscriptAppendResult> {
@@ -220,7 +220,7 @@ export async function appendAssistantMirrorMessageByIdentity(
 }
 
 /** 按作用域 transcript 目标追加 transcript 消息。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function appendSessionTranscriptMessageByIdentity<TMessage>(
   _params: SessionTranscriptAppendMessageParams<TMessage>,
 ): Promise<TranscriptMessageAppendResult<TMessage> | undefined> {
@@ -228,7 +228,7 @@ export async function appendSessionTranscriptMessageByIdentity<TMessage>(
 }
 
 /** 按作用域 transcript 目标发布 transcript 更新。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function publishSessionTranscriptUpdateByIdentity(
   _params: SessionTranscriptTargetParams & { update?: TranscriptUpdatePayload },
 ): Promise<void> {
@@ -236,7 +236,7 @@ export async function publishSessionTranscriptUpdateByIdentity(
 }
 
 /** 在写锁下运行 transcript 工作。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function withSessionTranscriptWriteLock<T>(
   _params: SessionTranscriptWriteLockParams,
   run: (context: SessionTranscriptWriteLockContext) => Promise<T> | T,

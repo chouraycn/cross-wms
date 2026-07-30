@@ -50,7 +50,7 @@ export type InboundReplyDispatchBase = {
 };
 
 /** @deprecated 使用 channel-inbound 的 buildInboundReplyDispatchBase。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildChannelMessageReplyDispatchBase(input: {
   text: string;
   replyToMessageId?: string;
@@ -59,7 +59,7 @@ export function buildChannelMessageReplyDispatchBase(input: {
 }
 
 /** @deprecated 使用 channel-inbound 的 dispatchChannelInboundReply。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function dispatchChannelMessageReplyWithBase(
   _base: InboundReplyDispatchBase,
 ): Promise<{ dispatched: boolean; messageId?: string }> {
@@ -67,35 +67,35 @@ export async function dispatchChannelMessageReplyWithBase(
 }
 
 /** @deprecated 仅在遗留兼容路径使用 recordChannelMessageReplyDispatch。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function recordChannelMessageReplyDispatch(_input: unknown): void {}
 
 /** @deprecated 使用 channel-inbound 的 hasFinalInboundReplyDispatch。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function hasFinalChannelMessageReplyDispatch(_result: unknown): boolean {
   return false;
 }
 
 /** @deprecated 使用 channel-inbound 的 hasVisibleInboundReplyDispatch。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function hasVisibleChannelMessageReplyDispatch(_result: unknown): boolean {
   return false;
 }
 
 /** @deprecated 使用 channel-inbound 的 resolveInboundReplyDispatchCounts。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveChannelMessageReplyDispatchCounts(_input: unknown): { final: number; visible: number } {
   return { final: 0, visible: 0 };
 }
 
 /** @deprecated 使用 channel-outbound 的 createChannelMessageReplyPipeline。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelTurnReplyPipeline(_input?: unknown): unknown {
   return {};
 }
 
 /** @deprecated 使用 channel-outbound 的 deliverInboundReplyWithMessageSendContext。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function deliverDurableInboundReplyPayload(_input?: unknown): Promise<{ delivered: boolean }> {
   return { delivered: false };
 }

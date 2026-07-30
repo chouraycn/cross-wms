@@ -34,7 +34,7 @@ export type StreamingOptions = {
 };
 
 /** 创建流式传输控制器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createStreamingController(options?: StreamingOptions): StreamingController {
   let state: StreamingState = "idle";
   const chunks: string[] = [];
@@ -65,19 +65,19 @@ export function createStreamingController(options?: StreamingOptions): Streaming
 }
 
 /** 解析流式传输模式。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveStreamingMode(_input?: unknown): StreamingMode {
   return "block";
 }
 
 /** 解析块流式传输合并配置。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveBlockStreamingCoalesceConfig(_input?: unknown): BlockStreamingCoalesceConfig {
   return { coalesceMs: 500, maxChunkSize: 1000 };
 }
 
 /** 判断是否启用流式传输。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function isStreamingEnabled(mode?: StreamingMode): boolean {
   return mode !== "off" && mode !== undefined;
 }

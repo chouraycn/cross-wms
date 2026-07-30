@@ -4,28 +4,28 @@ import path from "node:path";
 //   asDateTimestampMs,
 //   resolveExpiresAtMsFromEpochSeconds,
 //   parseStrictNonNegativeInteger,
-// } from "../../packages/normalization-core/src/number-coercion.js"; // TODO: 依赖模块未移植
-// import { normalizeLowercaseStringOrEmpty } from "../../packages/normalization-core/src/string-coerce.js"; // TODO: 依赖模块未移植
-// import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js"; // TODO: 依赖模块未移植
-// import { externalCliDiscoveryForProviderAuth } from "../agents/auth-profiles/external-cli-discovery.js"; // TODO: 依赖模块未移植
-// import { resolveApiKeyForProfile } from "../agents/auth-profiles/oauth.js"; // TODO: 依赖模块未移植
-// import { resolveAuthProfileOrder } from "../agents/auth-profiles/order.js"; // TODO: 依赖模块未移植
-// import { listProfilesForProvider } from "../agents/auth-profiles/profiles.js"; // TODO: 依赖模块未移植
+// } from "../../packages/normalization-core/src/number-coercion.js"; // contract stub
+// import { normalizeLowercaseStringOrEmpty } from "../../packages/normalization-core/src/string-coerce.js"; // contract stub
+// import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js"; // contract stub
+// import { externalCliDiscoveryForProviderAuth } from "../agents/auth-profiles/external-cli-discovery.js"; // contract stub
+// import { resolveApiKeyForProfile } from "../agents/auth-profiles/oauth.js"; // contract stub
+// import { resolveAuthProfileOrder } from "../agents/auth-profiles/order.js"; // contract stub
+// import { listProfilesForProvider } from "../agents/auth-profiles/profiles.js"; // contract stub
 // import {
 //   ensureAuthProfileStore,
 //   loadAuthProfileStoreForSecretsRuntime,
 //   loadAuthProfileStoreWithoutExternalProfiles,
-// } from "../agents/auth-profiles/store.js"; // TODO: 依赖模块未移植
-// import type { AuthProfileStore } from "../agents/auth-profiles/types.js"; // TODO: 依赖模块未移植
-// import type { AuthProfileCredential } from "../agents/auth-profiles/types.js"; // TODO: 依赖模块未移植
+// } from "../agents/auth-profiles/store.js"; // contract stub
+// import type { AuthProfileStore } from "../agents/auth-profiles/types.js"; // contract stub
+// import type { AuthProfileCredential } from "../agents/auth-profiles/types.js"; // contract stub
 // import {
 //   COPILOT_INTEGRATION_ID,
 //   buildCopilotIdeHeaders,
-// } from "../agents/copilot-dynamic-headers.js"; // TODO: 依赖模块未移植
-// import { resolveEnvApiKey } from "../agents/model-auth-env.js"; // TODO: 依赖模块未移植
-// import type { OpenClawConfig } from "../config/config.js"; // TODO: 依赖模块未移植
-// import { resolveStateDir } from "../config/paths.js"; // TODO: 依赖模块未移植
-// import { loadJsonFile, saveJsonFile } from "../infra/json-file.js"; // TODO: 依赖模块未移植
+// } from "../agents/copilot-dynamic-headers.js"; // contract stub
+// import { resolveEnvApiKey } from "../agents/model-auth-env.js"; // contract stub
+// import type { OpenClawConfig } from "../config/config.js"; // contract stub
+// import { resolveStateDir } from "../config/paths.js"; // contract stub
+// import { loadJsonFile, saveJsonFile } from "../infra/json-file.js"; // contract stub
 import { resolveProviderEndpoint } from "./provider-model-shared.js";
 
 // ==================== Local type stubs and function stubs for unported dependencies ====================
@@ -41,7 +41,7 @@ type AuthProfileStore = {
   profiles: Record<string, { provider?: string; type?: string; accountId?: string; [key: string]: unknown }>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function asDateTimestampMs(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value < 100_000_000_000 ? value * 1000 : value;
@@ -124,31 +124,31 @@ function saveJsonFile(_filePath: string, _value: unknown): void {
   // no-op stub
 }
 
-// export type { OpenClawConfig } from "../config/config.js"; // TODO: 依赖模块未移植
-// export type { SecretInput } from "../config/types.secrets.js"; // TODO: 依赖模块未移植
-// export type { SecretInputMode } from "../plugins/provider-auth-types.js"; // TODO: 依赖模块未移植
-// export type { ProviderAuthResult } from "../plugins/types.js"; // TODO: 依赖模块未移植
-// export type { ProviderAuthContext } from "../plugins/types.js"; // TODO: 依赖模块未移植
-// export type { AuthProfileStore, OAuthCredential } from "../agents/auth-profiles/types.js"; // TODO: 依赖模块未移植
+// export type { OpenClawConfig } from "../config/config.js"; // contract stub
+// export type { SecretInput } from "../config/types.secrets.js"; // contract stub
+// export type { SecretInputMode } from "../plugins/provider-auth-types.js"; // contract stub
+// export type { ProviderAuthResult } from "../plugins/types.js"; // contract stub
+// export type { ProviderAuthContext } from "../plugins/types.js"; // contract stub
+// export type { AuthProfileStore, OAuthCredential } from "../agents/auth-profiles/types.js"; // contract stub
 
-// export { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "../agents/auth-profiles/constants.js"; // TODO: 依赖模块未移植
+// export { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "../agents/auth-profiles/constants.js"; // contract stub
 // export {
 //   ensureAuthProfileStore,
 //   ensureAuthProfileStoreForLocalUpdate,
 //   updateAuthProfileStoreWithLock,
-// } from "../agents/auth-profiles/store.js"; // TODO: 依赖模块未移植
+// } from "../agents/auth-profiles/store.js"; // contract stub
 // export {
 //   listProfilesForProvider,
 //   removeProviderAuthProfilesWithLock,
 //   upsertAuthProfile,
 //   upsertAuthProfileWithLock,
-// } from "../agents/auth-profiles/profiles.js"; // TODO: 依赖模块未移植
-// export { resolveEnvApiKey } from "../agents/model-auth-env.js"; // TODO: 依赖模块未移植
+// } from "../agents/auth-profiles/profiles.js"; // contract stub
+// export { resolveEnvApiKey } from "../agents/model-auth-env.js"; // contract stub
 // export {
 //   readClaudeCliCredentialsCached,
 //   readCodexCliCredentialsCached,
-// } from "../agents/cli-credentials.js"; // TODO: 依赖模块未移植
-// export { suggestOAuthProfileIdForLegacyDefault } from "../agents/auth-profiles/repair.js"; // TODO: 依赖模块未移植
+// } from "../agents/cli-credentials.js"; // contract stub
+// export { suggestOAuthProfileIdForLegacyDefault } from "../agents/auth-profiles/repair.js"; // contract stub
 // export {
 //   CUSTOM_LOCAL_AUTH_MARKER,
 //   MINIMAX_OAUTH_MARKER,
@@ -156,24 +156,24 @@ function saveJsonFile(_filePath: string, _value: unknown): void {
 //   isNonSecretApiKeyMarker,
 //   resolveOAuthApiKeyMarker,
 //   resolveNonEnvSecretRefApiKeyMarker,
-// } from "../agents/model-auth-markers.js"; // TODO: 依赖模块未移植
+// } from "../agents/model-auth-markers.js"; // contract stub
 // export {
 //   formatApiKeyPreview,
 //   normalizeApiKeyInput,
 //   validateApiKeyInput,
-// } from "../plugins/provider-auth-input.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-auth-input.js"; // contract stub
 // export {
 //   ensureApiKeyFromEnvOrPrompt,
 //   ensureApiKeyFromOptionEnvOrPrompt,
 //   normalizeSecretInputModeInput,
 //   promptSecretRefForSetup,
 //   resolveSecretInputModeForEnvSelection,
-// } from "../plugins/provider-auth-input.js"; // TODO: 依赖模块未移植
-// export { normalizeApiKeyConfig } from "../agents/models-config.providers.secrets.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-auth-input.js"; // contract stub
+// export { normalizeApiKeyConfig } from "../agents/models-config.providers.secrets.js"; // contract stub
 // export {
 //   buildTokenProfileId,
 //   validateAnthropicSetupToken,
-// } from "../plugins/provider-auth-token.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-auth-token.js"; // contract stub
 // export {
 //   applyAuthProfileConfig,
 //   buildApiKeyCredential,
@@ -181,21 +181,21 @@ function saveJsonFile(_filePath: string, _value: unknown): void {
 //   writeOAuthCredentials,
 //   type ApiKeyStorageOptions,
 //   type WriteOAuthCredentialsOptions,
-// } from "../plugins/provider-auth-helpers.js"; // TODO: 依赖模块未移植
-// export { createProviderApiKeyAuthMethod } from "../plugins/provider-api-key-auth.js"; // TODO: 依赖模块未移植
-// export { coerceSecretRef, hasConfiguredSecretInput } from "../config/types.secrets.js"; // TODO: 依赖模块未移植
-// export { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js"; // TODO: 依赖模块未移植
-// export { resolveRequiredHomeDir } from "../infra/home-dir.js"; // TODO: 依赖模块未移植
-// export { resolveOpenClawAgentDir } from "./agent-dir-compat.js"; // TODO: 依赖模块未移植
+// } from "../plugins/provider-auth-helpers.js"; // contract stub
+// export { createProviderApiKeyAuthMethod } from "../plugins/provider-api-key-auth.js"; // contract stub
+// export { coerceSecretRef, hasConfiguredSecretInput } from "../config/types.secrets.js"; // contract stub
+// export { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js"; // contract stub
+// export { resolveRequiredHomeDir } from "../infra/home-dir.js"; // contract stub
+// export { resolveOpenClawAgentDir } from "./agent-dir-compat.js"; // contract stub
 // export {
 //   normalizeOptionalSecretInput,
 //   normalizeSecretInput,
-// } from "../utils/normalize-secret-input.js"; // TODO: 依赖模块未移植
+// } from "../utils/normalize-secret-input.js"; // contract stub
 // export {
 //   listKnownProviderAuthEnvVarNames,
 //   omitEnvKeysCaseInsensitive,
-// } from "../secrets/provider-env-vars.js"; // TODO: 依赖模块未移植
-// export { buildOauthProviderAuthResult } from "./provider-auth-result.js"; // TODO: 依赖模块未移植
+// } from "../secrets/provider-env-vars.js"; // contract stub
+// export { buildOauthProviderAuthResult } from "./provider-auth-result.js"; // contract stub
 // export {
 //   buildOpenAICodexCredentialExtra,
 //   decodeOpenAICodexJwtPayload,
@@ -203,16 +203,16 @@ function saveJsonFile(_filePath: string, _value: unknown): void {
 //   resolveOpenAICodexAuthIdentity,
 //   resolveOpenAICodexImportProfileName,
 //   type OpenAICodexAuthIdentity,
-// } from "./provider-openai-chatgpt-auth.js"; // TODO: 依赖模块未移植
+// } from "./provider-openai-chatgpt-auth.js"; // contract stub
 // export {
 //   generateHexPkceVerifierChallenge,
 //   generatePkceVerifierChallenge,
 //   toFormUrlEncoded,
-// } from "./oauth-utils.js"; // TODO: 依赖模块未移植
+// } from "./oauth-utils.js"; // contract stub
 // export {
 //   DEFAULT_OAUTH_REFRESH_MARGIN_MS,
 //   hasUsableOAuthCredential,
-// } from "../agents/auth-profiles/credential-state.js"; // TODO: 依赖模块未移植
+// } from "../agents/auth-profiles/credential-state.js"; // contract stub
 // export {
 //   COPILOT_EDITOR_PLUGIN_VERSION,
 //   COPILOT_EDITOR_VERSION,
@@ -220,7 +220,7 @@ function saveJsonFile(_filePath: string, _value: unknown): void {
 //   COPILOT_INTEGRATION_ID,
 //   COPILOT_USER_AGENT,
 //   buildCopilotIdeHeaders,
-// } from "../agents/copilot-dynamic-headers.js"; // TODO: 依赖模块未移植
+// } from "../agents/copilot-dynamic-headers.js"; // contract stub
 
 const COPILOT_TOKEN_URL = "https://api.github.com/copilot_internal/v2/token";
 

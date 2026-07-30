@@ -22,6 +22,9 @@ import { useWarehouseCapability } from '../capabilities/warehouse';
 import { AlertCarousel, type DashboardAlert } from '../components/Dashboard/AlertCarousel';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
+import { useI18n } from '../components/staff/i18n/index.js';
+
+type TFunc = (source: string, values?: Record<string | number, string | number>) => string;
 
 function computeAlerts(
   warehouses: Warehouse[],
@@ -29,6 +32,7 @@ function computeAlerts(
   selectedWarehouse: string,
   transitOrders: TransitOrder[],
   inventory: InventoryItem[],
+  t: TFunc,
 ): DashboardAlert[] {
   const alerts: DashboardAlert[] = [];
   const alertThreshold = settings.warningThreshold;
@@ -50,27 +54,27 @@ function computeAlerts(
       alerts.push({
         id: `full-${wh.id}`,
         severity: 'error',
-        title: '仓库已满',
-        message: `${wh.name} 容积率已达 ${rate.toFixed(1)}%，超过满仓线 ${fullThreshold}%`,
+        title: t('仓库已满'),
+        message: t('{name} 容积率已达 {rate}%，超过满仓线 {threshold}%', { name: wh.name, rate: rate.toFixed(1), threshold: fullThreshold }),
       });
     } else if (rate >= alertThreshold) {
       alerts.push({
         id: `warning-${wh.id}`,
         severity: 'warning',
-        title: '容积率预警',
-        message: `${wh.name} 容积率为 ${rate.toFixed(1)}%，超过预警线 ${alertThreshold}%`,
+        title: t('容积率预警'),
+        message: t('{name} 容积率为 {rate}%，超过预警线 {threshold}%', { name: wh.name, rate: rate.toFixed(1), threshold: alertThreshold }),
       });
     }
   }
 
   // 2. 在途报警（到仓后容积率可能超标）
-  const pendingTransit = transitOrders.filter((t) => t.status !== 'arrived');
+  const pendingTransit = transitOrders.filter((order) => order.status !== 'arrived');
   if (pendingTransit.length > 0) {
     const transitByDest: Record<string, number> = {};
-    for (const t of pendingTransit) {
-      const dest = t.toWarehouseId;
+    for (const order of pendingTransit) {
+      const dest = order.toWarehouseId;
       if (!transitByDest[dest]) transitByDest[dest] = 0;
-      transitByDest[dest] += t.volume / VOLUME_PER_ITEM_ESTIMATE;
+      transitByDest[dest] += order.volume / VOLUME_PER_ITEM_ESTIMATE;
     }
     for (const wh of targetWarehouses) {
       const transitItems = transitByDest[wh.id] || 0;
@@ -82,8 +86,8 @@ function computeAlerts(
           alerts.push({
             id: `transit-${wh.id}`,
             severity: 'error',
-            title: '在途报警',
-            message: `${wh.name} 在途到仓后容积率预计达 ${afterRate.toFixed(1)}%，超过阈值 ${transitAlertThreshold}%`,
+            title: t('在途报警'),
+            message: t('{name} 在途到仓后容积率预计达 {rate}%，超过阈值 {threshold}%', { name: wh.name, rate: afterRate.toFixed(1), threshold: transitAlertThreshold }),
           });
         }
       }
@@ -101,8 +105,8 @@ function computeAlerts(
     alerts.push({
       id: 'age-warning',
       severity: 'warning',
-      title: '库龄预警',
-      message: `共有 ${agedItems.length} 个 SKU 库龄超过 ${ageWarningDays} 天，请关注滞销/过期风险`,
+      title: t('库龄预警'),
+      message: t('共有 {count} 个 SKU 库龄超过 {days} 天，请关注滞销/过期风险', { count: agedItems.length, days: ageWarningDays }),
     });
   }
 
@@ -114,6 +118,7 @@ const DashboardPageContent: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
+  const { t } = useI18n();
   const { settings } = useDashboardSettings();
   const vis = settings.visibility;
   const navigate = useNavigate();
@@ -134,8 +139,8 @@ const DashboardPageContent: React.FC = () => {
   // 计算告警列表
   const alerts = useMemo(() => {
     if (loading) return [];
-    return computeAlerts(warehouses, settings, selectedWarehouse, transitOrders, inventory);
-  }, [warehouses, settings, selectedWarehouse, transitOrders, inventory, loading]);
+    return computeAlerts(warehouses, settings, selectedWarehouse, transitOrders, inventory, t);
+  }, [warehouses, settings, selectedWarehouse, transitOrders, inventory, loading, t]);
 
   // 过滤掉已关闭的告警
   const visibleAlerts = alerts.filter((a) => !dismissedAlerts.has(a.id));
@@ -210,14 +215,14 @@ const DashboardPageContent: React.FC = () => {
       {/* 标题行 — 与侧边栏 logo 垂直居中对齐 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 0 }}>
-          仪表盘总览
+          {t('仪表盘总览')}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -0.25 }}>
           <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
           {autoRefresh && (
             <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, minWidth: '4rem', textAlign: 'right' }}>
-              {countdown}s 后刷新
+              {t('{count}s 后刷新', { count: countdown })}
             </Typography>
           )}
           <FormControlLabel
@@ -235,7 +240,7 @@ const DashboardPageContent: React.FC = () => {
                 }}
               />
             }
-            label={<Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>自动刷新</Typography>}
+            label={<Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>{t('自动刷新')}</Typography>}
             sx={{ m: 0 }}
           />
         </Box>
@@ -267,7 +272,7 @@ const DashboardPageContent: React.FC = () => {
         <Box sx={{ textAlign: 'center', py: 10 }}>
           <CircularProgress size={40} sx={{ color: gs.textPrimary }} />
           <Typography sx={{ mt: 2, color: gs.textMuted, fontSize: '0.875rem' }}>
-            数据加载中...
+            {t('数据加载中...')}
           </Typography>
         </Box>
       )}
@@ -336,7 +341,7 @@ const DashboardPageContent: React.FC = () => {
               {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
                 <Box sx={{ textAlign: 'center', py: 8 }}>
                   <Typography sx={{ color: gs.textDisabled, fontSize: '0.95rem' }}>
-                    所有指标已隐藏，请在设置中开启需要显示的指标
+                    {t('所有指标已隐藏，请在设置中开启需要显示的指标')}
                   </Typography>
                 </Box>
               )}

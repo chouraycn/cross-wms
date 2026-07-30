@@ -34,7 +34,7 @@ export type MatchesApprovalRequestFiltersParams = {
 };
 
 /** 创建渠道 exec 审批配置档案。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelExecApprovalProfile(
   _params?: Partial<ChannelExecApprovalProfile>,
 ): ChannelExecApprovalProfile {
@@ -47,19 +47,19 @@ export function createChannelExecApprovalProfile(
 }
 
 /** 从回复负载中读取 exec 审批元数据。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function getExecApprovalReplyMetadata(_payload: unknown): ExecApprovalReplyMetadata | undefined {
   return undefined;
 }
 
 /** 从配置判断渠道 exec 审批客户端是否启用。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function isChannelExecApprovalClientEnabledFromConfig(_cfg: unknown): boolean {
   return false;
 }
 
 /** 判断目标接收者是否为 exec 审批的目标。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function isChannelExecApprovalTargetRecipient(_params: {
   cfg: unknown;
   accountId?: string | null;
@@ -69,7 +69,7 @@ export function isChannelExecApprovalTargetRecipient(_params: {
 }
 
 /** 匹配审批请求过滤器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function matchesApprovalRequestFilters(
   params: MatchesApprovalRequestFiltersParams,
 ): boolean {

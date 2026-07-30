@@ -51,19 +51,19 @@ export type QueryAgentSessionsParams = {
 };
 
 /** 加载 agent 会话存储。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function loadAgentSessionStore(_path?: string): Promise<AgentSessionStore> {
   return { entries: {} };
 }
 
 /** 保存 agent 会话存储。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function saveAgentSessionStore(_store: AgentSessionStore, _path?: string): Promise<void> {
   // 待 agents/sessions 移植后接入
 }
 
 /** 创建 agent 会话。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function createAgentSession(
   params: CreateAgentSessionParams,
 ): Promise<AgentSessionEntry> {
@@ -81,7 +81,7 @@ export async function createAgentSession(
 }
 
 /** 获取 agent 会话。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function getAgentSession(
   _store: AgentSessionStore,
   sessionId: string,
@@ -90,7 +90,7 @@ export function getAgentSession(
 }
 
 /** 更新 agent 会话。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function updateAgentSession(
   store: AgentSessionStore,
   params: UpdateAgentSessionParams,
@@ -109,7 +109,7 @@ export function updateAgentSession(
 }
 
 /** 查询 agent 会话列表。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function queryAgentSessions(
   store: AgentSessionStore,
   params: QueryAgentSessionsParams = {},
@@ -128,7 +128,7 @@ export function queryAgentSessions(
 }
 
 /** 删除 agent 会话。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function deleteAgentSession(
   store: AgentSessionStore,
   sessionId: string,
@@ -141,7 +141,7 @@ export function deleteAgentSession(
 }
 
 /** 关闭 agent 会话。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function closeAgentSession(
   store: AgentSessionStore,
   sessionId: string,

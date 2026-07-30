@@ -39,7 +39,7 @@ import { parseSkillMdContent } from '../services/skillMdParser.js';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 import { FileStorage } from '../storage/FileStorage.js';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { dependencyChecker, DependencyCheckResult } from '../../src/utils/dependencyChecker.js';
 import { SkillIndex, SkillLifecycle, auditAllSkills, checkSkillDependencies, getRequiresFromSkillMd, getInstallStepsFromSkillMd, generateInstallCommands } from '../services/openclaw/index.js';
 import { auditDocQuality, batchAuditDocQuality } from '../services/docQualityChecker.js';
@@ -97,7 +97,7 @@ function extractOpenClawRequires(content: string): { bins?: string[]; anyBins?: 
   if (!fmMatch) return undefined;
 
   try {
-    const parsed = yaml.load(fmMatch[1], { schema: yaml.DEFAULT_SCHEMA, json: true }) as Record<string, unknown>;
+    const parsed = yaml.load(fmMatch[1], { json: true }) as Record<string, unknown>;
     const metadata = parsed.metadata as Record<string, unknown> | undefined;
     const openclaw = metadata?.openclaw as Record<string, unknown> | undefined;
     const requires = openclaw?.requires as Record<string, unknown> | undefined;

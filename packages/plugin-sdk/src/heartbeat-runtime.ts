@@ -57,7 +57,7 @@ export type HeartbeatRuntime = {
 };
 
 /** 创建心跳运行时。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createHeartbeatRuntime(_config?: HeartbeatConfig): HeartbeatRuntime {
   const listeners = new Set<HeartbeatListener>();
   let alive = false;
@@ -84,7 +84,7 @@ export function createHeartbeatRuntime(_config?: HeartbeatConfig): HeartbeatRunt
 }
 
 /** 解析心跳可见性策略。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveHeartbeatVisibilityPolicy(
   _config?: unknown,
 ): HeartbeatVisibilityPolicy {
@@ -92,7 +92,7 @@ export function resolveHeartbeatVisibilityPolicy(
 }
 
 /** 判断心跳事件是否可见。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function isHeartbeatEventVisible(
   event: HeartbeatEvent,
   policy: HeartbeatVisibilityPolicy,
@@ -105,7 +105,7 @@ export function isHeartbeatEventVisible(
 }
 
 /** 发送心跳脉冲。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function emitHeartbeatPulse(
   _runtime: HeartbeatRuntime,
   _source: string,
@@ -115,7 +115,7 @@ export function emitHeartbeatPulse(
 }
 
 /** 请求心跳唤醒。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function requestHeartbeat(_params: {
   source: string;
   reason?: string;

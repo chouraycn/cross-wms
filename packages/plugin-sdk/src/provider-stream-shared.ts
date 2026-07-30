@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 // ==================== Local type stubs and function stubs for unported dependencies ====================
 
-/** Normalizes a string to lowercase or returns empty. TODO: 依赖模块未移植 */
+/** Normalizes a string to lowercase or returns empty. Contract stub: upstream import. */
 function normalizeLowercaseStringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
@@ -43,12 +43,12 @@ type ProviderWrapStreamFnContext = {
   [key: string]: unknown;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function extractStandalonePlainTextToolCallText(_params: unknown): string | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 async function* normalizePlainTextToolCallStreamEvents(
   _source: AsyncIterable<unknown>,
   _options: unknown,
@@ -56,32 +56,32 @@ async function* normalizePlainTextToolCallStreamEvents(
   // Stub: yields nothing
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function promoteStandalonePlainTextToolCallMessage(_params: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function scrubOverCapPlainTextToolCallMessage(_params: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function resolveOpenAIReasoningEffortMap(_params: unknown): Record<string, unknown> {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function resolveOpenAIReasoningEffortForModel(_params: unknown): string | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function mapThinkingLevelToReasoningEffort(level: ThinkLevel): string {
   return level;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function streamWithPayloadPatch(
   _underlying: unknown,
   _model: unknown,
@@ -92,12 +92,12 @@ function streamWithPayloadPatch(
   throw new Error("streamWithPayloadPatch: not implemented (dependency not ported)");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function streamSimple(_model: unknown, _context: unknown, _options?: unknown): unknown {
   throw new Error("streamSimple: not implemented (dependency not ported)");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 function createAssistantMessageEventStream(): unknown {
   return {
     result: async () => ({}),
@@ -113,20 +113,20 @@ function createAssistantMessageEventStream(): unknown {
 //   scrubOverCapPlainTextToolCallMessage,
 //   type PlainTextToolCallNameMatcher,
 //   type PlainTextToolCallMessageNormalization,
-// } from "../../packages/tool-call-repair/src/index.js"; // TODO: 依赖模块未移植
-// import { resolveOpenAIReasoningEffortMap } from "../agents/openai-reasoning-compat.js"; // TODO: 依赖模块未移植
-// import { resolveOpenAIReasoningEffortForModel } from "../agents/openai-reasoning-effort.js"; // TODO: 依赖模块未移植
-// import type { StreamFn } from "../agents/runtime/index.js"; // TODO: 依赖模块未移植
-// import type { ThinkLevel } from "../auto-reply/thinking.js"; // TODO: 依赖模块未移植
-// import { mapThinkingLevelToReasoningEffort } from "../llm/providers/stream-wrappers/reasoning-effort-utils.js"; // TODO: 依赖模块未移植
-// import { streamWithPayloadPatch } from "../llm/providers/stream-wrappers/stream-payload-utils.js"; // TODO: 依赖模块未移植
-// import { streamSimple } from "../llm/stream.js"; // TODO: 依赖模块未移植
-// import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js"; // TODO: 依赖模块未移植
-// export { applyAnthropicRefusal } from "../shared/anthropic-refusal.js"; // TODO: 依赖模块未移植
-// export { createDeferredEventBuffer } from "../shared/deferred-event-buffer.js"; // TODO: 依赖模块未移植
-// export { notifyLlmRequestActivity, onLlmRequestActivity } from "../shared/llm-request-activity.js"; // TODO: 依赖模块未移植
+// } from "../../packages/tool-call-repair/src/index.js"; // contract stub
+// import { resolveOpenAIReasoningEffortMap } from "../agents/openai-reasoning-compat.js"; // contract stub
+// import { resolveOpenAIReasoningEffortForModel } from "../agents/openai-reasoning-effort.js"; // contract stub
+// import type { StreamFn } from "../agents/runtime/index.js"; // contract stub
+// import type { ThinkLevel } from "../auto-reply/thinking.js"; // contract stub
+// import { mapThinkingLevelToReasoningEffort } from "../llm/providers/stream-wrappers/reasoning-effort-utils.js"; // contract stub
+// import { streamWithPayloadPatch } from "../llm/providers/stream-wrappers/stream-payload-utils.js"; // contract stub
+// import { streamSimple } from "../llm/stream.js"; // contract stub
+// import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js"; // contract stub
+// export { applyAnthropicRefusal } from "../shared/anthropic-refusal.js"; // contract stub
+// export { createDeferredEventBuffer } from "../shared/deferred-event-buffer.js"; // contract stub
+// export { notifyLlmRequestActivity, onLlmRequestActivity } from "../shared/llm-request-activity.js"; // contract stub
 
-// type ProviderWrapStreamFnContext = import("../plugins/types.js").ProviderWrapStreamFnContext; // TODO: 依赖模块未移植
+// type ProviderWrapStreamFnContext = import("../plugins/types.js").ProviderWrapStreamFnContext; // contract stub
 
 /** Optional provider stream decorator factory used by shared provider wrappers. */
 export type ProviderStreamWrapperFactory =
@@ -1115,14 +1115,14 @@ export function createGoogleThinkingStreamWrapper(
 // export {
 //   applyAnthropicPayloadPolicyToParams,
 //   resolveAnthropicPayloadPolicy,
-// } from "../agents/anthropic-payload-policy.js"; // TODO: 依赖模块未移植
-// export { applyAnthropicEphemeralCacheControlMarkers } from "../llm/providers/stream-wrappers/anthropic-cache-control-payload.js"; // TODO: 依赖模块未移植
+// } from "../agents/anthropic-payload-policy.js"; // contract stub
+// export { applyAnthropicEphemeralCacheControlMarkers } from "../llm/providers/stream-wrappers/anthropic-cache-control-payload.js"; // contract stub
 // export {
 //   createMoonshotThinkingWrapper,
 //   resolveMoonshotThinkingType,
-// } from "../llm/providers/stream-wrappers/moonshot-thinking.js"; // TODO: 依赖模块未移植
+// } from "../llm/providers/stream-wrappers/moonshot-thinking.js"; // contract stub
 export { streamWithPayloadPatch };
 // export {
 //   createToolStreamWrapper,
 //   createZaiToolStreamWrapper,
-// } from "../llm/providers/stream-wrappers/zai.js"; // TODO: 依赖模块未移植
+// } from "../llm/providers/stream-wrappers/zai.js"; // contract stub

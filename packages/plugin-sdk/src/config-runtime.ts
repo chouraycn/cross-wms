@@ -32,22 +32,22 @@ export type SessionStore = {
   entries: Record<string, SessionStoreEntry>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function loadSessionStore(_path?: string): Promise<SessionStore> {
   return { entries: {} };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function getSessionEntry(_store: SessionStore, _key: string): SessionStoreEntry | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listSessionEntries(store: SessionStore): SessionStoreEntry[] {
   return Object.values(store.entries);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function patchSessionEntry(
   store: SessionStore,
   key: string,
@@ -59,12 +59,12 @@ export function patchSessionEntry(
   return updated;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function readSessionUpdatedAt(entry: SessionStoreEntry | undefined): number | undefined {
   return entry?.updatedAt;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function updateSessionStoreEntry(
   store: SessionStore,
   key: string,
@@ -74,7 +74,7 @@ export function updateSessionStoreEntry(
   return store;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function upsertSessionEntry(
   store: SessionStore,
   key: string,
@@ -84,13 +84,13 @@ export function upsertSessionEntry(
   return store;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function saveSessionStore(_store: SessionStore, _path?: string): Promise<void> {
   // 待 config/sessions/store.js 移植后接入
 }
 
 /** 解析默认 agent ID。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveDefaultAgentId(): string {
   return "default";
 }
@@ -106,47 +106,47 @@ export type RuntimeConfigSourceSnapshot = {
 /** 配置写入完成后的回调意图。 */
 export type ConfigWriteAfterWrite = "restart" | "reload" | "none";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function getRuntimeConfig(): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function loadConfig(_path?: string): Promise<Record<string, unknown>> {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function setRuntimeConfigSnapshot(_config: Record<string, unknown>): void {
   // 待 config/io.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function clearRuntimeConfigSnapshot(): void {
   // 待 config/io.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function getRuntimeConfigSnapshot(): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function getRuntimeConfigSourceSnapshot(): RuntimeConfigSourceSnapshot | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function clearConfigCache(): void {
   // 待 config/io.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function readConfigFileSnapshotForWrite(): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function writeConfigFile(
   _config: Record<string, unknown>,
   _path?: string,
@@ -154,7 +154,7 @@ export async function writeConfigFile(
   // 待 config/io.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function mutateConfigFile(
   _path: string,
   _mutator: (config: Record<string, unknown>) => Record<string, unknown>,
@@ -163,7 +163,7 @@ export async function mutateConfigFile(
   // 待 config/mutate.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function replaceConfigFile(
   _path: string,
   _config: Record<string, unknown>,
@@ -172,38 +172,38 @@ export async function replaceConfigFile(
   // 待 config/mutate.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function logConfigUpdated(_path?: string): void {
   // 待 config/logging.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function updateConfig(
   _patch: Record<string, unknown>,
 ): Promise<void> {
   // 待 commands/models/shared.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function requireRuntimeConfig(): Record<string, unknown> {
   throw new Error("requireRuntimeConfig: runtime config not loaded (dependency not ported)");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveLivePluginConfigObject(
   _pluginId: string,
 ): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolvePluginConfigObject(
   _pluginId: string,
 ): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelModelOverride(
   _channelId: string,
 ): string | undefined {
@@ -215,26 +215,26 @@ export function resolveChannelModelOverride(
 /** 上下文可见性模式。 */
 export type ContextVisibilityMode = "auto" | "always" | "never";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveDefaultContextVisibility(): ContextVisibilityMode {
   return "auto";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelContextVisibilityMode(
   _channelId: string,
 ): ContextVisibilityMode {
   return "auto";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function evaluateSupplementalContextVisibility(
   _mode: ContextVisibilityMode,
 ): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function filterSupplementalContextItems<T>(items: T[]): T[] {
   return items;
 }
@@ -244,7 +244,7 @@ export function filterSupplementalContextItems<T>(items: T[]): T[] {
 /** Markdown 表格渲染模式。 */
 export type MarkdownTableMode = "auto" | "pipe" | "grid";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveMarkdownTableMode(): MarkdownTableMode {
   return "auto";
 }
@@ -264,22 +264,22 @@ export type ChannelGroupPolicy = GroupPolicy & {
 
 export const GROUP_POLICY_BLOCKED_LABEL = "blocked";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveDefaultGroupPolicy(): GroupPolicy {
   return { requireMention: false, blocked: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelGroupPolicy(_channelId: string): ChannelGroupPolicy {
   return { requireMention: false, blocked: false };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelGroupRequireMention(_channelId: string): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveToolsBySender(
   _channelId: string,
   _sender: string,
@@ -287,34 +287,34 @@ export function resolveToolsBySender(
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveAllowlistProviderRuntimeGroupPolicy(): GroupPolicy {
   return resolveDefaultGroupPolicy();
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveOpenProviderRuntimeGroupPolicy(): GroupPolicy {
   return resolveDefaultGroupPolicy();
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function warnMissingProviderGroupPolicyFallbackOnce(): void {
   // 待 config/runtime-group-policy.js 移植后接入
 }
 
 // ---- 原生命令 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isNativeCommandsExplicitlyDisabled(): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveNativeCommandsEnabled(): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveNativeSkillsEnabled(): boolean {
   return true;
 }
@@ -323,19 +323,19 @@ export function resolveNativeSkillsEnabled(): boolean {
 
 export const TELEGRAM_COMMAND_NAME_PATTERN = /^[a-z0-9_]+$/;
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function normalizeTelegramCommandName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveTelegramCustomCommands(): Array<{ name: string; description: string }> {
   return [];
 }
 
 // ---- 会话辅助 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionKey(
   _channelId: string,
   _sender: string,
@@ -344,47 +344,47 @@ export function resolveSessionKey(
   return `${_channelId}:${_sender}`;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveStorePath(_agentId?: string): string {
   return "state/sessions.json";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveGroupSessionKey(_channelId: string, _groupId: string): string {
   return `${_channelId}:group:${_groupId}`;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function canonicalizeMainSessionAlias(alias: string): string {
   return alias;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function evaluateSessionFreshness(_entry: SessionStoreEntry | undefined): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelResetConfig(_channelId: string): { mode: SessionResetMode } {
   return { mode: "never" };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionResetPolicy(_entry: SessionStoreEntry | undefined): SessionResetMode {
   return "never";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionResetType(_entry: SessionStoreEntry | undefined): SessionResetMode {
   return "never";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveThreadFlag(_entry: SessionStoreEntry | undefined): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function recordSessionMetaFromInbound(
   _store: SessionStore,
   _key: string,
@@ -393,7 +393,7 @@ export function recordSessionMetaFromInbound(
   // 待 config/sessions/store.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function updateLastRoute(
   _store: SessionStore,
   _key: string,
@@ -402,7 +402,7 @@ export function updateLastRoute(
   // 待 config/sessions/store.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function updateSessionStore(
   _store: SessionStore,
   _key: string,
@@ -411,7 +411,7 @@ export function updateSessionStore(
   return _store;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionStoreEntry(
   _store: SessionStore,
   _key: string,
@@ -419,19 +419,19 @@ export function resolveSessionStoreEntry(
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function clearSessionStoreCacheForTest(): void {
   // 待 config/sessions/store.js 移植后接入
 }
 
 // ---- 危险名称匹配 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function isDangerousNameMatchingEnabled(): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveDangerousNameMatchingEnabled(): boolean {
   return false;
 }
@@ -445,38 +445,38 @@ export type TtsAutoMode = "voice" | "text";
 /** TTS 提供商。 */
 export type TtsProvider = "openai" | "elevenlabs" | "azure";
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveActiveTalkProviderConfig(): unknown {
   return undefined;
 }
 
 // ---- Agent 并发 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveAgentMaxConcurrent(): number {
   return 1;
 }
 
 // ---- Cron 存储 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function loadCronStore(_path?: string): Promise<unknown> {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveCronStorePath(): string {
   return "state/cron.json";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function saveCronStore(_store: unknown, _path?: string): Promise<void> {
   // 待 cron/store.js 移植后接入
 }
 
 // ---- 模型覆盖 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function applyModelOverrideToSessionEntry(
   _entry: SessionStoreEntry,
   _model: string,
@@ -491,21 +491,21 @@ export type SecretRef = {
   ref: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function coerceSecretRef(value: unknown): SecretRef | string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "ref" in value) return value as SecretRef;
   return "";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveConfiguredSecretInputString(
   _input: unknown,
 ): string | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveConfiguredSecretInputWithFallback(
   _input: unknown,
   fallback?: string,
@@ -513,7 +513,7 @@ export function resolveConfiguredSecretInputWithFallback(
   return fallback ?? "";
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveRequiredConfiguredSecretRefInputString(
   _input: unknown,
 ): string {

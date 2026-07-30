@@ -75,6 +75,7 @@ import { CompactionDivider } from './CompactionDivider.js';
 import { PendingSendMessage } from './PendingSendMessage.js';
 import { buildChatItems, ChatItem } from '../../types/chat-items.js';
 import { TerminalButtonIcon, SidePanelCollapseIcon, SidePanelExpandIcon } from '../Common/Icons';
+import { useI18n } from '../staff/i18n/index.js';
 
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
@@ -104,6 +105,7 @@ const AgentActivityFeed: React.FC<{
   isDark: boolean;
   gs: ReturnType<typeof getGrayScale>;
 }> = ({ items, isDark, gs }) => {
+  const { t } = useI18n();
   const itemEvents = items.filter((item): item is SystemEvent & { type: 'item' } => item.type === 'item');
   if (itemEvents.length === 0) return null;
 
@@ -138,7 +140,7 @@ const AgentActivityFeed: React.FC<{
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
       }}>
-        Agent 活动
+        {t('Agent 活动')}
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {itemEvents.slice(0, 8).map((item) => (
@@ -174,6 +176,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   darkMode = false,
   placeholder = '输入您的问题...',
 }) => {
+  const { t } = useI18n();
   const isPage = variant === 'page';
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -336,7 +339,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       setShowApprovalDialog(true);
     },
     onApprovalTimeout: (requestId) => {
-      showToast('审批超时，已自动拒绝', 'error', 2000);
+      showToast(t('审批超时，已自动拒绝'), 'error', 2000);
     },
   });
 
@@ -407,7 +410,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           ...currentSession,
           messages: [],
         });
-        showToast('对话已清空', 'success', 1500);
+        showToast(t('对话已清空'), 'success', 1500);
         return true;
       }
       case 'new': {
@@ -417,9 +420,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       case 'model': {
         if (args) {
           updateSessionModel(args);
-          showToast(`已切换到模型: ${args}`, 'success', 2000);
+          showToast(t('已切换到模型: {model}', { model: args }), 'success', 2000);
         } else {
-          showToast('用法: /model <模型ID>', 'info', 3000);
+          showToast(t('用法: /model <模型ID>'), 'info', 3000);
         }
         return true;
       }
@@ -430,7 +433,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         const modelsMsg: Message = {
           id: `msg_${Date.now()}`,
           role: 'assistant',
-          content: `**可用模型：**\n\n${modelList || '暂无可用模型'}`,
+          content: `**${t('可用模型：')}**\n\n${modelList || t('暂无可用模型')}`,
           model: currentSession?.model || '',
           timestamp: new Date(),
           thinking: '',
@@ -448,7 +451,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         const contextMsg: Message = {
           id: `msg_${Date.now()}`,
           role: 'assistant',
-          content: `**上下文使用情况：**\n\n- 消息数量: ${msgCount}\n- 总字符数: ${totalChars}\n- 当前模型: ${currentSession.model || 'auto'}`,
+          content: `**${t('上下文使用情况：')}**\n\n- ${t('消息数量: ')}${msgCount}\n- ${t('总字符数: ')}${totalChars}\n- ${t('当前模型: ')}${currentSession.model || 'auto'}`,
           model: currentSession?.model || '',
           timestamp: new Date(),
           thinking: '',
@@ -463,35 +466,35 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       case 'compact': {
         const messages = currentSession.messages;
         if (messages.length < 8) {
-          showToast('消息数量不足 8 条，无需压缩', 'info', 2000);
+          showToast(t('消息数量不足 8 条，无需压缩'), 'info', 2000);
           return true;
         }
 
-        showToast('正在压缩对话...', 'info', 2000);
+        showToast(t('正在压缩对话...'), 'info', 2000);
         compactSession(6).then((result) => {
           if (result.success && result.compressed) {
-            showToast('对话压缩成功', 'success', 2000);
+            showToast(t('对话压缩成功'), 'success', 2000);
           } else if (result.success && !result.compressed) {
-            showToast('消息数量不足，无需压缩', 'info', 2000);
+            showToast(t('消息数量不足，无需压缩'), 'info', 2000);
           } else {
-            showToast('压缩失败，请重试', 'error', 3000);
+            showToast(t('压缩失败，请重试'), 'error', 3000);
           }
         }).catch(() => {
-          showToast('压缩失败，请重试', 'error', 3000);
+          showToast(t('压缩失败，请重试'), 'error', 3000);
         });
         return true;
       }
       case 'thinking': {
         const mode = args.toLowerCase();
         if (mode === 'on' || mode === 'off') {
-          showToast(`深度思考模式已${mode === 'on' ? '开启' : '关闭'}`, 'success', 2000);
+          showToast(t('深度思考模式已{status}', { status: mode === 'on' ? t('开启') : t('关闭') }), 'success', 2000);
         } else {
-          showToast('用法: /thinking on|off', 'info', 3000);
+          showToast(t('用法: /thinking on|off'), 'info', 3000);
         }
         return true;
       }
       case 'skill': {
-        showToast('技能选择器已打开', 'info', 1500);
+        showToast(t('技能选择器已打开'), 'info', 1500);
         return true;
       }
       case 'skill-create': {
@@ -508,14 +511,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       case 'debug': {
         const newDebugMode = !debugMode;
         setDebugMode(newDebugMode);
-        showToast(`调试模式已${newDebugMode ? '开启' : '关闭'}`, 'success', 2000);
+        showToast(t('调试模式已{status}', { status: newDebugMode ? t('开启') : t('关闭') }), 'success', 2000);
         // 在对话中插入一条调试状态消息
         const debugMsg: Message = {
           id: `msg_${Date.now()}`,
           role: 'assistant',
           content: newDebugMode
-            ? `**调试模式已开启**\n\n当前会话调试信息：\n- 消息数量: ${currentSession.messages.length}\n- 当前模型: ${currentSession.model || 'auto'}\n- 会话 ID: ${currentSession.id}\n- 调试面板已展开，可在消息下方查看 Token 用量和耗时`
-            : `**调试模式已关闭**`,
+            ? `**${t('调试模式已开启')}**\n\n${t('当前会话调试信息：')}\n- ${t('消息数量: ')}${currentSession.messages.length}\n- ${t('当前模型: ')}${currentSession.model || 'auto'}\n- ${t('会话 ID: ')}${currentSession.id}\n- ${t('调试面板已展开，可在消息下方查看 Token 用量和耗时')}`
+            : `**${t('调试模式已关闭')}**`,
           model: currentSession?.model || '',
           timestamp: new Date(),
           thinking: '',
@@ -607,17 +610,17 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
   /** 分享消息 — 导出为 Markdown 文件并复制到剪贴板 */
   const handleShare = useCallback((msg: Message) => {
-    const roleLabel = msg.role === 'user' ? '用户' : 'AI 助手';
+    const roleLabel = msg.role === 'user' ? t('用户') : t('AI 助手');
     const ts = msg.timestamp instanceof Date
       ? msg.timestamp.toLocaleString('zh-CN', { hour12: false })
       : String(msg.timestamp || '');
     const content = cleanAIDisclaimer(msg.content || '');
     const md = [
-      `# 对话分享`,
+      `# ${t('对话分享')}`,
       ``,
-      `**角色**: ${roleLabel}`,
-      ...(msg.model ? [`**模型**: ${msg.model}`] : []),
-      ...(ts ? [`**时间**: ${ts}`] : []),
+      `**${t('角色')}**: ${roleLabel}`,
+      ...(msg.model ? [`**${t('模型')}**: ${msg.model}`] : []),
+      ...(ts ? [`**${t('时间')}**: ${ts}`] : []),
       ``,
       `---`,
       ``,
@@ -644,25 +647,25 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch { /* 静默 */ }
 
-    showToast('已导出为 Markdown 并复制到剪贴板', 'success', 2000);
-  }, [showToast]);
+    showToast(t('已导出为 Markdown 并复制到剪贴板'), 'success', 2000);
+  }, [showToast, t]);
 
   /** 翻译消息 — 打开 Google Translate 链接 */
   const handleTranslate = useCallback((msg: Message) => {
     const text = (msg.content || '').trim();
     if (!text) {
-      showToast('消息内容为空，无法翻译', 'info', 2000);
+      showToast(t('消息内容为空，无法翻译'), 'info', 2000);
       return;
     }
     // 自动检测源语言，目标语言为中文
     const translateUrl = `https://translate.google.com/?sl=auto&tl=zh-CN&op=translate&text=${encodeURIComponent(text)}`;
     try {
       window.open(translateUrl, '_blank', 'noopener,noreferrer');
-      showToast('已打开 Google 翻译', 'success', 2000);
+      showToast(t('已打开 Google 翻译'), 'success', 2000);
     } catch {
-      showToast('无法打开翻译页面，请检查浏览器弹窗设置', 'error', 3000);
+      showToast(t('无法打开翻译页面，请检查浏览器弹窗设置'), 'error', 3000);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   // ===================== 快捷键支持 =====================
 
@@ -707,23 +710,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       allowlist: [...prev.allowlist, newEntry],
     }));
 
-    showToast(`已添加到白名单：${pattern}`, 'success', 2000);
-  }, [addToWhitelist, showToast]);
+    showToast(t('已添加到白名单：{pattern}', { pattern }), 'success', 2000);
+  }, [addToWhitelist, showToast, t]);
 
   const handleConfirmReplenishment = useCallback(async (suggestionId: number) => {
     try {
-      showToast(`补货建议 #${suggestionId} 已确认`, 'success', 2000);
+      showToast(t('补货建议 #{id} 已确认', { id: suggestionId }), 'success', 2000);
     } catch (e) {
       throw new Error(
-        e instanceof Error ? e.message : '确认补货建议失败，请重试',
+        e instanceof Error ? e.message : t('确认补货建议失败，请重试'),
       );
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   const handleAgentChange = useCallback((agent: AgentIdentity) => {
     setCurrentAgent(agent);
-    showToast(`已切换到 ${agent.name}`, 'info', 1500);
-  }, [showToast]);
+    showToast(t('已切换到 {name}', { name: agent.name }), 'info', 1500);
+  }, [showToast, t]);
 
   const isEmpty = chatMessages.length === 0;
   const showActivityFeed = isLoading && activeItems.length > 0;
@@ -748,7 +751,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           found: true,
           originalCount: chatMessages.length,
           compressionRatio: msg.contextCompressed.ratio,
-          summary: msg.contextCompressed.keyInfoPreserved?.join('；'),
+          summary: msg.contextCompressed.keyInfoPreserved?.join(t('；')),
         };
       }
     }
@@ -769,7 +772,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const chatItems = useMemo<ChatItem[]>(() => {
     const compactionDividers = compactionInfo ? [{
       insertAfterIndex: 0,
-      label: compactionInfo.found ? '已压缩历史对话' : '历史对话',
+      label: compactionInfo.found ? t('已压缩历史对话') : t('历史对话'),
       summary: compactionInfo.summary,
       originalCount: compactionInfo.originalCount,
       compressionRatio: compactionInfo.compressionRatio,
@@ -784,8 +787,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
   if (isPage) {
     // 推导会话标题
-    const sessionTitle = session.title === '新对话' || !session.title
-      ? (chatMessages[0]?.content?.slice(0, 24) || '新对话')
+    const sessionTitle = session.title === t('新对话') || !session.title
+      ? (chatMessages[0]?.content?.slice(0, 24) || t('新对话'))
       : session.title;
 
     // v1.7.89: 收起侧边栏时标题栏与新建对话按钮同一行（fixed 定位）
@@ -895,7 +898,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="搜索消息内容..."
+                placeholder={t('搜索消息内容...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -944,7 +947,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           {/* 右侧按钮组：搜索 + 终端 + 侧面板 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             {!searchOpen && (
-              <Tooltip title="搜索消息" arrow>
+              <Tooltip title={t('搜索消息')} arrow>
                 <IconButton
                   size="small"
                   onClick={() => setSearchOpen(true)}
@@ -959,26 +962,26 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-            <Tooltip title="压缩对话" arrow>
+            <Tooltip title={t('压缩对话')} arrow>
               <IconButton
                 size="small"
                 onClick={() => {
                   const messages = session.messages;
                   if (messages.length < 8) {
-                    showToast('消息数量不足 8 条，无需压缩', 'info', 2000);
+                    showToast(t('消息数量不足 8 条，无需压缩'), 'info', 2000);
                     return;
                   }
-                  showToast('正在压缩对话...', 'info', 2000);
+                  showToast(t('正在压缩对话...'), 'info', 2000);
                   compactSession(6).then((result) => {
                     if (result.success && result.compressed) {
-                      showToast('对话压缩成功', 'success', 2000);
+                      showToast(t('对话压缩成功'), 'success', 2000);
                     } else if (result.success && !result.compressed) {
-                      showToast('消息数量不足，无需压缩', 'info', 2000);
+                      showToast(t('消息数量不足，无需压缩'), 'info', 2000);
                     } else {
-                      showToast('压缩失败，请重试', 'error', 3000);
+                      showToast(t('压缩失败，请重试'), 'error', 3000);
                     }
                   }).catch(() => {
-                    showToast('压缩失败，请重试', 'error', 3000);
+                    showToast(t('压缩失败，请重试'), 'error', 3000);
                   });
                 }}
                 sx={{
@@ -993,7 +996,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 </svg>
               </IconButton>
             </Tooltip>
-            <Tooltip title={terminalOpen ? '关闭终端' : '打开终端'} arrow>
+            <Tooltip title={terminalOpen ? t('关闭终端') : t('打开终端')} arrow>
               <IconButton
                 size="small"
                 onClick={() => {
@@ -1020,7 +1023,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 <TerminalButtonIcon size={13.3} />
               </IconButton>
             </Tooltip>
-            <Tooltip title={sidePanelOpen ? '收起侧面板' : '展开侧面板'} arrow>
+            <Tooltip title={sidePanelOpen ? t('收起侧面板') : t('展开侧面板')} arrow>
             <IconButton
               size="small"
               onClick={() => {
@@ -1096,7 +1099,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 fontSize: '0.8125rem', color: gs.textMuted,
                 animation: 'tearPulse 1.6s ease-in-out infinite',
               }}>
-                正在加载历史对话...
+                {t('正在加载历史对话...')}
               </Typography>
             </Box>
           ) : isEmpty ? (
@@ -1147,7 +1150,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                     </Box>
 
                     <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
-                      时刻可视，实时感知，尽在掌握
+                      {t('时刻可视，实时感知，尽在掌握')}
                     </Typography>
                     <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
                       See anytime, know anytime
@@ -1287,7 +1290,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                           } else {
                             // 回退：导出整个对话为 Markdown
                             const md = chatMessages
-                              .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${cleanAIDisclaimer(m.content || '')}`)
+                              .map(m => `## ${m.role === 'user' ? t('用户') : t('AI')}\n\n${cleanAIDisclaimer(m.content || '')}`)
                               .join('\n\n---\n\n') + EXPORT_DISCLAIMER;
                             const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
                             const url = URL.createObjectURL(blob);
@@ -1336,10 +1339,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                       </Box>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
-                          导出文件
+                          {t('导出文件')}
                         </Typography>
                         <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
-                          提取代码块或导出对话为文件
+                          {t('提取代码块或导出对话为文件')}
                         </Typography>
                       </Box>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={gs.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
@@ -1369,7 +1372,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               />
               <Collapse in={chatMessages.length === 0} timeout={300}>
                 <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 1 }}>
-                  内容由AI生成，请核实重要信息
+                  {t('内容由AI生成，请核实重要信息')}
                 </Typography>
               </Collapse>
             </Box>
@@ -1457,7 +1460,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     <>
       <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 2, py: 0.5 }}>
-          <Tooltip title="新对话">
+          <Tooltip title={t('新对话')}>
             <IconButton
               size="small"
               onClick={handleNewChat}
@@ -1563,7 +1566,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                       });
                     } else {
                       const md = chatMessages
-                        .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${m.content || ''}`)
+                        .map(m => `## ${m.role === 'user' ? t('用户') : t('AI')}\n\n${m.content || ''}`)
                         .join('\n\n---\n\n');
                       const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
                       const url = URL.createObjectURL(blob);
@@ -1612,10 +1615,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
-                    导出文件
+                    {t('导出文件')}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
-                    提取代码块或导出对话为文件
+                    {t('提取代码块或导出对话为文件')}
                   </Typography>
                 </Box>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={gs.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
@@ -1646,7 +1649,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               flexShrink: 0,
             }}
           >
-            内容由AI生成，请核实重要信息
+            {t('内容由AI生成，请核实重要信息')}
           </Typography>
         </Collapse>
 

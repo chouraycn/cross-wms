@@ -352,6 +352,71 @@ setTimeout(() => {
   logger.info('[ConfigHotReload] 已延迟启动');
 }, 400);
 
+// ========== 数字员工(StaffDeck) API 适配层 ==========
+// 原前端(StaffDeck-main)调用 /api/auth|/api/enterprise|/api/chat/*，后端实际挂在 /api/staffdeck/*。
+// 此处只改写 req.url 前缀，转发给已注册的真实 staff 路由，不做任何业务逻辑。
+// 关键约束：
+//  1) 必须注册在所有 API 路由(含 chatRouter、registerStaffRoutes)之前，否则改写后的请求无法命中目标路由。
+//  2) /api/chat 仅匹配「带子路径」的形式(/api/chat/)，绝不改写裸 /api/chat ——
+//     后者是主程序遗留 chat 端点(chatRouter 挂载于 /api)，改写会破坏主程序聊天。
+//  3) 原前端 /api/chat/* 命名空间整体对应后端 /api/staffdeck/chat/*(chatStream 承载完整命名空间)，
+//     仅 scheduled-tasks / ui-config / agents(列表) 在 chat 之外，需精确优先覆盖。
+const STAFFDECK_API_REWRITES: Array<[RegExp, string]> = [
+  // 精确优先：覆盖 chatStream 命名空间之外、或位置不同的独立路由
+  [/^\/api\/chat\/scheduled-tasks\b/, '/api/staffdeck/scheduled-tasks'],
+  [/^\/api\/chat\/ui-config\b/, '/api/staffdeck/ui-config'],
+  [/^\/api\/chat\/agents(?=\?|$)/, '/api/staffdeck/agents'], // 仅列表端点(agents 后紧跟 ? 或结尾)；/agents/:id/use 走下方 chat 规则
+  // 其余 /api/chat/* 整体映射到 /api/staffdeck/chat/*（chatStream 完整命名空间）
+  [/^\/api\/chat\//, '/api/staffdeck/chat/'],
+  // enterprise 命名空间 → staffdeck
+  [/^\/api\/enterprise\b/, '/api/staffdeck'],
+  // auth 命名空间 → staffdeck/auth
+  [/^\/api\/auth\b/, '/api/staffdeck/auth'],
+];
+app.use((req, _res, next) => {
+  for (const [pattern, replacement] of STAFFDECK_API_REWRITES) {
+    if (pattern.test(req.url)) {
+      req.url = req.url.replace(pattern, replacement);
+      break;
+    }
+  }
+  next();
+});
+
+// ========== 数字员工嵌入前端 envelope 剥包 ==========
+// 根因：StaffDeck-main 原前端(iframe 内 /staffdeck-app)期望「裸数据」(数组/对象)，
+// 但本仓 staff 路由统一返回 { code, data, message } envelope，且原前端无 envelope unwrap。
+// 原前端拿到 envelope 后直接调用数组方法(如 _.some(envelope)) → 非数组 → 启动即崩溃白屏。
+// 修复：在 /api/staffdeck/* 响应层统一剥包(仅 code===0 的成功响应)，直接返回 data 字段。
+//   - 嵌入前端拿到裸数据 → 正常渲染；
+//   - 主程序 staff 页面经 client.ts(API_BASE='/api/staffdeck') 调用，其 unwrapEnvelope 对裸数据透传，不受影响；
+//   - 错误响应(code!==0)保留 envelope，保留错误码/信息供上层判断。
+const STAFFDECK_ENVELOPE_PREFIX = '/api/staffdeck';
+app.use((req, res, next) => {
+  if (typeof req.url !== 'string' || !req.url.startsWith(STAFFDECK_ENVELOPE_PREFIX)) {
+    return next();
+  }
+  const originalJson = res.json.bind(res) as (body: unknown) => unknown;
+  let patched = false;
+  res.json = ((body: unknown) => {
+    if (
+      !patched &&
+      body &&
+      typeof body === 'object' &&
+      !Array.isArray(body) &&
+      'code' in body &&
+      'data' in body &&
+      (body as { code?: unknown }).code === 0
+    ) {
+      patched = true;
+      return originalJson((body as { data: unknown }).data);
+    }
+    patched = true;
+    return originalJson(body);
+  }) as unknown as typeof res.json;
+  next();
+});
+
 // ========== Core API Routes (sync) ==========
 
 app.use('/api', chatRouter);
@@ -621,6 +686,32 @@ const FRONTEND_DIST_DIR = process.env.FRONTEND_DIR
   ? path.resolve(process.env.FRONTEND_DIR)
   : path.join(process.cwd(), 'dist');
 
+// ========== 数字员工(StaffDeck) 100% 复刻：独立前端静态托管 ==========
+// StaffDeck-main 原前端(shadcn/Tailwind)构建产物放在 dist/staffdeck-app/，
+// 通过 /staffdeck-app/* 独立托管，iframe 嵌入主程序，确保 Teal 设计系统不被 MUI 主主题污染。
+const STAFFDECK_APP_DIR = path.join(FRONTEND_DIST_DIR, 'staffdeck-app');
+if (fs.existsSync(STAFFDECK_APP_DIR) && fs.existsSync(path.join(STAFFDECK_APP_DIR, 'index.html'))) {
+  logger.info(`[Server] 数字员工独立前端目录: ${STAFFDECK_APP_DIR}`);
+  app.use('/staffdeck-app', express.static(STAFFDECK_APP_DIR, { index: false }));
+  // 该前缀下的 SPA fallback（深层路由返回 staffdeck-app 的 index.html，而非主前端）
+  const staffdeckIndexHtml = path.join(STAFFDECK_APP_DIR, 'index.html');
+  app.get(/^\/staffdeck-app\/(?!api\/).*/, (_req, res) => {
+    // 防御：构建产物可能被清理/未完全生成，避免 sendFile 抛 ENOENT 经全局兜底变成泛化 500
+    if (!fs.existsSync(staffdeckIndexHtml)) {
+      res
+        .status(503)
+        .type('text/plain; charset=utf-8')
+        .send('数字员工前端未构建（缺少 dist/staffdeck-app/index.html）。请先运行 npm run staffdeck:build。');
+      return;
+    }
+    res.sendFile(staffdeckIndexHtml);
+  });
+} else {
+  logger.warn(`[Server] 数字员工独立前端目录不存在: ${STAFFDECK_APP_DIR}（需先构建 StaffDeck-main/frontend-enterprise）`);
+}
+
+// ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
+// 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIST_DIR 加载
 if (fs.existsSync(FRONTEND_DIST_DIR) && fs.existsSync(path.join(FRONTEND_DIST_DIR, 'index.html'))) {
   logger.info(`[Server] 前端静态目录: ${FRONTEND_DIST_DIR}`);
   app.use(express.static(FRONTEND_DIST_DIR, { index: false }));
@@ -654,7 +745,26 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   }
 });
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
+/**
+ * 解析服务监听端口。优先级：process.env.PORT > process.env.CROSS_WMS_APP_PORT > --port= argv > 3001。
+ * 背景：历史文档(.env.example)曾用 CROSS_WMS_APP_PORT 且默认 3000，但 server 从未读取该变量、且
+ * 不自动加载根 .env；实际事实标准为 PORT=3001（Swift 壳 AppConfig.swift、vite 代理均依此）。
+ * 此处统一兼容两变量名与 --port argv，消除"改端口无效"的配置漂移。
+ */
+function resolveServerPort(): number {
+  const fromEnv = process.env.PORT || process.env.CROSS_WMS_APP_PORT;
+  if (fromEnv) {
+    const p = parseInt(fromEnv, 10);
+    if (!Number.isNaN(p)) return p;
+  }
+  const portArg = process.argv.find((a) => a.startsWith('--port='));
+  if (portArg) {
+    const p = parseInt(portArg.slice('--port='.length), 10);
+    if (!Number.isNaN(p)) return p;
+  }
+  return 3001;
+}
+const PORT = resolveServerPort();
 
 // v8.7: error 监听器必须在 listen() 之前注册，防止边缘情况下 error 事件丢失
 const server = http.createServer(app);

@@ -146,6 +146,13 @@ export const BUILD_ALL_STEPS = [
     cache: undefined,
   },
   {
+    label: "staffdeck:build",
+    kind: "node",
+    args: ["scripts/build-staffdeck-app.mjs"],
+    // 独立前端构建，产物 copy 到 dist/staffdeck-app/；与主前端构建无文件签名耦合。
+    cache: undefined,
+  },
+  {
     label: "write-build-info",
     kind: "node",
     args: ["--experimental-strip-types", "scripts/write-build-info.ts"],
@@ -178,6 +185,7 @@ export const BUILD_ALL_PROFILES = {
     "copy-hook-metadata",
     "copy-export-html-templates",
     "ui:build",
+    "staffdeck:build",
     "write-build-info",
     "write-cli-startup-metadata",
     "write-cli-compat",

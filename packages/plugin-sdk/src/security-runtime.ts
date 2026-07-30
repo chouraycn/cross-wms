@@ -6,7 +6,7 @@
 /** Result of safely opening a file within a trusted root. */
 type OpenResult = unknown;
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 async function fsRoot(_rootDir: string): Promise<{
   open(
     _relativePath: string,

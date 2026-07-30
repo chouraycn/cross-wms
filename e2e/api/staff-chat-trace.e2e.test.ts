@@ -6,6 +6,10 @@ import * as agentDao from '../../server/dao/staff/staffAgentDao.js';
 /**
  * 覆盖 Round4 的核心能力：/stream 在路由层把节点级事件写入 sd_agent_events（Trace），
  * 跳过高频增量 delta（防止表膨胀），并可通过 /sessions/:id/events 回放。
+ * 注意：落库事件名已统一为前端 useChatSession 契约（session_created /
+ * user_message_received / assistant_message_created / stream_end / done / error），
+ * 而非后端原始名（session.created / message.saved）。stream_delta 仍实时发 SSE，
+ * 但不落 Trace（避免高频增量撑爆 sd_agent_events）。
  */
 describe('员工聊天 /stream → Trace 落库', () => {
   const app = express();
@@ -14,7 +18,7 @@ describe('员工聊天 /stream → Trace 落库', () => {
 
   const tenant = 'test-trace-round4';
 
-  it('流式对话后节点事件写入 Trace，含 assistant message.saved，且不含高频 delta', async () => {
+  it('流式对话后节点事件写入 Trace（前端契约名），且不含高频 delta', async () => {
     // 创建真实员工，确保 /stream 走正常完成路径（而非 agent 不存在的 error 分支）
     const agent = agentDao.createAgent({
       tenant_id: tenant,
@@ -57,16 +61,19 @@ describe('员工聊天 /stream → Trace 落库', () => {
     const rows = events.body.data as Array<{ event_type: string; payload: Record<string, unknown> }>;
     const types = rows.map((e) => e.event_type);
 
-    // 节点级事件应落 Trace
-    expect(types).toContain('session.created');
-    expect(types).toContain('message.saved');
+    // 节点级事件应落 Trace（前端契约名）
+    expect(types).toContain('session_created');
+    expect(types).toContain('user_message_received');
+    expect(types).toContain('assistant_message_created');
     expect(types).toContain('done');
     // 正常完成路径应记录 assistant 消息落库事件
     expect(
-      rows.some((e) => e.event_type === 'message.saved' && e.payload?.role === 'assistant'),
+      rows.some(
+        (e) => e.event_type === 'assistant_message_created' && e.payload?.role === 'assistant',
+      ),
     ).toBe(true);
     // 高频增量 delta 不应落库（白名单过滤）
-    expect(types).not.toContain('text.delta');
+    expect(types).not.toContain('stream_delta');
     expect(types).not.toContain('thinking.delta');
   });
 });

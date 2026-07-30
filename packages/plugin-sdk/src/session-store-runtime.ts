@@ -110,19 +110,19 @@ export type SessionRecentConversationText = {
  * patchSessionEntry/upsertSessionEntry 写入。此整体存储辅助仅在 SQLite
  * 迁移前的过渡期保留。调用方应迁移至不直接读取 sessions.json。
  */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function loadSessionStore(_params?: SessionStoreListParams): Promise<unknown> {
   return { entries: {} };
 }
 
 /** 按 agent/session 身份加载单条会话条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function getSessionEntry(_params: SessionStoreReadParams): SessionEntry | undefined {
   return undefined;
 }
 
 /** 列出单个 agent 的会话条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listSessionEntries(
   _params: SessionStoreListParams = {},
 ): SessionStoreEntrySummary[] {
@@ -130,7 +130,7 @@ export function listSessionEntries(
 }
 
 /** 按 agent/session 身份补丁单条会话条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function patchSessionEntry(
   _params: PatchSessionEntryParams,
 ): Promise<SessionEntry | null> {
@@ -138,13 +138,13 @@ export async function patchSessionEntry(
 }
 
 /** 读取单条会话条目的最近活动时间戳。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function readSessionUpdatedAt(_params: ReadSessionUpdatedAtParams): number | undefined {
   return undefined;
 }
 
 /** 按存储路径与会话键更新已存在的会话条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function updateSessionStoreEntry(
   _params: UpdateSessionStoreEntryParams,
 ): Promise<SessionEntry | null> {
@@ -152,13 +152,13 @@ export async function updateSessionStoreEntry(
 }
 
 /** 按 agent/session 身份替换或创建单条会话条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function upsertSessionEntry(_params: UpsertSessionEntryParams): Promise<void> {
   // 待 config/sessions/store.js 移植后接入
 }
 
 /** 清理单个 agent 存储的陈旧生命周期会话条目与孤儿 transcript。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function cleanupSessionLifecycleArtifacts(
   _params: SessionLifecycleArtifactsCleanupParams,
 ): Promise<SessionLifecycleArtifactsCleanupResult> {
@@ -166,7 +166,7 @@ export async function cleanupSessionLifecycleArtifacts(
 }
 
 /** 解析会话存储条目。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionStoreEntry(
   _store: unknown,
   _key: string,
@@ -175,7 +175,7 @@ export function resolveSessionStoreEntry(
 }
 
 /** 解析存储路径。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveStorePath(
   _sessionStore?: string,
   _context?: { agentId?: string; env?: NodeJS.ProcessEnv },
@@ -184,7 +184,7 @@ export function resolveStorePath(
 }
 
 /** 解析目录内会话 transcript 路径。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionTranscriptPathInDir(_dir: string): string {
   return "transcript.jsonl";
 }
@@ -193,7 +193,7 @@ export function resolveSessionTranscriptPathInDir(_dir: string): string {
  * @deprecated 使用 getSessionEntry 按 agent/session 身份读取会话元数据，
  * 而非解析 transcript 文件路径。仅在 SQLite 迁移前过渡期保留。
  */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionFilePath(_params: unknown): string {
   return "state/transcript.jsonl";
 }
@@ -202,13 +202,13 @@ export function resolveSessionFilePath(_params: unknown): string {
  * @deprecated 使用 patchSessionEntry/upsertSessionEntry 按 agent/session
  * 身份持久化会话元数据。仅在 SQLite 迁移前过渡期保留。
  */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function resolveAndPersistSessionFile(_params: unknown): Promise<string> {
   return "state/transcript.jsonl";
 }
 
 /** 读取最近助手文本。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function readLatestAssistantTextFromSessionTranscript(
   _sessionFile: string,
 ): Promise<unknown> {
@@ -216,7 +216,7 @@ export async function readLatestAssistantTextFromSessionTranscript(
 }
 
 /** 读取最近用户/助手对话文本。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function readRecentUserAssistantTextForSession(
   _sessionFile: string,
 ): Promise<SessionRecentConversationText | undefined> {
@@ -224,7 +224,7 @@ export async function readRecentUserAssistantTextForSession(
 }
 
 /** 解析会话键。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionKey(
   _channelId: string,
   _sender: string,
@@ -234,25 +234,25 @@ export function resolveSessionKey(
 }
 
 /** 解析群组会话键。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveGroupSessionKey(_channelId: string, _groupId: string): string {
   return `${_channelId}:group:${_groupId}`;
 }
 
 /** 规范化主会话别名。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function canonicalizeMainSessionAlias(alias: string): string {
   return alias;
 }
 
 /** 清空测试用会话存储缓存。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function clearSessionStoreCacheForTest(): void {
   // 待 config/sessions/store.js 移植后接入
 }
 
 /** 从入站消息记录会话元数据。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function recordSessionMetaFromInbound(
   _store: unknown,
   _key: string,
@@ -262,7 +262,7 @@ export function recordSessionMetaFromInbound(
 }
 
 /** 更新最近路由。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function updateLastRoute(
   _store: unknown,
   _key: string,
@@ -275,7 +275,7 @@ export function updateLastRoute(
  * @deprecated 使用 patchSessionEntry/upsertSessionEntry 写入。这些整体
  * 存储辅助仅在 SQLite 迁移前过渡期保留。
  */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function saveSessionStore(_store: unknown, _path?: string): Promise<void> {
   // 待 config/sessions/store.js 移植后接入
 }
@@ -283,7 +283,7 @@ export async function saveSessionStore(_store: unknown, _path?: string): Promise
 /**
  * @deprecated 使用 patchSessionEntry/upsertSessionEntry 写入。
  */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function updateSessionStore(
   _store: unknown,
   _key: string,
@@ -293,37 +293,37 @@ export function updateSessionStore(
 }
 
 /** 评估会话新鲜度。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function evaluateSessionFreshness(_entry: SessionEntry | undefined): boolean {
   return false;
 }
 
 /** 解析渠道重置配置。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelResetConfig(_channelId: string): { mode: string } {
   return { mode: "never" };
 }
 
 /** 解析会话重置策略。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionResetPolicy(_entry: SessionEntry | undefined): string {
   return "never";
 }
 
 /** 解析会话重置类型。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSessionResetType(_entry: SessionEntry | undefined): string {
   return "never";
 }
 
 /** 解析会话线程标记。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveThreadFlag(_entry: SessionEntry | undefined): boolean {
   return false;
 }
 
 /** 解析发送策略。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveSendPolicy(_entry: SessionEntry | undefined): string {
   return "default";
 }

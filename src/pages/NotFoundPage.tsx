@@ -2,10 +2,12 @@ import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import { useI18n } from '../components/staff/i18n/index.js';
 
 /** 404 页面 — 路由未匹配时显示 */
 const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <Box
@@ -35,7 +37,7 @@ const NotFoundPage: React.FC = () => {
           fontWeight: 400,
         }}
       >
-        页面不存在
+        {t('页面不存在')}
       </Typography>
       <Button
         variant="outlined"
@@ -51,7 +53,7 @@ const NotFoundPage: React.FC = () => {
           },
         }}
       >
-        返回首页
+        {t('返回首页')}
       </Button>
     </Box>
   );

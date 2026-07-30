@@ -37,6 +37,7 @@ import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 import { SLASH_COMMANDS, SlashCommand } from '../../hooks/useSlashCommands';
 import { SlashCommandSelector } from './SlashCommandSelector';
+import { useI18n } from '../../components/staff/i18n/index.js';
 
 
 // ===================== Props =====================
@@ -94,6 +95,7 @@ function getFileTypeColor(mimeType: string, fileName: string): string {
 // ===================== Component =====================
 
 export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, updateSessionModel, initialSkill, isLoading, sendMessage, stopGeneration, variant = 'default' }: TopBarChatInputProps) {
+  const { t } = useI18n();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
@@ -152,7 +154,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      showToast('当前浏览器不支持语音识别，请使用 Chrome', 'error', 3000);
+      showToast(t('当前浏览器不支持语音识别，请使用 Chrome'), 'error', 3000);
       return;
     }
 
@@ -183,11 +185,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
     recognition.onerror = (event: any) => {
       if (event.error === 'not-allowed') {
-        showToast('无法访问麦克风，请检查权限设置', 'error', 3000);
+        showToast(t('无法访问麦克风，请检查权限设置'), 'error', 3000);
       } else if (event.error === 'no-speech') {
-        showToast('未检测到语音输入', 'info', 2000);
+        showToast(t('未检测到语音输入'), 'info', 2000);
       } else {
-        showToast(`语音识别错误: ${event.error}`, 'error', 2000);
+        showToast(t('语音识别错误: {error}', { error: event.error }), 'error', 2000);
       }
       setIsRecording(false);
     };
@@ -209,22 +211,22 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         handleInputChangeRef.current();
       }
       if (finalText) {
-        showToast('语音输入完成', 'success', 1500);
+        showToast(t('语音输入完成'), 'success', 1500);
       }
     };
 
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-    showToast('开始录音，再次点击停止', 'info', 2000);
-  }, [isRecording, showToast]);
+    showToast(t('开始录音，再次点击停止'), 'info', 2000);
+  }, [isRecording, showToast, t]);
 
   // 思考级别基础列表
   const BASE_THINKING_LEVELS = [
-    { value: 'off', label: '关闭' },
-    { value: 'low', label: '快速' },
-    { value: 'medium', label: '标准' },
-    { value: 'high', label: '深度' },
+    { value: 'off', label: t('关闭') },
+    { value: 'low', label: t('快速') },
+    { value: 'medium', label: t('标准') },
+    { value: 'high', label: t('深度') },
   ];
 
   // v10.0: 根据模型配置动态获取可用思考级别
@@ -236,7 +238,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     // 检查模型是否支持思考能力
     const supportsThinking = modelConfig.capabilities?.includes('reasoning');
     if (!supportsThinking) {
-      return [{ value: 'off', label: '关闭' }];
+      return [{ value: 'off', label: t('关闭') }];
     }
 
     // 如果模型指定了可用的思考级别，则使用模型指定的级别
@@ -252,7 +254,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     }
 
     return BASE_THINKING_LEVELS;
-  }, [session?.model, modelList]);
+  }, [session?.model, modelList, t]);
 
   // v10.0: 获取当前模型的默认思考级别
   const getModelDefaultThinkingLevel = useMemo(() => {
@@ -351,7 +353,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       if (folderName) {
         // 任务 7: 完善文件夹选择能力 — 显示完整路径和文件统计
         const fileCount = files.length;
-        setSelectedFolder(`${folderName}（${fileCount} 个文件）`);
+        setSelectedFolder(t('{folder}（{count} 个文件）', { folder: folderName, count: fileCount }));
       }
     }
     // 重置 input value 以便重复选择同一文件夹
@@ -409,7 +411,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // RC-3 修复：不再过滤 enabled=false 的模型，改为保留并标记 enabled 字段供 UI 灰显
   // 原行为：filter(m => m.enabled) 会导致用户看到"模型没了"
   const MODEL_OPTIONS: ModelOption[] = [
-    { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
+    { id: 'auto', name: 'Auto', provider: 'auto', description: t('根据任务自动选择最合适的模型') },
     ...modelList.map((m) => ({
       id: m.id,
       name: m.name,
@@ -428,7 +430,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 初始化选中的模型（默认 Auto）
   const [selectedModel, setSelectedModel] = useState('Auto');
   const [selectedModelId, setSelectedModelId] = useState('auto');
-  const [selectedPermission, setSelectedPermission] = useState('默认权限');
+  const [selectedPermission, setSelectedPermission] = useState(t('默认权限'));
   const [showAISettings, setShowAISettings] = useState(false);
 
   // v1.7.162: 跟踪用户是否主动选择了 Auto，防止 useEffect 覆盖
@@ -496,13 +498,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     // 前置校验：大小 + 文件类型
     for (const file of fileArray) {
       if (file.size > MAX_UPLOAD_SIZE) {
-        showToast(`文件 "${file.name}" 超过 10MB 限制`, 'error', 3000);
+        showToast(t('文件 "{name}" 超过 10MB 限制', { name: file.name }), 'error', 3000);
         return;
       }
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const isImage = file.type.startsWith('image/');
       if (!isImage && !ALLOWED_EXTENSIONS.has(ext)) {
-        showToast(`不支持的文件类型: .${ext}`, 'error', 3000);
+        showToast(t('不支持的文件类型: .{ext}', { ext }), 'error', 3000);
         return;
       }
     }
@@ -529,7 +531,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         });
       } catch (err) {
         // console.error('[TopBarChatInput] 文件上传失败:', file.name, err);
-        showToast(`文件上传失败: ${file.name}`, 'error', 3000);
+        showToast(t('文件上传失败: {name}', { name: file.name }), 'error', 3000);
       }
     }
 
@@ -864,37 +866,37 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         editableRef.current.innerHTML = '';
       }
       window.dispatchEvent(new CustomEvent('cdf-chat-clear'));
-      showToast('对话已清空', 'success', 2000);
+      showToast(t('对话已清空'), 'success', 2000);
     }
     setShowClearConfirm(false);
-  }, [session?.id, showToast]);
+  }, [session?.id, showToast, t]);
 
   // 复制对话
   const handleCopyChat = useCallback(async () => {
     if (!session?.messages || session.messages.length === 0) {
-      showToast('没有可复制的对话内容', 'info', 2000);
+      showToast(t('没有可复制的对话内容'), 'info', 2000);
       return;
     }
     const text = session.messages
       .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => `${m.role === 'user' ? '用户' : 'AI'}: ${m.content}`)
+      .map(m => `${m.role === 'user' ? t('用户') : 'AI'}: ${m.content}`)
       .join('\n\n');
     try {
       await navigator.clipboard.writeText(text);
-      showToast('对话已复制到剪贴板', 'success', 2000);
+      showToast(t('对话已复制到剪贴板'), 'success', 2000);
     } catch {
-      showToast('复制失败，请手动复制', 'error', 2000);
+      showToast(t('复制失败，请手动复制'), 'error', 2000);
     }
-  }, [session?.messages, showToast]);
+  }, [session?.messages, showToast, t]);
 
   // 导出对话
   const handleExportChat = useCallback(() => {
     if (!session?.messages || session.messages.length === 0) {
-      showToast('没有可导出的对话内容', 'info', 2000);
+      showToast(t('没有可导出的对话内容'), 'info', 2000);
       return;
     }
     const exportData = {
-      title: session.title || '对话记录',
+      title: session.title || t('对话记录'),
       exportTime: new Date().toISOString(),
       messages: session.messages
         .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -908,13 +910,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${session.title || '对话记录'}_${new Date().toLocaleDateString()}.json`;
+    a.download = `${session.title || t('对话记录')}_${new Date().toLocaleDateString()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('对话已导出', 'success', 2000);
-  }, [session, showToast]);
+    showToast(t('对话已导出'), 'success', 2000);
+  }, [session, showToast, t]);
 
   /**
    * v1.5.73: compositionend 后标记 — 解决 WKWebView 中 compositionend 先于 keydown 触发的问题
@@ -1104,7 +1106,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         {selectedSkill?.intentCategories && selectedSkill.intentCategories.length > 0 && (
           <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             <Typography sx={{ fontSize: 11, color: gs.textMuted, fontWeight: 500, mr: 0.25, flexShrink: 0 }}>
-              查询意图
+              {t('查询意图')}
             </Typography>
             {selectedSkill.intentCategories.map((intent) => {
               const colors = INTENT_COLORS[intent];
@@ -1240,7 +1242,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             ))}
             {isUploading && (
               <Typography sx={{ fontSize: 11, color: gs.textMuted, fontStyle: 'italic' }}>
-                上传中...
+                {t('上传中...')}
               </Typography>
             )}
           </Box>
@@ -1334,7 +1336,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                     pt: inputExpanded ? '3px' : 0,
                   }}
                 >
-                  今天帮你做些什么？ <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>@ 引用对话文件，/ 调用技能与指令</Box>
+                  {t('今天帮你做些什么？')} <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>{t('@ 引用对话文件，/ 调用技能与指令')}</Box>
                 </Typography>
               )}
               <div
@@ -1386,7 +1388,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
         {/* Toolbar */}
         <ChatToolbar
-          selectedModel={modelsLoading ? '加载中...' : selectedModel}
+          selectedModel={modelsLoading ? t('加载中...') : selectedModel}
           onModelChange={handleModelChange}
           selectedPermission={selectedPermission}
           onPermissionChange={setSelectedPermission}
@@ -1404,11 +1406,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           onThinkingLevelChange={setThinkingLevel}
           thinkingLevels={getAvailableThinkingLevels.map(l => ({
             value: l.value,
-            label: l.value === 'off' ? '关闭思考' : `${l.label}思考`,
-            desc: l.value === 'off' ? '直接输出结果，不进行深度推理' :
-                  l.value === 'low' ? '轻量推理，响应更快' :
-                  l.value === 'medium' ? '平衡推理深度和速度' :
-                  '更深入的推理分析',
+            label: l.value === 'off' ? t('关闭思考') :
+                   l.value === 'low' ? t('快速思考') :
+                   l.value === 'medium' ? t('标准思考') :
+                   t('深度思考'),
+            desc: l.value === 'off' ? t('直接输出结果，不进行深度推理') :
+                  l.value === 'low' ? t('轻量推理，响应更快') :
+                  l.value === 'medium' ? t('平衡推理深度和速度') :
+                  t('更深入的推理分析'),
           }))}
           onVoiceInput={handleVoiceInput}
           isRecording={isRecording}
@@ -1496,7 +1501,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   >
                     {selectedFolder}
                   </Typography>
-                  <Tooltip title="清除文件夹">
+                  <Tooltip title={t('清除文件夹')}>
                     <Box
                       component="span"
                       onClick={(e) => {
@@ -1527,7 +1532,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               ) : (
                 <>
                   <Typography sx={{ fontSize: 13, color: gs.textMuted, fontWeight: 400 }}>
-                    选择文件夹
+                    {t('选择文件夹')}
                   </Typography>
                   <KeyboardArrowDownIcon
                     sx={{
@@ -1536,7 +1541,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                       transition: 'transform 0.2s ease',
                     }}
                   />
-                  <Tooltip title="选择项目文件夹后，AI 将自动读取文件夹内的代码文件作为上下文，支持 .ts/.tsx/.js/.jsx/.py/.go/.rs/.java/.md 等格式" placement="top">
+                  <Tooltip title={t('选择项目文件夹后，AI 将自动读取文件夹内的代码文件作为上下文，支持 .ts/.tsx/.js/.jsx/.py/.go/.rs/.java/.md 等格式')} placement="top">
                     <Box
                       component="span"
                       sx={{
@@ -1591,12 +1596,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       >
         <DialogTitle sx={{ pb: 1, pt: 2.5 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-            清空对话
+            {t('清空对话')}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: '0.875rem', color: gs.textMuted }}>
-            确定要清空当前对话的所有消息吗？此操作不可撤销。
+            {t('确定要清空当前对话的所有消息吗？此操作不可撤销。')}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 2.5, pb: 2 }}>
@@ -1610,7 +1615,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               '&:hover': { bgcolor: gs.bgHover },
             }}
           >
-            取消
+            {t('取消')}
           </Button>
           <Button
             onClick={confirmClearChat}
@@ -1625,7 +1630,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               '&:hover': { boxShadow: 'none' },
             }}
           >
-            确认清空
+            {t('确认清空')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1711,7 +1716,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 {INTENT_CATEGORY_LABELS[expandedIntent]}
               </Typography>
               <Typography sx={{ fontSize: 10, color: '#9CA3AF', mt: 0.25 }}>
-                点击示例快速查询
+                {t('点击示例快速查询')}
               </Typography>
             </Box>
             {/* 快捷示例列表 */}

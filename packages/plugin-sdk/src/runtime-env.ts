@@ -172,19 +172,19 @@ export async function retryAsync<T>(
   throw lastError;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function ensureGlobalUndiciEnvProxyDispatcher(): void {
   // 待 infra/net/undici-global-dispatcher.js 移植后接入
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function registerUncaughtExceptionHandler(_handler: (error: Error) => void): () => void {
   const listener = (error: unknown) => _handler(error instanceof Error ? error : new Error(String(error)));
   process.on("uncaughtException", listener as NodeJS.UncaughtExceptionListener);
   return () => process.off("uncaughtException", listener as NodeJS.UncaughtExceptionListener);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function registerUnhandledRejectionHandler(
   _handler: (reason: unknown) => void,
 ): () => void {
@@ -193,7 +193,7 @@ export function registerUnhandledRejectionHandler(
   return () => process.off("unhandledRejection", listener);
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function isWSL2Sync(): boolean {
   return false;
 }

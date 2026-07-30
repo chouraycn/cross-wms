@@ -340,6 +340,122 @@
       "retry": "Retry",
       "history": "Execution History",
       "recentExecutions": "Recent Executions"
+    },
+    "dependency": {
+      "title": "Skill Dependencies",
+      "dependencies": "Dependencies",
+      "dependents": "Dependents",
+      "conflicts": "Conflicts",
+      "noDependencies": "No dependencies",
+      "noDependents": "No skills depend on this skill",
+      "noConflicts": "No conflicts",
+      "circularDependency": "Circular Dependency",
+      "circularWarning": "Circular dependency detected",
+      "required": "Required",
+      "optional": "Optional",
+      "dependencyGraph": "Dependency Graph",
+      "viewGraph": "View Graph",
+      "edgeTypes": {
+        "required": "Required Dependency",
+        "optional": "Optional Dependency",
+        "conflict": "Conflict",
+        "plugin": "Plugin Extension"
+      }
+    },
+    "health": {
+      "title": "Skill Health",
+      "overall": "Overall Score",
+      "metadata": "Metadata Completeness",
+      "dependencies": "Dependency Declarations",
+      "documentation": "Documentation Quality",
+      "security": "Security Compliance",
+      "score": "Score",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "checking": "Checking",
+      "summary": {
+        "totalSkills": "Total Skills",
+        "healthySkills": "Healthy Skills",
+        "warningSkills": "Warning Skills",
+        "criticalSkills": "Critical Skills",
+        "avgScore": "Average Score"
+      },
+      "detail": {
+        "metaCompleteness": "Metadata Completeness",
+        "depDeclarations": "Dependency Declarations",
+        "docQuality": "Documentation Quality",
+        "securityCompliance": "Security Compliance"
+      }
+    },
+    "docQuality": {
+      "title": "Documentation Quality Check",
+      "overallScore": "Overall Score",
+      "level": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor"
+      },
+      "checks": {
+        "structure": "Structure Completeness",
+        "readability": "Readability",
+        "examples": "Examples Completeness",
+        "parameters": "Parameter Documentation",
+        "formatting": "Formatting Standards"
+      },
+      "summary": {
+        "total": "Total",
+        "excellent": "Excellent",
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor",
+        "avgScore": "Average Score"
+      },
+      "issues": "Issues",
+      "suggestions": "Suggestions"
+    },
+    "usage": {
+      "title": "Usage Analytics",
+      "trend": "Invocation Trend",
+      "topSkills": "Top Skills",
+      "cooccurrence": "Co-occurrence Combinations",
+      "statusDistribution": "Status Distribution",
+      "timeRange": {
+        "7days": "Last 7 days",
+        "14days": "Last 14 days",
+        "30days": "Last 30 days",
+        "90days": "Last 90 days"
+      },
+      "totalCalls": "Total Calls",
+      "avgDaily": "Daily Average",
+      "successRate": "Success Rate",
+      "errorRate": "Error Rate"
+    },
+    "recommendations": {
+      "title": "Smart Recommendations",
+      "related": "Related Recommendations",
+      "basedOn": "Based on your usage habits",
+      "noData": "No recommendation data yet (personalized recommendations will be generated after using skills)",
+      "reason": {
+        "cooccurrence": "Related Usage",
+        "similarity": "Content Similarity",
+        "trending": "Trending",
+        "collaborative": "Collaborative Filtering"
+      }
+    },
+    "search": {
+      "hasDependencies": "Has Dependencies",
+      "noDependencies": "No Dependencies",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "sortBy": {
+        "score": "By Score",
+        "name": "By Name",
+        "recent": "By Recent",
+        "health": "By Health"
+      }
     }
   },
   "slashCommands": {

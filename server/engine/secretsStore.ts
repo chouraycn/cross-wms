@@ -215,7 +215,13 @@ export function getSecretValue(id: string, source: string = 'unknown'): string |
   const row = stmt.get(id) as { value_encrypted: string } | undefined;
 
   if (!row) {
-    logSecretAccess(id, source, 'read', false, '密钥不存在');
+    // Log failed read; wrap in try/catch because FK constraint on
+    // secrets_access_log.secret_id will reject a nonexistent secret id.
+    try {
+      logSecretAccess(id, source, 'read', false, '密钥不存在');
+    } catch {
+      // FK constraint prevents logging for nonexistent secret — acceptable
+    }
     return null;
   }
 

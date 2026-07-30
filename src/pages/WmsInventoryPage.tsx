@@ -55,12 +55,15 @@ import {
 } from '../api/wmsInventoryApi';
 import { INVENTORY_STATUS_CONFIG, EXPORT_FILENAME, EXPORT_HEADERS } from '../constants/wmsInventoryStatus';
 import type { InventoryCount } from '../types/wms';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const WmsInventoryPage: React.FC = () => {
   const { showToast } = useToast();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { t } = useI18n();
+  const dateLocale = getDateLocale();
 
   const [data, setData] = useState<InventoryCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,12 +92,12 @@ const WmsInventoryPage: React.FC = () => {
       );
       setData(result || []);
     } catch {
-      showToast('获取数据失败', 'error');
+      showToast(t('获取数据失败'), 'error');
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, showToast]);
+  }, [filterStatus, showToast, t]);
 
   useEffect(() => {
     fetchData();
@@ -136,13 +139,13 @@ const WmsInventoryPage: React.FC = () => {
     try {
       const success = await deleteInventoryCount(deletingId);
       if (success) {
-        showToast('删除成功', 'success');
+        showToast(t('删除成功'), 'success');
         fetchData();
       } else {
-        showToast('删除失败', 'error');
+        showToast(t('删除失败'), 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(t('网络错误'), 'error');
     } finally {
       setDeleteDialogOpen(false);
       setDeletingId(null);
@@ -165,7 +168,7 @@ const WmsInventoryPage: React.FC = () => {
 
   const handleExport = () => {
     if (filteredData.length === 0) {
-      showToast('没有数据可导出', 'warning');
+      showToast(t('没有数据可导出'), 'warning');
       return;
     }
     const rows = filteredData.map((item) => [
@@ -182,14 +185,14 @@ const WmsInventoryPage: React.FC = () => {
       item.notes || '',
     ]);
     exportToCsv(EXPORT_FILENAME, EXPORT_HEADERS, rows);
-    showToast(`已导出 ${rows.length} 条记录`, 'success');
+    showToast(t('已导出 {count} 条记录', { count: rows.length }), 'success');
   };
 
   // ===================== 渲染辅助 =====================
 
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '-';
-    try { return new Date(dateStr).toLocaleString('zh-CN'); } catch { return dateStr; }
+    try { return new Date(dateStr).toLocaleString(dateLocale); } catch { return dateStr; }
   };
 
   const getVarianceColor = (variance: number): string => {
@@ -201,22 +204,22 @@ const WmsInventoryPage: React.FC = () => {
   return (
     <Box>
       <PageHeader
-        title="库存盘点"
-        subtitle="管理库存盘点与差异调整记录"
-        summary={`共 ${filteredData.length} 条记录 · 待盘点 ${data.filter((i) => i.status === 'pending').length} 条`}
+        title={t('库存盘点')}
+        subtitle={t('管理库存盘点与差异调整记录')}
+        summary={t('共 {total} 条记录 · 待盘点 {pending} 条', { total: filteredData.length, pending: data.filter((i) => i.status === 'pending').length })}
         action={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>状态筛选</InputLabel>
+              <InputLabel>{t('状态筛选')}</InputLabel>
               <Select
                 value={filterStatus}
-                label="状态筛选"
+                label={t('状态筛选')}
                 onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
               >
-                <MenuItem value="all">全部</MenuItem>
-                <MenuItem value="pending">待盘点</MenuItem>
-                <MenuItem value="counted">已盘点</MenuItem>
-                <MenuItem value="adjusted">已调整</MenuItem>
+                <MenuItem value="all">{t('全部')}</MenuItem>
+                <MenuItem value="pending">{t('待盘点')}</MenuItem>
+                <MenuItem value="counted">{t('已盘点')}</MenuItem>
+                <MenuItem value="adjusted">{t('已调整')}</MenuItem>
               </Select>
             </FormControl>
             <Button
@@ -232,7 +235,7 @@ const WmsInventoryPage: React.FC = () => {
                 '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
               }}
             >
-              批量创建
+              {t('批量创建')}
             </Button>
             <Button
               variant="contained"
@@ -247,9 +250,9 @@ const WmsInventoryPage: React.FC = () => {
                 '&:hover': { backgroundColor: gs.textSecondary },
               }}
             >
-              新增盘点
+              {t('新增盘点')}
             </Button>
-            <Tooltip title="导出 CSV">
+            <Tooltip title={t('导出 CSV')}>
               <Button
                 variant="outlined"
                 size="small"
@@ -264,7 +267,7 @@ const WmsInventoryPage: React.FC = () => {
                   '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
                 }}
               >
-                导出
+                {t('导出')}
               </Button>
             </Tooltip>
           </Box>
@@ -283,11 +286,11 @@ const WmsInventoryPage: React.FC = () => {
       <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
+            <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
           </Box>
         ) : filteredData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">暂无盘点记录</Typography>
+            <Typography variant="body2" color="text.secondary">{t('暂无盘点记录')}</Typography>
           </Box>
         ) : (
           <>
@@ -296,16 +299,16 @@ const WmsInventoryPage: React.FC = () => {
                 <TableHead>
                   <TableRow sx={{ backgroundColor: gs.bgHover }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>仓库ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>库位编码</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('仓库ID')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('库位编码')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>系统数量</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>实盘数量</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>差异</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>盘点人</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>盘点时间</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>状态</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 180 }}>操作</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('系统数量')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('实盘数量')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('差异')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('盘点人')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('盘点时间')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('状态')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 180 }}>{t('操作')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -378,7 +381,7 @@ const WmsInventoryPage: React.FC = () => {
                             {/* pending: 录入实盘 + 编辑 + 删除 */}
                             {item.status === 'pending' && (
                               <>
-                                <Tooltip title="录入实盘">
+                                <Tooltip title={t('录入实盘')}>
                                   <IconButton
                                     size="small"
                                     onClick={() => handleCountClick(item)}
@@ -399,7 +402,7 @@ const WmsInventoryPage: React.FC = () => {
                             {/* counted: 确认调整 + 编辑 + 删除 */}
                             {item.status === 'counted' && (
                               <>
-                                <Tooltip title="确认调整">
+                                <Tooltip title={t('确认调整')}>
                                   <IconButton
                                     size="small"
                                     onClick={() => handleAdjustClick(item)}
@@ -419,7 +422,7 @@ const WmsInventoryPage: React.FC = () => {
 
                             {/* adjusted: 查看详情 */}
                             {item.status === 'adjusted' && (
-                              <Tooltip title="查看详情">
+                              <Tooltip title={t('查看详情')}>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEdit(item)}
@@ -445,8 +448,8 @@ const WmsInventoryPage: React.FC = () => {
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
               rowsPerPageOptions={[10, 20, 50]}
-              labelRowsPerPage="每页行数："
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
+              labelRowsPerPage={t('每页行数：')}
+              labelDisplayedRows={({ from, to, count }) => t('{from}-{to} / 共 {count} 条', { from, to, count })}
             />
           </>
         )}
@@ -491,14 +494,14 @@ const WmsInventoryPage: React.FC = () => {
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          确认删除
+          {t('确认删除')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <DialogContentText>确定删除该盘点记录吗？此操作不可撤销。</DialogContentText>
+          <DialogContentText>{t('确定删除该盘点记录吗？此操作不可撤销。')}</DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>确认删除</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('取消')}</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>{t('确认删除')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -511,39 +514,39 @@ const WmsInventoryPage: React.FC = () => {
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          确认差异调整
+          {t('确认差异调整')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           {adjustingItem && (
             <Box>
               <DialogContentText sx={{ mb: 2 }}>
-                确认后将根据实盘数量调整系统库存。确定继续？
+                {t('确认后将根据实盘数量调整系统库存。确定继续？')}
               </DialogContentText>
               <Box sx={{ bgcolor: gs.bgHover, p: 2, borderRadius: 1, border: `1px solid ${gs.border}` }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>仓库：</strong>{adjustingItem.warehouseId}
+                  <strong>{t('仓库：')}</strong>{adjustingItem.warehouseId}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>库位：</strong>{adjustingItem.locationCode}
+                  <strong>{t('库位：')}</strong>{adjustingItem.locationCode}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   <strong>SKU：</strong>{adjustingItem.sku}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>系统数量：</strong>{adjustingItem.systemQuantity}
+                  <strong>{t('系统数量：')}</strong>{adjustingItem.systemQuantity}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>实盘数量：</strong>{adjustingItem.actualQuantity}
+                  <strong>{t('实盘数量：')}</strong>{adjustingItem.actualQuantity}
                 </Typography>
                 <Typography variant="body2" sx={{ color: getVarianceColor(adjustingItem.variance ?? 0), fontWeight: 600 }}>
-                  <strong>差异：</strong>{(adjustingItem.variance ?? 0) > 0 ? '+' : ''}{adjustingItem.variance ?? 0}
+                  <strong>{t('差异：')}</strong>{(adjustingItem.variance ?? 0) > 0 ? '+' : ''}{adjustingItem.variance ?? 0}
                 </Typography>
               </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => setAdjustDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setAdjustDialogOpen(false)}>{t('取消')}</Button>
           <Button
             variant="contained"
             onClick={() => {
@@ -552,7 +555,7 @@ const WmsInventoryPage: React.FC = () => {
             }}
             sx={{ backgroundColor: '#059669' }}
           >
-            确认调整
+            {t('确认调整')}
           </Button>
         </DialogActions>
       </Dialog>

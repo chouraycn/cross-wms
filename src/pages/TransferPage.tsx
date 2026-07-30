@@ -52,12 +52,15 @@ import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import { STATUS_CONFIG, STATUS_ACTIONS } from '../constants/transferStatus';
 import type { TransferOrder, TransferStats } from '../types/wms';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const TransferPage: React.FC = () => {
   const { showToast } = useToast();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { t } = useI18n();
+  const dateLocale = getDateLocale();
 
   const [data, setData] = useState<TransferOrder[]>([]);
   const [total, setTotal] = useState(0);
@@ -106,12 +109,12 @@ const TransferPage: React.FC = () => {
       const allStats = calculateTransferStats(allResult.items || []);
       setStats(allStats);
     } catch {
-      showToast('获取数据失败', 'error');
+      showToast(t('获取数据失败'), 'error');
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterSku, page, rowsPerPage, showToast]);
+  }, [filterStatus, filterSku, page, rowsPerPage, showToast, t]);
 
   useEffect(() => {
     fetchData();
@@ -145,13 +148,13 @@ const TransferPage: React.FC = () => {
       const { deleteTransferOrder } = await import('../api/transferApi');
       const success = await deleteTransferOrder(deletingId);
       if (success) {
-        showToast('删除成功', 'success');
+        showToast(t('删除成功'), 'success');
         fetchData();
       } else {
-        showToast('删除失败', 'error');
+        showToast(t('删除失败'), 'error');
       }
     } catch (e) {
-      showToast((e as Error).message || '网络错误', 'error');
+      showToast((e as Error).message || t('网络错误'), 'error');
     } finally {
       setDeleteDialogOpen(false);
       setDeletingId(null);
@@ -168,10 +171,10 @@ const TransferPage: React.FC = () => {
     try {
       const { submitTransferOrder } = await import('../api/transferApi');
       await submitTransferOrder(submittingId, '当前用户');
-      showToast('提交成功，已扣减出库仓库存', 'success');
+      showToast(t('提交成功，已扣减出库仓库存'), 'success');
       fetchData();
     } catch (e) {
-      showToast((e as Error).message || '提交失败', 'error');
+      showToast((e as Error).message || t('提交失败'), 'error');
     } finally {
       setSubmitDialogOpen(false);
       setSubmittingId(null);
@@ -192,10 +195,10 @@ const TransferPage: React.FC = () => {
     try {
       const { unbindTransitOrder } = await import('../api/transferApi');
       await unbindTransitOrder(id);
-      showToast('已解绑物流', 'success');
+      showToast(t('已解绑物流'), 'success');
       fetchData();
     } catch (e) {
-      showToast((e as Error).message || '解绑失败', 'error');
+      showToast((e as Error).message || t('解绑失败'), 'error');
     }
   };
 
@@ -208,43 +211,43 @@ const TransferPage: React.FC = () => {
 
   const formatDate = (dateStr?: string | null): string => {
     if (!dateStr) return '-';
-    try { return new Date(dateStr).toLocaleString('zh-CN'); } catch { return dateStr; }
+    try { return new Date(dateStr).toLocaleString(dateLocale); } catch { return dateStr; }
   };
 
   // ===================== 统计卡片 =====================
 
   const statCards = [
-    { label: '草稿', value: stats.draft, color: gs.textDisabled, bgColor: gs.bgHover },
-    { label: '已提交', value: stats.submitted, color: '#D97706', bgColor: '#FEF3C7' },
-    { label: '在途', value: stats.in_transit, color: '#2563EB', bgColor: '#DBEAFE' },
-    { label: '已完成', value: stats.completed, color: '#059669', bgColor: '#D1FAE5' },
+    { label: t('草稿'), value: stats.draft, color: gs.textDisabled, bgColor: gs.bgHover },
+    { label: t('已提交'), value: stats.submitted, color: '#D97706', bgColor: '#FEF3C7' },
+    { label: t('在途'), value: stats.in_transit, color: '#2563EB', bgColor: '#DBEAFE' },
+    { label: t('已完成'), value: stats.completed, color: '#059669', bgColor: '#D1FAE5' },
   ];
 
   return (
     <Box>
       <PageHeader
-        title="仓库调拨"
-        subtitle="管理多仓库间的商品调拨"
-        summary={`共 ${total} 条记录`}
+        title={t('仓库调拨')}
+        subtitle={t('管理多仓库间的商品调拨')}
+        summary={t('共 {count} 条记录', { count: total })}
         action={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>状态筛选</InputLabel>
+              <InputLabel>{t('状态筛选')}</InputLabel>
               <Select
                 value={filterStatus}
-                label="状态筛选"
+                label={t('状态筛选')}
                 onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
               >
-                <MenuItem value="all">全部</MenuItem>
-                <MenuItem value="draft">草稿</MenuItem>
-                <MenuItem value="submitted">已提交</MenuItem>
-                <MenuItem value="in_transit">在途</MenuItem>
-                <MenuItem value="completed">已完成</MenuItem>
+                <MenuItem value="all">{t('全部')}</MenuItem>
+                <MenuItem value="draft">{t('草稿')}</MenuItem>
+                <MenuItem value="submitted">{t('已提交')}</MenuItem>
+                <MenuItem value="in_transit">{t('在途')}</MenuItem>
+                <MenuItem value="completed">{t('已完成')}</MenuItem>
               </Select>
             </FormControl>
             <TextField
               size="small"
-              placeholder="搜索 SKU"
+              placeholder={t('搜索 SKU')}
               value={filterSku}
               onChange={(e) => setFilterSku(e.target.value)}
               sx={{ width: 140 }}
@@ -262,7 +265,7 @@ const TransferPage: React.FC = () => {
                 '&:hover': { backgroundColor: gs.textSecondary },
               }}
             >
-              新增调拨
+              {t('新增调拨')}
             </Button>
           </Box>
         }
@@ -288,11 +291,11 @@ const TransferPage: React.FC = () => {
       <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
+            <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
           </Box>
         ) : data.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">暂无调拨记录</Typography>
+            <Typography variant="body2" color="text.secondary">{t('暂无调拨记录')}</Typography>
           </Box>
         ) : (
           <>
@@ -300,17 +303,17 @@ const TransferPage: React.FC = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: gs.bgHover }}>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>调拨单号</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('调拨单号')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品名</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>数量</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>体积</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>出库仓</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>入库仓</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>状态</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>创建人</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>创建时间</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 200 }}>操作</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('品名')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('数量')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('体积')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('出库仓')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('入库仓')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('状态')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('创建人')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('创建时间')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 200 }}>{t('操作')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -376,49 +379,49 @@ const TransferPage: React.FC = () => {
                           <Box sx={{ display: 'flex', gap: 0.5 }}>
                             {/* draft: 编辑 + 提交 + 删除 */}
                             {actions.includes('edit') && (
-                              <Tooltip title="编辑">
+                              <Tooltip title={t('编辑')}>
                                 <IconButton size="small" onClick={() => handleEdit(item)} sx={{ color: '#2563EB' }}>
                                   <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('submit') && (
-                              <Tooltip title="提交">
+                              <Tooltip title={t('提交')}>
                                 <IconButton size="small" onClick={() => handleSubmitClick(item.id)} sx={{ color: '#D97706' }}>
                                   <SendIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('delete') && (
-                              <Tooltip title="删除">
+                              <Tooltip title={t('删除')}>
                                 <IconButton size="small" onClick={() => handleDeleteClick(item.id)} sx={{ color: '#DC2626' }}>
                                   <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('receive') && (
-                              <Tooltip title="确认收货">
+                              <Tooltip title={t('确认收货')}>
                                 <IconButton size="small" onClick={() => handleReceiveClick(item)} sx={{ color: '#059669' }}>
                                   <CheckCircleIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('bindTransit') && (
-                              <Tooltip title="绑定物流">
+                              <Tooltip title={t('绑定物流')}>
                                 <IconButton size="small" onClick={() => handleBindTransitClick(item)} sx={{ color: '#2563EB' }}>
                                   <LocalShippingIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('unbindTransit') && (
-                              <Tooltip title="解绑物流">
+                              <Tooltip title={t('解绑物流')}>
                                 <IconButton size="small" onClick={() => handleUnbindTransit(item.id)} sx={{ color: '#DC2626' }}>
                                   <LinkOffIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
                             )}
                             {actions.includes('view') && (
-                              <Tooltip title="查看详情">
+                              <Tooltip title={t('查看详情')}>
                                 <IconButton size="small" onClick={() => handleViewDetail(item)} sx={{ color: gs.textMuted }}>
                                   <VisibilityIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
@@ -440,8 +443,8 @@ const TransferPage: React.FC = () => {
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
               rowsPerPageOptions={[10, 20, 50]}
-              labelRowsPerPage="每页行数："
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
+              labelRowsPerPage={t('每页行数：')}
+              labelDisplayedRows={({ from, to, count }) => t('{from}-{to} / 共 {count} 条', { from, to, count })}
             />
           </>
         )}
@@ -488,17 +491,17 @@ const TransferPage: React.FC = () => {
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          确认提交
+          {t('确认提交')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <DialogContentText>
-            提交后将扣减出库仓库存，此操作不可撤销。确定继续？
+            {t('提交后将扣减出库仓库存，此操作不可撤销。确定继续？')}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => setSubmitDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setSubmitDialogOpen(false)}>{t('取消')}</Button>
           <Button variant="contained" onClick={handleSubmitConfirm} sx={{ backgroundColor: '#D97706' }}>
-            确认提交
+            {t('确认提交')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -512,14 +515,14 @@ const TransferPage: React.FC = () => {
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          确认删除
+          {t('确认删除')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <DialogContentText>确定删除该调拨单吗？此操作不可撤销。</DialogContentText>
+          <DialogContentText>{t('确定删除该调拨单吗？此操作不可撤销。')}</DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>确认删除</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('取消')}</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>{t('确认删除')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -532,36 +535,36 @@ const TransferPage: React.FC = () => {
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          调拨单详情
+          {t('调拨单详情')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           {viewingItem && (
             <Box sx={{ bgcolor: gs.bgHover, p: 2, borderRadius: 1, border: `1px solid ${gs.border}` }}>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>调拨单号：</strong>{viewingItem.transferNo || '-'}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('调拨单号：')}</strong>{viewingItem.transferNo || '-'}</Typography>
               <Typography variant="body2" sx={{ mb: 1 }}><strong>SKU：</strong>{viewingItem.sku}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>品名：</strong>{viewingItem.name || '-'}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>数量：</strong>{viewingItem.quantity}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>体积：</strong>{viewingItem.volume}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>出库仓：</strong>{viewingItem.fromWarehouseName || viewingItem.fromWarehouseId}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>入库仓：</strong>{viewingItem.toWarehouseName || viewingItem.toWarehouseId}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>状态：</strong>{STATUS_CONFIG[viewingItem.status]?.label || viewingItem.status}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>创建人：</strong>{viewingItem.createdBy || '-'}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>提交人：</strong>{viewingItem.submittedBy || '-'}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>提交时间：</strong>{formatDate(viewingItem.submittedAt)}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>收货人：</strong>{viewingItem.receivedBy || '-'}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>收货时间：</strong>{formatDate(viewingItem.receivedAt)}</Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}><strong>完成时间：</strong>{formatDate(viewingItem.completedAt)}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('品名：')}</strong>{viewingItem.name || '-'}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('数量：')}</strong>{viewingItem.quantity}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('体积：')}</strong>{viewingItem.volume}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('出库仓：')}</strong>{viewingItem.fromWarehouseName || viewingItem.fromWarehouseId}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('入库仓：')}</strong>{viewingItem.toWarehouseName || viewingItem.toWarehouseId}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('状态：')}</strong>{STATUS_CONFIG[viewingItem.status]?.label || viewingItem.status}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('创建人：')}</strong>{viewingItem.createdBy || '-'}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('提交人：')}</strong>{viewingItem.submittedBy || '-'}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('提交时间：')}</strong>{formatDate(viewingItem.submittedAt)}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('收货人：')}</strong>{viewingItem.receivedBy || '-'}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('收货时间：')}</strong>{formatDate(viewingItem.receivedAt)}</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('完成时间：')}</strong>{formatDate(viewingItem.completedAt)}</Typography>
               {viewingItem.transitTrackingNo && (
-                <Typography variant="body2" sx={{ mb: 1 }}><strong>物流单号：</strong>{viewingItem.transitTrackingNo}</Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('物流单号：')}</strong>{viewingItem.transitTrackingNo}</Typography>
               )}
               {viewingItem.remark && (
-                <Typography variant="body2" sx={{ mb: 1 }}><strong>备注：</strong>{viewingItem.remark}</Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}><strong>{t('备注：')}</strong>{viewingItem.remark}</Typography>
               )}
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => { setViewDialogOpen(false); setViewingItem(null); }}>关闭</Button>
+          <Button onClick={() => { setViewDialogOpen(false); setViewingItem(null); }}>{t('关闭')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

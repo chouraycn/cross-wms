@@ -41,14 +41,14 @@ type WebMediaResult = {
   contentType?: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function buildOutboundMediaLoadOptions(
   _params: OutboundMediaLoadOptions,
 ): unknown {
   return _params;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 async function loadWebMedia(
   _url: string,
   _options: unknown,

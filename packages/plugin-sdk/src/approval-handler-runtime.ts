@@ -186,7 +186,7 @@ export type ApprovalRequest = ExecApprovalRequest | PluginApprovalRequest;
 export type ApprovalResolved = ExecApprovalResolved | PluginApprovalResolved;
 
 /** 创建渠道审批处理器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelApprovalHandler(_params: unknown): ChannelApprovalHandler {
   return {
     async handleApprovalRequest() {
@@ -202,7 +202,7 @@ export function createChannelApprovalHandler(_params: unknown): ChannelApprovalH
 }
 
 /** 创建渠道审批原生命令运行时适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelApprovalNativeRuntimeAdapter(
   _params: unknown,
 ): ChannelApprovalNativeRuntimeAdapter {
@@ -232,7 +232,7 @@ export function createChannelApprovalNativeRuntimeAdapter(
 }
 
 /** 从能力创建渠道审批处理器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelApprovalHandlerFromCapability(
   _params: unknown,
 ): ChannelApprovalHandler | undefined {
@@ -240,7 +240,7 @@ export function createChannelApprovalHandlerFromCapability(
 }
 
 /** 创建延迟加载的渠道审批原生命令运行时适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyChannelApprovalNativeRuntimeAdapter(
   _params: unknown,
 ): ChannelApprovalNativeRuntimeAdapter {
@@ -248,13 +248,13 @@ export function createLazyChannelApprovalNativeRuntimeAdapter(
 }
 
 /** 通过网关解析审批。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function resolveApprovalOverGateway(_params: unknown): Promise<unknown> {
   return undefined;
 }
 
 /** 构建渠道可见的已解决审批文本（exec 与 plugin 审批）。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildChannelApprovalResolvedText(params: {
   request: ApprovalRequest;
   resolved: ApprovalResolved;
@@ -270,7 +270,7 @@ export function buildChannelApprovalResolvedText(params: {
 }
 
 /** 构建渠道可见的审批过期文本（exec 与 plugin 审批）。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildChannelApprovalExpiredText(params: {
   request: ApprovalRequest;
   view: ExpiredApprovalView;

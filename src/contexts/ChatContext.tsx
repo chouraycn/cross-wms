@@ -2,6 +2,54 @@ import React, { createContext, useContext, useMemo, useCallback, useRef, useEffe
 import { Session, Message, ReferencedSession, Folder } from '../types/chat';
 import { API_BASE } from '../constants/api';
 import { getDebouncedStorage } from '../utils/storageDebounce';
+import { getStoredLocale } from '../components/staff/i18n/index.js';
+import englishCatalog from '../components/staff/i18n/en.json';
+
+const CHAT_I18N_CATALOG = englishCatalog as Record<string, string>;
+const TEMPLATE_TOKEN = /\{(\w+)\}/g;
+
+function interpolate(target: string, values: Record<string | number, string | number>): string {
+  return target.replace(TEMPLATE_TOKEN, (_, key: string) => {
+    const numericKey = Number(key);
+    if (!Number.isNaN(numericKey) && values[numericKey] !== undefined) {
+      return String(values[numericKey]);
+    }
+    return String(values[key] ?? `{${key}}`);
+  });
+}
+
+/** Standalone translate helper — works outside React render (e.g. utility functions). */
+export function tChat(source: string, values: Record<string | number, string | number> = {}): string {
+  if (getStoredLocale() === 'zh-CN') return interpolate(source, values);
+  return interpolate(CHAT_I18N_CATALOG[source] || source, values);
+}
+
+// ===================== 带超时的 fetch 包装（避免初始化期间 API 挂起导致白屏） =====================
+
+/** ChatProvider 初始化 fetch timeout（避免 API 无响应时长时间卡住） */
+const CHAT_INIT_FETCH_TIMEOUT = 8000;
+/** 最大重试次数（2 次：首次 + 1 次重试，减少等待时间） */
+const CHAT_INIT_MAX_RETRIES = 2;
+/** 重试间隔（ms）— 从 2 秒缩短到 500 毫秒，API 不可用快速失败回退到本地缓存 */
+const CHAT_INIT_RETRY_DELAY = 500;
+
+/**
+ * 带 AbortController 超时的 fetch。
+ * 超时 8 秒后自动 abort，避免挂起导致用户感知白屏。
+ */
+async function chatFetchWithTimeout(
+  url: string,
+  options?: RequestInit,
+  timeoutMs: number = CHAT_INIT_FETCH_TIMEOUT,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ===================== 三个独立 Context 类型定义 =====================
 
@@ -98,7 +146,7 @@ function createNewSession(defaultModel: string, parentSessionId?: string | null,
   const now = new Date();
   return {
     id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: parentSessionId ? '子任务' : '',
+    title: parentSessionId ? tChat('子任务') : '',
     model: defaultModel,
     messages: [],
     isPinned: false,
@@ -169,11 +217,11 @@ function saveSessionsToCache(sessions: Session[]): void {
 
 // ===================== 后端 API 函数 =====================
 
-/** 从后端 API 加载会话列表（权威数据源，带重试） */
-async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
+/** 从后端 API 加载会话列表（权威数据源，带超时 + 短重试） */
+async function fetchSessionsFromAPI(retries = CHAT_INIT_MAX_RETRIES): Promise<Session[]> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE}/sessions`);
+      const response = await chatFetchWithTimeout(`${API_BASE}/sessions`);
       const data = await response.json();
       if (data.sessions && Array.isArray(data.sessions)) {
         return data.sessions.map((s: Record<string, unknown>) => ({
@@ -188,10 +236,7 @@ async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
       return [];
     } catch (e) {
       if (attempt < retries) {
-        // console.warn(`[ChatProvider] 后端 API 不可用 (第${attempt}/${retries}次)，2秒后重试...`);
-        await new Promise((r) => setTimeout(r, 2000));
-      } else {
-        // console.warn('[ChatProvider] 后端 API 不可用，已用尽重试次数，使用本地缓存:', e);
+        await new Promise((r) => setTimeout(r, CHAT_INIT_RETRY_DELAY));
       }
     }
   }
@@ -316,13 +361,13 @@ async function updateSessionTitleViaAPI(id: string, title: string): Promise<bool
 
 async function fetchFoldersFromAPI(): Promise<Folder[]> {
   try {
-    const response = await fetch(`${API_BASE}/folders`);
+    const response = await chatFetchWithTimeout(`${API_BASE}/folders`);
     const data = await response.json();
     if (data.folders && Array.isArray(data.folders)) {
       return data.folders as Folder[];
     }
   } catch (e) {
-    // console.warn('[ChatProvider] 加载文件夹失败:', e);
+    // folder fetch timed out or failed; returning empty is safe
   }
   return [];
 }
@@ -651,7 +696,7 @@ export function ChatProvider({
     // 2. 自动标题：在所有路径之前执行，确保新会话也能生成标题
     let updatedSession = originalSession;
     const firstUserMsg = updatedSession.messages.find((m) => m.role === 'user');
-    if (firstUserMsg && (!updatedSession.title || updatedSession.title === '新对话')) {
+    if (firstUserMsg && (!updatedSession.title || updatedSession.title === tChat('新对话'))) {
       const autoTitle = firstUserMsg.content.slice(0, 20).replace(/\n/g, ' ').trim();
       if (autoTitle) {
         updatedSession = { ...updatedSession, title: autoTitle };
@@ -1005,7 +1050,7 @@ export function ChatProvider({
 export function useChatSession(): ChatSessionValue {
   const ctx = useContext(ChatSessionContext);
   if (!ctx) {
-    throw new Error('useChatSession 必须在 <ChatProvider> 内部使用');
+    throw new Error(tChat('useChatSession 必须在 <ChatProvider> 内部使用'));
   }
   return ctx;
 }
@@ -1017,7 +1062,7 @@ export function useChatSession(): ChatSessionValue {
 export function useChatSidebar(): ChatSidebarValue {
   const ctx = useContext(ChatSidebarContext);
   if (!ctx) {
-    throw new Error('useChatSidebar 必须在 <ChatProvider> 内部使用');
+    throw new Error(tChat('useChatSidebar 必须在 <ChatProvider> 内部使用'));
   }
   return ctx;
 }
@@ -1029,7 +1074,7 @@ export function useChatSidebar(): ChatSidebarValue {
 export function useChatMeta(): ChatMetaValue {
   const ctx = useContext(ChatMetaContext);
   if (!ctx) {
-    throw new Error('useChatMeta 必须在 <ChatProvider> 内部使用');
+    throw new Error(tChat('useChatMeta 必须在 <ChatProvider> 内部使用'));
   }
   return ctx;
 }

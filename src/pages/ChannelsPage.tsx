@@ -104,11 +104,13 @@ import {
   type PipelineStageStat,
 } from '../services/channelRuntimeApi';
 import { getGrayScale } from '../constants/theme';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const ChannelsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<'config' | 'runtime'>('config');
 
@@ -161,17 +163,17 @@ const ChannelsPage: React.FC = () => {
       setChannels(list);
     } catch (err) {
       // 降级：保证 UI 完整，填充空数据
-      setError(err instanceof Error ? err.message : '加载通道失败');
+      setError(err instanceof Error ? err.message : t('加载通道失败'));
       setChannelTypes([
-        { type: 'webhook', label: 'Webhook', description: '通用 Webhook 通道', bidirectional: false },
-        { type: 'feishu', label: '飞书', description: '飞书机器人', bidirectional: true },
-        { type: 'dingtalk', label: '钉钉', description: '钉钉机器人', bidirectional: true },
+        { type: 'webhook', label: 'Webhook', description: t('通用 Webhook 通道'), bidirectional: false },
+        { type: 'feishu', label: t('飞书'), description: t('飞书机器人'), bidirectional: true },
+        { type: 'dingtalk', label: t('钉钉'), description: t('钉钉机器人'), bidirectional: true },
       ]);
       setChannels([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadRuntime = useCallback(async () => {
     setRuntimeLoading(true);
@@ -193,11 +195,11 @@ const ChannelsPage: React.FC = () => {
       setPipelineTotal(pipeline.totalProcessed);
     } catch (err) {
       // 静默失败，UI 已经会展示空状态
-      setError(err instanceof Error ? err.message : '加载运行时数据失败');
+      setError(err instanceof Error ? err.message : t('加载运行时数据失败'));
     } finally {
       setRuntimeLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadChannels();
@@ -244,29 +246,29 @@ const ChannelsPage: React.FC = () => {
     try {
       if (dialogMode === 'create') {
         await createChannel(editingChannel);
-        setNotice('通道创建成功');
+        setNotice(t('通道创建成功'));
       } else {
         await updateChannel(editingChannel.name, editingChannel);
-        setNotice('通道更新成功');
+        setNotice(t('通道更新成功'));
       }
       handleCloseDialog();
       await loadChannels();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : t('保存失败'));
     } finally {
       setOperationLoading(null);
     }
   };
 
   const handleDeleteChannel = async (name: string) => {
-    if (!window.confirm(`确定要删除通道 "${name}" 吗？`)) return;
+    if (!window.confirm(t('确定要删除通道 "{name}" 吗？', { name }))) return;
     setOperationLoading(`delete-${name}`);
     try {
       await deleteChannel(name);
-      setNotice('通道删除成功');
+      setNotice(t('通道删除成功'));
       await loadChannels();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : t('删除失败'));
     } finally {
       setOperationLoading(null);
     }
@@ -282,7 +284,7 @@ const ChannelsPage: React.FC = () => {
       }
       await loadChannels();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '操作失败');
+      setError(err instanceof Error ? err.message : t('操作失败'));
     } finally {
       setOperationLoading(null);
     }
@@ -295,7 +297,7 @@ const ChannelsPage: React.FC = () => {
       setDetailChannel(detail);
       setDetailDialogOpen(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取详情失败');
+      setError(err instanceof Error ? err.message : t('获取详情失败'));
     } finally {
       setDetailLoading(false);
     }
@@ -323,9 +325,9 @@ const ChannelsPage: React.FC = () => {
     setOperationLoading('send');
     try {
       const result = await sendMessage(sendChannelName, sendContent, sendContentType);
-      setSendResult(result.ok ? '发送成功' : `发送失败: ${result.error}`);
+      setSendResult(result.ok ? t('发送成功') : t('发送失败: {err}', { err: result.error ?? '' }));
     } catch (err) {
-      setSendResult(`发送失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      setSendResult(t('发送失败: {err}', { err: err instanceof Error ? err.message : t('未知错误') }));
     } finally {
       setOperationLoading(null);
     }
@@ -333,45 +335,45 @@ const ChannelsPage: React.FC = () => {
 
   const handleAddAccount = async () => {
     if (!detailChannel) return;
-    const accountName = prompt('请输入账户名称：');
+    const accountName = window.prompt(t('请输入账户名称：'));
     if (!accountName) return;
-    const accountId = prompt('请输入账户 ID：');
+    const accountId = window.prompt(t('请输入账户 ID：'));
     if (!accountId) return;
     try {
       await addChannelAccount(detailChannel.name, { accountId, accountName });
-      setNotice('账户添加成功');
+      setNotice(t('账户添加成功'));
       const detail = await getChannelDetail(detailChannel.name);
       setDetailChannel(detail);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '添加账户失败');
+      setError(err instanceof Error ? err.message : t('添加账户失败'));
     }
   };
 
   const handleRemoveAccount = async (accountId: string) => {
     if (!detailChannel) return;
-    if (!window.confirm(`确定要删除账户 "${accountId}" 吗？`)) return;
+    if (!window.confirm(t('确定要删除账户 "{id}" 吗？', { id: accountId }))) return;
     try {
       await removeChannelAccount(detailChannel.name, accountId);
-      setNotice('账户删除成功');
+      setNotice(t('账户删除成功'));
       const detail = await getChannelDetail(detailChannel.name);
       setDetailChannel(detail);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除账户失败');
+      setError(err instanceof Error ? err.message : t('删除账户失败'));
     }
   };
 
   const handleBroadcast = async () => {
     if (!broadcastContent.trim()) {
-      setBroadcastResult('请输入广播内容');
+      setBroadcastResult(t('请输入广播内容'));
       return;
     }
     setBroadcastSending(true);
     setBroadcastResult(null);
     try {
       const r = await broadcastMessage({ content: broadcastContent, contentType: 'text' });
-      setBroadcastResult(`已广播到 ${r.total} 个通道，成功 ${r.succeeded}，失败 ${r.failed}`);
+      setBroadcastResult(t('已广播到 {total} 个通道，成功 {ok}，失败 {fail}', { total: r.total, ok: r.succeeded, fail: r.failed }));
     } catch (err) {
-      setBroadcastResult(`广播失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      setBroadcastResult(t('广播失败: {err}', { err: err instanceof Error ? err.message : t('未知错误') }));
     } finally {
       setBroadcastSending(false);
     }
@@ -379,25 +381,25 @@ const ChannelsPage: React.FC = () => {
 
   const getStatusChip = (status: ChannelStatus) => {
     const config: Record<string, { color: 'success' | 'error' | 'info' | 'warning' | 'default'; icon: React.ReactElement; label: string }> = {
-      online: { color: 'success', icon: <CheckCircleIcon />, label: '在线' },
-      offline: { color: 'error', icon: <CancelIcon />, label: '离线' },
-      connecting: { color: 'info', icon: <CircularProgress size={16} />, label: '连接中' },
-      error: { color: 'warning', icon: <WarningIcon />, label: '异常' },
-      disabled: { color: 'default', icon: <HelpOutlineIcon />, label: '已禁用' },
-      connected: { color: 'success', icon: <CheckCircleIcon />, label: '已连接' },
-      disconnected: { color: 'error', icon: <CancelIcon />, label: '已断开' },
-      unknown: { color: 'default', icon: <HelpOutlineIcon />, label: '未知' },
+      online: { color: 'success', icon: <CheckCircleIcon />, label: t('在线') },
+      offline: { color: 'error', icon: <CancelIcon />, label: t('离线') },
+      connecting: { color: 'info', icon: <CircularProgress size={16} />, label: t('连接中') },
+      error: { color: 'warning', icon: <WarningIcon />, label: t('异常') },
+      disabled: { color: 'default', icon: <HelpOutlineIcon />, label: t('已禁用') },
+      connected: { color: 'success', icon: <CheckCircleIcon />, label: t('已连接') },
+      disconnected: { color: 'error', icon: <CancelIcon />, label: t('已断开') },
+      unknown: { color: 'default', icon: <HelpOutlineIcon />, label: t('未知') },
     };
     return config[status] || config.unknown;
   };
 
   const renderDialog = () => (
     <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md">
-      <DialogTitle>{dialogMode === 'create' ? '创建通道' : '编辑通道'}</DialogTitle>
+      <DialogTitle>{dialogMode === 'create' ? t('创建通道') : t('编辑通道')}</DialogTitle>
       <DialogContent sx={{ mt: 2 }}>
         <TextField
           fullWidth
-          label="通道名称"
+          label={t('通道名称')}
           value={editingChannel?.name || ''}
           onChange={(e) => {
             if (editingChannel) {
@@ -409,7 +411,7 @@ const ChannelsPage: React.FC = () => {
         />
         <Select
           fullWidth
-          label="通道类型"
+          label={t('通道类型')}
           value={editingChannel?.type || ''}
           onChange={(e) => {
             if (editingChannel) {
@@ -420,15 +422,15 @@ const ChannelsPage: React.FC = () => {
           sx={{ mt: 2 }}
           required
         >
-          <MenuItem value="" disabled>选择通道类型</MenuItem>
-          {channelTypes.map(t => (
-            <MenuItem key={t.type} value={t.type}>
-              {t.label} ({t.description})
+          <MenuItem value="" disabled>{t('选择通道类型')}</MenuItem>
+          {channelTypes.map(ct => (
+            <MenuItem key={ct.type} value={ct.type}>
+              {ct.label} ({ct.description})
             </MenuItem>
           ))}
         </Select>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-          <Typography variant="body1">启用</Typography>
+          <Typography variant="body1">{t('启用')}</Typography>
           <Switch
             checked={editingChannel?.enabled ?? true}
             onChange={(e) => {
@@ -448,7 +450,7 @@ const ChannelsPage: React.FC = () => {
         ) : (
           <TextField
             fullWidth
-            label="凭证（JSON）"
+            label={t('凭证（JSON）')}
             multiline
             rows={4}
             value={JSON.stringify(editingChannel?.credentials || {}, null, 2)}
@@ -467,7 +469,7 @@ const ChannelsPage: React.FC = () => {
         )}
         <TextField
           fullWidth
-          label="选项（JSON）"
+          label={t('选项（JSON）')}
           multiline
           rows={3}
           value={JSON.stringify(editingChannel?.options || {}, null, 2)}
@@ -485,12 +487,12 @@ const ChannelsPage: React.FC = () => {
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCloseDialog}>取消</Button>
+        <Button onClick={handleCloseDialog}>{t('取消')}</Button>
         <Button
           onClick={handleSaveChannel}
           disabled={operationLoading === 'save'}
         >
-          {operationLoading === 'save' ? <CircularProgress size={20} /> : '保存'}
+          {operationLoading === 'save' ? <CircularProgress size={20} /> : t('保存')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -498,7 +500,7 @@ const ChannelsPage: React.FC = () => {
 
   const renderDetailDialog = () => (
     <Dialog open={detailDialogOpen} onClose={handleCloseDetail} maxWidth="lg">
-      <DialogTitle>通道详情</DialogTitle>
+      <DialogTitle>{t('通道详情')}</DialogTitle>
       <DialogContent sx={{ mt: 2, maxHeight: '70vh', overflow: 'auto' }}>
         {detailLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -508,36 +510,36 @@ const ChannelsPage: React.FC = () => {
           <Box>
             <Grid container spacing={3} mb={4}>
               <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">名称</Typography>
+                <Typography variant="body2" color="text.secondary">{t('名称')}</Typography>
                 <Typography variant="h6">{detailChannel.name}</Typography>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">类型</Typography>
+                <Typography variant="body2" color="text.secondary">{t('类型')}</Typography>
                 <Chip label={detailChannel.type} color="primary" />
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">状态</Typography>
+                <Typography variant="body2" color="text.secondary">{t('状态')}</Typography>
                 {(() => {
                   const status = getStatusChip(detailChannel.status);
                   return <Chip label={status.label} color={status.color} icon={status.icon} />;
                 })()}
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">启用</Typography>
+                <Typography variant="body2" color="text.secondary">{t('启用')}</Typography>
                 <Switch checked={detailChannel.enabled ?? true} disabled />
               </Grid>
             </Grid>
             {detailChannel.accounts && detailChannel.accounts.length > 0 && (
               <Box mb={4}>
-                <Typography variant="h6" mb={2}>账户列表</Typography>
+                <Typography variant="h6" mb={2}>{t('账户列表')}</Typography>
                 <TableContainer component={Paper}>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>账户 ID</TableCell>
-                        <TableCell>账户名称</TableCell>
-                        <TableCell>状态</TableCell>
-                        <TableCell>操作</TableCell>
+                        <TableCell>{t('账户 ID')}</TableCell>
+                        <TableCell>{t('账户名称')}</TableCell>
+                        <TableCell>{t('状态')}</TableCell>
+                        <TableCell>{t('操作')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -547,7 +549,7 @@ const ChannelsPage: React.FC = () => {
                           <TableCell>{account.accountName}</TableCell>
                           <TableCell>
                             <Chip
-                              label={account.enabled ? '启用' : '禁用'}
+                              label={account.enabled ? t('启用') : t('禁用')}
                               color={account.enabled ? 'success' : 'default'}
                             />
                           </TableCell>
@@ -562,13 +564,13 @@ const ChannelsPage: React.FC = () => {
                   </Table>
                 </TableContainer>
                 <Button onClick={handleAddAccount} startIcon={<AddIcon />} sx={{ mt: 2 }}>
-                  添加账户
+                  {t('添加账户')}
                 </Button>
               </Box>
             )}
             {detailChannel.options && Object.keys(detailChannel.options).length > 0 && (
               <Box mb={4}>
-                <Typography variant="h6" mb={2}>选项</Typography>
+                <Typography variant="h6" mb={2}>{t('选项')}</Typography>
                 <pre>{JSON.stringify(detailChannel.options, null, 2)}</pre>
               </Box>
             )}
@@ -576,14 +578,14 @@ const ChannelsPage: React.FC = () => {
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCloseDetail}>关闭</Button>
+        <Button onClick={handleCloseDetail}>{t('关闭')}</Button>
       </DialogActions>
     </Dialog>
   );
 
   const renderSendDialog = () => (
     <Dialog open={sendDialogOpen} onClose={handleCloseSendDialog} maxWidth="md">
-      <DialogTitle>发送消息到 {sendChannelName}</DialogTitle>
+      <DialogTitle>{t('发送消息到 {name}', { name: sendChannelName })}</DialogTitle>
       <DialogContent sx={{ mt: 2 }}>
         <Select
           fullWidth
@@ -591,13 +593,13 @@ const ChannelsPage: React.FC = () => {
           onChange={(e) => setSendContentType(e.target.value as 'text' | 'markdown' | 'json')}
           sx={{ mb: 2 }}
         >
-          <MenuItem value="text">文本</MenuItem>
+          <MenuItem value="text">{t('文本')}</MenuItem>
           <MenuItem value="markdown">Markdown</MenuItem>
           <MenuItem value="json">JSON</MenuItem>
         </Select>
         <TextField
           fullWidth
-          label="消息内容"
+          label={t('消息内容')}
           multiline
           rows={6}
           value={sendContent}
@@ -606,15 +608,15 @@ const ChannelsPage: React.FC = () => {
           required
         />
         {sendResult && (
-          <Alert severity={sendResult.includes('成功') ? 'success' : 'error'} sx={{ mt: 2 }}>
+          <Alert severity={sendResult.startsWith(t('发送成功')) || sendResult.includes('success') || sendResult.includes('Sent successfully') ? 'success' : 'error'} sx={{ mt: 2 }}>
             {sendResult}
           </Alert>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCloseSendDialog}>取消</Button>
+        <Button onClick={handleCloseSendDialog}>{t('取消')}</Button>
         <Button onClick={handleSendMessage} disabled={operationLoading === 'send'}>
-          {operationLoading === 'send' ? <CircularProgress size={20} /> : '发送'}
+          {operationLoading === 'send' ? <CircularProgress size={20} /> : t('发送')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -628,32 +630,32 @@ const ChannelsPage: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <HubIcon color="primary" />
-            <Typography variant="h6">ChannelManager（运行时）</Typography>
-            {managedChannelsDemo && <Chip size="small" color="warning" label="演示" />}
+            <Typography variant="h6">{t('ChannelManager（运行时）')}</Typography>
+            {managedChannelsDemo && <Chip size="small" color="warning" label={t('演示')} />}
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button size="small" startIcon={<RefreshIcon />} onClick={loadRuntime}>刷新</Button>
+            <Button size="small" startIcon={<RefreshIcon />} onClick={loadRuntime}>{t('刷新')}</Button>
             <Button size="small" variant="contained" startIcon={<CampaignIcon />} onClick={() => setBroadcastDialogOpen(true)}>
-              广播测试
+              {t('广播测试')}
             </Button>
           </Box>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          列出所有已注册通道实例，提供 <code>register / unregister / list / broadcast</code> 能力。
+          {t('列出所有已注册通道实例，提供 <code>register / unregister / list / broadcast</code> 能力。')}
         </Typography>
         {managedChannels.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            暂无已注册的运行时通道
+            {t('暂无已注册的运行时通道')}
           </Typography>
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>通道 ID</TableCell>
-                  <TableCell>类型</TableCell>
-                  <TableCell>运行时状态</TableCell>
-                  <TableCell>启动时间</TableCell>
+                  <TableCell>{t('通道 ID')}</TableCell>
+                  <TableCell>{t('类型')}</TableCell>
+                  <TableCell>{t('运行时状态')}</TableCell>
+                  <TableCell>{t('启动时间')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -669,7 +671,7 @@ const ChannelsPage: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {c.startedAtMs ? new Date(c.startedAtMs).toLocaleString('zh-CN') : '—'}
+                      {c.startedAtMs ? new Date(c.startedAtMs).toLocaleString() : '—'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -687,22 +689,22 @@ const ChannelsPage: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <KeyboardIcon color="primary" />
           <Typography variant="h6">TypingCallbacks</Typography>
-          {typersDemo && <Chip size="small" color="warning" label="演示" />}
+          {typersDemo && <Chip size="small" color="warning" label={t('演示')} />}
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          实时显示哪些用户正在某个通道中输入（typing）。
+          {t('实时显示哪些用户正在某个通道中输入（typing）。')}
         </Typography>
         {typers.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            当前没有用户正在 typing
+            {t('当前没有用户正在 typing')}
           </Typography>
         ) : (
           <List dense>
-            {typers.map(t => (
-              <ListItem key={`${t.channelId}-${t.userId}`}>
+            {typers.map(tp => (
+              <ListItem key={`${tp.channelId}-${tp.userId}`}>
                 <ListItemText
-                  primary={`${t.userId} 在 ${t.channelId} 中正在输入`}
-                  secondary={`起始：${new Date(t.startedAtMs).toLocaleTimeString('zh-CN')} · 过期：${new Date(t.expiresAtMs).toLocaleTimeString('zh-CN')}`}
+                  primary={`${tp.userId} ${t('在 {channel} 中正在输入', { channel: tp.channelId })}`}
+                  secondary={`${t('起始：')}${new Date(tp.startedAtMs).toLocaleTimeString()} · ${t('过期：')}${new Date(tp.expiresAtMs).toLocaleTimeString()}`}
                 />
               </ListItem>
             ))}
@@ -718,14 +720,14 @@ const ChannelsPage: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <LinkIcon color="primary" />
           <Typography variant="h6">PairingStore</Typography>
-          {pairingsDemo && <Chip size="small" color="warning" label="演示" />}
+          {pairingsDemo && <Chip size="small" color="warning" label={t('演示')} />}
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          已配对通道：双向桥接，用于跨通道消息转发。
+          {t('已配对通道：双向桥接，用于跨通道消息转发。')}
         </Typography>
         {pairings.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            暂无配对通道
+            {t('暂无配对通道')}
           </Typography>
         ) : (
           <List dense>
@@ -757,16 +759,16 @@ const ChannelsPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <AccountTreeIcon color="primary" />
             <Typography variant="h6">InboundReplyPipeline</Typography>
-            {pipelineDemo && <Chip size="small" color="warning" label="演示" />}
+            {pipelineDemo && <Chip size="small" color="warning" label={t('演示')} />}
             <Box sx={{ flex: 1 }} />
-            <Chip size="small" label={`已处理 ${total} 条消息`} />
+            <Chip size="small" label={t('已处理 {total} 条消息', { total })} />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            入站消息处理流水线：<code>normalize → filter → route → enrich</code>。
+            {t('入站消息处理流水线：<code>normalize → filter → route → enrich</code>。')}
           </Typography>
           {pipelineStages.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-              暂无流水线数据
+              {t('暂无流水线数据')}
             </Typography>
           ) : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'stretch' }}>
@@ -789,7 +791,7 @@ const ChannelsPage: React.FC = () => {
                         {stage.description}
                       </Typography>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-                        <Typography variant="caption" color="text.secondary">通过率</Typography>
+                        <Typography variant="caption" color="text.secondary">{t('通过率')}</Typography>
                         <Typography variant="caption" color="text.secondary">
                           {stage.passed} / {stage.received || 0}
                         </Typography>
@@ -801,7 +803,7 @@ const ChannelsPage: React.FC = () => {
                       />
                       {stage.dropped > 0 && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-                          丢弃 {stage.dropped}
+                          {t('丢弃 {count}', { count: stage.dropped })}
                         </Typography>
                       )}
                     </Box>
@@ -834,14 +836,14 @@ const ChannelsPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>广播测试消息</DialogTitle>
+        <DialogTitle>{t('广播测试消息')}</DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            将该消息发送到所有已启用的通道。
+            {t('将该消息发送到所有已启用的通道。')}
           </Typography>
           <TextField
             fullWidth
-            label="广播内容"
+            label={t('广播内容')}
             multiline
             rows={4}
             value={broadcastContent}
@@ -849,7 +851,7 @@ const ChannelsPage: React.FC = () => {
           />
           {broadcastResult && (
             <Alert
-              severity={broadcastResult.includes('已广播') ? 'success' : 'error'}
+              severity={broadcastResult.startsWith(t('已广播').slice(0, 2)) || broadcastResult.includes('Broadcast') ? 'success' : 'error'}
               sx={{ mt: 2 }}
             >
               {broadcastResult}
@@ -857,14 +859,14 @@ const ChannelsPage: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setBroadcastDialogOpen(false)}>关闭</Button>
+          <Button onClick={() => setBroadcastDialogOpen(false)}>{t('关闭')}</Button>
           <Button
             variant="contained"
             onClick={handleBroadcast}
             disabled={broadcastSending}
             startIcon={broadcastSending ? <CircularProgress size={16} /> : <CampaignIcon />}
           >
-            发送
+            {t('发送')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -874,9 +876,9 @@ const ChannelsPage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">通道管理</Typography>
+        <Typography variant="h4">{t('通道管理')}</Typography>
         <Button onClick={activeTab === 'config' ? loadChannels : loadRuntime} startIcon={<RefreshIcon />}>
-          刷新
+          {t('刷新')}
         </Button>
       </Box>
 
@@ -885,8 +887,8 @@ const ChannelsPage: React.FC = () => {
         onChange={(_, v) => setActiveTab(v)}
         sx={{ mb: 3, borderBottom: `1px solid ${gs.border}` }}
       >
-        <Tab value="config" label="通道配置" icon={<MessageIcon />} iconPosition="start" />
-        <Tab value="runtime" label="运行时" icon={<HubIcon />} iconPosition="start" />
+        <Tab value="config" label={t('通道配置')} icon={<MessageIcon />} iconPosition="start" />
+        <Tab value="runtime" label={t('运行时')} icon={<HubIcon />} iconPosition="start" />
       </Tabs>
 
       {notice && (
@@ -907,9 +909,9 @@ const ChannelsPage: React.FC = () => {
             <Card sx={{ bgcolor: gs.bgPanel }}>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h6">通道列表</Typography>
+                  <Typography variant="h6">{t('通道列表')}</Typography>
                   <Button onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
-                    创建通道
+                    {t('创建通道')}
                   </Button>
                 </Box>
                 {loading ? (
@@ -918,19 +920,19 @@ const ChannelsPage: React.FC = () => {
                   </Box>
                 ) : channels.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    暂无通道，请创建一个
+                    {t('暂无通道，请创建一个')}
                   </Typography>
                 ) : (
                   <TableContainer component={Paper}>
                     <Table>
                       <TableHead>
                         <TableRow>
-                          <TableCell>名称</TableCell>
-                          <TableCell>类型</TableCell>
-                          <TableCell>状态</TableCell>
-                          <TableCell>账户数</TableCell>
-                          <TableCell>启用</TableCell>
-                          <TableCell>操作</TableCell>
+                          <TableCell>{t('名称')}</TableCell>
+                          <TableCell>{t('类型')}</TableCell>
+                          <TableCell>{t('状态')}</TableCell>
+                          <TableCell>{t('账户数')}</TableCell>
+                          <TableCell>{t('启用')}</TableCell>
+                          <TableCell>{t('操作')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -981,16 +983,16 @@ const ChannelsPage: React.FC = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ bgcolor: gs.bgPanel }}>
               <CardContent>
-                <Typography variant="h6" mb={2}>支持的通道类型</Typography>
+                <Typography variant="h6" mb={2}>{t('支持的通道类型')}</Typography>
                 <List>
-                  {channelTypes.map(t => (
-                    <ListItem key={t.type} sx={{ py: 1 }}>
+                  {channelTypes.map(ct => (
+                    <ListItem key={ct.type} sx={{ py: 1 }}>
                       <ListItemText
-                        primary={t.label}
-                        secondary={t.description}
+                        primary={ct.label}
+                        secondary={ct.description}
                       />
-                      {t.bidirectional && (
-                        <Chip label="双向" size="small" color="info" />
+                      {ct.bidirectional && (
+                        <Chip label={t('双向')} size="small" color="info" />
                       )}
                     </ListItem>
                   ))}
@@ -1000,15 +1002,15 @@ const ChannelsPage: React.FC = () => {
 
             <Card sx={{ bgcolor: gs.bgPanel, mt: 3 }}>
               <CardContent>
-                <Typography variant="h6" mb={2}>快捷操作</Typography>
+                <Typography variant="h6" mb={2}>{t('快捷操作')}</Typography>
                 <Button fullWidth onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
-                  创建新通道
+                  {t('创建新通道')}
                 </Button>
                 <Button fullWidth onClick={loadChannels} startIcon={<RefreshIcon />} sx={{ mt: 1 }}>
-                  刷新列表
+                  {t('刷新列表')}
                 </Button>
                 <Button fullWidth onClick={() => setActiveTab('runtime')} startIcon={<HubIcon />} sx={{ mt: 1 }}>
-                  查看运行时
+                  {t('查看运行时')}
                 </Button>
               </CardContent>
             </Card>

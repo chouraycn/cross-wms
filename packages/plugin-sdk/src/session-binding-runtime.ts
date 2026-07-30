@@ -40,7 +40,7 @@ export type SessionBindingTesting = {
 };
 
 /** 测试辅助桩。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export const testing: SessionBindingTesting = {
   reset() {
     // 待 infra/outbound/session-binding-service.js 移植后接入
@@ -51,7 +51,7 @@ export const testing: SessionBindingTesting = {
 export const __testing = testing;
 
 /** 获取会话绑定服务实例。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function getSessionBindingService(): SessionBindingService {
   const noopService: SessionBindingService = {
     async getBinding() {
@@ -68,7 +68,7 @@ export function getSessionBindingService(): SessionBindingService {
 }
 
 /** 注册会话绑定适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function registerSessionBindingAdapter(_adapter: SessionBindingAdapter): void {
   // 待 infra/outbound/session-binding-service.js 移植后接入
 }

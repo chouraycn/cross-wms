@@ -47,7 +47,7 @@ export type LazyRuntimeSurface = {
 };
 
 /** 创建延迟加载的运行时模块。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyRuntimeModule<T>(
   loader: () => Promise<T>,
 ): LazyRuntimeModule<T> {
@@ -78,7 +78,7 @@ export function createLazyRuntimeModule<T>(
 }
 
 /** 创建延迟加载的运行时方法。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyRuntimeMethod<TArgs extends unknown[], TResult>(
   loader: () => Promise<(...args: TArgs) => TResult | Promise<TResult>>,
 ): LazyRuntimeMethod<TArgs, TResult> {
@@ -101,7 +101,7 @@ export function createLazyRuntimeMethod<TArgs extends unknown[], TResult>(
 }
 
 /** 创建延迟加载的运行时方法绑定器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyRuntimeMethodBinder(): LazyRuntimeMethodBinder {
   return {
     bind(loader) {
@@ -111,7 +111,7 @@ export function createLazyRuntimeMethodBinder(): LazyRuntimeMethodBinder {
 }
 
 /** 创建延迟加载的命名导出。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyRuntimeNamedExport<T>(
   loader: () => Promise<T>,
 ): LazyRuntimeNamedExport<T> {
@@ -135,7 +135,7 @@ export function createLazyRuntimeNamedExport<T>(
 }
 
 /** 创建延迟加载的运行时表面。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createLazyRuntimeSurface(): LazyRuntimeSurface {
   const modules = new Map<string, LazyRuntimeModule>();
   return {

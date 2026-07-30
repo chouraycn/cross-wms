@@ -40,11 +40,7 @@ import { useToast } from '../contexts/ToastContext';
 import type { Partner, PartnerType } from '../types/partners';
 import { getGrayScale } from '../constants/theme';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
-
-const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
-  supplier: '供应商',
-  customer: '客户',
-};
+import { useI18n } from '../components/staff/i18n/index.js';
 
 const PARTNER_TYPE_COLORS: Record<PartnerType, 'primary' | 'success'> = {
   supplier: 'primary',
@@ -59,6 +55,12 @@ const PartnersPage: React.FC = () => {
   const gs = getGrayScale(isDark);
   const { showToast } = useToast();
   const fadeCls = usePageFadeIn();
+  const { t } = useI18n();
+
+  const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
+    supplier: t('供应商'),
+    customer: t('客户'),
+  };
 
   // 列表数据
   const [items, setItems] = useState<Partner[]>([]);
@@ -96,14 +98,14 @@ const PartnersPage: React.FC = () => {
       setItems(result.items);
       setTotal(result.total);
     } catch (err) {
-      const message = err instanceof Error ? err.message : '加载客商列表失败';
+      const message = err instanceof Error ? err.message : t('加载客商列表失败');
       showToast(message, 'error');
       setItems([]);
       setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, filterType, searchText, showToast]);
+  }, [page, rowsPerPage, filterType, searchText, showToast, t]);
 
   useEffect(() => {
     fetchList();
@@ -152,11 +154,11 @@ const PartnersPage: React.FC = () => {
     setDeleting(true);
     try {
       await deletePartner(deleteTarget.id);
-      showToast(`已删除客商「${deleteTarget.name}」`, 'success');
+      showToast(t('已删除客商「{name}」', { name: deleteTarget.name }), 'success');
       setDeleteTarget(null);
       fetchList();
     } catch (err) {
-      const message = err instanceof Error ? err.message : '删除失败';
+      const message = err instanceof Error ? err.message : t('删除失败');
       showToast(message, 'error');
     } finally {
       setDeleting(false);
@@ -175,12 +177,12 @@ const PartnersPage: React.FC = () => {
     }
   };
 
-  const summary = total > 0 ? `共 ${total} 个客商` : undefined;
+  const summary = total > 0 ? t('共 {count} 个客商', { count: total }) : undefined;
 
   return (
     <Box className={fadeCls}>
       <PageHeader
-        title="客商管理"
+        title={t('客商管理')}
         summary={summary}
         action={
           <Button
@@ -195,7 +197,7 @@ const PartnersPage: React.FC = () => {
               '&:hover': { backgroundColor: '#374151' },
             }}
           >
-            新增客商
+            {t('新增客商')}
           </Button>
         }
       />
@@ -217,15 +219,15 @@ const PartnersPage: React.FC = () => {
               },
             }}
           >
-            <Tab label="全部" value="all" />
-            <Tab label="供应商" value="supplier" />
-            <Tab label="客户" value="customer" />
+            <Tab label={t('全部')} value="all" />
+            <Tab label={t('供应商')} value="supplier" />
+            <Tab label={t('客户')} value="customer" />
           </Tabs>
           <Box sx={{ ml: 'auto' }}>
             <SearchInput
               value={searchText}
               onChange={handleSearchChange}
-              placeholder="搜索客商名称..."
+              placeholder={t('搜索客商名称...')}
               width={220}
             />
           </Box>
@@ -238,13 +240,13 @@ const PartnersPage: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: gs.bgPage }}>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>名称</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>类型</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>联系人</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>电话</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>地址</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>创建时间</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 100 }}>操作</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('名称')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('类型')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('联系人')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('电话')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('地址')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('创建时间')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 100 }}>{t('操作')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -253,8 +255,8 @@ const PartnersPage: React.FC = () => {
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       {searchText.trim() || filterType !== 'all'
-                        ? '没有匹配的客商记录'
-                        : '暂无客商，点击「新增客商」开始添加'}
+                        ? t('没有匹配的客商记录')
+                        : t('暂无客商，点击「新增客商」开始添加')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -307,7 +309,7 @@ const PartnersPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <Tooltip title="编辑">
+                      <Tooltip title={t('编辑')}>
                         <IconButton
                           size="small"
                           onClick={() => handleEdit(partner)}
@@ -316,7 +318,7 @@ const PartnersPage: React.FC = () => {
                           <EditOutlinedIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="删除">
+                      <Tooltip title={t('删除')}>
                         <IconButton
                           size="small"
                           onClick={() => setDeleteTarget(partner)}
@@ -343,8 +345,8 @@ const PartnersPage: React.FC = () => {
             setPage(0);
           }}
           rowsPerPageOptions={PAGE_SIZE_OPTIONS}
-          labelRowsPerPage="每页行数："
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
+          labelRowsPerPage={t('每页行数：')}
+          labelDisplayedRows={({ from, to, count }) => t('{from}-{to} / 共 {count} 条', { from, to, count })}
         />
       </Card>
 
@@ -373,16 +375,16 @@ const PartnersPage: React.FC = () => {
         }}
       >
         <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
-          确认删除
+          {t('确认删除')}
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography sx={{ color: gs.textMuted }}>
-            确定要删除客商「{deleteTarget?.name}」吗？此操作不可撤销。
+            {t('确定要删除客商「{name}」吗？此操作不可撤销。', { name: deleteTarget?.name ?? '' })}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>
-            取消
+            {t('取消')}
           </Button>
           <Button
             variant="contained"
@@ -395,7 +397,7 @@ const PartnersPage: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {deleting ? '删除中...' : '确认删除'}
+            {deleting ? t('删除中...') : t('确认删除')}
           </Button>
         </DialogActions>
       </Dialog>

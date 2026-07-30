@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 export interface SkillInstallStep {
   type: 'brew' | 'node' | 'go' | 'rust' | 'pip' | 'cargo' | 'download' | 'bash';
@@ -95,7 +95,7 @@ export function parseSkillMdWithMetadata(content: string): ParsedSkillMdWithMeta
 
   if (fmMatch) {
     try {
-      frontmatter = yaml.load(fmMatch[1], { schema: yaml.DEFAULT_SCHEMA, json: true }) as Record<string, unknown> || {};
+      frontmatter = yaml.load(fmMatch[1], { json: true }) as Record<string, unknown> || {};
     } catch (err) {
       hasError = true;
       errorMessage = `YAML parse error: ${err instanceof Error ? err.message : String(err)}`;

@@ -19,7 +19,7 @@ import type { Command } from "commander";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { remoteSkillLoader, type RemoteSkillSource } from "../../engine/remoteSkillLoader.js";
 import { AppPaths } from '../../config/appPaths.js';
 import {

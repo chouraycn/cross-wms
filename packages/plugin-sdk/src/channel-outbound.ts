@@ -257,25 +257,25 @@ export type ChannelIngressQueueClaim = unknown;
 // ---- 出站发送辅助 ----
 
 /** 创建回复前缀上下文。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createReplyPrefixContext(_input?: unknown): Record<string, unknown> {
   return {};
 }
 
 /** 创建回复前缀选项。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createReplyPrefixOptions(_input?: unknown): Record<string, unknown> {
   return {};
 }
 
 /** 创建输入指示回调。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createTypingCallbacks(_input?: unknown): { onStart(): void; onStop(): void } {
   return { onStart() {}, onStop() {} };
 }
 
 /** 创建渠道回复管道。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createChannelReplyPipeline(_params: CreateChannelReplyPipelineParams): unknown {
   return {};
 }
@@ -284,7 +284,7 @@ export function createChannelReplyPipeline(_params: CreateChannelReplyPipelinePa
 export const createChannelMessageReplyPipeline = createChannelReplyPipeline;
 
 /** 解析渠道源回复投递模式。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelSourceReplyDeliveryMode(_input?: unknown): string {
   return "default";
 }
@@ -295,7 +295,7 @@ export const resolveChannelMessageSourceReplyDeliveryMode = resolveChannelSource
 // ---- 草稿流控制 ----
 
 /** 创建可最终化草稿生命周期。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createFinalizableDraftLifecycle(): {
   state: FinalizableDraftStreamState;
   start(): void;
@@ -320,29 +320,29 @@ export function createFinalizableDraftLifecycle(): {
 }
 
 /** 创建可最终化草稿流控制。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createFinalizableDraftStreamControls(): unknown {
   return createFinalizableDraftLifecycle();
 }
 
 /** 为状态创建可最终化草稿流控制。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createFinalizableDraftStreamControlsForState(_state: FinalizableDraftStreamState): unknown {
   return createFinalizableDraftLifecycle();
 }
 
 /** 清除可最终化草稿消息。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function clearFinalizableDraftMessage(_input?: unknown): void {}
 
 /** 在停止后取走消息 ID。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function takeMessageIdAfterStop(_input?: unknown): string | undefined {
   return undefined;
 }
 
 /** 创建草稿流循环。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createDraftStreamLoop(): DraftStreamLoop {
   return {
     async start() {},
@@ -351,7 +351,7 @@ export function createDraftStreamLoop(): DraftStreamLoop {
 }
 
 /** 解析渠道草稿流分块。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveChannelDraftStreamingChunking(_input?: unknown): ChannelDraftStreamingChunking {
   return { chunkSize: 1000, delayMs: 500 };
 }
@@ -359,7 +359,7 @@ export function resolveChannelDraftStreamingChunking(_input?: unknown): ChannelD
 // ---- 运行队列与生命周期 ----
 
 /** 创建渠道运行队列。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createChannelRunQueue<T = unknown>(_params?: ChannelRunQueueParams): ChannelRunQueue<T> {
   const tasks: T[] = [];
   return {
@@ -373,7 +373,7 @@ export function createChannelRunQueue<T = unknown>(_params?: ChannelRunQueuePara
 }
 
 /** 创建账号状态接收器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createAccountStatusSink(): { update(state: unknown): void; snapshot(): unknown } {
   let current: unknown = undefined;
   return {
@@ -387,15 +387,15 @@ export function createAccountStatusSink(): { update(state: unknown): void; snaps
 }
 
 /** 保持 HTTP 服务器任务存活。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function keepHttpServerTaskAlive(_input?: unknown): Promise<void> {}
 
 /** 运行被动账号生命周期。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function runPassiveAccountLifecycle(_input?: unknown): Promise<void> {}
 
 /** 等待中断。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function waitUntilAbort(signal: AbortSignal): Promise<void> {
   if (signal.aborted) return;
   await new Promise<void>((resolve) => {
@@ -406,19 +406,19 @@ export async function waitUntilAbort(signal: AbortSignal): Promise<void> {
 // ---- 出站负载 ----
 
 /** 创建出站负载计划。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createOutboundPayloadPlan(_input?: unknown): unknown {
   return {};
 }
 
 /** 为投递投影出站负载计划。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function projectOutboundPayloadPlanForDelivery(_input?: unknown): unknown {
   return {};
 }
 
 /** 构建出站会话上下文。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function buildOutboundSessionContext(input: {
   channelId: string;
   sessionId?: string;
@@ -428,41 +428,41 @@ export function buildOutboundSessionContext(input: {
 }
 
 /** 解析 agent 出站身份。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveAgentOutboundIdentity(agentId: string): OutboundIdentity {
   return { agentId };
 }
 
 /** 创建回复目标扇出。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createReplyToFanout(_input?: unknown): ReplyToResolution {
   return {};
 }
 
 /** 解析出站发送依赖。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveOutboundSendDeps(_input?: unknown): OutboundSendDeps {
   return {};
 }
 
 /** 为纯文本进行清理。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function sanitizeForPlainText(text: string): string {
   return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim();
 }
 
 // ---- 日志 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function logAckFailure(_channelId: string, _error: unknown): void {}
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function logTypingFailure(_channelId: string, _error: unknown): void {}
 
 // ---- 进度草稿合成器 ----
 
 /** 创建渠道进度草稿合成器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createChannelProgressDraftCompositor(
   _options?: ChannelProgressDraftUpdateOptions,
 ): ChannelProgressDraftCompositor {
@@ -480,7 +480,7 @@ export function createChannelProgressDraftCompositor(
 // ---- 持久化发送 ----
 
 /** 懒加载转发入站回复投递。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function deliverInboundReplyWithMessageSendContext(
   _context: unknown,
 ): Promise<DurableInboundReplyDeliveryResult> {
@@ -488,7 +488,7 @@ export async function deliverInboundReplyWithMessageSendContext(
 }
 
 /** 发送持久化消息批次。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function sendDurableMessageBatch(
   _params: DurableMessageBatchSendParams,
 ): Promise<DurableMessageBatchSendResult> {
@@ -496,7 +496,7 @@ export async function sendDurableMessageBatch(
 }
 
 /** 在持久化消息发送上下文中运行工作。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function withDurableMessageSendContext<T>(
   _params: DurableMessageSendContextParams,
   run: (ctx: DurableMessageSendContext) => Promise<T>,
@@ -507,31 +507,31 @@ export async function withDurableMessageSendContext<T>(
 // ---- 消息回执辅助 ----
 
 /** 从出站结果创建消息回执。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createMessageReceiptFromOutboundResults(_input?: unknown): MessageReceipt | undefined {
   return undefined;
 }
 
 /** 列出消息回执平台 ID。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listMessageReceiptPlatformIds(_receipt?: MessageReceipt): string[] {
   return [];
 }
 
 /** 创建消息接收上下文。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createMessageReceiveContext(input: { channelId: string; messageId: string }): MessageReceiveContext {
   return input;
 }
 
 /** 创建预览消息回执。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createPreviewMessageReceipt(messageId: string): MessageReceipt {
   return { messageId };
 }
 
 /** 解析消息回执主 ID。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function resolveMessageReceiptPrimaryId(receipt?: MessageReceipt): string | undefined {
   return receipt?.messageId;
 }
@@ -539,13 +539,13 @@ export function resolveMessageReceiptPrimaryId(receipt?: MessageReceipt): string
 // ---- 实时消息状态 ----
 
 /** 创建实时消息状态。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createLiveMessageState(): LiveMessageState {
   return { phase: "preview" };
 }
 
 /** 创建持久化消息状态记录。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createDurableMessageStateRecord(
   intent: DurableMessageSendIntent,
 ): DurableMessageStateRecord {
@@ -553,19 +553,19 @@ export function createDurableMessageStateRecord(
 }
 
 /** 标记实时消息已取消。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function markLiveMessageCancelled(state: LiveMessageState): LiveMessageState {
   return { ...state, phase: "cancelled" };
 }
 
 /** 标记实时消息已最终化。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function markLiveMessageFinalized(state: LiveMessageState, messageId?: string): LiveMessageState {
   return { ...state, phase: "finalized", messageId };
 }
 
 /** 标记实时消息预览已更新。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function markLiveMessagePreviewUpdated(state: LiveMessageState, previewText: string): LiveMessageState {
   return { ...state, previewText };
 }
@@ -573,13 +573,13 @@ export function markLiveMessagePreviewUpdated(state: LiveMessageState, previewTe
 // ---- 消息适配器 ----
 
 /** 定义渠道消息适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function defineChannelMessageAdapter(_input?: unknown): ChannelMessageAdapter {
   return {};
 }
 
 /** 定义可最终化实时预览适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function defineFinalizableLivePreviewAdapter(_input?: unknown): FinalizableLivePreviewAdapter {
   return {
     async updatePreview() {},
@@ -591,26 +591,26 @@ export function defineFinalizableLivePreviewAdapter(_input?: unknown): Finalizab
 }
 
 /** 从出站创建渠道消息适配器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createChannelMessageAdapterFromOutbound(_input?: unknown): ChannelMessageAdapter {
   return {};
 }
 
 /** 投递可最终化实时预览。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function deliverFinalizableLivePreview(_input?: unknown): Promise<LivePreviewFinalizerResult> {
   return { kind: "success" };
 }
 
 /** 使用可最终化实时预览适配器投递。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export async function deliverWithFinalizableLivePreviewAdapter(_input?: unknown): Promise<LivePreviewFinalizerResult> {
   return { kind: "success" };
 }
 
 // ---- 分类持久化发送恢复状态 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function classifyDurableSendRecoveryState(_input?: unknown): string {
   return "unknown";
 }
@@ -618,91 +618,91 @@ export function classifyDurableSendRecoveryState(_input?: unknown): string {
 // ---- 创建持久化入站接收日志 ----
 
 /** 创建持久化入站接收日志。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createDurableInboundReceiveJournal(): unknown {
   return {};
 }
 
 /** 从队列创建持久化入站接收日志。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createDurableInboundReceiveJournalFromQueue(_input?: unknown): unknown {
   return {};
 }
 
 // ---- 能力验证桩 ----
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listDeclaredChannelMessageLiveCapabilities(_input?: unknown): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listDeclaredDurableFinalCapabilities(_input?: unknown): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listDeclaredLivePreviewFinalizerCapabilities(_input?: unknown): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function listDeclaredReceiveAckPolicies(_input?: unknown): MessageAckPolicy[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function shouldAckMessageAfterStage(_stage: MessageAckStage, _policy?: MessageAckPolicy): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageAdapterCapabilityProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageLiveCapabilityAdapterProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageLiveCapabilityProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageLiveFinalizerProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageReceiveAckPolicyAdapterProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyChannelMessageReceiveAckPolicyProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyDurableFinalCapabilityProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function verifyLivePreviewFinalizerCapabilityProofs(_input?: unknown): boolean {
   return true;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function deriveDurableFinalDeliveryRequirements(_input?: unknown): unknown {
   return {};
 }
 
 /** 创建运行时出站委托。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime imports are routed to server/engine/plugin-sdk/* by the resolver
 export function createRuntimeOutboundDelegates(_input?: unknown): unknown {
   return {};
 }

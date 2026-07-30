@@ -66,43 +66,43 @@ export type DoctorSessionRouteStateOwner = {
   migrateState?(context: PluginDoctorStateMigrationContext): Promise<CompatMutationResult>;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function collectProviderDangerousNameMatchingScopes(
   _providerId: string,
 ): string[] {
   return [];
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function asObjectRecord(value: unknown): Record<string, unknown> {
   return (value ?? {}) as Record<string, unknown>;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function hasLegacyAccountStreamingAliases(_input: unknown): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function hasLegacyStreamingAliases(_input: unknown): boolean {
   return false;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function normalizeLegacyChannelAliases(
   _input: unknown,
 ): CompatMutationResult {
   return { changed: false, notes: [] };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function normalizeLegacyDmAliases(
   _input: unknown,
 ): CompatMutationResult {
   return { changed: false, notes: [] };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function normalizeLegacyStreamingAliases(
   _input: unknown,
   _options?: LegacyStreamingAliasOptions,
@@ -120,17 +120,17 @@ export type PluginInstallPathIssue = {
   message: string;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function detectPluginInstallPathIssue(_pluginId: string): PluginInstallPathIssue | undefined {
   return undefined;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function formatPluginInstallPathIssue(issue: PluginInstallPathIssue): string {
   return `[${issue.kind}] ${issue.path}: ${issue.message}`;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createPluginStateSyncKeyedStore(
   _options?: OpenKeyedStoreOptions,
 ): PluginStateKeyedStore {
@@ -151,7 +151,7 @@ export function createPluginStateSyncKeyedStore(
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export async function removePluginFromConfig(_pluginId: string): Promise<CompatMutationResult> {
   return { changed: false, notes: [] };
 }

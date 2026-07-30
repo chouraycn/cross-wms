@@ -132,7 +132,7 @@ export const ToolPolicySchema: ToolPolicySchema = {
 // ---- schema 构建辅助 ----
 
 /** 构建渠道配置 schema。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildChannelConfigSchema(options?: {
   allowFrom?: boolean;
   dm?: boolean;
@@ -160,7 +160,7 @@ export function buildChannelConfigSchema(options?: {
 }
 
 /** 构建捕获所有多账号渠道 schema。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildCatchallMultiAccountChannelSchema(options?: {
   allowFrom?: boolean;
   customFields?: Record<string, SchemaField>;
@@ -169,7 +169,7 @@ export function buildCatchallMultiAccountChannelSchema(options?: {
 }
 
 /** 构建 JSON 渠道配置 schema。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildJsonChannelConfigSchema(options?: {
   customFields?: Record<string, SchemaField>;
 }): ConfigSchemaShape {
@@ -177,7 +177,7 @@ export function buildJsonChannelConfigSchema(options?: {
 }
 
 /** 构建嵌套 DM 配置 schema。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function buildNestedDmConfigSchema(options?: {
   accounts?: Record<string, ConfigSchemaShape>;
 }): ConfigSchemaShape {
@@ -195,7 +195,7 @@ export function buildNestedDmConfigSchema(options?: {
 // ---- 校验辅助 ----
 
 /** 要求 allowlist 的 allowFrom。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function requireAllowlistAllowFrom(config: unknown): string[] {
   if (config && typeof config === "object" && "allowFrom" in config) {
     const value = (config as { allowFrom: unknown }).allowFrom;
@@ -205,7 +205,7 @@ export function requireAllowlistAllowFrom(config: unknown): string[] {
 }
 
 /** 要求 open 的 allowFrom。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function requireOpenAllowFrom(_config: unknown): string[] | true {
   return true;
 }

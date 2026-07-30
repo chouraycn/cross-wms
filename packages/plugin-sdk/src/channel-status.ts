@@ -66,19 +66,19 @@ export type ChannelStatusAdapter<ResolvedAccount = unknown, Probe = unknown, Aud
 // ---- 凭据快照字段投影 ----
 
 /** 投影凭据快照字段。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function projectCredentialSnapshotFields(_input?: unknown): Record<string, unknown> {
   return {};
 }
 
 /** 从凭据状态解析 configuredFrom。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveConfiguredFromCredentialStatuses(_input?: unknown): string {
   return "none";
 }
 
 /** 从必需凭据状态解析 configuredFrom。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveConfiguredFromRequiredCredentialStatuses(_input?: unknown): string {
   return "none";
 }
@@ -242,19 +242,19 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** 追加匹配元数据。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function appendMatchMetadata(_input: unknown, _metadata: unknown): unknown {
   return _input;
 }
 
 /** 转为字符串。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
 /** 为已启用账号收集问题。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function collectIssuesForEnabledAccounts(
   _channel: string,
   _accounts: unknown[],
@@ -263,13 +263,13 @@ export function collectIssuesForEnabledAccounts(
 }
 
 /** 格式化匹配元数据。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function formatMatchMetadata(_input: unknown): string {
   return "";
 }
 
 /** 解析已启用已配置账号 ID。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveEnabledConfiguredAccountId(_input: unknown): string | undefined {
   return undefined;
 }

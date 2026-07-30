@@ -17,7 +17,7 @@ export class ProviderHttpError extends Error {
   }
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createProviderHttpError(
   message: string,
   status: number,
@@ -465,14 +465,14 @@ export type ProviderRequestTransportOverrides = {
   tls?: ProviderRequestTlsOverride;
 };
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProviderRequestHeaders(
   _input?: ProviderRequestTransportOverrides,
 ): Record<string, string> {
   return {};
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProviderEndpoint(
   baseUrl: string,
   endpointClass: ProviderEndpointClass,
@@ -487,7 +487,7 @@ export function resolveProviderEndpoint(
   return { url: `${normalizeBaseUrl(baseUrl)}${pathMap[endpointClass]}`, endpointClass };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProviderRequestCapabilities(
   input?: ProviderRequestCapabilitiesInput,
 ): ProviderRequestCapabilities {
@@ -497,7 +497,7 @@ export function resolveProviderRequestCapabilities(
   };
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function resolveProviderRequestPolicy(
   input?: ProviderRequestPolicyInput,
 ): ProviderRequestPolicyResolution {

@@ -147,6 +147,84 @@ export function parseMultipartFormData(
   });
 }
 
+/**
+ * 多文件 multipart/form-data 解析器（无外部依赖）
+ * 兼容字段名 files / file / image，支持同一字段名多次出现（多文件）。
+ * 返回每个文件部分的 { fileName, mimeType, data }。
+ */
+export function parseMultipartFiles(
+  req: Request,
+): Promise<Array<{ fileName: string; mimeType: string; data: Buffer }>> {
+  return new Promise((resolve, reject) => {
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.includes('multipart/form-data')) {
+      return resolve([]);
+    }
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
+    if (!boundaryMatch) {
+      return reject(new Error('Missing boundary in Content-Type'));
+    }
+    const boundary = boundaryMatch[1] || boundaryMatch[2];
+    const delimiter = Buffer.from(`--${boundary}`);
+    const chunks: Buffer[] = [];
+    let totalSize = 0;
+
+    req.on('data', (chunk: Buffer) => {
+      totalSize += chunk.length;
+      if (totalSize > MAX_UPLOAD_SIZE * 1.5) {
+        req.destroy(new Error('Request body too large'));
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks);
+        const files: Array<{ fileName: string; mimeType: string; data: Buffer }> = [];
+        let pos = 0;
+        let totalFileSize = 0;
+        while (pos < body.length) {
+          const delimIdx = body.indexOf(delimiter, pos);
+          if (delimIdx === -1) break;
+          let headerEnd = body.indexOf('\r\n\r\n', delimIdx + delimiter.length);
+          if (headerEnd === -1) break;
+          const headerSection = body
+            .subarray(delimIdx + delimiter.length, headerEnd)
+            .toString();
+          headerEnd += 4;
+          const nextDelim = body.indexOf(delimiter, headerEnd);
+          if (nextDelim === -1) break;
+          let partEnd = nextDelim;
+          if (body[partEnd - 1] === 0x0a && body[partEnd - 2] === 0x0d) partEnd -= 2;
+
+          const nameMatch = headerSection.match(/name="?([^";\s]+)"?/);
+          const fieldName = nameMatch ? nameMatch[1] : '';
+          if (fieldName === 'files' || fieldName === 'file' || fieldName === 'image') {
+            const fnMatch = headerSection.match(/filename="([^"]*)"/);
+            const ctMatch = headerSection.match(/Content-Type:\s*([^\r\n]+)/i);
+            const fileName = fnMatch ? fnMatch[1] : 'upload';
+            const mimeType = ctMatch ? ctMatch[1].trim() : 'application/octet-stream';
+            const data = body.subarray(headerEnd, partEnd);
+            totalFileSize += data.length;
+            files.push({ fileName, mimeType, data: Buffer.from(data) });
+          }
+          pos = nextDelim + delimiter.length;
+          if (body.subarray(pos, pos + 2).equals(Buffer.from('--'))) break;
+        }
+        if (totalFileSize > MAX_UPLOAD_SIZE) {
+          return reject(new Error('Files too large (max 10MB)'));
+        }
+        resolve(files);
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    req.on('error', reject);
+  });
+}
+
 const router = Router();
 
 // v1.9.3: 处理 CORS 预检请求

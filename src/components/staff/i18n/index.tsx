@@ -20,7 +20,7 @@ type I18nContextValue = {
 
 const STORAGE_KEY = 'staffdeck_locale'
 const CATALOG = englishCatalog as Record<string, string>
-const TEMPLATE_TOKEN = /\{(\d+)\}/g
+const TEMPLATE_TOKEN = /\{(\w+)\}/g
 
 function initialLocale(): AppLocale {
   if (typeof window === 'undefined') return 'zh-CN'
@@ -30,7 +30,13 @@ function initialLocale(): AppLocale {
 let currentLocale: AppLocale = initialLocale()
 
 function interpolate(target: string, values: Record<string | number, string | number>): string {
-  return target.replace(TEMPLATE_TOKEN, (_, key: string) => String(values[key] ?? `{${key}}`))
+  return target.replace(TEMPLATE_TOKEN, (_, key: string) => {
+    const numericKey = Number(key)
+    if (!Number.isNaN(numericKey) && values[numericKey] !== undefined) {
+      return String(values[numericKey])
+    }
+    return String(values[key] ?? `{${key}}`)
+  })
 }
 
 function translateCore(source: string): string | null {

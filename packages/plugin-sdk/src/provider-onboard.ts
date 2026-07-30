@@ -21,24 +21,24 @@ type OpenClawConfig = Record<string, unknown> & {
   };
 };
 
-/** Model API type. TODO: 依赖模块未移植 */
+/** Model API type. Contract stub: upstream import. */
 type ModelApi = string;
 
-/** Model definition config. TODO: 依赖模块未移植 */
+/** Model definition config. Contract stub: upstream import. */
 type ModelDefinitionConfig = {
   id: string;
   api?: ModelApi;
   [key: string]: unknown;
 };
 
-/** Model provider config. TODO: 依赖模块未移植 */
+/** Model provider config. Contract stub: upstream import. */
 type ModelProviderConfig = {
   models?: ModelDefinitionConfig[];
   api?: ModelApi;
   [key: string]: unknown;
 };
 
-/** Agent model entry config. TODO: 依赖模块未移植 */
+/** Agent model entry config. Contract stub: upstream import. */
 type AgentModelEntryConfig = {
   provider?: string;
   model?: string;
@@ -46,7 +46,7 @@ type AgentModelEntryConfig = {
   [key: string]: unknown;
 };
 
-/** Resolves the primary string value from nested config. TODO: 依赖模块未移植 */
+/** Resolves the primary string value from nested config. Contract stub: upstream import. */
 function resolvePrimaryStringValue(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim().length > 0) {
     return value.trim();
@@ -54,17 +54,17 @@ function resolvePrimaryStringValue(value: unknown): string | undefined {
   return undefined;
 }
 
-/** Ensures a static model allowlist entry. TODO: 依赖模块未移植 */
+/** Ensures a static model allowlist entry. Contract stub: upstream import. */
 function ensureStaticModelAllowlistEntry(params: { cfg?: OpenClawConfig; modelRef?: string; defaultProvider?: string; provider?: string; model?: string; agentDir?: string }): OpenClawConfig {
   return params.cfg ?? {};
 }
 
-/** Normalizes a provider catalog model id. TODO: 依赖模块未移植 */
+/** Normalizes a provider catalog model id. Contract stub: upstream import. */
 function normalizeConfiguredProviderCatalogModelId(providerId: string, modelId: string): string {
   return `${providerId}/${modelId}`;
 }
 
-/** Normalizes agent model map for config. TODO: 依赖模块未移植 */
+/** Normalizes agent model map for config. Contract stub: upstream import. */
 function normalizeAgentModelMapForConfig(map: unknown): Record<string, AgentModelEntryConfig> {
   if (map && typeof map === "object" && !Array.isArray(map)) {
     return { ...(map as Record<string, AgentModelEntryConfig>) };
@@ -72,7 +72,7 @@ function normalizeAgentModelMapForConfig(map: unknown): Record<string, AgentMode
   return {};
 }
 
-/** Normalizes agent model ref for config. TODO: 依赖模块未移植 */
+/** Normalizes agent model ref for config. Contract stub: upstream import. */
 function normalizeAgentModelRefForConfig(ref: unknown): string | undefined {
   if (typeof ref === "string" && ref.trim().length > 0) {
     return ref.trim();
@@ -85,24 +85,24 @@ function normalizeAgentModelRefForConfig(ref: unknown): string | undefined {
   }
   return undefined;
 }
-// import { normalizeConfiguredProviderCatalogModelId } from "../agents/model-ref-shared.js"; // TODO: 依赖模块未移植
+// import { normalizeConfiguredProviderCatalogModelId } from "../agents/model-ref-shared.js"; // contract stub
 // import {
 //   normalizeAgentModelMapForConfig,
 //   normalizeAgentModelRefForConfig,
-// } from "../config/model-input.js"; // TODO: 依赖模块未移植
-// import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js"; // TODO: 依赖模块未移植
+// } from "../config/model-input.js"; // contract stub
+// import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js"; // contract stub
 // import type {
 //   ModelApi,
 //   ModelDefinitionConfig,
 //   ModelProviderConfig,
-// } from "../config/types.models.js"; // TODO: 依赖模块未移植
-// import type { OpenClawConfig } from "../config/types.openclaw.js"; // TODO: 依赖模块未移植
+// } from "../config/types.models.js"; // contract stub
+// import type { OpenClawConfig } from "../config/types.openclaw.js"; // contract stub
 
-// export type { OpenClawConfig, ModelApi, ModelDefinitionConfig, ModelProviderConfig }; // TODO: 依赖模块未移植
+// export type { OpenClawConfig, ModelApi, ModelDefinitionConfig, ModelProviderConfig }; // contract stub
 // export {
 //   resolveAgentModelFallbackValues,
 //   resolveAgentModelPrimaryValue,
-// } from "../config/model-input.js"; // TODO: 依赖模块未移植
+// } from "../config/model-input.js"; // contract stub
 
 /** Alias registration accepted by provider onboarding presets. */
 export type AgentModelAliasEntry =

@@ -7,10 +7,13 @@ import { subscribeRefresh } from '../App';
 import { getTransitOrders } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const InTransitPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const fadeCls = usePageFadeIn();
+  const { t } = useI18n();
+  const dateLocale = getDateLocale();
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -23,11 +26,14 @@ const InTransitPage: React.FC = () => {
 
   const orders = useMemo(() => getTransitOrders(), [refreshKey]);
 
-  const summary = orders.length > 0 ? `在途 ${orders.length} 单` : undefined;
+  const summary = orders.length > 0 ? t('在途 {count} 单', { count: orders.length }) : undefined;
 
   const handleExport = () => {
     if (orders.length === 0) return;
-    const headers = ['订单号', '跟踪号', '品类', '重量(kg)', '体积(m³)', '运输方式', '状态', '承运商', '预计到港'];
+    const headers = [
+      t('订单号'), t('跟踪号'), t('品类'), t('重量(kg)'), t('体积(m³)'),
+      t('运输方式'), t('状态'), t('承运商'), t('预计到港'),
+    ];
     const rows = orders.map(o => [
       o.id || '',
       o.trackingNo || '',
@@ -37,7 +43,7 @@ const InTransitPage: React.FC = () => {
       o.transportMode || '',
       o.status || '',
       o.carrier || '',
-      o.estimatedArrival ? new Date(o.estimatedArrival).toLocaleDateString('zh-CN') : '',
+      o.estimatedArrival ? new Date(o.estimatedArrival).toLocaleDateString(dateLocale) : '',
     ]);
     exportToCsv('transit-orders.csv', headers, rows);
   };
@@ -45,11 +51,11 @@ const InTransitPage: React.FC = () => {
   return (
     <Box key={refreshKey} className={fadeCls}>
       <PageHeader
-        title="在途管理"
+        title={t('在途管理')}
         summary={summary}
         action={
           orders.length > 0 ? (
-            <Tooltip title="导出 CSV">
+            <Tooltip title={t('导出 CSV')}>
               <Button
                 variant="outlined"
                 size="small"
@@ -64,7 +70,7 @@ const InTransitPage: React.FC = () => {
                   '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
                 }}
               >
-                导出
+                {t('导出')}
               </Button>
             </Tooltip>
           ) : undefined

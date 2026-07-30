@@ -226,6 +226,7 @@ ESBUILD_OUTPUT=$(./node_modules/.bin/esbuild \
   --format=cjs \
   --outfile="$TEMP_SERVER_BUNDLE" \
   --alias:@src="$ROOT_DIR/src" \
+  --alias:@cdf-know/plugin-sdk/extension-shared="$ROOT_DIR/server/engine/plugin-sdk/extension-shared.ts" \
   --external:better-sqlite3 \
   '--external:@cdfclaw/*' \
   --external:@modelcontextprotocol/sdk \
@@ -240,6 +241,9 @@ ESBUILD_OUTPUT=$(./node_modules/.bin/esbuild \
   --external:tr46 \
   --external:whatwg-url \
   --external:sqlite-vec \
+  --external:@larksuiteoapi/node-sdk \
+  --banner:js="var __import_meta_url = require('url').pathToFileURL(__filename).href;" \
+  --define:import.meta.url=__import_meta_url \
   --sourcemap=inline \
   2>&1) || true
 

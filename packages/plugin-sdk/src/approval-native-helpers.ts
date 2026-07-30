@@ -74,7 +74,7 @@ export type ChannelApprovalExplicitTargetEligibilityParams =
   };
 
 /** 比较渠道原生审批目标，使用与出站路由相同的规范化。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function nativeApprovalTargetsMatch(params: {
   channel?: string | null;
   left: NativeApprovalTarget;
@@ -88,7 +88,7 @@ export function nativeApprovalTargetsMatch(params: {
 }
 
 /** 判断渠道原生 exec 审批路由是否替换本地文本提示。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function shouldSuppressLocalNativeExecApprovalPrompt(_params: {
   cfg: unknown;
   accountId?: string | null;
@@ -118,7 +118,7 @@ export function resolveApprovalKind(
 }
 
 /** 为具有自定义目标匹配逻辑的渠道构建可复用的转发门控。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelApprovalForwardingEvaluator(_params: {
   channel: string;
   isTransportEnabled: (params: { cfg: unknown; accountId?: string | null }) => boolean;
@@ -169,7 +169,7 @@ export function createChannelApprovalForwardingEvaluator(_params: {
 }
 
 /** 创建原生审批渠道路由门控。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createNativeApprovalChannelRouteGates<TTarget extends NativeApprovalTarget>(
   _params: {
     channel: string;
@@ -229,7 +229,7 @@ export function createNativeApprovalChannelRouteGates<TTarget extends NativeAppr
 }
 
 /** 创建回退抑制器，避免原生投递后出现重复审批提示。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createNativeApprovalForwardingFallbackSuppressor<
   TTarget extends NativeApprovalTarget,
 >(_params: {
@@ -248,7 +248,7 @@ export function createNativeApprovalForwardingFallbackSuppressor<
 }
 
 /** 使用标准原生审批目标匹配解析请求来源目标。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelNativeOriginTargetResolver<TTarget extends NativeApprovalTarget>(
   _params: unknown,
 ): (input: unknown) => TTarget | null {
@@ -256,7 +256,7 @@ export function createChannelNativeOriginTargetResolver<TTarget extends NativeAp
 }
 
 /** 创建已配置审批人 DM 目标的解析器。 */
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 export function createChannelApproverDmTargetResolver<
   TApprover,
   TTarget extends NativeApprovalTarget = NativeApprovalTarget,

@@ -21,12 +21,12 @@ const GEMINI_UNSUPPORTED_SCHEMA_KEYWORDS: ReadonlySet<string> = new Set([
   "definitions",
 ]);
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function cleanSchemaForGemini(schema: TSchema): TSchema {
   return schema;
 }
 
-// TODO: 依赖模块未移植，暂用本地桩
+// Contract stub; runtime routed to server/engine/plugin-sdk by resolver.
 function stripUnsupportedSchemaKeywords(_schema: unknown, _keywords: ReadonlySet<string>): unknown {
   return _schema;
 }

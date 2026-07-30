@@ -81,8 +81,24 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'json-summary', 'html'],
+      reporter: ['text', 'text-summary', 'json', 'json-summary', 'lcov', 'html'],
       reportOnFailure: true,
+      // 覆盖率门禁：vitest 在 thresholds 不满足时会直接 fail（退出码非 0），
+      // 构成 CI 的主门禁。下方 shell 检查作为打印数值的辅助诊断。
+      //
+      // 阈值依据：当前 v8 provider 实测基线为 lines 4.99% / functions 86.44% /
+      // branches 83.38% / statements 4.99%。其中 lines/statements 偏低是 v8 provider
+      // 对被 import 的 TS 模块行级覆盖统计偏低（大量文件 0% lines / 100% functions），
+      // 因此 functions/branches 是主要门禁信号（对应任务中间目标 40%/35%）。
+      // lines/statements 设在基线之下以避免 CI 立即失败，同时阻止覆盖率回退。
+      // 后续随覆盖率提升逐步上调，最终目标 70%。
+      thresholds: {
+        lines: 2,
+        functions: 40,
+        branches: 35,
+        statements: 2,
+        perFile: false,
+      },
       include: [
         'src/services/**',
         'src/stores/**',
@@ -100,6 +116,18 @@ export default defineConfig({
         'server/storage/migration.ts',
         'server/engine/messageArchive.ts',
         'server/channels/access/allowlist.ts',
+        'server/keyRotator.ts',
+        'server/engine/contextCompress.ts',
+        'server/engine/compaction-planning.ts',
+        'server/engine/compaction-identifier.ts',
+        'server/engine/loopDetector.ts',
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.d.ts',
+        '**/node_modules/**',
+        '**/__tests__/**',
       ],
     },
   },

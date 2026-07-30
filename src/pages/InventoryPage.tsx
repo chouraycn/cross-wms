@@ -13,12 +13,15 @@ import { getInventoryItems } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
 import { getGrayScale } from '../constants/theme';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
+import { useI18n, getDateLocale } from '../components/staff/i18n/index.js';
 
 const InventoryPage: React.FC = () => {
   const theme = useTheme();
   const fadeCls = usePageFadeIn();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { t } = useI18n();
+  const dateLocale = getDateLocale();
   const [refreshKey, setRefreshKey] = useState(0);
   const [inboundOpen, setInboundOpen] = useState(false);
   const [outboundOpen, setOutboundOpen] = useState(false);
@@ -37,12 +40,14 @@ const InventoryPage: React.FC = () => {
   const warningCount = items.filter(i => i.isAgeWarning).length;
 
   const summary = items.length > 0
-    ? `总库存 ${items.length} 件${warningCount > 0 ? ` · 预警 ${warningCount} 件` : ''}`
+    ? (warningCount > 0
+        ? t('总库存 {total} 件 · 预警 {warning} 件', { total: items.length, warning: warningCount })
+        : t('总库存 {total} 件', { total: items.length }))
     : undefined;
 
   const handleExport = () => {
     if (items.length === 0) return;
-    const headers = ['SKU', '名称', '仓库ID', '数量', '总体积(m³)', '品类', '库龄预警', '入库日期'];
+    const headers = ['SKU', t('名称'), t('仓库ID'), t('数量'), t('总体积(m³)'), t('品类'), t('库龄预警'), t('入库日期')];
     const rows = items.map(i => [
       i.sku || '',
       i.name || '',
@@ -50,8 +55,8 @@ const InventoryPage: React.FC = () => {
       String(i.quantity ?? ''),
       String(i.totalVolume ?? ''),
       i.category || '',
-      i.isAgeWarning ? '预警' : '正常',
-      i.inboundDate ? new Date(i.inboundDate).toLocaleDateString('zh-CN') : '',
+      i.isAgeWarning ? t('预警') : t('正常'),
+      i.inboundDate ? new Date(i.inboundDate).toLocaleDateString(dateLocale) : '',
     ]);
     exportToCsv('inventory.csv', headers, rows);
   };
@@ -64,7 +69,7 @@ const InventoryPage: React.FC = () => {
   return (
     <Box key={refreshKey} className={fadeCls}>
       <PageHeader
-        title="库存管理"
+        title={t('库存管理')}
         summary={summary}
         action={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -81,7 +86,7 @@ const InventoryPage: React.FC = () => {
                 '&:hover': { backgroundColor: '#374151' },
               }}
             >
-              入库
+              {t('入库')}
             </Button>
             <Button
               variant="outlined"
@@ -97,10 +102,10 @@ const InventoryPage: React.FC = () => {
                 '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgPage },
               }}
             >
-              出库
+              {t('出库')}
             </Button>
             {items.length > 0 && (
-              <Tooltip title="导出 CSV">
+              <Tooltip title={t('导出 CSV')}>
                 <Button
                   variant="outlined"
                   size="small"
@@ -115,7 +120,7 @@ const InventoryPage: React.FC = () => {
                     '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgPage },
                   }}
                 >
-                  导出
+                  {t('导出')}
                 </Button>
               </Tooltip>
             )}
@@ -126,7 +131,7 @@ const InventoryPage: React.FC = () => {
 
       {/* 变动历史区域 */}
       <Box sx={{ mt: 4 }}>
-        <PageHeader title="变动历史" subtitle="库存出入库记录" />
+        <PageHeader title={t('变动历史')} subtitle={t('库存出入库记录')} />
         <TransactionHistory />
       </Box>
 
