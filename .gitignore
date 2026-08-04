@@ -82,6 +82,10 @@ test-app/
 test-electron.cjs
 test-main.cjs
 dist-server/
+# esbuild 单文件产物（build-server.mjs 输出，dev:fast 直接 node 它）。
+# 2026-08-04：此前漏忽略，导致 31MB 的 index.cjs 被跟踪，git 历史已累积 6 个版本 ≈144MB，
+# push 时触发 GitHub「文件超过 50MB 推荐上限」警告。
+server_dist/
 test-results/
 e2e-results/
 e2e/e2e-results/
