@@ -63,7 +63,10 @@ function readStoredSession(key: string): EnterpriseAuthSession | null {
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as EnterpriseAuthSession
-    if (!parsed.token || !parsed.user?.id) return null
+    // 允许 token='' 的 desktop 默认会话（后端对无 token 请求兜底 default-user）。
+    // 原先 !parsed.token 把空字符串视为无效，导致 iframe 内 getEnterpriseAuthSession()
+    // 一直返回 null，反复向父窗口请求 AUTH，父窗口发送 token='' 又被忽略 → 闪动循环。
+    if (!parsed.user?.id) return null
     return parsed
   } catch {
     return null
