@@ -13,7 +13,7 @@ import {
   nameFromAnyPath,
 } from "@openclaw/media-core/file-name";
 import { detectMime, extensionForMime } from "@openclaw/media-core/mime";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { toErrorObject } from "../infra/errors.js";
 import { fileStore } from "../infra/file-store.js";
 import { sanitizeUntrustedFileName } from "../infra/fs-safe-advanced.js";
@@ -88,7 +88,7 @@ function resolveMediaRelativePath(id: string, subdir: string, caller: string): s
 }
 
 function openMediaStore(maxBytes = MAX_BYTES) {
-  return fileStore({
+  return (fileStore as any)({
     rootDir: resolveMediaDir(),
     dirMode: 0o700,
     maxBytes,
@@ -117,7 +117,7 @@ export function setMediaStoreNetworkDepsForTest(deps?: {
  * Keeps: alphanumeric, dots, hyphens, underscores, Unicode letters/numbers.
  */
 function sanitizeFilename(name: string): string {
-  const base = sanitizeUntrustedFileName(name, "");
+  const base = sanitizeUntrustedFileName(name);
   if (!base) {
     return "";
   }
@@ -409,14 +409,14 @@ async function saveMediaSiblingTempFile(params: {
   writeTemp: (tempPath: string) => Promise<SavedMediaTempWriteResult>;
 }): Promise<SavedMedia> {
   const { result } = await retryAfterRecreatingDir(params.dir, () =>
-    writeSiblingTempFile<SavedMediaTempWriteResult>({
+    (writeSiblingTempFile as any)({
       dir: params.dir,
       mode: MEDIA_FILE_MODE,
       tempPrefix: params.tempPrefix,
       writeTemp: params.writeTemp,
-      resolveFinalPath: (resultLocal) => path.join(params.dir, resultLocal.id),
+      resolveFinalPath: (resultLocal: SavedMediaTempWriteResult) => path.join(params.dir, resultLocal.id),
     }),
-  );
+  ) as { result: SavedMediaTempWriteResult };
   return buildSavedMediaResult({ dir: params.dir, ...result });
 }
 
@@ -566,7 +566,7 @@ export async function saveMediaSource(
     });
   }
   try {
-    const { buffer, stat } = await readLocalFileSafely({ filePath: source, maxBytes });
+    const { buffer, stat } = (await (readLocalFileSafely as any)({ filePath: source, maxBytes })) as { buffer: Buffer; stat: { size: number } };
     const mime = await detectMime({ buffer, filePath: source });
     const ext = extensionForMime(mime) ?? path.extname(source);
     const id = buildSavedMediaId({ baseId, ext });

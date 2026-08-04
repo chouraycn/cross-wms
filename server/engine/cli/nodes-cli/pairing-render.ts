@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Shared renderer for pending node pairing request tables.
 import { sanitizeTerminalText } from "../../../packages/terminal-core/src/safe-text.js";
 import { renderTable } from "../../../packages/terminal-core/src/table.js";
-import { formatTimeAgo } from "../../infra/format-time/format-relative.ts";
+import { formatTimeAgo } from "../../infra/format-time/format-relative";
 import type { PendingRequest } from "./types.js";
 
 /** Render pending pairing requests with sanitized labels and relative request age. */

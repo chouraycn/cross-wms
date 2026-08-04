@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared reply test helpers for mocked typing and delivery callbacks.
 export function createMockTypingController() {
   return {

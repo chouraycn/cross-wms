@@ -2,7 +2,7 @@
  * Parses exec approval tool output and formats denial messages for users.
  *
  * 降级说明：
- *  - `@openclaw/normalization-core/string-coerce` 的 `normalizeLowercaseStringOrEmpty`
+ *  - `@cdf-know/normalization-core/string-coerce` 的 `normalizeLowercaseStringOrEmpty`
  *    改从 `../infra/string-coerce.js` 导入。
  */
 import { normalizeLowercaseStringOrEmpty } from "../infra/string-coerce.js";

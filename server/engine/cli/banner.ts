@@ -12,6 +12,12 @@
 import { hasRootVersionAlias } from "./argv.js";
 import { parseTaglineMode, readCliBannerTaglineMode } from "./banner-config-lite.js";
 import { pickTagline, type TaglineMode, type TaglineOptions } from "./tagline.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== 内联 theme stub（替代未移植的 terminal-core/theme.js）=====
 const theme = {

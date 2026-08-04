@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# P0-⑪: pre-push hook — run core security tests before pushing
+# Keeps push under 30 seconds while catching regressions
+
+echo "🧪 Running core tests before push..."
+
+# Run only the most critical test suites (security + crypto + migration)
+npx vitest run \
+  server/engine/secretsStore.test.ts \
+  server/engine/crypto.test.ts \
+  server/storage/migration.test.ts \
+  --reporter=dot \
+  --testTimeout=10000 \
+  2>&1 | tail -10
+
+EXIT_CODE=${PIPESTATUS[0]:-0}
+
+if [ "$EXIT_CODE" -ne 0 ]; then
+  echo "❌ Core tests failed. Use --no-verify to skip (not recommended)."
+  exit 1
+fi
+
+echo "✅ Core tests passed, pushing..."

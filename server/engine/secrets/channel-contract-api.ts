@@ -1,7 +1,7 @@
 /** Loads channel secret contract APIs from bundled and external plugin artifacts. */
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { openRootFileSync } from "../infra/boundary-file-read.js";
@@ -17,6 +17,10 @@ import type { PluginOrigin } from "../plugins/plugin-origin.types.js";
 import { loadBundledPluginPublicArtifactModuleSync } from "../plugins/public-surface-loader.js";
 import type { ResolverContext, SecretDefaults } from "./runtime-shared.js";
 import type { SecretTargetRegistryEntry } from "./target-registry-types.js";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 type UnsupportedSecretRefConfigCandidate = {
   path: string;

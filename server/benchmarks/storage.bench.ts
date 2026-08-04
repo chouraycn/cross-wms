@@ -5,7 +5,7 @@
  * 使用小数据量快速运行，确保框架可用。
  */
 import Database from 'better-sqlite3';
-import { BenchmarkRunner } from '@cdf-know/benchmark';
+import { BenchmarkRunner, type BenchmarkResult } from '@cdf-know/benchmark';
 
 const runner = new BenchmarkRunner({ defaultIterations: 10, defaultWarmup: 2 });
 
@@ -162,7 +162,7 @@ async function vectorSimilaritySearch() {
 export async function runStorageBenchmarks() {
   console.log('\n=== 存储基准测试 ===\n');
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   results.push(await sqliteBatchInsert());
   results.push(await sqliteQuery());

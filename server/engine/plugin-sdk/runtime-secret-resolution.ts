@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @deprecated Compatibility subpath. Import command secret helpers from
  * `openclaw/plugin-sdk/runtime` and lower-level secret helpers from

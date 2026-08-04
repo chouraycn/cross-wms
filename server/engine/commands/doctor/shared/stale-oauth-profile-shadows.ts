@@ -1,7 +1,7 @@
 // Doctor cleanup for per-agent OAuth profiles shadowing fresher main-agent credentials.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 import {
   resolveAgentDir,
   resolveDefaultAgentDir,

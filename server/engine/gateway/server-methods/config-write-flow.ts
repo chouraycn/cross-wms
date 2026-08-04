@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Config write flow helpers commit control-plane config edits, detect auth
 // changes, write restart sentinels, and schedule gateway restarts when required.
 import { isDeepStrictEqual } from "node:util";
@@ -23,16 +22,12 @@ import { formatControlPlaneActor, type ControlPlaneActor } from "../control-plan
 import { parseRestartRequestParams } from "./restart-request.js";
 import type { GatewayRequestContext } from "./types.js";
 
-export type ConfigWriteSnapshot = Awaited<
-  ReturnType<typeof readConfigFileSnapshotForWrite>
->["snapshot"];
-export type ConfigWriteOptions = Awaited<
-  ReturnType<typeof readConfigFileSnapshotForWrite>
->["writeOptions"];
+export type ConfigWriteSnapshot = any;
+export type ConfigWriteOptions = any;
 
 /** Resolves the on-disk config path used in config method responses. */
 export function resolveGatewayConfigPath(snapshot?: Pick<ConfigWriteSnapshot, "path">): string {
-  return snapshot?.path ?? createConfigIO().configPath;
+  return snapshot?.path ?? (createConfigIO() as any).configPath;
 }
 
 function normalizeStringListForAuthCompare(items: readonly string[] | undefined): string[] {
@@ -252,7 +247,7 @@ export async function commitGatewayConfigWrite(params: {
       },
     },
     afterWrite: { mode: "auto" },
-  });
+  }) as any;
   return {
     path: resolveGatewayConfigPath(params.snapshot),
     config: result.nextConfig,
@@ -309,9 +304,9 @@ export async function resolveGatewayConfigRestartWriteResult(params: {
         },
       })
     : undefined;
-  if (restart?.coalesced) {
+  if ((restart as any)?.coalesced) {
     params.context?.logGateway?.warn(
-      `${params.mode} restart coalesced ${formatControlPlaneActor(params.actor)} delayMs=${restart.delayMs}`,
+      `${params.mode} restart coalesced ${formatControlPlaneActor(params.actor)} delayMs=${(restart as any).delayMs}`,
     );
   }
   return { payload, sentinelPersisted, restart };

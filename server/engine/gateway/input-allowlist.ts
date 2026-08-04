@@ -1,7 +1,7 @@
 // Gateway input allowlist 辅助规范化可选的主机名 allowlist，
 // 同时保持 "未设置" 与 "拒绝全部" 的语义区别。
 // 移植自 openclaw/src/gateway/input-allowlist.ts。
-// 依赖调整：@openclaw/normalization-core/string-normalization → ../infra/string-normalization.js。
+// 依赖调整：@cdf-know/normalization-core/string-normalization → ../infra/string-normalization.js。
 import { normalizeTrimmedStringList } from "../infra/string-normalization.js";
 
 /**

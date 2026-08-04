@@ -1,3 +1,3 @@
 // Public package facade for plugin runtime helpers.
 
-export * from "../../../src/plugin-sdk/plugin-runtime.js";
+export * from "../../../engine/plugin-sdk/plugin-runtime.js";

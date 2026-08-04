@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { logger } from "../../logger.js";
 import { getSessionBindingService } from "../../engine/bindings/session-binding-service.js";
 import { listBindings } from "../../engine/routing/bindings.js";
-import { pluginRuntimeRegistry } from "../../engine/plugins/registry.js";
+import { PluginRegistry } from "../../engine/plugins/registry.js";
 
 export type StatusOptions = {
   json?: boolean;
@@ -85,7 +85,7 @@ function getMemoryUsage(): { used: number; total: number } {
 }
 
 function getPluginsStatus(): PluginStatus[] {
-  const entries = pluginRuntimeRegistry.list();
+  const entries = PluginRegistry.list();
   return entries.map((entry) => ({
     id: entry.pluginId,
     status: entry.status === "enabled" ? "loaded" : entry.status === "error" ? "error" : "inactive",

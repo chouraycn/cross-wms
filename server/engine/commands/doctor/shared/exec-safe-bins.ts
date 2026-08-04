@@ -1,5 +1,5 @@
 // Doctor checks and repairs for exec safeBins profiles and trusted binary directories.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { resolveCommandResolutionFromArgv } from "@openclaw-src/infra/exec-command-resolution.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway TLS runtime loads configured certificates or generates a local
 // self-signed pair, returning server-ready options plus client fingerprint.
 import { execFile } from "node:child_process";
@@ -7,11 +6,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import tls from "node:tls";
 import { promisify } from "node:util";
-import type { GatewayTlsConfig } from "../../config/types.gateway.ts";
-import { CONFIG_DIR, ensureDir, resolveUserPath, shortenHomeInString } from "../../utils.ts";
-import { pathExists } from "../fs-safe.ts";
-import { resolveSystemBin } from "../resolve-system-bin.ts";
-import { normalizeFingerprint } from "./fingerprint.ts";
+import type { GatewayTlsConfig } from "../../config/types.gateway";
+import { CONFIG_DIR, ensureDir, resolveUserPath, shortenHomeInString } from "../../utils";
+import { pathExists } from "../fs-safe";
+import { resolveSystemBin } from "../resolve-system-bin";
+import { normalizeFingerprint } from "./fingerprint";
 
 const execFileAsync = promisify(execFile);
 

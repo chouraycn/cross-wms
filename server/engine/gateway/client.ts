@@ -1,95 +1,243 @@
-import { logger } from '../../logger.js';
+// OpenClaw Gateway client facade.
+// Wraps the shared gateway-client package with OpenClaw host dependencies.
+import {
+  GatewayClient as BaseGatewayClient,
+  GATEWAY_CLOSE_CODE_HINTS as BASE_GATEWAY_CLOSE_CODE_HINTS,
+  GatewayClientRequestError as BaseGatewayClientRequestError,
+  describeGatewayCloseCode as baseDescribeGatewayCloseCode,
+  isGatewayConnectAssemblyError as baseIsGatewayConnectAssemblyError,
+  resolveGatewayClientConnectChallengeTimeoutMs as baseResolveGatewayClientConnectChallengeTimeoutMs,
+} from "../../packages/gateway-client/src/index.js";
+import type {
+  GatewayClientMode,
+  GatewayClientName,
+} from "../../packages/gateway-protocol/src/client-info.js";
+import type { EventFrame, HelloOk } from "../../packages/gateway-protocol/src/index.js";
+import {
+  clearDeviceAuthToken,
+  loadDeviceAuthToken,
+  storeDeviceAuthToken,
+} from "../infra/device-auth-store.js";
+import type { DeviceIdentity } from "../infra/device-identity.js";
+import {
+  loadOrCreateDeviceIdentity,
+  publicKeyRawBase64UrlFromPem,
+  signDevicePayload,
+} from "../infra/device-identity.js";
+import {
+  ensureInheritedManagedProxyRoutingActive,
+  registerManagedProxyGatewayLoopbackBypass,
+} from "../infra/net/proxy/proxy-lifecycle.js";
+import { normalizeFingerprint } from "../infra/tls/fingerprint.js";
+import { logDebug, logError } from "../logger.js";
+import { redactToolPayloadText } from "../logging/redact.js";
+import { VERSION } from "../version.js";
 
-/** Check if an error is a gateway connect assembly error. */
-export function isGatewayConnectAssemblyError(err: unknown): boolean {
-  if (err instanceof Error) {
-    return err.message.includes('gateway connect') || err.message.includes('assembly');
-  }
-  return false;
-}
+export type DeviceAuthTokenRecord = {
+  token?: string;
+  scopes?: string[];
+};
+
+export type GatewayClientHostDeps = {
+  loadOrCreateDeviceIdentity?: () => DeviceIdentity | undefined;
+  signDevicePayload?: (privateKeyPem: string, payload: string) => string;
+  publicKeyRawBase64UrlFromPem?: (publicKeyPem: string) => string;
+  loadDeviceAuthToken?: (params: {
+    deviceId: string;
+    role: string;
+    env?: NodeJS.ProcessEnv;
+  }) => DeviceAuthTokenRecord | null;
+  storeDeviceAuthToken?: (params: {
+    deviceId: string;
+    role: string;
+    token: string;
+    scopes: string[];
+    env?: NodeJS.ProcessEnv;
+  }) => void;
+  clearDeviceAuthToken?: (params: {
+    deviceId: string;
+    role: string;
+    env?: NodeJS.ProcessEnv;
+  }) => void;
+  beforeConnect?: () => void;
+  registerGatewayLoopbackBypass?: (url: string) => (() => void) | undefined;
+  logDebug?: (message: string) => void;
+  logError?: (message: string) => void;
+  redactForLog?: (message: string) => string;
+  normalizeTlsFingerprint?: (fingerprint: string | undefined) => string;
+};
 
 export type GatewayClientRequestOptions = {
   expectFinal?: boolean;
-  timeoutMs?: number;
+  timeoutMs?: number | null;
   signal?: AbortSignal;
-  onAccepted?: () => void;
+  onAccepted?: (payload: unknown) => void;
+};
+
+export type GatewayReconnectPausedInfo = {
+  code: number;
+  reason: string;
+  detailCode: string | null;
 };
 
 export type GatewayClientCloseInfo = {
-  phase: 'pre-hello' | 'post-hello';
+  phase: "pre-hello" | "post-hello";
   socketOpened: boolean;
   transportValidated: boolean;
   transientPreHelloCleanClose: boolean;
 };
 
+type GatewayClientErrorShape = {
+  message: string;
+  code?: string;
+  details?: unknown;
+  retryable?: boolean;
+  retryAfterMs?: number;
+};
+
+export const GATEWAY_CLOSE_CODE_HINTS: Readonly<Record<number, string>> =
+  BASE_GATEWAY_CLOSE_CODE_HINTS;
+
+export const GatewayClientRequestError = BaseGatewayClientRequestError as unknown as {
+  new (error: GatewayClientErrorShape): Error & {
+    readonly gatewayCode: string;
+    readonly details?: unknown;
+    readonly retryable: boolean;
+    readonly retryAfterMs?: number;
+  };
+};
+
+export type GatewayClientRequestError = InstanceType<typeof GatewayClientRequestError>;
+
+export function describeGatewayCloseCode(code: number): string | undefined {
+  return baseDescribeGatewayCloseCode(code);
+}
+
+export function isGatewayConnectAssemblyError(value: unknown): value is Error {
+  return baseIsGatewayConnectAssemblyError(value);
+}
+
+export type GatewayClientOptions = {
+  url?: string;
+  connectChallengeTimeoutMs?: number;
+  /** @deprecated Use connectChallengeTimeoutMs. */
+  connectDelayMs?: number;
+  preauthHandshakeTimeoutMs?: number;
+  tickWatchMinIntervalMs?: number;
+  tickWatchTimeoutMs?: number;
+  requestTimeoutMs?: number;
+  token?: string;
+  bootstrapToken?: string;
+  deviceToken?: string;
+  password?: string;
+  approvalRuntimeToken?: string;
+  instanceId?: string;
+  clientName?: GatewayClientName;
+  clientDisplayName?: string;
+  clientVersion?: string;
+  platform?: string;
+  deviceFamily?: string;
+  mode?: GatewayClientMode;
+  role?: string;
+  scopes?: string[];
+  caps?: string[];
+  commands?: string[];
+  permissions?: Record<string, boolean>;
+  pathEnv?: string;
+  env?: NodeJS.ProcessEnv;
+  deviceIdentity?: DeviceIdentity | null;
+  hostDeps?: GatewayClientHostDeps;
+  minProtocol?: number;
+  maxProtocol?: number;
+  tlsFingerprint?: string;
+  onEvent?: (evt: EventFrame) => void;
+  onHelloOk?: (hello: HelloOk) => void;
+  onConnectError?: (err: Error) => void;
+  onReconnectPaused?: (info: GatewayReconnectPausedInfo) => void;
+  onClose?: (code: number, reason: string, info?: GatewayClientCloseInfo) => void;
+  onGap?: (info: { expected: number; received: number }) => void;
+};
+
+export type GatewayClientConnectionMetadata = {
+  clientName?: GatewayClientName;
+  hasDeviceIdentity: boolean;
+  mode?: GatewayClientMode;
+  preauthHandshakeTimeoutMs?: number;
+};
+
+function createOpenClawGatewayClientHostDeps(
+  overrides?: GatewayClientHostDeps,
+): GatewayClientHostDeps {
+  return {
+    // This wrapper is the only place the package reaches into OpenClaw runtime
+    // state. Keep device identity, token storage, proxy, and redaction here.
+    loadOrCreateDeviceIdentity,
+    signDevicePayload,
+    publicKeyRawBase64UrlFromPem,
+    loadDeviceAuthToken,
+    storeDeviceAuthToken,
+    clearDeviceAuthToken,
+    beforeConnect: ensureInheritedManagedProxyRoutingActive,
+    registerGatewayLoopbackBypass: registerManagedProxyGatewayLoopbackBypass,
+    normalizeTlsFingerprint: (fingerprint) => normalizeFingerprint(fingerprint ?? ""),
+    logDebug,
+    logError,
+    redactForLog: redactToolPayloadText,
+    ...overrides,
+  };
+}
+
+export function resolveGatewayClientConnectChallengeTimeoutMs(
+  opts: Pick<
+    GatewayClientOptions,
+    "connectChallengeTimeoutMs" | "connectDelayMs" | "env" | "preauthHandshakeTimeoutMs"
+  >,
+): number {
+  return baseResolveGatewayClientConnectChallengeTimeoutMs(opts);
+}
+
 export class GatewayClient {
-  private readonly url: string;
-  private readonly token?: string;
-  private connected = false;
+  #client: BaseGatewayClient;
 
-  constructor(options: { url: string; token?: string; clientVersion?: string }) {
-    this.url = options.url;
-    this.token = options.token;
+  constructor(opts: GatewayClientOptions) {
+    // Inject host deps here so the reusable package stays decoupled from
+    // OpenClaw device identity, token storage, proxy routing, and logging.
+    this.#client = new BaseGatewayClient({
+      ...opts,
+      clientVersion: opts.clientVersion ?? VERSION,
+      hostDeps: createOpenClawGatewayClientHostDeps(opts.hostDeps),
+    });
   }
 
-  async start(): Promise<void> {
-    logger.info(`[GatewayClient] Connecting to ${this.url}`);
-    this.connected = true;
+  start(): void {
+    this.#client.start();
   }
 
-  async stop(): Promise<void> {
-    this.connected = false;
-    logger.info('[GatewayClient] Stopped');
+  stop(): void {
+    this.#client.stop();
   }
 
-  async stopAndWait(timeoutMs = 1_000): Promise<void> {
-    await this.stop();
+  stopAndWait(opts?: { timeoutMs?: number }): Promise<void> {
+    return this.#client.stopAndWait(opts);
   }
 
-  isConnected(): boolean {
-    return this.connected;
-  }
-
-  async request<T = unknown>(
+  request<T = Record<string, unknown>>(
     method: string,
-    params?: Record<string, unknown>,
-    options?: GatewayClientRequestOptions,
+    params?: unknown,
+    opts?: GatewayClientRequestOptions,
   ): Promise<T> {
-    if (!this.connected) {
-      throw new Error('GatewayClient not connected');
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), options?.timeoutMs ?? 30_000);
-    if (options?.signal) {
-      options.signal.addEventListener('abort', () => controller.abort(), { once: true });
-    }
-
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
-
-      const response = await fetch(this.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ method, params }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const json = await response.json() as { result?: T; error?: { message: string } };
-      if (json.error) throw new Error(json.error.message);
-      options?.onAccepted?.();
-      return json.result as T;
-    } finally {
-      clearTimeout(timeout);
-    }
+    return this.#client.request<T>(method, params, opts);
   }
 
-  getConnectionMetadata(): { url: string; connected: boolean } {
-    return { url: this.url, connected: this.connected };
+  getConnectionMetadata(): GatewayClientConnectionMetadata {
+    const opts = (this.#client as unknown as { opts: GatewayClientOptions }).opts;
+    return {
+      clientName: opts.clientName,
+      hasDeviceIdentity: Boolean(opts.deviceIdentity),
+      mode: opts.mode,
+      preauthHandshakeTimeoutMs: opts.preauthHandshakeTimeoutMs,
+    };
   }
 }
+
+export type { DeviceIdentity };

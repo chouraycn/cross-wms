@@ -7,7 +7,7 @@
  * self-contained. The registry accessors are adapted to the cross-wms
  * `commands-registry.js` API (which uses `aliases` rather than `textAliases`).
  */
-import { listCommands, type ChatCommandDefinition } from './commands-registry.js';
+import { listChatCommands, type ChatCommandDefinition } from './commands-registry.js';
 
 /** Options for normalizing slash-command text bodies. */
 export type CommandNormalizeOptions = {
@@ -231,7 +231,7 @@ export function listDetectionCommands(cfg?: CommandDetectionConfig): ChatCommand
   // cross-wms registry is process-global; config scoping is not yet supported,
   // so both branches return the same global list to match the existing API.
   void cfg;
-  return listCommands();
+  return listChatCommands();
 }
 
 /** Returns true when text starts with a configured control command alias. */

@@ -3,7 +3,7 @@
  *
  * 测试 Map vs Object、Set vs Array、数组排序等操作的性能。
  */
-import { BenchmarkRunner } from '@cdf-know/benchmark';
+import { BenchmarkRunner, type BenchmarkResult } from '@cdf-know/benchmark';
 
 const runner = new BenchmarkRunner({ defaultIterations: 10, defaultWarmup: 5 });
 
@@ -25,7 +25,7 @@ async function mapVsObjectLookup() {
 
   const lookupKeys = keys.slice(0, 1000);
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const mapResult = await runner.run(
     'Map 查找 1000 次',
@@ -66,7 +66,7 @@ async function setVsArrayDedup() {
     arr.push(i % 1000);
   }
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const setResult = await runner.run(
     'Set 去重 (10000 条)',
@@ -111,7 +111,7 @@ async function arraySorting() {
     arr.push(Math.random() * 10000);
   }
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const numberSortResult = await runner.run(
     '数组排序 10000 条 (数字)',

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Detects directive-only turns that should skip the model. */
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import type { MsgContext } from "../templating.js";

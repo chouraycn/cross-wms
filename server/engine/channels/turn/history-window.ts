@@ -1,122 +1,89 @@
-import { logger } from "../../../logger.js";
-import type { TurnContext, TurnWindow } from "./types.js";
-import { getConversationTurns } from "./kernel.js";
+// Windowed channel history facade over caller-owned pending-history maps.
+// 移植自 openclaw/src/channels/turn/history-window.ts
+import {
+  buildInboundHistoryFromMap,
+  buildPendingHistoryContextFromMap,
+  clearHistoryEntriesIfEnabled,
+  recordPendingHistoryEntryIfEnabled,
+  recordPendingHistoryEntryWithMedia,
+} from "../../auto-reply/reply/history.js";
+import type { HistoryEntry, HistoryMediaEntry } from "../../auto-reply/reply/history.types.js";
 
-export interface HistoryWindowOptions {
-  maxTurns?: number;
-  maxAgeMs?: number;
-  includeFailed?: boolean;
-  includeCancelled?: boolean;
-}
+type MaybePromise<T> = T | Promise<T>;
 
-const defaultOptions: Required<HistoryWindowOptions> = {
-  maxTurns: 20,
-  maxAgeMs: 60 * 60 * 1000,
-  includeFailed: false,
-  includeCancelled: false,
+/** Windowed channel history facade used by turn adapters to record and render recent context. */
+export type ChannelHistoryWindow<T extends HistoryEntry = HistoryEntry> = {
+  record: (params: { historyKey: string; entry?: T | null; limit: number }) => T[];
+  recordWithMedia: (params: {
+    historyKey: string;
+    entry?: T | null;
+    limit: number;
+    media?:
+      | readonly HistoryMediaEntry[]
+      | null
+      | (() => MaybePromise<readonly HistoryMediaEntry[] | null | undefined>);
+    mediaLimit?: number;
+    messageId?: string;
+    shouldRecord?: () => boolean;
+  }) => Promise<T[]>;
+  buildPendingContext: (params: {
+    historyKey: string;
+    limit: number;
+    currentMessage: string;
+    formatEntry: (entry: T) => string;
+    lineBreak?: string;
+  }) => string;
+  buildInboundHistory: (params: {
+    historyKey: string;
+    limit: number;
+  }) => HistoryEntry[] | undefined;
+  clear: (params: { historyKey: string; limit: number }) => void;
 };
 
-export function getTurnHistoryWindow(
-  conversationId: string,
-  options: HistoryWindowOptions = {}
-): TurnWindow {
-  const opts = { ...defaultOptions, ...options };
-  const allTurns = getConversationTurns(conversationId);
-  const now = Date.now();
-
-  let filtered = allTurns.filter((turn) => {
-    if (!opts.includeFailed && turn.status === "failed") return false;
-    if (!opts.includeCancelled && turn.status === "cancelled") return false;
-    if (now - turn.startedAt > opts.maxAgeMs) return false;
-    return true;
-  });
-
-  if (opts.maxTurns > 0 && filtered.length > opts.maxTurns) {
-    filtered = filtered.slice(-opts.maxTurns);
-  }
-
-  const window: TurnWindow = {
-    turns: filtered,
-    windowStart: filtered.length > 0 ? filtered[0].startedAt : now,
-    windowEnd: filtered.length > 0 ? filtered[filtered.length - 1].updatedAt : now,
-    count: filtered.length,
+/** Creates a bounded channel history window over a caller-owned history map. */
+export function createChannelHistoryWindow<T extends HistoryEntry = HistoryEntry>(params: {
+  historyMap: Map<string, T[]>;
+}): ChannelHistoryWindow<T> {
+  const { historyMap } = params;
+  return {
+    record: (recordParams) =>
+      recordPendingHistoryEntryIfEnabled({
+        historyMap,
+        historyKey: recordParams.historyKey,
+        limit: recordParams.limit,
+        entry: recordParams.entry,
+      }),
+    recordWithMedia: (recordParams) =>
+      recordPendingHistoryEntryWithMedia({
+        historyMap,
+        historyKey: recordParams.historyKey,
+        limit: recordParams.limit,
+        entry: recordParams.entry,
+        media: recordParams.media,
+        mediaLimit: recordParams.mediaLimit,
+        messageId: recordParams.messageId,
+        shouldRecord: recordParams.shouldRecord,
+      }),
+    buildPendingContext: (contextParams) =>
+      buildPendingHistoryContextFromMap({
+        historyMap,
+        historyKey: contextParams.historyKey,
+        limit: contextParams.limit,
+        currentMessage: contextParams.currentMessage,
+        formatEntry: contextParams.formatEntry as (entry: HistoryEntry) => string,
+        lineBreak: contextParams.lineBreak,
+      }),
+    buildInboundHistory: (historyParams) =>
+      buildInboundHistoryFromMap({
+        historyMap,
+        historyKey: historyParams.historyKey,
+        limit: historyParams.limit,
+      }),
+    clear: (clearParams) =>
+      clearHistoryEntriesIfEnabled({
+        historyMap,
+        historyKey: clearParams.historyKey,
+        limit: clearParams.limit,
+      }),
   };
-
-  logger.debug(`[Turn:HistoryWindow] Window for ${conversationId}: ${filtered.length} turns`);
-
-  return window;
-}
-
-export function getRecentTurns(
-  conversationId: string,
-  count: number
-): TurnContext[] {
-  const window = getTurnHistoryWindow(conversationId, { maxTurns: count });
-  return window.turns;
-}
-
-export function getTurnsInTimeRange(
-  conversationId: string,
-  startTime: number,
-  endTime: number
-): TurnContext[] {
-  const allTurns = getConversationTurns(conversationId);
-  return allTurns.filter(
-    (turn) => turn.startedAt >= startTime && turn.startedAt <= endTime
-  );
-}
-
-export function getTurnCountInWindow(
-  conversationId: string,
-  windowMs: number
-): number {
-  const now = Date.now();
-  const allTurns = getConversationTurns(conversationId);
-  return allTurns.filter((turn) => now - turn.startedAt <= windowMs).length;
-}
-
-export function getLastUserTurn(conversationId: string): TurnContext | undefined {
-  const allTurns = getConversationTurns(conversationId);
-  for (let i = allTurns.length - 1; i >= 0; i--) {
-    if (allTurns[i].source === "user") {
-      return allTurns[i];
-    }
-  }
-  return undefined;
-}
-
-export function getLastBotTurn(conversationId: string): TurnContext | undefined {
-  const allTurns = getConversationTurns(conversationId);
-  for (let i = allTurns.length - 1; i >= 0; i--) {
-    if (allTurns[i].source === "bot") {
-      return allTurns[i];
-    }
-  }
-  return undefined;
-}
-
-export function formatHistoryForPrompt(
-  window: TurnWindow,
-  maxLength?: number
-): string {
-  const lines: string[] = [];
-  let totalLength = 0;
-
-  for (const turn of window.turns) {
-    if (turn.inputMessage) {
-      const userLine = `User: ${turn.inputMessage.content}`;
-      if (maxLength && totalLength + userLine.length > maxLength) break;
-      lines.push(userLine);
-      totalLength += userLine.length;
-    }
-
-    for (const output of turn.outputMessages) {
-      const botLine = `Assistant: ${output.content}`;
-      if (maxLength && totalLength + botLine.length > maxLength) break;
-      lines.push(botLine);
-      totalLength += botLine.length;
-    }
-  }
-
-  return lines.join("\n");
 }

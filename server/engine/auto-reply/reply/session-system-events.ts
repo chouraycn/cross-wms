@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Records system-level session events for restarts, forks, and resets.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveUserTimezone } from '@openclaw-src/agents/date-time.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { buildChannelSummary } from '@openclaw-src/infra/channel-summary.js';
@@ -11,7 +10,7 @@ import {
   formatUtcTimestamp,
   formatZonedTimestamp,
   resolveTimezone,
-} from '@openclaw-src/infra/format-time/format-datetime.ts';
+} from '@openclaw-src/infra/format-time/format-datetime.js';
 import { isExecCompletionEvent } from '@openclaw-src/infra/heartbeat-events-filter.js';
 import {
   consumeSelectedSystemEventEntries,

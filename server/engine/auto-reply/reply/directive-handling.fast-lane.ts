@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Applies fast-lane reply directives before normal delivery processing.
 import type { ReplyPayload } from "../types.js";
 import { isDirectiveOnly } from "./directive-handling.directive-only.js";

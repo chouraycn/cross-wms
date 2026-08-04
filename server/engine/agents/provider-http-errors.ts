@@ -8,18 +8,21 @@
  * Cross-wms simplified: removed deep package imports, inlined utility functions.
  */
 
+import { asBoolean as _asBoolean } from "../utils/boolean.js";
+import { asFiniteNumber as _asFiniteNumber } from "../infra/number-coercion.js";
+import { requireInRange as _requireInRange } from "../tts/tts-provider-helpers.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+
+// Re-export shared coercion helpers so plugin-sdk speech-core can import
+// them from one location (provider-http-errors.ts).
+export const asBoolean = _asBoolean;
+export const asFiniteNumber = _asFiniteNumber;
+export const requireInRange = _requireInRange;
+export const trimToUndefined = normalizeOptionalString;
+
 const ERROR_BODY_METADATA_LIMIT = 500;
 const PROVIDER_BINARY_RESPONSE_MAX_BYTES = 16 * 1024 * 1024;
 const PROVIDER_JSON_RESPONSE_MAX_BYTES = 16 * 1024 * 1024;
-
-/** Normalize optional string: trim and return undefined if empty. */
-function trimToUndefined(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed || undefined;
-}
 
 /** Returns a plain object view for provider JSON payloads when one exists. */
 export function asObject(value: unknown): Record<string, unknown> | undefined {

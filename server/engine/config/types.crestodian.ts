@@ -1,4 +1,21 @@
-// 移植自 openclaw/src/config/types.crestodian.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+/**
+ * Crestodian config types for local control-plane and remote rescue behavior.
+ * Rescue config is deliberately narrow because it can approve state-changing maintainer actions.
+ */
+/** Remote rescue gate and approval retention policy. */
+type CrestodianRescueConfig = {
+  /**
+   * Remote message rescue gate.
+   * "auto" enables only for YOLO host posture with sandboxing off.
+   */
+  enabled?: "auto" | boolean;
+  /** Restrict rescue to owner DMs. Default: true. */
+  ownerDmOnly?: boolean;
+  /** Pending write approval TTL in minutes. Default: 15. */
+  pendingTtlMinutes?: number;
+};
 
-export type CrestodianConfig = unknown;
+/** Top-level Crestodian config block. */
+export type CrestodianConfig = {
+  rescue?: CrestodianRescueConfig;
+};

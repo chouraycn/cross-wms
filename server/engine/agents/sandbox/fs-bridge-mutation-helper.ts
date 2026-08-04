@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Pinned Python mutation helper for sandbox filesystem writes.
  *
@@ -481,7 +480,7 @@ export function buildPinnedRemovePlan(params: {
         target: params.check.target,
         options: {
           ...params.check.options,
-          aliasPolicy: PATH_ALIAS_POLICIES.unlinkTarget,
+          aliasPolicy: (PATH_ALIAS_POLICIES as any).unlinkTarget,
         },
       },
     ],
@@ -508,7 +507,7 @@ export function buildPinnedRenamePlan(params: {
         target: params.fromCheck.target,
         options: {
           ...params.fromCheck.options,
-          aliasPolicy: PATH_ALIAS_POLICIES.unlinkTarget,
+          aliasPolicy: (PATH_ALIAS_POLICIES as any).unlinkTarget,
         },
       },
       params.toCheck,

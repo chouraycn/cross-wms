@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Small shared normalization helpers for embedded-agent runner settings.
  */

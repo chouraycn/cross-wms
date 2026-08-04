@@ -79,6 +79,10 @@ export type ChatCommandDefinition = {
   category?: CommandCategory;
   /** Progressive disclosure tier. Defaults to "standard" when omitted. */
   tier?: CommandTier;
+  /** Convenience alias for key/nativeName used by legacy callers. */
+  name?: string;
+  /** Convenience alias for nativeAliases/textAliases used by legacy callers. */
+  aliases?: string[];
 };
 
 /** Provider-facing native command registration shape. */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Ensures runtime plugins required by selected native harnesses are installed.
  */

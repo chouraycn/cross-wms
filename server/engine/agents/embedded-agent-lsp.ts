@@ -1,11 +1,27 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-lsp.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Loads bundle-provided LSP server config for embedded-agent sessions.
  */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { BundleLspServerConfig } from "../plugins/bundle-lsp.js";
+import { loadEnabledBundleLspConfig } from "../plugins/bundle-lsp.js";
 
-export function loadEmbeddedAgentLspConfig(..._args: unknown[]): unknown {
-  return undefined;
+type EmbeddedAgentLspConfig = {
+  lspServers: Record<string, BundleLspServerConfig>;
+  diagnostics: Array<{ pluginId: string; message: string }>;
+};
+
+/** Resolve enabled embedded-agent LSP servers and diagnostics. */
+export function loadEmbeddedAgentLspConfig(params: {
+  workspaceDir: string;
+  cfg?: OpenClawConfig;
+}): EmbeddedAgentLspConfig {
+  const bundleLsp = loadEnabledBundleLspConfig({
+    workspaceDir: params.workspaceDir,
+    cfg: params.cfg,
+  });
+  // User-configured LSP servers could override bundle defaults here in the future.
+  return {
+    lspServers: { ...bundleLsp.config.lspServers },
+    diagnostics: bundleLsp.diagnostics,
+  };
 }

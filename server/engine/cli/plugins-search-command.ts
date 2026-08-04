@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/plugins-search-command.ts。
 //
 // 降级策略：
-//  - 原模块依赖 @openclaw/normalization-core/string-coerce 的
+//  - 原模块依赖 @cdf-know/normalization-core/string-coerce 的
 //    `normalizeOptionalString`。改用 cross-wms 的 `../infra/string-coerce.js`。
 //  - 原模块依赖 `../../packages/terminal-core/src/theme.js` 的 `theme`。
 //    cross-wms 未移植 terminal-core 包；这里内联一个 theme stub。

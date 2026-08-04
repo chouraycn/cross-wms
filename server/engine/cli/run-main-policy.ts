@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/run-main-policy.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce`、
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce`、
 //    `../config/types.openclaw.js`、`../plugins/manifest-command-aliases.js`、
 //    `./argv-invocation.js`、`./argv.js`、`./command-path-policy.js`、
 //    `./command-registration-policy.js`、`./precomputed-help.js`、

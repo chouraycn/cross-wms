@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Status helper tests cover plugin status normalization and user-facing summaries.
 import { describe, expect, it } from "vitest";
 import {

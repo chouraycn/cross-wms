@@ -306,14 +306,23 @@ class OpenShellSandboxBackendImpl {
   private ensurePromise: Promise<void> | null = null;
   private remoteSeedPending = false;
 
+  private readonly params: {
+    createParams: CreateSandboxBackendParams;
+    execContext: OpenShellExecContext;
+    remoteWorkspaceDir: string;
+    remoteAgentWorkspaceDir: string;
+  };
+
   constructor(
-    private readonly params: {
+    params: {
       createParams: CreateSandboxBackendParams;
       execContext: OpenShellExecContext;
       remoteWorkspaceDir: string;
       remoteAgentWorkspaceDir: string;
     },
-  ) {}
+  ) {
+    this.params = params;
+  }
 
   asHandle(): OpenShellSandboxBackend {
     return {

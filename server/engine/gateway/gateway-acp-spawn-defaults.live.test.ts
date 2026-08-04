@@ -16,7 +16,7 @@ import {
   clearRuntimeConfigSnapshot,
   getRuntimeConfig,
 } from "../config/config.js";
-import { resolveStorePath } from "../config/sessions/paths.js";
+import { resolveStorePath } from "@openclaw-src/agents/subagent-announce-delivery.runtime.js";
 import { loadSessionStore } from "../config/sessions/store.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";

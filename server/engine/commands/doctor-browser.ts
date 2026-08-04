@@ -2,7 +2,7 @@
 /** Facade-backed doctor checks and cleanup for bundled browser plugin state. */
 import fs from "node:fs";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { loadBundledPluginPublicSurfaceModuleSync } from "@openclaw-src/plugin-sdk/facade-loader.js";
 import { resolveConfigDir } from "@openclaw-src/utils.js";

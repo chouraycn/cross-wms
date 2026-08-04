@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway HTTP listener tests cover retry behavior for lock contention and listen failures.
 import { EventEmitter } from "node:events";
 import type { Server as HttpServer } from "node:http";

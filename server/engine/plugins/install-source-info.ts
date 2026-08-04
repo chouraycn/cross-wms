@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/install-source-info.ts。
 //
 // 降级策略：
-//  - 原文件依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原文件依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeOptionalString`。改用 cross-wms 的 `../infra/string-coerce.js`，
 //    该模块已提供同名导出，行为一致。
 //  - 原文件依赖 `../infra/clawhub-spec.js` 的 `parseClawHubPluginSpec`。

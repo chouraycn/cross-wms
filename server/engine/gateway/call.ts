@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Gateway RPC call helper.
 // Builds a GatewayClient, resolves auth/scopes, and performs one request.
 import { randomUUID } from "node:crypto";
 import { isLoopbackIpAddress } from "@openclaw/net-policy/ip";
 import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
@@ -328,7 +327,7 @@ export function isGatewayExplicitAuthRequiredError(
 const defaultCreateGatewayClient = (opts: GatewayClientOptions) => new GatewayClient(opts);
 type GatewayRuntimeConfigLoader = () => OpenClawConfig | Promise<OpenClawConfig>;
 const defaultGetRuntimeConfig = async (): Promise<OpenClawConfig> =>
-  (await import("../config/io.js")).getRuntimeConfig();
+  (await import("../config/io.js") as any).getRuntimeConfig();
 const defaultGatewayCallDeps: {
   createGatewayClient: typeof defaultCreateGatewayClient;
   getRuntimeConfig: GatewayRuntimeConfigLoader;
@@ -394,7 +393,7 @@ function loadGatewayConfigForConnectionDetails(): OpenClawConfig {
     }
     return config as OpenClawConfig;
   }
-  return readGatewayDispatchConfig();
+  return readGatewayDispatchConfig() as any;
 }
 
 function resolveGatewayStateDir(env: NodeJS.ProcessEnv): string {
@@ -664,7 +663,7 @@ function resolveGatewayCallTimeout(
     Boolean(process.env.VITEST && process.env.OPENCLAW_TEST_HANDSHAKE_TIMEOUT_MS);
   const resolvedHandshakeTimeoutMs =
     hasConfiguredHandshakeTimeout || hasEnvHandshakeTimeout
-      ? resolvePreauthHandshakeTimeoutMs({ configuredTimeoutMs: configuredHandshakeTimeoutMs })
+      ? resolvePreauthHandshakeTimeoutMs({ configuredTimeoutMs: configuredHandshakeTimeoutMs } as any)
       : undefined;
   const timeoutMs =
     typeof timeoutValue === "number" && Number.isFinite(timeoutValue)
@@ -1066,7 +1065,7 @@ async function executeGatewayRequestWithScopes<T>(params: {
       );
     }, safeTimerTimeoutMs);
 
-    void startGatewayClientWhenEventLoopReady(client, {
+    void (startGatewayClientWhenEventLoopReady as any)(client, {
       timeoutMs: safeTimerTimeoutMs,
       signal: startAbort.signal,
     })

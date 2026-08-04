@@ -1,6 +1,20 @@
 import { initSentry } from './sentry.js';
 initSentry();
 
+// P1-4 compile cache 优化已回退：
+// - dev 模式（tsx）：tsx 自处理 TS 编译，Node compile cache 对它无效
+// - 生产模式（esbuild bundle）：已是预编译 CJS，compile cache 无意义
+// 该优化仅在 node 直接运行 .js 且 Node 22.8+ 时有用，当前架构不适用
+
+// 注册自定义 ESM resolve 钩子 — 在扩展加载时提供 .js→.ts 回退与 openclaw/plugin-sdk/* 别名映射。
+// 必须在任何扩展 import() 之前注册。注册失败不阻塞启动（降级为仅加载无外部依赖的扩展）。
+import { register as registerEsmHook } from 'node:module';
+try {
+  registerEsmHook('./extension-resolve-hook.mjs', import.meta.url);
+} catch {
+  console.warn('[Server] ESM resolve hook 注册失败，扩展加载将降级运行');
+}
+
 // 端到端性能采集：记录后端启动总耗时起点
 import { recordBackendPhase } from './performance/performanceStore.js';
 const serverStartupStartedAt = performance.now();
@@ -21,6 +35,7 @@ import { agentRegistry } from './engine/agentRegistry.js';
 import { initDefaultSoulFiles } from './engine/soulLoader.js';
 import { skillRegistry } from './engine/skillRegistry.js';
 import { resolveRepoSkillsDir } from './cli/commands/skills.js';
+// seedStaffDeckOnBoot 改为懒加载（见下方 setImmediate），避免启动时加载 staff/seedStaffDeck 模块
 import { EventEmitter } from 'events';
 
 // v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
@@ -101,7 +116,8 @@ import agentChatRouter from './routes/agentChat.js';
 // import inventoryTransactionsRouter from './routes/inventory-transactions.js'; → lazyRouter
 
 // Services
-import './services/chainExecutor.js'; // side-effect: registers chain event handlers
+// chainExecutor 模块无需副作用注册（仅定义函数和模块级 Map），
+// 由实际调用方（chainRoutes 等 lazy 路由）按需 import，无需顶层加载
 import { batchAuditSkills } from './services/securityAuditor.js';
 import { initMatchingEngine } from './services/matchingService.js';
 import { syncModelsFromApi, loadModelsConfig } from './modelsStore.js';
@@ -113,7 +129,7 @@ import { startEngine } from './engine/engine.js';
 
 // Trigger Engine v2.0 (触发器系统)
 import { startTriggerEngine, stopTriggerEngine } from './engine/triggerEngine.js';
-import { startCronScheduler, stopCronScheduler } from './engine/cronScheduler.js';
+import { startCronScheduler, stopCronScheduler, getCronScheduler } from './engine/cronScheduler.js';
 import { initTriggerManager } from './engine/triggerManager.js';
 import { startEventListener, stopEventListener } from './engine/eventListener.js';
 
@@ -481,7 +497,7 @@ app.use('/api/matching', lazyRouter(() => import('./routes/matching.js'), undefi
 app.use('/api/models', lazyRouter(() => import('./routes/models.js'), undefined, 'models'));
 
 // Inventory NL-Query route (lazy)
-app.use('/api/inventory', lazyRouter(() => import('./routes/inventory-nl-query.js'), undefined, 'inventory-nl-query'));
+app.use('/api/inventory/nl-query', lazyRouter(() => import('./routes/inventory-nl-query.js'), undefined, 'inventory-nl-query'));
 
 // Memory routes (lazy)
 app.use('/api/memory', lazyRouter(() => import('./routes/memory.js'), undefined, 'memory'));
@@ -611,6 +627,47 @@ app.use('/gateway', gatewayRouter);       // Gateway 专属端点: /gateway/heal
 
 // v10.1: Gateway Server Routes (方法注册中心 + REST API)
 registerGatewayRoutes(app);
+
+// ========== k8s 健康探针端点 ==========
+// GET /healthz — 存活探针 (liveness)：进程存活即返回 ok，不检查依赖
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// GET /readyz — 就绪探针 (readiness)：检查数据库连接 + cron 调度器状态
+app.get('/readyz', (_req, res) => {
+  const checks: { database: 'ok' | 'fail'; cron_scheduler: 'ok' | 'fail' } = {
+    database: 'fail',
+    cron_scheduler: 'fail',
+  };
+
+  // 检查数据库连接
+  try {
+    const db = getDb();
+    db.prepare('SELECT 1').get();
+    checks.database = 'ok';
+  } catch {
+    checks.database = 'fail';
+  }
+
+  // 检查 cron 调度器状态
+  try {
+    if (getCronScheduler().isSchedulerRunning()) {
+      checks.cron_scheduler = 'ok';
+    }
+  } catch {
+    checks.cron_scheduler = 'fail';
+  }
+
+  const ready = checks.database === 'ok' && checks.cron_scheduler === 'ok';
+  res.status(ready ? 200 : 503).json({
+    status: ready ? 'ok' : 'not_ready',
+    checks,
+  });
+});
+// 注意：不再注册显式的 app.get('/', ...) 作为健康检查。
+// 根路径 '/' 由后续的 express.static(FRONTEND_DIST_DIR) + SPA fallback（/^\/(?!api\/).*/）
+// 统一托管前端 index.html。健康检查请使用标准的 /api/health 端点。
 
 // ========== Versioned API Routes (v1) ==========
 // All routes are also mounted under /api/v1 for versioned access
@@ -808,6 +865,13 @@ server.listen(PORT, () => {
       }).catch((err) => {
         logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
       }),
+      // agentRegistry.initialize 轻量（加载内置模板 + SOUL/MEMORY，同步），
+      // 与工具/插件/扩展并行，消除原 setTimeout(0) 延迟
+      Promise.resolve(agentRegistry.initialize()).then(() => {
+        logger.info('[AgentRegistry] 已初始化');
+      }).catch((err) => {
+        logger.warn('[AgentRegistry] 初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      }),
     ]);
     recordBackendPhase('server:core-init', performance.now() - coreInitStart);
 
@@ -834,21 +898,18 @@ server.listen(PORT, () => {
     });
 
     setTimeout(() => {
-      agentRegistry.initialize();
-      logger.info('[AgentRegistry] 已后台初始化');
-    }, 0);
-
-    setTimeout(() => {
       initDefaultSoulFiles();
     }, 100);
 
-    setTimeout(async () => {
+    // MCP 连接：connectAllEnabled 内部已用 Promise.allSettled 并行，
+    // 去掉原 5s 人工延迟，改用 setImmediate 让端口监听后立即并行连接
+    setImmediate(async () => {
       try {
         await mcpClientManager.connectAllEnabled();
       } catch (err) {
         logger.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
       }
-    }, 5000);
+    });
 
     import('./engine/messageArchive.js').then(({ startArchiveScheduler }) => {
       startArchiveScheduler(getDb);
@@ -856,11 +917,13 @@ server.listen(PORT, () => {
       logger.warn('[Server] 消息归档调度器启动失败:', err instanceof Error ? err.message : String(err));
     });
 
-    setTimeout(() => {
+    // 模型同步：去掉原 5s 人工延迟，改用 setImmediate 立即触发
+    // syncModelsFromApi 内部对各 provider 串行调用，但作为后台任务不阻塞启动
+    setImmediate(() => {
       syncModelsFromApi().catch(e => {
         logger.error('[ModelDiscovery] 启动同步失败:', e);
       });
-    }, 5000);
+    });
 
     startMemoryMonitor(60_000);
 
@@ -890,6 +953,18 @@ server.listen(PORT, () => {
         logger.warn('[Server] 流式任务模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
       });
 
+    // 数字员工自动 seed + 默认员工置 active（懒加载，首次请求时才触发，不阻塞启动）
+    // 原 setTimeout(3000) 改为 setImmediate，避免启动期 DB 写争抢
+    setImmediate(() => {
+      import('./staff/seedStaffDeck.js')
+        .then(({ seedStaffDeckOnBoot }) => {
+          seedStaffDeckOnBoot();
+        })
+        .catch((err) => {
+          logger.warn('[Server] 数字员工自动 seed 失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        });
+    });
+
     setTimeout(() => {
       ensureWmsTables();
       logger.info('[WMS] 行业技能表已后台初始化');
@@ -897,6 +972,7 @@ server.listen(PORT, () => {
 
     setTimeout(async () => {
       try {
+        const skillInitStart = performance.now();
         const currentFile = process.argv[1];
         const __dirname = path.dirname(currentFile);
         let bundledDir = path.join(__dirname, '../../skills');
@@ -911,13 +987,15 @@ server.listen(PORT, () => {
           userGlobalDir,
           workspaceDir,
         });
+        recordBackendPhase('server:skills-loaded', performance.now() - skillInitStart);
         logger.info(`[SkillRegistry] 初始化完成，已注册 ${skillRegistry.getAllSkills().length} 个技能`);
       } catch (err) {
         logger.warn('[SkillRegistry] 初始化失败:', err instanceof Error ? err.message : String(err));
       }
     }, 1000);
 
-    recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);
+    // 注意：server:startup-complete 指标已后移到 startCronScheduler() 之后，
+    // 因 readyz 依赖 cron_scheduler，该指标应反映真实就绪时间。
 
     initEventLedger()
       .then(async () => {
@@ -950,14 +1028,28 @@ server.listen(PORT, () => {
         logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
       });
 
-    setTimeout(async () => {
-      try {
-        const stats = await initMatchingEngine();
-        logger.info(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
-      } catch (e) {
-        logger.error('[Matching] 嵌入初始化失败:', e);
-      }
-    }, 15_000).unref();
+    // ONNX 初始化 + 意图锚点预热，完成后触发 initMatchingEngine（串行化避免 CPU 争抢）
+    // 原 initMatchingEngine 用 setTimeout(15s) 独立触发，会与 ONNX 会话初始化重叠
+    const onnxStart = performance.now();
+    import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => initOnnxEmbedding())
+      .then(() => {
+        recordBackendPhase('server:onnx-ready', performance.now() - onnxStart);
+        return import('./routes/modelSelector.js').then(({ warmupIntentAnchors }) => warmupIntentAnchors());
+      })
+      .then(async () => {
+        // ONNX 就绪后再触发 matching 引擎批量嵌入（避免 CPU 争抢）
+        try {
+          const matchingStart = performance.now();
+          const stats = await initMatchingEngine();
+          recordBackendPhase('server:matching-engine', performance.now() - matchingStart);
+          logger.info(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
+        } catch (e) {
+          logger.error('[Matching] 嵌入初始化失败:', e);
+        }
+      })
+      .catch(err => {
+        logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      });
 
     startEngine(30_000).then(({ stop }) => {
       logger.info('[Engine] 引擎已启动');
@@ -973,11 +1065,17 @@ server.listen(PORT, () => {
     // 注意：数字员工任务由 initScheduledTaskScheduler 异步导入并注册到本调度器，
     // 本调用负责启动其扫描循环（非阻塞）。
     try {
+      const cronStart = performance.now();
       startCronScheduler();
+      recordBackendPhase('server:cron-started', performance.now() - cronStart);
       logger.info('[Server] CronScheduler 已启动');
     } catch (err) {
       logger.warn('[Server] CronScheduler 启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     }
+
+    // server:startup-complete 指标后移至此：readyz 依赖 cron_scheduler，
+    // 此处才是服务真正就绪的时间点（包含 cron/引擎/触发器/事件监听器均已启动）。
+    recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);
 
     import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
       sessionLifecycleManager.start();
@@ -1021,11 +1119,7 @@ server.listen(PORT, () => {
       logger.warn('[Server] ACP ChatService runtime 注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     });
 
-    import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => initOnnxEmbedding())
-      .then(() => import('./routes/modelSelector.js').then(({ warmupIntentAnchors }) => warmupIntentAnchors()))
-      .catch(err => {
-        logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-      });
+    // ONNX 初始化已上移至 initMatchingEngine 之前（串行化），此处不再重复
 
     const gracefulShutdown = () => {
       logger.info('[Server] 正在关闭自动化引擎...');
@@ -1074,9 +1168,9 @@ server.listen(PORT, () => {
   })();
 });
 
-// 异步批量审查预置技能（不阻塞启动，延迟 5 秒执行）
+// 异步批量审查预置技能（不阻塞启动，延迟 30 秒执行以降低启动期 CPU 争抢）
 setTimeout(() => {
   batchAuditSkills().catch((e: Error) => logger.error('[Startup] 批量审查失败:', e));
-}, 5000);
+}, 30000);
 
 // v8.7: error 监听器已移至 server.listen() 之前（第 220 行），此处删除重复监听器

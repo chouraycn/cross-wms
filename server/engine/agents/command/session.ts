@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Resolves command session ids, keys, stores, and persisted thinking state.
  */

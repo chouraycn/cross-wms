@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lazy command implementations for routes that can bypass full Commander registration.
 import { defaultRuntime } from "../../runtime.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
@@ -133,14 +132,14 @@ export const routedCommandDefinitions = {
   "config-get": defineRoutedCommand({
     parseArgs: parseConfigGetRouteArgs,
     runParsedArgs: async (args) => {
-      const { runConfigGet } = await loadConfigCli();
+      const { runConfigGet } = (await loadConfigCli()) as any;
       await runConfigGet(args);
     },
   }),
   "config-unset": defineRoutedCommand({
     parseArgs: parseConfigUnsetRouteArgs,
     runParsedArgs: async (args) => {
-      const { runConfigUnset } = await loadConfigCli();
+      const { runConfigUnset } = (await loadConfigCli()) as any;
       await runConfigUnset(args);
     },
   }),

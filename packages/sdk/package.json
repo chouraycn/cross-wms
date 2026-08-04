@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/sdk",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow SDK - OpenClaw SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

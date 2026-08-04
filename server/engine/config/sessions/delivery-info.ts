@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/config/sessions/delivery-info.ts
 //
 // 降级策略：
-//  - normalizeLowercaseStringOrEmpty 内联实现（原依赖 @openclaw/normalization-core/string-coerce）。
+//  - normalizeLowercaseStringOrEmpty 内联实现（原依赖 @cdf-know/normalization-core/string-coerce）。
 //  - 以下依赖在 cross-wms 中尚未移植或 API 不同，使用本地降级占位实现：
 //    * resolveSessionStoreAgentId / resolveSessionStoreKey（原依赖 ../../gateway/session-store-key.js）
 //    * requiresFoldedSessionKeyAliasProof（原依赖 ../../sessions/session-key-utils.js）

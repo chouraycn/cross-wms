@@ -221,7 +221,7 @@ export async function runTrustedToolPolicies(
   const buildEvent = (): PluginHookBeforeToolCallEvent => {
     return {
       ...eventWithoutDerivedPaths,
-      params: adjustedParams,
+      params: adjustedParams as any,
       ...currentEventToolIdentity,
       ...currentDerivedEvent,
     };

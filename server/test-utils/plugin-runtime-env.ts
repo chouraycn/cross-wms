@@ -4,9 +4,24 @@
 // The upstream file imports OutputRuntimeEnv / RuntimeEnv from
 // "openclaw/plugin-sdk/runtime"; that module is not part of the cross-wms
 // server's resolution graph, so we declare minimal local type stubs that
-// capture the same shape (log/error/writeStdout/writeJson/exit) and re-use
-// vitest's vi.fn() for spies.
-import { vi } from "vitest";
+// capture the same shape (log/error/writeStdout/writeJson/exit).
+// 注意：不导入 vitest，避免生产环境加载 vitest 导致 "Vitest failed to
+// access its internal state" 错误。测试中如需 vi.fn() 断言能力，可在测试
+// 文件中自行 mock 本模块。
+
+type MockFn = ((...args: unknown[]) => unknown) & {
+  mock?: { calls: unknown[][] };
+};
+
+function createMockFn(): MockFn {
+  const calls: unknown[][] = [];
+  const fn = (...args: unknown[]) => {
+    calls.push(args);
+    return undefined;
+  };
+  (fn as MockFn).mock = { calls };
+  return fn as MockFn;
+}
 
 export type OutputRuntimeEnv = {
   log: (...args: unknown[]) => void;
@@ -26,15 +41,15 @@ type RuntimeEnvOptions = {
 export function createRuntimeEnv(options?: RuntimeEnvOptions): OutputRuntimeEnv {
   const throwOnExit = options?.throwOnExit ?? true;
   return {
-    log: vi.fn(),
-    error: vi.fn(),
-    writeStdout: vi.fn(),
-    writeJson: vi.fn(),
+    log: createMockFn() as OutputRuntimeEnv["log"],
+    error: createMockFn() as OutputRuntimeEnv["error"],
+    writeStdout: createMockFn() as OutputRuntimeEnv["writeStdout"],
+    writeJson: createMockFn() as OutputRuntimeEnv["writeJson"],
     exit: throwOnExit
-      ? (vi.fn((code: number): never => {
+      ? ((code: number): never => {
           throw new Error(`exit ${code}`);
-        }) as unknown as OutputRuntimeEnv["exit"])
-      : (vi.fn() as unknown as OutputRuntimeEnv["exit"]),
+        }) as OutputRuntimeEnv["exit"]
+      : (createMockFn() as unknown as OutputRuntimeEnv["exit"]),
   };
 }
 

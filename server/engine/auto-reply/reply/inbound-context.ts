@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Builds prompt context facts from inbound channel and sender metadata.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import { resolveConversationLabel } from '@openclaw-src/channels/conversation-label.js';
 import { resolveCommandTurnContext } from "../command-turn-context.js";

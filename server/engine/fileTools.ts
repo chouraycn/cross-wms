@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * File Tools — 文件系统操作与终端命令执行
  */

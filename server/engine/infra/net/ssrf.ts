@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/infra/net/ssrf.ts
 // 降级：
 //  - @openclaw/net-policy/ip → @cdf-know/net-policy（cross-wms workspace 包）
-//  - @openclaw/normalization-core/string-normalization → ../string-normalization.js（本地实现）
+//  - @cdf-know/normalization-core/string-normalization → ../string-normalization.js（本地实现）
 import { lookup as dnsLookupCb, type LookupAddress } from "node:dns";
 import { lookup as dnsLookup } from "node:dns/promises";
 import {

@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/net-policy",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow NetPolicy - 网络策略",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

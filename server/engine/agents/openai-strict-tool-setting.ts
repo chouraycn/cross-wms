@@ -5,7 +5,7 @@
  *
  * 移植自 openclaw/src/agents/openai-strict-tool-setting.ts。
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/normalization-core/string-coerce 中的 readStringValue
+ *   - @cdf-know/normalization-core/string-coerce 中的 readStringValue
  *   - ./provider-attribution.js 中的 resolveProviderRequestCapabilities
  * 本地降级实现：readStringValue 内联；
  *   resolveProviderRequestCapabilities 降级为本地实现，仅依据 provider/api/baseUrl

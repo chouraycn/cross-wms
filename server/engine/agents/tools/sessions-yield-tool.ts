@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * sessions_yield built-in tool.
  *

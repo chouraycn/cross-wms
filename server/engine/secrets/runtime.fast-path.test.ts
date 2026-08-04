@@ -7,7 +7,7 @@ import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js";
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
 import { saveAuthProfileStore } from "../agents/auth-profiles/store.js";
 import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
-import { resolveOAuthPath } from "../config/paths.js";
+import { resolveOAuthPath } from "@openclaw-src/config/paths.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";

@@ -1,10 +1,29 @@
-/**
- * 移植自 openclaw/src/agents/embedded-agent-runner.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
+// Embedded-agent runner barrel. Focused submodules own run orchestration,
+// compaction, queues, sandbox metadata, and SDK tool splitting.
+export { compactEmbeddedAgentSession } from "./embedded-agent-runner/compact.queued.js";
+export { applyExtraParamsToAgent } from "./embedded-agent-runner/extra-params.js";
 
-// No exports detected
-export const __stub: undefined = undefined;
+export { resolveEmbeddedSessionLane } from "./embedded-agent-runner/lanes.js";
+export { runEmbeddedAgent } from "./embedded-agent-runner/run.js";
+export {
+  abortAndDrainEmbeddedAgentRun,
+  abortEmbeddedAgentRun,
+  isEmbeddedAgentRunAbortableForCompaction,
+  isEmbeddedAgentRunActive,
+  isEmbeddedAgentRunHandleActive,
+  isEmbeddedAgentRunStreaming,
+  queueEmbeddedAgentMessage,
+  queueEmbeddedAgentMessageWithOutcome,
+  resolveActiveEmbeddedRunSessionId,
+  resolveActiveEmbeddedRunSessionId as resolveActiveEmbeddedAgentRunSessionId,
+  resolveActiveEmbeddedRunSessionIdBySessionFile,
+  waitForEmbeddedAgentRunEnd,
+} from "./embedded-agent-runner/runs.js";
+export { buildEmbeddedSandboxInfo } from "./embedded-agent-runner/sandbox-info.js";
+export { splitSdkTools } from "./embedded-agent-runner/tool-split.js";
+export type {
+  EmbeddedAgentMeta,
+  EmbeddedAgentCompactResult,
+  EmbeddedAgentRunMeta,
+  EmbeddedAgentRunResult,
+} from "./embedded-agent-runner/types.js";

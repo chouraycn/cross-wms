@@ -1,5 +1,5 @@
 // 管理设备配对请求、审批和 token 签发。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-normalization 导入字符串规范化，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-normalization 导入字符串规范化，
 // 从 ../shared/device-auth.js、../shared/device-bootstrap-profile.js、../shared/operator-scope-compat.js
 // 导入共享辅助，cross-wms 在 _device-shared-stubs 和 string-normalization 中提供降级实现。
 import { randomUUID } from "node:crypto";

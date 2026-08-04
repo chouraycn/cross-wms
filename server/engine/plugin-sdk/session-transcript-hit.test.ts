@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Session transcript hit tests cover transcript match formatting and path resolution.
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";

@@ -11,6 +11,8 @@
 
 import type { GatewayMethodContext } from './types.js';
 import { getMethodRegistry } from './methodRegistry.js';
+import { getWebSocketHub } from './webSocketHub.js';
+import { GATEWAY_EVENT_TYPES } from './gatewayEventTypes.js';
 
 // Registry 类型从 getMethodRegistry 推导，避免依赖未导出的 MethodRegistry 类
 type GatewayMethodRegistry = ReturnType<typeof getMethodRegistry>;
@@ -116,6 +118,21 @@ async function nodePairRequest(params: unknown, _ctx: GatewayMethodContext) {
   };
   pairRequests.set(requestId, request);
 
+  // 广播 node.pair.requested 事件，通知 WS 客户端有新的配对请求待审批
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.NODE_PAIR_REQUESTED, {
+      requestId,
+      nodeId,
+      displayName: request.displayName,
+      platform: request.platform,
+      deviceFamily: request.deviceFamily,
+      remoteIp: request.remoteIp,
+      requestedAt: request.createdAt,
+    });
+  } catch {
+    // ignore broadcast errors
+  }
+
   return {
     ok: true,
     status: 'pending' as const,
@@ -186,6 +203,18 @@ async function nodeApprove(params: unknown, _ctx: GatewayMethodContext) {
   };
   pairedNodes.set(node.nodeId, node);
 
+  // 广播 node.pair.resolved 事件（decision=approve）
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.NODE_PAIR_RESOLVED, {
+      requestId,
+      nodeId: node.nodeId,
+      decision: 'approve' as const,
+      resolvedAt: request.resolvedAt ?? Date.now(),
+    });
+  } catch {
+    // ignore broadcast errors
+  }
+
   return {
     ok: true,
     requestId,
@@ -216,6 +245,18 @@ async function nodeReject(params: unknown, _ctx: GatewayMethodContext) {
 
   request.status = 'rejected';
   request.resolvedAt = Date.now();
+
+  // 广播 node.pair.resolved 事件（decision=reject）
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.NODE_PAIR_RESOLVED, {
+      requestId,
+      nodeId: request.nodeId,
+      decision: 'reject' as const,
+      resolvedAt: request.resolvedAt,
+    });
+  } catch {
+    // ignore broadcast errors
+  }
 
   return {
     ok: true,
@@ -334,6 +375,57 @@ async function nodeDescribe(params: unknown, _ctx: GatewayMethodContext) {
   };
 }
 
+// ========== Node Invoke ==========
+
+async function nodeInvoke(params: unknown, _ctx: GatewayMethodContext) {
+  const p = (params || {}) as {
+    nodeId?: string;
+    kind?: string;
+    args?: unknown;
+  };
+
+  const nodeId = typeof p.nodeId === 'string' ? p.nodeId.trim() : '';
+  const kind = typeof p.kind === 'string' ? p.kind.trim() : '';
+
+  if (!nodeId) {
+    return { ok: false, error: { code: 'INVALID_REQUEST', message: 'nodeId is required' } };
+  }
+  if (!kind) {
+    return { ok: false, error: { code: 'INVALID_REQUEST', message: 'kind is required' } };
+  }
+
+  const node = pairedNodes.get(nodeId);
+  if (!node) {
+    return { ok: false, error: { code: 'INVALID_REQUEST', message: 'unknown nodeId' } };
+  }
+
+  const invokeId = generateId('inv');
+  const requestedAt = Date.now();
+
+  // 广播 node.invoke.request 事件，通知节点宿主执行调用
+  // 精简版不等待节点返回；由外部 node-host 监听该事件并异步回执
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.NODE_INVOKE_REQUEST, {
+      invokeId,
+      nodeId,
+      kind,
+      args: p.args,
+      requestedAt,
+    });
+  } catch {
+    // ignore broadcast errors
+  }
+
+  return {
+    ok: true,
+    invokeId,
+    nodeId,
+    kind,
+    requestedAt,
+    status: 'dispatched' as const,
+  };
+}
+
 /**
  * 注册所有节点方法
  */
@@ -346,4 +438,11 @@ export function registerNodeMethods(registry: GatewayMethodRegistry): void {
   registry.register('node.verify', nodeVerify);
   registry.register('node.rename', nodeRename);
   registry.register('node.describe', nodeDescribe);
+  registry.register('node.invoke', nodeInvoke);
+
+  // ---- 兼容别名（openclaw 命名，复用现有处理函数）----
+  registry.register('node.pair.approve', nodeApprove);   // node.pair.approve = node.approve 别名
+  registry.register('node.pair.reject', nodeReject);     // node.pair.reject = node.reject 别名
+  registry.register('node.pair.verify', nodeVerify);     // node.pair.verify = node.verify 别名
+  registry.register('node.pair.remove', nodeRemove);     // node.pair.remove = node.remove 别名
 }

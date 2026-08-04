@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Resolves channel and account context for command handlers. */
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { getActivePluginChannelRegistry } from '@openclaw-src/plugins/runtime.js';
 

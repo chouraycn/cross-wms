@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Bridges ACP transcript events into persisted OpenClaw session transcripts.
 import { resolveAcpSessionCwd } from "@openclaw/acp-core/runtime/session-identifiers";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';

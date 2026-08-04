@@ -1,11 +1,19 @@
 /**
- * 移植自 openclaw/src/agents/test-helpers/agent-tool-stubs.ts
+ * Agent tool stub helpers for tests.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Builds no-op tool inventory entries when tests only need schema and naming shape.
+ * Ported from openclaw/src/agents/test-helpers/agent-tool-stubs.ts
  */
+import { Type } from "typebox";
+import type { AgentTool, AgentToolResult } from "./runtime/index.js";
 
-export function createStubTool(..._args: unknown[]): unknown {
-  return undefined;
+/** Creates a no-op tool with an empty object schema. */
+export function createStubTool(name: string): AgentTool {
+  return {
+    name,
+    label: name,
+    description: "",
+    parameters: Type.Object({}),
+    execute: async () => ({}) as AgentToolResult<unknown>,
+  };
 }

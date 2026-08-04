@@ -121,6 +121,10 @@ export const EXTRACTION_TIMEOUT_SECONDS = 45;
 export const MAX_PER_HEARTBEAT = 3;
 /** 承诺过期清理时长（小时） */
 export const EXPIRE_AFTER_HOURS = 72;
+/** OpenClaw 兼容导出：单次心跳最多投递条数 */
+export const DEFAULT_COMMITMENT_MAX_PER_HEARTBEAT = MAX_PER_HEARTBEAT;
+/** OpenClaw 兼容导出：承诺过期清理时长（小时） */
+export const DEFAULT_COMMITMENT_EXPIRE_AFTER_HOURS = EXPIRE_AFTER_HOURS;
 /** 每个会话每日最多投递条数 */
 export const MAX_PER_DAY = 3;
 

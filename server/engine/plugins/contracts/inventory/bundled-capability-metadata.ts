@@ -21,6 +21,11 @@ import {
   type PluginManifest,
 } from "../../manifest.js";
 import { resolveLoaderPackageRoot } from "../../sdk-alias.js";
+import { fileURLToPath } from "node:url";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** 内联实现：返回去重后的规范化字符串数组，保持首次出现的顺序。 */
 function uniqueStrings(

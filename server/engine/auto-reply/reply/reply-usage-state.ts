@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { PluginHookReplyUsageState } from '@openclaw-src/plugins/hook-types.js';
 
 const TTL_MS = 5 * 60_000;

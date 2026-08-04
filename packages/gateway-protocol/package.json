@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/gateway-protocol",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow GatewayProtocol - Gateway 协议定义",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

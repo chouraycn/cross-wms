@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Decides whether an inbound turn may start, queue, or abort a reply run.
 import {
   createReplyOperation,

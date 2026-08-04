@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // Shared cross-wms stubs for openclaw media-package dependencies.
 //
 // Provides local adapters for helpers used by ported media/ and
@@ -41,7 +47,7 @@ export function logVerbose(message: string): void {
 }
 
 // ============================================================================
-// @openclaw/normalization-core/string-coerce — normalizeNullableString
+// @cdf-know/normalization-core/string-coerce — normalizeNullableString
 // (normalizeOptionalString lives in ./string-helpers.js; this companion returns null)
 // ============================================================================
 
@@ -425,23 +431,78 @@ export async function detectMime(params: {
 
 // ============================================================================
 // @openclaw/media-core/read-response-with-limit — bounded response readers
-// (Cross-wms stub: returns undefined; callers that need real network reads use
-//  existing cross-wms fetch guards. This stub exists only so type-only imports
-//  of these helpers compile without pulling openclaw's fetch-guard surface.)
+// // 复用 cross-wms 已有的真实实现模式：通过 ReadableStream 读取 Response body，
+// // 在达到字节上限时提前停止，避免下载超大响应体。
 // ============================================================================
 
-/** Reads a text snippet from a Response with a byte limit. Cross-wms stub returns "". */
+/** 默认最大读取字节数（1 MiB） */
+const DEFAULT_RESPONSE_READ_LIMIT = 1024 * 1024;
+
+/**
+ * 读取 Response body 的文本片段，限制最大字节数。
+ * 移植自 openclaw/packages/media-core/src/read-response-with-limit.ts。
+ */
 export async function readResponseTextSnippet(
-  _response: Response,
-  _maxBytes?: number,
+  response: Response,
+  maxBytes?: number,
 ): Promise<string> {
-  return "";
+  const buffer = await readResponseWithLimit(response, maxBytes);
+  return buffer.toString("utf-8");
 }
 
-/** Reads a Response body into a Buffer with a byte limit. Cross-wms stub returns empty. */
+/**
+ * 读取 Response body 到 Buffer，限制最大字节数。
+ * 移植自 openclaw/packages/media-core/src/read-response-with-limit.ts。
+ *
+ * 实现：通过 response.body（ReadableStream）逐块读取，累计字节数超过上限时
+ * 提前取消流。对于没有 body 的响应（如 204），返回空 Buffer。
+ */
 export async function readResponseWithLimit(
-  _response: Response,
-  _maxBytes?: number,
+  response: Response,
+  maxBytes?: number,
 ): Promise<Buffer> {
-  return Buffer.alloc(0);
+  const limit =
+    typeof maxBytes === "number" && maxBytes > 0
+      ? Math.floor(maxBytes)
+      : DEFAULT_RESPONSE_READ_LIMIT;
+
+  if (!response.body) {
+    return Buffer.alloc(0);
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (!value) {
+        continue;
+      }
+      const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
+      const remaining = limit - totalBytes;
+      if (remaining <= 0) {
+        break;
+      }
+      if (chunk.length > remaining) {
+        chunks.push(chunk.subarray(0, remaining));
+        totalBytes = limit;
+        break;
+      }
+      chunks.push(chunk);
+      totalBytes += chunk.length;
+    }
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // 忽略释放锁错误
+    }
+  }
+
+  return chunks.length === 0 ? Buffer.alloc(0) : Buffer.concat(chunks, totalBytes);
 }

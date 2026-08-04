@@ -53,7 +53,7 @@ export function checkPluginContract(
   }
 
   // 2. apiVersion 兼容性
-  const pluginApiVersion = manifest.apiVersion ?? '1.0.0';
+  const pluginApiVersion = (manifest as any).apiVersion ?? '1.0.0';
   let pluginApiOk = true;
   try {
     parseVersion(pluginApiVersion);

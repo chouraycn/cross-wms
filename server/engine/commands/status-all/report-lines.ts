@@ -2,8 +2,8 @@
 // Renders `openclaw status --all` report data into terminal lines.
 // Styling is applied here so data builders remain color/theme agnostic.
 
-import { getTerminalTableWidth, renderTable } from "@openclaw-src/packages/terminal-core/src/table.js";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { getTerminalTableWidth, renderTable } from "@openclaw/terminal-core/table";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import type { ProgressReporter } from "@openclaw-src/cli/progress.js";
 import { appendStatusAllDiagnosis } from "./diagnosis.js";
 import {

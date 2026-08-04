@@ -17,11 +17,9 @@ import {
 import { requireNodeSqlite } from "../../infra/node-sqlite.js";
 import { resolveSqliteDatabaseFilePaths } from "../../infra/sqlite-files.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../../state/openclaw-state-db.js";
+import { runOpenClawAgentWriteTransaction } from "@openclaw-src/state/openclaw-agent-db.js";
+import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "@openclaw-src/state/openclaw-state-db.js";
 import { resolveUserPath } from "../../utils.js";
 import { resolveRegisteredAgentIdForDir } from "../agent-dir-registry.js";
 import { resolveDefaultAgentDir } from "../agent-scope-config.js";
@@ -266,3 +264,6 @@ export function runAuthProfileWriteTransaction<T>(
 ): T {
   return runOpenClawAgentWriteTransaction(operation, resolveAuthProfileDatabaseOptions(agentDir));
 }
+
+export { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "@openclaw-src/state/openclaw-state-db.js";
+export { runOpenClawAgentWriteTransaction } from "@openclaw-src/state/openclaw-agent-db.js";

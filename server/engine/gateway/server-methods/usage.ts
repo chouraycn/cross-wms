@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Usage gateway methods aggregate provider and session cost/token metrics from
 // caches, logs, session stores, and discovered transcript files.
 import fs from "node:fs";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -386,7 +385,7 @@ function buildStoreBySessionId(
   const storeBySessionId = new Map<string, { key: string; entry: SessionEntry }>();
   for (const [sessionId, matches] of matchesBySessionId) {
     // Multiple store keys can point at one transcript; choose the UI-facing canonical key.
-    const preferredKey = resolvePreferredSessionKeyForSessionIdMatches(matches, sessionId);
+    const preferredKey = resolvePreferredSessionKeyForSessionIdMatches(matches as any, sessionId) as any;
     if (!preferredKey) {
       continue;
     }
@@ -807,7 +806,7 @@ async function loadAllAgentCostUsageSummary(params: {
   config: OpenClawConfig;
 }): Promise<CostUsageSummary> {
   const agentIds = listAgentsForGateway(params.config).agents.map((agent) =>
-    normalizeAgentId(agent.id),
+    normalizeAgentId((agent as any).id),
   );
   const summaries = await Promise.all(
     agentIds.map((agentId) =>

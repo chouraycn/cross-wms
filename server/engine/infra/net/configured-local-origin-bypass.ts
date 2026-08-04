@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Configured local-origin bypass logic decides when managed proxy routing may
 // skip proxying a known loopback provider origin.
 import { isLoopbackIpAddress } from "@openclaw/net-policy/ip";

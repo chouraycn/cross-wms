@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Dev gateway bootstrap for a local loopback config and seeded dev workspace.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveWorkspaceTemplateSearchDirs } from "../../agents/workspace-templates.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { handleReset } from "../../commands/onboard-helpers.js";
@@ -108,7 +107,7 @@ export async function ensureDevGatewayConfig(opts: { reset?: boolean }) {
     await handleReset("full", workspace, defaultRuntime);
   }
 
-  const io = createConfigIO();
+  const io = createConfigIO() as any;
   const configPath = io.configPath;
   const configExists = fs.existsSync(configPath);
   if (!opts.reset && configExists) {

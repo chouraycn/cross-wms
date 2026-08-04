@@ -6,11 +6,11 @@
  * stops managed gateway services before deleting broader state.
  */
 import { cancel, confirm, isCancel } from "@clack/prompts";
-import { selectStyled } from "@openclaw-src/packages/terminal-core/src/prompt-select-styled.js";
+import { selectStyled } from "@openclaw/terminal-core/prompt-select-styled";
 import {
   stylePromptMessage,
   stylePromptTitle,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { isNixMode } from "@openclaw-src/config/config.js";
 import { resolveGatewayService } from "@openclaw-src/daemon/service.js";

@@ -1,15 +1,7 @@
-// 移植自 openclaw/src/infra/provider-usage.fetch.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-
-export type fetchClaudeUsage = unknown;
-export const fetchClaudeUsage: unknown = undefined;
-export type fetchCodexUsage = unknown;
-export const fetchCodexUsage: unknown = undefined;
-export type fetchDeepSeekUsage = unknown;
-export const fetchDeepSeekUsage: unknown = undefined;
-export type fetchGeminiUsage = unknown;
-export const fetchGeminiUsage: unknown = undefined;
-export type fetchMinimaxUsage = unknown;
-export const fetchMinimaxUsage: unknown = undefined;
-export type fetchZaiUsage = unknown;
-export const fetchZaiUsage: unknown = undefined;
+// Public facade for built-in provider usage fetch implementations.
+export { fetchClaudeUsage } from "./provider-usage.fetch.claude.js";
+export { fetchCodexUsage } from "./provider-usage.fetch.codex.js";
+export { fetchDeepSeekUsage } from "./provider-usage.fetch.deepseek.js";
+export { fetchGeminiUsage } from "./provider-usage.fetch.gemini.js";
+export { fetchMinimaxUsage } from "./provider-usage.fetch.minimax.js";
+export { fetchZaiUsage } from "./provider-usage.fetch.zai.js";

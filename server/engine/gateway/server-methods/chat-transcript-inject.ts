@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Chat transcript injection appends gateway-authored assistant rows while
 // preserving agent-session parent links and transcript update notifications.
 import type { SessionManager } from "../../agents/sessions/session-manager.js";

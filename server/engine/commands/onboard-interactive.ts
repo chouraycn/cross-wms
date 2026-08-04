@@ -5,7 +5,7 @@
  * It wires the Clack prompter to the setup wizard and restores terminal state
  * on every exit path so canceled setup cannot leave stdin paused.
  */
-import { restoreTerminalState } from "@openclaw-src/packages/terminal-core/src/restore.js";
+import { restoreTerminalState } from "@openclaw/terminal-core/restore";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { defaultRuntime } from "@openclaw-src/runtime.js";
 import { createClackPrompter } from "@openclaw-src/wizard/clack-prompter.js";

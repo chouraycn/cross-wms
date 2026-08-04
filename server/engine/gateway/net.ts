@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway network address helpers.
 // Normalizes host/IP inputs and classifies local/private gateway requests.
 import type { IncomingMessage } from "node:http";
@@ -10,7 +9,7 @@ import {
   isPrivateOrLoopbackIpAddress,
   normalizeIpAddress,
 } from "@openclaw/net-policy/ip";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import type { GatewayBindMode } from "../config/types.gateway.js";
 import {
   resetContainerEnvironmentCacheForTest,

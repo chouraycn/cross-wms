@@ -1,5 +1,16 @@
-import { normalizeStringEntries } from "../../infra/string-normalization.js";
+// Skill loading config helpers resolve configured skill sources and enablement.
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { SkillConfig } from "../../config/types.skills.js";
+import {
+  evaluateRuntimeEligibility,
+  hasBinary,
+  isConfigPathTruthyWithDefaults,
+} from "../../shared/config-eval.js";
 import type { SkillEligibilityContext, SkillEntry, SkillsInstallPreferences } from "../types.js";
 import { resolveSkillKey } from "./frontmatter.js";
 import { resolveSkillSource } from "./source.js";
@@ -9,16 +20,13 @@ const DEFAULT_CONFIG_VALUES: Record<string, boolean> = {
   "browser.evaluateEnabled": true,
 };
 
-type ResolvedSkillConfig = {
-  enabled?: boolean;
-  env?: Record<string, string>;
-  apiKey?: string;
-};
+/** Platform helpers re-exported for skill loading callers and tests. */
+export { hasBinary };
 
 export function resolveSkillsInstallPreferences(config?: OpenClawConfig): SkillsInstallPreferences {
   const raw = config?.skills?.install;
   const preferBrew = raw?.preferBrew ?? true;
-  const manager = (raw?.nodeManager as string | undefined)?.toLowerCase().trim() || "";
+  const manager = normalizeLowercaseStringOrEmpty(normalizeOptionalString(raw?.nodeManager));
   const nodeManager: SkillsInstallPreferences["nodeManager"] =
     manager === "pnpm" || manager === "yarn" || manager === "bun" || manager === "npm"
       ? manager
@@ -30,46 +38,15 @@ export function isConfigPathTruthy(config: OpenClawConfig | undefined, pathStr: 
   return isConfigPathTruthyWithDefaults(config, pathStr, DEFAULT_CONFIG_VALUES);
 }
 
-function isConfigPathTruthyWithDefaults(
-  config: OpenClawConfig | undefined,
-  pathStr: string,
-  defaults: Record<string, boolean>,
-): boolean {
-  const value = getNestedValue(config, pathStr);
-  if (value === true || value === false) {
-    return value;
-  }
-  if (value === "true" || value === "1") {
-    return true;
-  }
-  if (value === "false" || value === "0") {
-    return false;
-  }
-  return defaults[pathStr] ?? false;
-}
-
-function getNestedValue(obj: unknown, pathStr: string): unknown {
-  const parts = pathStr.split(".");
-  let current: unknown = obj;
-  for (const part of parts) {
-    if (current && typeof current === "object" && part in current) {
-      current = (current as Record<string, unknown>)[part];
-    } else {
-      return undefined;
-    }
-  }
-  return current;
-}
-
 export function resolveSkillConfig(
   config: OpenClawConfig | undefined,
   skillKey: string,
-): ResolvedSkillConfig | undefined {
+): SkillConfig | undefined {
   const skills = config?.skills?.entries;
   if (!skills || typeof skills !== "object") {
     return undefined;
   }
-  const entry = (skills as Record<string, ResolvedSkillConfig | undefined>)[skillKey];
+  const entry = (skills as Record<string, SkillConfig | undefined>)[skillKey];
   if (!entry || typeof entry !== "object") {
     return undefined;
   }
@@ -87,6 +64,7 @@ function normalizeAllowlist(input: unknown): ReadonlySet<string> | undefined {
   return normalized.length > 0 ? new Set(normalized) : undefined;
 }
 
+// 保留 server 的 "bundled" 源标识，避免 server 内置技能绕过 allowlist 检查。
 const BUNDLED_SOURCES = new Set(["openclaw-bundled", "bundled"]);
 
 function isBundledSkill(entry: SkillEntry): boolean {
@@ -104,54 +82,8 @@ export function isBundledSkillAllowed(entry: SkillEntry, allowlist?: ReadonlySet
   if (!isBundledSkill(entry)) {
     return true;
   }
-  const key = resolveSkillKey(entry.skill, entry.metadata);
+  const key = resolveSkillKey(entry.skill, entry);
   return allowlist.has(key) || allowlist.has(entry.skill.name);
-}
-
-async function hasBinary(name: string): Promise<boolean> {
-  try {
-    const { spawnSync } = await import("node:child_process");
-    const result = spawnSync("which", [name]);
-    return result.status === 0;
-  } catch {
-    return false;
-  }
-}
-
-function evaluateRuntimeEligibility(params: {
-  os?: string | string[];
-  remotePlatforms?: string[];
-  always?: boolean;
-  requires?: Record<string, unknown>;
-  hasBin: (name: string) => Promise<boolean>;
-  hasRemoteBin?: (name: string) => boolean;
-  hasAnyRemoteBin?: (names: string[]) => boolean;
-  hasEnv: (envName: string) => boolean;
-  isConfigPathTruthy: (configPath: string) => boolean;
-}): boolean {
-  const { os, always, requires, hasEnv } = params;
-
-  if (always) {
-    return true;
-  }
-
-  if (os) {
-    const osList = Array.isArray(os) ? os : [os];
-    if (osList.length > 0 && !osList.includes(process.platform)) {
-      return false;
-    }
-  }
-
-  if (requires?.env) {
-    const envVars = Array.isArray(requires.env) ? requires.env : [requires.env];
-    for (const envVar of envVars) {
-      if (!hasEnv(String(envVar))) {
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 export function shouldIncludeSkill(params: {
@@ -161,7 +93,7 @@ export function shouldIncludeSkill(params: {
   eligibility?: SkillEligibilityContext;
 }): boolean {
   const { entry, config, bundledAllowlist, eligibility } = params;
-  const skillKey = resolveSkillKey(entry.skill, entry.metadata);
+  const skillKey = resolveSkillKey(entry.skill, entry);
   const skillConfig = resolveSkillConfig(config, skillKey);
 
   if (skillConfig?.enabled === false) {

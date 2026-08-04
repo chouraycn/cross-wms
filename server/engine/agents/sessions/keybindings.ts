@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Application keybinding definitions and user-config migration helpers.
  *

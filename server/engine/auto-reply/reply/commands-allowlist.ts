@@ -3,8 +3,8 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+} from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import { resolveExplicitConfigWriteTarget } from '@openclaw-src/channels/plugins/config-writes.js';
 import { getChannelPlugin } from '@openclaw-src/channels/plugins/index.js';
 import type { ChannelId } from '@openclaw-src/channels/plugins/types.public.js';

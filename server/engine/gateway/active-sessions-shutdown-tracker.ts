@@ -1,30 +1,51 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/active-sessions-shutdown-tracker.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Active session shutdown tracker.
+// Remembers sessions needing `session_end` hooks during gateway shutdown/restart.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-export type ActiveSessionForShutdown = unknown;
+// Module-level tracker of sessions that have received `session_start` but not
+// yet a paired `session_end`. The close handler drains this set on gateway
+// shutdown / restart so downstream `session_end` plugins (e.g. claude-mem)
+// can finalize sessions that were active when the process stopped, instead
+// of leaving ghost rows in `active` state across restarts (see #57790).
+//
+// Membership is keyed by `sessionId`. The existing session lifecycle paths
+// (`emitGatewaySessionStartPluginHook` /
+// `emitGatewaySessionEndPluginHook` in `session-reset-service.ts`) call into
+// this tracker so a session that has already been finalized by replace /
+// reset / delete / compaction is forgotten before the shutdown drain ever
+// runs. That is what keeps the shutdown finalizer from double-firing.
 
-export function noteActiveSessionForShutdown(..._args: unknown[]): unknown {
-  return undefined;
+export type ActiveSessionForShutdown = {
+  cfg: OpenClawConfig;
+  sessionKey: string;
+  sessionId: string;
+  storePath: string;
+  sessionFile?: string;
+  agentId?: string;
+};
+
+const trackedSessions = new Map<string, ActiveSessionForShutdown>();
+
+export function noteActiveSessionForShutdown(entry: ActiveSessionForShutdown): void {
+  if (!entry.sessionId) {
+    return;
+  }
+  trackedSessions.set(entry.sessionId, entry);
 }
 
-export function forgetActiveSessionForShutdown(..._args: unknown[]): unknown {
-  return undefined;
+export function forgetActiveSessionForShutdown(sessionId: string | undefined): void {
+  if (!sessionId) {
+    return;
+  }
+  trackedSessions.delete(sessionId);
 }
 
-export function listActiveSessionsForShutdown(..._args: unknown[]): unknown {
-  return [];
+export function listActiveSessionsForShutdown(): ActiveSessionForShutdown[] {
+  // Return a snapshot, not the backing map, so shutdown drains can iterate while
+  // lifecycle hooks concurrently forget finalized sessions.
+  return Array.from(trackedSessions.values());
 }
 
-export function clearActiveSessionsForShutdownTracker(..._args: unknown[]): unknown {
-  return undefined;
+export function clearActiveSessionsForShutdownTracker(): void {
+  trackedSessions.clear();
 }

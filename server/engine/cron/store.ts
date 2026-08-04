@@ -1,116 +1,55 @@
-/**
- * Cron Store - 持久化存储
- * 基于 JSON 文件的 cron job 存储实现，支持原子写入和隔离文件处理
- */
-
+/** Public cron store load/save API backed by SQLite plus quarantine sidecars. */
 import fs from "node:fs";
 import path from "node:path";
-import type { CronJob, CronJobState, CronStoreFile } from "./types.js";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { expandHomePrefix } from "../infra/home-dir.js";
+import { replaceFileAtomic } from "../infra/replace-file.js";
+import {
+  openOpenClawStateDatabase,
+  runOpenClawStateWriteTransaction,
+} from "../state/openclaw-state-db.js";
+import { resolveConfigDir } from "../utils.js";
+import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
+import { cronStoreKey } from "./store/key.js";
+import {
+  assertCronStoreCanPersist,
+  loadedCronStoreFromRows,
+  loadCronRows,
+  replaceCronRows,
+  updateCronRuntimeRows,
+} from "./store/row-codec.js";
+import type {
+  CronQuarantineFile,
+  LoadedCronStore,
+  QuarantinedCronConfigJob,
+} from "./store/types.js";
+export type {
+  CronConfigJobRuntimeEntry,
+  CronQuarantineFile,
+  LoadedCronStore,
+  QuarantinedCronConfigJob,
+} from "./store/types.js";
+import type { CronStoreFile } from "./types.js";
 
-// 重导出 types.ts 的类型，保持向后兼容
-export type { CronJob, CronJobState, CronStoreFile } from "./types.js";
-
-/** @deprecated 使用 types.ts 的 CronJob 代替 */
-export type CronJobConfig = Pick<CronJob, "id" | "name" | "description" | "enabled" | "agentId" | "sessionKey"> & {
-  schedule: CronJob["schedule"];
-  sessionTarget: CronJob["sessionTarget"];
-  wakeMode: CronJob["wakeMode"];
-  payload: CronJob["payload"];
-  delivery?: CronJob["delivery"];
-  failureAlert?: CronJob["failureAlert"];
-  deleteAfterRun?: boolean;
-  createdAtMs: number;
-  updatedAtMs: number;
-};
-
-/** @deprecated 使用 types.ts 的 CronJobState 代替 */
-export type CronJobRuntime = CronJobState;
-
-/** @deprecated 使用 types.ts 的 CronJob 代替 */
-export type CronJobEntry = CronJob;
-
-/** 隔离文件格式（用于存储无效或异常的 job） */
-export interface CronQuarantineFile {
-  version: number;
-  jobs: CronQuarantineEntry[];
-}
-
-/** 隔离条目 */
-export interface CronQuarantineEntry {
-  quarantinedAtMs: number;
-  sourceIndex: number;
-  reason: string;
-  job?: Partial<CronJob>;
-  raw?: string;
-  state?: CronJobState;
-  updatedAtMs?: number;
-  scheduleIdentity?: string;
-}
-
-/** 加载的存储数据 */
-export interface LoadedCronStore {
-  store: CronStoreFile;
-  quarantineJobs: CronQuarantineEntry[];
-  invalidConfigRows: CronQuarantineEntry[];
-}
-
-/** Cron Store 接口 */
-export interface CronJobStore {
-  /** 加载存储数据 */
-  load(): Promise<LoadedCronStore>;
-  /** 保存存储数据 */
-  save(store: CronStoreFile): Promise<void>;
-  /** 加载隔离文件 */
-  loadQuarantine(): Promise<CronQuarantineFile>;
-  /** 保存隔离文件 */
-  saveQuarantine(quarantine: CronQuarantineFile): Promise<void>;
-  /** 获取存储路径 */
-  getStorePath(): string;
-  /** 获取隔离文件路径 */
-  getQuarantinePath(): string;
-}
-
-// CronJobRuntime 已由 types.ts 的 CronJobState 代替，此处不再定义
-
-/** 默认的 cron 存储目录名 */
-const DEFAULT_CRON_DIR = "cron";
-
-/** 默认的存储文件名 */
-const DEFAULT_STORE_FILENAME = "jobs.json";
-
-/** 隔离文件名后缀 */
-const QUARANTINE_SUFFIX = "-quarantine.json";
-
-/** 解析默认的 cron 存储目录 */
 function resolveDefaultCronDir(): string {
-  const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? ".";
-  return path.join(homeDir, ".config", "cdfknow", DEFAULT_CRON_DIR);
+  return path.join(resolveConfigDir(), "cron");
 }
 
-/** 解析默认的存储文件路径 */
-function resolveDefaultStorePath(): string {
-  return path.join(resolveDefaultCronDir(), DEFAULT_STORE_FILENAME);
+function resolveDefaultCronStorePath(): string {
+  return path.join(resolveDefaultCronDir(), "jobs.json");
 }
 
-/** 解析隔离文件路径 */
-export function resolveQuarantinePath(storePath: string): string {
+/** Resolves the sidecar quarantine path used for invalid cron config rows. */
+export function resolveCronQuarantinePath(storePath: string): string {
   if (storePath.endsWith(".json")) {
-    return storePath.replace(/\.json$/, QUARANTINE_SUFFIX);
+    return storePath.replace(/\.json$/, "-quarantine.json");
   }
-  return `${storePath}${QUARANTINE_SUFFIX}`;
+  return `${storePath}-quarantine.json`;
 }
 
-/** 展开 home 目录前缀 */
-function expandHomePrefix(rawPath: string): string {
-  if (rawPath.startsWith("~/") || rawPath === "~") {
-    const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? "";
-    return rawPath.replace(/^~/, homeDir);
-  }
-  return rawPath;
-}
-
-/** 解析存储文件路径 */
-export function resolveCronStorePath(storePath?: string): string {
+/** Resolves the cron jobs store path, expanding home-relative user input. */
+export function resolveCronJobsStorePath(storePath?: string) {
   if (storePath?.trim()) {
     const raw = storePath.trim();
     if (raw.startsWith("~")) {
@@ -118,240 +57,160 @@ export function resolveCronStorePath(storePath?: string): string {
     }
     return path.resolve(raw);
   }
-  return resolveDefaultStorePath();
+  return resolveDefaultCronStorePath();
 }
 
-/** 原子写入文件 */
-async function atomicWrite(
-  filePath: string,
-  content: string,
-  dirMode = 0o700,
-  fileMode = 0o600,
-): Promise<void> {
-  const dir = path.dirname(filePath);
-  const tempPath = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+/** Loads cron jobs plus config/runtime sidecars from the SQLite-backed store. */
+export async function loadCronJobsStoreWithConfigJobs(storePath: string): Promise<LoadedCronStore> {
+  const resolvedStorePath = path.resolve(storePath);
+  const storeKey = cronStoreKey(resolvedStorePath);
+  const database = openOpenClawStateDatabase().db;
+  const rows = loadCronRows(database, storeKey);
+  if (rows.length > 0) {
+    return loadedCronStoreFromRows(rows);
+  }
+  return {
+    store: { version: 1, jobs: [] },
+    configJobs: [],
+    configJobIndexes: [],
+    configJobRuntimeEntries: [],
+    invalidConfigRows: [],
+  };
+}
 
-  // 确保目录存在
-  await fs.promises.mkdir(dir, { recursive: true, mode: dirMode });
+/** Loads only the persisted cron job store payload. */
+export async function loadCronJobsStore(storePath: string): Promise<CronStoreFile> {
+  return (await loadCronJobsStoreWithConfigJobs(storePath)).store;
+}
 
-  // 写入临时文件
-  await fs.promises.writeFile(tempPath, content, { mode: fileMode });
+/** Synchronously loads only the persisted cron job store payload. */
+export function loadCronJobsStoreSync(storePath: string): CronStoreFile {
+  const resolvedStorePath = path.resolve(storePath);
+  const storeKey = cronStoreKey(resolvedStorePath);
+  const database = openOpenClawStateDatabase().db;
+  const rows = loadCronRows(database, storeKey);
+  if (rows.length > 0) {
+    return loadedCronStoreFromRows(rows).store;
+  }
+  return { version: 1, jobs: [] };
+}
 
-  // 重命名到目标文件（原子操作）
+type SaveCronStoreOptions = {
+  stateOnly?: boolean;
+};
+
+async function atomicWrite(filePath: string, content: string, dirMode = 0o700): Promise<void> {
+  await replaceFileAtomic({
+    filePath,
+    content,
+    dirMode,
+    mode: 0o600,
+    tempPrefix: ".openclaw-cron",
+    renameMaxRetries: 3,
+    copyFallbackOnPermissionError: true,
+  });
+}
+
+/** Persists cron jobs, or only mutable runtime state when stateOnly is set. */
+export async function saveCronJobsStore(
+  storePath: string,
+  store: CronStoreFile,
+  opts?: SaveCronStoreOptions,
+) {
+  const resolvedStorePath = path.resolve(storePath);
+  const storeKey = cronStoreKey(resolvedStorePath);
+  if (opts?.stateOnly) {
+    // Hot-path timer updates only mutate runtime columns; full config JSON stays
+    // untouched so user-authored cron definitions do not churn.
+    runOpenClawStateWriteTransaction(({ db }) => {
+      updateCronRuntimeRows(db, storeKey, store);
+    });
+    return;
+  }
+  assertCronStoreCanPersist(store);
+  runOpenClawStateWriteTransaction(({ db }) => {
+    replaceCronRows(db, storeKey, store);
+  });
+}
+
+// Public plugin SDK seam; core callers use the SQLite-backed cron-jobs names above.
+/** Resolves the public plugin-SDK cron store path. */
+export function resolveCronStorePath(storePath?: string) {
+  return resolveCronJobsStorePath(storePath);
+}
+
+/** Plugin-SDK alias for loading the cron store. */
+export async function loadCronStore(storePath: string): Promise<CronStoreFile> {
+  return await loadCronJobsStore(storePath);
+}
+
+/** Plugin-SDK alias for saving the cron store. */
+export async function saveCronStore(
+  storePath: string,
+  store: CronStoreFile,
+  opts?: SaveCronStoreOptions,
+) {
+  await saveCronJobsStore(storePath, store, opts);
+}
+
+/** Loads the cron quarantine sidecar, validating its persisted v1 shape. */
+export async function loadCronQuarantineFile(pathLocal: string): Promise<CronQuarantineFile> {
   try {
-    await fs.promises.rename(tempPath, filePath);
+    const raw = await fs.promises.readFile(pathLocal, "utf-8");
+    const parsed = parseJsonWithJson5Fallback(raw);
+    if (!isRecord(parsed) || parsed.version !== 1 || !Array.isArray(parsed.jobs)) {
+      throw new Error(`Unsupported cron quarantine file shape at ${pathLocal}`);
+    }
+    const jobs = parsed.jobs.map((entry, index) => {
+      if (
+        !isRecord(entry) ||
+        typeof entry.reason !== "string" ||
+        (!isRecord(entry.job) && !("raw" in entry))
+      ) {
+        throw new Error(`Unsupported cron quarantine entry at ${pathLocal} index ${index}`);
+      }
+      const sourceIndex = typeof entry.sourceIndex === "number" ? entry.sourceIndex : -1;
+      const quarantinedAtMs =
+        typeof entry.quarantinedAtMs === "number" && Number.isFinite(entry.quarantinedAtMs)
+          ? entry.quarantinedAtMs
+          : Date.now();
+      const quarantined: CronQuarantineFile["jobs"][number] = {
+        quarantinedAtMs,
+        sourceIndex,
+        reason: entry.reason,
+      };
+      if (isRecord(entry.job)) {
+        quarantined.job = entry.job;
+      }
+      if ("raw" in entry) {
+        quarantined.raw = entry.raw;
+      }
+      if (isRecord(entry.state)) {
+        quarantined.state = entry.state;
+      }
+      if (typeof entry.updatedAtMs === "number" && Number.isFinite(entry.updatedAtMs)) {
+        quarantined.updatedAtMs = entry.updatedAtMs;
+      }
+      if (typeof entry.scheduleIdentity === "string") {
+        quarantined.scheduleIdentity = entry.scheduleIdentity;
+      }
+      return quarantined;
+    });
+    return { version: 1, jobs };
   } catch (err) {
-    // 如果重命名失败，尝试删除临时文件
-    try {
-      await fs.promises.unlink(tempPath);
-    } catch {
-      // ignore cleanup error
+    if ((err as { code?: unknown })?.code === "ENOENT") {
+      return { version: 1, jobs: [] };
     }
     throw err;
   }
 }
 
-/** 解析 JSON 文件，支持注释 */
-function parseJsonWithComments(raw: string): unknown {
-  // 移除单行注释
-  const cleaned = raw.replace(/\/\/.*$/gm, "");
-  // 移除多行注释
-  const noBlockComments = cleaned.replace(/\/\*[\s\S]*?\*\//g, "");
-  return JSON.parse(noBlockComments);
-}
-
-/** 验证是否为有效的记录对象 */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** 验证存储文件格式 */
-function isValidCronStoreFile(value: unknown): value is CronStoreFile {
-  if (!isRecord(value)) return false;
-  if (typeof value.version !== "number") return false;
-  if (!Array.isArray(value.jobs)) return false;
-  return true;
-}
-
-/** 验证任务配置（使用 types.ts 的 CronJob 字段） */
-function isValidCronJobConfig(value: unknown): value is CronJob {
-  if (!isRecord(value)) return false;
-  if (typeof value.id !== "string") return false;
-  if (typeof value.name !== "string") return false;
-  if (!isRecord(value.schedule)) return false;
-  if (typeof value.schedule.kind !== "string") return false;
-  if (typeof value.sessionTarget !== "string") return false;
-  if (typeof value.wakeMode !== "string") return false;
-  if (!isRecord(value.payload)) return false;
-  if (typeof value.enabled !== "boolean") return false;
-  if (typeof value.createdAtMs !== "number") return false;
-  if (typeof value.updatedAtMs !== "number") return false;
-  return true;
-}
-
-/** JSON 文件存储实现 */
-export class JsonCronJobStore implements CronJobStore {
-  private readonly storePath: string;
-  private readonly quarantinePath: string;
-
-  constructor(storePath?: string) {
-    this.storePath = resolveCronStorePath(storePath);
-    this.quarantinePath = resolveQuarantinePath(this.storePath);
-  }
-
-  getStorePath(): string {
-    return this.storePath;
-  }
-
-  getQuarantinePath(): string {
-    return this.quarantinePath;
-  }
-
-  async load(): Promise<LoadedCronStore> {
-    const invalidConfigRows: CronQuarantineEntry[] = [];
-    const validJobs: CronJob[] = [];
-
-    try {
-      const raw = await fs.promises.readFile(this.storePath, "utf-8");
-      const parsed = parseJsonWithComments(raw);
-
-      if (!isValidCronStoreFile(parsed)) {
-        console.warn("[cron-store] Invalid store file format, returning empty store");
-        return {
-          store: { version: 1, jobs: [] },
-          quarantineJobs: [],
-          invalidConfigRows: [],
-        };
-      }
-
-      const now = Date.now();
-
-      for (let i = 0; i < parsed.jobs.length; i++) {
-        const entry = parsed.jobs[i];
-
-        // 验证基本配置
-        if (!isValidCronJobConfig(entry)) {
-          invalidConfigRows.push({
-            quarantinedAtMs: now,
-            sourceIndex: i,
-            reason: "Invalid job config structure",
-            raw: JSON.stringify(entry),
-          });
-          continue;
-        }
-
-        // 确保运行时状态存在
-        const state = isRecord(entry.state) ? entry.state : {};
-        const job: CronJob = {
-          ...entry,
-          state: {
-            nextRunAtMs: typeof state.nextRunAtMs === "number" ? state.nextRunAtMs : undefined,
-            runningAtMs: typeof state.runningAtMs === "number" ? state.runningAtMs : undefined,
-            lastRunAtMs: typeof state.lastRunAtMs === "number" ? state.lastRunAtMs : undefined,
-            lastRunStatus: typeof state.lastRunStatus === "string" ? state.lastRunStatus : undefined,
-            lastError: typeof state.lastError === "string" ? state.lastError : undefined,
-            lastDurationMs: typeof state.lastDurationMs === "number" ? state.lastDurationMs : undefined,
-            lastSuccessAtMs: typeof state.lastSuccessAtMs === "number" ? state.lastSuccessAtMs : undefined,
-            consecutiveErrors: typeof state.consecutiveErrors === "number" ? state.consecutiveErrors : 0,
-            consecutiveSkipped: typeof state.consecutiveSkipped === "number" ? state.consecutiveSkipped : 0,
-          },
-        };
-
-        validJobs.push(job);
-      }
-    } catch (err) {
-      const code = (err as { code?: unknown })?.code;
-      if (code === "ENOENT") {
-        // 文件不存在，返回空存储
-        return {
-          store: { version: 1, jobs: [] },
-          quarantineJobs: [],
-          invalidConfigRows: [],
-        };
-      }
-      throw err;
-    }
-
-    // 加载隔离文件
-    const quarantineJobs = await this.loadQuarantine();
-
-    return {
-      store: { version: 1, jobs: validJobs },
-      quarantineJobs: quarantineJobs.jobs,
-      invalidConfigRows,
-    };
-  }
-
-  async save(store: CronStoreFile): Promise<void> {
-    const payload = JSON.stringify(store, null, 2);
-    await atomicWrite(this.storePath, payload);
-  }
-
-  async loadQuarantine(): Promise<CronQuarantineFile> {
-    try {
-      const raw = await fs.promises.readFile(this.quarantinePath, "utf-8");
-      const parsed = parseJsonWithComments(raw);
-
-      if (!isRecord(parsed) || parsed.version !== 1 || !Array.isArray(parsed.jobs)) {
-        console.warn("[cron-store] Invalid quarantine file format");
-        return { version: 1, jobs: [] };
-      }
-
-      const jobs: CronQuarantineEntry[] = [];
-      const now = Date.now();
-
-      for (let i = 0; i < parsed.jobs.length; i++) {
-        const entry = parsed.jobs[i];
-        if (!isRecord(entry) || typeof entry.reason !== "string") {
-          continue;
-        }
-
-        const quarantined: CronQuarantineEntry = {
-          quarantinedAtMs:
-            typeof entry.quarantinedAtMs === "number" ? entry.quarantinedAtMs : now,
-          sourceIndex: typeof entry.sourceIndex === "number" ? entry.sourceIndex : -1,
-          reason: entry.reason,
-        };
-
-        if (isRecord(entry.job)) {
-          quarantined.job = entry.job as Partial<CronJob>;
-        }
-        if (typeof entry.raw === "string") {
-          quarantined.raw = entry.raw;
-        }
-        if (isRecord(entry.state)) {
-          quarantined.state = entry.state as CronJobState;
-        }
-        if (typeof entry.updatedAtMs === "number") {
-          quarantined.updatedAtMs = entry.updatedAtMs;
-        }
-        if (typeof entry.scheduleIdentity === "string") {
-          quarantined.scheduleIdentity = entry.scheduleIdentity;
-        }
-
-        jobs.push(quarantined);
-      }
-
-      return { version: 1, jobs };
-    } catch (err) {
-      const code = (err as { code?: unknown })?.code;
-      if (code === "ENOENT") {
-        return { version: 1, jobs: [] };
-      }
-      throw err;
-    }
-  }
-
-  async saveQuarantine(quarantine: CronQuarantineFile): Promise<void> {
-    const payload = JSON.stringify(quarantine, null, 2);
-    await atomicWrite(this.quarantinePath, payload);
-  }
-}
-
-/** 隔离条目唯一性 key */
-function quarantineEntryKey(entry: CronQuarantineEntry): string {
+function quarantineEntryKey(entry: QuarantinedCronConfigJob): string {
+  const rawId = entry.job
+    ? (normalizeOptionalString(entry.job.id) ?? normalizeOptionalString(entry.job.jobId))
+    : null;
   return JSON.stringify({
-    id: entry.job?.id ?? null,
+    id: rawId ?? null,
     sourceIndex: entry.sourceIndex,
     reason: entry.reason,
     job: entry.job ?? null,
@@ -362,64 +221,52 @@ function quarantineEntryKey(entry: CronQuarantineEntry): string {
   });
 }
 
-/** 添加到隔离文件 */
-export async function quarantineEntries(
-  store: CronJobStore,
-  entries: CronQuarantineEntry[],
-  nowMs?: number,
-): Promise<string | null> {
-  if (entries.length === 0) {
+/** Appends new invalid cron config rows to the quarantine sidecar without duplicating entries. */
+export async function saveCronQuarantineFile(params: {
+  storePath: string;
+  entries: QuarantinedCronConfigJob[];
+  nowMs: number;
+}) {
+  if (params.entries.length === 0) {
     return null;
   }
-
-  const existing = await store.loadQuarantine();
+  const quarantinePath = resolveCronQuarantinePath(params.storePath);
+  const existing = await loadCronQuarantineFile(quarantinePath);
   const seen = new Set(existing.jobs.map(quarantineEntryKey));
   const nextJobs = existing.jobs.slice();
   let appended = false;
-
-  const now = nowMs ?? Date.now();
-
-  for (const entry of [...entries].sort((a, b) => a.sourceIndex - b.sourceIndex)) {
+  for (const entry of params.entries.toSorted((a, b) => a.sourceIndex - b.sourceIndex)) {
     const key = quarantineEntryKey(entry);
     if (seen.has(key)) {
       continue;
     }
+    // Deduplicate by the original invalid row shape so repeated loads do not
+    // keep appending the same quarantined config job.
     seen.add(key);
     appended = true;
     nextJobs.push({
-      quarantinedAtMs: now,
+      quarantinedAtMs: params.nowMs,
       sourceIndex: entry.sourceIndex,
       reason: entry.reason,
-      ...(entry.job ? { job: { ...entry.job } } : {}),
-      ...(entry.raw ? { raw: entry.raw } : {}),
-      ...(entry.state ? { state: { ...entry.state } } : {}),
+      ...(entry.job ? { job: structuredClone(entry.job) } : {}),
+      ...("raw" in entry ? { raw: structuredClone(entry.raw) } : {}),
+      ...(entry.state ? { state: structuredClone(entry.state) } : {}),
       ...(entry.updatedAtMs !== undefined ? { updatedAtMs: entry.updatedAtMs } : {}),
-      ...(entry.scheduleIdentity !== undefined
-        ? { scheduleIdentity: entry.scheduleIdentity }
-        : {}),
+      ...(entry.scheduleIdentity !== undefined ? { scheduleIdentity: entry.scheduleIdentity } : {}),
     });
   }
-
   if (!appended) {
-    return store.getQuarantinePath();
+    return quarantinePath;
   }
-
-  await store.saveQuarantine({ version: 1, jobs: nextJobs });
-  return store.getQuarantinePath();
+  const payload = JSON.stringify({ version: 1, jobs: nextJobs }, null, 2);
+  await atomicWrite(quarantinePath, payload);
+  return quarantinePath;
 }
 
-/** 默认存储实例 */
-let defaultStoreInstance: JsonCronJobStore | null = null;
+export type CronJobStore = any;
 
-/** 获取默认存储实例 */
-export function getDefaultCronStore(): CronJobStore {
-  if (!defaultStoreInstance) {
-    defaultStoreInstance = new JsonCronJobStore();
-  }
-  return defaultStoreInstance;
-}
-
-/** 设置默认存储实例（用于测试） */
-export function setDefaultCronStore(store: CronJobStore): void {
-  defaultStoreInstance = store as JsonCronJobStore;
+export function getDefaultCronStore(): never {
+  throw new Error(
+    "getDefaultCronStore: 需要从 openclaw 参考实现添加。当前 cross-wms 使用 resolveCronJobsStorePath + loadCronJobsStoreSync/loadCronJobsStore 加载存储。",
+  );
 }

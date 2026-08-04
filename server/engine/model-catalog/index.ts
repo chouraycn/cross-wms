@@ -29,9 +29,16 @@ export class ModelCatalog {
   private mergedRows: NormalizedModelCatalogRow[] = [];
   private modelAuthStatuses: Map<string, 'authenticated' | 'unauthenticated' | 'pending'> =
     new Map();
+  private _initialized = false;
 
   constructor() {
     this.registry = new ModelRegistry();
+    this.providerIndex = { version: 1, providers: {} };
+  }
+
+  private ensureInitialized(): void {
+    if (this._initialized) return;
+    this._initialized = true;
     this.providerIndex = loadProviderIndex();
     this.initializeBuiltinModels();
     this.rebuildMergedRows();
@@ -210,10 +217,12 @@ export class ModelCatalog {
   }
 
   listModels(): UnifiedModelCatalogEntry[] {
+    this.ensureInitialized();
     return this.mergedRows.map((row) => this.rowToUnifiedEntry(row));
   }
 
   search(params: ModelSearchParams): ModelSearchResult {
+    this.ensureInitialized();
     let models = this.listModels();
 
     if (params.query) {
@@ -312,6 +321,7 @@ export class ModelCatalog {
   }
 
   listProviders(): string[] {
+    this.ensureInitialized();
     const providers = new Set<string>();
     for (const row of this.mergedRows) {
       providers.add(row.provider);
@@ -343,6 +353,7 @@ export class ModelCatalog {
   }
 
   registerModel(model: ModelManifest, source: UnifiedModelCatalogSource = 'runtime'): boolean {
+    this.ensureInitialized();
     const result = this.registry.register(model, source);
     if (result) {
       this.rebuildMergedRows();
@@ -351,6 +362,7 @@ export class ModelCatalog {
   }
 
   unregisterModel(provider: string, modelId: string): boolean {
+    this.ensureInitialized();
     const result = this.registry.unregister(provider, modelId);
     if (result) {
       this.rebuildMergedRows();
@@ -359,6 +371,7 @@ export class ModelCatalog {
   }
 
   loadManifestCatalog(catalog: ModelCatalogManifest, pluginId: string): void {
+    this.ensureInitialized();
     const plan = planManifestModelCatalogRows({
       registry: {
         plugins: [
@@ -376,6 +389,7 @@ export class ModelCatalog {
   }
 
   loadProviderIndex(index?: ProviderIndex): void {
+    this.ensureInitialized();
     const idx = index ?? this.providerIndex;
     const plan = planProviderIndexModelCatalogRows({ index: idx });
     this.providerIndexRows = [...plan.rows];
@@ -384,10 +398,12 @@ export class ModelCatalog {
   }
 
   getProviderIndex(): ProviderIndex {
+    this.ensureInitialized();
     return this.providerIndex;
   }
 
   getRegistry(): ModelRegistry {
+    this.ensureInitialized();
     return this.registry;
   }
 

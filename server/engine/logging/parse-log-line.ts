@@ -1,5 +1,15 @@
 import type { ParsedLogLine } from './types.js';
 
+// Pino numeric level labels (https://getpino.io/#/docs/api?id=loggerlevels).
+const PINO_LEVEL_NAMES: Record<number, string> = {
+  10: 'trace',
+  20: 'debug',
+  30: 'info',
+  40: 'warn',
+  50: 'error',
+  60: 'fatal',
+};
+
 function extractMessage(value: Record<string, unknown>): string {
   const parts: string[] = [];
   for (const key of Object.keys(value)) {
@@ -31,6 +41,40 @@ function parseMetaName(raw?: unknown): { subsystem?: string; module?: string } {
   }
 }
 
+function resolveLevel(raw: unknown, metaLogLevelName?: unknown): string | undefined {
+  if (typeof metaLogLevelName === 'string' && metaLogLevelName.length > 0) {
+    return metaLogLevelName.toLowerCase();
+  }
+  if (typeof raw === 'string' && raw.length > 0) {
+    return raw.toLowerCase();
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return PINO_LEVEL_NAMES[raw];
+  }
+  return undefined;
+}
+
+function resolveTime(parsed: Record<string, unknown>, meta?: Record<string, unknown>): string | undefined {
+  const timeRaw = parsed.time;
+  if (typeof timeRaw === 'number' && Number.isFinite(timeRaw)) {
+    try {
+      return new Date(timeRaw).toISOString();
+    } catch {
+      return undefined;
+    }
+  }
+  if (typeof timeRaw === 'string') {
+    return timeRaw;
+  }
+  if (typeof meta?.date === 'string') {
+    return meta.date;
+  }
+  if (typeof parsed.timestamp === 'string') {
+    return parsed.timestamp;
+  }
+  return undefined;
+}
+
 export function parseLogLine(raw: string): ParsedLogLine | null {
   try {
     const trimmed = raw.trim();
@@ -42,15 +86,8 @@ export function parseLogLine(raw: string): ParsedLogLine | null {
     const nameMeta = parseMetaName(meta?.name);
     const levelRaw = typeof meta?.logLevelName === 'string' ? meta.logLevelName : parsed.level;
     return {
-      time:
-        typeof parsed.time === 'string'
-          ? parsed.time
-          : typeof meta?.date === 'string'
-            ? meta.date
-            : typeof parsed.timestamp === 'string'
-              ? parsed.timestamp
-              : undefined,
-      level: typeof levelRaw === 'string' ? levelRaw.toLowerCase() : undefined,
+      time: resolveTime(parsed, meta),
+      level: resolveLevel(levelRaw, meta?.logLevelName),
       subsystem: nameMeta.subsystem,
       module: nameMeta.module,
       message: typeof parsed.msg === 'string' ? parsed.msg : extractMessage(parsed),

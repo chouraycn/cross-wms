@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/logs-cli.ts。
 //
 // 降级策略：
-//  - 原模块依赖大量未移植模块：`@openclaw/normalization-core/string-coerce`、
+//  - 原模块依赖大量未移植模块：`@cdf-know/normalization-core/string-coerce`、
 //    `../../packages/gateway-protocol/src/client-info.js`、
 //    `../../packages/gateway-protocol/src/connect-error-details.js`、
 //    `../../packages/terminal-core/src/*`（links/progress-line/stream-writer/theme）、

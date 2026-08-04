@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/plugins-command-helpers.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeLowercaseStringOrEmpty`。改用 cross-wms 的
 //    `../infra/string-coerce.js`，已提供同名导出，行为一致。
 //  - 原模块依赖 `../../packages/terminal-core/src/theme.js` 的 `theme`。

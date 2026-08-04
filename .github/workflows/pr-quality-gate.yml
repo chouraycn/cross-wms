@@ -11,27 +11,20 @@ concurrency:
   group: quality-gate-${{ github.ref }}
   cancel-in-progress: true
 
+# P0-①: 所有检查 job 并行执行（无 needs 依赖），仅 e2e-test 等待构建完成
+# P0-⑥: 使用 composite action 复用 checkout+setup+npm ci，消除重复
+# P2-⑩: Quick-CI 与 PR-Gate 共用 .github/actions/setup-node-deps
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
+      - name: Run oxlint (src + server)
+        run: npm run lint:ox
       - name: Run ESLint (src + server)
         run: npm run lint
-
       - name: Check for unused dependencies
         run: npx depcheck || true
 
@@ -39,27 +32,10 @@ jobs:
     name: Dead Code (knip)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [lint]
+    # P0-①: 不再 needs lint，直接并行执行
     if: github.event_name == 'pull_request'
-    # 门禁保持警告（不阻断）：knip 配置 knip.json 已验证可正确加载并应用，
-    # 但本项目的动态注册模式（通道/插件/命令经注册表字符串派发、桶文件 re-export、
-    # 多 CLI 入口）导致 knip 无法完整追溯导入图，报出大量"未用导出/文件"误报。
-    # 警告模式仍能暴露"死代码全做"清理成果的回归，但阻断会误伤每个 PR。
-    # 后续若针对性补全 entry / 忽略动态注册模式，可将此改回 false 固化。
-    continue-on-error: true
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Run knip dead-code analysis
         run: npm run deadcode
 
@@ -68,53 +44,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
       - name: WKWebView compatibility lint
-        run: bash scripts/wkwebview-lint.sh || true
-
+        run: bash scripts/wkwebview-lint.sh
       - name: Performance lint
-        run: bash scripts/perf-lint.sh || true
-
+        run: bash scripts/perf-lint.sh
       - name: Package version contract check
-        run: bash scripts/check-packages.sh || true
-
+        run: bash scripts/check-packages.sh
       - name: API contract check
-        run: bash scripts/check-api-contracts.sh || true
-
+        run: bash scripts/check-api-contracts.sh
       - name: CI health check
-        run: bash scripts/ci-health-check.sh || true
+        run: bash scripts/ci-health-check.sh
 
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Type check frontend
         run: npx tsc --noEmit
-
       - name: Type check backend
         run: npx tsc --noEmit --project server/tsconfig.json
 
@@ -125,25 +76,10 @@ jobs:
     env:
       ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Run tests with coverage
-        # vitest.config.ts 的 coverage.thresholds 是主门禁：不满足时 vitest 直接非 0 退出。
         run: npm run test:ci -- --passWithNoTests
-
       - name: Check coverage thresholds
-        # 辅助诊断：打印各维度数值。主门禁已由上一步 vitest thresholds 强制；
-        # 此处的阈值与 vitest.config.ts 保持一致，作为二次校验与可读输出。
         run: |
           COVERAGE_JSON=$(cat coverage/coverage-summary.json 2>/dev/null || echo '{}')
           LINES=$(echo "$COVERAGE_JSON" | jq -r '.total.lines.pct // 0')
@@ -157,12 +93,10 @@ jobs:
           echo "Branches: $BRANCHES%"
           echo "Statements: $STATEMENTS%"
 
-          # 阈值与 vitest.config.ts -> coverage.thresholds 保持一致。
-          # lines/statements 偏低因 v8 provider 行级统计限制，functions/branches 为主信号。
-          MIN_LINES=2
-          MIN_FUNCTIONS=40
-          MIN_BRANCHES=35
-          MIN_STATEMENTS=2
+          MIN_LINES=40
+          MIN_FUNCTIONS=50
+          MIN_BRANCHES=45
+          MIN_STATEMENTS=40
 
           if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
             echo "::error::Lines coverage ($LINES%) below threshold ($MIN_LINES%)"
@@ -180,7 +114,6 @@ jobs:
             echo "::error::Statements coverage ($STATEMENTS%) below threshold ($MIN_STATEMENTS%)"
             exit 1
           fi
-
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
@@ -188,7 +121,6 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 30
-
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -201,25 +133,13 @@ jobs:
     name: E2E API Test (vitest)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint, typecheck]
+    # P0-①: 不再 needs [lint, typecheck]，直接并行
     env:
       ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Run E2E API tests (regression gate)
         run: npm run test:e2e:api -- --passWithNoTests 2>&1 | tee e2e-api-output.log
-
       - name: Check E2E pass rate (>= 95%)
         if: always()
         run: |
@@ -243,7 +163,6 @@ jobs:
             exit 1
           fi
           echo "✅ E2E pass rate ${PASS_RATE}% meets threshold ${THRESHOLD}%"
-
       - name: Upload E2E API results
         uses: actions/upload-artifact@v4
         if: always()
@@ -254,24 +173,13 @@ jobs:
             e2e-results/api-results.json
           retention-days: 7
 
+  # P0-①: 构建不再等待测试完成，直接并行启动
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint, typecheck, test, e2e-api-test, static-checks]
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Cache build artifacts
         uses: actions/cache@v4
         with:
@@ -283,7 +191,6 @@ jobs:
             ${{ runner.os }}-vite-build-v2-${{ hashFiles('**/package-lock.json', 'vite.config.ts', 'tsconfig.json') }}
             ${{ runner.os }}-vite-build-v2-${{ hashFiles('**/package-lock.json') }}
             ${{ runner.os }}-vite-build-v2-
-
       - name: Build frontend (vite)
         id: build
         run: |
@@ -293,7 +200,6 @@ jobs:
           BUILD_TIME_MS=$(( (END_TIME - START_TIME) / 1000000 ))
           echo "build_time_ms=$BUILD_TIME_MS" >> "$GITHUB_OUTPUT"
           echo "Build time: ${BUILD_TIME_MS}ms"
-
       - name: Check build warnings
         run: |
           WARNING_COUNT=$(grep -c "warning" build-output.log || echo 0)
@@ -304,7 +210,6 @@ jobs:
             echo "::error::Build contains errors"
             exit 1
           fi
-
       - name: Check bundle size
         id: bundle-size
         run: |
@@ -313,21 +218,18 @@ jobs:
           echo "Bundle size: ${TOTAL_SIZE}KB"
           echo "total_size_kb=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
           
-          # 统计 JS 和 CSS 文件大小
           JS_SIZE=$(find dist/ -name '*.js' -exec du -sk {} + | awk '{sum+=$1} END {print sum+0}')
           CSS_SIZE=$(find dist/ -name '*.css' -exec du -sk {} + | awk '{sum+=$1} END {print sum+0}')
           echo "js_size_kb=$JS_SIZE" >> "$GITHUB_OUTPUT"
           echo "css_size_kb=$CSS_SIZE" >> "$GITHUB_OUTPUT"
           echo "JS: ${JS_SIZE}KB, CSS: ${CSS_SIZE}KB"
           
-          # 统计文件数量
           FILE_COUNT=$(find dist/ -type f | wc -l)
           echo "file_count=$FILE_COUNT" >> "$GITHUB_OUTPUT"
           
           if [ "$TOTAL_SIZE" -gt "$MAX_SIZE" ]; then
             echo "::warning::Bundle size exceeds ${MAX_SIZE}KB (current: ${TOTAL_SIZE}KB)"
           fi
-
       - name: Post build performance comment
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -355,7 +257,6 @@ jobs:
             > Generated from commit \`${context.sha.substring(0, 7)}\`
             `;
             
-            // 查找已有的性能报告评论并更新
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -381,7 +282,6 @@ jobs:
                 body: commentBody,
               });
             }
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -393,20 +293,8 @@ jobs:
     name: Backend Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [lint, typecheck, test, e2e-api-test, static-checks]
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Build backend (esbuild)
         run: |
           ./node_modules/.bin/esbuild server/index.ts \
@@ -432,7 +320,6 @@ jobs:
             --external:sqlite-vec \
             --sourcemap=inline \
             2>&1 | tee backend-build.log
-
       - name: Verify backend bundle
         run: |
           if [ ! -f /tmp/cdf-server-bundle.cjs ]; then
@@ -445,7 +332,6 @@ jobs:
             echo "::error::Backend bundle is suspiciously small ($BUNDLE_SIZE bytes)"
             exit 1
           fi
-          # Syntax check
           node -c /tmp/cdf-server-bundle.cjs
           echo "✅ Backend bundle verified"
 
@@ -454,63 +340,84 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Run npm audit (fail on critical)
         run: npm audit --audit-level=critical
-
       - name: Run dependency vulnerability scan
         run: npx snyk test --severity-threshold=critical || true
-
       - name: Check for outdated dependencies (info only)
         run: npm outdated || true
         if: always()
 
+  # P1-③: Playwright UI E2E 分片并行执行（4 shards）
   e2e-test:
-    name: E2E API Test
+    name: E2E UI Test (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [frontend-build, backend-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/4, 2/4, 3/4, 4/4]
     env:
       ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: ./.github/actions/setup-node-deps
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: npm run test:e2e -- --passWithNoTests 2>&1 | tee e2e-output.log
-
+      - name: Run E2E tests (shard ${{ matrix.shard }})
+        run: npx playwright test --config=e2e/playwright.config.ts --shard=${{ matrix.shard }} 2>&1 | tee e2e-output-${{ matrix.shard }}.log
+      - name: Merge shard results
+        if: always()
+        run: |
+          mkdir -p e2e-results
+          cp e2e-output-${{ matrix.shard }}.log e2e-results/ 2>/dev/null || true
       - name: Upload E2E results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e2e-results
+          name: e2e-results-${{ matrix.shard }}
           path: |
-            e2e-output.log
+            e2e-output-${{ matrix.shard }}.log
             e2e-results/
           retention-days: 7
+
+  # P2-④: Flaky test 检测 — 对核心测试运行 2 次重试，识别不稳定测试
+  flaky-test-detection:
+    name: Flaky Test Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
+    steps:
+      - uses: ./.github/actions/setup-node-deps
+      - name: Run tests with retry (detect flaky tests)
+        run: |
+          npx vitest run --retry=2 --reporter=json --outputFile=flaky-results.json 2>&1 | tee flaky-output.log || true
+          
+          if [ -f flaky-results.json ]; then
+            TOTAL=$(jq '.numTotalTests' flaky-results.json 2>/dev/null || echo 0)
+            RETRIED=$(jq '.testResults | map(.retryCount // 0) | add // 0' flaky-results.json 2>/dev/null || echo 0)
+            echo "Total tests: $TOTAL"
+            echo "Retried tests: $RETRIED"
+            if [ "$RETRIED" -gt 0 ]; then
+              echo "::warning::$RETRIED tests required retry (potential flaky tests)"
+              # List flaky test names
+              jq -r '.testResults[] | select(.retryCount > 0) | .name' flaky-results.json 2>/dev/null || true
+            else
+              echo "✅ No flaky tests detected"
+            fi
+          fi
+      - name: Upload flaky test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaky-test-report
+          path: |
+            flaky-output.log
+            flaky-results.json
+          retention-days: 14
+          if-no-files-found: warn
 
   swift-test:
     name: Swift Test (6.0.3)
@@ -519,7 +426,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-
       - name: Check for Swift changes
         id: swift_changes
         uses: dorny/paths-filter@v3
@@ -531,17 +437,14 @@ jobs:
               - 'scripts/build-macos-swift.sh'
               - 'scripts/create-dmg.sh'
               - 'scripts/codesign-mac-app.sh'
-
       - name: Select Xcode
         if: steps.swift_changes.outputs.swift == 'true'
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-
       - name: Set up Swift
         if: steps.swift_changes.outputs.swift == 'true'
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: '6.0.3'
-
       - name: Cache Swift Package
         if: steps.swift_changes.outputs.swift == 'true'
         uses: actions/cache@v4
@@ -550,26 +453,21 @@ jobs:
           key: ${{ runner.os }}-swift-6.0.3-spm-${{ hashFiles('apps/macos/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-swift-6.0.3-spm-
-
       - name: Resolve Dependencies
         if: steps.swift_changes.outputs.swift == 'true'
         run: swift package resolve
         working-directory: apps/macos
-
       - name: Build
         if: steps.swift_changes.outputs.swift == 'true'
         run: swift build --build-tests
         working-directory: apps/macos
-
       - name: Run Tests
         if: steps.swift_changes.outputs.swift == 'true'
         run: swift test --disable-sandbox 2>&1 | tee test-output.log
         working-directory: apps/macos
-
       - name: Skip (no Swift changes)
         if: steps.swift_changes.outputs.swift != 'true'
         run: echo "No Swift-related changes detected, skipping Swift tests."
-
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always() && steps.swift_changes.outputs.swift == 'true'

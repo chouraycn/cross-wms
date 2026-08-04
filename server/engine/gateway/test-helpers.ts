@@ -1,7 +1,37 @@
-// 移植自 openclaw/src/gateway/test-helpers.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 注意：本文件为测试基础设施 stub，仅用于占位，不包含实际测试逻辑。
-
-// 原文件无顶层 export 或仅包含 re-export，已降级为空 stub。
-
-export {};
+/**
+ * Public barrel for gateway integration test helpers.
+ */
+export {
+  agentCommand,
+  cronIsolatedRun,
+  dispatchInboundMessageMock,
+  embeddedRunMock,
+  getReplyFromConfig,
+  mockGetReplyFromConfigOnce,
+  agentDiscoveryMock,
+  testState,
+  testTailnetIPv4,
+  testTailscaleWhois,
+} from "./test-helpers.runtime-state.js";
+export { resetTestPluginRegistry, setTestPluginRegistry } from "./test-helpers.plugin-registry.js";
+export {
+  connectOk,
+  connectReq,
+  connectWebchatClient,
+  createGatewaySuiteHarness,
+  getFreePort,
+  getTrackedConnectChallengeNonce,
+  installGatewayTestHooks,
+  onceMessage,
+  readConnectChallengeNonce,
+  rpcReq,
+  startConnectedServerWithClient,
+  startGatewayServer,
+  startGatewayServerWithRetries,
+  startServer,
+  startServerWithClient,
+  trackConnectChallengeNonce,
+  waitForSystemEvent,
+  withGatewayServer,
+  writeSessionStore,
+} from "./test-helpers.server.js";

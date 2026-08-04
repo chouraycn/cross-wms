@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Runtime SDK subpath for command primitive text classifiers.
  */

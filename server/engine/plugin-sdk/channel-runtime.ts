@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @deprecated Compatibility shim only. Keep old plugins working, but do not
  * add new imports here and do not use this subpath from repo code.

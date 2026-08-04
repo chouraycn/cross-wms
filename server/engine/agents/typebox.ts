@@ -1,23 +1,64 @@
 /**
- * 移植自 openclaw/src/agents/schema/typebox.ts
+ * Shared TypeBox schema helpers for agent tools.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 移植自 openclaw/src/agents/schema/typebox.ts
  */
+import { Type } from "typebox";
+import {
+  CHANNEL_TARGET_DESCRIPTION,
+  CHANNEL_TARGETS_DESCRIPTION,
+} from "../infra/outbound/channel-target.js";
+export { optionalStringEnum, stringEnum } from "./string-enum.js";
 
-export function channelTargetSchema(..._args: unknown[]): unknown {
-  return undefined;
+/** Builds a schema for one outbound channel target. */
+export function channelTargetSchema(options?: { description?: string }) {
+  return Type.String({
+    description: options?.description ?? CHANNEL_TARGET_DESCRIPTION,
+  });
 }
-export function channelTargetsSchema(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Builds a schema for multiple outbound channel targets. */
+export function channelTargetsSchema(options?: { description?: string }) {
+  return Type.Array(
+    channelTargetSchema({ description: options?.description ?? CHANNEL_TARGETS_DESCRIPTION }),
+  );
 }
-export function optionalFiniteNumberSchema(..._args: unknown[]): unknown {
-  return undefined;
+
+type IntegerSchemaOptions = {
+  description?: string;
+  maximum?: number;
+};
+
+type NumberSchemaOptions = {
+  description?: string;
+  deprecated?: boolean;
+  minimum?: number;
+  maximum?: number;
+  exclusiveMinimum?: number;
+  exclusiveMaximum?: number;
+};
+
+/** Builds an optional finite number schema with caller-provided metadata. */
+export function optionalFiniteNumberSchema(options: NumberSchemaOptions = {}) {
+  return Type.Optional(Type.Number(options));
 }
-export function optionalPositiveIntegerSchema(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Builds an optional positive integer schema. */
+export function optionalPositiveIntegerSchema(options: IntegerSchemaOptions = {}) {
+  return Type.Optional(
+    Type.Integer({
+      minimum: 1,
+      ...options,
+    }),
+  );
 }
-export function optionalNonNegativeIntegerSchema(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Builds an optional non-negative integer schema. */
+export function optionalNonNegativeIntegerSchema(options: IntegerSchemaOptions = {}) {
+  return Type.Optional(
+    Type.Integer({
+      minimum: 0,
+      ...options,
+    }),
+  );
 }

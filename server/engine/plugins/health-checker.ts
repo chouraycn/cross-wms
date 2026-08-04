@@ -1,6 +1,6 @@
 import { logger } from '../../logger.js';
 import type { PluginHealthMetrics, PluginEvent } from './types.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import { listFailedPlugins } from './loader-state.js';
 import { getSandboxStats } from './sandbox.js';
 
@@ -44,14 +44,14 @@ let currentOptions: Required<HealthCheckOptions> = { ...DEFAULT_OPTIONS };
  * 手动执行一次健康检查。
  *
  * 数据来源：
- * - pluginRuntimeRegistry：已注册插件清单
+ * - PluginRegistry：已注册插件清单
  * - loader-state：失败的插件
  * - sandbox stats：调用次数、错误次数
  */
 export function runHealthCheck(options: HealthCheckOptions = {}): HealthSnapshot {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   currentOptions = opts;
-  const entries = pluginRuntimeRegistry.list();
+  const entries = PluginRegistry.list();
   const failed = listFailedPlugins();
   const failedIds = new Set(failed.map((f) => f.pluginId));
   const now = Date.now();

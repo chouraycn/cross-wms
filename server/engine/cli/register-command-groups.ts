@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/program/register-command-groups.ts
 //
 // 降级策略：
-//  - 原模块依赖 @openclaw/normalization-core/string-normalization 的 uniqueStrings；
+//  - 原模块依赖 @cdf-know/normalization-core/string-normalization 的 uniqueStrings；
 //    cross-wms 未移植该包；内联降级实现。
 
 import type { Command } from "commander";

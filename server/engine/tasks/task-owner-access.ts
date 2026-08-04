@@ -1,7 +1,7 @@
 // Normalizes task owner keys and checks requester access to task records.
 // 移植自 openclaw/src/tasks/task-owner-access.ts。
 // 降级：task-registry.ts 未移植（2409行），从 _openclaw-task-stubs.js 导入占位实现。
-// @openclaw/normalization-core/string-coerce 改用 cross-wms 的 ../infra/string-coerce.js。
+// @cdf-know/normalization-core/string-coerce 改用 cross-wms 的 ../infra/string-coerce.js。
 import { normalizeOptionalString } from "../infra/string-coerce.js";
 import {
   findTaskByRunId,

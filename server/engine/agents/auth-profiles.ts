@@ -1,88 +1,98 @@
-import { logger } from '../../logger.js';
-import {
-  registerAuthProfile,
-  updateAuthProfile,
-  getAuthProfile,
-  listAuthProfiles,
-  deleteAuthProfile,
-  getAuthProfilesByProvider,
-  isAuthProfileValid,
-  clearAuthProfiles,
-} from './auth-profiles-registry.js';
-import {
-  setSessionAuthOverride,
-  getSessionAuthOverride,
-  clearSessionAuthOverride,
-  applySessionOverride,
-  listSessionAuthOverrides,
-  cleanupExpiredOverrides,
-} from './auth-profiles-session-override.js';
-
-export type { AuthProfile } from './auth-profiles-registry.js';
-export { AuthProfileSchema } from './auth-profiles-registry.js';
-export type { SessionAuthOverride } from './auth-profiles-session-override.js';
-
-export function createAuthProfile(params: {
-  id: string;
-  name: string;
-  provider: string;
-  type: 'api_key' | 'oauth' | 'bearer' | 'basic' | 'custom';
-  credentials: Record<string, unknown>;
-  scopes?: string[];
-  expiresAt?: number;
-  metadata?: Record<string, unknown>;
-}) {
-  return registerAuthProfile({
-    id: params.id,
-    name: params.name,
-    provider: params.provider,
-    type: params.type,
-    credentials: params.credentials,
-    scopes: params.scopes ?? [],
-    expiresAt: params.expiresAt,
-    metadata: params.metadata ?? {},
-  });
-}
-
-export function getEffectiveAuthProfile(profileId: string, sessionId?: string) {
-  const profile = getAuthProfile(profileId);
-  if (!profile) return undefined;
-  
-  if (sessionId) {
-    return applySessionOverride(profile, sessionId);
-  }
-  
-  return profile;
-}
-
-export function validateAuthProfile(profileId: string): boolean {
-  const profile = getAuthProfile(profileId);
-  if (!profile) return false;
-  return isAuthProfileValid(profile);
-}
-
-export function refreshAuthProfile(profileId: string, credentials: Record<string, unknown>, expiresAt?: number) {
-  return updateAuthProfile(profileId, {
-    credentials,
-    expiresAt,
-  });
-}
-
+/**
+ * Public auth-profile barrel for agent/provider auth code.
+ * Keep external callers on these exported contracts instead of deep
+ * auth-profile implementation files.
+ */
+export { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "./auth-profiles/constants.js";
+export type {
+  AuthCredentialReasonCode,
+  TokenExpiryState,
+} from "./auth-profiles/credential-state.js";
+export type { AuthProfileEligibilityReasonCode } from "./auth-profiles/order.js";
+export { resolveAuthProfileDisplayLabel } from "./auth-profiles/display.js";
+export { formatAuthDoctorHint } from "./auth-profiles/doctor.js";
 export {
-  registerAuthProfile,
-  updateAuthProfile,
-  getAuthProfile,
-  listAuthProfiles,
-  deleteAuthProfile,
-  getAuthProfilesByProvider,
-  isAuthProfileValid,
-  clearAuthProfiles,
-  setSessionAuthOverride,
-  getSessionAuthOverride,
-  clearSessionAuthOverride,
-  applySessionOverride,
-  listSessionAuthOverrides,
-  cleanupExpiredOverrides,
-};
-
-logger.debug('[Agents:AuthProfiles] Module loaded');
+  externalCliDiscoveryForConfigStatus,
+  externalCliDiscoveryForProviderAuth,
+  externalCliDiscoveryForProviders,
+  externalCliDiscoveryNone,
+  externalCliDiscoveryScoped,
+  type ExternalCliAuthDiscovery,
+} from "./auth-profiles/external-cli-discovery.js";
+export {
+  refreshOAuthCredentialForRuntime,
+  resolveApiKeyForProfile,
+} from "./auth-profiles/oauth.js";
+export {
+  isConfiguredAwsSdkAuthProfileForProvider,
+  isStoredCredentialCompatibleWithAuthProvider,
+  resolveAuthProfileEligibility,
+  resolveAuthProfileOrder,
+} from "./auth-profiles/order.js";
+export {
+  resolveAuthStatePathForDisplay,
+  resolveAuthStorePathForDisplay,
+} from "./auth-profiles/paths.js";
+export {
+  dedupeProfileIds,
+  listProfilesForProvider,
+  markAuthProfileSuccess,
+  removeProviderAuthProfilesWithLock,
+  resolveSubscriptionAuthModeForProfiles,
+  setAuthProfileOrder,
+  upsertAuthProfile,
+  upsertAuthProfileWithLock,
+} from "./auth-profiles/profiles.js";
+export {
+  repairOAuthProfileIdMismatch,
+  suggestOAuthProfileIdForLegacyDefault,
+} from "./auth-profiles/repair.js";
+export {
+  buildPortableAuthProfileSecretsStoreForAgentCopy,
+  isAuthProfileCredentialPortableForAgentCopy,
+  resolveAuthProfilePortability,
+  type AuthProfilePortability,
+  type AuthProfilePortabilityReason,
+} from "./auth-profiles/portability.js";
+export {
+  clearRuntimeAuthProfileStoreSnapshots,
+  ensureAuthProfileStore,
+  ensureAuthProfileStoreWithoutExternalProfiles,
+  getRuntimeAuthProfileStoreSnapshot,
+  hasAnyAuthProfileStoreSource,
+  hasLocalAuthProfileStoreSource,
+  loadAuthProfileStoreForSecretsRuntime,
+  loadAuthProfileStoreWithoutExternalProfiles,
+  loadAuthProfileStoreForRuntime,
+  replaceRuntimeAuthProfileStoreSnapshots,
+  loadAuthProfileStore,
+  saveAuthProfileStore,
+  findPersistedAuthProfileCredential,
+  resolvePersistedAuthProfileOwnerAgentDir,
+} from "./auth-profiles/store.js";
+export type {
+  ApiKeyCredential,
+  AuthProfileBlockedReason,
+  AuthProfileBlockedSource,
+  AuthProfileCredential,
+  AuthProfileFailureReason,
+  AuthProfileIdRepairResult,
+  AuthProfileState,
+  AuthProfileStore,
+  OAuthCredential,
+  ProfileUsageStats,
+  TokenCredential,
+} from "./auth-profiles/types.js";
+export {
+  calculateAuthProfileCooldownMs,
+  clearAuthProfileCooldown,
+  clearExpiredCooldowns,
+  getSoonestCooldownExpiry,
+  isProfileInCooldown,
+  markAuthProfileCooldown,
+  markAuthProfileBlockedUntil,
+  markAuthProfileFailure,
+  resolveProfilesUnavailableReason,
+  resolveProfileUnusableUntilForDisplay,
+  setAuthProfileFailureHook,
+} from "./auth-profiles/usage.js";

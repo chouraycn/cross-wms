@@ -1,5 +1,6 @@
-// 移植自 openclaw/src/infra/file-lock-manager.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Exposes lifecycle-owned file lock managers with fs-safe defaults.
+import "./fs-safe-defaults.js";
 
-export type createFileLockManager = unknown;
-export const createFileLockManager: unknown = undefined;
+// Process-local file lock manager used by code that needs explicit lifecycle
+// control instead of a one-shot withFileLock call.
+export { createFileLockManager } from "@openclaw/fs-safe/file-lock";

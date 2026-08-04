@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Device auth store helpers persist and normalize paired device auth records.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 import {
   type DeviceAuthEntry,
   type DeviceAuthStore,

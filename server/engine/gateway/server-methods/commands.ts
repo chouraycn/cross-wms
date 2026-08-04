@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Commands gateway methods expose validated command listing for a resolved
 // agent, provider, scope, and argument-detail request.
 import {

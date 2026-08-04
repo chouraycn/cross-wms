@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Metadata registry loader builds plugin metadata registries without activating runtime barrels.
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { loadOpenClawPlugins } from "../loader.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Implements maintenance commands for Crestodian-backed session cleanup.
 import { logVerbose } from '@openclaw-src/globals.js';
 import type { CommandHandler } from "./commands-types.js";

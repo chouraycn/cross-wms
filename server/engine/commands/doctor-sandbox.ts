@@ -2,7 +2,7 @@
 /** Doctor checks and repairs for Docker sandbox images, namespaces, and registry state. */
 import fs from "node:fs";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import {
   DEFAULT_SANDBOX_BROWSER_IMAGE,
   DEFAULT_SANDBOX_COMMON_IMAGE,

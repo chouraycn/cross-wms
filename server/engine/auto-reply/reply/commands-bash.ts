@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Implements bash command execution, approval, and stop handling.
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { handleBashChatCommand } from "./bash-command.js";

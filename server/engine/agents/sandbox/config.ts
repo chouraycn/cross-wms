@@ -1,12 +1,10 @@
-// @ts-nocheck
-
 /**
  * Sandbox configuration resolver.
  *
  * Merges global and agent settings into normalized Docker, SSH, browser, prune, scope, and tool-policy config.
  */
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { resolveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { SandboxSshSettings } from "../../config/types.sandbox.js";
 import { normalizeSecretInputString } from "../../config/types.secrets.js";

@@ -1,11 +1,11 @@
 // 规范化插件作用域标识符和作用域列表。
 //
-// 降级说明：原 openclaw 版本依赖 `@openclaw/normalization-core/string-normalization`
+// 降级说明：原 openclaw 版本依赖 `@cdf-know/normalization-core/string-normalization`
 // 的 `normalizeStringEntries`，这里改为本地实现以避免引入外部包。
 
 /**
  * 规范化字符串条目数组：去除首尾空白、过滤空值、保留顺序。
- * 本地降级实现，替代 `@openclaw/normalization-core/string-normalization` 的 `normalizeStringEntries`。
+ * 本地降级实现，替代 `@cdf-know/normalization-core/string-normalization` 的 `normalizeStringEntries`。
  */
 function normalizeStringEntries(entries: readonly unknown[]): string[] {
   const result: string[] = [];

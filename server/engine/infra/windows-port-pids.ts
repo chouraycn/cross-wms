@@ -1,5 +1,5 @@
 // 解析拥有监听端口的 Windows 进程 ID。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-coerce 和 string-normalization 导入，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-coerce 和 string-normalization 导入，
 // 从 ../daemon/cmd-argv.js 导入 parseCmdScriptCommandLine；
 // cross-wms 使用本地 string-coerce、string-normalization 和本地 parseCmdScriptCommandLine 实现。
 import { spawnSync } from "node:child_process";

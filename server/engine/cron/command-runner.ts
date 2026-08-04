@@ -1,119 +1,170 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import type { CronRunOutcome } from "./types.js";
+import { finiteSecondsToTimerSafeMilliseconds } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { runCommandWithTimeout } from "../process/exec.js";
+import type { CronRunDiagnostics, CronRunOutcome, CronRunStatus, CronJob } from "./types.js";
 
-export interface CommandRunnerOptions {
-  argv: string[];
-  cwd?: string;
-  env?: Record<string, string>;
-  input?: string;
-  timeoutSeconds?: number;
-  noOutputTimeoutSeconds?: number;
-  outputMaxBytes?: number;
+const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60_000;
+const EFFECTIVELY_UNBOUNDED_TIMEOUT_MS = 2_147_483_647;
+
+function secondsToMs(value: number | undefined): number | undefined {
+  if (typeof value !== "number") {
+    return undefined;
+  }
+  if (value <= 0) {
+    return EFFECTIVELY_UNBOUNDED_TIMEOUT_MS;
+  }
+  return finiteSecondsToTimerSafeMilliseconds(value) ?? undefined;
 }
 
-export interface CommandRunnerResult {
-  outcome: CronRunOutcome;
-  stdout?: string;
-  stderr?: string;
-  exitCode?: number;
+function formatCommand(argv: string[]): string {
+  return argv.map((arg) => JSON.stringify(arg)).join(" ");
 }
 
-export async function runCommand(options: CommandRunnerOptions): Promise<CommandRunnerResult> {
-  const { argv, cwd, env, input, timeoutSeconds = 300, noOutputTimeoutSeconds = 120, outputMaxBytes = 1024 * 1024 * 10 } = options;
+function trimOutput(value: string): string | undefined {
+  return normalizeOptionalString(value);
+}
 
-  if (argv.length === 0) {
-    return {
-      outcome: {
-        status: "error",
-        error: "argv is empty",
+function buildCommandSummary(params: { stdout: string; stderr: string }): string | undefined {
+  const stdout = trimOutput(params.stdout);
+  const stderr = trimOutput(params.stderr);
+  if (stdout && stderr) {
+    return `stdout:\n${stdout}\n\nstderr:\n${stderr}`;
+  }
+  return stdout ?? stderr;
+}
+
+function commandErrorMessage(params: {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  termination: string;
+}): string {
+  if (params.termination === "timeout") {
+    return "command timed out";
+  }
+  if (params.termination === "no-output-timeout") {
+    return "command produced no output before noOutputTimeoutSeconds";
+  }
+  if (params.termination === "signal") {
+    return params.signal ? `command stopped by signal ${params.signal}` : "command stopped";
+  }
+  if (typeof params.code === "number") {
+    return `command exited with code ${params.code}`;
+  }
+  return "command failed";
+}
+
+function buildDiagnostics(params: {
+  command: string;
+  status: CronRunStatus;
+  summary?: string;
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  stdoutTruncatedBytes?: number;
+  stderrTruncatedBytes?: number;
+  nowMs: () => number;
+}): CronRunDiagnostics {
+  const truncated =
+    Boolean(params.stdoutTruncatedBytes && params.stdoutTruncatedBytes > 0) ||
+    Boolean(params.stderrTruncatedBytes && params.stderrTruncatedBytes > 0);
+  return {
+    ...(params.summary ? { summary: params.summary } : {}),
+    entries: [
+      {
+        ts: params.nowMs(),
+        source: "exec",
+        severity: params.status === "ok" ? "info" : "error",
+        message: params.summary
+          ? `command ${params.status}: ${params.command}`
+          : `command ${params.status} with no output: ${params.command}`,
+        exitCode: params.code,
+        truncated,
+        ...(params.signal ? { toolName: `signal:${params.signal}` } : {}),
       },
+    ],
+  };
+}
+
+/** Executes a cron command payload without starting an agent/model run. */
+export async function runCronCommandJob(params: {
+  job: CronJob;
+  abortSignal?: AbortSignal;
+  nowMs?: () => number;
+}): Promise<CronRunOutcome> {
+  const nowMs = params.nowMs ?? Date.now;
+  const { payload } = params.job;
+  if (payload.kind !== "command") {
+    return {
+      status: "skipped",
+      error: 'command runner requires payload.kind="command"',
+    };
+  }
+  if (!Array.isArray(payload.argv) || payload.argv.length === 0) {
+    return {
+      status: "skipped",
+      error: 'command payload requires non-empty "argv"',
     };
   }
 
-  return new Promise((resolve) => {
-    const [command, ...args] = argv;
-    let stdout = "";
-    let stderr = "";
-    let lastOutputAt = Date.now();
-
-    const child = spawn(command, args, {
-      cwd,
-      env: { ...process.env, ...env },
-      stdio: ["pipe", "pipe", "pipe"],
+  const command = formatCommand(payload.argv);
+  const noOutputTimeoutMs = secondsToMs(payload.noOutputTimeoutSeconds);
+  try {
+    const result = await runCommandWithTimeout(payload.argv, {
+      timeoutMs: secondsToMs(payload.timeoutSeconds) ?? DEFAULT_COMMAND_TIMEOUT_MS,
+      ...(payload.cwd ? { cwd: payload.cwd } : {}),
+      ...(payload.input !== undefined ? { input: payload.input } : {}),
+      ...(payload.env ? { env: payload.env } : {}),
+      ...(noOutputTimeoutMs !== undefined ? { noOutputTimeoutMs } : {}),
+      ...(payload.outputMaxBytes !== undefined ? { maxOutputBytes: payload.outputMaxBytes } : {}),
+      ...(params.abortSignal ? { signal: params.abortSignal } : {}),
+      killProcessTree: true,
     });
-
-    const timeoutId = setTimeout(() => {
-      child.kill("SIGTERM");
-      setTimeout(() => child.kill("SIGKILL"), 5000);
-    }, timeoutSeconds * 1000);
-
-    const noOutputTimeoutId = setInterval(() => {
-      if (Date.now() - lastOutputAt > noOutputTimeoutSeconds * 1000) {
-        child.kill("SIGTERM");
-        setTimeout(() => child.kill("SIGKILL"), 5000);
-      }
-    }, 1000);
-
-    child.stdout.on("data", (data) => {
-      lastOutputAt = Date.now();
-      if (stdout.length + data.length < outputMaxBytes) {
-        stdout += data.toString();
-      }
-    });
-
-    child.stderr.on("data", (data) => {
-      lastOutputAt = Date.now();
-      if (stderr.length + data.length < outputMaxBytes) {
-        stderr += data.toString();
-      }
-    });
-
-    if (input) {
-      child.stdin.write(input);
-      child.stdin.end();
-    }
-
-    child.on("close", (exitCode) => {
-      clearTimeout(timeoutId);
-      clearInterval(noOutputTimeoutId);
-
-      const exitCodeNum: number | undefined = exitCode ?? undefined;
-
-      if (exitCode === 0) {
-        resolve({
-          outcome: {
-            status: "ok",
-            summary: stdout.trim() || "command completed successfully",
-          },
-          stdout,
-          stderr,
-          exitCode: exitCodeNum,
+    const ok =
+      result.code === 0 &&
+      !result.killed &&
+      result.termination !== "timeout" &&
+      result.termination !== "no-output-timeout" &&
+      result.termination !== "signal";
+    const status: CronRunStatus = ok ? "ok" : "error";
+    const summary = buildCommandSummary({ stdout: result.stdout, stderr: result.stderr });
+    const error = ok
+      ? undefined
+      : commandErrorMessage({
+          code: result.code,
+          signal: result.signal,
+          termination: result.termination,
         });
-      } else {
-        resolve({
-          outcome: {
-            status: "error",
-            error: stderr.trim() || `command exited with code ${exitCode}`,
+    return {
+      status,
+      ...(error ? { error } : {}),
+      ...(summary ? { summary } : {}),
+      diagnostics: buildDiagnostics({
+        command,
+        status,
+        summary,
+        code: result.code,
+        signal: result.signal,
+        stdoutTruncatedBytes: result.stdoutTruncatedBytes,
+        stderrTruncatedBytes: result.stderrTruncatedBytes,
+        nowMs,
+      }),
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    return {
+      status: "error",
+      error,
+      diagnostics: {
+        summary: error,
+        entries: [
+          {
+            ts: nowMs(),
+            source: "exec",
+            severity: "error",
+            message: `command failed to start: ${command}: ${error}`,
+            exitCode: null,
           },
-          stdout,
-          stderr,
-          exitCode: exitCodeNum,
-        });
-      }
-    });
-
-    child.on("error", (err) => {
-      clearTimeout(timeoutId);
-      clearInterval(noOutputTimeoutId);
-
-      resolve({
-        outcome: {
-          status: "error",
-          error: err.message,
-        },
-        stdout,
-        stderr,
-      });
-    });
-  });
+        ],
+      },
+    };
+  }
 }

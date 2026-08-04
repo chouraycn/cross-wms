@@ -1,16 +1,39 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/runtime-plugin-config.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway runtime plugin config resolver.
+// Applies plugin auto-enable rules against the active manifest snapshot.
+import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { getCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
+import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 
-export function resolveGatewayPluginConfig(..._args: unknown[]): unknown {
-  return undefined;
+type CachedGatewayPluginConfig = {
+  snapshot: PluginMetadataSnapshot;
+  config: OpenClawConfig;
+};
+
+const gatewayPluginConfigCache = new WeakMap<OpenClawConfig, CachedGatewayPluginConfig>();
+
+/** Resolves runtime config with plugin auto-enable applied for gateway startup/reload paths. */
+export function resolveGatewayPluginConfig(params: { config: OpenClawConfig }): OpenClawConfig {
+  const currentSnapshot = getCurrentPluginMetadataSnapshot({
+    config: params.config,
+    allowWorkspaceScopedSnapshot: true,
+  });
+  if (!currentSnapshot) {
+    return (applyPluginAutoEnable({
+      config: params.config,
+    }) as { config: OpenClawConfig }).config;
+  }
+
+  const cached = gatewayPluginConfigCache.get(params.config);
+  if (cached?.snapshot === currentSnapshot) {
+    return cached.config;
+  }
+
+  const config = (applyPluginAutoEnable({
+    config: params.config,
+    manifestRegistry: currentSnapshot.manifestRegistry,
+    discovery: currentSnapshot.discovery,
+  }) as { config: OpenClawConfig }).config;
+  gatewayPluginConfigCache.set(params.config, { snapshot: currentSnapshot, config });
+  return config;
 }

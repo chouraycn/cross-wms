@@ -1,7 +1,7 @@
 /**
  * Removes short-window duplicate user turns from compaction summaries.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 
 const DEFAULT_DUPLICATE_USER_MESSAGE_WINDOW_MS = 60_000;
 const MIN_DUPLICATE_USER_MESSAGE_CHARS = 24;

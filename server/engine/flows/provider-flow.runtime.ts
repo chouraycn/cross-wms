@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Provider flow runtime helpers load provider setup behavior behind runtime imports.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import * as providerWizard from "../plugins/provider-wizard.js";
 import type { ProviderModelPickerEntry } from "../plugins/provider-wizard.js";

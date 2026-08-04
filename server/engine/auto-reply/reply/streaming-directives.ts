@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Converts streaming reply directives into payload delivery decisions.
 import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
 import { parseInlineDirectives } from '@openclaw-src/utils/directive-tags.js';

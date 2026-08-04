@@ -1,78 +1,69 @@
-/**
- * 跨平台守护进程服务名称、标签和配置描述。
- */
+/** Cross-platform daemon service names, labels, and profile-aware descriptions. */
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
-const DEFAULT_LAUNCH_AGENT_LABEL = "com.cdf-know.daemon";
-const DEFAULT_SYSTEMD_SERVICE_NAME = "cdf-know-daemon";
-const DEFAULT_WINDOWS_TASK_NAME = "CrossWMSDaemon";
-const SERVICE_MARKER = "crosswms";
-const SERVICE_KIND = "daemon";
-const SERVICE_RUNTIME_PID_ENV = "CROSS_WMS_SERVICE_PID";
+// Default service labels (canonical + legacy compatibility)
+export const GATEWAY_LAUNCH_AGENT_LABEL = "ai.openclaw.gateway";
+export const GATEWAY_SYSTEMD_SERVICE_NAME = "openclaw-gateway";
+export const GATEWAY_WINDOWS_TASK_NAME = "OpenClaw Gateway";
+export const GATEWAY_SERVICE_MARKER = "openclaw";
+export const GATEWAY_SERVICE_KIND = "gateway";
+export const GATEWAY_SERVICE_RUNTIME_PID_ENV = "OPENCLAW_GATEWAY_SERVICE_PID";
+const NODE_LAUNCH_AGENT_LABEL = "ai.openclaw.node";
+const NODE_SYSTEMD_SERVICE_NAME = "openclaw-node";
+const NODE_WINDOWS_TASK_NAME = "OpenClaw Node";
+export const NODE_SERVICE_MARKER = "openclaw";
+export const NODE_SERVICE_KIND = "node";
+export const NODE_WINDOWS_TASK_SCRIPT_NAME = "node.cmd";
+export const LEGACY_GATEWAY_SYSTEMD_SERVICE_NAMES: string[] = ["clawdbot-gateway"];
 
-const NODE_LAUNCH_AGENT_LABEL = "com.cdf-know.node";
-const NODE_SYSTEMD_SERVICE_NAME = "cdf-know-node";
-const NODE_WINDOWS_TASK_NAME = "CrossWMSNode";
-const NODE_SERVICE_MARKER = "crosswms";
-const NODE_SERVICE_KIND = "node";
-const NODE_WINDOWS_TASK_SCRIPT_NAME = "node.cmd";
-
-export {
-  DEFAULT_LAUNCH_AGENT_LABEL,
-  DEFAULT_SYSTEMD_SERVICE_NAME,
-  DEFAULT_WINDOWS_TASK_NAME,
-  SERVICE_MARKER,
-  SERVICE_KIND,
-  SERVICE_RUNTIME_PID_ENV,
-  NODE_LAUNCH_AGENT_LABEL,
-  NODE_SYSTEMD_SERVICE_NAME,
-  NODE_WINDOWS_TASK_NAME,
-  NODE_SERVICE_MARKER,
-  NODE_SERVICE_KIND,
-  NODE_WINDOWS_TASK_SCRIPT_NAME,
-};
-
-export function normalizeProfile(profile?: string): string | null {
+export function normalizeGatewayProfile(profile?: string): string | null {
   const trimmed = profile?.trim();
-  if (!trimmed || trimmed.toLowerCase() === "default") {
+  if (!trimmed || normalizeLowercaseStringOrEmpty(trimmed) === "default") {
+    // The default profile keeps the historical unqualified service names.
     return null;
   }
   return trimmed;
 }
 
-export function resolveProfileSuffix(profile?: string): string {
-  const normalized = normalizeProfile(profile);
+export function resolveGatewayProfileSuffix(profile?: string): string {
+  const normalized = normalizeGatewayProfile(profile);
   return normalized ? `-${normalized}` : "";
 }
 
-export function resolveLaunchAgentLabel(profile?: string): string {
-  const normalized = normalizeProfile(profile);
+export function resolveGatewayLaunchAgentLabel(profile?: string): string {
+  const normalized = normalizeGatewayProfile(profile);
   if (!normalized) {
-    return DEFAULT_LAUNCH_AGENT_LABEL;
+    return GATEWAY_LAUNCH_AGENT_LABEL;
   }
-  return `com.cdf-know.${normalized}`;
+  return `ai.openclaw.${normalized}`;
 }
 
-export function resolveSystemdServiceName(profile?: string): string {
-  const suffix = resolveProfileSuffix(profile);
+export function resolveLegacyGatewayLaunchAgentLabels(profile?: string): string[] {
+  void profile;
+  return [];
+}
+
+export function resolveGatewaySystemdServiceName(profile?: string): string {
+  const suffix = resolveGatewayProfileSuffix(profile);
   if (!suffix) {
-    return DEFAULT_SYSTEMD_SERVICE_NAME;
+    return GATEWAY_SYSTEMD_SERVICE_NAME;
   }
-  return `cdf-know-daemon${suffix}`;
+  return `openclaw-gateway${suffix}`;
 }
 
-export function resolveWindowsTaskName(profile?: string): string {
-  const normalized = normalizeProfile(profile);
+export function resolveGatewayWindowsTaskName(profile?: string): string {
+  const normalized = normalizeGatewayProfile(profile);
   if (!normalized) {
-    return DEFAULT_WINDOWS_TASK_NAME;
+    return GATEWAY_WINDOWS_TASK_NAME;
   }
-  return `CrossWMS Daemon (${normalized})`;
+  return `OpenClaw Gateway (${normalized})`;
 }
 
-export function formatServiceDescription(params?: {
+export function formatGatewayServiceDescription(params?: {
   profile?: string;
   version?: string;
 }): string {
-  const profile = normalizeProfile(params?.profile);
+  const profile = normalizeGatewayProfile(params?.profile);
   const version = params?.version?.trim();
   const parts: string[] = [];
   if (profile) {
@@ -82,21 +73,21 @@ export function formatServiceDescription(params?: {
     parts.push(`v${version}`);
   }
   if (parts.length === 0) {
-    return "CrossWMS Daemon";
+    return "OpenClaw Gateway";
   }
-  return `CrossWMS Daemon (${parts.join(", ")})`;
+  return `OpenClaw Gateway (${parts.join(", ")})`;
 }
 
-export function resolveServiceDescription(params: {
+export function resolveGatewayServiceDescription(params: {
   env: Record<string, string | undefined>;
   environment?: Record<string, string | undefined>;
   description?: string;
 }): string {
   return (
     params.description ??
-    formatServiceDescription({
-      profile: params.env.CROSS_WMS_PROFILE,
-      version: params.environment?.CROSS_WMS_SERVICE_VERSION ?? params.env.CROSS_WMS_SERVICE_VERSION,
+    formatGatewayServiceDescription({
+      profile: params.env.OPENCLAW_PROFILE,
+      version: params.environment?.OPENCLAW_SERVICE_VERSION ?? params.env.OPENCLAW_SERVICE_VERSION,
     })
   );
 }
@@ -116,7 +107,7 @@ export function resolveNodeWindowsTaskName(): string {
 export function formatNodeServiceDescription(params?: { version?: string }): string {
   const version = params?.version?.trim();
   if (!version) {
-    return "CrossWMS Node Host";
+    return "OpenClaw Node Host";
   }
-  return `CrossWMS Node Host (v${version})`;
+  return `OpenClaw Node Host (v${version})`;
 }

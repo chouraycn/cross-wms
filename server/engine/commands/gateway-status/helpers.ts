@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Shared helpers for gateway status target selection, auth, summaries, and probe rendering. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { colorize, theme } from "@openclaw/terminal-core/theme";
 import { parseTimeoutMsWithFallback } from "@openclaw-src/cli/parse-timeout.js";
 import { resolveGatewayPort } from "@openclaw-src/config/config.js";
 import type { OpenClawConfig, ConfigFileSnapshot } from "@openclaw-src/config/types.js";

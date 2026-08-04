@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Channel selection chooses a deliverable message channel from explicit input,
 // tool context fallback, or configured plugin accounts.
 import { listChannelPlugins } from "../../channels/plugins/index.js";
@@ -210,7 +209,7 @@ export async function listConfiguredMessageChannels(
     if (!isKnownChannel(plugin.id)) {
       continue;
     }
-    if (await isPluginConfigured(plugin, cfg)) {
+    if (await isPluginConfigured(plugin as any, cfg)) {
       channels.push(plugin.id);
     }
   }

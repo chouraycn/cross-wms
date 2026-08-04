@@ -1,24 +1,76 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/control-ui-shared.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Control UI shared URL helpers.
+// Normalizes base paths and avatar URLs for browser/gateway surfaces.
+import {
+  isAvatarHttpUrl,
+  isAvatarImageDataUrl,
+  looksLikeAvatarPath,
+} from "../shared/avatar-policy.js";
 
-export function normalizeControlUiBasePath(..._args: unknown[]): unknown {
-  return undefined;
+const CONTROL_UI_AVATAR_PREFIX = "/avatar";
+
+/** Normalizes a Control UI base path to either "" or a leading-slash path without trailing slash. */
+export function normalizeControlUiBasePath(basePath?: string): string {
+  if (!basePath) {
+    return "";
+  }
+  let normalized = basePath.trim();
+  if (!normalized) {
+    return "";
+  }
+  if (!normalized.startsWith("/")) {
+    normalized = `/${normalized}`;
+  }
+  if (normalized === "/") {
+    return "";
+  }
+  if (normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
 }
 
-export function buildControlUiAvatarUrl(..._args: unknown[]): unknown {
-  return undefined;
+/** Builds the gateway-served avatar URL for an agent under the provided base path. */
+export function buildControlUiAvatarUrl(basePath: string, agentId: string): string {
+  return basePath
+    ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/${agentId}`
+    : `${CONTROL_UI_AVATAR_PREFIX}/${agentId}`;
 }
 
-export function resolveAssistantAvatarUrl(..._args: unknown[]): unknown {
-  return undefined;
+/** Resolves the assistant avatar URL that Control UI should render for the active agent. */
+export function resolveAssistantAvatarUrl(params: {
+  avatar?: string | null;
+  agentId?: string | null;
+  basePath?: string;
+}): string | undefined {
+  const avatar = params.avatar?.trim();
+  if (!avatar) {
+    return undefined;
+  }
+  if (isAvatarHttpUrl(avatar) || isAvatarImageDataUrl(avatar)) {
+    return avatar;
+  }
+
+  const basePath = normalizeControlUiBasePath(params.basePath);
+  const baseAvatarPrefix = basePath
+    ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/`
+    : `${CONTROL_UI_AVATAR_PREFIX}/`;
+  if (basePath && avatar.startsWith(`${CONTROL_UI_AVATAR_PREFIX}/`)) {
+    return `${basePath}${avatar}`;
+  }
+  if (avatar.startsWith(baseAvatarPrefix)) {
+    return avatar;
+  }
+
+  if (!params.agentId) {
+    return avatar;
+  }
+  // Local filesystem-ish avatar config is exposed through the gateway avatar
+  // route instead of being handed directly to the browser.
+  if (looksLikeAvatarPath(avatar)) {
+    return buildControlUiAvatarUrl(basePath, params.agentId);
+  }
+  return avatar;
 }
+
+/** URL prefix for gateway-served Control UI avatar assets. */
+export { CONTROL_UI_AVATAR_PREFIX };

@@ -1,12 +1,11 @@
-// @ts-nocheck
 
 /**
  * Pure cooldown and unusable-window helpers for auth profile usage state.
  * Mutation and persistence live in usage.ts; this module owns reusable state
  * predicates used by rotation and failure handling.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asDateTimestampMs } from "../../shared/number-coercion.js";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";
 import type { AuthProfileFailureReason, AuthProfileStore, ProfileUsageStats } from "./types.js";
 
 /** Returns true for providers whose auth-profile cooldowns are provider-managed. */
@@ -221,3 +220,5 @@ export function clearExpiredCooldowns(store: AuthProfileStore, now?: number): bo
 
   return mutated;
 }
+
+export { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";

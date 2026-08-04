@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests command status runtime lazy loading and direct status reply behavior.
  */

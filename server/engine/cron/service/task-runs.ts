@@ -1,53 +1,143 @@
-import type { CronJob, CronRunOutcome } from "../types.js";
+/** Detached task-ledger integration for cron runs. */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import {
+  DEFAULT_AGENT_ID,
+  normalizeAgentId,
+  resolveAgentIdFromSessionKey,
+} from "../../routing/session-key.js";
+import {
+  completeTaskRunByRunId,
+  createRunningTaskRun,
+  failTaskRunByRunId,
+} from "../../tasks/detached-task-runtime.js";
+import { resolveCronAgentSessionKey } from "../isolated-agent/session-key.js";
+import { createCronExecutionId } from "../run-id.js";
+import type { CronJob, CronRunStatus } from "../types.js";
+import { normalizeCronRunErrorText, timeoutErrorMessage } from "./execution-errors.js";
+import type { CronServiceState } from "./state.js";
+import { CRON_TASK_RUNNING_PROGRESS_SUMMARY } from "./task-ledger.js";
 
-interface TaskRunRecord {
-  runId: string;
-  jobId: string;
-  jobName: string;
-  startTime: number;
-  endTime?: number;
-  outcome?: CronRunOutcome;
+/** Converts cron ids into bounded session-key path segments with a fallback for empty input. */
+export function normalizeCronLaneSegment(value: string | undefined, fallback: string): string {
+  const normalized = normalizeOptionalLowercaseString(value)
+    ?.replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+  return normalized || fallback;
 }
 
-const taskRuns = new Map<string, TaskRunRecord[]>();
+/** Builds the main-session child key used to isolate one cron run's task transcript. */
+export function resolveMainSessionCronRunSessionKey(job: CronJob, startedAt: number): string {
+  const explicitAgentId = job.agentId?.trim();
+  const agentId = normalizeAgentId(explicitAgentId || resolveAgentIdFromSessionKey(job.sessionKey));
+  const jobSegment = normalizeCronLaneSegment(job.id, "job");
+  const runSegment = normalizeCronLaneSegment(String(Math.max(0, Math.floor(startedAt))), "run");
+  return `agent:${agentId}:cron:${jobSegment}:run:${runSegment}`;
+}
 
-export function recordTaskRunStart(job: CronJob, runId: string): void {
-  const runs = taskRuns.get(job.id) ?? [];
-  runs.push({
-    runId,
-    jobId: job.id,
-    jobName: job.name,
-    startTime: Date.now(),
+function resolveCronTaskChildSessionKey(params: {
+  state: CronServiceState;
+  job: CronJob;
+  startedAt: number;
+}): string | undefined {
+  if (params.job.sessionTarget === "main") {
+    return resolveMainSessionCronRunSessionKey(params.job, params.startedAt);
+  }
+  const explicitSessionKey = params.job.sessionKey?.trim();
+  if (explicitSessionKey) {
+    // Explicit session bindings must win over generated cron session keys so
+    // task drill-down opens the same transcript the cron run actually used.
+    return explicitSessionKey;
+  }
+  if (params.job.sessionTarget !== "isolated") {
+    return undefined;
+  }
+  return resolveCronAgentSessionKey({
+    sessionKey: `cron:${params.job.id}`,
+    agentId: params.job.agentId ?? params.state.deps.defaultAgentId ?? DEFAULT_AGENT_ID,
   });
-  taskRuns.set(job.id, runs);
 }
 
-export function recordTaskRunEnd(job: CronJob, runId: string, outcome: CronRunOutcome): void {
-  const runs = taskRuns.get(job.id);
-  if (!runs) {
+/** Creates a best-effort detached task ledger row for a cron run. */
+export function tryCreateCronTaskRun(params: {
+  state: CronServiceState;
+  job: CronJob;
+  startedAt: number;
+}): string | undefined {
+  const runId = createCronExecutionId(params.job.id, params.startedAt);
+  try {
+    const task = createRunningTaskRun({
+      runtime: "cron",
+      sourceId: params.job.id,
+      ownerKey: "",
+      scopeKind: "system",
+      childSessionKey: resolveCronTaskChildSessionKey(params),
+      agentId: params.job.agentId,
+      runId,
+      label: params.job.name,
+      task: params.job.name || params.job.id,
+      deliveryStatus: "not_applicable",
+      notifyPolicy: "silent",
+      startedAt: params.startedAt,
+      lastEventAt: params.startedAt,
+      progressSummary: CRON_TASK_RUNNING_PROGRESS_SUMMARY,
+    });
+    if (!task) {
+      params.state.deps.log.warn(
+        { jobId: params.job.id },
+        "cron: task ledger record was not persisted",
+      );
+      return undefined;
+    }
+    return runId;
+  } catch (error) {
+    params.state.deps.log.warn(
+      { jobId: params.job.id, error },
+      "cron: failed to create task ledger record",
+    );
+    return undefined;
+  }
+}
+
+/** Completes or fails the detached task ledger row for a cron run when one exists. */
+export function tryFinishCronTaskRun(
+  state: CronServiceState,
+  result: {
+    taskRunId?: string;
+    status: CronRunStatus;
+    error?: unknown;
+    endedAt: number;
+    summary?: string;
+  },
+): void {
+  if (!result.taskRunId) {
     return;
   }
-
-  const run = runs.find((r) => r.runId === runId);
-  if (run) {
-    run.endTime = Date.now();
-    run.outcome = outcome;
-  }
-}
-
-export function getTaskRuns(jobId: string): TaskRunRecord[] {
-  return taskRuns.get(jobId) ?? [];
-}
-
-export function getRecentTaskRuns(jobId: string, limit: number = 10): TaskRunRecord[] {
-  const runs = taskRuns.get(jobId) ?? [];
-  return [...runs].reverse().slice(0, limit);
-}
-
-export function clearTaskRuns(jobId?: string): void {
-  if (jobId) {
-    taskRuns.delete(jobId);
-  } else {
-    taskRuns.clear();
+  try {
+    if (result.status === "ok" || result.status === "skipped") {
+      completeTaskRunByRunId({
+        runId: result.taskRunId,
+        runtime: "cron",
+        endedAt: result.endedAt,
+        lastEventAt: result.endedAt,
+        terminalSummary: result.summary ?? undefined,
+      });
+      return;
+    }
+    failTaskRunByRunId({
+      runId: result.taskRunId,
+      runtime: "cron",
+      status:
+        normalizeCronRunErrorText(result.error) === timeoutErrorMessage() ? "timed_out" : "failed",
+      endedAt: result.endedAt,
+      lastEventAt: result.endedAt,
+      error: result.status === "error" ? normalizeCronRunErrorText(result.error) : undefined,
+      terminalSummary: result.summary ?? undefined,
+    });
+  } catch (error) {
+    state.deps.log.warn(
+      { runId: result.taskRunId, jobStatus: result.status, error },
+      "cron: failed to update task ledger record",
+    );
   }
 }

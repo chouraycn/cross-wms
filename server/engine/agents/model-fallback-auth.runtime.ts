@@ -1,10 +1,13 @@
 /**
- * 移植自 openclaw/src/agents/model-fallback-auth.runtime.ts
+ * Runtime auth profile barrel for fallback/provider selection code.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * These exports keep the hot runtime path on the auth-profile submodules without
+ * pulling the broader model config surface into provider fallback logic.
  */
-
-// No exports detected
-export const __stub: undefined = undefined;
+export { resolveAuthProfileOrder } from "./auth-profiles/order.js";
+export { ensureAuthProfileStore, loadAuthProfileStoreForRuntime } from "./auth-profiles/store.js";
+export {
+  getSoonestCooldownExpiry,
+  isProfileInCooldown,
+  resolveProfilesUnavailableReason,
+} from "./auth-profiles/usage.js";

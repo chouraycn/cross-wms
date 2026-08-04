@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Session compaction compatibility bridge over the shared agent-core implementation.
  *
@@ -79,7 +78,7 @@ export async function generateSummary(
   return unwrapCompactionResult(
     await generateSummaryCore(
       currentMessages,
-      model,
+      (model as any),
       reserveTokens,
       apiKey,
       headers,
@@ -107,7 +106,7 @@ export async function compact(
   return unwrapCompactionResult(
     await compactCore(
       preparation,
-      model,
+      (model as any),
       apiKey,
       headers,
       customInstructions,

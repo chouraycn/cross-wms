@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Converts raw provider/transport errors into concise user-facing copy.
  */

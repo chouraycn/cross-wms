@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Runs background side-question commands against the active agent context.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeCommandBody, type CommandNormalizeOptions } from "../commands-registry.js";
 
 const BTW_COMMAND_RE = /^\/btw(?::|\s|$)/i;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared user-facing auth guidance for session/model selection failures.
  *

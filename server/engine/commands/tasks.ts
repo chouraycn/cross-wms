@@ -2,9 +2,9 @@
 // Human-facing background task commands.
 // Handles task listing/show/cancel/notify/audit plus registry maintenance for tasks, flows, and sessions.
 
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { timestampMsToIsoString } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { formatLookupMiss } from "@openclaw-src/cli/error-format.js";
 import { getRuntimeConfig } from "@openclaw-src/config/config.js";

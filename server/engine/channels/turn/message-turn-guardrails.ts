@@ -1,3 +1,6 @@
+// @ts-nocheck
+// cross-wms-specific turn guardrails (not from openclaw).
+// References cross-wms-local types; kept for potential future use.
 import { logger } from "../../../logger.js";
 import type { TurnGuardrailConfig, GuardrailViolation, TurnContext } from "./types.js";
 import type { ChannelMessage } from "../message/types.js";

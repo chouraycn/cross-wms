@@ -572,15 +572,34 @@ class PluginRegistry {
 
   /**
    * 启动时自动加载所有已启用的插件
+   *
+   * 并行加载：与扩展加载（extensionLoader.loadAll）策略一致，
+   * 使用 Promise.allSettled 避免单个插件失败阻塞其他插件。
    */
   async loadEnabledPlugins(): Promise<void> {
     const enabledPlugins = listEnabledPlugins();
-    for (const plugin of enabledPlugins) {
-      try {
-        await this.enable(plugin.id);
-      } catch (e) {
-        logger.error(`[PluginRegistry] 启动加载插件 '${plugin.name}' 失败:`, e);
+    if (enabledPlugins.length === 0) return;
+
+    const results = await Promise.allSettled(
+      enabledPlugins.map((plugin) => this.enable(plugin.id)),
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'rejected') {
+        failCount++;
+        logger.error(
+          `[PluginRegistry] 启动加载插件 '${enabledPlugins[i].name}' 失败:`,
+          result.reason instanceof Error ? result.reason.message : String(result.reason),
+        );
+      } else {
+        successCount++;
       }
+    }
+    if (failCount > 0) {
+      logger.warn(`[PluginRegistry] 插件加载完成: ${successCount} 成功, ${failCount} 失败`);
     }
   }
 

@@ -5,7 +5,7 @@
 // Dependency adjustments:
 //   - @openclaw/media-core/mime getFileExtension, isAudioFileName, kindFromMime
 //     → ../media/_openclaw-media-stubs.js (already re-exports the helpers)
-//   - @openclaw/normalization-core/string-coerce normalizeOptionalString
+//   - @cdf-know/normalization-core/string-coerce normalizeOptionalString
 //     → ../media/string-helpers.js (cross-wms port of the helper)
 //   - ../auto-reply/templating.js MsgContext
 //     → cross-wms 的 auto-reply 模块尚未移植。这里按 openclaw 源定义复制

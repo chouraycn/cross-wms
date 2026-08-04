@@ -42,8 +42,12 @@ import {
   type SecurityVerdict,
 } from "../../engine/skills/index.js";
 import { logger } from "../../logger.js";
+import { fileURLToPath } from "node:url";
 
 // CommonJS 环境下 __dirname 原生可用
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export type SkillsOptions = {
   json?: boolean;

@@ -1,11 +1,10 @@
-// @ts-nocheck
 
 /**
  * Guarded fetch wrappers for web tools.
  *
  * Applies SSRF policy, timeout normalization, and trusted/self-hosted endpoint modes.
  */
-import { finiteSecondsToTimerSafeMilliseconds } from "@openclaw/normalization-core/number-coercion";
+import { finiteSecondsToTimerSafeMilliseconds } from "@cdf-know/normalization-core/number-coercion";
 import {
   fetchWithSsrFGuard,
   type GuardedFetchOptions,

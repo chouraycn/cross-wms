@@ -288,5 +288,5 @@ export function formatVersionInfo(info: PluginVersionInfo): string {
 
 /** 从 manifest 注册版本 */
 export function registerVersionFromManifest(manifest: PluginManifest): void {
-  pluginVersionRegistry.register(manifest.id, manifest.version, 'install');
+  pluginVersionRegistry.register(manifest.id, manifest.version ?? '', 'install');
 }

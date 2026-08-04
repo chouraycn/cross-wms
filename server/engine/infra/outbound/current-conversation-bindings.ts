@@ -1,12 +1,11 @@
-// @ts-nocheck
 // Generic current-conversation bindings persist lightweight conversation ->
 // session links for plugin channels without a custom binding adapter.
 import {
   asDateTimestampMs,
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeConversationText } from "../../acp/conversation-id.js";
 import { normalizeAnyChannelId } from "../../channels/registry.js";
 import { getActivePluginChannelRegistryFromState } from "../../plugins/runtime-channel-state.js";
@@ -116,7 +115,7 @@ function readPersistedBindings(): SessionBindingRecord[] {
       .select(["record_json"])
       .orderBy("binding_id", "asc"),
   ).rows;
-  return bindingRowsToRecords(rows);
+  return bindingRowsToRecords(rows as any);
 }
 
 function targetAgentIdForSessionKey(targetSessionKey: string): string {
@@ -137,7 +136,7 @@ function writePersistedBindings(): void {
     executeSqliteQuerySync(
       db,
       bindingDb.insertInto("current_conversation_bindings").values(
-        records.map((record) => {
+        (records.map((record) => {
           const conversation = normalizeConversationRef(record.conversation);
           return {
             binding_key: buildConversationKey(conversation),
@@ -158,7 +157,7 @@ function writePersistedBindings(): void {
             record_json: JSON.stringify(record),
             updated_at: updatedAt,
           };
-        }),
+        }) as any),
       ),
     );
   });
@@ -208,9 +207,9 @@ function resolveChannelSupportsCurrentConversationBinding(channel: string): bool
   // Importing plugins/runtime here creates a module cycle through plugin-sdk
   // surfaces during bundled channel discovery.
   const plugin = (getActivePluginChannelRegistryFromState()?.channels ?? []).find((entry) =>
-    matchesPluginId(entry.plugin),
+    matchesPluginId(entry.plugin as any),
   )?.plugin;
-  if (plugin?.conversationBindings?.supportsCurrentConversationBinding === true) {
+  if ((plugin as any)?.conversationBindings?.supportsCurrentConversationBinding === true) {
     return true;
   }
   return false;

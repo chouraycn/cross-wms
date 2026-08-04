@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared assertions for channel directory id contract tests.
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway auth resolver.
 // Combines configured auth, overrides, environment credentials, and Tailscale policy.
 import type {

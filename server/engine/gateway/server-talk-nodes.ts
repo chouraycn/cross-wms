@@ -1,16 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-talk-nodes.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway talk-capable node detection.
+// Accepts explicit talk caps and legacy talk.* command declarations.
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import type { NodeRegistry, NodeSession } from "./node-registry.js";
 
-export function hasConnectedTalkNode(..._args: unknown[]): unknown {
-  return false;
+// Talk node detection accepts either the explicit talk capability or talk.*
+// commands so older and newer node clients both enable talk routing.
+const TALK_CAPABILITY = "talk";
+const TALK_COMMAND_PREFIX = "talk.";
+
+/** Returns true when any connected node can handle talk routing. */
+export function hasConnectedTalkNode(registry: NodeRegistry): boolean {
+  return registry.listConnected().some(isTalkCapableNode);
+}
+
+function isTalkCapableNode(node: NodeSession): boolean {
+  return (
+    node.caps.some(
+      (capability) => normalizeOptionalLowercaseString(capability) === TALK_CAPABILITY,
+    ) ||
+    node.commands.some((command) =>
+      normalizeOptionalLowercaseString(command)?.startsWith(TALK_COMMAND_PREFIX),
+    )
+  );
 }

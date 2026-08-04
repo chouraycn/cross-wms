@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Diagnostics gateway methods expose bounded stability snapshots while keeping
 // malformed queries out of logging internals.
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";

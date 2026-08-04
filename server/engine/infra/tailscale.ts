@@ -2,9 +2,9 @@
 // 移植自 openclaw/src/infra/tailscale.ts（降级实现）。
 //
 // 降级说明：
-//  - @openclaw/normalization-core/number-coercion 替换为 ./_runtime-stubs.js 中的 asDateTimestampMs/resolveExpiresAtMsFromDurationMs
-//  - @openclaw/normalization-core/record-coerce 替换为 ./record-coerce.js 中的 asNullableObjectRecord
-//  - @openclaw/normalization-core/string-coerce 替换为 ./string-coerce.js
+//  - @cdf-know/normalization-core/number-coercion 替换为 ./_runtime-stubs.js 中的 asDateTimestampMs/resolveExpiresAtMsFromDurationMs
+//  - @cdf-know/normalization-core/record-coerce 替换为 ./record-coerce.js 中的 asNullableObjectRecord
+//  - @cdf-know/normalization-core/string-coerce 替换为 ./string-coerce.js
 //  - ../globals.js 的 logVerbose 降级为 console.debug（no-op 在测试环境）
 //  - ../process/exec.js 的 runExec 内联实现（使用 child_process.spawn）
 import { existsSync } from "node:fs";

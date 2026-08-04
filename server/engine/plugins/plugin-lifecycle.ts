@@ -15,7 +15,7 @@ import {
   listLifecycleStates,
   type LifecycleState,
 } from './lifecycle.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import { createPluginContext, destroyPluginContext } from './plugin-context.js';
 import { executeInPluginSandbox } from './plugin-sandbox.js';
 import { initializePluginPermissions, revokeAllPluginPermissions } from './plugin-permissions.js';
@@ -69,7 +69,7 @@ export async function activatePlugin(
     const context = createPluginContext({ manifest, config });
 
     // 4. 查找模块的 lifecycle 钩子
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     const module = entry?.instance as { lifecycle?: PluginLifecycle } | undefined;
     const lifecycle = module?.lifecycle;
 
@@ -118,7 +118,7 @@ export async function deactivatePlugin(pluginId: string): Promise<LifecycleOpera
   try {
     assertTransition(fromState, 'disabling');
 
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     if (!entry) {
       throw new PluginLifecycleError(
         `插件 ${pluginId} 未注册`,
@@ -184,7 +184,7 @@ export async function installPluginEntry(
     const context = createPluginContext({ manifest, config });
 
     // 3. 调用 install 钩子（如果模块已加载）
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     const module = entry?.instance as { lifecycle?: PluginLifecycle } | undefined;
     const lifecycle = module?.lifecycle;
 
@@ -226,7 +226,7 @@ export async function uninstallPluginEntry(pluginId: string): Promise<LifecycleO
   try {
     assertTransition(fromState, 'uninstalling');
 
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     if (entry) {
       const context = createPluginContext({ manifest: entry.manifest });
       const module = entry.instance as { lifecycle?: PluginLifecycle } | undefined;
@@ -285,7 +285,7 @@ export async function updatePluginEntry(
   try {
     assertTransition(fromState, 'updating');
 
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     if (!entry) {
       throw new PluginLifecycleError(
         `插件 ${pluginId} 未注册，无法更新`,
@@ -304,7 +304,7 @@ export async function updatePluginEntry(
     }
 
     // 更新注册表中的 manifest
-    pluginRuntimeRegistry.registerManifest(manifest, {
+    PluginRegistry.registerManifest(manifest, {
       capabilities: manifest.capabilities,
       status: 'installed',
     });

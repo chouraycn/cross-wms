@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds memory flush prompts when conversation context exceeds model budget.
 import { resolveContextTokensForModel } from '@openclaw-src/agents/context.js';
 import { DEFAULT_CONTEXT_TOKENS } from '@openclaw-src/agents/defaults.js';

@@ -3,7 +3,7 @@
 
 import type { ChannelId } from "@openclaw-src/channels/plugins/types.public.js";
 import type { SessionKind } from "@openclaw-src/sessions/classify-session-kind.js";
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@cdf-know/normalization-core/string-coerce";
 import type {
   RetainedLostTaskAuditSummary,
   TaskAuditSummary,

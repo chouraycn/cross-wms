@@ -1,5 +1,5 @@
 /** Local URL classifier for model provider status/list output. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 /** Returns true for loopback, wildcard, and mDNS local base URLs. */
 export const isLocalBaseUrl = (baseUrl: string) => {

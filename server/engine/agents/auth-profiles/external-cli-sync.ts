@@ -1,11 +1,10 @@
-// @ts-nocheck
 
 /**
  * External CLI OAuth synchronization.
  * Reads supported CLI credential stores, decides whether those credentials can
  * safely bootstrap local auth profiles, and returns runtime/persisted overlays.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import {
   readClaudeCliCredentialsCached,
   readCodexCliCredentialsCached,

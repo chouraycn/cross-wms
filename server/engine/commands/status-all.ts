@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Entry point for `openclaw status --all`.
 // Orchestrates the scan, local service probes, and report rendering while report builders own formatting.
 
@@ -6,9 +5,9 @@ import { withProgress } from "@openclaw-src/cli/progress.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { buildStatusAllReportData } from "./status-all/report-data.js";
 import { buildStatusAllReportLines } from "./status-all/report-lines.js";
-import { resolveStatusServiceSummaries } from "./status-runtime-shared.ts";
+import { resolveStatusServiceSummaries } from "./status-runtime-shared";
 import { resolveNodeOnlyGatewayInfo } from "./status.node-mode.js";
-import { collectStatusScanOverview } from "./status.scan-overview.ts";
+import { collectStatusScanOverview } from "./status.scan-overview";
 
 /** Runs the full read-only status report and writes it to the runtime logger. */
 export async function statusAllCommand(

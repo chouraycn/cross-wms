@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Applies directive-only command state changes without running the agent. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { resolveAgentDir, resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { renderExecTargetLabel } from '@openclaw-src/agents/bash-tools.exec-runtime.js';
 import { resolveExecDefaults } from '@openclaw-src/agents/exec-defaults.js';

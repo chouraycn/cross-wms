@@ -187,12 +187,15 @@ router.post('/sessions/:sessionId/recover', async (req, res) => {
     }
 
     // v11.1: 检查并重放未完成的工具调用
-    let replayReport = null;
+    let replayReport: { succeeded: number; failed: number } | null = null;
     try {
       const { toolReplayRepair } = await import('../engine/toolReplayRepair.js');
       if (toolReplayRepair.needsRepair(sessionId)) {
-        replayReport = await toolReplayRepair.repairSession(sessionId);
-        logger.info(`[EventLedgerRoute] 工具重放: ${replayReport.succeeded} 成功, ${replayReport.failed} 失败`);
+        const report = await toolReplayRepair.repairSession(sessionId);
+        replayReport = report;
+        if (report) {
+          logger.info(`[EventLedgerRoute] 工具重放: ${report.succeeded} 成功, ${report.failed} 失败`);
+        }
       }
     } catch (replayErr) {
       logger.warn('[EventLedgerRoute] 工具重放失败（非阻塞）:', replayErr instanceof Error ? replayErr.message : String(replayErr));

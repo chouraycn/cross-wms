@@ -6,7 +6,7 @@ import type {
   SttStreamCallbacks,
   ModelApiType,
 } from './types.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 export const DEEPGRAM_DEFAULT_BASE_URL = 'https://api.deepgram.com/v1/listen';
 

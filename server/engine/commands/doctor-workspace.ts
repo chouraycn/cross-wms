@@ -2,7 +2,7 @@
 /** Doctor checks and repairs for workspace memory files and legacy workspace hints. */
 import fs from "node:fs";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { DEFAULT_AGENTS_FILENAME } from "@openclaw-src/agents/workspace.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

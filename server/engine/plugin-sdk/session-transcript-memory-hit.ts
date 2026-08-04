@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { normalizeOptionalString } from "../../../packages/normalization-core/src/string-coerce.js";
 import { uniqueStrings } from "../../../packages/normalization-core/src/string-normalization.js";
 import type { SessionEntry } from "../config/sessions/types.js";

@@ -1,3 +1,3 @@
 // Public package facade for text runtime helpers.
 
-export * from "../../../src/plugin-sdk/text-runtime.js";
+export * from "../../../engine/plugin-sdk/text-runtime.js";

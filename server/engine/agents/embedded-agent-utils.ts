@@ -1,48 +1,26 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-utils.ts
- *
  * Embedded-agent message text utilities.
  * Extracts visible assistant text, reasoning summaries, thinking-tag blocks,
  * and compact tool metadata for channel delivery and transcript replay.
  */
+import type { AssistantMessage } from "../llm/types.js";
+import { extractTextFromChatContent } from "../shared/chat-content.js";
+import {
+  normalizeAssistantPhase,
+  parseAssistantTextSignature,
+  type AssistantPhase,
+} from "../shared/chat-message-content.js";
+import { sanitizeAssistantVisibleText } from "../shared/text/assistant-visible-text.js";
+import { stripReasoningTagsFromText } from "../shared/text/reasoning-tags.js";
+import { sanitizeUserFacingText } from "./embedded-agent-helpers/sanitize-user-facing-text.js";
+import type { AgentMessage } from "./runtime/index.js";
+import { formatToolDetail, resolveToolDisplay } from "./tool-display.js";
 
+export {
+  stripDowngradedToolCallText,
+  stripMinimaxToolCallXml,
+} from "../shared/text/assistant-visible-text.js";
 export { stripModelSpecialTokens } from "../shared/text/model-special-tokens.js";
-
-const THINKING_TAG_NAME_PATTERN = String.raw`(?:(?:antml:|mm:)?(?:think(?:ing)?|thought)|antthinking)`;
-
-/** Global regex used to scan provider-emitted thinking tags. */
-export const THINKING_TAG_SCAN_RE = new RegExp(
-  String.raw`<\s*(\/?)\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
-  "gi",
-);
-
-const THINKING_TAG_OPEN_RE = new RegExp(String.raw`<\s*${THINKING_TAG_NAME_PATTERN}\s*>`, "i");
-const THINKING_TAG_CLOSE_RE = new RegExp(
-  String.raw`<\s*\/\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
-  "i",
-);
-const THINKING_TAG_OPEN_GLOBAL_RE = new RegExp(
-  String.raw`<\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
-  "gi",
-);
-const THINKING_TAG_CLOSE_GLOBAL_RE = new RegExp(
-  String.raw`<\s*\/\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
-  "gi",
-);
-
-type AssistantMessage = {
-  role: "assistant";
-  content: string | Array<{ type: string; text?: string; thinking?: string; thinkingSignature?: string; textSignature?: unknown; [key: string]: unknown }>;
-  stopReason?: string;
-  phase?: unknown;
-  [key: string]: unknown;
-};
-
-type AgentMessage = {
-  role: string;
-  content?: unknown;
-  [key: string]: unknown;
-};
 
 /** Narrow an agent message to an assistant message. */
 export function isAssistantMessage(msg: AgentMessage | undefined): msg is AssistantMessage {
@@ -51,56 +29,123 @@ export function isAssistantMessage(msg: AgentMessage | undefined): msg is Assist
 
 /**
  * Strip thinking tags and their content from text.
- * This is a safety net for cases where the model outputs thinking tags
+ * This is a safety net for cases where the model outputs <think> tags
  * that slip through other filtering mechanisms.
  */
 export function stripThinkingTagsFromText(text: string): string {
-  return text.replace(
-    new RegExp(String.raw`<\s*(?:antml:|mm:)?(?:think(?:ing)?|thought|antthinking)\s*>[\s\S]*?<\s*\/\s*(?:antml:|mm:)?(?:think(?:ing)?|thought|antthinking)\s*>`, "gi"),
-    "",
-  ).trim();
+  return stripReasoningTagsFromText(text, { mode: "strict", trim: "both" });
 }
 
 function sanitizeAssistantText(text: string): string {
-  // Basic sanitization: strip ANSI escape codes and control characters
-  return text
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
-    .trim();
+  return sanitizeAssistantVisibleText(text);
 }
 
 export function sanitizeAssistantVisibleStreamText(text: string): string {
-  return sanitizeAssistantText(text);
+  return sanitizeUserFacingText(sanitizeAssistantText(text), { errorContext: false });
+}
+
+function finalizeAssistantExtraction(msg: AssistantMessage, extracted: string): string {
+  const errorContext = msg.stopReason === "error";
+  return sanitizeUserFacingText(extracted, { errorContext });
+}
+
+type AssistantTextExtractionResult = {
+  text: string;
+  hadRequestedPhase: boolean;
+};
+
+function extractAssistantTextForPhase(
+  msg: AssistantMessage,
+  phase?: AssistantPhase,
+): AssistantTextExtractionResult {
+  const messagePhase = normalizeAssistantPhase((msg as { phase?: unknown }).phase);
+  const shouldIncludeContent = (resolvedPhase?: AssistantPhase) => {
+    if (phase) {
+      return resolvedPhase === phase;
+    }
+    return resolvedPhase === undefined;
+  };
+
+  if (typeof msg.content === "string") {
+    const hadRequestedPhase = phase ? messagePhase === phase : messagePhase === undefined;
+    return {
+      text: shouldIncludeContent(messagePhase)
+        ? finalizeAssistantExtraction(msg, sanitizeAssistantText(msg.content))
+        : "",
+      hadRequestedPhase,
+    };
+  }
+
+  if (!Array.isArray(msg.content)) {
+    return { text: "", hadRequestedPhase: false };
+  }
+
+  const hasExplicitPhasedTextBlocks = msg.content.some((block) => {
+    if (!block || typeof block !== "object") {
+      return false;
+    }
+    const record = block as { type?: unknown; textSignature?: unknown };
+    if (record.type !== "text") {
+      return false;
+    }
+    return Boolean(parseAssistantTextSignature(record.textSignature)?.phase);
+  });
+
+  let hadRequestedPhase = false;
+  const extracted =
+    extractTextFromChatContent(
+      msg.content.filter((block) => {
+        if (!block || typeof block !== "object") {
+          return false;
+        }
+        const record = block as { type?: unknown; textSignature?: unknown };
+        if (record.type !== "text") {
+          return false;
+        }
+        const signature = parseAssistantTextSignature(record.textSignature);
+        const resolvedPhase =
+          signature?.phase ?? (hasExplicitPhasedTextBlocks ? undefined : messagePhase);
+        if (phase ? resolvedPhase === phase : resolvedPhase === undefined) {
+          hadRequestedPhase = true;
+        }
+        return shouldIncludeContent(resolvedPhase);
+      }),
+      {
+        sanitizeText: (text) => sanitizeAssistantText(text),
+        joinWith: "\n",
+        normalizeText: (text) => text.trim(),
+      },
+    ) ?? "";
+
+  return {
+    text: finalizeAssistantExtraction(msg, extracted),
+    hadRequestedPhase,
+  };
 }
 
 /** Extract text intended for users, preferring explicit final-answer phase blocks. */
 export function extractAssistantVisibleText(msg: AssistantMessage): string {
-  if (typeof msg.content === "string") {
-    return sanitizeAssistantText(msg.content);
+  const finalAnswerExtraction = extractAssistantTextForPhase(msg, "final_answer");
+  if (finalAnswerExtraction.hadRequestedPhase) {
+    return finalAnswerExtraction.text.trim() ? finalAnswerExtraction.text : "";
   }
-  if (!Array.isArray(msg.content)) {
-    return "";
-  }
-  return msg.content
-    .filter((block) => block?.type === "text" && typeof block.text === "string")
-    .map((block) => sanitizeAssistantText(block.text!))
-    .filter(Boolean)
-    .join("\n");
+
+  return extractAssistantTextForPhase(msg).text;
 }
 
 /** Extract sanitized assistant text across all text content blocks. */
 export function extractAssistantText(msg: AssistantMessage): string {
-  if (typeof msg.content === "string") {
-    return sanitizeAssistantText(msg.content);
-  }
-  if (!Array.isArray(msg.content)) {
-    return "";
-  }
-  return msg.content
-    .filter((block) => block?.type === "text" && typeof block.text === "string")
-    .map((block) => sanitizeAssistantText(block.text!))
-    .filter(Boolean)
-    .join("\n");
+  const extracted =
+    extractTextFromChatContent(msg.content, {
+      sanitizeText: (text) => sanitizeAssistantText(text),
+      joinWith: "\n",
+      normalizeText: (text) => text.trim(),
+    }) ?? "";
+  // Only apply keyword-based error rewrites when the assistant message is actually an error.
+  // Otherwise normal prose that *mentions* errors (e.g. "context overflow") can get clobbered.
+  // Gate on stopReason only — a non-error response with an errorMessage set (e.g. from a
+  // background tool failure) should not have its content rewritten (#13935).
+  return finalizeAssistantExtraction(msg, extracted);
 }
 
 /** Extract native thinking block text or a placeholder when only signed reasoning exists. */
@@ -113,12 +158,13 @@ export function extractAssistantThinking(msg: AssistantMessage): string {
       if (!block || typeof block !== "object") {
         return "";
       }
-      if (block.type === "thinking" && typeof block.thinking === "string") {
-        const thinking = block.thinking.trim();
+      const record = block as unknown as Record<string, unknown>;
+      if (record.type === "thinking" && typeof record.thinking === "string") {
+        const thinking = record.thinking.trim();
         if (thinking) {
           return thinking;
         }
-        if (typeof block.thinkingSignature === "string" && block.thinkingSignature.trim()) {
+        if (typeof record.thinkingSignature === "string" && record.thinkingSignature.trim()) {
           return "Native reasoning was produced; no summary text was returned.";
         }
       }
@@ -134,6 +180,10 @@ export function formatReasoningMessage(text: string): string {
   if (!trimmed) {
     return "";
   }
+  // Show reasoning in italics (cursive) for markdown-friendly surfaces (Discord, etc.).
+  // Keep a plain prefix so existing parsing/detection keeps working.
+  // Note: Underscore markdown cannot span multiple lines on Telegram, so we wrap
+  // each non-empty line separately.
   const italicLines = trimmed
     .split("\n")
     .map((line) => (line ? `_${line}_` : line))
@@ -145,9 +195,32 @@ type ThinkTaggedSplitBlock =
   | { type: "thinking"; thinking: string }
   | { type: "text"; text: string };
 
+const THINKING_TAG_NAME_PATTERN = String.raw`(?:(?:antml:|mm:)?(?:think(?:ing)?|thought)|antthinking)`;
+const THINKING_TAG_OPEN_RE = new RegExp(String.raw`<\s*${THINKING_TAG_NAME_PATTERN}\s*>`, "i");
+const THINKING_TAG_CLOSE_RE = new RegExp(
+  String.raw`<\s*\/\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
+  "i",
+);
+const THINKING_TAG_OPEN_GLOBAL_RE = new RegExp(
+  String.raw`<\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
+  "gi",
+);
+const THINKING_TAG_CLOSE_GLOBAL_RE = new RegExp(
+  String.raw`<\s*\/\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
+  "gi",
+);
+/** Global regex used to scan provider-emitted thinking tags. */
+export const THINKING_TAG_SCAN_RE = new RegExp(
+  String.raw`<\s*(\/?)\s*${THINKING_TAG_NAME_PATTERN}\s*>`,
+  "gi",
+);
+
 /** Split text that starts with thinking tags into structured thinking/text blocks. */
 export function splitThinkingTaggedText(text: string): ThinkTaggedSplitBlock[] | null {
   const trimmedStart = text.trimStart();
+  // Avoid false positives: only treat it as structured thinking when it begins
+  // with a think tag (common for local/OpenAI-compat providers that emulate
+  // reasoning blocks via tags).
   if (!trimmedStart.startsWith("<")) {
     return null;
   }
@@ -164,12 +237,16 @@ export function splitThinkingTaggedText(text: string): ThinkTaggedSplitBlock[] |
   const blocks: ThinkTaggedSplitBlock[] = [];
 
   const pushText = (value: string) => {
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     blocks.push({ type: "text", text: value });
   };
   const pushThinking = (value: string) => {
     const cleaned = value.trim();
-    if (!cleaned) return;
+    if (!cleaned) {
+      return;
+    }
     blocks.push({ type: "thinking", thinking: cleaned });
   };
 
@@ -227,7 +304,7 @@ export function promoteThinkingTagsToBlocks(message: AssistantMessage): void {
       next.push(block);
       continue;
     }
-    const split = splitThinkingTaggedText(block.text ?? "");
+    const split = splitThinkingTaggedText(block.text);
     if (!split) {
       next.push(block);
       continue;
@@ -301,14 +378,6 @@ export function inferToolMetaFromArgs(
   args: unknown,
   options?: { detailMode?: "explain" | "raw" },
 ): string | undefined {
-  const name = toolName ?? "unknown";
-  if (!args || typeof args !== "object") {
-    return `[${name}]`;
-  }
-  try {
-    const brief = JSON.stringify(args).slice(0, 120);
-    return `[${name}] ${brief}`;
-  } catch {
-    return `[${name}]`;
-  }
+  const display = resolveToolDisplay({ name: toolName, args, detailMode: options?.detailMode });
+  return formatToolDetail(display);
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Message-action threading helpers inherit reply/thread metadata only for
 // same-conversation sends and prepare outbound session mirroring.
 import { readStringParam } from "../../agents/tools/common.js";

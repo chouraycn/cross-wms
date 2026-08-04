@@ -1,5 +1,5 @@
 // 解析 OpenClaw 更新渠道（stable/beta/dev），根据 config、tag、版本决定。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-coerce 导入
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-coerce 导入
 // normalizeOptionalLowercaseString；cross-wms 使用本地 string-coerce.js。
 import { normalizeOptionalLowercaseString } from "./string-coerce.js";
 import { parseComparableSemver } from "./semver-compare.js";

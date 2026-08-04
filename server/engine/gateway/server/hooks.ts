@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Gateway hook server wiring translates external hook requests into wake events or isolated agent runs.
 import { randomUUID } from "node:crypto";
 import {
   resolveDateTimestampMs,
   resolveTimestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { sanitizeInboundSystemTags } from "../../auto-reply/reply/inbound-text.js";
 import type { CliDeps } from "../../cli/deps.types.js";
 import { getRuntimeConfig } from "../../config/io.js";
@@ -144,7 +143,7 @@ export function createGatewayHooksRequestHandler(params: {
         timeoutSeconds: value.timeoutSeconds,
         allowUnsafeExternalContent: value.allowUnsafeExternalContent,
         externalContentSource: value.externalContentSource,
-      },
+      } as any,
       delivery,
       state: { nextRunAtMs: nowMs },
     };
@@ -154,7 +153,7 @@ export function createGatewayHooksRequestHandler(params: {
       try {
         // Agent hooks run after the HTTP response path has returned, so failure
         // handling must record a system event instead of throwing to the caller.
-        const cfg = getRuntimeConfig();
+        const cfg = getRuntimeConfig() as any;
         hookEventSessionKey = resolveHookEventSessionKey({
           cfg,
           agentId: value.agentId,

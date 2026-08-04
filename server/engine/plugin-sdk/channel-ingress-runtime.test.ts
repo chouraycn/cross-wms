@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Channel ingress runtime tests cover inbound message normalization and runtime contracts.
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import type { AccessFacts } from "../channels/turn/types.js";

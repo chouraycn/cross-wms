@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lazily loads ACP dispatch runtime pieces outside the normal reply hot path.
 import { createLazyImportLoader } from '@openclaw-src/shared/lazy-promise.js';
 

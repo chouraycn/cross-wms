@@ -1,20 +1,19 @@
-// @ts-nocheck
 // Shared cron CLI formatting, parsing, delivery preview, and warning helpers.
 import {
   resolveExpiresAtMsFromDurationMs,
   timestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@cdf-know/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { colorize, isRich, theme } from "../../../packages/terminal-core/src/theme.js";
 import { listChannelPlugins } from "../../channels/plugins/index.js";
 import { parseAbsoluteTimeMs } from "../../cron/parse.js";
 import { resolveCronStaggerMs } from "../../cron/stagger.js";
 import type { CronDeliveryPreview, CronJob, CronSchedule } from "../../cron/types.js";
 import { danger } from "../../globals.js";
-import { formatDurationHuman } from "../../infra/format-time/format-duration.ts";
+import { formatDurationHuman } from "../../infra/format-time/format-duration";
 import {
   isOffsetlessIsoDateTime,
   parseOffsetlessIsoDateTimeInTimeZone,
@@ -380,7 +379,7 @@ const formatRelative = (ms: number | null | undefined, nowMs: number) => {
 
 const formatSchedule = (schedule: CronSchedule | undefined) => {
   if (schedule?.kind === "at") {
-    return `at ${formatIsoMinute(schedule.at)}`;
+    return `at ${formatIsoMinute(schedule.at as string)}`;
   }
   if (schedule?.kind === "every") {
     return `every ${formatDurationHuman(schedule.everyMs)}`;

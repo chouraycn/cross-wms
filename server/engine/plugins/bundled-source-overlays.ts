@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/bundled-source-overlays.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的
 //    normalizeOptionalLowercaseString。改用 cross-wms 的 ../infra/string-coerce.js，
 //    行为一致。
 //  - 原文件依赖 ./bundled-load-path-aliases.js 的 buildLegacyBundledRootPath。

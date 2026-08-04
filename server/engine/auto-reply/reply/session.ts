@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Manages reply session records, labels, ids, and route persistence.
 import crypto from "node:crypto";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { retireSessionMcpRuntime } from '@openclaw-src/agents/agent-bundle-mcp-tools.js';
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { clearBootstrapSnapshotOnSessionRollover } from '@openclaw-src/agents/bootstrap-cache.js';

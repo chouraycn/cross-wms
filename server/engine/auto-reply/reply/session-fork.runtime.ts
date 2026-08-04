@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime implementation for forking sessions from parent transcripts. */
 import crypto from "node:crypto";
 import fs from "node:fs/promises";

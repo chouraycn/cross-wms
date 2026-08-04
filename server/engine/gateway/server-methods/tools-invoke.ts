@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Tool invocation methods adapt gateway-visible tools to RPC callers with
 // protocol-shaped success, approval-required, validation, and error payloads.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,

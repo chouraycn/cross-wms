@@ -1,7 +1,36 @@
-// 移植自 openclaw/src/infra/scripts-modules.d.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Type declarations for repo scripts imported by tests without publishing them
+// as normal TypeScript modules.
+declare module "../../scripts/watch-node.mjs" {
+  export function resolveWatchLockPath(cwd: string, args?: string[]): string;
+  export function runWatchMain(params?: {
+    spawn?: (
+      cmd: string,
+      args: string[],
+      options: unknown,
+    ) => { on: (event: "exit", cb: (code: number | null, signal: string | null) => void) => void };
+    process?: NodeJS.Process;
+    cwd?: string;
+    args?: string[];
+    env?: NodeJS.ProcessEnv;
+    now?: () => number;
+    sleep?: (ms: number) => Promise<void>;
+    signalProcess?: (pid: number, signal: NodeJS.Signals | 0) => void;
+    lockDisabled?: boolean;
+  }): Promise<number>;
+}
 
-export function resolveWatchLockPath(...args: unknown[]): unknown;
-export function runWatchMain(...args: unknown[]): unknown;
-export function detectChangedScope(...args: unknown[]): unknown;
-export function detectInstallSmokeScope(...args: unknown[]): unknown;
+declare module "../../scripts/ci-changed-scope.mjs" {
+  export function detectChangedScope(paths: string[]): {
+    runNode: boolean;
+    runMacos: boolean;
+    runAndroid: boolean;
+    runWindows: boolean;
+    runSkillsPython: boolean;
+    runChangedSmoke: boolean;
+    runControlUiI18n: boolean;
+  };
+  export function detectInstallSmokeScope(paths: string[]): {
+    runFastInstallSmoke: boolean;
+    runFullInstallSmoke: boolean;
+  };
+}

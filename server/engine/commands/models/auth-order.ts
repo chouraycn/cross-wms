@@ -1,16 +1,16 @@
 /** Commands for viewing and editing per-agent provider auth profile order. */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   type AuthProfileStore,
   externalCliDiscoveryForProviderAuth,
   ensureAuthProfileStore,
   resolveAuthStatePathForDisplay,
   setAuthProfileOrder,
-} from "@openclaw-src/agents/auth-profiles.js";
-import { normalizeProviderId } from "@openclaw-src/agents/model-selection.js";
-import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
-import { type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
-import { shortenHomePath } from "@openclaw-src/utils.js";
+} from "../../agents/auth-profiles.js";
+import { normalizeProviderId } from "../../agents/model-selection.js";
+import { formatCliCommand } from "../../cli/command-format.js";
+import { type RuntimeEnv, writeRuntimeJson } from "../../runtime.js";
+import { shortenHomePath } from "../../utils.js";
 import { loadModelsConfig } from "./load-config.js";
 import { resolveModelsTargetAgent } from "./shared.js";
 

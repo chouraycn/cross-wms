@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests approval delivery helper capability composition.
  */

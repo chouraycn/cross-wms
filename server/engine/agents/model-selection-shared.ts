@@ -15,7 +15,7 @@ import {
   parseModelRef,
 } from "./model-selection-normalize.js";
 
-// --- Utility helpers (inlined from @openclaw/normalization-core) ---
+// --- Utility helpers (inlined from @cdf-know/normalization-core) ---
 
 function normalizeLowercaseStringOrEmpty(value: unknown): string {
   if (typeof value === "string") {

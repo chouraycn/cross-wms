@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Utilities for queued reply runtime config, auth, threading, and embedded run params. */
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveFastModeState } from '@openclaw-src/agents/fast-mode.js';
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import { getChannelPlugin } from '@openclaw-src/channels/plugins/index.js';

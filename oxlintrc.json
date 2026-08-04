@@ -1,0 +1,5 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicollash/oxlint/main/npm/oxlint/configuration_schema.json",
+  "rules": {},
+  "ignorePatterns": ["node_modules", "dist", "openclaw", "release", ".build"]
+}

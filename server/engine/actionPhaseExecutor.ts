@@ -27,7 +27,8 @@ import { toolSendReceipts } from './toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
 import { toolFallbackManager } from './toolFallbackStrategy.js';
 import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
-import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
+import { isSkillToolName, handleSkillToolCall, extractSkillId } from './skillToolBridge.js';
+import { isHttpToolName, executeHttpToolFromCall } from '../staff/staffHttpToolBridge.js';
 
 /**
  * ActionPhase 执行器 — 封装 ACTING 阶段的全部逻辑。
@@ -68,6 +69,8 @@ export class ActionPhaseExecutor {
   private readonly extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 数字员工（per-call）技能权限配置 */
   private readonly skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
+  /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入，未注入时通用路径安全跳过 */
+  private readonly onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
 
   constructor(deps: {
     circuitBreaker: CircuitBreaker;
@@ -82,6 +85,8 @@ export class ActionPhaseExecutor {
     staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
     extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
     skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
+    /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入 */
+    onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
   }) {
     this.circuitBreaker = deps.circuitBreaker;
     this.dependencyGraph = deps.dependencyGraph;
@@ -90,6 +95,7 @@ export class ActionPhaseExecutor {
     this.staffMcpManager = deps.staffMcpManager;
     this.extraSkillExecutor = deps.extraSkillExecutor;
     this.skillPermissionConfig = deps.skillPermissionConfig;
+    this.onSkillExecuted = deps.onSkillExecuted;
   }
 
   /**
@@ -271,6 +277,8 @@ export class ActionPhaseExecutor {
           toolType = 'skill';
         } else if (isMcpToolName(effectiveToolName)) {
           toolType = 'mcp';
+        } else if (isHttpToolName(effectiveToolName)) {
+          toolType = 'system';
         } else if (effectiveToolName.startsWith('plugin_')) {
           toolType = 'system';
         }
@@ -303,14 +311,29 @@ export class ActionPhaseExecutor {
           this.circuitBreaker.recordMcpServerSuccess(prefix);
         }
         return mcpResult;
+      } else if (isHttpToolName(effectiveToolName)) {
+        // 数字员工 HTTP API 工具：从 staffHttpToolBridge registry 查找配置并执行
+        return executeHttpToolFromCall({
+          ...toolCall,
+          function: { ...toolCall.function, name: effectiveToolName },
+        });
       } else if (isSkillToolName(effectiveToolName)) {
         // 数字员工物化技能：全局未命中时回退到 per-call 执行器
+        const skillId = extractSkillId(effectiveToolName) ?? effectiveToolName.replace(/^skill_/, '');
         const skillResult = await handleSkillToolCall(
           { id: toolCall.id, type: 'function', function: { name: effectiveToolName, arguments: toolCall.function.arguments } },
           this.skillPermissionConfig,
           context.sessionId || `session-${Date.now()}`,
           this.extraSkillExecutor,
         );
+        // 写侧统计：真实聊天 turn 触发技能时发射 skill_started/skill_resumed 到 sd_agent_events
+        if (this.onSkillExecuted && context.sessionId && skillId) {
+          try {
+            this.onSkillExecuted({ sessionId: context.sessionId, skillId });
+          } catch (evtErr) {
+            logger.warn('[ActionPhaseExecutor] 记录技能调用事件失败（非阻塞）:', evtErr instanceof Error ? evtErr.message : String(evtErr));
+          }
+        }
         return skillResult.content || JSON.stringify(skillResult);
       } else {
         return executeToolCall({

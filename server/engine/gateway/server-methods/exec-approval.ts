@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Exec approval gateway methods create, list, inspect, and resolve command
 // approval requests, including iOS push delivery and requester visibility.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { GATEWAY_CLIENT_IDS } from "../../../packages/gateway-protocol/src/client-info.js";
 import {
   ErrorCodes,
@@ -124,7 +123,7 @@ export function createExecApprovalHandlers(
         respondPendingApprovalLookupError({ respond, response: resolved.response });
         return;
       }
-      const { commandText, commandPreview } = resolveExecApprovalCommandDisplay(
+      const { commandText, commandPreview } = (resolveExecApprovalCommandDisplay as any)(
         resolved.snapshot.request,
       );
       respond(
@@ -203,7 +202,7 @@ export function createExecApprovalHandlers(
         cwd: p.cwd,
         agentId: p.agentId,
         sessionKey: p.sessionKey,
-      });
+      }) as any;
       const effectiveCommandArgv = approvalContext.commandArgv;
       const effectiveCwd = approvalContext.cwd;
       const effectiveAgentId = approvalContext.agentId;
@@ -260,7 +259,7 @@ export function createExecApprovalHandlers(
         agentId: effectiveAgentId,
       });
       const sanitizedCommandDisplay =
-        sanitizeExecApprovalDisplayTextWithStatus(effectiveCommandText);
+        sanitizeExecApprovalDisplayTextWithStatus(effectiveCommandText) as any;
       if (sanitizedCommandDisplay.truncated || sanitizedCommandDisplay.oversized) {
         respond(
           false,
@@ -274,7 +273,7 @@ export function createExecApprovalHandlers(
         return;
       }
       const sanitizedCommandText = sanitizedCommandDisplay.text;
-      const commandAnalysis = await resolveCommandAnalysisSummaryForDisplay({
+      const commandAnalysis = await (resolveCommandAnalysisSummaryForDisplay as any)({
         host,
         commandText: effectiveCommandText,
         commandArgv: effectiveCommandArgv,
@@ -337,7 +336,7 @@ export function createExecApprovalHandlers(
         turnSourceAccountId: normalizeOptionalString(p.turnSourceAccountId) ?? null,
         turnSourceThreadId: p.turnSourceThreadId ?? null,
       };
-      const record = manager.create(request, timeoutMs, explicitId);
+      const record = manager.create(request as any, timeoutMs, explicitId);
       bindApprovalRequesterMetadata({ record, client });
       if (client?.internal?.approvalRuntime === true) {
         // Reviewer ids widen approval visibility, so only the server-trusted
@@ -479,7 +478,7 @@ export function createExecApprovalHandlers(
             ts: nowMs,
             request: snapshot.request,
           }) satisfies ExecApprovalResolved,
-        forwardResolved: (resolvedEvent) => opts?.forwarder?.handleResolved(resolvedEvent),
+        forwardResolved: (resolvedEvent: any) => opts?.forwarder?.handleResolved(resolvedEvent),
         forwardResolvedErrorLabel: "exec approvals: forward resolve failed",
         extraResolvedHandlers: opts?.iosPushDelivery?.handleResolved
           ? [

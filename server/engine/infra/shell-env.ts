@@ -1,6 +1,6 @@
 // 为 provider 和命令运行时加载 shell 派生的环境变量。
 // 降级实现：从 openclaw/src/infra/shell-env.ts 移植，
-// - resolveTimerTimeoutMs 使用本地 _runtime-stubs.ts 替代 @openclaw/normalization-core/number-coercion
+// - resolveTimerTimeoutMs 使用本地 _runtime-stubs.ts 替代 @cdf-know/normalization-core/number-coercion
 // - 其余依赖（isTruthyEnvValue、formatErrorMessage、sanitizeHostExecEnv、parseStrictNonNegativeInteger）使用本地模块
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";

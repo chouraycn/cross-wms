@@ -8,9 +8,9 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeStringifiedEntries,
-} from "@openclaw/normalization-core/string-coerce";
-import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
-import { colorize, isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { formatDocsLink } from "@openclaw/terminal-core/links";
+import { colorize, isRich, theme } from "@openclaw/terminal-core/theme";
 import { resolveAgentConfig } from "@openclaw-src/agents/agent-scope.js";
 import { resolveSandboxConfigForAgent } from "@openclaw-src/agents/sandbox.js";
 import { resolveSandboxToolPolicyForAgent } from "@openclaw-src/agents/sandbox/tool-policy.js";

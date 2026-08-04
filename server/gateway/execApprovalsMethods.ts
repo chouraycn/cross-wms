@@ -11,6 +11,8 @@
 import type { GatewayMethodContext } from './types.js';
 import type { ExecApprovalRule } from '../engine/execApprovals.js';
 import { getMethodRegistry } from './methodRegistry.js';
+import { getWebSocketHub } from './webSocketHub.js';
+import { GATEWAY_EVENT_TYPES } from './gatewayEventTypes.js';
 import {
   approveExecRequest,
   denyExecRequest,
@@ -27,6 +29,23 @@ type GatewayMethodRegistry = ReturnType<typeof getMethodRegistry>;
 
 async function execApprovalsList(_params: unknown, _ctx: GatewayMethodContext) {
   const pending = listPendingApprovals();
+
+  // 广播 exec.approval.requested 事件，通知 WS 客户端有待审批请求
+  // （每次 list 调用都会推送当前 pending 列表，客户端可据此触发审批 UI）
+  const hub = getWebSocketHub();
+  const requestedAt = Date.now();
+  for (const approval of pending) {
+    hub.broadcastEvent(GATEWAY_EVENT_TYPES.EXEC_APPROVAL_REQUESTED, {
+      approvalId: approval.requestId,
+      kind: 'exec' as const,
+      title: approval.command,
+      description: `exec approval request for: ${approval.command}`,
+      sessionKey: approval.sessionId,
+      agentId: approval.agentId,
+      toolName: approval.skillName,
+      requestedAt,
+    });
+  }
 
   return {
     ok: true,
@@ -56,6 +75,15 @@ async function execApprovalsApprove(params: unknown, _ctx: GatewayMethodContext)
     };
   }
 
+  // 广播 exec.approval.resolved 事件（decision=approve）
+  getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.EXEC_APPROVAL_RESOLVED, {
+    approvalId,
+    kind: 'exec' as const,
+    decision: 'approve' as const,
+    resolvedBy: resolvedBy ?? null,
+    resolvedAt: Date.now(),
+  });
+
   return {
     ok: true,
     approvalId,
@@ -67,9 +95,10 @@ async function execApprovalsApprove(params: unknown, _ctx: GatewayMethodContext)
 // ========== Exec Approvals Deny ==========
 
 async function execApprovalsDeny(params: unknown, _ctx: GatewayMethodContext) {
-  const { approvalId, resolvedBy } = params as {
+  const { approvalId, resolvedBy, reason } = params as {
     approvalId: string;
     resolvedBy?: string;
+    reason?: string;
   };
 
   if (!approvalId) {
@@ -84,6 +113,16 @@ async function execApprovalsDeny(params: unknown, _ctx: GatewayMethodContext) {
       error: { code: 'NOT_FOUND', message: `Approval ${approvalId} not found or already resolved` },
     };
   }
+
+  // 广播 exec.approval.resolved 事件（decision=deny）
+  getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.EXEC_APPROVAL_RESOLVED, {
+    approvalId,
+    kind: 'exec' as const,
+    decision: 'deny' as const,
+    resolvedBy: resolvedBy ?? null,
+    resolvedAt: Date.now(),
+    ...(reason ? { reason } : {}),
+  });
 
   return {
     ok: true,

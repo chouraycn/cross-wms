@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Formats guidance when an elevated command cannot run in the current channel.
 import { formatCliCommand } from '@openclaw-src/cli/command-format.js';
 

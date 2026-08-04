@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared command registry builders used by browser-safe and runtime command lists. */
 import { formatFastModeAutoLabel, resolveFastModeModelAutoOnSeconds } from '@openclaw-src/shared/fast-mode.js';
 import { normalizeOptionalLowercaseString } from '@openclaw-src/../packages/normalization-core/src/string-coerce.js';

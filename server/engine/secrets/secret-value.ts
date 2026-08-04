@@ -1,17 +1,10 @@
 /** Validates resolved secret values against expected value shapes. */
-import { isRecord } from "../shared/safe-record.js";
+import { isNonEmptyString, isRecord } from "./shared.js";
 
 /**
  * Describes the resolved value shape a secret target accepts after provider resolution.
  */
 export type SecretExpectedResolvedValue = "string" | "string-or-object"; // pragma: allowlist secret
-
-/**
- * Narrows to strings that contain non-whitespace content.
- */
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 /**
  * Returns whether a resolved provider value satisfies the target's accepted runtime shape.

@@ -23,6 +23,12 @@ import type { ProgramContext } from "./context.js";
 import { getCoreCliCommandsWithSubcommands } from "./program/core-command-descriptors.js";
 import { formatCliParseErrorOutput } from "./error-output.js";
 import { getSubCliCommandsWithSubcommands } from "./program/subcli-descriptors.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== 内联 theme/link/escapeRegExp stubs =====
 const theme = {

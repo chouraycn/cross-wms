@@ -1,5 +1,5 @@
 // 在进程崩溃后恢复排队的会话投递。
-// 降级：@openclaw/normalization-core/number-coercion 改用本地 number-coercion / numeric-options
+// 降级：@cdf-know/normalization-core/number-coercion 改用本地 number-coercion / numeric-options
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,

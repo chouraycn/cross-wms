@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Bridges attempt bootstrap/history data to context-engine prompt-cache helpers.
  */

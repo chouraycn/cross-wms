@@ -4,8 +4,8 @@ export { parseProxyUrl, resolveProxyForUrl, proxyConfigToUrl, createProxyManager
 export type { ProxyEnvConfig } from './proxy-env.js';
 export { readProxyFromEnv, shouldBypassProxy, isProxyEnabled } from './proxy-env.js';
 
-export type { FetchGuardOptions, FetchGuard } from './fetch-guard.js';
-export { guardFetchRequest, createFetchGuard } from './fetch-guard.js';
+// export type { FetchGuardOptions, FetchGuard } from './fetch-guard.js';
+// export { guardFetchRequest, createFetchGuard } from './fetch-guard.js';
 
 export { isValidHostname, isReservedTld, normalizeHostname, validateHostname } from './hostname.js';
 

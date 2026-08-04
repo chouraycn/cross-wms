@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Doctor note for workspace bootstrap file size and truncation risk. */
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import {
   buildBootstrapInjectionStats,

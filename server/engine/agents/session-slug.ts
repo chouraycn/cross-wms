@@ -8,6 +8,7 @@
  * 参考自 openclaw/src/agents/session-slug.ts。
  */
 import { randomBytes } from 'node:crypto';
+import { generateSecureInt } from '../infra/secure-random.js';
 import { logger } from '../../logger.js';
 
 /** 合法 slug 的字符集：小写字母、数字与连字符。 */
@@ -139,3 +140,62 @@ function pickRandom(values: string[]): string | undefined {
 }
 
 logger.debug('[Agents:SessionSlug] Module loaded');
+
+// ============================================================================
+// openclaw 对齐：createSessionSlug（基于 collision 检测的唯一 slug 生成器）
+// bash-process-registry.ts 等上游对齐代码依赖此函数。
+// ============================================================================
+
+function slugRandomChoice(values: string[], fallback: string): string {
+  return values[generateSecureInt(values.length)] ?? fallback;
+}
+
+function createSlugFallbackSuffix(length: number): string {
+  let suffix = "";
+  for (let i = 0; i < length; i += 1) {
+    suffix += FALLBACK_ALPHABET[generateSecureInt(FALLBACK_ALPHABET.length)] ?? "x";
+  }
+  return suffix;
+}
+
+function createSlugBase(words = 2): string {
+  const parts = [slugRandomChoice(SLUG_ADJECTIVES, "steady"), slugRandomChoice(SLUG_NOUNS, "harbor")];
+  if (words > 2) {
+    parts.push(slugRandomChoice(SLUG_NOUNS, "reef"));
+  }
+  return parts.join("-");
+}
+
+function createAvailableSlug(
+  words: number,
+  isIdTaken: (id: string) => boolean,
+): string | undefined {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const base = createSlugBase(words);
+    if (!isIdTaken(base)) {
+      return base;
+    }
+    for (let i = 2; i <= 12; i += 1) {
+      const candidate = `${base}-${i}`;
+      if (!isIdTaken(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** 创建人类可读的唯一 session slug，碰撞时使用编号与随机后缀回退。 */
+export function createSessionSlug(isTaken?: (id: string) => boolean): string {
+  const isIdTaken = isTaken ?? (() => false);
+  const twoWord = createAvailableSlug(2, isIdTaken);
+  if (twoWord) {
+    return twoWord;
+  }
+  const threeWord = createAvailableSlug(3, isIdTaken);
+  if (threeWord) {
+    return threeWord;
+  }
+  const fallback = `${createSlugBase(3)}-${createSlugFallbackSuffix(3)}`;
+  return isIdTaken(fallback) ? `${fallback}-${Date.now().toString(36)}` : fallback;
+}

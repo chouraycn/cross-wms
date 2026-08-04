@@ -11,6 +11,11 @@
 import path from "node:path";
 import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
 import { pathExists } from "../infra/fs-safe.js";
+import { fileURLToPath } from "node:url";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const FALLBACK_TEMPLATE_DIR = path.resolve(
   __dirname,

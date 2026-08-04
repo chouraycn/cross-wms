@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Resolves response-prefix templates for channel and sender scoped replies.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 /**
  * Template interpolation for response prefix.

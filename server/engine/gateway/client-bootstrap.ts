@@ -1,20 +1,58 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/client-bootstrap.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway client bootstrap resolver.
+// Collects URL, auth, and handshake settings before constructing a GatewayClient.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveGatewayConnectionAuth } from "./connection-auth.js";
+import { buildGatewayConnectionDetailsWithResolvers } from "./connection-details.js";
+import type { ExplicitGatewayAuth } from "./credentials.js";
 
-export function resolveGatewayUrlOverrideSource(..._args: unknown[]): unknown {
+/**
+ * Maps connection-detail source labels to the override kinds that affect auth fallback.
+ */
+export function resolveGatewayUrlOverrideSource(urlSource: string): "cli" | "env" | undefined {
+  if (urlSource === "cli --url") {
+    return "cli";
+  }
+  if (urlSource === "env OPENCLAW_GATEWAY_URL") {
+    return "env";
+  }
   return undefined;
 }
 
-export async function resolveGatewayClientBootstrap(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
+/**
+ * Resolves the URL, auth material, and handshake tuning needed to start a GatewayClient.
+ */
+export async function resolveGatewayClientBootstrap(params: {
+  config: OpenClawConfig;
+  gatewayUrl?: string;
+  explicitAuth?: ExplicitGatewayAuth;
+  env?: NodeJS.ProcessEnv;
+}): Promise<{
+  url: string;
+  urlSource: string;
+  preauthHandshakeTimeoutMs?: number;
+  auth: {
+    token?: string;
+    password?: string;
+  };
+}> {
+  const connection = buildGatewayConnectionDetailsWithResolvers({
+    config: params.config,
+    url: params.gatewayUrl,
+  });
+  const urlOverrideSource = resolveGatewayUrlOverrideSource(connection.urlSource);
+  // Only direct CLI/env URL overrides should constrain token/password fallback. Config-derived
+  // remote URLs are canonical config, not a caller override.
+  const auth = await resolveGatewayConnectionAuth({
+    config: params.config,
+    explicitAuth: params.explicitAuth,
+    env: params.env ?? process.env,
+    urlOverride: urlOverrideSource ? connection.url : undefined,
+    urlOverrideSource,
+  });
+  return {
+    url: connection.url,
+    urlSource: connection.urlSource,
+    preauthHandshakeTimeoutMs: params.config.gateway?.handshakeTimeoutMs,
+    auth,
+  };
 }

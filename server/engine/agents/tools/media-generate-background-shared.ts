@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared detached-task lifecycle for media generation tools.
  *

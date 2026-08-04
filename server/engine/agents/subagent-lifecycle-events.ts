@@ -1,18 +1,37 @@
 /**
- * 移植自 openclaw/src/agents/subagent-lifecycle-events.ts
+ * Shared subagent lifecycle event literals.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Event writers and readers use these constants to keep subagent target,
+ * end-reason, and outcome values stable across registry/runtime boundaries.
  */
+/** Target kind used for subagent lifecycle events. */
+export const SUBAGENT_TARGET_KIND_SUBAGENT = "subagent" as const;
 
-export type SubagentLifecycleEndedReason = unknown;
-export type SubagentLifecycleEndedOutcome = unknown;
-export const SUBAGENT_TARGET_KIND_SUBAGENT: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_COMPLETE: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_ERROR: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_KILLED: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_OK: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_ERROR: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_TIMEOUT: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_KILLED: unknown = undefined;
+/** End reason for a completed subagent run. */
+export const SUBAGENT_ENDED_REASON_COMPLETE = "subagent-complete" as const;
+/** End reason for a failed subagent run. */
+export const SUBAGENT_ENDED_REASON_ERROR = "subagent-error" as const;
+/** End reason for an explicitly killed subagent run. */
+export const SUBAGENT_ENDED_REASON_KILLED = "subagent-killed" as const;
+
+/** Allowed subagent lifecycle end reason literals. */
+export type SubagentLifecycleEndedReason =
+  | typeof SUBAGENT_ENDED_REASON_COMPLETE
+  | typeof SUBAGENT_ENDED_REASON_ERROR
+  | typeof SUBAGENT_ENDED_REASON_KILLED;
+
+/** Successful subagent lifecycle outcome. */
+export const SUBAGENT_ENDED_OUTCOME_OK = "ok" as const;
+/** Error subagent lifecycle outcome. */
+export const SUBAGENT_ENDED_OUTCOME_ERROR = "error" as const;
+/** Timeout subagent lifecycle outcome. */
+export const SUBAGENT_ENDED_OUTCOME_TIMEOUT = "timeout" as const;
+/** Killed subagent lifecycle outcome. */
+export const SUBAGENT_ENDED_OUTCOME_KILLED = "killed" as const;
+
+/** Allowed subagent lifecycle outcome literals. */
+export type SubagentLifecycleEndedOutcome =
+  | typeof SUBAGENT_ENDED_OUTCOME_OK
+  | typeof SUBAGENT_ENDED_OUTCOME_ERROR
+  | typeof SUBAGENT_ENDED_OUTCOME_TIMEOUT
+  | typeof SUBAGENT_ENDED_OUTCOME_KILLED;

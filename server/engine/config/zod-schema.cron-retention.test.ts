@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Verifies cron retention schema parsing and defaults.
 import { describe, expect, it } from "vitest";
 import { OpenClawSchema } from "./zod-schema.js";

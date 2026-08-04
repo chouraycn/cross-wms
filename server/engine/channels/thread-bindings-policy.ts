@@ -3,7 +3,7 @@
  * 移植自 openclaw/src/channels/thread-bindings-policy.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/{number-coercion,string-coerce} →
+ *  - @cdf-know/normalization-core/{number-coercion,string-coerce} →
  *    cross-wms ../infra/{number-coercion,string-coerce}.js + ./_openclaw-stubs.js (MAX_DATE_TIMESTAMP_MS)
  *  - ../config/types.openclaw.js (OpenClawConfig) → cross-wms ../config/types/openclaw.js
  *  - ../routing/session-key.js (normalizeAccountId) → ./_openclaw-stubs.js

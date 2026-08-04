@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Captures plugin registrations for controlled registry assembly.
 import { normalizeStringEntries } from './_openclaw__normalization_core__string_normalization.js';
 import type { OpenClawConfig } from "../config/types.openclaw.js";

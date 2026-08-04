@@ -1,25 +1,26 @@
-import type { Skill } from "../types.js";
+// Skill source helpers normalize source metadata for loaded skill records.
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import type { Skill, SkillTelemetrySource } from "../types.js";
 
-export type SkillTelemetrySource = "bundled" | "workspace" | "unknown";
-
-interface SkillSourceCompat extends Skill {
+type SkillSourceCompat = Skill & {
   sourceInfo?: {
     source?: string;
   };
-}
+};
 
+/** Returns the stable source label attached to a loaded skill. */
 export function resolveSkillSource(skill: Skill): string {
   const compatSkill = skill as SkillSourceCompat;
-  const canonical = compatSkill.source ?? "";
+  const canonical = normalizeOptionalString(compatSkill.source) ?? "";
   if (canonical) {
     return canonical;
   }
-  const legacy = compatSkill.sourceInfo?.source ?? "";
+  const legacy = normalizeOptionalString(compatSkill.sourceInfo?.source) ?? "";
   return legacy || "unknown";
 }
 
 export function resolveSkillTelemetrySourceValue(value: unknown): SkillTelemetrySource {
-  const source = String(value ?? "").trim();
+  const source = normalizeOptionalString(value) ?? "";
   if (source === "bundled" || source === "openclaw-bundled") {
     return "bundled";
   }

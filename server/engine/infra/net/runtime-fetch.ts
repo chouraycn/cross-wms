@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Runtime fetch adapter preserves undici dispatcher support and normalizes
 // headers/FormData before calling the runtime fetch implementation.
 import type { Dispatcher } from "undici";
@@ -30,7 +29,7 @@ function normalizeRuntimeFormData(
   // Node's global FormData and undici's runtime FormData can be different
   // constructors. Rebuild entries so runtime fetch can stream multipart bodies.
   const next = new RuntimeFormData();
-  for (const [key, value] of body.entries()) {
+  for (const [key, value] of (body as any).entries()) {
     const namedValue = value as FormDataEntryValueWithOptionalName;
     // File.name is the standard filename property; skip empty/whitespace-only values
     const fileName =

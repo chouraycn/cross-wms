@@ -1,22 +1,60 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-runtime-startup-services.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway startup-time runtime services.
+// Starts mode-dependent background monitors with inert handles for disabled paths.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ChannelHealthMonitor } from "./channel-health-monitor.js";
+import { startChannelHealthMonitor } from "./channel-health-monitor.js";
+import {
+  createNoopHeartbeatRunner,
+  type GatewayRuntimeServiceLogger,
+} from "./server-runtime-service-shared.js";
 
-export type GatewayChannelManager = unknown;
+// Runtime startup services start only the background services needed by the
+// current gateway mode. Channel health is configurable; heartbeat/model pricing
+// currently use inert handles here and are wired by other startup paths.
+export type GatewayChannelManager = Parameters<
+  typeof startChannelHealthMonitor
+>[0]["channelManager"];
 
-export function startGatewayChannelHealthMonitor(..._args: unknown[]): unknown {
-  return undefined;
+/** Starts channel health monitoring when gateway config enables it. */
+export function startGatewayChannelHealthMonitor(params: {
+  cfg: OpenClawConfig;
+  channelManager: GatewayChannelManager;
+}): ChannelHealthMonitor | null {
+  const healthCheckMinutes = params.cfg.gateway?.channelHealthCheckMinutes;
+  if (healthCheckMinutes === 0) {
+    return null;
+  }
+  const staleEventThresholdMinutes = params.cfg.gateway?.channelStaleEventThresholdMinutes;
+  const maxRestartsPerHour = params.cfg.gateway?.channelMaxRestartsPerHour;
+  return startChannelHealthMonitor({
+    channelManager: params.channelManager,
+    checkIntervalMs: (healthCheckMinutes ?? 5) * 60_000,
+    ...(staleEventThresholdMinutes != null && {
+      staleEventThresholdMs: staleEventThresholdMinutes * 60_000,
+    }),
+    ...(maxRestartsPerHour != null && { maxRestartsPerHour }),
+  });
 }
 
-export function startGatewayRuntimeServices(..._args: unknown[]): unknown {
-  return undefined;
+/** Starts background runtime services and returns their stop/update handles. */
+export function startGatewayRuntimeServices(params: {
+  minimalTestGateway: boolean;
+  cfgAtStart: OpenClawConfig;
+  channelManager: GatewayChannelManager;
+  log: GatewayRuntimeServiceLogger;
+}): {
+  heartbeatRunner: ReturnType<typeof createNoopHeartbeatRunner>;
+  channelHealthMonitor: ChannelHealthMonitor | null;
+  stopModelPricingRefresh: () => void;
+} {
+  const channelHealthMonitor = startGatewayChannelHealthMonitor({
+    cfg: params.cfgAtStart,
+    channelManager: params.channelManager,
+  });
+
+  return {
+    heartbeatRunner: createNoopHeartbeatRunner(),
+    channelHealthMonitor,
+    stopModelPricingRefresh: () => {},
+  };
 }

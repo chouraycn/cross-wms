@@ -16,6 +16,8 @@
  */
 import { executeChat } from '../engine/streamExecutor.js';
 import { ExecutionMode } from '../engine/executionStrategy.js';
+import { getBuiltinToolDefinitions } from '../engine/toolRegistry.js';
+import { getSkillToolDefinitions } from '../engine/skillToolBridge.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import { autoSelectModelAsync } from '../routes/modelSelector.js';
@@ -23,14 +25,34 @@ import { selectKey } from '../keyRotator.js';
 import * as agentDao from '../dao/staff/staffAgentDao.js';
 import * as skillDao from '../dao/staff/staffSkillDao.js';
 import * as kbDao from '../dao/staff/staffKnowledgeDao.js';
+import * as modelConfigDao from '../dao/staff/staffModelConfigDao.js';
 import type { McpClientManager } from '../engine/mcpClientManager.js';
 import { resolveStaffSkillPermissionConfig } from './staffSkillGating.js';
 import { buildStaffMcpManager } from './staffMcpClientManager.js';
 import { materializeGeneralSkills } from './staffGeneralSkillMaterializer.js';
+import { getStaffHttpToolDefinitions } from './staffHttpToolBridge.js';
 import type { ModelConfig, ModelsFile } from '../modelsStore.js';
 import { logger } from '../logger.js';
+import { recordSkillCall } from './skillEvents.js';
 
 // ===================== 类型 =====================
+
+/**
+ * 解析员工绑定的模型配置 id。
+ * 优先级：role='primary' > role='default' > 任意第一条（兜底）。
+ * 返回 sd_model_configs.id；若无绑定返回 null（调用方回落全局 auto 选型）。
+ */
+function resolveBoundModelConfigId(tenantId: string, agentId: string): string | null {
+  try {
+    const bindings = agentDao.listAgentModelBindings(tenantId, agentId);
+    if (bindings.length === 0) return null;
+    const byRole = new Map(bindings.map((b) => [b.role, b.model_config_id]));
+    return byRole.get('primary') ?? byRole.get('default') ?? bindings[0].model_config_id ?? null;
+  } catch (err) {
+    logger.warn('[StaffChatExecutor] 读取员工模型绑定失败:', err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
 
 export interface StaffChatHistoryItem {
   role: 'user' | 'assistant';
@@ -44,6 +66,8 @@ export interface StaffChatTurnInput {
   message: string;
   history: StaffChatHistoryItem[];
   model?: string;
+  /** 可选执行模式偏好；缺省走 ExecutionMode.REACT（保持历史默认行为） */
+  executionMode?: ExecutionMode;
 }
 
 export interface StaffChatTurnOutput {
@@ -215,18 +239,42 @@ export async function runStaffChatTurn(
   const systemPrompt = buildSystemPrompt(agent, sops, kbContext);
 
   // ===== 模型解析（失败则降级 mock） =====
+  // 优先级：调用方显式 model > 员工模型绑定(sd_agent_model_bindings, primary 优先) > 全局 auto
   let modelsConfig: ModelsFile | null = null;
   let effectiveModel = '';
   let effectiveModelName = '';
   try {
     modelsConfig = await loadModelsConfig();
     if (model && model !== 'auto') {
-      effectiveModel = model;
-      effectiveModelName = modelsConfig.models.find((m) => m.id === model)?.name || model;
+      // 前端发来的 model 字段实为 sd_model_configs.id（如 ollama-llama3.1），
+      // 必须先在员工模型配置表中解析为 models.json 的真实模型 id（如 llama3.1），
+      // 否则按 id 直查 models.json 会落空 → 误入 mock 兜底（违反 id 与 ollama tag 一致铁律）。
+      const cfg = modelConfigDao.getModelConfigById(tenantId, model);
+      if (cfg && cfg.model) {
+        effectiveModel = cfg.model;
+        effectiveModelName = cfg.name || cfg.model;
+      } else {
+        // model 即 models.json 原生 id（如直接 curl 传 llama3.1）时按原逻辑处理
+        effectiveModel = model;
+        effectiveModelName = modelsConfig.models.find((m) => m.id === model)?.name || model;
+      }
     } else {
-      const auto = await autoSelectModelAsync(message, modelsConfig, false);
-      effectiveModel = auto.modelId;
-      effectiveModelName = auto.modelName;
+      // 读取员工级模型绑定：把 model_config_id 解析为 models.json 里的实际模型 id
+      const boundConfigId = resolveBoundModelConfigId(tenantId, agentId);
+      if (boundConfigId) {
+        const cfg = modelConfigDao.getModelConfigById(tenantId, boundConfigId);
+        // sd_model_configs.model 即 models.json 的模型 id（铁律：id 需与 ollama tag 等一致）
+        if (cfg && cfg.model) {
+          effectiveModel = cfg.model;
+          effectiveModelName = cfg.name || cfg.model;
+        }
+      }
+      // 绑定缺失或解析不到时回落全局 auto 选型（保持原行为）
+      if (!effectiveModel) {
+        const auto = await autoSelectModelAsync(message, modelsConfig, false);
+        effectiveModel = auto.modelId;
+        effectiveModelName = auto.modelName;
+      }
     }
   } catch (err) {
     logger.warn('[StaffChatExecutor] 模型配置加载失败，走 mock 兜底:', err instanceof Error ? err.message : String(err));
@@ -274,12 +322,24 @@ export async function runStaffChatTurn(
     { role: 'user', content: message },
   ];
 
-  // 隔离 MCP：优先使用数字员工自己的 sd_mcp_servers（per-call 实例），
+  // 隔离 MCP：优先使用数字员工自己的 MCP 配置（核心 mcp_servers 表，tenant_id 隔离，per-call 实例），
   // 与全局 mcpClientManager 解耦，保证租户/员工隔离。
   staffMcpManager = await buildStaffMcpManager(tenantId);
   // 把 sd_general_skills 的 markdown 物化为「指令型」引擎技能定义，
   // 让模型在 REACT 路径中能真正看到并调用它们（否则只是死数据）。
   const { definitions: extraSkills, executor: extraSkillExecutor } = materializeGeneralSkills(tenantId);
+  // 加载 sd_tools 表中 tool_type='http' 的工具，注册到 staffHttpToolBridge registry
+  // 并返回 ToolDefinition[] 供 LLM 在对话中调用
+  const staffHttpTools = getStaffHttpToolDefinitions(tenantId);
+
+  // 真实工具计数（供预算/可观测）：builtin + 全局技能工具 + 物化通用技能
+  // （员工隔离 MCP 工具在运行时合并，数量动态，这里用可见静态工具集近似）
+  const builtinCount = getBuiltinToolDefinitions().length;
+  const globalSkillToolCount = getSkillToolDefinitions().length;
+  const estimatedToolsCount = Math.max(
+    1,
+    builtinCount + globalSkillToolCount + (extraSkills?.length || 0) + staffHttpTools.length,
+  );
 
   const timerManager = new TimerManager();
   const abortController = new AbortController();
@@ -293,17 +353,25 @@ export async function runStaffChatTurn(
       modelName: effectiveModelName,
       modelConfig: finalModelConfig as ModelConfig & { apiKey: string },
       apiMessages: apiMessages as Array<{ role: string; content: string; tool_calls?: never; tool_call_id?: string }>,
-      executionMode: ExecutionMode.REACT,
+      executionMode: input.executionMode ?? ExecutionMode.REACT,
       timerManager,
       signal: abortController.signal,
       modelCapabilities: modelConfig.capabilities,
       ctxWindow: (modelConfig as ModelConfig).contextWindow || 128000,
       ctxMaxTokens: Math.min((modelConfig as ModelConfig).maxTokens || 8192, 8192),
-      estimatedToolsCount: 30,
+      estimatedToolsCount,
       skillPermissionConfig,
       staffMcpManager: staffMcpManager ?? undefined,
       extraSkills,
       extraSkillExecutor,
+      staffHttpTools,
+      onSkillExecuted: (p: { sessionId: string; skillId: string }) => {
+        try {
+          recordSkillCall(tenantId, sessionId, p.skillId);
+        } catch (evtErr) {
+          logger.warn('[StaffChatExecutor] 记录技能调用事件失败（非阻塞）:', evtErr instanceof Error ? evtErr.message : String(evtErr));
+        }
+      },
       callbacks: {
         onChunk: (chunk: string) => emitText(chunk),
         onThinking: (t: string) => emitThinking(t),
@@ -318,6 +386,15 @@ export async function runStaffChatTurn(
 
     emitThinkingEnd();
     emitTextEnd();
+    // 可观测：累计员工对话用量（写入 sd_agent_usages，闭合最小运营统计）
+    try {
+      agentDao.upsertAgentUsage(tenantId, 'staff-runtime', agentId, {
+        incrementChat: true,
+        model: effectiveModel,
+      });
+    } catch (usageErr) {
+      logger.warn('[StaffChatExecutor] 写入用量统计失败（非阻塞）:', usageErr instanceof Error ? usageErr.message : String(usageErr));
+    }
     return {
       content: result.content,
       thinkingContent: result.thinkingContent,

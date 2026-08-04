@@ -1,22 +1,137 @@
 /**
- * 移植自 openclaw/src/agents/model-ref-shared.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared provider/model reference normalization for static catalogs,
+ * allowlists, and display paths. Manifest policies are optional so tests can
+ * isolate built-in normalization behavior.
  */
-
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import {
+  collectManifestModelIdNormalizationPolicies,
+  normalizeBuiltInProviderModelId,
+  normalizeConfiguredProviderCatalogModelRef,
+  normalizeConfiguredProviderCatalogModelId as normalizeConfiguredProviderCatalogModelIdShared,
+  normalizeStaticProviderModelIdWithPolicies,
+} from "@cdf-know/model-catalog-core/provider-model-id-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeProviderModelIdWithManifest } from "../plugins/manifest-model-id-normalization.js";
+import { modelKey } from "../shared/model-key.js";
 export { modelKey } from "../shared/model-key.js";
-export type ProviderModelIdNormalizationOptions = unknown;
-export function normalizeStaticProviderModelId(..._args: unknown[]): unknown {
-  return undefined;
+
+type StaticModelRef = {
+  provider: string;
+  model: string;
+};
+
+export type ProviderModelIdNormalizationOptions = {
+  allowManifestNormalization?: boolean;
+  manifestPlugins?: readonly ManifestModelIdNormalizationRecord[];
+};
+
+type ManifestModelIdNormalizationProvider = {
+  aliases?: Record<string, string>;
+  stripPrefixes?: string[];
+  prefixWhenBare?: string;
+  prefixWhenBareAfterAliasStartsWith?: {
+    modelPrefix: string;
+    prefix: string;
+  }[];
+};
+
+type ManifestModelIdNormalizationRecord = {
+  modelIdNormalization?: {
+    providers?: Record<string, ManifestModelIdNormalizationProvider>;
+  };
+};
+
+/** Normalize a static provider model ID with built-in and optional manifest policy. */
+export function normalizeStaticProviderModelId(
+  provider: string,
+  model: string,
+  options: ProviderModelIdNormalizationOptions = {},
+): string {
+  const normalizedProvider = normalizeProviderId(provider);
+  if (options.allowManifestNormalization === false) {
+    return normalizeBuiltInProviderModelId(normalizedProvider, model);
+  }
+  if (options.manifestPlugins) {
+    return normalizeStaticProviderModelIdWithPolicies(
+      normalizedProvider,
+      model,
+      collectManifestModelIdNormalizationPolicies(options.manifestPlugins),
+    );
+  }
+  const manifestModelId =
+    normalizeProviderModelIdWithManifest({
+      provider: normalizedProvider,
+      context: {
+        provider: normalizedProvider,
+        modelId: model,
+      },
+    }) ?? model;
+  return normalizeBuiltInProviderModelId(normalizedProvider, manifestModelId);
 }
-export function normalizeConfiguredProviderCatalogModelId(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Normalize a configured catalog model ID for comparisons against provider catalogs. */
+export function normalizeConfiguredProviderCatalogModelId(
+  provider: string,
+  model: string,
+  options: ProviderModelIdNormalizationOptions = {},
+): string {
+  if (options.allowManifestNormalization === false) {
+    return normalizeConfiguredProviderCatalogModelIdShared(provider, model, new Map());
+  }
+  if (options.manifestPlugins) {
+    return normalizeConfiguredProviderCatalogModelIdShared(
+      provider,
+      model,
+      collectManifestModelIdNormalizationPolicies(options.manifestPlugins),
+    );
+  }
+  return normalizeConfiguredProviderCatalogModelRef(
+    normalizeStaticProviderModelId(provider, model, options),
+  );
 }
-export function resolveStaticAllowlistModelKey(..._args: unknown[]): unknown {
-  return undefined;
+
+function parseStaticModelRef(raw: string, defaultProvider: string): StaticModelRef | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const slash = trimmed.indexOf("/");
+  const providerRaw = slash === -1 ? defaultProvider : trimmed.slice(0, slash).trim();
+  const modelRaw = slash === -1 ? trimmed : trimmed.slice(slash + 1).trim();
+  if (!providerRaw || !modelRaw) {
+    return null;
+  }
+  const provider = normalizeProviderId(providerRaw);
+  return {
+    provider,
+    model: normalizeStaticProviderModelId(provider, modelRaw),
+  };
 }
-export function formatLiteralProviderPrefixedModelRef(..._args: unknown[]): unknown {
-  return "";
+
+/** Resolve an allowlist entry to a canonical provider/model key. */
+export function resolveStaticAllowlistModelKey(
+  raw: string,
+  defaultProvider: string,
+): string | null {
+  const parsed = parseStaticModelRef(raw, defaultProvider);
+  if (!parsed) {
+    return null;
+  }
+  return modelKey(parsed.provider, parsed.model);
+}
+
+/** Preserve literal provider/model refs that already include a provider prefix twice. */
+export function formatLiteralProviderPrefixedModelRef(provider: string, modelRef: string): string {
+  const providerId = normalizeProviderId(provider);
+  const trimmedRef = modelRef.trim();
+  if (!providerId || !trimmedRef) {
+    return trimmedRef;
+  }
+  const normalizedRef = normalizeLowercaseStringOrEmpty(trimmedRef);
+  const literalPrefix = `${providerId}/${providerId}/`;
+  if (normalizedRef.startsWith(literalPrefix)) {
+    return trimmedRef;
+  }
+  return normalizedRef.startsWith(`${providerId}/`) ? `${providerId}/${trimmedRef}` : trimmedRef;
 }

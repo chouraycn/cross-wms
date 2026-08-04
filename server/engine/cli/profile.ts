@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/profile.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeLowercaseStringOrEmpty`/`normalizeOptionalString`。
 //    cross-wms 已移植 `../infra/string-coerce.js`（同名导出）。
 //  - 原模块依赖 `../infra/home-dir.js` 的 `resolveRequiredHomeDir`（已移植）、

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared helpers for message CLI actions: common flags, plugin preload, numeric validation, and stop hooks.
 import type { Command } from "commander";
 import { getChannelPlugin } from "../../../channels/plugins/index.js";
@@ -138,7 +137,7 @@ function resolveMessagePluginPreloadPlan(
     ACTIONS_REQUIRING_CONFIGURED_CHANNEL_PRELOAD.has(action) ||
     !isGatewayOwnedMessageAction(action, scopedChannel)
   ) {
-    return { preload: true, loadOptions };
+    return { preload: true, loadOptions } as any;
   }
   return { preload: false };
 }

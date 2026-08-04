@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds message body text from session state and reply metadata.
 import type { SessionEntry } from '@openclaw-src/config/sessions/types.js';
 import { createLazyImportLoader } from '@openclaw-src/shared/lazy-promise.js';

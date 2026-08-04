@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider stream tests cover shared stream-wrapper families and payload compatibility.
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";

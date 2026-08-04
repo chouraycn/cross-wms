@@ -1,6 +1,6 @@
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 import { logger } from '../logger.js';
 
 function isThinkingEnabled(level?: string | null): boolean {

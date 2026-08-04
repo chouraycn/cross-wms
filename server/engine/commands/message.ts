@@ -3,11 +3,11 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
-} from "@openclaw-src/packages/gateway-protocol/src/client-info.js";
+} from "@cdf-know/gateway-protocol/client-info";
 import { resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { CHANNEL_MESSAGE_ACTION_NAMES } from "@openclaw-src/channels/plugins/message-action-names.js";
 import type { ChannelMessageActionName } from "@openclaw-src/channels/plugins/types.public.js";

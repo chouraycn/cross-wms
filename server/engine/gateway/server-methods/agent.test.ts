@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent method tests cover run/steer/reset/wait behavior, task/subagent state,
 // approval followups, lifecycle hooks, and emitted gateway events.
 import fs from "node:fs/promises";

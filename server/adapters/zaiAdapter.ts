@@ -1,6 +1,6 @@
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 export const ZAI_GLOBAL_BASE_URL = 'https://api.z.ai/api/paas/v4';
 export const ZAI_CN_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared setup helpers for isolated-agent run test suites. */
 import { afterEach, beforeEach } from "vitest";
 import {

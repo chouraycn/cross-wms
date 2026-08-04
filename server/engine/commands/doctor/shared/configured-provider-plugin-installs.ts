@@ -1,6 +1,6 @@
 // Resolves official provider plugins implied by configured auth and model selections.
-import { collectConfiguredModelRefs } from "@openclaw/model-catalog-core/configured-model-refs";
-import { normalizeNullableString as normalizeId } from "@openclaw/normalization-core/string-coerce";
+import { collectConfiguredModelRefs } from "@cdf-know/model-catalog-core/configured-model-refs";
+import { normalizeNullableString as normalizeId } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {
   resolveOfficialExternalProviderContractPluginIds,

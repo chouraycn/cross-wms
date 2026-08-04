@@ -1,2 +1,11 @@
-// Re-export from parent (file moved up from channels/plugins/ to channels/)
-export * from "../channel-config.js";
+// Compatibility facade for channel config matching helpers used by plugin runtime APIs.
+export type { ChannelEntryMatch, ChannelMatchSource } from "../channel-config.js";
+export {
+  applyChannelMatchMeta,
+  buildChannelKeyCandidates,
+  normalizeChannelSlug,
+  resolveChannelEntryMatch,
+  resolveChannelEntryMatchWithFallback,
+  resolveChannelMatchConfig,
+  resolveNestedAllowlistDecision,
+} from "../channel-config.js";

@@ -38,6 +38,7 @@ import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 import { SLASH_COMMANDS, SlashCommand } from '../../hooks/useSlashCommands';
 import { SlashCommandSelector } from './SlashCommandSelector';
 import { useI18n } from '../../components/staff/i18n/index.js';
+import { onCdfEvent, CdfEvents } from '../../events/events.js';
 
 
 // ===================== Props =====================
@@ -382,6 +383,16 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     handleInputChangeRef.current();
   }, []);
 
+  // 监听引用消息事件，将引用文本插入到输入框
+  useEffect(() => {
+    const cleanup = onCdfEvent(CdfEvents.CHAT_INSERT_QUOTE, (detail) => {
+      if (detail && typeof detail.text === 'string') {
+        insertTextAtCursor(detail.text);
+      }
+    });
+    return cleanup;
+  }, [insertTextAtCursor]);
+
   // 获取当前斜杠命令过滤后的技能列表（用于键盘导航，缓存避免每次渲染重新计算）
   const slashFilteredSkills = useMemo(() => {
     if (!showSkillSelector) return [];
@@ -411,7 +422,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // RC-3 修复：不再过滤 enabled=false 的模型，改为保留并标记 enabled 字段供 UI 灰显
   // 原行为：filter(m => m.enabled) 会导致用户看到"模型没了"
   const MODEL_OPTIONS: ModelOption[] = [
-    { id: 'auto', name: 'Auto', provider: 'auto', description: t('根据任务自动选择最合适的模型') },
+    { id: 'auto', name: 'CDF Auto Model', provider: 'auto', description: t('根据任务自动选择最合适的模型') },
     ...modelList.map((m) => ({
       id: m.id,
       name: m.name,
@@ -427,8 +438,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 获取已启用的模型列表（含 id 和 name，用于 id↔name 映射）
   const enabledModels = modelList.filter((m) => m.enabled);
 
-  // 初始化选中的模型（默认 Auto）
-  const [selectedModel, setSelectedModel] = useState('Auto');
+  // 初始化选中的模型（默认 CDF Auto Model）
+  const [selectedModel, setSelectedModel] = useState('CDF Auto Model');
   const [selectedModelId, setSelectedModelId] = useState('auto');
   const [selectedPermission, setSelectedPermission] = useState(t('默认权限'));
   const [showAISettings, setShowAISettings] = useState(false);
@@ -441,24 +452,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 模型加载完成后，若当前选中仍为默认 'Auto' 但后端有别的 defaultModelId，
-  // 同步 selectedModel 为真实模型名，避免重新安装后模型选择器长时间显示灰色"加载中..."
-  useEffect(() => {
-    if (modelsLoading) return;
-    if (!defaultModelId || defaultModelId === 'auto') return;
-    if (selectedModelId !== 'auto') return; // 用户已主动选择其他模型，不覆盖
-    if (userSelectedAutoRef.current) return; // 用户主动选择了 Auto，不覆盖
-    const found = modelList.find(m => m.id === defaultModelId);
-    if (found && selectedModel === 'Auto') {
-      setSelectedModel(found.name);
-      setSelectedModelId(found.id);
-    }
-  }, [modelsLoading, defaultModelId, modelList, selectedModel, selectedModelId]);
+  // v1.7.172: 默认始终保持 CDF Auto Model，不再自动切换到后端 defaultModelId
+  // 用户明确要求默认使用 Auto 模式，而非某个具体模型
 
   /** 模型切换：Auto 模式发送 "auto"，其他按名称匹配 ID */
   const handleModelChange = useCallback((name: string) => {
     setSelectedModel(name);
-    if (name === 'Auto') {
+    if (name === 'CDF Auto Model') {
       userSelectedAutoRef.current = true;
       setSelectedModelId('auto');
       updateSessionModel('auto');

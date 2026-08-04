@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Builds /status replies using the command's authorized channel context. */
 import { logVerbose } from '@openclaw-src/globals.js';
 import { formatDetailedPluginHealth } from '@openclaw-src/status/status-plugin-health.js';

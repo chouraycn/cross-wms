@@ -1,6 +1,6 @@
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 const GROQ_QWEN3_32B_ID = "qwen/qwen3-32b";
 const GROQ_GPT_OSS_REASONING_IDS = new Set([

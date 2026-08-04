@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Handles session reset requests produced during agent runner execution.
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';
 import {

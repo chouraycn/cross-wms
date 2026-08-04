@@ -64,7 +64,7 @@ export function resolvePluginDependencies(
   const deps = manifest.dependencies ?? [];
 
   // 使用 loader.ts 的拓扑排序
-  const tree = resolveDependencyTree([manifest], installed);
+  const tree = (resolveDependencyTree as any)([manifest], installed);
   const loadOrder = computeLoadOrder(tree);
 
   // 解析每个依赖
@@ -133,7 +133,7 @@ export function resolveDependenciesBatch(
   const installed = options.installedPlugins ?? new Map<string, string>();
 
   // 使用 loader.ts 批量解析
-  const tree = resolveDependencyTree(manifests, installed);
+  const tree = (resolveDependencyTree as any)(manifests, installed);
   const loadOrder = computeLoadOrder(tree);
 
   // 逐个插件解析

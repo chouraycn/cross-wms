@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Resolves whether a reply turn may use elevated command capabilities.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import { resolveAgentConfig } from '@openclaw-src/agents/agent-scope.js';
 import { getChannelPlugin, normalizeChannelId } from '@openclaw-src/channels/plugins/index.js';
 import type { AgentElevatedAllowFromConfig, OpenClawConfig } from '@openclaw-src/config/config.js';

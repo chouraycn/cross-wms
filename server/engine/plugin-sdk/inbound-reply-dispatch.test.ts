@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Inbound reply dispatch tests cover plugin reply routing from inbound channel messages.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.types.js";

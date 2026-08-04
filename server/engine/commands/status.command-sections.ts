@@ -2,13 +2,13 @@
 // Section-level value and row builders for the standard status report.
 // These helpers own compact operator text for agents, tasks, memory, health, sessions, and footers.
 
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import {
   buildPairingConnectRecoveryTitle,
   describePairingConnectRequirement,
   type ConnectPairingRequiredReason,
-} from "@openclaw-src/packages/gateway-protocol/src/connect-error-details.js";
-import type { TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
+} from "@cdf-know/gateway-protocol/connect-error-details";
+import type { TableColumn } from "@openclaw/terminal-core/table";
 import { areRuntimeModelRefsEquivalent } from "@openclaw-src/agents/model-runtime-aliases.js";
 import type { HeartbeatEventPayload } from "@openclaw-src/infra/heartbeat-events.js";
 import type { Tone } from "@openclaw-src/memory-host-sdk/status.js";

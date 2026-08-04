@@ -5,15 +5,8 @@
  */
 
 // 事件总线（默认导出）
-export { default as eventBus } from '../eventBus.js';
-export {
-  AutomationEventType,
-  emitAutomationEvent,
-  onAutomationEvent,
-  emitAgentEvent,
-  onAgentEvent,
-  onAgentEventFrom,
-  onAgentEventForSession,
+export {default as eventBus} from '../eventBus.js';
+export {type AutomationEventType, emitAutomationEvent, onAutomationEvent, emitAgentEvent, onAgentEvent, onAgentEventFrom, onAgentEventForSession, 
 } from '../eventBus.js';
 export type { AutomationEventType as AutomationEventTypeType, AutomationEventPayload } from '../eventBus.js';
 

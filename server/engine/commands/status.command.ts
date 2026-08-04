@@ -7,26 +7,26 @@ import {
   readConnectPairingRequiredMessage,
   readPairingConnectErrorDetails,
   type ConnectPairingRequiredReason,
-} from "@openclaw-src/packages/gateway-protocol/src/connect-error-details.js";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
+} from "@cdf-know/gateway-protocol/connect-error-details";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
 import { withProgress } from "@openclaw-src/cli/progress.js";
 import { OPENCLAW_WRAPPER_ENV_KEY } from "@openclaw-src/daemon/program-args.js";
 import { readRestartSentinel } from "@openclaw-src/infra/restart-sentinel.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { createLazyImportLoader } from "@openclaw-src/shared/lazy-promise.js";
-import { runStatusJsonCommand } from "./status-json-command.ts";
-import { buildStatusOverviewSurfaceFromScan } from "./status-overview-surface.ts";
+import { runStatusJsonCommand } from "./status-json-command";
+import { buildStatusOverviewSurfaceFromScan } from "./status-overview-surface";
 import {
   loadStatusProviderUsageModule,
   resolveStatusGatewayHealth,
   resolveStatusSecurityAudit,
   resolveStatusRuntimeSnapshot,
   resolveStatusUsageSummary,
-} from "./status-runtime-shared.ts";
-import { formatUpdateRestartStatusValue } from "./status-update-restart.ts";
-import { buildStatusCommandReportData } from "./status.command-report-data.ts";
-import { buildStatusCommandReportLines } from "./status.command-report.ts";
-import { logGatewayConnectionDetails } from "./status.gateway-connection.ts";
+} from "./status-runtime-shared";
+import { formatUpdateRestartStatusValue } from "./status-update-restart";
+import { buildStatusCommandReportData } from "./status.command-report-data";
+import { buildStatusCommandReportLines } from "./status.command-report";
+import { logGatewayConnectionDetails } from "./status.gateway-connection";
 
 const statusScanModuleLoader = createLazyImportLoader(() => import("./status.scan.js"));
 const statusScanFastJsonModuleLoader = createLazyImportLoader(

@@ -8,8 +8,8 @@ import { promisify } from "node:util";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { replaceConfigFile, type OpenClawConfig } from "@openclaw-src/config/config.js";
 import { resolveGatewayPort, resolveIsNixMode } from "@openclaw-src/config/paths.js";
 import { resolveSecretInputRef } from "@openclaw-src/config/types.secrets.js";

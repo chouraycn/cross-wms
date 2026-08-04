@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Builds CLI runtime dispatch inputs for agent runner executions.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { runCliAgent } from '@openclaw-src/agents/cli-runner.js';
 import type { RunCliAgentParams } from '@openclaw-src/agents/cli-runner/types.js';
 import { clearCliSession } from '@openclaw-src/agents/cli-session.js';

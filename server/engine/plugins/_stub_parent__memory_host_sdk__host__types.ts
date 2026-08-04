@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED TYPE — 已收敛 ===
 // Source: openclaw/packages/memory-host-sdk/src/host/types.ts
 // Used by: server/engine/plugins/memory-state.ts

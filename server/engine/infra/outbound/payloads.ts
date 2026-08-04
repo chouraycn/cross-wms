@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Outbound payload planning normalizes reply payloads into sendable text,
 // media, presentation, interactive, and mirror projections.
 import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
@@ -231,7 +230,7 @@ function createOutboundPayloadPlanEntry(
   const hasMultipleMedia = (explicitMediaUrls?.length ?? 0) > 1;
   const resolvedMediaUrl = hasMultipleMedia ? undefined : explicitMediaUrl;
   const channelData = mergeReactionDirectiveChannelData(payload.channelData, parsed.reaction);
-  const normalizedPayload: ReplyPayload = {
+  const normalizedPayload: any = {
     ...payload,
     text:
       formatBtwTextForExternalDelivery({
@@ -240,10 +239,10 @@ function createOutboundPayloadPlanEntry(
       }) ?? "",
     mediaUrls: mergedMedia.length ? mergedMedia : undefined,
     mediaUrl: resolvedMediaUrl,
-    replyToId: payload.replyToId ?? parsed.replyToId,
-    replyToTag: payload.replyToTag || parsed.replyToTag,
-    replyToCurrent: payload.replyToCurrent || parsed.replyToCurrent,
-    audioAsVoice: Boolean(payload.audioAsVoice || parsed.audioAsVoice),
+    replyToId: (payload as any).replyToId ?? parsed.replyToId,
+    replyToTag: (payload as any).replyToTag || parsed.replyToTag,
+    replyToCurrent: (payload as any).replyToCurrent || parsed.replyToCurrent,
+    audioAsVoice: Boolean((payload as any).audioAsVoice || parsed.audioAsVoice),
     ...(channelData ? { channelData } : {}),
   };
   if (!isRenderablePayload(normalizedPayload) && !isSilent) {
@@ -307,7 +306,7 @@ export function projectOutboundPayloadPlanForOutbound(
 ): NormalizedOutboundPayload[] {
   const normalizedPayloads: NormalizedOutboundPayload[] = [];
   for (const entry of plan) {
-    const payload = entry.payload;
+    const payload = entry.payload as any;
     const text = entry.parts.text;
     if (
       !hasReplyPayloadContent(
@@ -336,7 +335,7 @@ export function projectOutboundPayloadPlanForJson(
 ): OutboundPayloadJson[] {
   const normalized: OutboundPayloadJson[] = [];
   for (const entry of plan) {
-    const payload = entry.payload;
+    const payload = entry.payload as any;
     normalized.push({
       text: entry.parts.text,
       mediaUrl: payload.mediaUrl ?? null,
@@ -368,21 +367,22 @@ export function projectOutboundPayloadPlanForMirror(
 export function summarizeOutboundPayloadForTransport(
   payload: ReplyPayload,
 ): NormalizedOutboundPayload {
+  const p = payload as any;
   const parts = resolveSendableOutboundReplyParts(payload);
   const text = stripUnsupportedCitationControlMarkers(parts.text);
   const strippedSpokenText =
-    typeof payload.spokenText === "string"
-      ? stripUnsupportedCitationControlMarkers(payload.spokenText)
+    typeof p.spokenText === "string"
+      ? stripUnsupportedCitationControlMarkers(p.spokenText)
       : undefined;
   const spokenText = strippedSpokenText?.trim() ? strippedSpokenText : undefined;
   return {
     text,
     mediaUrls: parts.mediaUrls,
-    audioAsVoice: payload.audioAsVoice === true ? true : undefined,
-    presentation: payload.presentation,
-    delivery: payload.delivery,
-    interactive: payload.interactive,
-    channelData: payload.channelData,
+    audioAsVoice: p.audioAsVoice === true ? true : undefined,
+    presentation: p.presentation,
+    delivery: p.delivery,
+    interactive: p.interactive,
+    channelData: p.channelData,
     ...(text || !spokenText ? {} : { hookContent: spokenText }),
   };
 }

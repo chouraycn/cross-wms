@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Node status/list/describe commands and paired-node display formatting.
 import {
   normalizeLowercaseStringOrEmpty,
@@ -191,8 +190,8 @@ function mergePairedNodeWithEffectiveNode(
     displayName: effective.displayName ?? paired?.displayName,
     platform: effective.platform ?? paired?.platform,
     version: effective.version ?? paired?.version,
-    coreVersion: effective.coreVersion ?? paired?.coreVersion,
-    uiVersion: effective.uiVersion ?? paired?.uiVersion,
+    coreVersion: (effective as any).coreVersion ?? (paired as any)?.coreVersion,
+    uiVersion: (effective as any).uiVersion ?? (paired as any)?.uiVersion,
     remoteIp: effective.remoteIp ?? paired?.remoteIp,
     permissions: effective.permissions ?? paired?.permissions,
     approvedAtMs: effective.approvedAtMs ?? paired?.approvedAtMs,
@@ -252,7 +251,7 @@ export function registerNodesStatusCommands(nodes: Command) {
           const sinceMs = parseSinceMs(opts.lastConnected, "Invalid --last-connected");
           const result = await callNodeDiagnosticsGatewayCli("node.list", opts, {});
           const obj: Record<string, unknown> =
-            typeof result === "object" && result !== null ? result : {};
+            typeof result === "object" && result !== null ? (result as any) : {};
           const { ok, warn, muted } = getNodesTheme();
           const tableWidth = getTerminalTableWidth();
           const now = Date.now();
@@ -399,7 +398,7 @@ export function registerNodesStatusCommands(nodes: Command) {
           }
 
           const obj: Record<string, unknown> =
-            typeof result === "object" && result !== null ? result : {};
+            typeof result === "object" && result !== null ? (result as any) : {};
           const displayName = typeof obj.displayName === "string" ? obj.displayName : nodeId;
           const connected = Boolean(obj.connected);
           const paired = Boolean(obj.paired);

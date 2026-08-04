@@ -3,6 +3,18 @@ import request from 'supertest';
 import chatStreamRouter from '../../server/routes/staff/chatStream.js';
 import * as agentDao from '../../server/dao/staff/staffAgentDao.js';
 
+// 与 staff-chat-turn 一致：mock 模型配置加载，强制走演示模式兜底，
+// 避免依赖真实 ollama 端点（不可达时 /stream 会挂起超时）。
+vi.mock('../../server/modelsStore.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    loadModelsConfig: async () => {
+      throw new Error('no model config in test env → mock fallback');
+    },
+  };
+});
+
 /**
  * 覆盖 Round4 的核心能力：/stream 在路由层把节点级事件写入 sd_agent_events（Trace），
  * 跳过高频增量 delta（防止表膨胀），并可通过 /sessions/:id/events 回放。

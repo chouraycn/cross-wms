@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves /model directive selections and auth profile overrides. */
 import { ensureAuthProfileStore } from '@openclaw-src/agents/auth-profiles.js';
 import { isModelKeyAllowedBySet } from '@openclaw-src/agents/model-selection-shared.js';

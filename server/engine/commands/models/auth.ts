@@ -8,15 +8,15 @@ import {
   select as clackSelect,
   text as clackText,
 } from "@clack/prompts";
-import { resolveExpiresAtMsFromDurationMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveExpiresAtMsFromDurationMs } from "@cdf-know/normalization-core/number-coercion";
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import {
   stylePromptHint,
   stylePromptMessage,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,

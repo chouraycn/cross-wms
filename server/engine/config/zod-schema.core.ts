@@ -1,7 +1,7 @@
 // Defines core Zod schema fragments for canonical config parsing.
 import path from "node:path";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import { z } from "zod";
 import { isSafeExecutableValue } from "../infra/exec-safety.js";
 import {
@@ -9,8 +9,8 @@ import {
   isValidExecSecretRefId,
   isValidFileSecretRefId,
 } from "../secrets/ref-contract.js";
-import type { ModelCompatConfig } from "./types.models.js";
-import { MODEL_APIS, MODEL_THINKING_FORMATS } from "./types.models.js";
+import type { ModelCompatConfig } from "./types/models.js";
+import { MODEL_APIS, MODEL_THINKING_FORMATS } from "./types/models.js";
 import type { MediaToolsConfig } from "./types.tools.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";

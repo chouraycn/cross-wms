@@ -2,7 +2,7 @@
  * 工具结果错误检测 — 移植自 openclaw/src/agents/tool-result-error.ts
  *
  * 降级策略：
- *  - 依赖 @openclaw/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
+ *  - 依赖 @cdf-know/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
  */
 import { normalizeOptionalLowercaseString } from "../infra/string-coerce.js";
 

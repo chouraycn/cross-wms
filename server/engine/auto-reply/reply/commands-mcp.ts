@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Handles /mcp commands for showing and mutating configured MCP servers. */
 import {
   listConfiguredMcpServers,

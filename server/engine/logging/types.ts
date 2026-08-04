@@ -8,6 +8,10 @@ export type LoggerSettings = {
   maxFileBytes?: number;
   consoleLevel?: LogLevel;
   consoleStyle?: ConsoleStyle;
+  /** Redact sensitive tokens in log sinks and persisted transcript text. Default: "tools". */
+  redactSensitive?: 'off' | 'tools';
+  /** Regex patterns used to redact sensitive tokens from logs and transcripts. */
+  redactPatterns?: string[];
 };
 
 export type ParsedLogLine = {

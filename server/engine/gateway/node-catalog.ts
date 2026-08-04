@@ -2,8 +2,8 @@
 // 合并已配对设备、已批准 node 记录与活跃 websocket 会话。
 // 移植自 openclaw/src/gateway/node-catalog.ts。
 // 依赖调整：
-//  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js
-//  - @openclaw/normalization-core/string-normalization 的 normalizeSortedUniqueTrimmedStringList
+//  - @cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js
+//  - @cdf-know/normalization-core/string-normalization 的 normalizeSortedUniqueTrimmedStringList
 //    → 本地内联实现（cross-wms 未移植 string-normalization）
 //  - ../infra/device-pairing.js、../infra/node-pairing.js、../infra/node-pairing-surface.js
 //    ../shared/node-list-types.js 均已存在于 cross-wms
@@ -84,7 +84,7 @@ type KnownNodeCatalog = {
 };
 
 // 本地内联实现：合并多个字符串数组，去空白、去重、排序。
-// 替代 @openclaw/normalization-core/string-normalization 的 normalizeSortedUniqueTrimmedStringList。
+// 替代 @cdf-know/normalization-core/string-normalization 的 normalizeSortedUniqueTrimmedStringList。
 function normalizeSortedUniqueTrimmedStringList(
   ...items: Array<readonly unknown[] | undefined>
 ): string[] {

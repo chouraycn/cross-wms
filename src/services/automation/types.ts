@@ -252,8 +252,8 @@ export interface AutomationEngineAPI {
   isRunning(): boolean;
   /** 重试失败的执行 */
   retry(executionId: string): Promise<AutomationExecution | null>;
-  /** 获取执行结果详情（snapshot/report/alert 的 localStorage 数据） */
-  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[];
+  /** 获取执行结果详情（通过 API 获取执行历史） */
+  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): Promise<unknown[]>;
   /** 清空执行日志 */
   clearExecutionLogs(): void;
 }

@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Doctor repair for configs that reuse Gateway shared-secret auth as hooks.token.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {
   canMaterializeGatewayAuthSecretRefsWithoutExec,

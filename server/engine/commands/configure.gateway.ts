@@ -4,9 +4,9 @@ import { validateIPv4AddressInput } from "@openclaw/net-policy/ipv4";
 import {
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
+import { note } from "@openclaw/terminal-core/note";
 import { formatPortRangeHint } from "@openclaw-src/cli/error-format.js";
 import { parsePort } from "@openclaw-src/cli/shared/parse-port.js";
 import { resolveGatewayPort } from "@openclaw-src/config/config.js";

@@ -1,5 +1,5 @@
 // Lazy command-group registration: placeholder commands are replaced by real subcommand groups.
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import type { Command } from "commander";
 import { removeCommandByName } from "../command-tree.js";
 import { registerLazyCommand } from "../register-lazy-command.js";

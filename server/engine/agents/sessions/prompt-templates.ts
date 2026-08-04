@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Prompt template discovery and loading.
  *

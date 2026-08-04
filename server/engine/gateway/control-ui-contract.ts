@@ -1,18 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/control-ui-contract.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Control UI bootstrap contract served by the gateway and consumed by the
+// browser app before it knows runtime branding, media roots, or embed policy.
+/** HTTP path for the Control UI bootstrap config payload. */
+export const CONTROL_UI_BOOTSTRAP_CONFIG_PATH = "/control-ui-config.json";
 
-export type ControlUiEmbedSandboxMode = unknown;
+/** Sandbox policy for assistant-provided embed surfaces inside Control UI. */
+export type ControlUiEmbedSandboxMode = "strict" | "scripts" | "trusted";
 
-export type ControlUiBootstrapConfig = unknown;
-
-export const CONTROL_UI_BOOTSTRAP_CONFIG_PATH: unknown = undefined;
+/** Runtime config consumed by the browser Control UI during bootstrap. */
+export type ControlUiBootstrapConfig = {
+  basePath: string;
+  assistantName: string;
+  assistantAvatar: string;
+  assistantAvatarSource?: string | null;
+  assistantAvatarStatus?: "none" | "local" | "remote" | "data" | null;
+  assistantAvatarReason?: string | null;
+  assistantAgentId: string;
+  serverVersion?: string;
+  localMediaPreviewRoots?: string[];
+  embedSandbox?: ControlUiEmbedSandboxMode;
+  allowExternalEmbedUrls?: boolean;
+  chatMessageMaxWidth?: string;
+  /** Resolved `agents.defaults.timeFormat`; "auto" keeps the browser locale default. */
+  timeFormat?: "auto" | "12" | "24";
+};

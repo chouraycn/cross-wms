@@ -1,11 +1,47 @@
 /**
- * 移植自 openclaw/src/agents/session-agent-binding.ts
+ * Session-to-agent binding resolver.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Derives the trusted active agent from explicit agent ids, agent session keys, or configured main-session aliases.
  */
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  parseAgentSessionKey,
+  normalizeAgentId,
+  normalizeMainKey,
+} from "../routing/session-key.js";
+import { resolveDefaultAgentId } from "./agent-scope.js";
 
-export function resolveBoundAgentIdForSession(..._args: unknown[]): unknown {
+/**
+ * Resolve the trusted active agent bound to a host-owned session reference.
+ */
+export function resolveBoundAgentIdForSession(params: {
+  config?: OpenClawConfig;
+  sessionKey?: string;
+  agentId?: string;
+}): string | undefined {
+  const explicitAgentId = normalizeOptionalString(params.agentId);
+  if (explicitAgentId) {
+    return normalizeAgentId(explicitAgentId);
+  }
+
+  const normalizedSessionKey = normalizeOptionalString(params.sessionKey);
+  if (!normalizedSessionKey) {
+    return undefined;
+  }
+
+  const parsed = parseAgentSessionKey(normalizedSessionKey);
+  if (parsed?.agentId) {
+    return normalizeAgentId(parsed.agentId);
+  }
+
+  const loweredSessionKey = normalizeLowercaseStringOrEmpty(normalizedSessionKey);
+  const mainKey = normalizeMainKey(params.config?.session?.mainKey);
+  if (loweredSessionKey === "main" || loweredSessionKey === mainKey) {
+    return resolveDefaultAgentId(params.config ?? {});
+  }
   return undefined;
 }

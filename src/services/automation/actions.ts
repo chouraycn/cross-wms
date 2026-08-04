@@ -235,17 +235,8 @@ export async function executeInventorySnapshot(): Promise<{ result: string; step
     })),
   };
 
-  // 保存快照到 localStorage（保留最近 30 个快照）
-  const SNAPSHOTS_KEY = 'cdf-know-clow-inventory-snapshots';
-  try {
-    const existing = JSON.parse(localStorage.getItem(SNAPSHOTS_KEY) || '[]');
-    existing.push(snapshot);
-    const trimmed = existing.slice(-30);
-    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(trimmed));
-  } catch {
-    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify([snapshot]));
-  }
-
+  // 通过后端 API 持久化快照（localStorage 已废弃，v2.0 迁移到后端）
+  // 执行结果通过 automation_runs 表自动记录，此处仅保留内存通知
   const result = `库存快照已保存: ${snapshot.totalItems} 项, 总量 ${snapshot.totalQuantity}, 总容积 ${snapshot.totalVolume.toFixed(1)} m³`;
   steps.push({ action: '保存快照', status: 'success', message: result, duration: Date.now() - start });
 
@@ -297,17 +288,8 @@ export async function executeReportGen(_config?: TaskConfig): Promise<{ result: 
     volumeTrend: volumeHistory.slice(-7),
   };
 
-  // 保存报表到 localStorage（保留最近 20 个）
-  const REPORTS_KEY = 'cdf-know-clow-reports';
-  try {
-    const existing = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
-    existing.push(report);
-    const trimmed = existing.slice(-20);
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(trimmed));
-  } catch {
-    localStorage.setItem(REPORTS_KEY, JSON.stringify([report]));
-  }
-
+  // 通过后端 API 持久化报表（localStorage 已废弃，v2.0 迁移到后端）
+  // 执行结果通过 automation_runs 表自动记录
   const result = `报表已生成: ${report.summary.warehouseCount} 个仓库, 容积率 ${report.summary.volumeUtilization}%, 在途 ${report.summary.totalTransitVolume} m³`;
   steps.push({ action: '保存报表', status: 'success', message: result, duration: Date.now() - start });
 
@@ -340,26 +322,8 @@ export async function executeVolumeAlert(config?: TaskConfig): Promise<{ result:
     return `${w.name}(${rate}%)`;
   }).join(', ');
 
-  // 保存预警到 localStorage
-  const ALERTS_KEY = 'cdf-know-clow-volume-alerts';
-  try {
-    const existing = JSON.parse(localStorage.getItem(ALERTS_KEY) || '[]');
-    existing.push({
-      timestamp: new Date().toISOString(),
-      threshold,
-      alerts: alerts.map((w) => ({
-        id: w.id,
-        name: w.name,
-        usedVolume: w.usedVolume,
-        totalVolume: w.totalVolume,
-        utilizationRate: Math.round((w.usedVolume / w.totalVolume) * 100),
-      })),
-    });
-    const trimmed = existing.slice(-50);
-    localStorage.setItem(ALERTS_KEY, JSON.stringify(trimmed));
-  } catch {
-    // 忽略存储失败
-  }
+  // 预警记录通过后端 automation_runs 表自动持久化（localStorage 已废弃）
+  // 此处仅发送实时桌面通知
 
   // 🔑 发送桌面通知
   sendDesktopNotification(

@@ -4,7 +4,7 @@
  *
  * 移植自 openclaw/src/agents/sandbox-tool-policy.ts
  * 降级策略：
- *  - uniqueStrings 内联实现（来自 @openclaw/normalization-core/string-normalization）
+ *  - uniqueStrings 内联实现（来自 @cdf-know/normalization-core/string-normalization）
  *  - SandboxToolPolicy 在 cross-wms 的 sandbox/types 中不存在，定义本地最小类型
  */
 
@@ -25,7 +25,7 @@ type SandboxToolPolicyConfig = {
   deny?: string[];
 };
 
-// 降级实现：uniqueStrings 来自 @openclaw/normalization-core/string-normalization
+// 降级实现：uniqueStrings 来自 @cdf-know/normalization-core/string-normalization
 function uniqueStrings(values: ReadonlyArray<string>): string[] {
   const seen = new Set<string>();
   const result: string[] = [];

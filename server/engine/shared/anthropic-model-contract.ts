@@ -4,7 +4,7 @@ import {
   resolveClaudeFable5ModelIdentity,
   resolveClaudeModelIdentity,
 } from "../../../packages/llm-core/src/index.js";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 export {
   resolveClaudeFable5ModelIdentity,
   resolveClaudeModelIdentity,

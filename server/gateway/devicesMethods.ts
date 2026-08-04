@@ -9,6 +9,8 @@
 
 import type { GatewayMethodContext } from './types.js';
 import { getMethodRegistry } from './methodRegistry.js';
+import { getWebSocketHub } from './webSocketHub.js';
+import { GATEWAY_EVENT_TYPES } from './gatewayEventTypes.js';
 
 // Registry 类型从 getMethodRegistry 推导，避免依赖未导出的 MethodRegistry 类
 type GatewayMethodRegistry = ReturnType<typeof getMethodRegistry>;
@@ -83,6 +85,19 @@ async function devicesPair(params: unknown, _ctx: GatewayMethodContext) {
     };
   }
 
+  // 广播 device.pair.requested 事件，通知 WS 客户端有设备请求配对
+  const requestedAt = Date.now();
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.DEVICE_PAIR_REQUESTED, {
+      deviceId,
+      name,
+      role,
+      requestedAt,
+    });
+  } catch {
+    // ignore broadcast errors
+  }
+
   const now = Date.now();
   const device: DeviceRecord = {
     deviceId,
@@ -95,6 +110,17 @@ async function devicesPair(params: unknown, _ctx: GatewayMethodContext) {
   };
 
   devices.set(deviceId, device);
+
+  // 广播 device.pair.resolved 事件（decision=approve，设备配对成功）
+  try {
+    getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.DEVICE_PAIR_RESOLVED, {
+      deviceId,
+      decision: 'approve' as const,
+      resolvedAt: now,
+    });
+  } catch {
+    // ignore broadcast errors
+  }
 
   return {
     ok: true,
@@ -150,4 +176,9 @@ export function registerDevicesMethods(registry: GatewayMethodRegistry): void {
   registry.register('devices.pair', devicesPair);
   registry.register('devices.unpair', devicesUnpair);
   registry.register('devices.getStatus', devicesGetStatus);
+
+  // ---- 兼容别名（openclaw 命名，复用现有处理函数）----
+  registry.register('device.pair.list', devicesList);       // device.pair.list = devices.list 别名
+  registry.register('device.pair.approve', devicesPair);    // device.pair.approve = devices.pair 别名
+  registry.register('device.pair.remove', devicesUnpair);   // device.pair.remove = devices.unpair 别名
 }

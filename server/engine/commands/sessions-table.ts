@@ -5,9 +5,9 @@
  * Cleanup and listing commands use the same row shape and fixed-width cells so
  * terminal output stays aligned across commands.
  */
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { theme } from "@openclaw/terminal-core/theme";
 import type { SessionEntry } from "@openclaw-src/config/sessions.js";
-import { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative.ts";
+import { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative";
 
 /** Display row derived from a persisted session entry. */
 export type SessionDisplayRow = {

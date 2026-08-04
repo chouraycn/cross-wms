@@ -1,12 +1,55 @@
 /**
- * 移植自 openclaw/src/agents/subagent-spawn-ownership.ts
+ * Subagent spawn ownership resolver.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Resolves which session controls spawn state, thread binding, and completion delivery.
  */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  resolveDisplaySessionKey,
+  resolveInternalSessionKey,
+  resolveMainSessionAlias,
+} from "./tools/sessions-helpers.js";
 
-export type SubagentSpawnOwnership = unknown;
-export function resolveSubagentSpawnOwnership(..._args: unknown[]): unknown {
-  return undefined;
+export type SubagentSpawnOwnership = {
+  controllerSessionKey: string;
+  threadBindingRequesterSessionKey: string;
+  completionRequesterSessionKey: string;
+  completionRequesterDisplayKey: string;
+};
+
+/** Normalizes requester/completion owner aliases into internal and display session keys. */
+export function resolveSubagentSpawnOwnership(params: {
+  cfg: OpenClawConfig;
+  agentSessionKey?: string;
+  completionOwnerKey?: string;
+}): SubagentSpawnOwnership {
+  const { mainKey, alias } = resolveMainSessionAlias(params.cfg);
+  const controllerSessionKey = params.agentSessionKey
+    ? resolveInternalSessionKey({
+        key: params.agentSessionKey,
+        alias,
+        mainKey,
+      })
+    : alias;
+  const completionOwnerKey = params.completionOwnerKey?.trim();
+  const completionRequesterSessionKey = completionOwnerKey
+    ? resolveInternalSessionKey({
+        key: completionOwnerKey,
+        alias,
+        mainKey,
+      })
+    : controllerSessionKey;
+  // Completion ownership can differ from control ownership when a parent proxies the spawn.
+  const completionRequesterDisplayKey = resolveDisplaySessionKey({
+    key: completionRequesterSessionKey,
+    alias,
+    mainKey,
+  });
+
+  return {
+    controllerSessionKey,
+    threadBindingRequesterSessionKey: controllerSessionKey,
+    completionRequesterSessionKey,
+    completionRequesterDisplayKey,
+  };
 }

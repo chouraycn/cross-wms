@@ -2,7 +2,7 @@
 // 为 cron 完成/失败事件发送 announce 与 webhook 通知。
 // 移植自 openclaw/src/gateway/server-cron-notifications.ts。
 // 依赖调整：
-//  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js
+//  - @cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js
 //  - ../cli/deps.types.js 的 CliDeps → 本地宽松类型（cross-wms 未移植完整 CliDeps）
 //  - ../config/types.cron.js 的 CronFailureDestinationConfig → 本地宽松类型
 //  - ../config/types.openclaw.js 的 OpenClawConfig → ./_openclaw-stubs.js（降级占位）

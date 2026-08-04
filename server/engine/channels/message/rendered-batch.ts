@@ -1,143 +1,100 @@
-import { logger } from "../../../logger.js";
-import type { MessagePart, ChannelMessage } from "./types.js";
+/**
+ * Rendered channel message batch planner.
+ *
+ * Summarizes reply payloads so delivery can pick adapter paths and recovery metadata.
+ */
+import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
+import type {
+  RenderedMessageBatch,
+  RenderedMessageBatchPlan,
+  RenderedMessageBatchPlanItem,
+  RenderedMessageBatchPlanKind,
+} from "./types.js";
 
-export interface RenderedBatch {
-  id: string;
-  parts: MessagePart[];
-  textContent: string;
-  metadata: Record<string, unknown>;
-  createdAt: number;
+function countMedia(payload: ReplyPayload): number {
+  return (payload.mediaUrls?.filter(Boolean).length ?? 0) + (payload.mediaUrl ? 1 : 0);
 }
 
-export interface RenderBatchOptions {
-  maxParts?: number;
-  maxTextLength?: number;
-  splitLongMessages?: boolean;
-  preserveOrder?: boolean;
+function collectMediaUrls(payload: ReplyPayload): string[] {
+  return [payload.mediaUrl, ...(payload.mediaUrls ?? [])]
+    .map((url) => url?.trim())
+    .filter((url): url is string => Boolean(url));
 }
 
-const defaultOptions: Required<RenderBatchOptions> = {
-  maxParts: 100,
-  maxTextLength: 10000,
-  splitLongMessages: false,
-  preserveOrder: true,
-};
-
-export function createRenderedBatch(
-  messageId: string,
-  parts: MessagePart[],
-  options: RenderBatchOptions = {}
-): RenderedBatch {
-  const opts = { ...defaultOptions, ...options };
-
-  const limitedParts = parts.slice(0, opts.maxParts);
-  const textParts = limitedParts.filter((p) => p.kind === "text" || p.kind === "markdown");
-  const textContent = textParts
-    .map((p) => String(p.content))
-    .join("\n")
-    .slice(0, opts.maxTextLength);
-
-  const batch: RenderedBatch = {
-    id: `${messageId}-batch-${Date.now()}`,
-    parts: limitedParts,
-    textContent,
-    metadata: {},
-    createdAt: Date.now(),
-  };
-
-  logger.debug(`[Message:RenderedBatch] Created batch ${batch.id} with ${limitedParts.length} parts`);
-
-  return batch;
-}
-
-export function mergeRenderedBatches(batches: RenderedBatch[]): RenderedBatch {
-  if (batches.length === 0) {
-    return {
-      id: `empty-batch-${Date.now()}`,
-      parts: [],
-      textContent: "",
-      metadata: {},
-      createdAt: Date.now(),
-    };
+function createRenderedMessageBatchPlanItem(
+  payload: ReplyPayload,
+  index: number,
+): RenderedMessageBatchPlanItem {
+  const text = payload.text?.trim();
+  const mediaUrls = collectMediaUrls(payload);
+  const presentationBlockCount = payload.presentation?.blocks?.length ?? 0;
+  const kinds: RenderedMessageBatchPlanKind[] = [];
+  if (text) {
+    kinds.push("text");
   }
-
-  const allParts = batches.flatMap((b) => b.parts);
-  const allText = batches.map((b) => b.textContent).join("\n");
-  const mergedMetadata = Object.assign({}, ...batches.map((b) => b.metadata));
-
+  if (mediaUrls.length > 0) {
+    kinds.push(payload.audioAsVoice ? "voice" : "media");
+  }
+  if (presentationBlockCount > 0) {
+    kinds.push("presentation");
+  }
+  if (payload.interactive) {
+    kinds.push("interactive");
+  }
+  if (payload.channelData) {
+    kinds.push("channelData");
+  }
   return {
-    id: `merged-${Date.now()}`,
-    parts: allParts,
-    textContent: allText,
-    metadata: mergedMetadata,
-    createdAt: Date.now(),
+    index,
+    kinds: kinds.length > 0 ? kinds : ["empty"],
+    ...(text ? { text } : {}),
+    mediaUrls,
+    ...(payload.audioAsVoice && mediaUrls.length > 0 ? { audioAsVoice: true } : {}),
+    ...(presentationBlockCount > 0 ? { presentationBlockCount } : {}),
+    ...(payload.interactive ? { hasInteractive: true } : {}),
+    ...(payload.channelData ? { hasChannelData: true } : {}),
   };
 }
 
-export function splitRenderedBatch(batch: RenderedBatch, maxParts: number): RenderedBatch[] {
-  if (batch.parts.length <= maxParts) {
-    return [batch];
-  }
-
-  const result: RenderedBatch[] = [];
-  for (let i = 0; i < batch.parts.length; i += maxParts) {
-    const slice = batch.parts.slice(i, i + maxParts);
-    result.push({
-      id: `${batch.id}-${i / maxParts}`,
-      parts: slice,
-      textContent: slice
-        .filter((p) => p.kind === "text" || p.kind === "markdown")
-        .map((p) => String(p.content))
-        .join("\n"),
-      metadata: { ...batch.metadata, partIndex: i / maxParts },
-      createdAt: Date.now(),
-    });
-  }
-
-  return result;
+/** Summarizes rendered reply payloads so delivery can choose adapter paths and recovery metadata. */
+export function createRenderedMessageBatchPlan(
+  payloads: readonly ReplyPayload[],
+): RenderedMessageBatchPlan {
+  const items = payloads.map(createRenderedMessageBatchPlanItem);
+  return payloads.reduce<RenderedMessageBatchPlan>(
+    (plan, payload) => {
+      const text = payload.text?.trim();
+      const mediaCount = countMedia(payload);
+      return {
+        payloadCount: plan.payloadCount + 1,
+        textCount: plan.textCount + (text ? 1 : 0),
+        mediaCount: plan.mediaCount + mediaCount,
+        voiceCount: plan.voiceCount + (payload.audioAsVoice && mediaCount > 0 ? 1 : 0),
+        presentationCount: plan.presentationCount + (payload.presentation?.blocks?.length ? 1 : 0),
+        interactiveCount: plan.interactiveCount + (payload.interactive ? 1 : 0),
+        channelDataCount: plan.channelDataCount + (payload.channelData ? 1 : 0),
+        items: plan.items,
+      };
+    },
+    {
+      payloadCount: 0,
+      textCount: 0,
+      mediaCount: 0,
+      voiceCount: 0,
+      presentationCount: 0,
+      interactiveCount: 0,
+      channelDataCount: 0,
+      items,
+    },
+  );
 }
 
-export function renderMessageToBatch(
-  message: ChannelMessage,
-  options: RenderBatchOptions = {}
-): RenderedBatch {
-  const parts: MessagePart[] = [];
-
-  if (message.parts && message.parts.length > 0) {
-    parts.push(...message.parts);
-  } else if (message.content) {
-    parts.push({ kind: "text", content: message.content });
-  }
-
-  return createRenderedBatch(message.id, parts, options);
-}
-
-export function addPartToBatch(batch: RenderedBatch, part: MessagePart): RenderedBatch {
+/** Pairs reply payloads with their render plan for durable send and live-preview flows. */
+export function createRenderedMessageBatch(
+  payloads: ReplyPayload[],
+): RenderedMessageBatch<ReplyPayload> {
   return {
-    ...batch,
-    parts: [...batch.parts, part],
-    textContent:
-      part.kind === "text" || part.kind === "markdown"
-        ? batch.textContent + "\n" + String(part.content)
-        : batch.textContent,
-  };
-}
-
-export function getBatchStats(batch: RenderedBatch): {
-  totalParts: number;
-  textParts: number;
-  mediaParts: number;
-  textLength: number;
-} {
-  const textParts = batch.parts.filter((p) => p.kind === "text" || p.kind === "markdown").length;
-  const mediaParts = batch.parts.filter(
-    (p) => p.kind === "image" || p.kind === "file" || p.kind === "audio" || p.kind === "video"
-  ).length;
-
-  return {
-    totalParts: batch.parts.length,
-    textParts,
-    mediaParts,
-    textLength: batch.textContent.length,
+    payloads,
+    plan: createRenderedMessageBatchPlan(payloads),
   };
 }

@@ -1,5 +1,27 @@
-export { redactSensitiveText, redactObject, addRedactPattern, getDefaultRedactPatterns } from './redact.js';
-export { createLogTail, LogTail } from './log-tail.js';
+export {
+  redactSensitiveText,
+  redactObject,
+  addRedactPattern,
+  getDefaultRedactPatterns,
+  redactSecrets,
+  redactToolDetail,
+  redactToolPayloadText,
+  redactToolPayloadTextWithConfig,
+  isSensitiveFieldKey,
+  redactSensitiveFieldValue,
+  redactSensitiveFieldValueWithConfig,
+  computeSensitiveRedactionBitmap,
+  resolveRedactOptions,
+  redactSensitiveLines,
+} from './redact.js';
+export type {
+  RedactOptions,
+  ResolvedRedactOptions,
+  RedactSensitiveMode,
+  RedactPattern,
+} from './redact.js';
+export { createLogTail, LogTail, readConfiguredLogTail, resolveLogFile } from './log-tail.js';
+export type { LogTailPayload } from './log-tail.js';
 export { LogLevel, parseLogLevel, compareLogLevels, shouldLog, levelToString } from './levels.js';
 export { createSubsystemLogger } from './subsystem.js';
 export type { SubsystemLogger } from './subsystem.js';
@@ -55,9 +77,16 @@ export {
 } from './message-lifecycle.js';
 export type { MessageLifecycleStage, MessageLifecycleEvent } from './message-lifecycle.js';
 
-export { redactBounded, redactBoundedJson, clampText, truncateMiddle } from './redact-bounded.js';
+export { redactBounded, redactBoundedJson, clampText, truncateMiddle, replacePatternBounded } from './redact-bounded.js';
 
-export { redactIdentifiers, redactIdentifiersInObject, maskString, maskEmail } from './redact-identifier.js';
+export {
+  redactIdentifiers,
+  redactIdentifiersInObject,
+  maskString,
+  maskEmail,
+  sha256HexPrefix,
+  redactIdentifier,
+} from './redact-identifier.js';
 
 export type {
   ParsedLogLine,

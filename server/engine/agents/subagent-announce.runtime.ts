@@ -1,10 +1,20 @@
 /**
- * 移植自 openclaw/src/agents/subagent-announce.runtime.ts
+ * Runtime dependency barrel for subagent announcement/output collection.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Keeping these imports behind one module lets tests replace gateway/session
+ * IO without changing the announce logic itself.
  */
-
+export { getRuntimeConfig } from "../config/config.js";
+export {
+  loadSessionStore,
+  readSessionEntry,
+  resolveAgentIdFromSessionKey,
+  resolveStorePath,
+} from "../config/sessions.js";
 export { callGateway } from "../gateway/call.js";
+export { readSessionMessagesAsync } from "../gateway/session-transcript-readers.js";
 export { dispatchGatewayMethodInProcess } from "../gateway/server-plugins.js";
+export {
+  isEmbeddedAgentRunActive,
+  waitForEmbeddedAgentRunEnd,
+} from "./embedded-agent-runner/runs.js";

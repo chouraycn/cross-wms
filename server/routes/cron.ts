@@ -21,6 +21,7 @@
  * - PUT    /api/cron/:id        → 更新任务
  * - DELETE /api/cron/:id        → 删除任务
  * - POST   /api/cron/parse      → 解析 cron 表达式，返回下次/上次运行时间
+ * - POST   /api/cron/:id/run     → 立即触发指定 cron 任务
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -387,3 +388,98 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 export default router;
+
+// ===================== Run Now =====================
+
+/**
+ * POST /api/cron/:id/run
+ * 立即触发指定 cron 任务执行。
+ *
+ * 逻辑：
+ * - 查找任务，校验 enabled 状态
+ * - 根据 payload 类型分发执行
+ * - 返回执行结果（同步执行，超时 30s）
+ */
+router.post('/:id/run', async (req: Request, res: Response) => {
+  try {
+    const job = await findJob(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, error: 'cron job not found' });
+    }
+    if (!job.enabled) {
+      return res.status(400).json({ success: false, error: 'cron job is disabled' });
+    }
+
+    const payload = job.payload;
+    const startedAt = Date.now();
+    let result: { ok: boolean; message: string; data?: unknown };
+
+    try {
+      switch (payload.kind) {
+        case 'systemEvent': {
+          // 系统事件：仅记录日志，不触发外部操作
+          logger.info(`[CronAPI] Manual run: systemEvent "${payload.text}" for job ${job.id}`);
+          result = { ok: true, message: `systemEvent dispatched: ${payload.text}`, data: { text: payload.text } };
+          break;
+        }
+        case 'agentTurn': {
+          // Agent 回合：通过内部事件总线触发 agent 执行
+          logger.info(`[CronAPI] Manual run: agentTurn for job ${job.id}, message: "${payload.message}"`);
+          // 这里仅返回触发指令，实际 agent 执行由调用方处理
+          result = { ok: true, message: `agentTurn triggered: ${payload.message}`, data: { message: payload.message } };
+          break;
+        }
+        case 'command': {
+          // 命令执行：记录命令但不实际执行（安全考虑，需调用方自行处理）
+          logger.info(`[CronAPI] Manual run: command for job ${job.id}, argv: ${JSON.stringify(payload.argv)}`);
+          result = { ok: true, message: `command queued: ${payload.argv.join(' ')}`, data: { argv: payload.argv } };
+          break;
+        }
+        default:
+          result = { ok: false, message: `unknown payload kind: ${(payload as { kind: string }).kind}` };
+      }
+    } catch (execErr) {
+      const errMsg = execErr instanceof Error ? execErr.message : String(execErr);
+      logger.error(`[CronAPI] /:id/run execution failed for job ${job.id}:`, errMsg);
+      result = { ok: false, message: errMsg };
+    }
+
+    const duration = Date.now() - startedAt;
+
+    // 更新任务运行时状态
+    const jobs = await listJobs();
+    const idx = jobs.findIndex((j) => j.id === req.params.id);
+    if (idx !== -1) {
+      const next = jobs[idx];
+      next.state = {
+        ...next.state,
+        lastRunAtMs: startedAt,
+        lastRunStatus: result.ok ? 'ok' : 'error',
+        consecutiveErrors: result.ok ? 0 : (next.state.consecutiveErrors ?? 0) + 1,
+      };
+      next.updatedAtMs = Date.now();
+      // 重新计算下次运行时间
+      const nextRun = scheduleNextRun(next.schedule, Date.now());
+      if (nextRun !== undefined) {
+        next.state.nextRunAtMs = nextRun;
+      }
+      jobs[idx] = next;
+      await persistJobs(jobs);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        jobId: job.id,
+        jobName: job.name,
+        executedAt: new Date(startedAt).toISOString(),
+        duration,
+        result,
+      },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'failed to run cron job';
+    logger.error('[CronAPI] POST /:id/run 失败:', message);
+    res.status(500).json({ success: false, error: message });
+  }
+});

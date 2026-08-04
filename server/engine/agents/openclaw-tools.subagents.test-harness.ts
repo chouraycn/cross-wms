@@ -1,15 +1,64 @@
-/**
- * 移植自 openclaw/src/agents/openclaw-tools.subagents.test-harness.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
+// Shared subagent tool test harness for gateway/config/queue dependency overrides.
+import { vi } from "vitest";
+import { testing as queueCleanupTesting } from "../auto-reply/reply/queue/cleanup.js";
+import type { CallGatewayOptions } from "../gateway/call.js";
+import type { MockFn } from "../test-utils/vitest-mock-fn.js";
+import { testing as subagentAnnounceTesting } from "./subagent-announce.js";
+import { testing as subagentControlTesting } from "./subagent-control.js";
 
-export function setSubagentsConfigOverride(..._args: unknown[]): unknown {
-  return undefined;
+type LoadedConfig = ReturnType<(typeof import("../config/config.js"))["getRuntimeConfig"]>;
+
+export const callGatewayMock: MockFn = vi.fn();
+
+const defaultConfig: LoadedConfig = {
+  session: {
+    mainKey: "main",
+    scope: "per-sender",
+  },
+};
+
+let configOverride: LoadedConfig = defaultConfig;
+
+async function callGatewayForTest<T = Record<string, unknown>>(
+  opts: CallGatewayOptions,
+): Promise<T> {
+  // Preserve the gateway call shape while giving tests a single mock to assert.
+  return (await callGatewayMock(opts)) as T;
 }
-export function resetSubagentsConfigOverride(..._args: unknown[]): unknown {
-  return undefined;
+
+export function setSubagentsConfigOverride(next: LoadedConfig) {
+  configOverride = next;
 }
-export const callGatewayMock: unknown = undefined;
+
+export function resetSubagentsConfigOverride() {
+  configOverride = defaultConfig;
+}
+
+function applySharedSubagentTestDeps() {
+  // Keep control, announce, and queue cleanup modules on the same mocked gateway.
+  subagentControlTesting.setDepsForTest({
+    callGateway: callGatewayForTest,
+  });
+  subagentAnnounceTesting.setDepsForTest({
+    callGateway: callGatewayForTest,
+    getRuntimeConfig: () => configOverride,
+  });
+  queueCleanupTesting.setDepsForTests({
+    resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
+  });
+}
+
+applySharedSubagentTestDeps();
+
+vi.mock("../gateway/call.js", () => ({
+  callGateway: callGatewayForTest,
+}));
+
+vi.mock("../config/config.js", async () => {
+  const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");
+  return {
+    ...actual,
+    getRuntimeConfig: () => configOverride,
+    resolveGatewayPort: () => 18789,
+  };
+});

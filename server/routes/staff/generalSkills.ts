@@ -329,7 +329,7 @@ router.post('/:slug/run/stream', async (req: Request, res: Response) => {
     if (!data.success) {
       res.write(`data: ${JSON.stringify({ type: 'error', data: { message: data.error } })}\n\n`);
     } else {
-      const instructions = (data.output?.instructions as string[]) || [];
+      const instructions = ((data.output as { instructions?: string[] } | null | undefined)?.instructions) || [];
       res.write(
         `data: ${JSON.stringify({ type: 'trace', data: { phase: 'instruction_generated', message: '已生成技能指令', code: instructions.join('\n\n') } })}\n\n`,
       );

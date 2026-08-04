@@ -1,11 +1,10 @@
-// @ts-nocheck
 // System gateway methods expose device identity, heartbeat controls, system
 // presence snapshots, and normalized system events.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveMainSessionKeyFromConfig } from "../../config/sessions.js";
 import {
@@ -106,13 +105,13 @@ export const systemHandlers: GatewayRequestHandlers = {
       roles,
       scopes,
       tags,
-    });
+    } as any);
     const isNodePresenceLine = text.startsWith("Node:");
     if (isNodePresenceLine) {
       // Node presence heartbeats are noisy; only enqueue user-visible system
       // events when routing context or meaningful node metadata changes.
-      const next = presenceUpdate.next;
-      const changed = new Set(presenceUpdate.changedKeys);
+      const next = presenceUpdate.next as any;
+      const changed = new Set(presenceUpdate.changedKeys as any);
       const reasonValue = next.reason ?? reason;
       const normalizedReason = normalizeLowercaseStringOrEmpty(reasonValue);
       const ignoreReason =
@@ -124,7 +123,7 @@ export const systemHandlers: GatewayRequestHandlers = {
       const reasonChanged = changed.has("reason") && !ignoreReason;
       const hasChanges = hostChanged || ipChanged || versionChanged || modeChanged || reasonChanged;
       if (hasChanges) {
-        const contextChanged = isSystemEventContextChanged(sessionKey, presenceUpdate.key);
+        const contextChanged = isSystemEventContextChanged(sessionKey, presenceUpdate.key as any) as any;
         const parts: string[] = [];
         // Re-state node identity only when the line would otherwise lose
         // routing context or the host/IP changed.
@@ -146,7 +145,7 @@ export const systemHandlers: GatewayRequestHandlers = {
         if (deltaText) {
           enqueueSystemEvent(deltaText, {
             sessionKey,
-            contextKey: presenceUpdate.key,
+            contextKey: presenceUpdate.key as any,
           });
         }
       }

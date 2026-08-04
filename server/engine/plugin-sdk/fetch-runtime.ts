@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Public fetch/proxy helpers for plugins that need wrapped fetch behavior.
 
 import type { GuardedFetchOptions } from "../infra/net/fetch-guard.js";

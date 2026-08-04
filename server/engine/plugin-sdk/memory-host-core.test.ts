@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests memory host core public artifact discovery and workspace handling.
  */

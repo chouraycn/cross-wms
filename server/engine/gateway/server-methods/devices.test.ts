@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Device method tests cover pairing approval/rejection, paired-device lookup,
 // token rotation/revocation, and operator scope enforcement.
 import { beforeEach, describe, expect, it, vi } from "vitest";

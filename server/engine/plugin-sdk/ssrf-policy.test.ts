@@ -1,4 +1,3 @@
-// @ts-nocheck
 // SSRF policy tests cover URL allow/deny decisions for plugin network helpers.
 import { describe, expect, it, vi } from "vitest";
 import type { LookupFn } from "../infra/net/ssrf.js";

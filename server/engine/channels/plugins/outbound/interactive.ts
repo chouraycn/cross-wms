@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Interactive outbound compatibility helpers.
  *

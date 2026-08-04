@@ -16,7 +16,7 @@
  *   branch; instances of the real class would also satisfy `instanceof`
  *   checks once cross-wms introduces the real export.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_IDS,
   normalizeGatewayClientId,

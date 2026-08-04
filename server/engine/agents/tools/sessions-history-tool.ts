@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * sessions_history built-in tool.
  *
@@ -6,7 +7,7 @@
  * Ported from openclaw/src/agents/tools/sessions-history-tool.ts.
  *
  * cross-wms adjustments:
- * - Replaced `@openclaw/normalization-core/string-coerce` import of `readStringValue`
+ * - Replaced `@cdf-know/normalization-core/string-coerce` import of `readStringValue`
  *   with `../../infra/string-coerce.js` because cross-wms exposes it there.
  * - Replaced `../../config/config.js` import of `getRuntimeConfig` with a local stub
  *   because cross-wms does not export `getRuntimeConfig`; the tool accepts an explicit

@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // Porting stubs for shared/ files whose openclaw dependencies have not been
 // ported to cross-wms. Each stub declares the public types and provides a
 // simplified implementation so the ported entry-status helper compiles and

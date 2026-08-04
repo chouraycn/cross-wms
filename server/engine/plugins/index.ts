@@ -100,12 +100,11 @@ export type {
   PluginDependency,
   PluginManifest as PluginRuntimeManifest,
   PluginToolDefinition as PluginRuntimeToolDefinition,
-  PluginTrigger,
+  PluginLogger,
   PluginConfigSchema,
   PluginConfigProperty,
   PluginInstance,
   PluginContext,
-  PluginLogger,
   PluginStorage,
   PluginFetch,
   PluginFetchInit,
@@ -113,7 +112,7 @@ export type {
   PluginEventBus,
   PluginConfigAccessor,
   PluginLifecycle,
-  PluginRuntimeRecord,
+  PluginRuntime,
   PluginEvent,
   PluginHealthMetrics,
   MarketplaceEntry,
@@ -205,7 +204,7 @@ export type {
 export { DEFAULT_SANDBOX_LIMITS } from './sandbox.js';
 
 // registry.ts
-export { pluginRuntimeRegistry, createPluginRegistry } from './registry.js';
+export { PluginRegistry, createPluginRegistry } from './registry.js';
 export type { RegistryEntry } from './registry.js';
 
 // marketplace.ts
@@ -759,7 +758,7 @@ export * from './security-events.js';
 export * from './services.js';
 export * from './session-entry-slot-keys.js';
 export * from './setup-descriptors.js';
-export * from './setup-registry.runtime.js';
+// export * from './setup-registry.runtime.js';  // removed: TS2308 conflict (testing/__testing)
 export * from './setup-registry.js';
 export * from './slots.js';
 export * from './source-display.js';

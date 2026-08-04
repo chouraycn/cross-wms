@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Prepares bundled MCP configuration for CLI runner backends.
  */

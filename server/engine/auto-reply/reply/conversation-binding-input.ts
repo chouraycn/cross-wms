@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Builds normalized conversation binding inputs from channel and routing facts.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeConversationText } from '@openclaw-src/acp/conversation-id.js';
 import { resolveConversationBindingContext } from '@openclaw-src/channels/conversation-binding-context.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

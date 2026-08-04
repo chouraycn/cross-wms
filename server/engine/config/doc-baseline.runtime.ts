@@ -1,8 +1,15 @@
-// 移植自 openclaw/src/config/doc-baseline.runtime.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Collects runtime data needed to generate config documentation baselines.
+import { collectBundledChannelConfigs as collectBundledChannelConfigsImpl } from "../plugins/bundled-channel-config-metadata.js";
+import { loadPluginManifestRegistry as loadPluginManifestRegistryImpl } from "../plugins/manifest-registry.js";
+import {
+  collectChannelSchemaMetadata as collectChannelSchemaMetadataImpl,
+  collectPluginSchemaMetadata as collectPluginSchemaMetadataImpl,
+} from "./channel-config-metadata.js";
+import { buildConfigSchema as buildConfigSchemaImpl } from "./schema.js";
 
-export const loadPluginManifestRegistry: unknown = undefined;
-export const collectBundledChannelConfigs: unknown = undefined;
-export const collectChannelSchemaMetadata: unknown = undefined;
-export const collectPluginSchemaMetadata: unknown = undefined;
-export const buildConfigSchema: unknown = undefined;
+/** Runtime facade used by docs baseline generation to keep imports narrow. */
+export const loadPluginManifestRegistry = loadPluginManifestRegistryImpl;
+export const collectBundledChannelConfigs = collectBundledChannelConfigsImpl;
+export const collectChannelSchemaMetadata = collectChannelSchemaMetadataImpl;
+export const collectPluginSchemaMetadata = collectPluginSchemaMetadataImpl;
+export const buildConfigSchema = buildConfigSchemaImpl;

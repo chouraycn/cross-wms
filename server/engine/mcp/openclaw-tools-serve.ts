@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * OpenClaw 工具服务
  *

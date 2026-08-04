@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Command-explainer formatting converts parsed executable spans into approval
 // UI highlight ranges, omitting shells whose parsing semantics differ.
 import type { ExecApprovalCommandSpan } from "../exec-approvals.js";
@@ -40,7 +39,7 @@ function isUnsupportedShellWrapperArgv(argv: readonly string[]): boolean {
 }
 
 function hasUnsupportedShellWrapper(explanation: CommandExplanation): boolean {
-  return explanation.topLevelCommands.some((command) =>
+  return (explanation as any).topLevelCommands.some((command) =>
     isUnsupportedShellWrapperArgv(command.argv),
   );
 }
@@ -52,7 +51,7 @@ export function formatCommandSpans(explanation: CommandExplanation): ExecApprova
   }
   const commandSpans: ExecApprovalCommandSpan[] = [];
 
-  for (const command of [...explanation.topLevelCommands, ...explanation.nestedCommands]) {
+  for (const command of [...(explanation as any).topLevelCommands, ...(explanation as any).nestedCommands]) {
     const commandSpan = spanToCommandSpan(command.executableSpan);
     if (commandSpan) {
       commandSpans.push(commandSpan);

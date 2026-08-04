@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Builds plugin hook context metadata for native agent harness events.
  */

@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/trajectory/runtime.ts
 //
 // 适配说明：
-// - sanitizeDiagnosticPayload: cross-wms 未提供，降级为 redactPayload
+// - sanitizeDiagnosticPayload: 已从 ../agents/payload-redaction.js 导入（与 openclaw 一致）
 // - assertNoSymlinkParents: cross-wms 签名为 (filePath, options?)，openclaw 为对象参数
 // - writeSiblingTempFile: cross-wms 签名不支持 writeTemp 回调，改用 writeViaSiblingTempPath（原子写入+重命名）
 // - readRegularFileSync: cross-wms 签名为 (filePath): string，openclaw 为 ({filePath, maxBytes}): {buffer}
@@ -11,7 +11,7 @@
 // - safeJsonStringify: 从 ../infra/safe-json.js 导入
 import fs from "node:fs";
 import path from "node:path";
-import { redactPayload } from "../agents/payload-redaction.js";
+import { sanitizeDiagnosticPayload } from "../agents/payload-redaction.js";
 import type {
   QueuedFileWriter,
   QueuedFileWriterDiagnostics,
@@ -22,7 +22,7 @@ import {
   writeViaSiblingTempPath,
 } from "../infra/fs-safe-advanced.js";
 import { readRegularFileSync } from "../infra/_fs-safe-stubs.js";
-import { redactObject } from "../logging/redact.js";
+import { redactSecrets as redactObject } from "../logging/redact.js";
 import { parseBooleanValue } from "../infra/boolean-coerce.js";
 import { safeJsonStringify } from "../infra/safe-json.js";
 import {
@@ -34,11 +34,6 @@ import {
   resolveTrajectoryPointerOpenFlags,
 } from "./paths.js";
 import type { TrajectoryEvent, TrajectoryToolDefinition } from "./types.js";
-
-// 降级：cross-wms 未提供 sanitizeDiagnosticPayload，使用 redactPayload 替代
-function sanitizeDiagnosticPayload(value: unknown): unknown {
-  return redactPayload(value);
-}
 
 // 降级：cross-wms 未提供 redactSecrets，使用 redactObject 替代
 function redactSecrets<T>(value: T): T {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Normalizes real inbound newline characters while preserving literal escape text. */
 export function normalizeInboundTextNewlines(input: string): string {
   // Normalize actual newline characters (CR+LF and CR to LF).

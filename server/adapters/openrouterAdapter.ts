@@ -1,6 +1,6 @@
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 export const OPENROUTER_DEFAULT_MODEL_ID = 'openrouter/auto';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Public contract-safe web-search config helpers for provider plugins that do
 // not need plugin enable/selection wiring.
 

@@ -1,8 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../../logger.js';
+import type { OpenClawConfig } from '../../config/types.openclaw.js';
+import { normalizeAgentId } from '../../routing/session-key.js';
 import type { SkillEntry } from '../types.js';
-import { normalizeSkillName } from './filter.js';
+import { normalizeSkillFilter, normalizeSkillName } from './filter.js';
+
+type AgentSkillsLimits = {
+  maxSkillsPromptChars?: number;
+};
+
+function resolveAgentEntry(
+  cfg: OpenClawConfig | undefined,
+  agentId: string | undefined,
+): NonNullable<NonNullable<OpenClawConfig['agents']>['list']>[number] | undefined {
+  if (!cfg) {
+    return undefined;
+  }
+  const normalizedAgentId = normalizeAgentId(agentId);
+  return cfg.agents?.list?.find((entry) => normalizeAgentId(entry.id) === normalizedAgentId);
+}
 
 export type AgentSkillVisibility = 'all' | 'whitelist' | 'tagged';
 
@@ -326,19 +343,30 @@ export function getAgentFilterCount(): number {
 }
 
 export function resolveEffectiveAgentSkillFilter(
-  agentSkillFilter: string[] | undefined,
-  entries: readonly SkillEntry[],
+  cfg: OpenClawConfig | undefined,
+  agentId: string | undefined,
 ): string[] | undefined {
-  if (!agentSkillFilter || agentSkillFilter.length === 0) {
+  if (!cfg) {
     return undefined;
   }
-  const normalizedFilter = new Set(agentSkillFilter.map(normalizeSkillName));
-  const result: string[] = [];
-  for (const entry of entries) {
-    const name = normalizeSkillName(entry.skill.name);
-    if (normalizedFilter.has(name)) {
-      result.push(entry.skill.name);
-    }
+  const agentEntry = resolveAgentEntry(cfg, agentId);
+  if (agentEntry && Object.hasOwn(agentEntry, 'skills')) {
+    return normalizeSkillFilter(agentEntry.skills);
   }
-  return result.length > 0 ? result : undefined;
+  return normalizeSkillFilter(cfg.agents?.defaults?.skills);
+}
+
+export function resolveEffectiveAgentSkillsLimits(
+  cfg: OpenClawConfig | undefined,
+  agentId: string | undefined,
+): AgentSkillsLimits | undefined {
+  if (!agentId) {
+    return undefined;
+  }
+  const agentEntry = resolveAgentEntry(cfg, agentId);
+  if (!agentEntry || !Object.hasOwn(agentEntry, 'skillsLimits')) {
+    return undefined;
+  }
+  const { maxSkillsPromptChars } = agentEntry.skillsLimits ?? {};
+  return typeof maxSkillsPromptChars === 'number' ? { maxSkillsPromptChars } : undefined;
 }

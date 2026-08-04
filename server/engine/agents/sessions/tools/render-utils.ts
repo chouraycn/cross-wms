@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Rendering helpers for session tool output in the TUI.
  *

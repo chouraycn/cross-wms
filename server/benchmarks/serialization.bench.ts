@@ -3,7 +3,7 @@
  *
  * 测试 JSON 序列化/反序列化、深拷贝等操作的性能。
  */
-import { BenchmarkRunner } from '@cdf-know/benchmark';
+import { BenchmarkRunner, type BenchmarkResult } from '@cdf-know/benchmark';
 
 const runner = new BenchmarkRunner({ defaultIterations: 100, defaultWarmup: 10 });
 
@@ -55,7 +55,7 @@ async function jsonBenchmarks() {
   const obj100kb = generateLargeObject(10);
   const obj1mb = generateLargeObject(100);
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const jsonStringify100kb = await runner.run(
     'JSON.stringify 小对象 (~10KB)',
@@ -121,7 +121,7 @@ function deepCloneRecursive(obj: unknown): unknown {
 
 async function deepCloneBenchmarks() {
   const obj = generateLargeObject(20);
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const jsonClone = await runner.run(
     '深拷贝 - JSON.parse(JSON.stringify)',

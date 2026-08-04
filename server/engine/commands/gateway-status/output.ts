@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Text and JSON rendering for the gateway status command. */
-import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { colorize, theme } from "@openclaw/terminal-core/theme";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { writeRuntimeJson } from "@openclaw-src/runtime.js";
 import { serializeGatewayDiscoveryBeacon } from "./discovery.js";

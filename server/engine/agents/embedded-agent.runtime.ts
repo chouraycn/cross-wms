@@ -1,10 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent.runtime.ts
+ * Embedded agent runtime barrel.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime callers import this surface for run lifecycle helpers without pulling
+ * in the larger embedded-agent module path directly.
  */
-
-// No exports detected
-export const __stub: undefined = undefined;
+export {
+  abortAndDrainEmbeddedAgentRun,
+  abortEmbeddedAgentRun,
+  isEmbeddedAgentRunActive,
+  isEmbeddedAgentRunStreaming,
+  resolveActiveEmbeddedRunSessionId,
+  resolveActiveEmbeddedRunSessionIdBySessionFile,
+  runEmbeddedAgent,
+  resolveEmbeddedSessionLane,
+  waitForEmbeddedAgentRunEnd,
+} from "./embedded-agent.js";

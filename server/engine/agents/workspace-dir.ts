@@ -1,14 +1,26 @@
 /**
- * 移植自 openclaw/src/agents/workspace-dir.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Workspace directory normalization helpers. They expand user paths, reject
+ * filesystem roots, and provide cwd fallback for runtime callers.
  */
+import path from "node:path";
+import { resolveUserPath } from "../utils.js";
 
-export function normalizeWorkspaceDir(..._args: unknown[]): unknown {
-  return undefined;
+/** Normalizes a workspace directory and rejects filesystem roots. */
+export function normalizeWorkspaceDir(workspaceDir?: string): string | null {
+  const trimmed = workspaceDir?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const expanded = trimmed.startsWith("~") ? resolveUserPath(trimmed) : trimmed;
+  const resolved = path.resolve(expanded);
+  // Refuse filesystem roots as "workspace" (too broad; almost always a bug).
+  if (resolved === path.parse(resolved).root) {
+    return null;
+  }
+  return resolved;
 }
-export function resolveWorkspaceRoot(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Resolves the effective workspace root, falling back to cwd. */
+export function resolveWorkspaceRoot(workspaceDir?: string): string {
+  return normalizeWorkspaceDir(workspaceDir) ?? process.cwd();
 }

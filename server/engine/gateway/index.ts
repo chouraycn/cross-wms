@@ -878,7 +878,7 @@ export * from "./test-helpers.config-snapshots.js";
 export * from "./test-helpers.connected-session-store.js";
 // CONFLICT (TS2308): export * from "./test-helpers.e2e.js";
 export * from "./test-helpers.maintenance-state.js";
-export * from "./test-helpers.mocks.js";
+// TEST-ONLY: export * from "./test-helpers.mocks.js";
 export * from "./test-helpers.node-invoke.js";
 export * from "./test-helpers.openai-mock.js";
 export * from "./test-helpers.plugin-registry.js";

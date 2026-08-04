@@ -26,20 +26,9 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-deps
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        # `npm ci` is deterministic and faster than `npm install` for CI.
-        run: npm ci --legacy-peer-deps
+          install-flags: '--legacy-peer-deps'
 
       - name: Make scripts executable
         # Linux runners don't preserve the executable bit on checkout.

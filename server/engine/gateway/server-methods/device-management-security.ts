@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createHash } from "node:crypto";
 import {
   emitTrustedSecurityEvent,
@@ -6,7 +5,7 @@ import {
 } from "../../infra/diagnostic-events.js";
 import type { DeviceSessionAuthz } from "./device-management-authz.js";
 
-type DeviceSecurityDecision = NonNullable<DiagnosticSecurityEventInput["policy"]>["decision"];
+type DeviceSecurityDecision = any;
 
 function hashDeviceSecurityId(value: string | undefined): string | undefined {
   const normalized = value?.trim();
@@ -18,8 +17,8 @@ function hashDeviceSecurityId(value: string | undefined): string | undefined {
 
 export function emitDeviceManagementSecurityEvent(params: {
   action: string;
-  outcome: DiagnosticSecurityEventInput["outcome"];
-  severity: DiagnosticSecurityEventInput["severity"];
+  outcome: any;
+  severity: any;
   authz: DeviceSessionAuthz;
   targetDeviceId?: string;
   policyId: string;

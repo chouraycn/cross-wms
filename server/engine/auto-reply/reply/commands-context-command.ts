@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Implements context inspection commands for the active reply session.
 import { logVerbose } from '@openclaw-src/globals.js';
 import { buildContextReply } from "./commands-context-report.js";

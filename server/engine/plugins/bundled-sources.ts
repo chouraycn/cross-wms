@@ -3,9 +3,9 @@
 // 移植自 openclaw/src/plugins/bundled-sources.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/record-coerce 的 isRecord。
+//  - 原文件依赖 @cdf-know/normalization-core/record-coerce 的 isRecord。
 //    改用 cross-wms 的 ../infra/record-coerce.js，已提供同名导出。
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的 normalizeOptionalString。
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的 normalizeOptionalString。
 //    改用 cross-wms 的 ../infra/string-coerce.js，已提供同名导出。
 //  - 原文件依赖 ./discovery.js 的 discoverOpenClawPlugins 与 PluginDiscoveryResult。
 //    cross-wms 尚未移植该模块。这里内联降级实现：PluginDiscoveryResult 占位为

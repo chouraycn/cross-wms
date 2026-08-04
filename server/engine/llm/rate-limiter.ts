@@ -29,7 +29,10 @@ export type RateLimitSnapshot = {
 /** 滑动窗口计数器（毫秒级）。 */
 class SlidingWindow {
   private events: Array<{ time: number; tokens: number }> = [];
-  constructor(private windowMs: number) {}
+  private windowMs: number;
+  constructor(windowMs: number) {
+    this.windowMs = windowMs;
+  }
 
   /** 添加事件。 */
   add(time: number, tokens: number): void {

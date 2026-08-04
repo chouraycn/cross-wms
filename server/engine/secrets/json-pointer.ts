@@ -1,6 +1,6 @@
 /** JSON Pointer token helpers for file-backed secret refs. */
-import { isRecord as isJsonObject } from "../shared/safe-record.js";
-import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
+import { isRecord as isJsonObject } from "@cdf-know/normalization-core/record-coerce";
+import { parseConfigPathArrayIndex } from "./path-array-index.js";
 
 function failOrUndefined(params: { onMissing: "throw" | "undefined"; message: string }): undefined {
   if (params.onMissing === "throw") {

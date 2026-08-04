@@ -4,10 +4,10 @@
  * ordering.
  *
  * 移植自 openclaw/src/agents/prompt-cache-stability.ts
- * 降级：内联 normalizeLowercaseStringOrEmpty（来自 @openclaw/normalization-core/string-coerce）。
+ * 降级：内联 normalizeLowercaseStringOrEmpty（来自 @cdf-know/normalization-core/string-coerce）。
  */
 
-// 降级实现：normalizeLowercaseStringOrEmpty 来自 @openclaw/normalization-core/string-coerce
+// 降级实现：normalizeLowercaseStringOrEmpty 来自 @cdf-know/normalization-core/string-coerce
 function normalizeLowercaseStringOrEmpty(value: unknown): string {
   if (typeof value !== "string") {
     return "";

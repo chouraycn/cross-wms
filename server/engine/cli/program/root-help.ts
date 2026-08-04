@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Root help renderer that combines core, sub-CLI, and optional plugin command descriptors.
 import { Command } from "commander";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";

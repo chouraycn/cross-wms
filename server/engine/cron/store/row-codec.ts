@@ -200,3 +200,49 @@ export function loadedCronStoreFromJson(jobs: unknown[]): LoadedCronStore {
     invalidConfigRows: [],
   };
 }
+
+// ============================================================================
+// 以下为 openclaw row-codec.ts 中存在、但 cross-wms 未合并的 SQLite 持久化 API。
+// 提供最小可运行 stub：DB 相关操作为 no-op，rows→store 转换走 JSON 兼容路径。
+// 完整 SQLite 实现见 openclaw/src/cron/store/row-codec.ts:185-328。
+// ============================================================================
+
+/**
+ * Stub: 在写入 SQLite 前断言所有 config job 都能正确往返。
+ * cross-wms 未合并 SQLite 持久化层，此处无操作。
+ */
+export function assertCronStoreCanPersist(_store: CronStoreFile): void {
+  // no-op: SQLite persistence layer not merged from openclaw.
+}
+
+/**
+ * Stub: 从 SQLite 行列表重建 LoadedCronStore。
+ * 由于未合并 SQLite 层，这里将每行视为 JSON 任务并通过 loadedCronStoreFromJson 解析。
+ */
+export function loadedCronStoreFromRows(rows: unknown[]): LoadedCronStore {
+  return loadedCronStoreFromJson(rows);
+}
+
+/**
+ * Stub: 从 SQLite 加载 cron 行。未合并 SQLite 层，返回空数组。
+ * 调用方应回退到 JSON 文件存储路径。
+ */
+export function loadCronRows(_db: unknown, _storeKey: string): unknown[] {
+  return [];
+}
+
+/**
+ * Stub: 替换 SQLite 中的 cron 行。未合并 SQLite 层，无操作。
+ * 调用方应回退到 JSON 文件存储路径。
+ */
+export function replaceCronRows(_db: unknown, _storeKey: string, _store: CronStoreFile): void {
+  // no-op: SQLite persistence layer not merged from openclaw.
+}
+
+/**
+ * Stub: 更新 SQLite 中的 cron 运行时列。未合并 SQLite 层，无操作。
+ * 调用方应回退到 JSON 文件存储路径。
+ */
+export function updateCronRuntimeRows(_db: unknown, _storeKey: string, _store: CronStoreFile): void {
+  // no-op: SQLite persistence layer not merged from openclaw.
+}

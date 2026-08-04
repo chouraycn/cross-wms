@@ -2,7 +2,7 @@
 //
 // 移植自 openclaw/src/media-generation/runtime-shared.ts。
 // 原始实现依赖大量未移植的内部模块（agents/auth-profiles、config/model-input、
-// secrets/provider-env-vars、@openclaw/normalization-core、packages/media-generation-core 等）。
+// secrets/provider-env-vars、@cdf-know/normalization-core、packages/media-generation-core 等）。
 // 此文件为简化自包含版本，保留以下纯工具函数：
 //   - 超时归一化 (resolveMediaProviderDefaultTimeoutMs / resolveMediaProviderRequestTimeoutMs)
 //   - 宽高比推导与匹配 (deriveAspectRatioFromSize / resolveClosestAspectRatio)
@@ -35,7 +35,7 @@ export type FallbackAttempt = {
 };
 
 // ---------------------------------------------------------------------------
-// 内联依赖（替代 @openclaw/normalization-core）
+// 内联依赖（替代 @cdf-know/normalization-core）
 // ---------------------------------------------------------------------------
 
 /** Node.js 定时器安全上限（略低于 2^31-1 以留余量）。 */

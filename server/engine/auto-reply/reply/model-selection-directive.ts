@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Normalizes model selection directives into provider and model ids.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { splitTrailingAuthProfile } from '@openclaw-src/agents/model-ref-profile.js';
 import { modelKey } from '@openclaw-src/agents/model-ref-shared.js';
 import { isModelKeyAllowedBySet } from '@openclaw-src/agents/model-selection-shared.js';

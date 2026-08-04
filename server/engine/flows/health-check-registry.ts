@@ -13,9 +13,11 @@ const REGISTRY = new Map<string, HealthCheck>();
 /** 重复注册检查时抛出的错误。 */
 export class HealthCheckRegistrationError extends Error {
   readonly code = 'DOCTOR_DUPLICATE_CHECK';
-  constructor(readonly checkId: string) {
+  readonly checkId: string;
+  constructor(checkId: string) {
     super(`健康检查已注册: ${checkId}`);
     this.name = 'HealthCheckRegistrationError';
+    this.checkId = checkId;
   }
 }
 

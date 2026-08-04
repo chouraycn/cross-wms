@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Tracks inbound message ids to avoid duplicate reply runs.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveGlobalDedupeCache, type DedupeCache } from '@openclaw-src/infra/dedupe.js';
 import { channelRouteDedupeKey } from '@openclaw-src/plugin-sdk/channel-route.js';
 import { parseAgentSessionKey } from '@openclaw-src/sessions/session-key-utils.js';

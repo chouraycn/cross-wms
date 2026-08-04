@@ -15,7 +15,7 @@
 import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as generalSkillDao from '../../dao/staff/staffGeneralSkillDao.js';
-import * as mcpServerDao from '../../dao/staff/staffMcpServerDao.js';
+import * as mcpServerDao from '../../engine/mcpConfigStore.js';
 
 const router = Router();
 

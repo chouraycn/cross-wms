@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === RE-EXPORT — 已收敛 ===
 // Source: openclaw/src/config/types.openclaw.ts
 // Used by: server/engine/plugins/{provider-auth-ref,doctor-contract-registry,provider-auth-input,activation-planner,slots}.ts

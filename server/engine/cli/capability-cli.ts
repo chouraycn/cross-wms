@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/capability-cli.ts。
 //
 // 降级策略：原模块依赖大量未移植模块：`@openclaw/media-core/mime`、
-// `@openclaw/normalization-core/string-coerce`、
+// `@cdf-know/normalization-core/string-coerce`、
 // `../../packages/gateway-protocol/src/client-info.js`、
 // `../../packages/terminal-core/src/*`、`../agents/*`、`../auto-reply/*`、
 // `../config/*`、`../gateway/call.js`、`../runtime.js` 等。

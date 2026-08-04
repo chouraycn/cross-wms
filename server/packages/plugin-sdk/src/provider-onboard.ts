@@ -1,3 +1,3 @@
 // Public package facade for provider onboarding contracts.
 
-export * from "../../../src/plugin-sdk/provider-onboard.js";
+export * from "../../../engine/plugin-sdk/provider-onboard.js";

@@ -2,7 +2,7 @@
 // Ported from openclaw/src/media/file-context.ts.
 //
 // Dependency adjustments:
-//   - @openclaw/normalization-core/string-coerce normalizeOptionalString
+//   - @cdf-know/normalization-core/string-coerce normalizeOptionalString
 //     → ./string-helpers.js (cross-wms port of the helper)
 //   - ../infra/fs-safe-advanced.js sanitizeUntrustedFileName(input, fallback)
 //     → cross-wms single-arg variant in ../infra/fs-safe-advanced.js. openclaw

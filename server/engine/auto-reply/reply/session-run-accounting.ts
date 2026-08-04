@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Tracks per-session run usage totals and last-run accounting facts.
 import { deriveSessionTotalTokens, type NormalizedUsage } from '@openclaw-src/agents/usage.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/installed-plugin-index-scope-lookup.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的
 //    normalizeOptionalLowercaseString。改用 cross-wms 的 ../infra/string-coerce.js，
 //    该模块已提供同名导出，行为一致。
 //  - 原文件依赖 ../security/safe-regex.js 的 compileSafeRegex。cross-wms 已移植

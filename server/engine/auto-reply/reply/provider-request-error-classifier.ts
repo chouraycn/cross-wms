@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Classifies provider request failures into retry and user-facing categories.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { formatErrorMessage } from '@openclaw-src/infra/errors.js';
 
 /** Provider request error classes that get a specialized user-facing reply. */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves whether a sender may reset or restart a reply session.
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { isInternalMessageChannel } from '@openclaw-src/utils/message-channel.js';

@@ -4,7 +4,7 @@
  * moves toward provider plugin ownership.
  *
  * 降级说明：
- *  - `@openclaw/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`
+ *  - `@cdf-know/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`
  *    改从 `../infra/string-coerce.js` 导入。
  *  - openclaw `../config/types.openclaw.js` 的 `OpenClawConfig` 在 cross-wms 中
  *    未移植，这里定义仅包含本模块所需访问路径的本地宽松类型。

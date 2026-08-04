@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Builds structured context reports for context command responses.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentIds } from '@openclaw-src/agents/agent-scope.js';
 import { analyzeBootstrapBudget } from '@openclaw-src/agents/bootstrap-budget.js';
 import { isRealConversationMessage } from '@openclaw-src/agents/compaction-real-conversation.js';

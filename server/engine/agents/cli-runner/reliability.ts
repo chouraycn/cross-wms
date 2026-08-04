@@ -1,10 +1,9 @@
-// @ts-nocheck
 
 /**
  * Watchdog and supervisor key helpers for CLI runner reliability.
  */
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import type { CliBackendConfig } from "../../config/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { AGENT_LANE_SUBAGENT } from "../lanes.js";

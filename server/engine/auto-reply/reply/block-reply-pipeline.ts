@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Buffers streaming reply blocks before coalesced final delivery.
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { clampPositiveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
 import {
   hasOutboundReplyContent,
   resolveSendableOutboundReplyParts,

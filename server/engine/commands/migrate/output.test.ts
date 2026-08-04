@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Migration output tests cover preview and apply result formatting plus conflict validation.
 import { describe, expect, it } from "vitest";
-import { stripAnsi } from "@openclaw-src/packages/terminal-core/src/ansi.js";
+import { stripAnsi } from "@openclaw/terminal-core/ansi";
 import type { MigrationItem, MigrationPlan } from "../../plugins/types.js";
 import { formatMigrationPreview, formatMigrationResult } from "./output.js";
 

@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isInboundPathAllowed } from "@openclaw/media-core/inbound-path-policy";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { assertSandboxPath } from '@openclaw-src/agents/sandbox-paths.js';
 import { ensureSandboxWorkspaceForSession } from '@openclaw-src/agents/sandbox.js';
 import { slugifySessionKey } from '@openclaw-src/agents/sandbox/shared.js';

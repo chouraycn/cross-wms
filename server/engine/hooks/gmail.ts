@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Gmail hook helpers manage Gmail OAuth setup and watcher launch state.
 import { randomBytes } from "node:crypto";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   type OpenClawConfig,
   DEFAULT_GATEWAY_PORT,

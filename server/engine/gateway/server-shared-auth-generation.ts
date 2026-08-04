@@ -1,36 +1,102 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-shared-auth-generation.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway shared-auth generation enforcement.
+// Disconnects clients when config writes invalidate shared credentials.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveGatewayReloadSettings } from "./config-reload-settings.js";
 
-export type SharedGatewayAuthClient = unknown;
+/** Gateway client subset relevant to shared auth generation enforcement. */
+export type SharedGatewayAuthClient = {
+  usesSharedGatewayAuth?: boolean;
+  sharedGatewaySessionGeneration?: string;
+  socket: { close: (code: number, reason: string) => void };
+};
 
-export type SharedGatewaySessionGenerationState = unknown;
+/** Mutable shared auth generation state. */
+export type SharedGatewaySessionGenerationState = {
+  current: string | undefined;
+  required: string | undefined | null;
+};
 
-export function disconnectStaleSharedGatewayAuthClients(..._args: unknown[]): unknown {
-  return undefined;
+/** Disconnect shared-auth clients whose generation no longer matches the expected one. */
+export function disconnectStaleSharedGatewayAuthClients(params: {
+  clients: Iterable<SharedGatewayAuthClient>;
+  expectedGeneration: string | undefined;
+}): void {
+  for (const gatewayClient of params.clients) {
+    if (!gatewayClient.usesSharedGatewayAuth) {
+      continue;
+    }
+    if (gatewayClient.sharedGatewaySessionGeneration === params.expectedGeneration) {
+      continue;
+    }
+    try {
+      gatewayClient.socket.close(4001, "gateway auth changed");
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
-export function disconnectAllSharedGatewayAuthClients(..._args: unknown[]): unknown {
-  return undefined;
+/** Disconnect every shared-auth client regardless of generation. */
+export function disconnectAllSharedGatewayAuthClients(
+  clients: Iterable<SharedGatewayAuthClient>,
+): void {
+  for (const gatewayClient of clients) {
+    if (!gatewayClient.usesSharedGatewayAuth) {
+      continue;
+    }
+    try {
+      gatewayClient.socket.close(4001, "gateway auth changed");
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
-export function getRequiredSharedGatewaySessionGeneration(..._args: unknown[]): unknown {
-  return undefined;
+/** Resolve the generation clients must use, treating null as "current is required". */
+export function getRequiredSharedGatewaySessionGeneration(
+  state: SharedGatewaySessionGenerationState,
+): string | undefined {
+  return state.required === null ? state.current : state.required;
 }
 
-export function setCurrentSharedGatewaySessionGeneration(..._args: unknown[]): unknown {
-  return undefined;
+/** Update current generation and clear stale required-generation markers. */
+export function setCurrentSharedGatewaySessionGeneration(
+  state: SharedGatewaySessionGenerationState,
+  nextGeneration: string | undefined,
+): void {
+  const previousGeneration = state.current;
+  state.current = nextGeneration;
+  if (state.required === nextGeneration) {
+    state.required = null;
+    return;
+  }
+  if (state.required !== null && previousGeneration !== nextGeneration) {
+    state.required = null;
+  }
 }
 
-export function enforceSharedGatewaySessionGenerationForConfigWrite(..._args: unknown[]): unknown {
-  return undefined;
+/** Enforce shared auth generation behavior after a config write. */
+export function enforceSharedGatewaySessionGenerationForConfigWrite(params: {
+  state: SharedGatewaySessionGenerationState;
+  nextConfig: OpenClawConfig;
+  resolveRuntimeSnapshotGeneration: () => string | undefined;
+  clients: Iterable<SharedGatewayAuthClient>;
+}): void {
+  const reloadMode = resolveGatewayReloadSettings(params.nextConfig).mode;
+  const nextSharedGatewaySessionGeneration = params.resolveRuntimeSnapshotGeneration();
+  if (reloadMode === "off") {
+    params.state.current = nextSharedGatewaySessionGeneration;
+    params.state.required = nextSharedGatewaySessionGeneration;
+    disconnectStaleSharedGatewayAuthClients({
+      clients: params.clients,
+      expectedGeneration: nextSharedGatewaySessionGeneration,
+    });
+    return;
+  }
+  params.state.required = null;
+  setCurrentSharedGatewaySessionGeneration(params.state, nextSharedGatewaySessionGeneration);
+  disconnectStaleSharedGatewayAuthClients({
+    clients: params.clients,
+    expectedGeneration: nextSharedGatewaySessionGeneration,
+  });
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Temporary plugin/extension fixtures.
  *

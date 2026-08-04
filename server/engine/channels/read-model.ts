@@ -1,23 +1,3 @@
-// 移植自 openclaw/src/channels/status/read-model.ts
-
-export type RuntimeChannelStatusPayload = unknown;
-
-export function getRuntimeChannelAccounts(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export function normalizeRuntimeChannelAccountSnapshots(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export function hasRuntimeCredentialAvailable(..._args: unknown[]): unknown {
-  return false;
-}
-
-export function markConfiguredUnavailableCredentialStatusesAvailable(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export async function resolveChannelAccountStatusRows(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
-}
+// Re-export from status/ subdirectory (real implementation).
+// 顶层兼容入口：转发到 ./status/read-model.js 的真实实现。
+export * from "./status/read-model.js";

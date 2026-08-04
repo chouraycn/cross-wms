@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway-status output tests cover warning construction plus text and JSON rendering.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayProbeResult } from "../../gateway/probe.js";

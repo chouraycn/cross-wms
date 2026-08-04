@@ -73,9 +73,17 @@ export class LlmCircuitBreaker {
   private lastFailureAt?: number;
   private openedAt?: number;
   private successAfterOpen = 0;
+  private readonly options: {
+    /** 连续失败阈值（默认 5） */
+    failureThreshold: number;
+    /** 熔断时长（ms，默认 30s） */
+    resetTimeoutMs: number;
+    /** half-open 状态下连续成功数达到该值后关闭熔断器（默认 2） */
+    halfOpenSuccessThreshold: number;
+  };
 
   constructor(
-    private readonly options: {
+    options: {
       /** 连续失败阈值（默认 5） */
       failureThreshold: number;
       /** 熔断时长（ms，默认 30s） */
@@ -83,7 +91,9 @@ export class LlmCircuitBreaker {
       /** half-open 状态下连续成功数达到该值后关闭熔断器（默认 2） */
       halfOpenSuccessThreshold: number;
     },
-  ) {}
+  ) {
+    this.options = options;
+  }
 
   /** 当前状态 */
   getState(): CircuitState {
@@ -209,23 +219,31 @@ let invokeCounter = 0;
 
 /** 熔断器打开错误 */
 export class CircuitOpenError extends Error {
+  public readonly provider: string;
+  public readonly resetAt: number;
   constructor(
-    public readonly provider: string,
-    public readonly resetAt: number,
+    provider: string,
+    resetAt: number,
   ) {
     super(`Circuit breaker for "${provider}" is open; retries available at ${new Date(resetAt).toISOString()}`);
     this.name = 'CircuitOpenError';
+    this.provider = provider;
+    this.resetAt = resetAt;
   }
 }
 
 /** 速率限制错误 */
 export class RateLimitExceededError extends Error {
+  public readonly provider: string;
+  public readonly waitedMs: number;
   constructor(
-    public readonly provider: string,
-    public readonly waitedMs: number,
+    provider: string,
+    waitedMs: number,
   ) {
     super(`Rate limit exceeded for "${provider}" after waiting ${waitedMs}ms`);
     this.name = 'RateLimitExceededError';
+    this.provider = provider;
+    this.waitedMs = waitedMs;
   }
 }
 

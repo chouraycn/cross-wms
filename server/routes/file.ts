@@ -783,7 +783,14 @@ router.get('/generated/:sessionId', async (req: Request, res: Response) => {
     }
 
     const entries = await fs.promises.readdir(sessionDir, { withFileTypes: true });
-    const files = [];
+    const files: Array<{
+      fileName: string;
+      fileSize: number;
+      createdAt: string;
+      updatedAt: string;
+      downloadUrl: string;
+      previewUrl: string;
+    }> = [];
 
     for (const entry of entries) {
       if (entry.isFile()) {

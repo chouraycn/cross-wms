@@ -5,7 +5,7 @@ import {
   stylePromptHint,
   stylePromptMessage,
   stylePromptTitle,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import { resolveApiKeyForProvider } from "@openclaw-src/agents/model-auth.js";
 import { type ModelScanResult, scanOpenRouterModels } from "@openclaw-src/agents/model-scan.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

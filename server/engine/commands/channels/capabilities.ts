@@ -3,8 +3,8 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { theme } from "@openclaw/terminal-core/theme";
 import { resolveChannelDefaultAccountId } from "@openclaw-src/channels/plugins/helpers.js";
 import {
   createMessageActionDiscoveryContext,

@@ -2,13 +2,13 @@
 import {
   resolveProviderModelPickerFlowContributions,
   resolveProviderModelPickerFlowEntries,
-} from "@openclaw-src/flows/provider-flow.runtime.js";
-import { runProviderPluginAuthMethod } from "@openclaw-src/plugins/provider-auth-choice.js";
+} from "../flows/provider-flow.runtime.js";
+import { runProviderPluginAuthMethod } from "../plugins/provider-auth-choice.js";
 import {
   resolveProviderPluginChoice,
   runProviderModelSelectedHook,
-} from "@openclaw-src/plugins/provider-wizard.js";
-import { resolvePluginProviders } from "@openclaw-src/plugins/providers.runtime.js";
+} from "../plugins/provider-wizard.js";
+import { resolvePluginProviders } from "../plugins/providers.runtime.js";
 
 /** Lazy runtime methods consumed by model picker command flows. */
 export const modelPickerRuntime = {

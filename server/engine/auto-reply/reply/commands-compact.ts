@@ -1,10 +1,10 @@
 // @ts-nocheck
 // Implements compaction commands for session context and model state.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveAgentDir, resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { resolveContextTokensForModel } from '@openclaw-src/agents/context.js';
 import { classifyCompactionReason } from '@openclaw-src/agents/embedded-agent-runner/compact-reasons.js';

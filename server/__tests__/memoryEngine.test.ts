@@ -1,264 +1,240 @@
 /**
- * memoryEngine 单元测试
+ * @vitest-environment node
  *
- * 测试记忆引擎的基本功能
+ * 内存引擎测试 — 记忆存储 / 检索 / 上下文管理
+ *
+ * 通过 mock appPaths 指向临时目录，隔离文件副作用；
+ * mock memory-host registry 使向量搜索不可用，强制走文本搜索路径。
  */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import path from 'path';
+import fs from 'fs';
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { memoryEngine } from '../memoryEngine.js';
+// 使用 vi.hoisted 确保 USER_DATA_DIR 在 vi.mock 工厂提升执行时可用
+const { USER_DATA_DIR } = vi.hoisted(() => {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memory-engine-test-'));
+  return { USER_DATA_DIR: path.join(tmpDir, 'user-data') };
+});
 
-// Mock AppPaths 和 fs
 vi.mock('../config/appPaths.js', () => ({
   AppPaths: {
-    userDataDir: '/tmp/test-memory',
-    rootDir: '/tmp/test-memory',
-    onnxModelsDir: '/tmp/test-memory/models',
-  },
-}));
-
-vi.mock('fs', () => ({
-  default: {
-    existsSync: vi.fn(() => false),
-    mkdirSync: vi.fn(),
-    readFileSync: vi.fn(() => '[]'),
-    writeFileSync: vi.fn(),
+    userDataDir: USER_DATA_DIR,
   },
 }));
 
 vi.mock('../logger.js', () => ({
   logger: {
+    debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn(),
   },
 }));
 
-describe('memoryEngine', () => {
-  const testSessionId = 'test-session-123';
+// mock memory-host registry：getDefaultHostId 返回 null → 向量搜索不可用
+vi.mock('../engine/memory-host/index.js', () => ({
+  getGlobalMemoryHostRegistry: () => ({
+    getDefaultHostId: () => null,
+  }),
+}));
 
-  beforeEach(async () => {
-    // 重置记忆引擎状态
-    memoryEngine.destroy();
-    await memoryEngine.init();
+import { memoryEngine } from '../memoryEngine.js';
+
+beforeEach(async () => {
+  // 清空临时目录
+  if (fs.existsSync(USER_DATA_DIR)) {
+    fs.rmSync(USER_DATA_DIR, { recursive: true, force: true });
+  }
+  fs.mkdirSync(USER_DATA_DIR, { recursive: true });
+  memoryEngine.destroy();
+  await memoryEngine.init();
+});
+
+afterEach(() => {
+  memoryEngine.destroy();
+});
+
+describe('init 初始化', () => {
+  it('初始化后创建 memory 目录结构', () => {
+    expect(fs.existsSync(path.join(USER_DATA_DIR, 'memory'))).toBe(true);
+    expect(fs.existsSync(path.join(USER_DATA_DIR, 'memory', 'sessions'))).toBe(true);
   });
 
-  describe('会话记忆', () => {
-    it('应能添加会话记忆', () => {
-      const mem = memoryEngine.addSessionMemory(testSessionId, '用户喜欢简洁的回答', {
-        type: 'preference',
-        importance: 8,
-        tags: ['user-pref'],
-      });
+  it('重复 init 幂等', async () => {
+    await expect(memoryEngine.init()).resolves.not.toThrow();
+  });
+});
 
-      expect(mem).toBeDefined();
-      expect(mem.id).toBeTruthy();
-      expect(mem.content).toBe('用户喜欢简洁的回答');
-      expect(mem.type).toBe('preference');
-      expect(mem.importance).toBe(8);
-      expect(mem.tags).toEqual(['user-pref']);
-      expect(mem.sourceSessionId).toBe(testSessionId);
+describe('会话记忆存储', () => {
+  it('addSessionMemory 写入并返回记忆条目', () => {
+    const item = memoryEngine.addSessionMemory('sess-1', '用户偏好深色主题', {
+      type: 'preference',
+      importance: 8,
+      tags: ['ui'],
     });
-
-    it('应能查询会话记忆', async () => {
-      memoryEngine.addSessionMemory(testSessionId, '记忆 1 - 项目使用 React', {
-        type: 'fact',
-        importance: 5,
-        tags: ['project'],
-      });
-      memoryEngine.addSessionMemory(testSessionId, '记忆 2 - 用户喜欢 TypeScript', {
-        type: 'preference',
-        importance: 7,
-        tags: ['user-pref'],
-      });
-      memoryEngine.addSessionMemory(testSessionId, '记忆 3 - 数据库用 PostgreSQL', {
-        type: 'fact',
-        importance: 6,
-        tags: ['project'],
-      });
-
-      const results = await memoryEngine.querySessionMemories(testSessionId, {
-        limit: 10,
-        sortBy: 'recency',
-      });
-
-      expect(results.length).toBe(3);
-    });
-
-    it('应能按重要性排序', async () => {
-      memoryEngine.addSessionMemory(testSessionId, '低重要性', { importance: 2, type: 'fact' });
-      memoryEngine.addSessionMemory(testSessionId, '高重要性', { importance: 9, type: 'fact' });
-      memoryEngine.addSessionMemory(testSessionId, '中重要性', { importance: 5, type: 'fact' });
-
-      const results = await memoryEngine.querySessionMemories(testSessionId, {
-        sortBy: 'importance',
-      });
-
-      expect(results[0].content).toBe('高重要性');
-      expect(results[1].content).toBe('中重要性');
-      expect(results[2].content).toBe('低重要性');
-    });
-
-    it('应能按类型过滤', async () => {
-      memoryEngine.addSessionMemory(testSessionId, '事实记忆', { type: 'fact' });
-      memoryEngine.addSessionMemory(testSessionId, '偏好记忆', { type: 'preference' });
-      memoryEngine.addSessionMemory(testSessionId, '经验记忆', { type: 'experience' });
-
-      const results = await memoryEngine.querySessionMemories(testSessionId, {
-        types: ['fact', 'preference'],
-      });
-
-      expect(results.length).toBe(2);
-      expect(results.every(r => r.type === 'fact' || r.type === 'preference')).toBe(true);
-    });
-
-    it('应能按关键词搜索', async () => {
-      memoryEngine.addSessionMemory(testSessionId, 'React 是一个 UI 库', { type: 'fact' });
-      memoryEngine.addSessionMemory(testSessionId, 'Vue 也是一个 UI 库', { type: 'fact' });
-      memoryEngine.addSessionMemory(testSessionId, 'PostgreSQL 是关系型数据库', { type: 'fact' });
-
-      const results = await memoryEngine.querySessionMemories(testSessionId, {
-        query: 'UI',
-      });
-
-      expect(results.length).toBe(2);
-      expect(results.every(r => r.content.includes('UI'))).toBe(true);
-    });
-
-    it('应能限制返回数量', async () => {
-      for (let i = 0; i < 10; i++) {
-        memoryEngine.addSessionMemory(testSessionId, `记忆 ${i}`, { type: 'fact' });
-      }
-
-      const results = await memoryEngine.querySessionMemories(testSessionId, {
-        limit: 3,
-      });
-
-      expect(results.length).toBe(3);
-    });
-
-    it('应能更新访问计数', async () => {
-      memoryEngine.addSessionMemory(testSessionId, '测试记忆', { type: 'fact' });
-
-      const first = (await memoryEngine.querySessionMemories(testSessionId))[0];
-      const initialAccessCount = first.accessCount;
-
-      // 再查询两次
-      await memoryEngine.querySessionMemories(testSessionId);
-      await memoryEngine.querySessionMemories(testSessionId);
-
-      const after = (await memoryEngine.querySessionMemories(testSessionId))[0];
-      expect(after.accessCount).toBe(initialAccessCount + 3);
-    });
-
-    it('应能删除会话记忆', async () => {
-      const mem = memoryEngine.addSessionMemory(testSessionId, '要删除的记忆', { type: 'fact' });
-
-      const before = await memoryEngine.querySessionMemories(testSessionId);
-      expect(before.length).toBe(1);
-
-      const deleted = memoryEngine.deleteSessionMemory(testSessionId, mem.id);
-      expect(deleted).toBe(true);
-
-      const after = await memoryEngine.querySessionMemories(testSessionId);
-      expect(after.length).toBe(0);
-    });
-
-    it('删除不存在的记忆应返回 false', () => {
-      const result = memoryEngine.deleteSessionMemory(testSessionId, 'non-existent-id');
-      expect(result).toBe(false);
-    });
-
-    it('应能更新会话记忆', () => {
-      const mem = memoryEngine.addSessionMemory(testSessionId, '原始内容', { type: 'fact', importance: 5 });
-
-      const updated = memoryEngine.updateSessionMemory(testSessionId, mem.id, {
-        content: '更新后的内容',
-        importance: 8,
-      });
-
-      expect(updated).not.toBeNull();
-      expect(updated!.content).toBe('更新后的内容');
-      expect(updated!.importance).toBe(8);
-    });
+    expect(item.id).toBeTruthy();
+    expect(item.content).toBe('用户偏好深色主题');
+    expect(item.type).toBe('preference');
+    expect(item.importance).toBe(8);
+    expect(item.sourceSessionId).toBe('sess-1');
+    expect(item.tags).toEqual(['ui']);
   });
 
-  describe('全局记忆', () => {
-    it('应能添加全局记忆', () => {
-      const mem = memoryEngine.addGlobalMemory('用户总是用中文交流', {
-        type: 'preference',
-        importance: 9,
-        tags: ['language'],
-      });
+  it('默认类型与重要性', () => {
+    const item = memoryEngine.addSessionMemory('sess-1', 'some fact');
+    expect(item.type).toBe('fact');
+    expect(item.importance).toBe(5);
+  });
+});
 
-      expect(mem).toBeDefined();
-      expect(mem.id).toBeTruthy();
-      expect(mem.content).toBe('用户总是用中文交流');
-    });
-
-    it('应能查询全局记忆', async () => {
-      memoryEngine.addGlobalMemory('全局事实 1', { type: 'fact', importance: 5 });
-      memoryEngine.addGlobalMemory('全局偏好 1', { type: 'preference', importance: 8 });
-
-      const results = await memoryEngine.queryGlobalMemories({ limit: 10 });
-      expect(results.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it('应能删除全局记忆', async () => {
-      const mem = memoryEngine.addGlobalMemory('要删除的全局记忆', { type: 'fact' });
-
-      const before = await memoryEngine.queryGlobalMemories({ limit: 100 });
-      const beforeCount = before.length;
-
-      const deleted = memoryEngine.deleteGlobalMemory(mem.id);
-      expect(deleted).toBe(true);
-
-      const after = await memoryEngine.queryGlobalMemories({ limit: 100 });
-      expect(after.length).toBe(beforeCount - 1);
-    });
-
-    it('应能从会话记忆升级为全局记忆', () => {
-      const sessionMem = memoryEngine.addSessionMemory(testSessionId, '重要的项目信息', {
-        type: 'fact',
-        importance: 6,
-        tags: ['project'],
-      });
-
-      const globalMem = memoryEngine.promoteToGlobal(testSessionId, sessionMem.id);
-
-      expect(globalMem).not.toBeNull();
-      expect(globalMem!.importance).toBeGreaterThan(sessionMem.importance);
-      expect(globalMem!.content).toBe(sessionMem.content);
-    });
+describe('会话记忆检索', () => {
+  beforeEach(() => {
+    memoryEngine.addSessionMemory('sess-1', '苹果是水果', { importance: 7, tags: ['food'] });
+    memoryEngine.addSessionMemory('sess-1', '香蕉也是水果', { importance: 5, tags: ['food'] });
+    memoryEngine.addSessionMemory('sess-1', '汽车是交通工具', { importance: 3, tags: ['vehicle'] });
   });
 
-  describe('上下文提示', () => {
-    it('应能生成上下文提示', async () => {
-      memoryEngine.addGlobalMemory('用户喜欢简洁回答', { type: 'preference', importance: 8 });
-      memoryEngine.addSessionMemory(testSessionId, '当前项目用 React', { type: 'fact', importance: 5 });
-
-      const prompt = await memoryEngine.getContextPrompt(testSessionId, '', {
-        globalLimit: 5,
-        sessionLimit: 5,
-      });
-
-      expect(prompt).toContain('重要记忆');
-      expect(prompt).toContain('会话记忆');
-      expect(prompt).toContain('用户喜欢简洁回答');
-      expect(prompt).toContain('当前项目用 React');
-    });
+  it('返回会话内所有记忆', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', { limit: 10 });
+    expect(results.length).toBe(3);
   });
 
-  describe('记忆类型', () => {
-    it('应支持所有记忆类型', () => {
-      const types: Array<'fact' | 'preference' | 'experience' | 'instruction' | 'other'> = [
-        'fact', 'preference', 'experience', 'instruction', 'other'
-      ];
+  it('按重要性过滤', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', { minImportance: 6 });
+    expect(results.length).toBe(1);
+    expect(results[0].content).toBe('苹果是水果');
+  });
 
-      for (const type of types) {
-        const mem = memoryEngine.addSessionMemory(testSessionId, `测试 ${type}`, { type });
-        expect(mem.type).toBe(type);
-      }
+  it('按关键词搜索', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', { query: '水果' });
+    expect(results.length).toBe(2);
+    for (const r of results) {
+      expect(r.content).toContain('水果');
+    }
+  });
+
+  it('按标签过滤', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', { tags: ['vehicle'] });
+    expect(results.length).toBe(1);
+    expect(results[0].content).toBe('汽车是交通工具');
+  });
+
+  it('按重要性排序', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', {
+      sortBy: 'importance',
+      limit: 10,
+    });
+    expect(results[0].importance).toBeGreaterThanOrEqual(results[1].importance);
+    expect(results[0].content).toBe('苹果是水果');
+  });
+
+  it('limit 限制返回数量', async () => {
+    const results = await memoryEngine.querySessionMemories('sess-1', { limit: 2 });
+    expect(results.length).toBe(2);
+  });
+});
+
+describe('会话记忆更新与删除', () => {
+  it('updateSessionMemory 更新字段', () => {
+    const item = memoryEngine.addSessionMemory('sess-1', '原始内容');
+    const updated = memoryEngine.updateSessionMemory('sess-1', item.id, {
+      content: '更新内容',
+      importance: 9,
+    });
+    expect(updated?.content).toBe('更新内容');
+    expect(updated?.importance).toBe(9);
+  });
+
+  it('updateSessionMemory 对不存在 ID 返回 null', () => {
+    expect(memoryEngine.updateSessionMemory('sess-1', 'nonexistent', { content: 'x' })).toBeNull();
+  });
+
+  it('deleteSessionMemory 删除', () => {
+    const item = memoryEngine.addSessionMemory('sess-1', '待删除');
+    expect(memoryEngine.deleteSessionMemory('sess-1', item.id)).toBe(true);
+    expect(memoryEngine.deleteSessionMemory('sess-1', item.id)).toBe(false);
+  });
+});
+
+describe('全局记忆', () => {
+  it('addGlobalMemory 默认重要性 7', () => {
+    const item = memoryEngine.addGlobalMemory('全局事实');
+    expect(item.importance).toBe(7);
+  });
+
+  it('queryGlobalMemories 检索', async () => {
+    memoryEngine.addGlobalMemory('地球是圆的', { importance: 10, tags: ['science'] });
+    memoryEngine.addGlobalMemory('苹果是水果', { importance: 6, tags: ['food'] });
+
+    const all = await memoryEngine.queryGlobalMemories({ limit: 10 });
+    expect(all.length).toBe(2);
+
+    const science = await memoryEngine.queryGlobalMemories({ tags: ['science'] });
+    expect(science.length).toBe(1);
+    expect(science[0].content).toBe('地球是圆的');
+  });
+
+  it('deleteGlobalMemory 删除', () => {
+    const item = memoryEngine.addGlobalMemory('待删除全局');
+    expect(memoryEngine.deleteGlobalMemory(item.id)).toBe(true);
+    expect(memoryEngine.deleteGlobalMemory(item.id)).toBe(false);
+  });
+
+  it('promoteToGlobal 从会话记忆升级', () => {
+    const sessionItem = memoryEngine.addSessionMemory('sess-1', '值得长期保留', {
+      importance: 6,
+    });
+    const promoted = memoryEngine.promoteToGlobal('sess-1', sessionItem.id);
+    expect(promoted).not.toBeNull();
+    expect(promoted?.content).toBe('值得长期保留');
+    // 升级后重要性 +2（上限 10）
+    expect(promoted?.importance).toBe(8);
+    // 应有新的 ID
+    expect(promoted?.id).not.toBe(sessionItem.id);
+  });
+
+  it('promoteToGlobal 对不存在 ID 返回 null', () => {
+    expect(memoryEngine.promoteToGlobal('sess-1', 'nonexistent')).toBeNull();
+  });
+});
+
+describe('上下文管理 getContextPrompt', () => {
+  it('无记忆时返回空字符串', async () => {
+    const prompt = await memoryEngine.getContextPrompt('empty-sess');
+    expect(prompt).toBe('');
+  });
+
+  it('返回格式化的上下文提示', async () => {
+    memoryEngine.addGlobalMemory('全局重要事实', { importance: 10 });
+    memoryEngine.addSessionMemory('sess-1', '会话内记忆', { importance: 8 });
+
+    const prompt = await memoryEngine.getContextPrompt('sess-1');
+    expect(prompt).toContain('全局重要事实');
+    expect(prompt).toContain('会话内记忆');
+  });
+});
+
+describe('cleanup 清理过期记忆', () => {
+  it('清理低重要性且长期未访问的记忆', () => {
+    // importance 1，会被清理（minImportance 默认 3）
+    memoryEngine.addGlobalMemory('低重要性', { importance: 1 });
+    // importance 10，不会被清理
+    memoryEngine.addGlobalMemory('高重要性', { importance: 10 });
+
+    const removed = memoryEngine.cleanup({ olderThanDays: 0, minImportance: 3 });
+    expect(removed).toBeGreaterThanOrEqual(1);
+
+    // 高重要性应保留
+    const remaining = memoryEngine
+      .queryGlobalMemories({ limit: 100 });
+    // cleanup 是同步的，但 queryGlobalMemories 是 async
+    return remaining.then((items) => {
+      const contents = items.map((i) => i.content);
+      expect(contents).toContain('高重要性');
+      expect(contents).not.toContain('低重要性');
     });
   });
 });

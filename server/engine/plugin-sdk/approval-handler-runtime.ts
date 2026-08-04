@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Runtime SDK subpath for approval handler adapters and approval view text helpers.
  */

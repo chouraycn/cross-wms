@@ -461,7 +461,7 @@ function unwrapArgvForMutableOperand(argv: string[]): {
       continue;
     }
     const shellMultiplexerUnwrap = asShellMultiplexerUnwrap(
-      unwrapKnownShellMultiplexerInvocation(current),
+      unwrapKnownShellMultiplexerInvocation(current) as any,
       normalizeExecutableToken(current[0] ?? ""),
     );
     if (shellMultiplexerUnwrap.kind === "unwrapped") {

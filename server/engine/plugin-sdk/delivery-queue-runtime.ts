@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Delivery queue runtime helpers persist and replay outbound plugin delivery work.
 import {
   drainPendingDeliveries as coreDrainPendingDeliveries,

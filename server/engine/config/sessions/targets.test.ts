@@ -5,7 +5,7 @@ import path from "node:path";
 import { withTempHome } from "openclaw/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../config.js";
-import { resolveStorePath } from "./paths.js";
+import { resolveStorePath } from "@openclaw-src/agents/subagent-announce-delivery.runtime.js";
 import {
   resolveAgentSessionStoreTargetsSync,
   resolveAllAgentSessionStoreTargetsSync,

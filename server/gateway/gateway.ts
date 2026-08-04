@@ -216,34 +216,6 @@ gatewayRouter.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// 获取模型列表
-gatewayRouter.get('/v1/models', async (_req: Request, res: Response) => {
-  try {
-    const models: OpenAIModel[] = [
-      { id: 'deepseek-chat', provider: 'deepseek', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-chat', parent: null },
-      { id: 'deepseek-v3', provider: 'deepseek', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-v3', parent: null },
-      { id: 'gpt-4o', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o', parent: null },
-      { id: 'gpt-4o-mini', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o-mini', parent: null },
-      { id: 'gpt-4-turbo', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4-turbo', parent: null },
-      { id: 'claude-sonnet-4', provider: 'anthropic', object: 'model', created: 1700000000, owned_by: 'Anthropic', permission: [], root: 'claude-sonnet-4', parent: null },
-      { id: 'glm-4', provider: 'zhipu', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4', parent: null },
-      { id: 'glm-4-plus', provider: 'zhipu', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4-plus', parent: null },
-      { id: 'qwen-plus', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-plus', parent: null },
-      { id: 'qwen-turbo', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-turbo', parent: null },
-      { id: 'qwen-long', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-long', parent: null },
-      { id: 'gemini-2.0-flash', provider: 'google', object: 'model', created: 1700000000, owned_by: 'Google', permission: [], root: 'gemini-2.0-flash', parent: null },
-    ];
-
-    res.json({
-      object: 'list',
-      data: models,
-    });
-  } catch (error) {
-    logger.error('[Gateway] 获取模型列表失败:', error);
-    res.status(500).json({ error: { message: 'Failed to list models', type: 'server_error' } });
-  }
-});
-
 // Chat Completions（需认证）
 gatewayRouter.post('/v1/chat/completions', async (req: Request, res: Response) => {
   const authResult = await authenticateRequest(req);

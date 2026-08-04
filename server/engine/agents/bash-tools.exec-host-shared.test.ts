@@ -3,7 +3,7 @@
  * Covers pending-state expiry, follow-up failure dedupe, elevated handoffs,
  * policy merging, and unavailable approval surfaces.
  */
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@cdf-know/normalization-core/number-coercion";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   consumeExecApprovalFollowupRuntimeHandoff,

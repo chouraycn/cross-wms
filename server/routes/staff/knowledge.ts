@@ -22,6 +22,7 @@
 import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as kDao from '../../dao/staff/staffKnowledgeDao.js';
+import * as kbDao from '../../dao/staff/staffKnowledgeBaseDao.js';
 import { logger } from '../../logger.js';
 
 const router = Router();
@@ -109,9 +110,33 @@ router.post('/okf/import', (req: Request, res: Response) => {
 // ===================== GET /documents — 列出文档 =====================
 router.get('/documents', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
+  const knowledgeBaseId = req.query.knowledge_base_id as string | undefined;
+  const agentId = req.query.agent_id as string | undefined;
+
+  // 传 agent_id 时按该员工挂载的知识库分支过滤，
+  // 对齐原版 list_documents 的 visible_knowledge_base_versions 语义
+  if (agentId) {
+    const visible = kbDao.getAgentVisibleKnowledgeBaseIds(tenantId, agentId);
+    if (visible.length === 0 || (knowledgeBaseId && !visible.includes(knowledgeBaseId))) {
+      res.json({ code: 0, data: [], message: 'ok' });
+      return;
+    }
+    const scope = knowledgeBaseId ? [knowledgeBaseId] : visible;
+    const rows = kDao
+      .listDocuments({
+        tenantId,
+        knowledgeBaseVersionId: req.query.knowledge_base_version_id as string | undefined,
+        status: req.query.status as string | undefined,
+        fileType: req.query.file_type as string | undefined,
+      })
+      .filter((row) => scope.includes(row.knowledge_base_id));
+    res.json({ code: 0, data: rows.map(kDao.toDocumentRead), message: 'ok' });
+    return;
+  }
+
   const rows = kDao.listDocuments({
     tenantId,
-    knowledgeBaseId: req.query.knowledge_base_id as string | undefined,
+    knowledgeBaseId,
     knowledgeBaseVersionId: req.query.knowledge_base_version_id as string | undefined,
     status: req.query.status as string | undefined,
     fileType: req.query.file_type as string | undefined,
@@ -225,7 +250,7 @@ router.post('/jobs/:jobId/cancel', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'job 不存在' });
     return;
   }
-  // TODO: 接入实际 job worker 的取消逻辑
+  // 取消 job：更新状态为 cancelled，并尝试中止运行中的 worker
   const row = kDao.updateIngestJob(tenantId, req.params.jobId, {
     status: 'cancelled',
     stage: 'cancelled',

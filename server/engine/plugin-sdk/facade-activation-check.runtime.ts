@@ -70,8 +70,8 @@ function readFacadeBoundaryConfigSafely(): {
       // cross-wms 降级 stub 返回 unknown，按 OpenClawConfig 断言。
       return { rawConfig: runtimeSnapshot as OpenClawConfig };
     }
-    // cross-wms 的 resolveConfigPath 需要 relativePath 参数（无默认值）。
-    const configPath = resolveConfigPath("config.json");
+    // cross-wms 的 resolveConfigPath 需要 env 参数（无默认值）。
+    const configPath = resolveConfigPath(process.env);
     if (!fs.existsSync(configPath)) {
       return { rawConfig: EMPTY_FACADE_BOUNDARY_CONFIG };
     }
@@ -91,7 +91,7 @@ function getFacadeBoundaryResolvedConfig() {
   const readResult = readFacadeBoundaryConfigSafely();
   const { rawConfig } = readResult;
   // cross-wms 的 configMayNeedPluginAutoEnable 返回 unknown，作为 truthiness 判别使用。
-  const autoEnabled = configMayNeedPluginAutoEnable(rawConfig, process.env)
+  const autoEnabled = (configMayNeedPluginAutoEnable(rawConfig, process.env)
     ? applyPluginAutoEnable({
         config: rawConfig,
         env: process.env,
@@ -99,7 +99,7 @@ function getFacadeBoundaryResolvedConfig() {
     : {
         config: rawConfig,
         autoEnabledReasons: {} as Record<string, string[]>,
-      };
+      }) as { config?: OpenClawConfig; autoEnabledReasons: Record<string, string[]> };
   // cross-wms 的 applyPluginAutoEnable stub 可能返回 config: undefined，
   // 回退到 rawConfig 以满足下游 OpenClawConfig 类型要求。
   const config: OpenClawConfig = autoEnabled.config ?? rawConfig;

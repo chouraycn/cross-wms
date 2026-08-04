@@ -1,162 +1,262 @@
-import { z } from 'zod';
-import { logger } from '../../logger.js';
+/**
+ * Resolves MCP transport command, environment, and timeout configuration.
+ */
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
+import { resolveOpenClawMcpTransportAlias } from "../config/mcp-config-normalize.js";
+import { logWarn } from "../logger.js";
+import {
+  describeHttpMcpServerLaunchConfig,
+  resolveHttpMcpServerLaunchConfig,
+  type HttpMcpTransportType,
+} from "./mcp-http.js";
+import {
+  describeStdioMcpServerLaunchConfig,
+  resolveStdioMcpServerLaunchConfig,
+} from "./mcp-stdio.js";
 
-export const McpTransportConfigSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['stdio', 'http', 'sse', 'websocket']),
-  enabled: z.boolean().default(true),
-  timeoutMs: z.number().default(30000),
-  maxRetries: z.number().default(3),
-  retryDelayMs: z.number().default(1000),
-  headers: z.record(z.string(), z.string()).default({}),
-  metadata: z.record(z.string(), z.unknown()).default({}),
-});
+// Resolves raw MCP server config into the transport shape used by bundle MCP
+// runtime startup. Stdio is preferred when launch config is valid; otherwise
+// HTTP/SSE transports are attempted with normalized timeout fields.
+type ResolvedBaseMcpTransportConfig = {
+  description: string;
+  connectionTimeoutMs: number;
+  requestTimeoutMs: number;
+  supportsParallelToolCalls: boolean;
+};
 
-export const McpStdioTransportConfigSchema = McpTransportConfigSchema.extend({
-  type: z.literal('stdio'),
-  command: z.string(),
-  args: z.array(z.string()).default([]),
-  cwd: z.string().optional(),
-  env: z.record(z.string(), z.string()).default({}),
-});
-
-export const McpHttpTransportConfigSchema = McpTransportConfigSchema.extend({
-  type: z.literal('http'),
-  url: z.string().url(),
-  method: z.enum(['POST', 'GET']).default('POST'),
-});
-
-export const McpSseTransportConfigSchema = McpTransportConfigSchema.extend({
-  type: z.literal('sse'),
-  url: z.string().url(),
-});
-
-export const McpWebsocketTransportConfigSchema = McpTransportConfigSchema.extend({
-  type: z.literal('websocket'),
-  url: z.string().url(),
-  reconnect: z.boolean().default(true),
-  reconnectDelayMs: z.number().default(3000),
-});
-
-export type McpTransportConfig = z.infer<typeof McpTransportConfigSchema>;
-export type McpStdioTransportConfig = z.infer<typeof McpStdioTransportConfigSchema>;
-export type McpHttpTransportConfig = z.infer<typeof McpHttpTransportConfigSchema>;
-export type McpSseTransportConfig = z.infer<typeof McpSseTransportConfigSchema>;
-export type McpWebsocketTransportConfig = z.infer<typeof McpWebsocketTransportConfigSchema>;
-
-const configStore = new Map<string, McpTransportConfig>();
-
-export function registerTransportConfig(config: McpTransportConfig): void {
-  let schema;
-  switch (config.type) {
-    case 'stdio':
-      schema = McpStdioTransportConfigSchema;
-      break;
-    case 'http':
-      schema = McpHttpTransportConfigSchema;
-      break;
-    case 'sse':
-      schema = McpSseTransportConfigSchema;
-      break;
-    case 'websocket':
-      schema = McpWebsocketTransportConfigSchema;
-      break;
-    default:
-      schema = McpTransportConfigSchema;
-  }
-
-  const result = schema.safeParse(config);
-  if (!result.success) {
-    throw new Error(`Invalid MCP transport config: ${result.error.message}`);
-  }
-
-  configStore.set(config.id, result.data as McpTransportConfig);
-  logger.debug(`[Agents:McpTransportConfig] Registered transport: ${config.id} (${config.type})`);
-}
-
-export function getTransportConfig(id: string): McpTransportConfig | undefined {
-  return configStore.get(id);
-}
-
-export function listTransportConfigs(): McpTransportConfig[] {
-  return Array.from(configStore.values());
-}
-
-export function updateTransportConfig(id: string, updates: Partial<McpTransportConfig>): McpTransportConfig | undefined {
-  const existing = configStore.get(id);
-  if (!existing) return undefined;
-
-  const updated: McpTransportConfig = {
-    ...existing,
-    ...updates,
-    id,
-  } as McpTransportConfig;
-
-  configStore.set(id, updated);
-  logger.debug(`[Agents:McpTransportConfig] Updated transport: ${id}`);
-  return updated;
-}
-
-export function deleteTransportConfig(id: string): boolean {
-  const existed = configStore.has(id);
-  if (existed) {
-    configStore.delete(id);
-    logger.debug(`[Agents:McpTransportConfig] Deleted transport: ${id}`);
-  }
-  return existed;
-}
-
-export function getTransportConfigsByType(type: McpTransportConfig['type']): McpTransportConfig[] {
-  return listTransportConfigs().filter(c => c.type === type && c.enabled);
-}
-
-export function createStdioConfig(params: {
-  id: string;
-  name: string;
+type ResolvedStdioMcpTransportConfig = ResolvedBaseMcpTransportConfig & {
+  kind: "stdio";
+  transportType: "stdio";
   command: string;
   args?: string[];
-  cwd?: string;
   env?: Record<string, string>;
-  timeoutMs?: number;
-  maxRetries?: number;
-}): McpStdioTransportConfig {
-  return McpStdioTransportConfigSchema.parse({
-    id: params.id,
-    name: params.name,
-    type: 'stdio',
-    command: params.command,
-    args: params.args ?? [],
-    cwd: params.cwd,
-    env: params.env ?? {},
-    timeoutMs: params.timeoutMs ?? 30000,
-    maxRetries: params.maxRetries ?? 3,
-  });
-}
+  cwd?: string;
+};
 
-export function createHttpConfig(params: {
-  id: string;
-  name: string;
+type ResolvedHttpMcpTransportConfig = ResolvedBaseMcpTransportConfig & {
+  kind: "http";
+  transportType: HttpMcpTransportType;
   url: string;
-  method?: 'POST' | 'GET';
   headers?: Record<string, string>;
-  timeoutMs?: number;
-  maxRetries?: number;
-}): McpHttpTransportConfig {
-  return McpHttpTransportConfigSchema.parse({
-    id: params.id,
-    name: params.name,
-    type: 'http',
-    url: params.url,
-    method: params.method ?? 'POST',
-    headers: params.headers ?? {},
-    timeoutMs: params.timeoutMs ?? 30000,
-    maxRetries: params.maxRetries ?? 3,
+  auth?: "oauth";
+  oauth?: Record<string, unknown>;
+  sslVerify?: boolean;
+  clientCert?: string;
+  clientKey?: string;
+};
+
+type ResolvedMcpTransportConfig = ResolvedStdioMcpTransportConfig | ResolvedHttpMcpTransportConfig;
+
+const DEFAULT_CONNECTION_TIMEOUT_MS = 30_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+
+function getPositiveNumber(rawServer: unknown, keys: readonly string[]): number | undefined {
+  if (!rawServer || typeof rawServer !== "object") {
+    return undefined;
+  }
+  const record = rawServer as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function getConnectionTimeoutMs(rawServer: unknown): number {
+  const milliseconds = getPositiveNumber(rawServer, ["connectionTimeoutMs"]);
+  if (milliseconds) {
+    return Math.floor(milliseconds);
+  }
+  const seconds = getPositiveNumber(rawServer, ["connectTimeout", "connect_timeout"]);
+  if (seconds) {
+    return Math.floor(seconds * 1_000);
+  }
+  return DEFAULT_CONNECTION_TIMEOUT_MS;
+}
+
+function getRequestTimeoutMs(rawServer: unknown): number {
+  const milliseconds = getPositiveNumber(rawServer, ["requestTimeoutMs"]);
+  if (milliseconds) {
+    return Math.floor(milliseconds);
+  }
+  const seconds = getPositiveNumber(rawServer, ["timeout"]);
+  if (seconds) {
+    return Math.floor(seconds * 1_000);
+  }
+  return DEFAULT_REQUEST_TIMEOUT_MS;
+}
+
+function getBooleanField(rawServer: unknown, keys: readonly string[]): boolean | undefined {
+  if (!rawServer || typeof rawServer !== "object") {
+    return undefined;
+  }
+  const record = rawServer as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function getStringField(rawServer: unknown, keys: readonly string[]): string | undefined {
+  if (!rawServer || typeof rawServer !== "object") {
+    return undefined;
+  }
+  const record = rawServer as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+function getRequestedTransport(rawServer: unknown): string {
+  if (
+    !rawServer ||
+    typeof rawServer !== "object" ||
+    typeof (rawServer as { transport?: unknown }).transport !== "string"
+  ) {
+    return "";
+  }
+  return normalizeLowercaseStringOrEmpty((rawServer as { transport?: string }).transport);
+}
+
+function getRequestedTransportAlias(rawServer: unknown): HttpMcpTransportType | "" {
+  if (
+    !rawServer ||
+    typeof rawServer !== "object" ||
+    typeof (rawServer as { type?: unknown }).type !== "string"
+  ) {
+    return "";
+  }
+  return resolveOpenClawMcpTransportAlias((rawServer as { type?: string }).type) ?? "";
+}
+
+function resolveHttpTransportConfig(
+  serverName: string,
+  rawServer: unknown,
+  transportType: HttpMcpTransportType,
+): ResolvedHttpMcpTransportConfig | null {
+  const launch = resolveHttpMcpServerLaunchConfig(rawServer, {
+    transportType,
+    onDroppedHeader: (key) => {
+      logWarn(
+        `bundle-mcp: server "${serverName}": header "${key}" has an unsupported value type and was ignored.`,
+      );
+    },
+    onMalformedHeaders: () => {
+      logWarn(
+        `bundle-mcp: server "${serverName}": "headers" must be a JSON object; the value was ignored.`,
+      );
+    },
   });
+  if (!launch.ok) {
+    return null;
+  }
+  return {
+    kind: "http",
+    transportType: launch.config.transportType,
+    url: launch.config.url,
+    headers: launch.config.headers,
+    ...(rawServer &&
+    typeof rawServer === "object" &&
+    (rawServer as { auth?: unknown }).auth === "oauth"
+      ? { auth: "oauth" as const }
+      : {}),
+    ...(rawServer &&
+    typeof rawServer === "object" &&
+    (rawServer as { oauth?: unknown }).oauth &&
+    typeof (rawServer as { oauth?: unknown }).oauth === "object" &&
+    !Array.isArray((rawServer as { oauth?: unknown }).oauth)
+      ? { oauth: (rawServer as { oauth: Record<string, unknown> }).oauth }
+      : {}),
+    ...(getBooleanField(rawServer, ["sslVerify", "ssl_verify"]) !== undefined
+      ? { sslVerify: getBooleanField(rawServer, ["sslVerify", "ssl_verify"]) }
+      : {}),
+    ...(getStringField(rawServer, ["clientCert", "client_cert"])
+      ? { clientCert: getStringField(rawServer, ["clientCert", "client_cert"]) }
+      : {}),
+    ...(getStringField(rawServer, ["clientKey", "client_key"])
+      ? { clientKey: getStringField(rawServer, ["clientKey", "client_key"]) }
+      : {}),
+    description: describeHttpMcpServerLaunchConfig(launch.config),
+    connectionTimeoutMs: getConnectionTimeoutMs(rawServer),
+    requestTimeoutMs: getRequestTimeoutMs(rawServer),
+    supportsParallelToolCalls:
+      getBooleanField(rawServer, ["supportsParallelToolCalls", "supports_parallel_tool_calls"]) ??
+      false,
+  };
 }
 
-export function clearTransportConfigs(): void {
-  configStore.clear();
-}
+/** Resolve one MCP server's launch transport config, or null when unsupported. */
+export function resolveMcpTransportConfig(
+  serverName: string,
+  rawServer: unknown,
+): ResolvedMcpTransportConfig | null {
+  const logServerName = sanitizeForLog(serverName);
+  const requestedTransport = getRequestedTransport(rawServer);
+  const requestedTransportAlias = requestedTransport ? "" : getRequestedTransportAlias(rawServer);
+  const effectiveTransport = requestedTransport || requestedTransportAlias;
+  const stdioLaunch = resolveStdioMcpServerLaunchConfig(rawServer, {
+    onDroppedEnv: (key) => {
+      logWarn(
+        `bundle-mcp: server "${logServerName}": env "${sanitizeForLog(key)}" is blocked for stdio startup safety and was ignored.`,
+      );
+    },
+  });
+  if (stdioLaunch.ok) {
+    // A command-bearing server is always treated as stdio even when HTTP-ish
+    // aliases are present, matching existing MCP config precedence.
+    return {
+      kind: "stdio",
+      transportType: "stdio",
+      command: stdioLaunch.config.command,
+      args: stdioLaunch.config.args,
+      env: stdioLaunch.config.env,
+      cwd: stdioLaunch.config.cwd,
+      description: describeStdioMcpServerLaunchConfig(stdioLaunch.config),
+      connectionTimeoutMs: getConnectionTimeoutMs(rawServer),
+      requestTimeoutMs: getRequestTimeoutMs(rawServer),
+      supportsParallelToolCalls:
+        getBooleanField(rawServer, ["supportsParallelToolCalls", "supports_parallel_tool_calls"]) ??
+        false,
+    };
+  }
 
-logger.debug('[Agents:McpTransportConfig] Module loaded');
+  if (
+    effectiveTransport &&
+    effectiveTransport !== "sse" &&
+    effectiveTransport !== "streamable-http"
+  ) {
+    logWarn(
+      `bundle-mcp: skipped server "${logServerName}" because transport "${sanitizeForLog(effectiveTransport)}" is not supported.`,
+    );
+    return null;
+  }
+
+  if (effectiveTransport === "streamable-http") {
+    const httpTransport = resolveHttpTransportConfig(serverName, rawServer, "streamable-http");
+    if (httpTransport) {
+      return httpTransport;
+    }
+  }
+
+  const sseTransport = resolveHttpTransportConfig(serverName, rawServer, "sse");
+  if (sseTransport) {
+    return sseTransport;
+  }
+
+  const httpLaunch = resolveHttpMcpServerLaunchConfig(rawServer);
+  const httpReason = httpLaunch.ok ? "not an HTTP MCP server" : httpLaunch.reason;
+  logWarn(
+    `bundle-mcp: skipped server "${logServerName}" because ${stdioLaunch.reason} and ${httpReason}.`,
+  );
+  return null;
+}

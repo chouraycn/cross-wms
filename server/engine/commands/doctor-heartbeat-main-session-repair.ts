@@ -2,8 +2,8 @@
 /** Doctor repair for main sessions accidentally occupied by synthetic heartbeat transcripts. */
 import fs from "node:fs";
 import path from "node:path";
-import { asNullableObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import type { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { asNullableObjectRecord } from "@cdf-know/normalization-core/record-coerce";
+import type { note } from "@openclaw/terminal-core/note";
 import { isHeartbeatOkResponse, isHeartbeatUserMessage } from "@openclaw-src/auto-reply/heartbeat-filter.js";
 import { formatSessionArchiveTimestamp } from "@openclaw-src/config/sessions/artifacts.js";
 import { resolveMainSessionKey } from "@openclaw-src/config/sessions/main-session.js";

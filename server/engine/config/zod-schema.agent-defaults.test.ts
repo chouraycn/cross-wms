@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Covers agent default schema parsing and compatibility behavior.
 import { describe, expect, it } from "vitest";
 import { validateConfigObject } from "./validation.js";

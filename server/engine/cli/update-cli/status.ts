@@ -1,4 +1,3 @@
-// @ts-nocheck
 // `openclaw update status`: combines install metadata, configured channel, and remote update checks.
 import { getTerminalTableWidth, renderTable } from "../../../packages/terminal-core/src/table.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
@@ -42,7 +41,7 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
   }
 
   const root = await resolveUpdateRoot();
-  const config = await readSourceConfigBestEffort();
+  const config = await readSourceConfigBestEffort() as any;
   const configChannel = normalizeUpdateChannel(config.update?.channel);
 
   const update = await checkUpdateStatus({

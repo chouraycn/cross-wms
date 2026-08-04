@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * web_fetch built-in tool.
  *
@@ -6,7 +7,7 @@
  * Ported from openclaw/src/agents/tools/web-fetch.ts.
  *
  * cross-wms adjustments:
- * - Replaced `@openclaw/normalization-core/string-coerce` with the cross-wms stub at
+ * - Replaced `@cdf-know/normalization-core/string-coerce` with the cross-wms stub at
  *   `../../plugins/_openclaw__normalization_core__string_coerce.js`.
  * - Replaced `../../utils.js` import of `isRecord` with
  *   `../../infra/record-coerce.js` because cross-wms keeps `isRecord` there.

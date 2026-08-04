@@ -1,5 +1,5 @@
 /** Formats compact tool metadata labels for auto-reply progress/status messages. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import os from "node:os";
 
 function resolveEffectiveHomeDir(env: NodeJS.ProcessEnv, homedir: () => string): string | undefined {

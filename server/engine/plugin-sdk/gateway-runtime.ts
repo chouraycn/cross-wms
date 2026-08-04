@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Public gateway/client helpers for plugins that talk to the host gateway surface.
 
 export * from "../gateway/channel-status-patches.js";

@@ -1,20 +1,58 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/operator-approval-runtime-token.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Operator approval runtime token.
+// Uses an existing shared socket token when available, with a process-local fallback.
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { loadExecApprovals } from "../infra/exec-approvals.js";
 
-export function getOperatorApprovalRuntimeToken(..._args: unknown[]): unknown {
-  return undefined;
+const APPROVAL_RUNTIME_TOKEN_CONTEXT = "openclaw:gateway-approval-runtime-token:v1";
+
+let fallbackApprovalRuntimeToken: string | null = null;
+
+function deriveApprovalRuntimeToken(socketToken: string): string {
+  return createHmac("sha256", socketToken)
+    .update(APPROVAL_RUNTIME_TOKEN_CONTEXT)
+    .digest("base64url");
 }
 
-export function isOperatorApprovalRuntimeToken(..._args: unknown[]): unknown {
-  return false;
+function readSharedApprovalRuntimeToken(): string | null {
+  const token = loadExecApprovals().socket?.token?.trim();
+  return token ? deriveApprovalRuntimeToken(token) : null;
+}
+
+function tokenMatches(token: string, expected: string | null | undefined): boolean {
+  if (!expected) {
+    return false;
+  }
+  const tokenBytes = Buffer.from(token);
+  const expectedBytes = Buffer.from(expected);
+  // timingSafeEqual requires equal lengths; keep length rejection explicit instead of catching.
+  return tokenBytes.length === expectedBytes.length && timingSafeEqual(tokenBytes, expectedBytes);
+}
+
+/**
+ * Returns the token used to authorize local operator-approval clients.
+ */
+export function getOperatorApprovalRuntimeToken(): string {
+  const sharedToken = readSharedApprovalRuntimeToken();
+  if (sharedToken) {
+    return sharedToken;
+  }
+  fallbackApprovalRuntimeToken ??= randomBytes(32).toString("base64url");
+  return fallbackApprovalRuntimeToken;
+}
+
+/**
+ * Validates a presented loopback approval token without accepting empty or partial matches.
+ */
+export function isOperatorApprovalRuntimeToken(value: string | null | undefined): boolean {
+  const token = value?.trim();
+  if (!token) {
+    return false;
+  }
+  const sharedToken = readSharedApprovalRuntimeToken();
+  if (tokenMatches(token, sharedToken)) {
+    return true;
+  }
+  const fallbackToken =
+    fallbackApprovalRuntimeToken ?? (sharedToken ? null : getOperatorApprovalRuntimeToken());
+  return tokenMatches(token, fallbackToken);
 }

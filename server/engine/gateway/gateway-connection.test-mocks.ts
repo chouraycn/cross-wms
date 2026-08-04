@@ -1,19 +1,41 @@
-// 移植自 openclaw/src/gateway/gateway-connection.test-mocks.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-// 注意：本文件为测试基础设施 stub，仅用于占位，不包含实际测试逻辑。
+// Gateway connection/startup module mocks.
+// Provides shared Vitest mocks for connection and startup helper tests.
+import { vi, type Mock } from "vitest";
 
-export const loadConfigMock: unknown = undefined;
+type TestMock<TArgs extends unknown[] = unknown[], TResult = unknown> = Mock<
+  (...args: TArgs) => TResult
+>;
 
-export const resolveGatewayPortMock: unknown = undefined;
+export const loadConfigMock: TestMock = vi.fn();
+export const resolveGatewayPortMock: TestMock = vi.fn();
+export const resolveStateDirMock: TestMock<[NodeJS.ProcessEnv], string> = vi.fn(
+  (env: NodeJS.ProcessEnv) => env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw",
+);
+export const resolveConfigPathMock: TestMock<[NodeJS.ProcessEnv, string], string> = vi.fn(
+  (env: NodeJS.ProcessEnv, stateDir: string) =>
+    env.OPENCLAW_CONFIG_PATH ?? `${stateDir}/openclaw.json`,
+);
+export const pickPrimaryTailnetIPv4Mock: TestMock = vi.fn();
+export const pickPrimaryLanIPv4Mock: TestMock = vi.fn();
+export const isLoopbackHostMock: TestMock<[string], boolean> = vi.fn((host: string) =>
+  /^(localhost|127(?:\.\d{1,3}){3}|::1|\[::1\]|::ffff:127(?:\.\d{1,3}){3})$/i.test(
+    host.trim().replace(/\.+$/, ""),
+  ),
+);
+export const isSecureWebSocketUrlMock: TestMock<
+  [string, { allowPrivateWs?: boolean } | undefined],
+  boolean
+> = vi.fn((url: string, opts?: { allowPrivateWs?: boolean }) => {
+  const parsed = new URL(url);
+  if (parsed.protocol === "wss:") {
+    return true;
+  }
+  if (parsed.protocol !== "ws:") {
+    return false;
+  }
+  return opts?.allowPrivateWs === true || isLoopbackHostMock(parsed.hostname);
+});
 
-export const resolveStateDirMock: unknown = undefined;
-
-export const resolveConfigPathMock: unknown = undefined;
-
-export const pickPrimaryTailnetIPv4Mock: unknown = undefined;
-
-export const pickPrimaryLanIPv4Mock: unknown = undefined;
-
-export const isLoopbackHostMock: unknown = undefined;
-
-export const isSecureWebSocketUrlMock: unknown = undefined;
+vi.mock("../infra/tailnet.js", () => ({
+  pickPrimaryTailnetIPv4: pickPrimaryTailnetIPv4Mock,
+}));

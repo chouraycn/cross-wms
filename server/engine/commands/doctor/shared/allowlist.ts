@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Shared doctor allowlist predicates for normalized sender lists.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import type { DoctorAllowFromList } from "@openclaw-src/types.js";
 
 /** Return true when an allowFrom-like list has at least one normalized sender entry. */

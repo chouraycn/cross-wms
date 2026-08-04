@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Auth profile repair helpers.
@@ -8,7 +7,7 @@
 import {
   findNormalizedProviderKey,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
+} from "@cdf-know/model-catalog-core/provider-id";
 import type { AuthProfileConfig } from "../../config/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { resolveAuthProfileMetadata } from "./identity.js";

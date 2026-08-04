@@ -59,7 +59,7 @@ export async function safeRegisterPlugin(
     options.onValidated?.(normalized, result);
 
     // 4. 注册版本
-    getPluginVersionRegistry().register(normalized.id, normalized.version, 'install');
+    getPluginVersionRegistry().register(normalized.id, normalized.version ?? '', 'install');
 
     // 5. 注册回调
     options.onRegistered?.(normalized);

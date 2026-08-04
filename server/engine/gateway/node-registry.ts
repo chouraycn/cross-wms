@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/gateway/node-registry.ts。
 // 依赖调整：
 //  - node:crypto randomUUID → 直接使用 Node 内建
-//  - @openclaw/normalization-core/number-coercion 的 addTimerTimeoutGraceMs、resolveTimerTimeoutMs
+//  - @cdf-know/normalization-core/number-coercion 的 addTimerTimeoutGraceMs、resolveTimerTimeoutMs
 //    → 本地内联实现（cross-wms number-coercion.ts 未导出这两个函数）；
 //    isFutureDateTimestampMs、resolveExpiresAtMsFromDurationMs 来自 ../infra/number-coercion.js
 //  - ../logging/diagnostic-payload.js 的 logRejectedLargePayload
@@ -175,7 +175,7 @@ function normalizeString(value: unknown): string {
 }
 
 // 本地内联实现：将超时值钳制到 Node 安全定时器范围，支持默认值与最小值。
-// 替代 @openclaw/normalization-core/number-coercion 的 resolveTimerTimeoutMs。
+// 替代 @cdf-know/normalization-core/number-coercion 的 resolveTimerTimeoutMs。
 function resolveTimerTimeoutMs(
   timeoutMs: number | undefined,
   defaultMs: number,
@@ -189,7 +189,7 @@ function resolveTimerTimeoutMs(
 }
 
 // 本地内联实现：为超时值追加宽限期，钳制到安全范围。
-// 替代 @openclaw/normalization-core/number-coercion 的 addTimerTimeoutGraceMs。
+// 替代 @cdf-know/normalization-core/number-coercion 的 addTimerTimeoutGraceMs。
 function addTimerTimeoutGraceMs(timeoutMs: number, graceMs: number): number {
   const base = Math.max(0, Math.floor(timeoutMs));
   const grace = Math.max(0, Math.floor(graceMs));

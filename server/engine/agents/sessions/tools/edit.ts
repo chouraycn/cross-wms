@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Built-in edit session tool.
  *

@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Applies semantic validators for safe-bin command arguments.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 type SafeBinSemanticValidationParams = {
   binName?: string;

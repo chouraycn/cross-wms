@@ -1,6 +1,6 @@
 /** Provider-index-backed model catalog rows for bundled model-list output. */
-import { normalizeModelCatalogProviderId } from "@openclaw/model-catalog-core/model-catalog-refs";
-import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
+import { normalizeModelCatalogProviderId } from "@cdf-know/model-catalog-core/model-catalog-refs";
+import type { NormalizedModelCatalogRow } from "@cdf-know/model-catalog-core/model-catalog-types";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {
   loadOpenClawProviderIndex,

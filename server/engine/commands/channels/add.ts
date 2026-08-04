@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Implements guided and non-interactive `openclaw channels add` account setup.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { getBundledChannelSetupPlugin } from "@openclaw-src/channels/plugins/bundled.js";
 import { parseOptionalDelimitedEntries } from "@openclaw-src/channels/plugins/helpers.js";

@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Message-action TTS helpers lazily apply session/config driven speech output
 // to send payloads without loading TTS providers for ordinary sends.
 import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
-import { resolveStorePath } from "../../config/sessions.js";
+import { resolveStorePath } from "@openclaw-src/agents/subagent-announce-delivery.runtime.js";
 import { loadSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";

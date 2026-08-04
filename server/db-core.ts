@@ -12,8 +12,8 @@ import { initMarketplaceTables } from './db-marketplace.js';
 import { initProjectTables } from './db-project.js';
 import { initPluginTables } from './db-plugin.js';
 import { initSkillTables } from './db-skill.js';
-import { initGoalTables } from './engine/goalStore.js';
-import { initWebhookTables } from './dao/webhookDao.js';
+import { initGoalTables } from './engine/goalStoreTables.js';
+import { initWebhookTables } from './dao/webhookDaoTables.js';
 import { initArchiveTables } from './engine/messageArchive.js';
 import { initTaskMonitorTables } from './db-task-monitor.js';
 import { initWorkboardTables } from './db-workboard.js';
@@ -23,6 +23,7 @@ import { initStaffTables } from './db-staff.js';
 import { SQLiteEngine } from './storage/SQLiteEngine.js';
 import { FileStorage } from './storage/FileStorage.js';
 import { migrateSessionsToJsonl } from './storage/migration.js';
+import { runMigrations } from './migrations/runner.js';
 import type { IStorageEngine } from './storage/StorageEngine.js';
 import { configureSqliteConnectionPragmas } from './storage/sqliteWalMaintenance.js';
 import type { SqliteWalMaintenance } from './storage/sqliteWalMaintenance.js';
@@ -684,22 +685,38 @@ export function initDb(): Database.Database {
   restoreDatabaseFromBackup();
 
   // v2.3.3: 启动前先做 WAL checkpoint，防止上次崩溃残留的 WAL 导致数据丢失
+  // 优化：仅在 WAL 文件存在且较大（>1MB）时才做 checkpoint，避免每次启动都阻塞
   if (fs.existsSync(DB_PATH)) {
+    const walPath = DB_PATH + '-wal';
+    let needsCheckpoint = false;
     try {
-      const tempDb = new Database(DB_PATH);
-      tempDb.pragma('wal_checkpoint(TRUNCATE)');
-      tempDb.close();
+      if (fs.existsSync(walPath)) {
+        const walSize = fs.statSync(walPath).size;
+        if (walSize > 1024 * 1024) { // >1MB 才做 checkpoint
+          needsCheckpoint = true;
+        }
+      }
     } catch {
-      logger.info('[DB] WAL checkpoint 失败，尝试恢复...');
-      if (fs.existsSync(DB_BACKUP_PATH)) {
-        try { fs.unlinkSync(DB_PATH); } catch {}
-        try { fs.unlinkSync(DB_PATH + '-wal'); } catch {}
-        try { fs.unlinkSync(DB_PATH + '-shm'); } catch {}
-        try {
-          fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
-          logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
-        } catch (e: unknown) {
-          logger.error('[DB] 从备份恢复失败:', e instanceof Error ? e.message : String(e));
+      needsCheckpoint = true; // stat 失败，保守做 checkpoint
+    }
+
+    if (needsCheckpoint) {
+      try {
+        const tempDb = new Database(DB_PATH);
+        tempDb.pragma('wal_checkpoint(TRUNCATE)');
+        tempDb.close();
+      } catch {
+        logger.info('[DB] WAL checkpoint 失败，尝试恢复...');
+        if (fs.existsSync(DB_BACKUP_PATH)) {
+          try { fs.unlinkSync(DB_PATH); } catch {}
+          try { fs.unlinkSync(DB_PATH + '-wal'); } catch {}
+          try { fs.unlinkSync(DB_PATH + '-shm'); } catch {}
+          try {
+            fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
+            logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
+          } catch (e: unknown) {
+            logger.error('[DB] 从备份恢复失败:', e instanceof Error ? e.message : String(e));
+          }
         }
       }
     }
@@ -858,6 +875,14 @@ export function initDb(): Database.Database {
 
   // StaffDeck 表结构初始化（sd_ 前缀命名空间，与既有表完全隔离）
   initStaffTables(db);
+
+  // v9.1+: 增量迁移框架。首次运行时所有表已由上述 initXxxTables 创建，
+  // 迁移内部的 CREATE TABLE IF NOT EXISTS / ALTER 会幂等跳过，仅记录迁移版本。
+  try {
+    runMigrations(db);
+  } catch (e) {
+    logger.warn('[DB] 迁移运行器执行失败（可忽略）:', e);
+  }
 
   // v2.11+: 把 shared/data/builtin-skills.json 中的老技能一次性迁入新 user_skills + SKILL.md
   // 幂等：通过 app_settings 中的 builtin_skills_migrated_v1 标记。

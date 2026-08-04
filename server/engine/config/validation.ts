@@ -352,6 +352,49 @@ function walkConfigWithPath(
   }
 }
 
+// ===================== 兼容性导出 =====================
+// 以下函数为 openclaw 兼容性 API，委托给 validateConfig 实现。
+
+/**
+ * 对配置对象执行原始（raw）结构校验，不应用插件扩展。
+ */
+export function validateConfigObjectRaw(
+  config: unknown,
+  schema: z.ZodType,
+): ValidationResult {
+  return validateConfig(config, schema, { checkAllowedValues: false, checkColdImports: false });
+}
+
+/**
+ * 对配置对象执行原始结构校验，并应用插件扩展策略。
+ */
+export function validateConfigObjectRawWithPlugins(
+  config: unknown,
+  schema: z.ZodType,
+): ValidationResult {
+  return validateConfig(config, schema, { checkColdImports: false });
+}
+
+/**
+ * 对配置对象执行完整校验（含插件扩展与全部策略检查）。
+ */
+export function validateConfigObjectWithPlugins(
+  config: unknown,
+  schema: z.ZodType,
+): ValidationResult {
+  return validateConfig(config, schema);
+}
+
+/**
+ * 对配置对象执行标准校验（无插件扩展）。config.ts 通过 barrel 导出此名称。
+ */
+export function validateConfigObject(
+  config: unknown,
+  schema: z.ZodType,
+): ValidationResult {
+  return validateConfig(config, schema, { checkAllowedValues: false });
+}
+
 /** 从 zod schema 中获取对象 shape（如果 schema 是对象类型） */
 function getObjectSchemaShape(schema: z.ZodType): Record<string, unknown> | null {
   const internal = schema as unknown as { _zod?: { def: Record<string, unknown> }; _def?: Record<string, unknown>; shape?: Record<string, unknown> };

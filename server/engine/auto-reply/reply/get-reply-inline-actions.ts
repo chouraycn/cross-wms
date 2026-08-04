@@ -3,7 +3,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { collectTextContentBlocks } from '@openclaw-src/agents/content-blocks.js';
 import type { BlockReplyChunking } from '@openclaw-src/agents/embedded-agent-block-chunker.js';
 import { getChannelPlugin } from '@openclaw-src/channels/plugins/index.js';

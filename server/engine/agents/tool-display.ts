@@ -1,100 +1,115 @@
 /**
- * 工具调用显示格式化
+ * User-facing tool display formatter.
  *
- * 提供 agent 工具调用与结果的统一显示格式化能力，
- * 包括工具调用信息拼接、结果序列化与输出截断。
- *
- * 参考自 openclaw/src/agents/tool-display.ts。
+ * Builds redacted labels and compact details from tool metadata without affecting execution semantics.
  */
-import { logger } from '../../logger.js';
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { redactToolDetail } from "../logging/redact.js";
+import { shortenHomeInString } from "../utils.js";
+import {
+  defaultTitle,
+  formatToolDetailText,
+  formatDetailKey,
+  normalizeToolName,
+  resolveToolVerbAndDetailForArgs,
+} from "./tool-display-common.js";
+import { TOOL_DISPLAY_CONFIG } from "./tool-display-config.js";
+import type { ToolDetailMode } from "./tool-display-exec.js";
 
-/** truncateToolOutput 的默认最大长度。 */
-const DEFAULT_MAX_OUTPUT_LENGTH = 200;
+type ToolDisplay = {
+  name: string;
+  emoji: string;
+  title: string;
+  label: string;
+  verb?: string;
+  detail?: string;
+};
 
-/** 截断后追加的省略标记。 */
-const TRUNCATE_SUFFIX = '...';
+const FALLBACK = TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
+const TOOL_MAP = TOOL_DISPLAY_CONFIG.tools ?? {};
+const DETAIL_LABEL_OVERRIDES: Record<string, string> = {
+  agentId: "agent",
+  sessionKey: "session",
+  targetId: "target",
+  targetUrl: "url",
+  nodeId: "node",
+  requestId: "request",
+  messageId: "message",
+  threadId: "thread",
+  channelId: "channel",
+  guildId: "guild",
+  userId: "user",
+  runTimeoutSeconds: "timeout",
+  timeoutSeconds: "timeout",
+  includeTools: "tools",
+  pollQuestion: "poll",
+  maxChars: "max chars",
+};
+const MAX_DETAIL_ENTRIES = 8;
 
-/**
- * 格式化工具调用为可读字符串。
- *
- * 格式示例：
- *   [Tool] toolName(args)
- *   [Tool] toolName(args) => result
- *
- * args 与 result 会被序列化为紧凑 JSON，并按需截断。
- *
- * @param toolName 工具名称
- * @param args 工具调用参数
- * @param result 工具调用结果（可选）
- */
-export function formatToolCall(
-  toolName: string,
-  args: unknown,
-  result?: unknown,
-): string {
-  const name = typeof toolName === 'string' && toolName ? toolName : 'unknown';
-  const argsStr = formatValue(args);
-  const base = `[Tool] ${name}(${argsStr})`;
-  if (result === undefined) {
-    return base;
+/** Resolves the display model for a tool invocation. */
+export function resolveToolDisplay(params: {
+  name?: string;
+  args?: unknown;
+  meta?: string;
+  detailMode?: ToolDetailMode;
+}): ToolDisplay {
+  const name = normalizeToolName(params.name);
+  const key = normalizeLowercaseStringOrEmpty(name);
+  const spec = TOOL_MAP[key];
+  const emoji = spec?.emoji ?? FALLBACK.emoji ?? "🧩";
+  const title = spec?.title ?? defaultTitle(name);
+  const label = spec?.label ?? title;
+  const toolDisplayParts = resolveToolVerbAndDetailForArgs({
+    toolKey: key,
+    args: params.args,
+    meta: params.meta,
+    spec,
+    fallbackDetailKeys: FALLBACK.detailKeys,
+    detailMode: "summary",
+    toolDetailMode: params.detailMode,
+    detailMaxEntries: MAX_DETAIL_ENTRIES,
+    detailFormatKey: (raw) => formatDetailKey(raw, DETAIL_LABEL_OVERRIDES),
+  });
+  const { verb } = toolDisplayParts;
+  let { detail } = toolDisplayParts;
+
+  if (detail) {
+    detail = shortenHomeInString(detail);
   }
-  const resultStr = formatValue(result);
-  return `${base} => ${resultStr}`;
+
+  return {
+    name,
+    emoji,
+    title,
+    label,
+    verb,
+    detail,
+  };
+}
+
+/** Formats and redacts detail text for display. */
+export function formatToolDetail(display: ToolDisplay): string | undefined {
+  const detailRaw = display.detail ? redactToolDetail(display.detail) : undefined;
+  return formatToolDetailText(detailRaw);
+}
+
+/** Builds the compact one-line summary shown in transcripts and logs. */
+export function formatToolSummary(display: ToolDisplay): string {
+  const detail = formatToolDetail(display);
+  if (detail && (display.name === "bash" || display.name === "exec")) {
+    return `${display.emoji} ${detail}`;
+  }
+  return detail
+    ? `${display.emoji} ${display.label}: ${detail}`
+    : `${display.emoji} ${display.label}`;
 }
 
 /**
- * 格式化工具结果为可读字符串。
- *
- * 字符串原样返回（按需截断），其他类型序列化为 JSON。
- * @param result 工具调用结果
+ * Formats a tool display into a one-line call label used by streaming/transcript layers.
+ * Convenience wrapper around formatToolSummary for callers that have already resolved
+ * the display model. streaming.ts 通过 formatToolCall(resolveToolDisplay({...})) 调用。
  */
-export function formatToolResult(result: unknown): string {
-  if (typeof result === 'string') {
-    return result;
-  }
-  return formatValue(result);
+export function formatToolCall(display: ToolDisplay): string {
+  return formatToolSummary(display);
 }
-
-/**
- * 截断工具输出文本，超出最大长度时尾部追加省略标记。
- *
- * @param text 待截断的文本
- * @param maxLength 最大长度，默认 200
- */
-export function truncateToolOutput(text: string, maxLength?: number): string {
-  if (typeof text !== 'string') {
-    return '';
-  }
-  const limit = typeof maxLength === 'number' && maxLength > 0
-    ? maxLength
-    : DEFAULT_MAX_OUTPUT_LENGTH;
-  if (text.length <= limit) {
-    return text;
-  }
-  // 预留省略标记的长度
-  const budget = Math.max(limit - TRUNCATE_SUFFIX.length, 0);
-  return text.slice(0, budget) + TRUNCATE_SUFFIX;
-}
-
-/** 将任意值序列化为紧凑字符串，对象/数组使用 JSON。 */
-function formatValue(value: unknown): string {
-  if (value === undefined) {
-    return '';
-  }
-  if (value === null) {
-    return 'null';
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-logger.debug('[Agents:ToolDisplay] Module loaded');

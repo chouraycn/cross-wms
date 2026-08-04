@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Appends untrusted metadata to prompt text with an instruction-safe label. */
 import { normalizeInboundTextNewlines } from "./inbound-text.js";
 

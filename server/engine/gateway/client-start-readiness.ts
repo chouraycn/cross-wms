@@ -52,8 +52,8 @@ async function startGatewayClientWithReadinessWait(
   options: GatewayClientStartReadinessOptions = {},
 ): Promise<EventLoopReadyResult> {
   const result = await readinessProbe({
-    timeoutMs: options.readyTimeoutMs ?? options.timeoutMs,
-    pollIntervalMs: options.pollIntervalMs,
+    maxWaitMs: options.readyTimeoutMs ?? options.maxWaitMs,
+    intervalMs: options.intervalMs,
   });
   await client.start();
   return result;

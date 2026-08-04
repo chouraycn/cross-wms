@@ -1,140 +1,132 @@
-import { logger } from "../../../logger.js";
-import type { InboundEventMedia, InboundEventContext } from "./types.js";
+/**
+ * Channel inbound media normalization.
+ *
+ * Converts plugin attachment metadata into aligned prompt/context media payload fields.
+ */
+import { normalizeOptionalString as normalizeString } from "@cdf-know/normalization-core/string-coerce";
+import type { HistoryMediaEntry } from "../../auto-reply/reply/history.types.js";
+import type { InboundMediaFacts } from "../turn/types.js";
 
-export interface MediaProcessingOptions {
-  maxFileSize?: number;
-  allowedMimeTypes?: string[];
-  autoDownload?: boolean;
-  generateThumbnails?: boolean;
-}
-
-const defaultOptions: Required<MediaProcessingOptions> = {
-  maxFileSize: 50 * 1024 * 1024,
-  allowedMimeTypes: [],
-  autoDownload: false,
-  generateThumbnails: false,
+/**
+ * Attachment metadata accepted from channel plugins before core normalization.
+ */
+export type ChannelInboundMediaInput = {
+  path?: string | null;
+  url?: string | null;
+  contentType?: string | null;
+  kind?: InboundMediaFacts["kind"] | null;
+  transcribed?: boolean | null;
+  messageId?: string | null;
 };
 
-const mediaCache = new Map<string, InboundEventMedia>();
+/**
+ * Environment payload fields consumed by prompt/context builders for inbound media attachments.
+ */
+export type ChannelInboundMediaPayload = {
+  MediaPath?: string;
+  MediaUrl?: string;
+  MediaType?: string;
+  MediaPaths?: string[];
+  MediaUrls?: string[];
+  MediaTypes?: string[];
+  MediaTranscribedIndexes?: number[];
+};
 
-export function processMediaAttachments(
-  event: InboundEventContext,
-  options: MediaProcessingOptions = {}
-): InboundEventMedia[] {
-  const opts = { ...defaultOptions, ...options };
-  const media: InboundEventMedia[] = [];
-
-  if (event.attachments) {
-    for (const attachment of event.attachments) {
-      const processed = processSingleAttachment(attachment, opts);
-      if (processed) {
-        media.push(processed);
-        mediaCache.set(`${event.eventId}-${attachment.id}`, processed);
-      }
-    }
+function alignedStrings(values: Array<string | undefined>): string[] | undefined {
+  if (!values.some(Boolean)) {
+    return undefined;
   }
-
-  if (event.media) {
-    for (const m of event.media) {
-      if (validateMedia(m, opts)) {
-        media.push(m);
-      }
-    }
-  }
-
-  logger.debug(
-    `[InboundEvent:Media] Processed ${media.length} media items for ${event.eventId}`
-  );
-
-  return media;
+  // Preserve indexes across parallel Media* arrays so transcribed indexes and
+  // media metadata continue to refer to the same attachment.
+  return values.map((value) => value ?? "");
 }
 
-function processSingleAttachment(
-  attachment: { mimeType: string; size?: number; name: string; url?: string },
-  opts: Required<MediaProcessingOptions>
-): InboundEventMedia | null {
-  if (opts.maxFileSize && attachment.size && attachment.size > opts.maxFileSize) {
-    logger.warn(`[InboundEvent:Media] File too large: ${attachment.name}`);
-    return null;
+function normalizeKind(value: InboundMediaFacts["kind"] | null | undefined) {
+  return value ?? undefined;
+}
+
+function mediaType(media: InboundMediaFacts): string | undefined {
+  return media.contentType ?? media.kind;
+}
+
+/**
+ * Normalizes plugin-provided attachment facts into the channel turn media shape.
+ */
+export function toInboundMediaFacts(
+  media: readonly ChannelInboundMediaInput[] | null | undefined,
+  defaults: {
+    kind?: InboundMediaFacts["kind"];
+    messageId?: string;
+    transcribed?: (media: ChannelInboundMediaInput, index: number) => boolean;
+  } = {},
+): InboundMediaFacts[] {
+  if (!Array.isArray(media)) {
+    return [];
   }
+  return media.map((entry, index) => ({
+    path: normalizeString(entry.path),
+    url: normalizeString(entry.url),
+    contentType: normalizeString(entry.contentType),
+    kind: normalizeKind(entry.kind) ?? defaults.kind,
+    transcribed: entry.transcribed === true || defaults.transcribed?.(entry, index) === true,
+    messageId: normalizeString(entry.messageId) ?? defaults.messageId,
+  }));
+}
 
-  if (opts.allowedMimeTypes.length > 0) {
-    const mimeType = attachment.mimeType.toLowerCase();
-    const allowed = opts.allowedMimeTypes.some(
-      (t) => mimeType.startsWith(t.toLowerCase()) || mimeType === t.toLowerCase()
-    );
-    if (!allowed) {
-      logger.warn(`[InboundEvent:Media] MIME type not allowed: ${attachment.mimeType}`);
-      return null;
-    }
-  }
+/**
+ * Projects inbound attachment facts into transcript history without transient turn-only flags.
+ */
+export function toHistoryMediaEntries(
+  media: readonly ChannelInboundMediaInput[] | null | undefined,
+  defaults: {
+    kind?: InboundMediaFacts["kind"];
+    messageId?: string;
+  } = {},
+): HistoryMediaEntry[] {
+  return toInboundMediaFacts(media, defaults).map((entry) => ({
+    path: entry.path,
+    url: entry.url,
+    contentType: entry.contentType,
+    kind: entry.kind,
+    messageId: entry.messageId,
+  }));
+}
 
-  const type = detectMediaType(attachment.mimeType);
-
+/**
+ * Builds prompt environment media fields while keeping single-item legacy fields populated.
+ */
+export function buildChannelInboundMediaPayload(
+  media: readonly InboundMediaFacts[] | null | undefined,
+): ChannelInboundMediaPayload {
+  const entries = Array.isArray(media) ? media : [];
+  const transcribedIndexes = entries
+    .map((item, index) => (item.transcribed ? index : undefined))
+    .filter((index): index is number => index !== undefined);
   return {
-    type,
-    url: attachment.url,
-    mimeType: attachment.mimeType,
-    size: attachment.size,
-    filename: attachment.name,
+    MediaPath: entries[0]?.path,
+    MediaUrl: entries[0]?.url ?? entries[0]?.path,
+    MediaType: entries[0] ? mediaType(entries[0]) : undefined,
+    MediaPaths: alignedStrings(entries.map((item) => item.path)),
+    MediaUrls: alignedStrings(entries.map((item) => item.url ?? item.path)),
+    MediaTypes: alignedStrings(entries.map(mediaType)),
+    MediaTranscribedIndexes: transcribedIndexes.length > 0 ? transcribedIndexes : undefined,
   };
 }
 
-function detectMediaType(mimeType: string): InboundEventMedia["type"] {
-  const type = mimeType.toLowerCase();
-  if (type.startsWith("image/")) return "image";
-  if (type.startsWith("video/")) return "video";
-  if (type.startsWith("audio/")) return "audio";
-  return "file";
-}
-
-function validateMedia(
-  media: InboundEventMedia,
-  opts: Required<MediaProcessingOptions>
-): boolean {
-  if (opts.maxFileSize && media.size && media.size > opts.maxFileSize) {
-    return false;
-  }
-  if (opts.allowedMimeTypes.length > 0 && media.mimeType) {
-    const mimeType = media.mimeType.toLowerCase();
-    return opts.allowedMimeTypes.some(
-      (t) => mimeType.startsWith(t.toLowerCase()) || mimeType === t.toLowerCase()
-    );
-  }
-  return true;
-}
-
-export function extractMediaText(media: InboundEventMedia): string | null {
-  if (media.type === "file" && media.filename) {
-    return media.filename;
-  }
-  return null;
-}
-
-export function getMediaByEventId(eventId: string): InboundEventMedia[] {
-  const results: InboundEventMedia[] = [];
-  for (const [key, media] of mediaCache) {
-    if (key.startsWith(`${eventId}-`)) {
-      results.push(media);
-    }
-  }
-  return results;
-}
-
-export function clearMediaCache(): void {
-  mediaCache.clear();
-}
-
-export function getMediaTypeCount(media: InboundEventMedia[]): {
-  images: number;
-  videos: number;
-  audio: number;
-  files: number;
-} {
-  return {
-    images: media.filter((m) => m.type === "image").length,
-    videos: media.filter((m) => m.type === "video").length,
-    audio: media.filter((m) => m.type === "audio").length,
-    files: media.filter((m) => m.type === "file").length,
+export async function processMediaAttachments(params: {
+  media: readonly ChannelInboundMediaInput[] | null | undefined;
+  defaults?: {
+    kind?: InboundMediaFacts["kind"];
+    messageId?: string;
+    transcribed?: (media: ChannelInboundMediaInput, index: number) => boolean;
   };
+}): Promise<{
+  facts: InboundMediaFacts[];
+  history: HistoryMediaEntry[];
+  payload: ChannelInboundMediaPayload;
+}> {
+  const facts = toInboundMediaFacts(params.media, params.defaults);
+  const history = toHistoryMediaEntries(params.media, params.defaults);
+  const payload = buildChannelInboundMediaPayload(facts);
+  return { facts, history, payload };
 }

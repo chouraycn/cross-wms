@@ -1,6 +1,4 @@
-import { logger } from '../../logger.js';
-import type { SecurityFinding, SecurityLevel } from './types.js';
-
+// Performs lightweight safe-regex checks for user-supplied patterns.
 type QuantifierRead = {
   consumed: number;
   minRepeat: number;
@@ -25,21 +23,15 @@ type ParseFrame = {
 };
 
 type PatternToken =
-  | { kind: 'simple-token' }
-  | { kind: 'group-open' }
-  | { kind: 'group-close' }
-  | { kind: 'alternation' }
-  | { kind: 'quantifier'; quantifier: QuantifierRead };
+  | { kind: "simple-token" }
+  | { kind: "group-open" }
+  | { kind: "group-close" }
+  | { kind: "alternation" }
+  | { kind: "quantifier"; quantifier: QuantifierRead };
 
 const SAFE_REGEX_CACHE_MAX = 256;
 const SAFE_REGEX_TEST_WINDOW = 2048;
-
-export type SafeRegexRejectReason =
-  | 'empty'
-  | 'unsafe-nested-repetition'
-  | 'invalid-regex'
-  | 'too-long'
-  | 'unsafe-pattern';
+export type SafeRegexRejectReason = "empty" | "unsafe-nested-repetition" | "invalid-regex";
 
 export type SafeRegexCompileResult =
   | {
@@ -53,17 +45,9 @@ export type SafeRegexCompileResult =
       source: string;
       flags: string;
       reason: SafeRegexRejectReason;
-      detail?: string;
     };
 
 const safeRegexCache = new Map<string, SafeRegexCompileResult>();
-
-const DANGEROUS_PATTERNS = [
-  { pattern: /\(.*\)[*+]/, name: 'group repetition' },
-  { pattern: /\[.*\][*+].*\[.*\][*+]/, name: 'multiple character class repetition' },
-  { pattern: /\.\*.*\.\*/, name: 'multiple wildcard repetition' },
-  { pattern: /\(.*\|.*\)[*+]/, name: 'alternation with repetition' },
-];
 
 function createParseFrame(): ParseFrame {
   return {
@@ -103,17 +87,17 @@ function recordAlternative(frame: ParseFrame): void {
 
 function readQuantifier(source: string, index: number): QuantifierRead | null {
   const ch = source[index];
-  const consumed = source[index + 1] === '?' ? 2 : 1;
-  if (ch === '*') {
+  const consumed = source[index + 1] === "?" ? 2 : 1;
+  if (ch === "*") {
     return { consumed, minRepeat: 0, maxRepeat: null };
   }
-  if (ch === '+') {
+  if (ch === "+") {
     return { consumed, minRepeat: 1, maxRepeat: null };
   }
-  if (ch === '?') {
+  if (ch === "?") {
     return { consumed, minRepeat: 0, maxRepeat: 1 };
   }
-  if (ch !== '{') {
+  if (ch !== "{") {
     return null;
   }
 
@@ -127,7 +111,7 @@ function readQuantifier(source: string, index: number): QuantifierRead | null {
 
   const minRepeat = Number.parseInt(source.slice(index + 1, i), 10);
   let maxRepeat: number | null = minRepeat;
-  if (source[i] === ',') {
+  if (source[i] === ",") {
     i += 1;
     const maxStart = i;
     while (i < source.length && /\d/.test(source[i])) {
@@ -136,11 +120,11 @@ function readQuantifier(source: string, index: number): QuantifierRead | null {
     maxRepeat = i === maxStart ? null : Number.parseInt(source.slice(maxStart, i), 10);
   }
 
-  if (source[i] !== '}') {
+  if (source[i] !== "}") {
     return null;
   }
   i += 1;
-  if (source[i] === '?') {
+  if (source[i] === "?") {
     i += 1;
   }
   if (maxRepeat !== null && maxRepeat < minRepeat) {
@@ -158,51 +142,51 @@ function tokenizePattern(source: string): PatternToken[] {
     const ch = source[i];
 
     if (inCharClass) {
-      if (ch === '\\') {
+      if (ch === "\\") {
         i += 1;
         continue;
       }
-      if (ch === ']') {
+      if (ch === "]") {
         inCharClass = false;
       }
       continue;
     }
 
-    if (ch === '\\') {
+    if (ch === "\\") {
       i += 1;
-      tokens.push({ kind: 'simple-token' });
+      tokens.push({ kind: "simple-token" });
       continue;
     }
 
-    if (ch === '[') {
+    if (ch === "[") {
       inCharClass = true;
-      tokens.push({ kind: 'simple-token' });
+      tokens.push({ kind: "simple-token" });
       continue;
     }
 
-    if (ch === '(') {
-      tokens.push({ kind: 'group-open' });
+    if (ch === "(") {
+      tokens.push({ kind: "group-open" });
       continue;
     }
 
-    if (ch === ')') {
-      tokens.push({ kind: 'group-close' });
+    if (ch === ")") {
+      tokens.push({ kind: "group-close" });
       continue;
     }
 
-    if (ch === '|') {
-      tokens.push({ kind: 'alternation' });
+    if (ch === "|") {
+      tokens.push({ kind: "alternation" });
       continue;
     }
 
     const quantifier = readQuantifier(source, i);
     if (quantifier) {
-      tokens.push({ kind: 'quantifier', quantifier });
+      tokens.push({ kind: "quantifier", quantifier });
       i += quantifier.consumed - 1;
       continue;
     }
 
-    tokens.push({ kind: 'simple-token' });
+    tokens.push({ kind: "simple-token" });
   }
 
   return tokens;
@@ -231,17 +215,17 @@ function analyzeTokensForNestedRepetition(tokens: PatternToken[]): boolean {
   };
 
   for (const token of tokens) {
-    if (token.kind === 'simple-token') {
+    if (token.kind === "simple-token") {
       emitSimpleToken();
       continue;
     }
 
-    if (token.kind === 'group-open') {
+    if (token.kind === "group-open") {
       frames.push(createParseFrame());
       continue;
     }
 
-    if (token.kind === 'group-close') {
+    if (token.kind === "group-close") {
       if (frames.length > 1) {
         const frame = frames.pop() as ParseFrame;
         if (frame.hasAlternation) {
@@ -267,7 +251,7 @@ function analyzeTokensForNestedRepetition(tokens: PatternToken[]): boolean {
       continue;
     }
 
-    if (token.kind === 'alternation') {
+    if (token.kind === "alternation") {
       const frame = frames[frames.length - 1];
       frame.hasAlternation = true;
       recordAlternative(frame);
@@ -310,99 +294,9 @@ function analyzeTokensForNestedRepetition(tokens: PatternToken[]): boolean {
   return false;
 }
 
-export function hasNestedRepetition(source: string): boolean {
-  return analyzeTokensForNestedRepetition(tokenizePattern(source));
-}
-
-export function detectRedoSrisks(source: string): string[] {
-  const risks: string[] = [];
-
-  if (hasNestedRepetition(source)) {
-    risks.push('Nested repetition detected - potential catastrophic backtracking');
-  }
-
-  for (const dangerous of DANGEROUS_PATTERNS) {
-    if (dangerous.pattern.test(source)) {
-      risks.push(`Potential ReDoS pattern: ${dangerous.name}`);
-    }
-  }
-
-  return risks;
-}
-
-export function compileSafeRegexDetailed(
-  source: string,
-  flags = '',
-): SafeRegexCompileResult {
-  const trimmed = source.trim();
-  if (!trimmed) {
-    return { regex: null, source: trimmed, flags, reason: 'empty' };
-  }
-
-  if (trimmed.length > 4096) {
-    return {
-      regex: null,
-      source: trimmed,
-      flags,
-      reason: 'too-long',
-      detail: 'Pattern exceeds maximum length of 4096 characters',
-    };
-  }
-
-  const cacheKey = `${flags}::${trimmed}`;
-  if (safeRegexCache.has(cacheKey)) {
-    return (
-      safeRegexCache.get(cacheKey) ?? {
-        regex: null,
-        source: trimmed,
-        flags,
-        reason: 'invalid-regex',
-      }
-    );
-  }
-
-  let result: SafeRegexCompileResult;
-
-  const redoSrisks = detectRedoSrisks(trimmed);
-  if (redoSrisks.length > 0) {
-    result = {
-      regex: null,
-      source: trimmed,
-      flags,
-      reason: 'unsafe-nested-repetition',
-      detail: redoSrisks.join('; '),
-    };
-  } else {
-    try {
-      result = { regex: new RegExp(trimmed, flags), source: trimmed, flags, reason: null };
-    } catch (err) {
-      result = {
-        regex: null,
-        source: trimmed,
-        flags,
-        reason: 'invalid-regex',
-        detail: err instanceof Error ? err.message : String(err),
-      };
-    }
-  }
-
-  safeRegexCache.set(cacheKey, result);
-  if (safeRegexCache.size > SAFE_REGEX_CACHE_MAX) {
-    const oldestKey = safeRegexCache.keys().next().value;
-    if (oldestKey) {
-      safeRegexCache.delete(oldestKey);
-    }
-  }
-
-  if (result.reason) {
-    logger.debug(`[Security:SafeRegex] Rejected pattern: ${result.reason}`, result.detail);
-  }
-
-  return result;
-}
-
-export function compileSafeRegex(source: string, flags = ''): RegExp | null {
-  return compileSafeRegexDetailed(source, flags).regex;
+function testRegexFromStart(regex: RegExp, value: string): boolean {
+  regex.lastIndex = 0;
+  return regex.test(value);
 }
 
 export function testRegexWithBoundedInput(
@@ -414,58 +308,59 @@ export function testRegexWithBoundedInput(
     return false;
   }
   if (input.length <= maxWindow) {
-    regex.lastIndex = 0;
-    return regex.test(input);
+    return testRegexFromStart(regex, input);
   }
   const head = input.slice(0, maxWindow);
-  regex.lastIndex = 0;
-  if (regex.test(head)) {
+  if (testRegexFromStart(regex, head)) {
     return true;
   }
-  regex.lastIndex = 0;
-  return regex.test(input.slice(-maxWindow));
+  return testRegexFromStart(regex, input.slice(-maxWindow));
 }
 
-export function auditRegexPattern(pattern: string, patternId: string): SecurityFinding[] {
-  const findings: SecurityFinding[] = [];
-  const result = compileSafeRegexDetailed(pattern);
+export function hasNestedRepetition(source: string): boolean {
+  // Conservative parser: tokenize first, then check if repeated tokens/groups are repeated again.
+  // Non-goal: complete regex AST support; keep strict enough for config safety checks.
+  return analyzeTokensForNestedRepetition(tokenizePattern(source));
+}
 
-  if (result.reason === 'unsafe-nested-repetition') {
-    const severity: SecurityLevel = 'high';
-    findings.push({
-      id: `regex-redos-${patternId}`,
-      title: `Potential ReDoS vulnerability in pattern: ${patternId}`,
-      severity,
-      category: 'regex',
-      description: `Regular expression pattern may be vulnerable to Regular Expression Denial of Service (ReDoS) attacks. ${result.detail ?? ''}`,
-      recommendation: 'Rewrite the pattern to avoid nested repetition and catastrophic backtracking. Use compileSafeRegex to validate patterns before use.',
-      metadata: { patternId, pattern, detail: result.detail },
-    });
+export function compileSafeRegexDetailed(source: string, flags = ""): SafeRegexCompileResult {
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return { regex: null, source: trimmed, flags, reason: "empty" };
+  }
+  const cacheKey = `${flags}::${trimmed}`;
+  if (safeRegexCache.has(cacheKey)) {
+    return (
+      safeRegexCache.get(cacheKey) ?? {
+        regex: null,
+        source: trimmed,
+        flags,
+        reason: "invalid-regex",
+      }
+    );
   }
 
-  if (result.reason === 'too-long') {
-    findings.push({
-      id: `regex-too-long-${patternId}`,
-      title: `Regex pattern too long: ${patternId}`,
-      severity: 'medium',
-      category: 'regex',
-      description: result.detail ?? 'Pattern exceeds maximum safe length',
-      recommendation: 'Simplify the regular expression pattern or split it into multiple smaller patterns.',
-      metadata: { patternId, patternLength: pattern.length },
-    });
+  let result: SafeRegexCompileResult;
+  if (hasNestedRepetition(trimmed)) {
+    result = { regex: null, source: trimmed, flags, reason: "unsafe-nested-repetition" };
+  } else {
+    try {
+      result = { regex: new RegExp(trimmed, flags), source: trimmed, flags, reason: null };
+    } catch {
+      result = { regex: null, source: trimmed, flags, reason: "invalid-regex" };
+    }
   }
 
-  if (result.reason === 'invalid-regex') {
-    findings.push({
-      id: `regex-invalid-${patternId}`,
-      title: `Invalid regex pattern: ${patternId}`,
-      severity: 'low',
-      category: 'regex',
-      description: result.detail ?? 'Pattern is not a valid regular expression',
-      recommendation: 'Fix the regular expression syntax errors.',
-      metadata: { patternId },
-    });
+  safeRegexCache.set(cacheKey, result);
+  if (safeRegexCache.size > SAFE_REGEX_CACHE_MAX) {
+    const oldestKey = safeRegexCache.keys().next().value;
+    if (oldestKey) {
+      safeRegexCache.delete(oldestKey);
+    }
   }
+  return result;
+}
 
-  return findings;
+export function compileSafeRegex(source: string, flags = ""): RegExp | null {
+  return compileSafeRegexDetailed(source, flags).regex;
 }

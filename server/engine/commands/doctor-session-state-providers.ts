@@ -1,8 +1,8 @@
 // @ts-nocheck
 /** Doctor repair for stale plugin-owned routing state persisted in session entries. */
-import { normalizeOptionalString as normalizeString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntriesLower } from "@openclaw/normalization-core/string-normalization";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { normalizeOptionalString as normalizeString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntriesLower } from "@cdf-know/normalization-core/string-normalization";
+import { note } from "@openclaw/terminal-core/note";
 import {
   resolveAgentModelFallbacksOverride,
   resolveDefaultAgentId,

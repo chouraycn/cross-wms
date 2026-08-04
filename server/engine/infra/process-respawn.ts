@@ -1,35 +1,10 @@
-// 当没有管理器处理重启时重新生成网关进程。
-// 移植自 openclaw/src/infra/process-respawn.ts
-//
-// 降级说明：
-//  - @openclaw/normalization-core/string-coerce → ./string-coerce.js
-//  - triggerOpenClawRestart 来自 ./restart.js，cross-wms 未移植此函数，
-//    本地降级 stub 返回失败
+// Respawns the gateway process when no supervisor handles restart.
 import { spawn, type ChildProcess } from "node:child_process";
-import { normalizeOptionalLowercaseString } from "./string-coerce.js";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { isContainerEnvironment } from "./container-environment.js";
 import { formatErrorMessage } from "./errors.js";
+import { triggerOpenClawRestart } from "./restart.js";
 import { detectRespawnSupervisor } from "./supervisor-markers.js";
-import type { RestartAttempt } from "./restart.types.js";
-
-// ============================================================================
-// 降级 stub —— triggerOpenClawRestart（cross-wms 未移植完整 supervisor 重启逻辑）
-// ============================================================================
-
-/**
- * 触发 OpenClaw 重启（降级 stub）。
- * openclaw 的 ./restart.js 导出此函数，cross-wms 未移植完整的 supervisor 重启逻辑。
- * 降级为返回失败，调用方应回退到 in-process 重启。
- */
-function triggerOpenClawRestart(): RestartAttempt {
-  return {
-    ok: false,
-    method: "supervisor",
-    detail: "triggerOpenClawRestart not implemented in cross-wms",
-  };
-}
-
-// ============================================================================
 
 type RespawnMode = "spawned" | "supervised" | "disabled" | "failed";
 
@@ -101,7 +76,7 @@ export function restartGatewayProcessWithFreshPid(
     // Avoid detached kickstart/start handoffs here so restart timing stays tied
     // to launchd's native supervision rather than a second helper process.
     if (supervisor === "schtasks") {
-      const restart = triggerOpenClawRestart();
+      const restart = triggerOpenClawRestart() as any;
       if (!restart.ok) {
         return {
           mode: "failed",
@@ -151,7 +126,7 @@ export function respawnGatewayProcessForUpdate(
   });
   if (supervisor) {
     if (supervisor === "schtasks") {
-      const restart = triggerOpenClawRestart();
+      const restart = triggerOpenClawRestart() as any;
       if (!restart.ok) {
         return {
           mode: "failed",

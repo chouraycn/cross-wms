@@ -403,6 +403,24 @@ export type PluginManifest = {
   /** Manifest-owned config behavior consumed by generic core helpers. */
   configContracts?: PluginManifestConfigContracts;
   channelConfigs?: Record<string, PluginManifestChannelConfig>;
+  /** Plugin-owned capability declarations (tools, hooks, providers, channels). */
+  capabilities?: any[];
+  /** Plugin dependencies (ids with optional version ranges). */
+  dependencies?: any[];
+  /** Entry module path for the plugin runtime. */
+  entry?: string;
+  /** Alternate entrypoint module path (legacy alias for entry). */
+  entrypoint?: string;
+  /** Risk level classification for sandbox/permission decisions. */
+  riskLevel?: string;
+  /** Permission declarations required by this plugin. */
+  permissions?: any[];
+  /** Tool definitions owned by this plugin. */
+  tools?: any[];
+  /** Arbitrary metadata bag for marketplace/catalog display. */
+  metadata?: Record<string, unknown>;
+  /** Human-readable display name shown in UI surfaces. */
+  displayName?: string;
 };
 
 export type PluginManifestContracts = {

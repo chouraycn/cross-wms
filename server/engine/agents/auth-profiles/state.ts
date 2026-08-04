@@ -6,11 +6,11 @@
  * separately from secret-bearing credentials.
  */
 import { isDeepStrictEqual } from "node:util";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { asFiniteNumber } from "@cdf-know/normalization-core/number-coercion";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@cdf-know/normalization-core/string-normalization";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { AUTH_STORE_VERSION } from "./constants.js";
 import { readPersistedAuthProfileStateRaw, writePersistedAuthProfileStateRaw } from "./sqlite.js";

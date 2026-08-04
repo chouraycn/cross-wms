@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { formatErrorMessage } from "@openclaw-src/infra/errors.js";

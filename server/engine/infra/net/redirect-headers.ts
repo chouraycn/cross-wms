@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Redirect header helpers retain only cross-origin-safe request headers.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeHeadersInitForFetch } from "../fetch-headers.js";
 
 const CROSS_ORIGIN_REDIRECT_SAFE_HEADERS = new Set([
@@ -31,7 +30,7 @@ export function retainSafeHeadersForCrossOriginRedirect(
   }
   const incoming = new Headers(normalizeHeadersInitForFetch(headers));
   const safeHeaders: Record<string, string> = {};
-  for (const [key, value] of incoming.entries()) {
+  for (const [key, value] of (incoming as any).entries()) {
     // Normalize lookup only; preserve the outgoing casing produced by Headers.
     if (CROSS_ORIGIN_REDIRECT_SAFE_HEADERS.has(normalizeLowercaseStringOrEmpty(key))) {
       safeHeaders[key] = value;

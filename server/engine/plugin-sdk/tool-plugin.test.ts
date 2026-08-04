@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests tool plugin schema helpers and SDK tool registration contracts.
  */

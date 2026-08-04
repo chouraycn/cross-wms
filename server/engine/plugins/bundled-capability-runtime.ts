@@ -33,6 +33,10 @@ import {
 } from "./tool-contracts.js";
 import type { OpenClawPluginDefinition, OpenClawPluginModule } from "./types.js";
 
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const log = createSubsystemLogger("plugins");
 
 const CAPABILITY_VITEST_SHIM_ALIASES = [

@@ -2,7 +2,7 @@
 // Summaries compact repeated auth/runtime failures while preserving enough context for operators.
 
 import fs from "node:fs/promises";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { classifyOAuthRefreshFailureReason } from "@openclaw-src/agents/auth-profiles/oauth-refresh-failure.js";
 
 /** Reads the last non-empty lines from a gateway log file, returning an empty list on read failure. */

@@ -1,7 +1,7 @@
 // Implements identity metadata updates for configured agents.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { identityHasValues, parseIdentityMarkdown } from "@openclaw-src/agents/identity-file.js";
 import { DEFAULT_IDENTITY_FILENAME } from "@openclaw-src/agents/workspace.js";

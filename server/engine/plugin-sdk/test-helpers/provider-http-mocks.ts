@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared HTTP fetch mock helpers for provider contract tests.
  */

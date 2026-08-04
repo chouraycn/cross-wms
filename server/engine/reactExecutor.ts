@@ -37,7 +37,7 @@ import { mcpClientManager } from './mcpClientManager.js';
 import { compressContextWithSummary } from './contextCompress.js';
 import { truncateContextForModel, estimateMessagesTokens, type ApiMessage } from './contextTruncate.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
-import type { ExecutionStrategyOptions } from './executionStrategy.js';
+import type { ExecutionStrategyOptions } from './execution-strategy-types.js';
 import type { SkillDefinition } from '../types/skill-runtime.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
 import { LoopDetector } from './loopDetector.js';
@@ -198,6 +198,8 @@ export class ReActExecutor {
   private _extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 数字员工（per-call）技能权限配置 */
   private _skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
+  /** 数字员工技能调用事件回调（写侧统计来源），由 ExecutionStrategyOptions 注入 */
+  private _onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
 
   // 懒加载访问器 — 避免构造函数中一次性创建所有对象
   private get observer(): Observer {
@@ -239,6 +241,7 @@ export class ReActExecutor {
       staffMcpManager: this._staffMcpManager,
       extraSkillExecutor: this._extraSkillExecutor,
       skillPermissionConfig: this._skillPermissionConfig,
+      onSkillExecuted: this._onSkillExecuted,
     }));
   }
   private get autoCompressor(): AutoCompressor {
@@ -485,10 +488,11 @@ ${stepsText}`;
       sessionId,
     } = options;
 
-    // 桥接数字员工（per-call）注入：MCP manager / 物化技能执行器 / 技能权限
+    // 桥接数字员工（per-call）注入：MCP manager / 物化技能执行器 / 技能权限 / HTTP 工具
     this._staffMcpManager = options.staffMcpManager;
     this._extraSkillExecutor = options.extraSkillExecutor;
     this._skillPermissionConfig = options.skillPermissionConfig;
+    this._onSkillExecuted = options.onSkillExecuted;
 
     // 推送初始 SSE 反馈 — 让用户在首 token 到达前就看到"AI 正在处理"
     if (onSSEEvent) {
@@ -509,13 +513,14 @@ ${stepsText}`;
     // v9.1 [一]: 重置执行轨迹
     this._scratchpad = [];
 
-    // 获取工具定义（内置 + 插件 + MCP + 数字员工 per-call 注入）
+    // 获取工具定义（内置 + 插件 + MCP + 数字员工 per-call 注入：MCP/技能/HTTP工具）
     const builtinTools = getBuiltinToolDefinitions();
     const pluginTools = pluginRegistry.getActiveTools();
     const mcpTools = mcpClientManager.getMcpTools();
     const staffMcpTools = options.staffMcpManager?.getMcpTools() ?? [];
     const extraSkillTools = options.extraSkills ? options.extraSkills.map((def) => skillDefinitionToToolDef(def)) : [];
-    const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...staffMcpTools, ...extraSkillTools];
+    const staffHttpTools = options.staffHttpTools ?? [];
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...staffMcpTools, ...extraSkillTools, ...staffHttpTools];
 
     // 复制消息列表
     const currentMessages = [...messages];
@@ -608,7 +613,7 @@ ${stepsText}`;
         }
         
         // v9.2: 如果 autoCompressor 判断需要压缩，先获取压缩计划
-        let compressionPlan = null;
+        let compressionPlan: any = null;
         if (this.autoCompressor.shouldCompress()) {
           try {
             compressionPlan = this.autoCompressor.getCompressionPlan(currentMessages);

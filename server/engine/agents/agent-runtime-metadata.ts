@@ -1,11 +1,44 @@
-/**
- * 移植自 openclaw/src/agents/agent-runtime-metadata.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
+/** Resolves agent runtime metadata from model/provider policy and ACP session overlays. */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { applyAcpRuntimeOverlay, type AgentRuntimeMetadata } from "./acp-runtime-overlay.js";
+import { resolveAgentHarnessPolicy } from "./harness/policy.js";
+import { resolveDefaultModelForAgent } from "./model-selection.js";
 
-export function resolveModelAgentRuntimeMetadata(..._args: unknown[]): unknown {
-  return undefined;
+/** Resolves the runtime id/source that should be reported for a model-backed agent session. */
+export function resolveModelAgentRuntimeMetadata(params: {
+  cfg: OpenClawConfig;
+  agentId: string;
+  provider?: string;
+  model?: string;
+  sessionKey?: string;
+  /**
+   * True when the loaded session entry has persisted ACP metadata. ACP-shaped
+   * keys without this marker can be bridge sessions that use the configured
+   * model/runtime.
+   */
+  acpRuntime?: boolean;
+  /**
+   * The ACP backend identifier stored on the session entry (`entry.acp.backend`).
+   * When provided for an ACP-keyed session, the overlay reports this value as the
+   * runtime id instead of the generic fallback "acpx", so sessions backed by a
+   * non-default registered ACP backend are classified correctly.
+   */
+  acpBackend?: string;
+}): AgentRuntimeMetadata {
+  const resolved =
+    params.provider && params.model
+      ? { provider: params.provider, model: params.model }
+      : resolveDefaultModelForAgent({ cfg: params.cfg, agentId: params.agentId });
+  const policy = resolveAgentHarnessPolicy({
+    provider: resolved.provider,
+    modelId: resolved.model,
+    config: params.cfg,
+    agentId: params.agentId,
+    sessionKey: params.sessionKey,
+  });
+  const meta: AgentRuntimeMetadata = {
+    id: policy.runtime,
+    source: policy.runtimeSource ?? "implicit",
+  };
+  return applyAcpRuntimeOverlay(meta, params.sessionKey, params.acpRuntime, params.acpBackend);
 }

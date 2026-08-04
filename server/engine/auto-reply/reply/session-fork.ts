@@ -1,4 +1,3 @@
-// @ts-nocheck
 import path from "node:path";
 import { resolveStorePath } from '@openclaw-src/config/sessions/paths.js';
 import { updateSessionStore } from '@openclaw-src/config/sessions/store.js';

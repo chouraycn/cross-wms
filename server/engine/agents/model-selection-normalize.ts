@@ -3,7 +3,7 @@
  *
  * Normalizes provider/model references and configured model ids.
  * Simplified for cross-wms: inlines provider normalization instead of
- * depending on @openclaw/model-catalog-core.
+ * depending on @cdf-know/model-catalog-core.
  */
 
 export type ModelRef = {

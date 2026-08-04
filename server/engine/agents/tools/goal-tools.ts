@@ -11,7 +11,7 @@ import {
   MODEL_UPDATABLE_SESSION_GOAL_STATUSES,
   updateSessionGoalStatus,
 } from "../../config/sessions/goals.js";
-import { resolveStorePath } from "../../config/sessions/paths.js";
+import { resolveStorePath } from "@openclaw-src/agents/subagent-announce-delivery.runtime.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
 import { stringEnum } from "../schema/typebox.js";

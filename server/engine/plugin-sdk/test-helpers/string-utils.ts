@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared string helpers for plugin SDK contract tests.
  */

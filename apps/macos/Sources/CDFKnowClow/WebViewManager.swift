@@ -14,12 +14,23 @@ final class WebViewManager: NSObject {
     private var loadAttempts = 0
     private let maxLoadAttempts = 3
 
+    /// v1.7.20: 首次加载完成回调（用于 SplashScreenController 等待 WebView 渲染完成后再切换视图）
+    private var hasNotifiedLoad = false
+    var onFirstLoadFinished: (() -> Void)?
+
+    /// 前端 React 渲染完成回调（main.tsx 通过 IPC reactReady 通知）
+    var onReactReady: (() -> Void)?
+
     override init() {
         super.init()
         self.configuration = makeConfiguration()
         self.webView = WKWebView(frame: .zero, configuration: self.configuration)
         self.webView.navigationDelegate = self
         self.webView.uiDelegate = self
+        // 将 IPCHandler 的 reactReady 信号转发给 WebViewManager 的回调
+        ipcHandler.onReactReady = { [weak self] in
+            self?.onReactReady?()
+        }
     }
 
     func getWebView() -> WKWebView {
@@ -52,6 +63,8 @@ final class WebViewManager: NSObject {
         }
         """) { _, _ in }
     }
+
+    // MARK: - Configuration
 
     private func makeConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
@@ -86,6 +99,7 @@ final class WebViewManager: NSObject {
 
     func loadMainAppDirect() {
         loadAttempts = 0
+        hasNotifiedLoad = false
         let mainURL = detectMainAppURL()
         webViewLogger.info("Loading main app directly from: \(mainURL.absoluteString, privacy: .public)")
         loadMainApp(url: mainURL)
@@ -256,6 +270,11 @@ extension WebViewManager: WKNavigationDelegate {
         Task { @MainActor in
             webViewLogger.info("Navigation finished")
             self.injectNativeBridge()
+            // v1.7.20: 通知 SplashScreenController WebView 已加载完成，可以安全切换视图
+            if !self.hasNotifiedLoad {
+                self.hasNotifiedLoad = true
+                self.onFirstLoadFinished?()
+            }
         }
     }
 

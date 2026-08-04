@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Provider entry tests cover provider plugin entry contracts and catalog integration.
 import { describe, expect, it } from "vitest";
 import type { ModelDefinitionConfig } from "../config/types.models.js";

@@ -1,6 +1,6 @@
 /** Migration provider context and report-directory helpers. */
 import path from "node:path";
-import { timestampMsToIsoFileStamp } from "@openclaw/normalization-core/number-coercion";
+import { timestampMsToIsoFileStamp } from "@cdf-know/normalization-core/number-coercion";
 import { getRuntimeConfig } from "@openclaw-src/config/config.js";
 import { resolveStateDir } from "@openclaw-src/config/paths.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

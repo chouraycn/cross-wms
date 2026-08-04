@@ -24,7 +24,6 @@ export type {
   PluginDependency,
   PluginManifest,
   PluginToolDefinition,
-  PluginTrigger,
   PluginConfigSchema,
   PluginConfigProperty,
   PluginContext,

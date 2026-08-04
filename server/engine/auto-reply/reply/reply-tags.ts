@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Parses inline reply tags that affect delivery, routing, and model behavior.
 import { parseInlineDirectives } from '@openclaw-src/utils/directive-tags.js';
 

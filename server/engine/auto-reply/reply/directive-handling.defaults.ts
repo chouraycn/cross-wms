@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Default model and alias resolution for directive handling.
 import {
   buildModelAliasIndex,

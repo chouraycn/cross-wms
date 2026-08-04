@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Installs runtime-context and prompt-transform boundaries before LLM calls.
  */
@@ -45,7 +44,7 @@ export function normalizeMessagesForLlmBoundary(
   options?: LlmBoundaryOptions,
 ): AgentMessage[] {
   const normalized = stripUnsafeBlockedRunMetadata(
-    stripToolResultDetails(normalizeAssistantReplayContent(messages)),
+    (stripToolResultDetails as any)(normalizeAssistantReplayContent(messages)),
   );
   const withoutHistoricalInboundMetadata = stripHistoricalInboundMetadataFromUserMessages(
     normalized,

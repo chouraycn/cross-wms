@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves media paths from reply payloads into runtime attachment metadata.
 import path from "node:path";
 import { isPassThroughRemoteMediaSource } from "@openclaw/media-core/media-source-url";

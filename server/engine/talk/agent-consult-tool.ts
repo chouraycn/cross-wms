@@ -6,7 +6,7 @@
  *
  * 自包含实现，参考 openclaw/src/talk/agent-consult-tool.ts。
  * 内联 normalizeOptionalString/normalizeOptionalLowercaseString，
- * 避免 @openclaw/normalization-core/string-coerce 依赖。
+ * 避免 @cdf-know/normalization-core/string-coerce 依赖。
  */
 import type { RealtimeVoiceTool } from "./provider-types.js";
 

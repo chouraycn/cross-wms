@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Syntax highlighting renderer for terminal-friendly formatted output.
  *

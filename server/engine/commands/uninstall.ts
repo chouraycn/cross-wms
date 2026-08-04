@@ -8,7 +8,7 @@ import {
   stylePromptHint,
   stylePromptMessage,
   stylePromptTitle,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { isNixMode } from "@openclaw-src/config/config.js";
 import { resolveGatewayService } from "@openclaw-src/daemon/service.js";

@@ -247,7 +247,7 @@ const ASYNC_AUDIT_CHECKS: ExtraAsyncAuditCheck[] = [
 
 export async function runExtraAsyncAudit(context?: ExtraAsyncAuditContext): Promise<SecurityFinding[]> {
   const findings: SecurityFinding[] = [];
-  const promises = [];
+  const promises: Promise<void>[] = [];
 
   for (const check of ASYNC_AUDIT_CHECKS) {
     promises.push(

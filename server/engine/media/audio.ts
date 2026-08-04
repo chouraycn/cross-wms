@@ -1,6 +1,6 @@
 // Audio media helpers normalize audio mime types, extensions, and load options.
 // Ported from openclaw media. @openclaw/media-core/mime helpers are provided
-// locally via ./_openclaw-media-stubs.js; @openclaw/normalization-core/string-coerce
+// locally via ./_openclaw-media-stubs.js; @cdf-know/normalization-core/string-coerce
 // is provided via ./string-helpers.js.
 import {
   getFileExtension,

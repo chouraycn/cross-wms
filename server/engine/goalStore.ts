@@ -17,29 +17,10 @@ import type {
   GoalStatus,
 } from './goalTypes.js';
 import { TERMINAL_GOAL_STATUSES } from './goalTypes.js';
-
-/**
- * 初始化 goal 表
- */
-export function initGoalTables(db: ReturnType<typeof getDb>): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS goal (
-      id TEXT PRIMARY KEY,
-      sessionKey TEXT NOT NULL UNIQUE,
-      objective TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
-      tokenBudget INTEGER,
-      usedTokens INTEGER NOT NULL DEFAULT 0,
-      createdAt INTEGER NOT NULL,
-      updatedAt INTEGER NOT NULL,
-      note TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_goal_sessionKey ON goal(sessionKey);
-    CREATE INDEX IF NOT EXISTS idx_goal_status ON goal(status);
-  `);
-  logger.info('[GoalStore] goal 表已初始化');
-}
+// Re-export initGoalTables from leaf module for backward compatibility.
+// The function was extracted to goalStoreTables.ts to break db-core.ts ↔ goalStore.ts cycle (#26).
+import { initGoalTables } from './goalStoreTables.js';
+export { initGoalTables };
 
 /**
  * 创建目标

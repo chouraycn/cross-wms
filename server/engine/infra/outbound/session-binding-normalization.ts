@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Session-binding normalization creates stable channel/account/conversation keys
 // and removes invalid self-parent relationships.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { normalizeAccountId } from "../../routing/session-key.js";
 
 /**

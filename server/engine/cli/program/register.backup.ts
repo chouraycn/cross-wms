@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Backup command registration for local state archive creation and verification.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";

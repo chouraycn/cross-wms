@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Migrates legacy provider-declared OAuth profile ids to current auth profile ids. */
-import { sanitizeForLog } from "@openclaw-src/packages/terminal-core/src/ansi.js";
+import { sanitizeForLog } from "@openclaw/terminal-core/ansi";
 import { repairOAuthProfileIdMismatch } from "@openclaw-src/agents/auth-profiles/repair.js";
 import { ensureAuthProfileStore } from "@openclaw-src/agents/auth-profiles/store.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
@@ -11,7 +11,7 @@ async function loadProviderRuntime() {
 }
 
 async function loadNoteRuntime() {
-  return import("@openclaw-src/packages/terminal-core/src/note.js");
+  return import("@openclaw/terminal-core/note");
 }
 
 function hasConfigOAuthProfiles(cfg: OpenClawConfig): boolean {

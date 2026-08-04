@@ -280,7 +280,7 @@ export function listSessionTranscriptCorpusEntriesForAgentSync(
   agentId: string,
 ): SessionTranscriptCorpusEntry[] {
   const normalizedAgentId = normalizeAgentId(agentId);
-  const cfg = getRuntimeConfig();
+  const cfg = getRuntimeConfig() as any;
   const configuredStore = cfg.session?.store;
   const storePath = resolveStorePath(configuredStore, {
     agentId: normalizedAgentId,

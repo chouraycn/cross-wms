@@ -188,7 +188,7 @@ export async function loadPluginCliCommandRegistryWithContext(params: {
         cache: false,
         forceFullRuntimeForChannelPlugins: true,
         runtimeOptions: {
-          nodes: createPluginCliGatewayNodesRuntime(),
+          nodes: createPluginCliGatewayNodesRuntime() as any,
         },
       }),
     ) as unknown as PluginRegistry,

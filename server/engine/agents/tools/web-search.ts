@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * web_search built-in tool.
  *

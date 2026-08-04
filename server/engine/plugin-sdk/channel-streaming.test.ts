@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel streaming helper lifecycle and event forwarding.
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared helpers for subagent command tests and directive fixtures.
 import type { InlineDirectives } from "./directive-handling.js";
 

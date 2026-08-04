@@ -1,14 +1,17 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.exec-output.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Rendering helpers for exec output/status updates.
+ * Keeps no-output placeholders and warning placement consistent across exec
+ * progress, polling, and completion surfaces.
  */
+const EXEC_NO_OUTPUT_PLACEHOLDER = "(no output)";
 
-export function renderExecOutputText(..._args: unknown[]): unknown {
-  return "";
+/** Render command output with a stable placeholder for empty output. */
+export function renderExecOutputText(value: string | undefined): string {
+  return value || EXEC_NO_OUTPUT_PLACEHOLDER;
 }
-export function renderExecUpdateText(..._args: unknown[]): unknown {
-  return "";
+
+/** Render the text shown in exec progress updates, including warnings first. */
+export function renderExecUpdateText(params: { tailText?: string; warnings: string[] }): string {
+  const warningText = params.warnings.length ? `${params.warnings.join("\n")}\n\n` : "";
+  return warningText + renderExecOutputText(params.tailText);
 }

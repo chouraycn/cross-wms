@@ -2,7 +2,7 @@
  * 为 prompt 可见的模型引导格式化已配置的模型别名。
  *
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/normalization-core/string-coerce 中的 normalizeOptionalString
+ *   - @cdf-know/normalization-core/string-coerce 中的 normalizeOptionalString
  *   - config/types.openclaw.js 中的 OpenClawConfig
  * 本地降级实现：normalizeOptionalString 内联为 trim+空串转 undefined；
  * OpenClawConfig 视为 unknown，仅做运行时字段访问。

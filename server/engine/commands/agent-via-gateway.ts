@@ -3,12 +3,12 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { TextDecoder } from "node:util";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { resolveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
-} from "@openclaw-src/packages/gateway-protocol/src/client-info.js";
+} from "@cdf-know/gateway-protocol/client-info";
 import { listAgentIds, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope-config.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import type { CliDeps } from "@openclaw-src/cli/deps.types.js";

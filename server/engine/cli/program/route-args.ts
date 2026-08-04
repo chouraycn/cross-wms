@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Route-first argv parsers for commands that can skip full Commander startup.
 import { isValueToken } from "../../infra/cli-root-options.js";
 import {

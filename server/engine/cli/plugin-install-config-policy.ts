@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/cli/plugin-install-config-policy.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-normalization`、
+//  - 原模块依赖 `@cdf-know/normalization-core/string-normalization`、
 //    `../infra/json-files.js`、`../infra/npm-registry-spec.js`、
 //    `../plugins/bundled-sources.js`、`../plugins/manifest.js`、
 //    `../plugins/official-external-plugin-catalog.js`、`../utils.js`、

@@ -1,80 +1,133 @@
-import { logger } from "../../logger.js";
+/** Prunes expired per-run cron sessions and archives unreferenced transcripts. */
+import { parseDurationMs } from "../cli/parse-duration.js";
+import {
+  applySessionEntryLifecycleMutation,
+  listSessionEntries,
+  type SessionEntryLifecycleRemoval,
+} from "../config/sessions/session-accessor.js";
+import type { CronConfig } from "../config/types.cron.js";
+import { formatErrorMessage } from "../infra/errors.js";
+import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
+import type { Logger } from "./service/state.js";
 
-const REAPER_INTERVAL_MS = 60000;
-const MAX_IDLE_DURATION_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_RETENTION_MS = 24 * 3_600_000; // 24 hours
 
-interface SessionReaperState {
-  activeSessions: Map<string, { lastUsedAtMs: number; sessionKey: string }>;
-  intervalId?: NodeJS.Timeout;
-  enabled: boolean;
-}
+/** Minimum interval between reaper sweeps (avoid running every timer tick). */
+const MIN_SWEEP_INTERVAL_MS = 5 * 60_000; // 5 minutes
 
-const state: SessionReaperState = {
-  activeSessions: new Map(),
-  enabled: true,
-};
+const lastSweepAtMsByStore = new Map<string, number>();
 
-export function startSessionReaper(): void {
-  if (state.intervalId) {
-    return;
+/** Resolves cron run-session retention; `false` disables pruning, bad strings fall back safely. */
+export function resolveRetentionMs(cronConfig?: CronConfig): number | null {
+  if (cronConfig?.sessionRetention === false) {
+    return null; // pruning disabled
   }
-
-  state.intervalId = setInterval(() => {
-    reapIdleSessions();
-  }, REAPER_INTERVAL_MS);
-}
-
-export function stopSessionReaper(): void {
-  if (state.intervalId) {
-    clearInterval(state.intervalId);
-    state.intervalId = undefined;
-  }
-}
-
-export function registerSession(sessionKey: string): void {
-  if (!state.enabled) {
-    return;
-  }
-  state.activeSessions.set(sessionKey, {
-    lastUsedAtMs: Date.now(),
-    sessionKey,
-  });
-}
-
-export function updateSessionActivity(sessionKey: string): void {
-  const session = state.activeSessions.get(sessionKey);
-  if (session) {
-    session.lastUsedAtMs = Date.now();
-  }
-}
-
-export function unregisterSession(sessionKey: string): void {
-  state.activeSessions.delete(sessionKey);
-}
-
-function reapIdleSessions(): void {
-  const now = Date.now();
-  const idleSessionKeys: string[] = [];
-
-  for (const [key, { lastUsedAtMs }] of state.activeSessions) {
-    if (now - lastUsedAtMs > MAX_IDLE_DURATION_MS) {
-      idleSessionKeys.push(key);
+  const raw = cronConfig?.sessionRetention;
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      return parseDurationMs(raw.trim(), { defaultUnit: "h" });
+    } catch {
+      return DEFAULT_RETENTION_MS;
     }
   }
-
-  for (const key of idleSessionKeys) {
-    state.activeSessions.delete(key);
-    logger.info({ sessionKey: key }, "[cron-session-reaper] reaped idle session");
-  }
+  return DEFAULT_RETENTION_MS;
 }
 
-export function getActiveSessionCount(): number {
-  return state.activeSessions.size;
+type ReaperResult = {
+  swept: boolean;
+  pruned: number;
+};
+
+/**
+ * Sweeps completed isolated cron run sessions while preserving base cron sessions.
+ *
+ * Must run outside the cron service `locked()` section because this acquires
+ * the session-store file lock; reversing that order can deadlock timer ticks.
+ */
+export async function sweepCronRunSessions(params: {
+  cronConfig?: CronConfig;
+  /** Resolved path to sessions.json — required. */
+  sessionStorePath: string;
+  nowMs?: number;
+  log: Logger;
+  /** Override for testing — skips the min-interval throttle. */
+  force?: boolean;
+}): Promise<ReaperResult> {
+  const now = params.nowMs ?? Date.now();
+  const storePath = params.sessionStorePath;
+  const lastSweepAtMs = lastSweepAtMsByStore.get(storePath) ?? 0;
+
+  // Timer ticks can be frequent; throttle per store path to avoid repeated
+  // session-store I/O while preserving a force path for deterministic tests.
+  if (!params.force && now - lastSweepAtMs < MIN_SWEEP_INTERVAL_MS) {
+    return { swept: false, pruned: 0 };
+  }
+
+  const retentionMs = resolveRetentionMs(params.cronConfig);
+  if (retentionMs === null) {
+    lastSweepAtMsByStore.set(storePath, now);
+    return { swept: false, pruned: 0 };
+  }
+
+  let pruned = 0;
+  let transcriptCleanupError: unknown;
+  try {
+    const cutoff = now - retentionMs;
+    const removals: SessionEntryLifecycleRemoval[] = [];
+    for (const { sessionKey, entry } of listSessionEntries({ storePath, clone: false })) {
+      if (!isCronRunSessionKey(sessionKey)) {
+        continue;
+      }
+      const updatedAt = entry.updatedAt ?? 0;
+      if (updatedAt < cutoff) {
+        removals.push({
+          sessionKey,
+          expectedEntry: entry,
+          ...(entry.sessionId ? { expectedSessionId: entry.sessionId } : {}),
+          expectedUpdatedAt: entry.updatedAt,
+          archiveRemovedTranscript: true,
+        });
+      }
+    }
+    if (removals.length > 0) {
+      const result = await applySessionEntryLifecycleMutation({
+        storePath,
+        removals,
+        restrictArchivedTranscriptsToStoreDir: true,
+        cleanupArchivedTranscripts: {
+          rules: [{ reason: "deleted", olderThanMs: retentionMs }],
+          nowMs: now,
+        },
+        captureArtifactCleanupError: true,
+      });
+      pruned = result.removedEntries;
+      transcriptCleanupError = result.artifactCleanupError;
+    }
+  } catch (err) {
+    params.log.warn({ err: String(err) }, "cron-reaper: failed to sweep session store");
+    return { swept: false, pruned: 0 };
+  }
+
+  lastSweepAtMsByStore.set(storePath, now);
+
+  if (transcriptCleanupError) {
+    params.log.warn(
+      { err: formatErrorMessage(transcriptCleanupError) },
+      "cron-reaper: transcript cleanup failed",
+    );
+  }
+
+  if (pruned > 0) {
+    params.log.info(
+      { pruned, retentionMs },
+      `cron-reaper: pruned ${pruned} expired cron run session(s)`,
+    );
+  }
+
+  return { swept: true, pruned };
 }
 
-export function enableSessionReaper(enabled: boolean): void {
-  state.enabled = enabled;
-  if (!enabled) {
-    state.activeSessions.clear();
-  }
+/** Resets per-store reaper throttles between tests. */
+export function resetReaperThrottle(): void {
+  lastSweepAtMsByStore.clear();
 }

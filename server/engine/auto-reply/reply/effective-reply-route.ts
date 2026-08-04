@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves the effective reply route from current context and persisted session route. */
 import { normalizeChatType, type ChatType } from '@openclaw-src/channels/chat-type.js';
 import type { SessionEntry } from '@openclaw-src/config/sessions/types.js';

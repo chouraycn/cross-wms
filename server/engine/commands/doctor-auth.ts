@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Doctor notes for auth profile health, OAuth refresh failures, and legacy Codex config. */
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import {
   listAgentIds,
   resolveAgentDir,

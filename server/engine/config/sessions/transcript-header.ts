@@ -73,3 +73,14 @@ export function updateTranscriptHeader(
     ...updates,
   };
 }
+
+/**
+ * 兼容别名：transcript-append.ts 通过 createSessionTranscriptHeader(params) 调用，
+ * 其中 params 是一个对象（包含 sessionId 等字段）。委托给 createTranscriptHeader。
+ */
+export function createSessionTranscriptHeader(
+  params: Partial<TranscriptHeader> & { sessionId?: string },
+): TranscriptHeader {
+  const { sessionId, ...rest } = params;
+  return createTranscriptHeader(sessionId ?? "", rest);
+}

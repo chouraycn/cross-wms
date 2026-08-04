@@ -435,3 +435,29 @@ export async function saveAuditReport(report: SecretsAuditReport): Promise<void>
     historySize: history.length,
   });
 }
+
+/**
+ * 根据审计报告解析进程退出码
+ *
+ * 约定：
+ * - 无发现（clean）或仅有 info 级别发现 → 0
+ * - 存在 warn 级别发现 → 1
+ * - 存在 error 级别发现 → 2
+ *
+ * @param report - 审计报告
+ * @returns 退出码（0 / 1 / 2）
+ */
+export function resolveSecretsAuditExitCode(report: SecretsAuditReport): number {
+  if (report.status === 'clean' || report.findings.length === 0) {
+    return 0;
+  }
+  const hasError = report.findings.some((f) => f.severity === 'error');
+  if (hasError) {
+    return 2;
+  }
+  const hasWarn = report.findings.some((f) => f.severity === 'warn');
+  if (hasWarn) {
+    return 1;
+  }
+  return 0;
+}

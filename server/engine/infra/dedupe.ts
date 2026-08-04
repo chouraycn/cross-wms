@@ -81,9 +81,6 @@ export function createDedupeFilter<T>(
   };
 }
 
-// Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveGlobalDedupeCache: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
-
 // openclaw compat: bounded in-memory dedupe cache with optional TTL expiry
 export interface DedupeCacheOptions {
   ttlMs?: number;
@@ -137,4 +134,18 @@ export function createDedupeCache(options: DedupeCacheOptions): DedupeCache {
       return cache.size;
     },
   };
+}
+
+const GLOBAL_DEDUPE_CACHE_KEY = Symbol.for('openclaw-dedupe-cache');
+
+/**
+ * 解析（或首次创建）全局共享的去重缓存实例。
+ * 重导出自 server/infra/dedupe.ts 的同名函数。
+ */
+export function resolveGlobalDedupeCache(key?: string, options?: DedupeCacheOptions): DedupeCache {
+  const globalObj = globalThis as unknown as Record<symbol, DedupeCache>;
+  if (!globalObj[GLOBAL_DEDUPE_CACHE_KEY]) {
+    globalObj[GLOBAL_DEDUPE_CACHE_KEY] = createDedupeCache(options ?? {});
+  }
+  return globalObj[GLOBAL_DEDUPE_CACHE_KEY]!;
 }

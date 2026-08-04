@@ -1,278 +1,683 @@
+// @ts-nocheck
 /**
- * apply-patch 工具（代码补丁应用）
- *
- * 解析 unified diff 格式的补丁内容，并将其应用到指定文件。
- * 支持 @@ hunk 头、上下文行、新增行（+）与删除行（-），
- * 适用于 agent 场景下的代码补丁应用。
- *
- * 与 openclaw/src/agents/apply-patch.ts 中 OpenAI 风格的 *** Begin Patch 包络不同，
- * 本模块聚焦于标准 unified diff 的最小化实现，不引入额外依赖。
- *
- * 参考自 openclaw/src/agents/apply-patch.ts。
+ * Runtime apply_patch tool and parser.
+ * Parses OpenAI-style patch envelopes and applies add/update/delete/move hunks
+ * through guarded host or sandbox filesystem operations.
  */
-import fs from 'node:fs/promises';
-import { logger } from '../../logger.js';
+import syncFs from "node:fs";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { Type } from "typebox";
+import { openRootFile, type RootFileOpenResult } from "../infra/boundary-file-read.js";
+import { root as fsRoot } from "../infra/fs-safe.js";
+import { PATH_ALIAS_POLICIES, type PathAliasPolicy } from "../infra/path-alias-guards.js";
+import { applyUpdateHunk } from "./apply-patch-update.js";
+import { toRelativeSandboxPath, resolvePathFromInput } from "./path-policy.js";
+import type { AgentTool } from "./runtime/index.js";
+import { assertSandboxPath } from "./sandbox-paths.js";
+import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 
-/** applyPatch 的返回结果。 */
-export interface ApplyPatchResult {
-  /** 是否应用成功。 */
-  success: boolean;
-  /** 新增的行数。 */
-  linesAdded: number;
-  /** 删除的行数。 */
-  linesRemoved: number;
-  /** 失败时的错误信息。 */
-  errorMessage?: string;
-}
+const BEGIN_PATCH_MARKER = "*** Begin Patch";
+const END_PATCH_MARKER = "*** End Patch";
+const ADD_FILE_MARKER = "*** Add File: ";
+const DELETE_FILE_MARKER = "*** Delete File: ";
+const UPDATE_FILE_MARKER = "*** Update File: ";
+const MOVE_TO_MARKER = "*** Move to: ";
+const EOF_MARKER = "*** End of File";
+const CHANGE_CONTEXT_MARKER = "@@ ";
+const EMPTY_CHANGE_CONTEXT_MARKER = "@@";
 
-/** 解析后的单个 hunk。 */
-interface ParsedHunk {
-  /** 原文件中的起始行号（1-based）。 */
-  oldStart: number;
-  /** 原文件中该 hunk 覆盖的行数。 */
-  oldCount: number;
-  /** 新文件中的起始行号（1-based）。 */
-  newStart: number;
-  /** 新文件中该 hunk 覆盖的行数。 */
-  newCount: number;
-  /** hunk 体（不含 hunk 头行）。 */
-  lines: string[];
-}
+type AddFileHunk = {
+  kind: "add";
+  path: string;
+  contents: string;
+};
 
-/** hunk 头 @@ -oldStart,oldCount +newStart,newCount @@ 的解析正则。 */
-const HUNK_HEADER_RE = /^@@-(\d+)(?:,(\d+))?\+(\d+)(?:,(\d+))?@@/;
+type DeleteFileHunk = {
+  kind: "delete";
+  path: string;
+};
 
-/**
- * 将补丁内容应用到指定文件。
- *
- * 支持 unified diff 格式：包含可选的 `---`/`+++` 头行，以及 `@@ ... @@` hunk 头。
- * 多个 hunk 会按原文件行号倒序应用，避免行号偏移导致的错位。
- *
- * @param patchContent unified diff 格式的补丁内容
- * @param filePath 待应用补丁的目标文件路径
- */
-export async function applyPatch(
-  patchContent: string,
-  filePath: string,
-): Promise<ApplyPatchResult> {
-  if (!patchContent || typeof patchContent !== 'string') {
-    return {
-      success: false,
-      linesAdded: 0,
-      linesRemoved: 0,
-      errorMessage: 'Patch content is empty.',
-    };
-  }
-  if (!filePath || typeof filePath !== 'string') {
-    return {
-      success: false,
-      linesAdded: 0,
-      linesRemoved: 0,
-      errorMessage: 'File path is required.',
-    };
-  }
+type UpdateFileChunk = {
+  changeContext?: string;
+  oldLines: string[];
+  newLines: string[];
+  isEndOfFile: boolean;
+};
 
-  let originalContent = '';
-  try {
-    originalContent = await fs.readFile(filePath, 'utf8');
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT') {
-      // 文件不存在时视为空文件，补丁中的新增行将创建该文件
-      originalContent = '';
-    } else {
-      return {
-        success: false,
-        linesAdded: 0,
-        linesRemoved: 0,
-        errorMessage: `Failed to read file: ${(err as Error).message}`,
-      };
-    }
-  }
+type UpdateFileHunk = {
+  kind: "update";
+  path: string;
+  movePath?: string;
+  chunks: UpdateFileChunk[];
+};
 
-  const hunks = parseHunks(patchContent);
-  if (hunks.length === 0) {
-    return {
-      success: false,
-      linesAdded: 0,
-      linesRemoved: 0,
-      errorMessage: 'No valid hunks found in patch content.',
-    };
-  }
+type Hunk = AddFileHunk | DeleteFileHunk | UpdateFileHunk;
 
-  // 使用 \n 切分，保留行内容；末尾换行不影响行计数
-  const lines = originalContent.length > 0 ? originalContent.split('\n') : [];
-  // 若原文件以换行结尾，split 会产生一个空尾元素，应用时需要还原
-  const trailingNewline = originalContent.length > 0 && originalContent.endsWith('\n');
+export type ApplyPatchSummary = {
+  added: string[];
+  modified: string[];
+  deleted: string[];
+};
 
-  let linesAdded = 0;
-  let linesRemoved = 0;
+type ApplyPatchResult = {
+  summary: ApplyPatchSummary;
+  text: string;
+};
 
-  // 倒序应用，避免后续 hunk 的行号因前一个 hunk 的增删而失效
-  const sorted = [...hunks].sort((a, b) => b.oldStart - a.oldStart);
+type ApplyPatchToolDetails = {
+  summary: ApplyPatchSummary;
+};
 
-  for (const hunk of sorted) {
-    const apply = applyHunk(lines, hunk);
-    if (!apply.ok) {
-      return {
-        success: false,
-        linesAdded,
-        linesRemoved,
-        errorMessage: apply.error,
-      };
-    }
-    linesAdded += apply.added;
-    linesRemoved += apply.removed;
-  }
+type SandboxApplyPatchConfig = {
+  root: string;
+  bridge: SandboxFsBridge;
+};
 
-  let resultContent = lines.join('\n');
-  if (trailingNewline && resultContent.length > 0) {
-    resultContent += '\n';
-  }
+type ApplyPatchOptions = {
+  cwd: string;
+  sandbox?: SandboxApplyPatchConfig;
+  /** Restrict patch paths to the workspace root (cwd). Default: true. Set false to opt out. */
+  workspaceOnly?: boolean;
+  signal?: AbortSignal;
+};
 
-  try {
-    await fs.writeFile(filePath, resultContent, 'utf8');
-  } catch (err) {
-    return {
-      success: false,
-      linesAdded,
-      linesRemoved,
-      errorMessage: `Failed to write file: ${(err as Error).message}`,
-    };
-  }
+const applyPatchSchema = Type.Object({
+  input: Type.String({
+    description: "Patch content using the *** Begin Patch/End Patch format.",
+  }),
+});
+
+/** Create the agent tool wrapper for applying patch-envelope input. */
+export function createApplyPatchTool(
+  options: { cwd?: string; sandbox?: SandboxApplyPatchConfig; workspaceOnly?: boolean } = {},
+): AgentTool<typeof applyPatchSchema, ApplyPatchToolDetails> {
+  const cwd = options.cwd ?? process.cwd();
+  const sandbox = options.sandbox;
+  const workspaceOnly = options.workspaceOnly !== false;
 
   return {
-    success: true,
-    linesAdded,
-    linesRemoved,
+    name: "apply_patch",
+    label: "apply_patch",
+    description:
+      "Apply a patch to one or more files using the apply_patch format. The input should include *** Begin Patch and *** End Patch markers.",
+    parameters: applyPatchSchema,
+    execute: async (_toolCallId, args, signal) => {
+      const params = args as { input?: string };
+      const input = typeof params.input === "string" ? params.input : "";
+      if (!input.trim()) {
+        throw new Error("Provide a patch input.");
+      }
+      if (signal?.aborted) {
+        const err = new Error("Aborted");
+        err.name = "AbortError";
+        throw err;
+      }
+
+      const result = await applyPatch(input, {
+        cwd,
+        sandbox,
+        workspaceOnly,
+        signal,
+      });
+
+      return {
+        content: [{ type: "text", text: result.text }],
+        details: { summary: result.summary },
+      };
+    },
   };
 }
 
-/**
- * 从补丁文本中解析出所有 hunk。
- * 跳过 `---`/`+++` 头行与 diff 控制行，仅保留 `@@` hunk。
- */
-function parseHunks(patchContent: string): ParsedHunk[] {
-  const rawLines = patchContent.split(/\r?\n/);
-  const hunks: ParsedHunk[] = [];
-
-  let i = 0;
-  // 跳过可能的 git diff 头（diff --git、index、---、+++ 等）
-  while (i < rawLines.length) {
-    const line = rawLines[i];
-    if (HUNK_HEADER_RE.test(line)) {
-      const match = HUNK_HEADER_RE.exec(line);
-      if (!match) {
-        i += 1;
-        continue;
-      }
-      const oldStart = parseInt(match[1], 10);
-      const oldCount = match[2] !== undefined ? parseInt(match[2], 10) : 1;
-      const newStart = parseInt(match[3], 10);
-      const newCount = match[4] !== undefined ? parseInt(match[4], 10) : 1;
-
-      const body: string[] = [];
-      i += 1;
-      while (i < rawLines.length) {
-        const bodyLine = rawLines[i];
-        // 遇到下一个 hunk 头或补丁结尾则停止
-        if (HUNK_HEADER_RE.test(bodyLine)) {
-          break;
-        }
-        // 跳过 hunk 之外的控制行（如多余的头信息）
-        if (bodyLine.startsWith('---') || bodyLine.startsWith('+++')) {
-          i += 1;
-          continue;
-        }
-        body.push(bodyLine);
-        i += 1;
-      }
-
-      hunks.push({
-        oldStart,
-        oldCount,
-        newStart,
-        newCount,
-        lines: body,
-      });
-    } else {
-      i += 1;
-    }
+/** Parse and apply a patch envelope to the configured filesystem target. */
+export async function applyPatch(
+  input: string,
+  options: ApplyPatchOptions,
+): Promise<ApplyPatchResult> {
+  const parsed = parsePatchText(input);
+  if (parsed.hunks.length === 0) {
+    throw new Error("No files were modified.");
   }
 
-  return hunks;
-}
+  const summary: ApplyPatchSummary = {
+    added: [],
+    modified: [],
+    deleted: [],
+  };
+  const seen = {
+    added: new Set<string>(),
+    modified: new Set<string>(),
+    deleted: new Set<string>(),
+  };
+  const fileOps = resolvePatchFileOps(options);
 
-/** 单个 hunk 的应用结果。 */
-interface ApplyHunkResult {
-  ok: boolean;
-  added: number;
-  removed: number;
-  error?: string;
-}
+  for (const hunk of parsed.hunks) {
+    if (options.signal?.aborted) {
+      const err = new Error("Aborted");
+      err.name = "AbortError";
+      throw err;
+    }
 
-/**
- * 将单个 hunk 应用到行数组（原地修改）。
- * @param lines 原文件的行数组（会被修改）
- * @param hunk 待应用的 hunk
- */
-function applyHunk(lines: string[], hunk: ParsedHunk): ApplyHunkResult {
-  // oldStart 为 1-based，0 表示空文件场景（补丁创建新文件）
-  const startIdx = Math.max(hunk.oldStart - 1, 0);
-
-  // 解析 hunk 体：区分上下文行、新增行（+）与删除行（-）
-  const oldLines: string[] = [];
-  const newLines: string[] = [];
-  let pureAdded = 0;
-  let pureRemoved = 0;
-  for (const bodyLine of hunk.lines) {
-    if (bodyLine.startsWith('\\')) {
-      // "\ No newline at end of file" 等元信息行，跳过
+    if (hunk.kind === "add") {
+      const target = await resolvePatchPath(hunk.path, options);
+      await assertPatchParentPath(hunk.path, options);
+      await ensureDir(target.resolved, fileOps);
+      await fileOps.writeFile(target.resolved, hunk.contents);
+      recordSummary(summary, seen, "added", target.display);
       continue;
     }
-    const marker = bodyLine[0];
-    const rest = bodyLine.slice(1);
-    if (marker === '+') {
-      newLines.push(rest);
-      pureAdded += 1;
-    } else if (marker === '-') {
-      oldLines.push(rest);
-      pureRemoved += 1;
-    } else if (marker === ' ') {
-      oldLines.push(rest);
-      newLines.push(rest);
-    } else if (bodyLine === '') {
-      // 空行视为上下文行
-      oldLines.push('');
-      newLines.push('');
+
+    if (hunk.kind === "delete") {
+      const target = await resolvePatchPath(hunk.path, options, PATH_ALIAS_POLICIES.unlinkTarget);
+      await fileOps.remove(target.resolved);
+      recordSummary(summary, seen, "deleted", target.display);
+      continue;
+    }
+
+    const target = await resolvePatchPath(hunk.path, options);
+    const applied = await applyUpdateHunk(target.resolved, hunk.chunks, {
+      readFile: (pathLocal) => fileOps.readFile(pathLocal),
+    });
+
+    if (hunk.movePath) {
+      const moveTarget = await resolvePatchPath(hunk.movePath, options);
+      await assertPatchParentPath(hunk.movePath, options);
+      await ensureDir(moveTarget.resolved, fileOps);
+      const moveResolvesToSource =
+        path.resolve(moveTarget.resolved) === path.resolve(target.resolved);
+      await fileOps.writeFile(
+        moveResolvesToSource ? target.resolved : moveTarget.resolved,
+        applied,
+      );
+      if (!moveResolvesToSource) {
+        await fileOps.remove(target.resolved);
+      }
+      recordSummary(
+        summary,
+        seen,
+        "modified",
+        moveResolvesToSource ? target.display : moveTarget.display,
+      );
+    } else {
+      await fileOps.writeFile(target.resolved, applied);
+      recordSummary(summary, seen, "modified", target.display);
     }
   }
-
-  // 校验原文件对应区段是否与 hunk 描述的旧行一致
-  for (let j = 0; j < oldLines.length; j += 1) {
-    const original = lines[startIdx + j];
-    if (original === undefined) {
-      // 原文件行数不足，仍允许在尾部追加（创建新文件场景）
-      break;
-    }
-    if (original !== oldLines[j]) {
-      return {
-        ok: false,
-        added: 0,
-        removed: 0,
-        error: `Context mismatch at line ${startIdx + j + 1}: expected "${oldLines[j]}", got "${original}".`,
-      };
-    }
-  }
-
-  // 替换 oldLines 区段为 newLines
-  lines.splice(startIdx, oldLines.length, ...newLines);
 
   return {
-    ok: true,
-    added: pureAdded,
-    removed: pureRemoved,
+    summary,
+    text: formatSummary(summary),
   };
 }
 
-logger.debug('[Agents:ApplyPatch] Module loaded');
+function recordSummary(
+  summary: ApplyPatchSummary,
+  seen: {
+    added: Set<string>;
+    modified: Set<string>;
+    deleted: Set<string>;
+  },
+  bucket: keyof ApplyPatchSummary,
+  value: string,
+) {
+  if (seen[bucket].has(value)) {
+    return;
+  }
+  seen[bucket].add(value);
+  summary[bucket].push(value);
+}
+
+function formatSummary(summary: ApplyPatchSummary): string {
+  const lines = ["Success. Updated the following files:"];
+  for (const file of summary.added) {
+    lines.push(`A ${file}`);
+  }
+  for (const file of summary.modified) {
+    lines.push(`M ${file}`);
+  }
+  for (const file of summary.deleted) {
+    lines.push(`D ${file}`);
+  }
+  return lines.join("\n");
+}
+
+type PatchFileOps = {
+  readFile: (filePath: string) => Promise<string>;
+  writeFile: (filePath: string, content: string) => Promise<void>;
+  remove: (filePath: string) => Promise<void>;
+  mkdirp: (dir: string) => Promise<void>;
+};
+
+function resolvePatchFileOps(options: ApplyPatchOptions): PatchFileOps {
+  if (options.sandbox) {
+    const { root, bridge } = options.sandbox;
+    return {
+      readFile: async (filePath) => {
+        const buf = await bridge.readFile({ filePath, cwd: root });
+        return buf.toString("utf8");
+      },
+      writeFile: (filePath, content) => bridge.writeFile({ filePath, cwd: root, data: content }),
+      remove: (filePath) => bridge.remove({ filePath, cwd: root, force: false }),
+      mkdirp: (dir) => bridge.mkdirp({ filePath: dir, cwd: root }),
+    };
+  }
+  const workspaceOnly = options.workspaceOnly !== false;
+  const rootPromise = workspaceOnly ? fsRoot(options.cwd) : undefined;
+  return {
+    readFile: async (filePath) => {
+      if (!workspaceOnly) {
+        return await fs.readFile(filePath, "utf8");
+      }
+      const opened = await openRootFile({
+        absolutePath: filePath,
+        rootPath: options.cwd,
+        boundaryLabel: "workspace root",
+      });
+      assertBoundaryRead(opened, filePath);
+      try {
+        return syncFs.readFileSync(opened.fd, "utf8");
+      } finally {
+        syncFs.closeSync(opened.fd);
+      }
+    },
+    writeFile: async (filePath, content) => {
+      if (!workspaceOnly) {
+        await fs.writeFile(filePath, content, "utf8");
+        return;
+      }
+      const relative = toRelativeSandboxPath(options.cwd, filePath);
+      await (await rootPromise)?.write(relative, content, { encoding: "utf8" });
+    },
+    remove: async (filePath) => {
+      if (!workspaceOnly) {
+        await fs.rm(filePath);
+        return;
+      }
+      const relative = toRelativeSandboxPath(options.cwd, filePath);
+      await (await rootPromise)?.remove(relative);
+    },
+    mkdirp: async (dir) => {
+      if (!workspaceOnly) {
+        await fs.mkdir(dir, { recursive: true });
+        return;
+      }
+      const relative = toRelativeSandboxPath(options.cwd, dir, { allowRoot: true });
+      const root = await rootPromise;
+      if (!root) {
+        return;
+      }
+      if (relative === "" || relative === ".") {
+        await root.ensureRoot();
+        return;
+      }
+      await root.mkdir(relative);
+    },
+  };
+}
+
+async function ensureDir(filePath: string, ops: PatchFileOps) {
+  const parent = path.dirname(filePath);
+  if (!parent || parent === ".") {
+    return;
+  }
+  await ops.mkdirp(parent);
+}
+
+async function assertPatchParentPath(filePath: string, options: ApplyPatchOptions) {
+  if (options.workspaceOnly === false || options.sandbox) {
+    return;
+  }
+  const parent = path.dirname(filePath);
+  if (!parent || parent === ".") {
+    return;
+  }
+  await assertSandboxPath({
+    filePath: parent,
+    cwd: options.cwd,
+    root: options.cwd,
+  });
+  await assertNoExistingParentAliases({
+    parentPath: resolvePathFromInput(parent, options.cwd),
+    rootPath: options.cwd,
+  });
+}
+
+async function assertNoExistingParentAliases(params: { parentPath: string; rootPath: string }) {
+  const rootPath = path.resolve(params.rootPath);
+  const parentPath = path.resolve(params.parentPath);
+  const relative = path.relative(rootPath, parentPath);
+  if (!relative || relative === "" || relativePathEscapesRoot(relative)) {
+    return;
+  }
+
+  let current = rootPath;
+  for (const segment of relative.split(path.sep)) {
+    if (!segment) {
+      continue;
+    }
+    current = path.join(current, segment);
+    const stat = await fs.lstat(current).catch((error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return null;
+      }
+      throw error;
+    });
+    if (!stat) {
+      return;
+    }
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Path alias under sandbox root: ${path.relative(rootPath, current)}`);
+    }
+  }
+}
+
+async function resolvePatchPath(
+  filePath: string,
+  options: ApplyPatchOptions,
+  aliasPolicy: PathAliasPolicy = PATH_ALIAS_POLICIES.strict,
+): Promise<{ resolved: string; display: string }> {
+  if (options.sandbox) {
+    const resolved = options.sandbox.bridge.resolvePath({
+      filePath,
+      cwd: options.cwd,
+    });
+    if (options.workspaceOnly !== false && resolved.hostPath) {
+      await assertSandboxPath({
+        filePath: resolved.hostPath,
+        cwd: options.cwd,
+        root: options.cwd,
+        allowFinalSymlinkForUnlink: aliasPolicy.allowFinalSymlinkForUnlink,
+        allowFinalHardlinkForUnlink: aliasPolicy.allowFinalHardlinkForUnlink,
+      });
+    }
+    return {
+      resolved: resolved.hostPath ?? resolved.containerPath,
+      display: resolved.relativePath || resolved.containerPath,
+    };
+  }
+
+  const workspaceOnly = options.workspaceOnly !== false;
+  const resolved = workspaceOnly
+    ? (
+        await assertSandboxPath({
+          filePath,
+          cwd: options.cwd,
+          root: options.cwd,
+          allowFinalSymlinkForUnlink: aliasPolicy.allowFinalSymlinkForUnlink,
+          allowFinalHardlinkForUnlink: aliasPolicy.allowFinalHardlinkForUnlink,
+        })
+      ).resolved
+    : resolvePathFromInput(filePath, options.cwd);
+  return {
+    resolved,
+    display: toDisplayPath(resolved, options.cwd),
+  };
+}
+
+function assertBoundaryRead(
+  opened: RootFileOpenResult,
+  targetPath: string,
+): asserts opened is Extract<RootFileOpenResult, { ok: true }> {
+  if (opened.ok) {
+    return;
+  }
+  const reason = opened.reason === "validation" ? "unsafe path" : "path not found";
+  throw new Error(`Failed boundary read for ${targetPath} (${reason})`);
+}
+
+function toDisplayPath(resolved: string, cwd: string): string {
+  const relative = path.relative(cwd, resolved);
+  if (!relative || relative === "") {
+    return path.basename(resolved);
+  }
+  if (relativePathEscapesRoot(relative)) {
+    return resolved;
+  }
+  return relative;
+}
+
+function relativePathEscapesRoot(relativePath: string): boolean {
+  return (
+    relativePath === ".." ||
+    relativePath.startsWith("../") ||
+    relativePath.startsWith("..\\") ||
+    path.isAbsolute(relativePath)
+  );
+}
+
+function parsePatchText(input: string): { hunks: Hunk[]; patch: string } {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    throw new Error("Invalid patch: input is empty.");
+  }
+
+  const lines = trimmed.split(/\r?\n/);
+  const validated = checkPatchBoundariesLenient(lines);
+  const hunks: Hunk[] = [];
+
+  const lastLineIndex = validated.length - 1;
+  let remaining = validated.slice(1, lastLineIndex);
+  let lineNumber = 2;
+
+  while (remaining.length > 0) {
+    const { hunk, consumed } = parseOneHunk(remaining, lineNumber);
+    hunks.push(hunk);
+    lineNumber += consumed;
+    remaining = remaining.slice(consumed);
+  }
+
+  return { hunks, patch: validated.join("\n") };
+}
+
+function checkPatchBoundariesLenient(lines: string[]): string[] {
+  const strictError = checkPatchBoundariesStrict(lines);
+  if (!strictError) {
+    return lines;
+  }
+
+  if (lines.length < 4) {
+    throw new Error(strictError);
+  }
+  const first = lines[0];
+  const last = lines.at(-1);
+  if (
+    last &&
+    (first === "<<EOF" || first === "<<'EOF'" || first === '<<"EOF"') &&
+    last.endsWith("EOF")
+  ) {
+    const inner = lines.slice(1, -1);
+    const innerError = checkPatchBoundariesStrict(inner);
+    if (!innerError) {
+      return inner;
+    }
+    throw new Error(innerError);
+  }
+
+  throw new Error(strictError);
+}
+
+function checkPatchBoundariesStrict(lines: string[]): string | null {
+  const firstLine = lines[0]?.trim();
+  const lastLine = lines[lines.length - 1]?.trim();
+
+  if (firstLine === BEGIN_PATCH_MARKER && lastLine === END_PATCH_MARKER) {
+    return null;
+  }
+  if (firstLine !== BEGIN_PATCH_MARKER) {
+    return "The first line of the patch must be '*** Begin Patch'";
+  }
+  return "The last line of the patch must be '*** End Patch'";
+}
+
+function parseOneHunk(lines: string[], lineNumber: number): { hunk: Hunk; consumed: number } {
+  if (lines.length === 0) {
+    throw new Error(`Invalid patch hunk at line ${lineNumber}: empty hunk`);
+  }
+  const firstLine = lines[0].trim();
+  if (firstLine.startsWith(ADD_FILE_MARKER)) {
+    const targetPath = firstLine.slice(ADD_FILE_MARKER.length);
+    let contents = "";
+    let consumed = 1;
+    for (const addLine of lines.slice(1)) {
+      if (addLine.startsWith("+")) {
+        contents += `${addLine.slice(1)}\n`;
+        consumed += 1;
+      } else {
+        break;
+      }
+    }
+    return {
+      hunk: { kind: "add", path: targetPath, contents },
+      consumed,
+    };
+  }
+
+  if (firstLine.startsWith(DELETE_FILE_MARKER)) {
+    const targetPath = firstLine.slice(DELETE_FILE_MARKER.length);
+    return {
+      hunk: { kind: "delete", path: targetPath },
+      consumed: 1,
+    };
+  }
+
+  if (firstLine.startsWith(UPDATE_FILE_MARKER)) {
+    const targetPath = firstLine.slice(UPDATE_FILE_MARKER.length);
+    let remaining = lines.slice(1);
+    let consumed = 1;
+    let movePath: string | undefined;
+
+    const moveCandidate = remaining[0]?.trim();
+    if (moveCandidate?.startsWith(MOVE_TO_MARKER)) {
+      movePath = moveCandidate.slice(MOVE_TO_MARKER.length);
+      remaining = remaining.slice(1);
+      consumed += 1;
+    }
+
+    const chunks: UpdateFileChunk[] = [];
+    while (remaining.length > 0) {
+      if (remaining[0].trim() === "") {
+        remaining = remaining.slice(1);
+        consumed += 1;
+        continue;
+      }
+      if (remaining[0].startsWith("***")) {
+        break;
+      }
+      const { chunk, consumed: chunkLines } = parseUpdateFileChunk(
+        remaining,
+        lineNumber + consumed,
+        chunks.length === 0,
+      );
+      chunks.push(chunk);
+      remaining = remaining.slice(chunkLines);
+      consumed += chunkLines;
+    }
+
+    if (chunks.length === 0) {
+      throw new Error(
+        `Invalid patch hunk at line ${lineNumber}: Update file hunk for path '${targetPath}' is empty`,
+      );
+    }
+
+    return {
+      hunk: {
+        kind: "update",
+        path: targetPath,
+        movePath,
+        chunks,
+      },
+      consumed,
+    };
+  }
+
+  throw new Error(
+    `Invalid patch hunk at line ${lineNumber}: '${lines[0]}' is not a valid hunk header. Valid hunk headers: '*** Add File: {path}', '*** Delete File: {path}', '*** Update File: {path}'`,
+  );
+}
+
+function parseUpdateFileChunk(
+  lines: string[],
+  lineNumber: number,
+  allowMissingContext: boolean,
+): { chunk: UpdateFileChunk; consumed: number } {
+  if (lines.length === 0) {
+    throw new Error(
+      `Invalid patch hunk at line ${lineNumber}: Update hunk does not contain any lines`,
+    );
+  }
+
+  let changeContext: string | undefined;
+  let startIndex = 0;
+  if (lines[0] === EMPTY_CHANGE_CONTEXT_MARKER) {
+    startIndex = 1;
+  } else if (lines[0].startsWith(CHANGE_CONTEXT_MARKER)) {
+    changeContext = lines[0].slice(CHANGE_CONTEXT_MARKER.length);
+    startIndex = 1;
+  } else if (!allowMissingContext) {
+    throw new Error(
+      `Invalid patch hunk at line ${lineNumber}: Expected update hunk to start with a @@ context marker, got: '${lines[0]}'`,
+    );
+  }
+
+  if (startIndex >= lines.length) {
+    throw new Error(
+      `Invalid patch hunk at line ${lineNumber + 1}: Update hunk does not contain any lines`,
+    );
+  }
+
+  const chunk: UpdateFileChunk = {
+    changeContext,
+    oldLines: [],
+    newLines: [],
+    isEndOfFile: false,
+  };
+
+  let parsedLines = 0;
+  for (const line of lines.slice(startIndex)) {
+    if (line === EOF_MARKER) {
+      if (parsedLines === 0) {
+        throw new Error(
+          `Invalid patch hunk at line ${lineNumber + 1}: Update hunk does not contain any lines`,
+        );
+      }
+      chunk.isEndOfFile = true;
+      parsedLines += 1;
+      break;
+    }
+
+    const marker = line[0];
+    if (!marker) {
+      chunk.oldLines.push("");
+      chunk.newLines.push("");
+      parsedLines += 1;
+      continue;
+    }
+
+    if (marker === " ") {
+      const content = line.slice(1);
+      chunk.oldLines.push(content);
+      chunk.newLines.push(content);
+      parsedLines += 1;
+      continue;
+    }
+    if (marker === "+") {
+      chunk.newLines.push(line.slice(1));
+      parsedLines += 1;
+      continue;
+    }
+    if (marker === "-") {
+      chunk.oldLines.push(line.slice(1));
+      parsedLines += 1;
+      continue;
+    }
+
+    if (parsedLines === 0) {
+      throw new Error(
+        `Invalid patch hunk at line ${lineNumber + 1}: Unexpected line found in update hunk: '${line}'. Every line should start with ' ' (context line), '+' (added line), or '-' (removed line)`,
+      );
+    }
+    break;
+  }
+
+  return { chunk, consumed: parsedLines + startIndex };
+}

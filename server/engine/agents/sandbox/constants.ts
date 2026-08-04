@@ -5,7 +5,7 @@
  * Centralizes image names, container prefixes, workspace paths, browser ports, and registry locations.
  */
 import path from "node:path";
-import { CHANNEL_IDS } from "../../channels/ids.js";
+import { CHAT_CHANNEL_ORDER as CHANNEL_IDS } from "../../channels/_openclaw-stubs.js";
 import { STATE_DIR } from "../../config/paths.js";
 
 export const DEFAULT_SANDBOX_WORKSPACE_ROOT = path.join(STATE_DIR, "sandboxes");
@@ -62,3 +62,4 @@ export const SANDBOX_REGISTRY_PATH = path.join(SANDBOX_STATE_DIR, "containers.js
 export const SANDBOX_BROWSER_REGISTRY_PATH = path.join(SANDBOX_STATE_DIR, "browsers.json");
 export const SANDBOX_CONTAINERS_DIR = path.join(SANDBOX_STATE_DIR, "containers");
 export const SANDBOX_BROWSERS_DIR = path.join(SANDBOX_STATE_DIR, "browsers");
+

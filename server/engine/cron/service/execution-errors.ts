@@ -1,84 +1,73 @@
-import type { CronJob, CronRunOutcome } from "../types.js";
+/** Formats stable cron timeout and execution error messages. */
+import { formatEmbeddedAgentExecutionPhase } from "../../agents/embedded-agent-runner/execution-phase.js";
+import type { CronAgentExecutionStarted } from "../types.js";
 
-export type ExecutionErrorCategory =
-  | "delivery-target"
-  | "model-error"
-  | "timeout"
-  | "validation"
-  | "authorization"
-  | "resource"
-  | "unknown";
-
-export interface ExecutionErrorInfo {
-  category: ExecutionErrorCategory;
-  message: string;
-  retryable: boolean;
-  details?: Record<string, unknown>;
+function formatCronAgentExecutionPhase(execution?: CronAgentExecutionStarted): string | undefined {
+  return formatEmbeddedAgentExecutionPhase(execution?.phase);
 }
 
-export function classifyExecutionError(error: unknown): ExecutionErrorInfo {
-  const message = error instanceof Error ? error.message : String(error);
-
-  if (message.includes("delivery") || message.includes("target")) {
-    return {
-      category: "delivery-target",
-      message,
-      retryable: false,
-    };
+/** Formats the generic cron execution timeout message with last-known phase context when available. */
+export function timeoutErrorMessage(execution?: CronAgentExecutionStarted): string {
+  const phase = formatCronAgentExecutionPhase(execution);
+  if (!phase) {
+    return "cron: job execution timed out";
   }
-
-  if (message.includes("model") || message.includes("provider")) {
-    return {
-      category: "model-error",
-      message,
-      retryable: true,
-    };
-  }
-
-  if (message.includes("timeout") || message.includes("timed out")) {
-    return {
-      category: "timeout",
-      message,
-      retryable: true,
-    };
-  }
-
-  if (message.includes("validation") || message.includes("invalid")) {
-    return {
-      category: "validation",
-      message,
-      retryable: false,
-    };
-  }
-
-  if (message.includes("auth") || message.includes("permission") || message.includes("token")) {
-    return {
-      category: "authorization",
-      message,
-      retryable: false,
-    };
-  }
-
-  if (message.includes("resource") || message.includes("limit")) {
-    return {
-      category: "resource",
-      message,
-      retryable: true,
-    };
-  }
-
-  return {
-    category: "unknown",
-    message,
-    retryable: false,
-  };
+  return `cron: job execution timed out (last phase: ${phase})`;
 }
 
-export function createErrorOutcome(error: unknown): CronRunOutcome {
-  const info = classifyExecutionError(error);
-  return {
-    status: "error",
-    error: info.message,
-    errorKind: info.category === "delivery-target" ? "delivery-target" : undefined,
-  };
+/** Formats timeout text for runs that stalled before the isolated runner started. */
+export function setupTimeoutErrorMessage(execution?: CronAgentExecutionStarted): string {
+  const phase = formatCronAgentExecutionPhase(execution);
+  if (!phase) {
+    return "cron: isolated agent setup timed out before runner start";
+  }
+  return `cron: isolated agent setup timed out before runner start (last phase: ${phase})`;
+}
+
+/** Returns true for the setup-timeout class that fires before the isolated runner starts. */
+export function isSetupTimeoutErrorText(error: string): boolean {
+  return error.startsWith("cron: isolated agent setup timed out before runner start");
+}
+
+/** Formats timeout text for runs that stalled after setup but before execution start. */
+export function preExecutionTimeoutErrorMessage(execution?: CronAgentExecutionStarted): string {
+  const phase = formatCronAgentExecutionPhase(execution);
+  if (!phase) {
+    return "cron: isolated agent run stalled before execution start";
+  }
+  return `cron: isolated agent run stalled before execution start (last phase: ${phase})`;
+}
+
+/** Extracts a human timeout/abort reason, falling back to the canonical cron timeout text. */
+export function resolveCronAbortReasonText(reason: unknown): string | undefined {
+  if (typeof reason === "string" && reason.trim()) {
+    return reason.trim();
+  }
+  if (reason instanceof Error && reason.message.trim()) {
+    return reason.message.trim();
+  }
+  return undefined;
+}
+
+/** Extracts a human timeout/abort reason, falling back to the canonical cron timeout text. */
+export function abortErrorMessage(signal?: AbortSignal): string {
+  return resolveCronAbortReasonText(signal?.reason) ?? timeoutErrorMessage();
+}
+
+function isAbortError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  return err.name === "AbortError" || err.message === timeoutErrorMessage();
+}
+
+/** Normalizes thrown cron run failures into stable log/run-log text. */
+export function normalizeCronRunErrorText(err: unknown): string {
+  if (isAbortError(err)) {
+    return timeoutErrorMessage();
+  }
+  if (typeof err === "string") {
+    return err === `Error: ${timeoutErrorMessage()}` ? timeoutErrorMessage() : err;
+  }
+  return String(err);
 }

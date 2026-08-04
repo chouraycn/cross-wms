@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Test fixture helpers for constructing ACP runtime session metadata.
 import type { SessionAcpMeta } from '@openclaw-src/config/sessions/types.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

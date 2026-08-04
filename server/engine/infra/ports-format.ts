@@ -1,6 +1,6 @@
 // 格式化端口探测结果用于诊断和 CLI 输出。
 // 降级实现：从 openclaw/src/infra/ports-format.ts 移植，
-// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @openclaw/normalization-core/string-coerce
+// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @cdf-know/normalization-core/string-coerce
 // - formatCliCommand 使用本地 _runtime-stubs.ts 替代 ../cli/command-format.js
 import { normalizeLowercaseStringOrEmpty } from "./string-coerce.js";
 import { formatCliCommand } from "./_runtime-stubs.js";

@@ -1,7 +1,7 @@
 // Session path helper tests pin default store path contracts used by CLI commands.
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveStorePath } from "./paths.js";
+import { resolveStorePath } from "@openclaw-src/agents/subagent-announce-delivery.runtime.js";
 
 describe("resolveStorePath", () => {
   it("uses the default agent store when session.store is absent or blank", () => {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime facade for group channel plugin lookup helpers. */
 import { getChannelPlugin, normalizeChannelId } from '@openclaw-src/channels/plugins/index.js';
 

@@ -2,8 +2,8 @@
 import {
   asDateTimestampMs,
   resolveTimestampMsToIsoString,
-} from "../infra/_runtime-stubs.js";
-import { normalizeOptionalString } from "../infra/string-coerce.js";
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { parseAbsoluteTimeMs } from "./parse.js";
 import type { CronSchedule } from "./types.js";
 

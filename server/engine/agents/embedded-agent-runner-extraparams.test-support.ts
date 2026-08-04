@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared fixtures for asserting payload mutations from extra-params wrappers.
 import type { Context, Model } from "../llm/types.js";
 import { applyExtraParamsToAgent } from "./embedded-agent-runner/extra-params.js";
@@ -37,7 +36,7 @@ export function runExtraParamsPayloadCase(params: {
     id: params.modelId,
   } as Model<"openai-completions">;
   const context: Context = { messages: [] };
-  void agent.streamFn?.(model, context, {});
+  void agent.streamFn?.((model as any), context, {});
 
   return payloads[0] ?? {};
 }

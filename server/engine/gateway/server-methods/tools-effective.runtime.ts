@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Lazy import boundary for effective-tool inventory helpers used by gateway RPCs.
  */

@@ -5,7 +5,7 @@
  * This module owns port/bind/auth validation and token/ref preservation before
  * the final config write happens.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { formatInvalidPortOption } from "@openclaw-src/cli/error-format.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

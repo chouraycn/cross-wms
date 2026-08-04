@@ -26,36 +26,31 @@ metadata:
 
 ```bash
 # 创建每日库存快照任务
-POST /api/automation/tasks
+POST /api/automation
 {
   "name": "每日库存快照",
   "type": "inventory-snapshot",
-  "schedule": {
-    "type": "cron",
-    "expression": "0 2 * * *",
-    "timezone": "Asia/Shanghai"
-  },
-  "params": {
+  "scheduleType": "recurring",
+  "rrule": "FREQ=DAILY;BYHOUR=2;BYMINUTE=0",
+  "taskConfig": {
     "warehouse_ids": ["WH-SH-001", "WH-SZ-001"],
     "include_aging": true
   },
-  "validity": {
-    "start_date": "2026-07-20",
-    "end_date": "2026-12-31"
-  },
-  "notify_on": ["failure", "success"]
+  "validFrom": "2026-07-20",
+  "validUntil": "2026-12-31",
+  "notificationConfig": {
+    "notify_on": ["failure", "success"]
+  }
 }
 
 # 创建每周报表任务
-POST /api/automation/tasks
+POST /api/automation
 {
   "name": "周出入库报表",
   "type": "report-gen",
-  "schedule": {
-    "type": "cron",
-    "expression": "0 9 * * 1"
-  },
-  "params": {
+  "scheduleType": "recurring",
+  "rrule": "FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0",
+  "taskConfig": {
     "report_type": "inbound_outbound",
     "period": "last_7d",
     "recipients": ["manager@example.com"]
@@ -67,32 +62,20 @@ POST /api/automation/tasks
 
 ```bash
 # 多步骤动作链：快照 → 分析 → 预警
-POST /api/automation/workflows
+# 通过 custom 类型 + actionChain 实现
+POST /api/automation
 {
   "name": "库存健康检查",
-  "steps": [
-    {
-      "step": 1,
-      "action": "inventory-snapshot",
-      "params": { "warehouse_ids": ["all"] }
-    },
-    {
-      "step": 2,
-      "action": "aging-analysis",
-      "depends_on": [1],
-      "params": { "threshold_days": 90 }
-    },
-    {
-      "step": 3,
-      "action": "send-alert",
-      "depends_on": [2],
-      "params": {
-        "channels": ["email", "webhook"],
-        "template": "aging_alert"
-      }
-    }
-  ],
-  "schedule": { "type": "cron", "expression": "0 3 * * *" }
+  "type": "custom",
+  "scheduleType": "recurring",
+  "rrule": "FREQ=DAILY;BYHOUR=3;BYMINUTE=0",
+  "taskConfig": {
+    "actionChain": [
+      { "action": "snapshot", "params": { "warehouse_ids": ["all"] } },
+      { "action": "check-volume", "params": { "threshold_days": 90 } },
+      { "action": "notify", "params": { "channels": ["email", "webhook"], "template": "aging_alert" } }
+    ]
+  }
 }
 ```
 
@@ -100,30 +83,61 @@ POST /api/automation/workflows
 
 ```bash
 # 查看任务列表
-GET /api/automation/tasks?status=active&page=1&limit=20
+GET /api/automation?status=active
 
 # 查看执行历史
-GET /api/automation/tasks/{taskId}/history?limit=10
+GET /api/automation/executions?limit=20
 # 返回：执行时间、状态、耗时、输出摘要
 
-# 暂停/恢复任务
-PUT /api/automation/tasks/{taskId}/status
-{ "status": "paused" }  // paused | active | disabled
+# 查看单个任务的执行历史
+GET /api/automation/:id/executions?limit=10
 
 # 手动触发
-POST /api/automation/tasks/{taskId}/trigger
-{ "params": { "override": true } }
+POST /api/automation/:id/trigger
+
+# 更新任务状态
+PUT /api/automation/:id
+{ "status": "paused" }  // paused | active | disabled
+
+# 删除任务
+DELETE /api/automation/:id
+```
+
+### 4. Cron 任务管理
+
+```bash
+# 列出所有 cron 任务
+GET /api/cron
+
+# 创建 cron 任务
+POST /api/cron
+{
+  "name": "每小时数据同步",
+  "cronExpression": "0 * * * *",
+  "timezone": "Asia/Shanghai",
+  "payload": { "kind": "agentTurn", "message": "执行数据同步" }
+}
+
+# 立即运行 cron 任务
+POST /api/cron/:id/run
+
+# 解析 cron 表达式
+POST /api/cron/parse
+{ "cron": "0 2 * * *" }
+
+# 删除 cron 任务
+DELETE /api/cron/:id
 ```
 
 ## 支持的调度表达式
 
-| 场景 | Cron 表达式 | 说明 |
-|------|------------|------|
-| 每小时 | `0 * * * *` | 整点执行 |
-| 每天凌晨2点 | `0 2 * * *` | 避开业务高峰 |
-| 每周一早9点 | `0 9 * * 1` | 周报表 |
-| 每月1号 | `0 3 1 * *` | 月度快照 |
-| 每15分钟 | `*/15 * * * *` | 高频同步 |
+| 场景 | RRULE | Cron 表达式 | 说明 |
+|------|-------|------------|------|
+| 每小时 | `FREQ=HOURLY;BYHOUR=0;BYMINUTE=0` | `0 * * * *` | 整点执行 |
+| 每天凌晨2点 | `FREQ=DAILY;BYHOUR=2;BYMINUTE=0` | `0 2 * * *` | 避开业务高峰 |
+| 每周一早9点 | `FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0` | `0 9 * * 1` | 周报表 |
+| 每月1号 | `FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=3;BYMINUTE=0` | `0 3 1 * *` | 月度快照 |
+| 每15分钟 | — | `*/15 * * * *` | 高频同步 |
 
 ## 最佳实践
 
@@ -157,7 +171,7 @@ POST /api/automation/tasks/{taskId}/trigger
 
 **Q: 任务执行失败了怎么排查？**
 
-A: 1) 查看执行日志 `/api/automation/tasks/{id}/logs`；2) 检查参数是否正确；3) 确认依赖服务（数据库/API）是否可用；4) 手动触发测试。
+A: 1) 查看执行历史 `GET /api/automation/:id/executions`；2) 检查参数是否正确；3) 确认依赖服务（数据库/API）是否可用；4) 手动触发测试 `POST /api/automation/:id/trigger`。
 
 **Q: 多个任务可以并行执行吗？**
 

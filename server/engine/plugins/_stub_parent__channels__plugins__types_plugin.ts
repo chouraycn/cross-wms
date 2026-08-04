@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED FROM OPENCLAW SOURCE (simplified) ===
 // Source: openclaw/src/channels/plugins/types.plugin.ts
 // Status: 已移植 openclaw 同源类型定义（简化版，省略完整 adapter 依赖链）

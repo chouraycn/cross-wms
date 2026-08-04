@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/host-hook-runtime.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的 normalizeOptionalString。
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的 normalizeOptionalString。
 //    改用 cross-wms 的 ../infra/string-coerce.js，行为一致。
 //  - 原文件依赖 ../infra/agent-events.js 的 AgentEventPayload。cross-wms 尚未移植
 //    该模块。这里定义本地最小结构占位，仅含 dispatchPluginAgentEventSubscriptions

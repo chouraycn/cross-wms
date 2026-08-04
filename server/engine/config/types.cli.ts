@@ -1,5 +1,14 @@
-// 移植自 openclaw/src/config/types.cli.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Defines CLI configuration types.
+export type CliBannerTaglineMode = "random" | "default" | "off";
 
-export type CliBannerTaglineMode = unknown;
-export type CliConfig = unknown;
+export type CliConfig = {
+  banner?: {
+    /**
+     * Controls CLI banner tagline behavior.
+     * - "random": pick from tagline pool (default)
+     * - "default": always use DEFAULT_TAGLINE
+     * - "off": hide tagline text
+     */
+    taglineMode?: CliBannerTaglineMode;
+  };
+};

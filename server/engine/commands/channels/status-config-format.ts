@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Config-only channel status formatter used when the gateway is unreachable.
-import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { formatDocsLink } from "@openclaw/terminal-core/links";
+import { theme } from "@openclaw/terminal-core/theme";
 import {
   hasConfiguredUnavailableCredentialStatus,
   hasResolvedCredentialValue,

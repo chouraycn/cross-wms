@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Shared subagent helpers for routing, labels, and transcript text.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { SubagentRunRecord } from '@openclaw-src/agents/subagent-registry.js';
 import { sanitizeTaskStatusText } from '@openclaw-src/tasks/task-status.js';
 import { truncateUtf16Safe } from '@openclaw-src/utils.js';

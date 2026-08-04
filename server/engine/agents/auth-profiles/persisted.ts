@@ -5,12 +5,12 @@
  * Normalizes legacy JSON stores, SQLite/raw payloads, runtime state metadata,
  * legacy OAuth files, and merged main/agent stores.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import { resolveOAuthPath } from "../../config/paths.js";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
+import { resolveOAuthPath } from "@openclaw-src/config/paths.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
-import { loadJsonFile } from "../../infra/json-file.js";
+import { loadJsonFile } from "@openclaw-src/infra/json-file.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { asBoolean } from "../../utils/boolean.js";
 import { AUTH_STORE_VERSION, log } from "./constants.js";
@@ -822,3 +822,6 @@ export function loadPersistedAuthProfileStore(
 export function loadLegacyAuthProfileStore(agentDir?: string): LegacyAuthStore | null {
   return coerceLegacyAuthStore(loadJsonFile(resolveLegacyAuthStorePath(agentDir)));
 }
+
+export { loadJsonFile } from "@openclaw-src/infra/json-file.js";
+export { resolveOAuthPath } from "@openclaw-src/config/paths.js";

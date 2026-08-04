@@ -12,7 +12,6 @@
 
 import type { Trigger, TriggerType, TriggerStats, TriggerExecutionResult, TriggerConditionGroup } from '../../src/services/automation/types.js';
 import { getCronScheduler } from './cronScheduler.js';
-import { getTriggerManager } from './triggerManager.js';
 import { getEventListener } from './eventListener.js';
 import { executeAndRecord } from './engine.js';
 import { getAutomationById } from '../dao/automationDao.js';

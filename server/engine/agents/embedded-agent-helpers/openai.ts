@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Normalizes OpenAI Responses reasoning/tool-call history for safe replay.
  */

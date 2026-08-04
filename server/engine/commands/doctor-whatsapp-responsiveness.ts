@@ -2,7 +2,7 @@
 /** Doctor hints for WhatsApp responsiveness when local TUI clients block gateway work. */
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { StatusSummary } from "./status.types.js";

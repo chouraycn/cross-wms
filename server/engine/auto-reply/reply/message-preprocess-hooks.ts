@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Runs plugin message preprocessing hooks before reply prompt construction.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { fireAndForgetHook } from '@openclaw-src/hooks/fire-and-forget.js';
 import { createInternalHookEvent, triggerInternalHook } from '@openclaw-src/hooks/internal-hooks.js';

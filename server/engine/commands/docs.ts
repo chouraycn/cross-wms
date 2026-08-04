@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Implements docs link/search output for `openclaw docs`.
-import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { formatDocsLink } from "@openclaw/terminal-core/links";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 

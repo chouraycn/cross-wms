@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Prunes already-processed image payloads from replayed prompt history.
  */

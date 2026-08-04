@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Docker sandbox backend implementation.
  *

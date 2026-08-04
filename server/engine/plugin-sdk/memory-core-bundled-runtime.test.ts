@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests bundled memory core runtime facade loading.
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Built-in write session tool.
  *

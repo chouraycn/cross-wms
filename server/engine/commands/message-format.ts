@@ -1,9 +1,9 @@
 // @ts-nocheck
 /** Human-readable formatter for `openclaw message` action results. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { getTerminalTableWidth, renderTable } from "@openclaw-src/packages/terminal-core/src/table.js";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
+import { getTerminalTableWidth, renderTable } from "@openclaw/terminal-core/table";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { getLoadedChannelPlugin } from "@openclaw-src/channels/plugins/index.js";
 import type { ChannelId } from "@openclaw-src/channels/plugins/types.public.js";
 import type { OutboundDeliveryResult } from "@openclaw-src/infra/outbound/deliver.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Setup command registration: baseline setup by default, onboarding wizard when wizard flags appear.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";

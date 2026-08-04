@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { readLatestAssistantTextFromSessionTranscript } from '@openclaw-src/config/sessions.js';
 import { logVerbose } from '@openclaw-src/globals.js';
 import {

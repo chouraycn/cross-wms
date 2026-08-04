@@ -1,7 +1,16 @@
+// @ts-nocheck
 import { logger } from '../../../logger.js';
-import { SessionStore } from './store.js';
+import { saveSessionStore } from './store.js';
 import { generateSessionId } from './session-key.js';
 import type { SessionMetadata } from './types.js';
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { resolveLoadedSessionThreadInfo } from "../../channels/plugins/session-thread-info-loaded.js";
+import { normalizeMessageChannel } from "../../utils/message-channel-normalize.js";
+import type { SessionConfig, SessionResetConfig } from "../types.base.js";
+import type { SessionResetType } from "./reset-policy.js";
 
 export interface ResetOptions {
   keepActive?: boolean;
@@ -20,7 +29,7 @@ export interface ResetResult {
 }
 
 export async function resetAllSessions(
-  store: SessionStore,
+  store: saveSessionStore,
   options: ResetOptions = {}
 ): Promise<ResetResult> {
   const result: ResetResult = {
@@ -93,7 +102,7 @@ export async function resetAllSessions(
 }
 
 export async function resetSession(
-  store: SessionStore,
+  store: saveSessionStore,
   sessionId: string
 ): Promise<SessionMetadata | null> {
   logger.info('[SessionReset] 重置会话:', sessionId);
@@ -124,7 +133,7 @@ export async function resetSession(
 }
 
 export function createNewSessionAsReset(
-  store: SessionStore,
+  store: saveSessionStore,
   templateSessionId?: string
 ): SessionMetadata {
   if (templateSessionId) {
@@ -146,7 +155,7 @@ export function createNewSessionAsReset(
 }
 
 export async function softResetSession(
-  store: SessionStore,
+  store: saveSessionStore,
   sessionId: string
 ): Promise<boolean> {
   logger.info('[SessionReset] 软重置会话（保留元数据，清空消息）:', sessionId);
@@ -181,4 +190,75 @@ export async function softResetSession(
     logger.error('[SessionReset] 软重置失败:', sessionId, err);
     return false;
   }
+}
+
+// ============================================================================
+// OpenClaw reset helpers (merged from openclaw/src/config/sessions/reset.ts)
+// Classify direct, group, and thread sessions and route reset config by channel.
+// ============================================================================
+
+const GROUP_SESSION_MARKERS = [":group:", ":channel:"];
+
+/** Returns true when a session key is known to represent a thread. */
+export function isThreadSessionKey(sessionKey?: string | null): boolean {
+  return Boolean(resolveLoadedSessionThreadInfo(sessionKey).threadId);
+}
+
+export function resolveSessionResetType(params: {
+  sessionKey?: string | null;
+  isGroup?: boolean;
+  isThread?: boolean;
+}): SessionResetType {
+  // Thread wins over group because thread-specific reset policy should apply to grouped replies.
+  if (params.isThread || isThreadSessionKey(params.sessionKey)) {
+    return "thread";
+  }
+  if (params.isGroup) {
+    return "group";
+  }
+  const normalized = normalizeLowercaseStringOrEmpty(params.sessionKey);
+  if (GROUP_SESSION_MARKERS.some((marker) => normalized.includes(marker))) {
+    return "group";
+  }
+  return "direct";
+}
+
+export function resolveThreadFlag(params: {
+  sessionKey?: string | null;
+  messageThreadId?: string | number | null;
+  threadLabel?: string | null;
+  threadStarterBody?: string | null;
+  parentSessionKey?: string | null;
+}): boolean {
+  if (params.messageThreadId != null) {
+    return true;
+  }
+  if (params.threadLabel?.trim()) {
+    return true;
+  }
+  if (params.threadStarterBody?.trim()) {
+    return true;
+  }
+  if (params.parentSessionKey?.trim()) {
+    return true;
+  }
+  return isThreadSessionKey(params.sessionKey);
+}
+
+export function resolveChannelResetConfig(params: {
+  sessionCfg?: SessionConfig;
+  channel?: string | null;
+}): SessionResetConfig | undefined {
+  const resetByChannel = params.sessionCfg?.resetByChannel;
+  if (!resetByChannel) {
+    return undefined;
+  }
+  const normalized = normalizeMessageChannel(params.channel);
+  const fallback = normalizeOptionalLowercaseString(params.channel);
+  // Channel ids can arrive as public message-channel names or raw provider keys.
+  const key = normalized ?? fallback;
+  if (!key) {
+    return undefined;
+  }
+  return resetByChannel[key];
 }

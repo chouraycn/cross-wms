@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Runtime model auth helpers expose provider auth resolution to plugin runtimes.
 import {
   getApiKeyForModel as resolveModelApiKey,
@@ -65,6 +64,6 @@ export async function getRuntimeAuthForModel(params: {
   return {
     ...resolvedAuth,
     ...preparedAuth,
-    apiKey: preparedAuth.apiKey ?? resolvedAuth.apiKey,
+    apiKey: (preparedAuth as any).apiKey ?? resolvedAuth.apiKey,
   };
 }

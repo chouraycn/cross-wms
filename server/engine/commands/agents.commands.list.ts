@@ -29,7 +29,7 @@ function formatSummary(summary: AgentSummary) {
       ? `${summary.id}${defaultTag} (${summary.name})`
       : `${summary.id}${defaultTag}`;
 
-  const identityParts = [];
+  const identityParts: string[] = [];
   if (summary.identityEmoji) {
     identityParts.push(summary.identityEmoji);
   }

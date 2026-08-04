@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Delivery queue recovery drains pending outbound sends with backoff, crash
 // replay protection, unknown-send reconciliation, and failed-entry pruning.
 import {
   resolveDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@cdf-know/normalization-core/number-coercion";
 import type {
   ChannelMessageSendCommitContext,
   ChannelMessageUnknownSendReconciliationResult,
@@ -180,7 +179,7 @@ async function reconcileUnknownQueuedDelivery(opts: {
       ...(entry.platformSendStartedAt !== undefined
         ? { platformSendStartedAt: entry.platformSendStartedAt }
         : {}),
-      payloads: entry.payloads,
+      payloads: entry.payloads as any,
       ...(entry.renderedBatchPlan ? { renderedBatchPlan: entry.renderedBatchPlan } : {}),
       ...(entry.replyToId !== undefined ? { replyToId: entry.replyToId } : {}),
       ...(entry.replyToMode !== undefined ? { replyToMode: entry.replyToMode } : {}),
@@ -244,7 +243,7 @@ function buildReconciledCommitContext(params: {
       kind: "payload",
       text: payload.text ?? "",
       mediaUrl: payload.mediaUrl,
-      payload,
+      payload: payload as any,
     };
   }
   const mediaUrl = payload.mediaUrl ?? payload.mediaUrls?.find((url) => url);
@@ -254,7 +253,7 @@ function buildReconciledCommitContext(params: {
       kind: "media",
       text: payload.text ?? "",
       mediaUrl,
-      audioAsVoice: payload.audioAsVoice,
+      audioAsVoice: (payload as any).audioAsVoice,
       gifPlayback: params.entry.gifPlayback,
       forceDocument: params.entry.forceDocument,
     };

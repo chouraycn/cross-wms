@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED FROM OPENCLAW SOURCE ===
 // Source: openclaw/src/agents/auth-profiles/profiles.ts (upsertAuthProfile 函数)
 // Status: 已移植 upsertAuthProfile 同步实现

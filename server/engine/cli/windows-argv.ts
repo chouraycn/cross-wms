@@ -1,11 +1,11 @@
 // Windows 启动器 argv 规范化：npm/bun 包装器会在 argv 中重复 node.exe。
 //
-// 降级说明：原 openclaw 版本依赖 `@openclaw/normalization-core/string-coerce` 的
+// 降级说明：原 openclaw 版本依赖 `@cdf-know/normalization-core/string-coerce` 的
 // `normalizeLowercaseStringOrEmpty`，这里改为本地实现以避免引入外部包。
 
 /**
  * 将字符串规范化为小写形式；非字符串或空值返回空字符串。
- * 本地降级实现，替代 `@openclaw/normalization-core/string-coerce` 的同名导出。
+ * 本地降级实现，替代 `@cdf-know/normalization-core/string-coerce` 的同名导出。
  */
 function normalizeLowercaseStringOrEmpty(value: unknown): string {
   if (typeof value !== "string") {

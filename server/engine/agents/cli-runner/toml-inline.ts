@@ -1,9 +1,8 @@
-// @ts-nocheck
 
 /**
  * Minimal TOML inline serializer for CLI config overrides.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 
 function escapeTomlString(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');

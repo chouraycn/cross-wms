@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway e2e proof: turn-source routing fields change gateway response behavior.
 //
 // Without turn-source fields: plugin.approval.request expires immediately with

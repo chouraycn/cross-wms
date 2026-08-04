@@ -8,6 +8,24 @@ export enum LogLevel {
   Silent = 6,
 }
 
+export const ALLOWED_LOG_LEVELS = [
+  "trace",
+  "debug",
+  "info",
+  "warn",
+  "error",
+  "fatal",
+  "silent",
+] as const;
+
+export function levelToMinLevel(level: string): LogLevel {
+  return parseLogLevel(level);
+}
+
+export function normalizeLogLevel(level: string | undefined): LogLevel {
+  return parseLogLevel(level);
+}
+
 export function parseLogLevel(level: string | undefined): LogLevel {
   if (!level) return LogLevel.Info;
   const lower = level.toLowerCase().trim();

@@ -1,5 +1,5 @@
 // LLM Runtime tests cover api registry behavior.
-import { createAssistantMessageEventStream, type Model } from "@openclaw/llm-core";
+import { createAssistantMessageEventStream, type Model } from "@cdf-know/llm-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { getApiProvider, registerApiProvider, unregisterApiProviders } from "./api-registry.js";
 

@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * Resolves configured native harness policy for agent ids.
  */
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { AUTO_AGENT_RUNTIME_ID, type EmbeddedAgentRuntime } from "../agent-runtime-id.js";
 import { normalizeOptionalAgentRuntimeId } from "../agent-runtime-id.js";
-import { resolveModelRuntimePolicy } from "../model-runtime-policy.js";
+import { resolveModelRuntimePolicy } from "@openclaw-src/agents/model-runtime-policy.js";
 import { openAIProviderUsesCodexRuntimeByDefault } from "../openai-routing.js";
 
 /**
@@ -51,3 +50,5 @@ export function resolveAgentHarnessPolicy(params: {
     runtimeSource,
   };
 }
+
+export { resolveModelRuntimePolicy } from "@openclaw-src/agents/model-runtime-policy.js";

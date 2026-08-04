@@ -83,6 +83,34 @@ export type selectApplicableRuntimeConfig = unknown;
 export type setRuntimeConfigSnapshot = unknown;
 export type setRuntimeConfigSnapshotRefreshHandler = unknown;
 export type projectConfigOntoRuntimeSourceSnapshot = unknown;
+// Value stubs: config.ts 通过 `export {}` 重导出这些名称为值，必须提供运行时绑定。
+export function clearRuntimeConfigSnapshot(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function getRuntimeConfigSnapshotMetadata(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function getRuntimeConfigSnapshot(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function getRuntimeConfigSourceSnapshot(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function resetConfigRuntimeState(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function resolveRuntimeConfigCacheKey(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function selectApplicableRuntimeConfig(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function setRuntimeConfigSnapshot(..._args: unknown[]): unknown {
+  return undefined;
+}
+export function setRuntimeConfigSnapshotRefreshHandler(..._args: unknown[]): unknown {
+  return undefined;
+}
 export const projectConfigOntoRuntimeSourceSnapshot: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
 export type CircularIncludeError = unknown;
 export const CircularIncludeError: new (...args: unknown[]) => any = undefined as unknown as new (...args: unknown[]) => any;

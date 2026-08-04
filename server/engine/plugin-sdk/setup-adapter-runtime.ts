@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @deprecated Compatibility subpath. Import setup helpers from
  * `openclaw/plugin-sdk/setup-runtime` instead.

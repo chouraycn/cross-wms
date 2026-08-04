@@ -1,5 +1,17 @@
-// 移植自 openclaw/src/config/types.channel-health.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Defines channel heartbeat and health visibility configuration types.
+export type ChannelHeartbeatVisibilityConfig = {
+  /** Show HEARTBEAT_OK acknowledgments in chat (default: false). */
+  showOk?: boolean;
+  /** Show heartbeat alerts with actual content (default: true). */
+  showAlerts?: boolean;
+  /** Emit indicator events for UI status display (default: true). */
+  useIndicator?: boolean;
+};
 
-export type ChannelHeartbeatVisibilityConfig = unknown;
-export type ChannelHealthMonitorConfig = unknown;
+export type ChannelHealthMonitorConfig = {
+  /**
+   * Enable channel-health-monitor restarts for this channel or account.
+   * Inherits the global gateway setting when omitted.
+   */
+  enabled?: boolean;
+};

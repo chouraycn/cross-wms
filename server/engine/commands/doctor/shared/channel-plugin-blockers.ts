@@ -1,5 +1,5 @@
 // Doctor warnings for configured channels blocked by disabled channel plugins.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import { listExplicitlyDisabledChannelIdsForConfig } from "@openclaw-src/channels/config-presence.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

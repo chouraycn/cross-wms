@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Gateway health probes used by doctor before deeper daemon and memory diagnostics. */
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { probeGatewayStatus } from "@openclaw-src/cli/daemon-cli/probe.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {

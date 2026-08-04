@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests approval reaction runtime helper behavior.
  */

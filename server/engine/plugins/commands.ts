@@ -215,7 +215,7 @@ function buildPluginCommandRuntimeContext(params: {
             allowModelOverride: false,
             allowComplete: true,
           } as RuntimeLlmAuthority,
-        }).complete(request);
+        }).complete(request) as any;
       },
     },
   };
@@ -375,7 +375,7 @@ export async function executePluginCommand(params: {
     ...(diagnosticsPrivateRoutedForCommand === undefined
       ? {}
       : { diagnosticsPrivateRouted: diagnosticsPrivateRoutedForCommand }),
-    requestConversationBinding: async (bindingParams: PluginConversationBindingRequestParams) => {
+    requestConversationBinding: (async (bindingParams: PluginConversationBindingRequestParams) => {
       if (!command.pluginRoot || !bindingConversation) {
         return {
           status: "error",
@@ -390,7 +390,7 @@ export async function executePluginCommand(params: {
         conversation: bindingConversation,
         binding: bindingParams,
       });
-    },
+    }) as any,
     detachConversationBinding: async () => {
       if (!command.pluginRoot || !bindingConversation) {
         return { removed: false };

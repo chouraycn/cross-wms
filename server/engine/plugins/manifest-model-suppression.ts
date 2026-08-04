@@ -3,7 +3,7 @@
  *
  * 移植自 openclaw/src/plugins/manifest-model-suppression.ts。
  *
- * 降级策略：原文件依赖 @openclaw/normalization-core/string-coerce、
+ * 降级策略：原文件依赖 @cdf-know/normalization-core/string-coerce、
  * ./manifest-registry.js。运行时函数降级为返回空结果。
  */
 

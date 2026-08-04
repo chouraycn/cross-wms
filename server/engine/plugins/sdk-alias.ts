@@ -12,6 +12,10 @@ import { PluginLruCache } from "./plugin-cache-primitives.js";
 type PluginSdkAliasCandidateKind = "dist" | "src";
 export type PluginSdkResolutionPreference = "auto" | "dist" | "src";
 
+// ESM 模块下 __filename/__dirname 不可用，预先解析当前模块路径
+const currentModuleUrl = import.meta.url;
+const currentModulePath = fileURLToPath(currentModuleUrl);
+
 export type LoaderModuleResolveParams = {
   modulePath?: string;
   argv1?: string;
@@ -85,7 +89,7 @@ export function normalizeJitiAliasTargetPath(targetPath: string): string {
 }
 
 function resolveLoaderModulePath(params: LoaderModuleResolveParams = {}): string {
-  return params.modulePath ?? fileURLToPath(params.moduleUrl ?? __filename);
+  return params.modulePath ?? fileURLToPath(params.moduleUrl ?? currentModuleUrl);
 }
 
 function readPluginSdkPackageJson(packageRoot: string): PluginSdkPackageJson | null {
@@ -519,63 +523,63 @@ const JS_STATIC_RELATIVE_DEPENDENCY_PATTERN =
 // source/dist alias here to keep source checkouts and packaged builds aligned.
 const WORKSPACE_PACKAGE_ALIAS_ENTRIES: WorkspacePackageAliasEntry[] = [
   {
-    packageName: "@openclaw/gateway-client",
+    packageName: "@cdf-know/gateway-client",
     packageDir: "gateway-client",
     subpath: "",
     srcFile: "index.ts",
     distFile: "index.mjs",
   },
   {
-    packageName: "@openclaw/gateway-client",
+    packageName: "@cdf-know/gateway-client",
     packageDir: "gateway-client",
     subpath: "readiness",
     srcFile: "readiness.ts",
     distFile: "readiness.mjs",
   },
   {
-    packageName: "@openclaw/gateway-client",
+    packageName: "@cdf-know/gateway-client",
     packageDir: "gateway-client",
     subpath: "timeouts",
     srcFile: "timeouts.ts",
     distFile: "timeouts.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "",
     srcFile: "index.ts",
     distFile: "index.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "client-info",
     srcFile: "client-info.ts",
     distFile: "client-info.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "connect-error-details",
     srcFile: "connect-error-details.ts",
     distFile: "connect-error-details.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "schema",
     srcFile: "schema.ts",
     distFile: "schema.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "startup-unavailable",
     srcFile: "startup-unavailable.ts",
     distFile: "startup-unavailable.mjs",
   },
   {
-    packageName: "@openclaw/gateway-protocol",
+    packageName: "@cdf-know/gateway-protocol",
     packageDir: "gateway-protocol",
     subpath: "version",
     srcFile: "version.ts",
@@ -645,35 +649,35 @@ const WORKSPACE_PACKAGE_ALIAS_ENTRIES: WorkspacePackageAliasEntry[] = [
     distFile: "types.mjs",
   },
   {
-    packageName: "@openclaw/media-generation-core",
+    packageName: "@cdf-know/media-generation-core",
     packageDir: "media-generation-core",
     subpath: "",
     srcFile: "index.ts",
     distFile: "index.mjs",
   },
   {
-    packageName: "@openclaw/media-generation-core",
+    packageName: "@cdf-know/media-generation-core",
     packageDir: "media-generation-core",
     subpath: "capability-model-ref",
     srcFile: "capability-model-ref.ts",
     distFile: "capability-model-ref.mjs",
   },
   {
-    packageName: "@openclaw/media-generation-core",
+    packageName: "@cdf-know/media-generation-core",
     packageDir: "media-generation-core",
     subpath: "catalog",
     srcFile: "catalog.ts",
     distFile: "catalog.mjs",
   },
   {
-    packageName: "@openclaw/media-generation-core",
+    packageName: "@cdf-know/media-generation-core",
     packageDir: "media-generation-core",
     subpath: "model-ref",
     srcFile: "model-ref.ts",
     distFile: "model-ref.mjs",
   },
   {
-    packageName: "@openclaw/media-generation-core",
+    packageName: "@cdf-know/media-generation-core",
     packageDir: "media-generation-core",
     subpath: "normalization",
     srcFile: "normalization.ts",
@@ -757,35 +761,35 @@ const WORKSPACE_PACKAGE_ALIAS_ENTRIES: WorkspacePackageAliasEntry[] = [
     distFile: "read-response-with-limit.mjs",
   },
   {
-    packageName: "@openclaw/normalization-core",
+    packageName: "@cdf-know/normalization-core",
     packageDir: "normalization-core",
     subpath: "",
     srcFile: "index.ts",
     distFile: "index.mjs",
   },
   {
-    packageName: "@openclaw/normalization-core",
+    packageName: "@cdf-know/normalization-core",
     packageDir: "normalization-core",
     subpath: "number-coercion",
     srcFile: "number-coercion.ts",
     distFile: "number-coercion.mjs",
   },
   {
-    packageName: "@openclaw/normalization-core",
+    packageName: "@cdf-know/normalization-core",
     packageDir: "normalization-core",
     subpath: "record-coerce",
     srcFile: "record-coerce.ts",
     distFile: "record-coerce.mjs",
   },
   {
-    packageName: "@openclaw/normalization-core",
+    packageName: "@cdf-know/normalization-core",
     packageDir: "normalization-core",
     subpath: "string-coerce",
     srcFile: "string-coerce.ts",
     distFile: "string-coerce.mjs",
   },
   {
-    packageName: "@openclaw/normalization-core",
+    packageName: "@cdf-know/normalization-core",
     packageDir: "normalization-core",
     subpath: "string-normalization",
     srcFile: "string-normalization.ts",
@@ -953,56 +957,56 @@ const WORKSPACE_PACKAGE_ALIAS_ENTRIES: WorkspacePackageAliasEntry[] = [
     distFile: "url-userinfo.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "",
     srcFile: "index.ts",
     distFile: "index.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "configured-model-refs",
     srcFile: "configured-model-refs.ts",
     distFile: "configured-model-refs.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "model-catalog-refs",
     srcFile: "model-catalog-refs.ts",
     distFile: "model-catalog-refs.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "model-catalog-normalize",
     srcFile: "model-catalog-normalize.ts",
     distFile: "model-catalog-normalize.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "model-catalog-types",
     srcFile: "model-catalog-types.ts",
     distFile: "model-catalog-types.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "provider-id",
     srcFile: "provider-id.ts",
     distFile: "provider-id.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "provider-model-id-normalization",
     srcFile: "provider-model-id-normalization.ts",
     distFile: "provider-model-id-normalization.mjs",
   },
   {
-    packageName: "@openclaw/model-catalog-core",
+    packageName: "@cdf-know/model-catalog-core",
     packageDir: "model-catalog-core",
     subpath: "provider-model-id-normalize",
     srcFile: "provider-model-id-normalize.ts",
@@ -1542,7 +1546,7 @@ export function listPluginSdkExportedSubpaths(
     pluginSdkResolution?: PluginSdkResolutionPreference;
   } = {},
 ): string[] {
-  const modulePath = params.modulePath ?? __filename;
+  const modulePath = params.modulePath ?? currentModulePath;
   const packageRoot = resolveLoaderPluginSdkPackageRoot({
     modulePath,
     argv1: params.argv1,
@@ -1586,7 +1590,7 @@ export function resolvePluginSdkScopedAliasMap(
     pluginSdkResolution?: PluginSdkResolutionPreference;
   } = {},
 ): Record<string, string> {
-  const modulePath = params.modulePath ?? __filename;
+  const modulePath = params.modulePath ?? currentModulePath;
   const packageRoot = resolveLoaderPluginSdkPackageRoot({
     modulePath,
     argv1: params.argv1,

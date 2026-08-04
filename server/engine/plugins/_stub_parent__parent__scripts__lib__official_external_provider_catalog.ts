@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === DEGRADED IMPLEMENTATION (data file placeholder) ===
 // Source: openclaw/scripts/lib/official-external-provider-catalog.json (待迁移)
 // Status: 降级实现 stub — 返回空对象 {}

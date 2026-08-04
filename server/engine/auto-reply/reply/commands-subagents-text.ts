@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Text extraction helpers for subagent command output. */
 import { sanitizeTextContent } from '@openclaw-src/agents/tools/chat-history-text.js';
 import { extractTextFromChatContent } from '@openclaw-src/shared/chat-content.js';

@@ -20,8 +20,8 @@ export type {
 } from './schema.js';
 export { resolveEnvVar, resolveEnvVars } from './env-vars.js';
 export type { EnvVarBinding } from './env-vars.js';
-export { resolveConfigPath, resolveDataDir, resolveConfigDir } from './paths.js';
-export type { ConfigPaths } from './paths.js';
+export { resolveConfigPath, resolveStateDir, resolveConfigDir } from './paths.js';
+export type { CONFIG_PATH } from './paths.js';
 export { migrateLegacyConfig, detectLegacyConfig } from './legacy.js';
 export type { LegacyConfigResult } from './legacy.js';
 
@@ -70,12 +70,12 @@ export {
 
 export * as sessions from './sessions/index.js';
 export {
-  SessionStore,
-  getSessionStore,
+  // SessionStore,  // removed: not exported from sessions/index.js
+  // getSessionStore,  // removed: not exported from sessions/index.js
   SessionStoreWriter,
   SessionStoreCache,
   SessionStoreMaintenance,
-  SessionAccessor,
+  // SessionAccessor,  // removed: not exported from sessions/index.js
   Transcript,
   getTranscript,
   TranscriptStream,
@@ -89,7 +89,7 @@ export {
   ThreadInfoManager,
   generateSessionId,
   generateSessionKey,
-  resolveSessionPaths,
+  // resolveSessionPaths,  // removed: not exported from sessions/index.js
   ensureSessionDirs,
   sessionFileExists,
   archivedSessionFileExists,
@@ -137,7 +137,7 @@ export {
   getCurrentSchemaVersion,
 } from './sessions/index.js';
 export type {
-  SessionStatus,
+  // SessionStatus,  // removed: not exported from sessions/index.js
   SessionMetadata,
   SessionData,
   SessionGoal,
@@ -158,7 +158,7 @@ export type {
   ResetResult,
   SessionListOptions,
   SessionListResult,
-  SessionKey,
+  // SessionKey,  // removed: not exported from sessions/index.js
   SessionFileInfo,
   StoreWriteResult,
   SessionPaths,

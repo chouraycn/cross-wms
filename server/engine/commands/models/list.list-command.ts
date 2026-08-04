@@ -1,5 +1,5 @@
 /** Implementation of `openclaw models list`. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { parseModelRef } from "@openclaw-src/agents/model-selection.js";
 import type { ModelRegistry } from "@openclaw-src/llm/model-registry.js";
 import type { Model } from "@openclaw-src/llm/types.js";

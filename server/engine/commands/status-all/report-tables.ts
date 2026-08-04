@@ -2,7 +2,7 @@
 // Table row helpers for status report sections.
 // These functions keep terminal styling decisions out of the scan/data layer.
 
-import type { RenderTableOptions } from "@openclaw-src/packages/terminal-core/src/table.js";
+import type { RenderTableOptions } from "@openclaw/terminal-core/table";
 import { formatTimeAgo } from "./format.js";
 import type { StatusReportSection } from "./text-report.js";
 

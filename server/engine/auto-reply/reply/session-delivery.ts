@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Resolves persisted delivery route fields for session-bound replies.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';
 import { buildAgentMainSessionKey } from '@openclaw-src/routing/session-key.js';
 import { parseAgentSessionKey } from '@openclaw-src/sessions/session-key-utils.js';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests memory host event log helpers and persisted event behavior.
  */

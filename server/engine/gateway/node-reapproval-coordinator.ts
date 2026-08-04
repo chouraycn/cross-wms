@@ -1,4 +1,3 @@
-// @ts-nocheck
 // 在配对 node 重新审批请求进入配对存储前进行协调。
 // 移植自 openclaw/src/gateway/node-reapproval-coordinator.ts。
 // 依赖调整：
@@ -54,8 +53,8 @@ type LocalRateLimiter = {
 };
 
 function createAuthRateLimiter(config: RateLimitConfig): LocalRateLimiter {
-  const maxAttempts = config.maxAttempts > 0 ? config.maxAttempts : 5;
-  const windowMs = config.windowMs > 0 ? config.windowMs : 60_000;
+  const maxAttempts: number = (config.maxAttempts ?? 0) > 0 ? config.maxAttempts! : 5;
+  const windowMs: number = (config.windowMs ?? 0) > 0 ? config.windowMs! : 60_000;
   const store = new Map<string, { count: number; windowStart: number }>();
 
   return {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel policy helper exports and policy decisions.
  */

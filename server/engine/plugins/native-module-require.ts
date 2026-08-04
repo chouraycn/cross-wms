@@ -5,7 +5,7 @@ import Module from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const nodeRequire = createRequire(__filename);
+const nodeRequire = createRequire(import.meta.url);
 type ResolveFilename = (
   request: string,
   parent: NodeJS.Module | undefined,

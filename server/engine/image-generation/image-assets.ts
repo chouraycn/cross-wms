@@ -367,6 +367,74 @@ export function cloneImageAsset(asset: GeneratedImageAsset): GeneratedImageAsset
   };
 }
 
+// ============================================================================
+// Stubs for openclaw-aligned exports (minimal implementations)
+// ============================================================================
+
+export type ImageMimeTypeDetection = { mimeType: string; extension: string };
+export type OpenAiCompatibleImageResponseEntry = { b64_json?: unknown; mime_type?: unknown; revised_prompt?: unknown };
+export type OpenAiCompatibleImageResponsePayload = { data?: unknown };
+
+export function imageFileExtensionForMimeType(mimeType: string | undefined, fallback = "png"): string {
+  if (!mimeType) return fallback;
+  const normalized = mimeType.split(";")[0]?.trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (normalized.includes("jpeg") || normalized.includes("jpg")) return "jpg";
+  if (normalized.includes("svg")) return "svg";
+  const slashIndex = normalized.indexOf("/");
+  return slashIndex >= 0 ? normalized.slice(slashIndex + 1) || fallback : fallback;
+}
+
+export function toImageDataUrl(params: { buffer: Buffer; mimeType?: string; defaultMimeType?: string }): string {
+  const mimeType = params.mimeType ?? params.defaultMimeType ?? "image/png";
+  return `data:${mimeType};base64,${params.buffer.toString("base64")}`;
+}
+
+export function parseImageDataUrl(dataUrl: string): { mimeType: string; base64: string } | undefined {
+  const match = dataUrl.match(/^data:(image\/[^;,]+)(?:;[^,]*)?;base64,(.+)$/is);
+  if (!match) return undefined;
+  return { mimeType: match[1], base64: match[2] };
+}
+
+export function generatedImageAssetFromBase64(params: {
+  base64: string | undefined; index: number; mimeType?: string;
+  revisedPrompt?: string; defaultMimeType?: string; fileNamePrefix?: string; sniffMimeType?: boolean;
+}): GeneratedImageAsset | undefined {
+  if (!params.base64) return undefined;
+  const buffer = Buffer.from(params.base64, "base64");
+  const mimeType = params.mimeType ?? params.defaultMimeType ?? "image/png";
+  return {
+    buffer,
+    mimeType,
+    fileName: `${params.fileNamePrefix ?? "image"}-${params.index}.${imageFileExtensionForMimeType(mimeType)}`,
+    revisedPrompt: params.revisedPrompt,
+  };
+}
+
+export function generatedImageAssetFromDataUrl(params: {
+  dataUrl: string; index: number; fileNamePrefix?: string;
+}): GeneratedImageAsset | undefined {
+  const parsed = parseImageDataUrl(params.dataUrl);
+  if (!parsed) return undefined;
+  return generatedImageAssetFromBase64({ base64: parsed.base64, index: params.index, mimeType: parsed.mimeType, fileNamePrefix: params.fileNamePrefix });
+}
+
+export function generatedImageAssetFromOpenAiCompatibleEntry(params: {
+  entry: OpenAiCompatibleImageResponseEntry; index: number;
+  defaultMimeType?: string; fileNamePrefix?: string; sniffMimeType?: boolean;
+}): GeneratedImageAsset | undefined {
+  const b64 = typeof params.entry.b64_json === "string" ? params.entry.b64_json : undefined;
+  const mimeType = typeof params.entry.mime_type === "string" ? params.entry.mime_type : undefined;
+  const revisedPrompt = typeof params.entry.revised_prompt === "string" ? params.entry.revised_prompt : undefined;
+  return generatedImageAssetFromBase64({ base64: b64, index: params.index, mimeType, revisedPrompt, defaultMimeType: params.defaultMimeType, fileNamePrefix: params.fileNamePrefix, sniffMimeType: params.sniffMimeType });
+}
+
+export function imageSourceUploadFileName(params: { fileName?: string; mimeType?: string; index: number; prefix?: string }): string {
+  if (params.fileName) return params.fileName;
+  const ext = imageFileExtensionForMimeType(params.mimeType);
+  return `${params.prefix ?? "image"}-${params.index}.${ext}`;
+}
+
 export function validateImageAsset(asset: GeneratedImageAsset): {
   valid: boolean;
   errors: string[];

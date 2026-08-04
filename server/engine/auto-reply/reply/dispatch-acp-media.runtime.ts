@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime media-understanding dependencies used by ACP reply dispatch. */
 export { applyMediaUnderstanding } from '@openclaw-src/media-understanding/apply.js';
 export { MediaAttachmentCache } from '@openclaw-src/media-understanding/attachments.js';

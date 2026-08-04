@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Builds model picker choices and endpoint labels for model directives.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { findNormalizedProviderValue, normalizeProviderId } from '@openclaw-src/agents/model-selection.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 

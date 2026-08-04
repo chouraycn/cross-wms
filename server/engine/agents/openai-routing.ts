@@ -4,7 +4,7 @@
  * 自定义 OpenAI 兼容 baseUrl 会显式绕过 Codex-runtime 默认值。
  *
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/model-catalog-core/provider-id 中的 normalizeProviderId
+ *   - @cdf-know/model-catalog-core/provider-id 中的 normalizeProviderId
  *   - config/types.openclaw.js 中的 OpenClawConfig
  * 本地降级实现：normalizeProviderId 内联为 trim+lowercase；
  * OpenClawConfig 视为 unknown，仅做运行时字段访问。

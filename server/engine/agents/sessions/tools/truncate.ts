@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Session tool truncation facade.
  *

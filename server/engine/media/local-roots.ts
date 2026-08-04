@@ -2,9 +2,9 @@
 // Ported from openclaw/src/media/local-roots.ts.
 //
 // Dependency adjustments:
-//   - @openclaw/normalization-core/string-coerce (normalizeOptionalString)
+//   - @cdf-know/normalization-core/string-coerce (normalizeOptionalString)
 //     → ./string-helpers.js (cross-wms local stub)
-//   - @openclaw/normalization-core/string-normalization (uniqueStrings)
+//   - @cdf-know/normalization-core/string-normalization (uniqueStrings)
 //     → ./_porting-stubs.js
 //   - ../agents/agent-scope.js (resolveAgentWorkspaceDir) → ./_porting-stubs.js
 //   - ../agents/tool-fs-policy.js (resolveEffectiveToolFs*) → ./_porting-stubs.js

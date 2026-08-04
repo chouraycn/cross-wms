@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Model picker provider catalog helpers build provider choices from catalog data.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import { resolveDefaultAgentDir } from "../agents/agent-scope.js";
 import { ensureAuthProfileStoreWithoutExternalProfiles } from "../agents/auth-profiles.js";
 import type { ModelCatalogEntry } from "../agents/model-catalog.js";

@@ -38,6 +38,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import WorkflowEditor from '../components/Workflow/WorkflowEditor';
 import type { Workflow, WorkflowTemplate } from '../../server/engine/workflow/types';
+import { t } from '../i18n';
 
 const STATUS_COLORS = {
   draft: 'default',
@@ -45,11 +46,15 @@ const STATUS_COLORS = {
   archived: 'warning',
 } as const;
 
-const STATUS_LABELS = {
-  draft: '草稿',
-  published: '已发布',
-  archived: '已归档',
-} as const;
+/** 获取工作流状态的本地化标签 */
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'draft': return t('workflowPage:statusDraft');
+    case 'published': return t('workflowPage:statusPublished');
+    case 'archived': return t('workflowPage:statusArchived');
+    default: return status;
+  }
+}
 
 const WorkflowPage: React.FC = () => {
   const theme = useTheme();
@@ -91,10 +96,10 @@ const WorkflowPage: React.FC = () => {
       if (response.ok) {
         setWorkflows(result.data);
       } else {
-        setError(result.error || '加载失败');
+        setError(result.error || t('workflowPage:loadFailed'));
       }
     } catch (err) {
-      setError('网络错误，请稍后重试');
+      setError(t('workflowPage:networkErrorRetry'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +112,7 @@ const WorkflowPage: React.FC = () => {
   // 创建工作流
   const handleCreate = useCallback(async () => {
     if (!newWorkflowName) {
-      setSnackbar({ open: true, message: '请输入工作流名称', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:nameRequired'), severity: 'error' });
       return;
     }
 
@@ -122,7 +127,7 @@ const WorkflowPage: React.FC = () => {
             {
               id: 'trigger-1',
               type: 'trigger',
-              name: '触发器',
+              name: t('workflowPage:triggerNode'),
               config: { type: 'manual' },
               position: { x: 100, y: 100 },
               connections: [],
@@ -137,42 +142,42 @@ const WorkflowPage: React.FC = () => {
       const result = await response.json();
 
       if (response.ok) {
-        setSnackbar({ open: true, message: '创建成功', severity: 'success' });
+        setSnackbar({ open: true, message: t('workflowPage:createSuccess'), severity: 'success' });
         setCreateDialogOpen(false);
         setNewWorkflowName('');
         setNewWorkflowDesc('');
         loadWorkflows();
       } else {
-        setSnackbar({ open: true, message: result.error || '创建失败', severity: 'error' });
+        setSnackbar({ open: true, message: result.error || t('workflowPage:createFailed'), severity: 'error' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: '网络错误', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:networkError'), severity: 'error' });
     }
   }, [newWorkflowName, newWorkflowDesc, loadWorkflows]);
 
   // 删除工作流
   const handleDelete = useCallback(async (id: string) => {
-    if (!window.confirm('确定要删除这个工作流吗？')) return;
+    if (!window.confirm(t('workflowPage:deleteConfirm'))) return;
 
     try {
       const response = await fetch(`/api/workflow/${id}`, { method: 'DELETE' });
       const result = await response.json();
 
       if (response.ok) {
-        setSnackbar({ open: true, message: '删除成功', severity: 'success' });
+        setSnackbar({ open: true, message: t('workflowPage:deleteSuccess'), severity: 'success' });
         loadWorkflows();
       } else {
-        setSnackbar({ open: true, message: result.error || '删除失败', severity: 'error' });
+        setSnackbar({ open: true, message: result.error || t('workflowPage:deleteFailed'), severity: 'error' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: '网络错误', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:networkError'), severity: 'error' });
     }
   }, [loadWorkflows]);
 
   // 执行工作流
   const handleExecute = useCallback(async (workflow: Workflow) => {
     if (workflow.status !== 'published') {
-      setSnackbar({ open: true, message: '只有已发布的工作流才能执行', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:executeRestricted'), severity: 'error' });
       return;
     }
 
@@ -187,12 +192,12 @@ const WorkflowPage: React.FC = () => {
       const result = await response.json();
 
       if (response.ok) {
-        setSnackbar({ open: true, message: '工作流执行已启动', severity: 'success' });
+        setSnackbar({ open: true, message: t('workflowPage:executeStarted'), severity: 'success' });
       } else {
-        setSnackbar({ open: true, message: result.error || '执行失败', severity: 'error' });
+        setSnackbar({ open: true, message: result.error || t('workflowPage:executeFailed'), severity: 'error' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: '网络错误', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:networkError'), severity: 'error' });
     } finally {
       setIsExecuting(false);
     }
@@ -210,13 +215,13 @@ const WorkflowPage: React.FC = () => {
       const result = await response.json();
 
       if (response.ok) {
-        setSnackbar({ open: true, message: '保存成功', severity: 'success' });
+        setSnackbar({ open: true, message: t('workflowPage:saveSuccess'), severity: 'success' });
         loadWorkflows();
       } else {
-        setSnackbar({ open: true, message: result.error || '保存失败', severity: 'error' });
+        setSnackbar({ open: true, message: result.error || t('workflowPage:saveFailed'), severity: 'error' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: '网络错误', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:networkError'), severity: 'error' });
     }
   }, [loadWorkflows]);
 
@@ -234,9 +239,9 @@ const WorkflowPage: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
 
-      setSnackbar({ open: true, message: '导出成功', severity: 'success' });
+      setSnackbar({ open: true, message: t('workflowPage:exportSuccess'), severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: '导出失败', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:exportFailed'), severity: 'error' });
     }
   }, []);
 
@@ -266,14 +271,14 @@ const WorkflowPage: React.FC = () => {
       const result = await response.json();
 
       if (response.ok) {
-        setSnackbar({ open: true, message: '创建成功', severity: 'success' });
+        setSnackbar({ open: true, message: t('workflowPage:createSuccess'), severity: 'success' });
         setTemplateDialogOpen(false);
         loadWorkflows();
       } else {
-        setSnackbar({ open: true, message: result.error || '创建失败', severity: 'error' });
+        setSnackbar({ open: true, message: result.error || t('workflowPage:createFailed'), severity: 'error' });
       }
     } catch (err) {
-      setSnackbar({ open: true, message: '网络错误', severity: 'error' });
+      setSnackbar({ open: true, message: t('workflowPage:networkError'), severity: 'error' });
     }
   }, [loadWorkflows]);
 
@@ -293,7 +298,7 @@ const WorkflowPage: React.FC = () => {
     <Box sx={{ p: 3 }}>
       {/* 页面标题 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">工作流管理</Typography>
+        <Typography variant="h4">{t('workflowPage:title')}</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
@@ -303,13 +308,13 @@ const WorkflowPage: React.FC = () => {
               setTemplateDialogOpen(true);
             }}
           >
-            模板市场
+            {t('workflowPage:templateMarket')}
           </Button>
           <Button
             variant="outlined"
             startIcon={<UploadIcon />}
           >
-            导入
+            {t('workflowPage:import')}
           </Button>
         </Box>
       </Box>
@@ -332,7 +337,7 @@ const WorkflowPage: React.FC = () => {
       {!loading && workflows.length === 0 && (
         <Box sx={{ textAlign: 'center', p: 4 }}>
           <Typography variant="h6" color="text.secondary">
-            暂无工作流，点击右下角按钮创建
+            {t('workflowPage:emptyState')}
           </Typography>
         </Box>
       )}
@@ -346,19 +351,19 @@ const WorkflowPage: React.FC = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="h6">{workflow.name}</Typography>
                     <Chip
-                      label={STATUS_LABELS[workflow.status]}
-                      color={STATUS_COLORS[workflow.status]}
+                      label={getStatusLabel(workflow.status)}
+                      color={STATUS_COLORS[workflow.status as keyof typeof STATUS_COLORS]}
                       size="small"
                     />
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {workflow.description || '无描述'}
+                    {workflow.description || t('workflowPage:noDescription')}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    节点数: {workflow.nodes.length} | 版本: {workflow.version}
+                    {t('workflowPage:nodeCount')}: {workflow.nodes.length} | {t('workflowPage:version')}: {workflow.version}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                    更新时间: {new Date(workflow.updatedAt).toLocaleString()}
+                    {t('workflowPage:updatedAt')}: {new Date(workflow.updatedAt).toLocaleString()}
                   </Typography>
                 </CardContent>
                 <CardActions>
@@ -392,18 +397,18 @@ const WorkflowPage: React.FC = () => {
 
       {/* 创建对话框 */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
-        <DialogTitle>创建新工作流</DialogTitle>
+        <DialogTitle>{t('workflowPage:createDialogTitle')}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="工作流名称"
+              label={t('workflowPage:formName')}
               value={newWorkflowName}
               onChange={(e) => setNewWorkflowName(e.target.value)}
               fullWidth
               required
             />
             <TextField
-              label="描述"
+              label={t('workflowPage:formDescription')}
               value={newWorkflowDesc}
               onChange={(e) => setNewWorkflowDesc(e.target.value)}
               multiline
@@ -413,8 +418,8 @@ const WorkflowPage: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>取消</Button>
-          <Button variant="contained" onClick={handleCreate}>创建</Button>
+          <Button onClick={() => setCreateDialogOpen(false)}>{t('workflowPage:cancel')}</Button>
+          <Button variant="contained" onClick={handleCreate}>{t('workflowPage:create')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -438,7 +443,7 @@ const WorkflowPage: React.FC = () => {
 
       {/* 模板市场对话框 */}
       <Dialog open={templateDialogOpen} onClose={() => setTemplateDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>模板市场</DialogTitle>
+        <DialogTitle>{t('workflowPage:templateMarketTitle')}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
             {templates.map(template => (
@@ -459,13 +464,13 @@ const WorkflowPage: React.FC = () => {
                     <Button
                       size="small"
                       onClick={() => {
-                        const name = prompt('请输入工作流名称:', template.name);
+                        const name = prompt(t('workflowPage:nameRequired'), template.name);
                         if (name) {
                           handleCreateFromTemplate(template.id, name);
                         }
                       }}
                     >
-                      使用模板
+                      {t('workflowPage:useTemplate')}
                     </Button>
                   </CardActions>
                 </Card>
@@ -474,7 +479,7 @@ const WorkflowPage: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTemplateDialogOpen(false)}>关闭</Button>
+          <Button onClick={() => setTemplateDialogOpen(false)}>{t('workflowPage:close')}</Button>
         </DialogActions>
       </Dialog>
 

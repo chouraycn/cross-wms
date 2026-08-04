@@ -1,36 +1,13 @@
-/**
- * Simplified port of openclaw/src/secrets/storage-scan.ts
- *
- * Filesystem discovery and bounded JSON readers for local secret storage audits.
- *
- * Simplification: listAgentIds and resolveAgentDir from agent-scope.js are not
- * ported yet. Inlined stubs return ["main"] and default dir so discovery only
- * covers the implicit main agent until agent-scope is ported.
- */
+/** Filesystem discovery and bounded JSON readers for local secret storage audits. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord as isJsonObject } from "../infra/record-coerce.js";
+import { isRecord as isJsonObject } from "@cdf-know/normalization-core/record-coerce";
+import { listAgentIds, resolveAgentDir } from "../agents/agent-scope.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { resolveUserPath } from "../infra/_fs-safe-stubs.js";
+import { resolveUserPath } from "../utils.js";
 import { listAuthProfileStoreAgentDirs as listAuthProfileStoreAgentDirsFromAuthStorePaths } from "./auth-store-paths.js";
 import { parseEnvValue } from "./shared.js";
-
-/**
- * Stub for listAgentIds from agent-scope.js (unported).
- * Returns only "main" until agent-scope is ported.
- */
-function listAgentIds(_config: OpenClawConfig): string[] {
-  return ["main"];
-}
-
-/**
- * Stub for resolveAgentDir from agent-scope.js (unported).
- * Returns the default main agent dir until agent-scope is ported.
- */
-function resolveAgentDir(_config: OpenClawConfig, agentId: string): string {
-  return path.join("agents", agentId, "agent");
-}
 
 /** Parses one .env assignment value using the shared shell-ish env parser. */
 export function parseEnvAssignmentValue(raw: string): string {
@@ -64,7 +41,7 @@ export function listLegacyAuthJsonPaths(stateDir: string): string[] {
 function resolveActiveAgentDir(stateDir: string, env: NodeJS.ProcessEnv = process.env): string {
   const override = env.OPENCLAW_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
   if (override) {
-    return resolveUserPath(override);
+    return resolveUserPath(override, env);
   }
   // Storage scans must include the implicit main agent even before config has agent entries.
   return path.join(resolveUserPath(stateDir), "agents", "main", "agent");

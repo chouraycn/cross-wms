@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Private QA CLI loader, enabled only from source checkouts and explicit env opt-in.
 import fs from "node:fs";
 import path from "node:path";

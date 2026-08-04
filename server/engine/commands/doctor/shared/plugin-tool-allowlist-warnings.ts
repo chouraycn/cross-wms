@@ -1,9 +1,9 @@
 // Doctor warnings for plugin allowlists that make configured tool policies ineffective.
-import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as hasRecord } from "@cdf-know/normalization-core/record-coerce";
 import {
   sortUniqueStrings,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@cdf-know/normalization-core/string-normalization";
 import { sanitizeServerName, TOOL_NAME_SEPARATOR } from "@openclaw-src/agents/agent-bundle-mcp-names.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "@openclaw-src/agents/glob-pattern.js";
 import { resolveProviderToolPolicy } from "@openclaw-src/agents/provider-tool-policy.js";

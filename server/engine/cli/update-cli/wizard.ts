@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Interactive updater entrypoint: resolves current install/channel state, prompts for
 // a target channel, then delegates the actual mutation to the non-interactive updater.
 import { confirm, isCancel } from "@clack/prompts";
@@ -50,8 +49,8 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
     readConfigFileSnapshot(),
   ]);
 
-  const configChannel = configSnapshot.valid
-    ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
+  const configChannel = (configSnapshot as any).valid
+    ? normalizeUpdateChannel((configSnapshot as any).config.update?.channel)
     : null;
   const channelInfo = resolveEffectiveUpdateChannel({
     configChannel,

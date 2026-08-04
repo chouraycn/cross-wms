@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared get-reply test fixtures for sessions, directives, and mocked runtimes.
 import { expect, vi, type Mock } from "vitest";
 import type { MsgContext } from "../templating.js";

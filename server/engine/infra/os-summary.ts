@@ -1,5 +1,5 @@
 // Collects operating system summary facts for diagnostics.
-// 降级实现：使用 cross-wms 本地的 normalizeOptionalString 替代 @openclaw/normalization-core/string-coerce。
+// 降级实现：使用 cross-wms 本地的 normalizeOptionalString 替代 @cdf-know/normalization-core/string-coerce。
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 

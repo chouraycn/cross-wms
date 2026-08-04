@@ -4,7 +4,7 @@
  * Keeps provider metadata and built-in model exceptions on one path before request payloads are built.
  *
  * 移植自 openclaw/src/agents/openai-reasoning-compat.ts。
- * 注意：原 openclaw 实现依赖 @openclaw/normalization-core/string-coerce 中的
+ * 注意：原 openclaw 实现依赖 @cdf-know/normalization-core/string-coerce 中的
  * normalizeLowercaseStringOrEmpty。本地降级实现：内联该函数。
  */
 

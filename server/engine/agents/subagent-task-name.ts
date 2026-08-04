@@ -1,11 +1,33 @@
 /**
- * 移植自 openclaw/src/agents/subagent-task-name.ts
+ * Subagent task-name normalization.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tool callers use this to validate optional named subagent targets while
+ * keeping reserved target words out of user-defined task names.
  */
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 
-export function normalizeSubagentTaskName(..._args: unknown[]): unknown {
-  return undefined;
+const SUBAGENT_TASK_NAME_RE = /^[a-z][a-z0-9_-]{0,63}$/;
+const RESERVED_SUBAGENT_TASK_NAMES = new Set(["all", "last"]);
+
+type NormalizeSubagentTaskNameResult =
+  | { taskName?: string; error?: undefined }
+  | { taskName?: undefined; error: string };
+
+/** Normalizes and validates an optional subagent task name. */
+export function normalizeSubagentTaskName(value: unknown): NormalizeSubagentTaskNameResult {
+  const taskName = normalizeOptionalString(value);
+  if (!taskName) {
+    return {};
+  }
+  if (!SUBAGENT_TASK_NAME_RE.test(taskName)) {
+    return {
+      error: `Invalid taskName "${taskName}". Use 1-64 chars matching [a-z][a-z0-9_-]*.`,
+    };
+  }
+  if (RESERVED_SUBAGENT_TASK_NAMES.has(taskName)) {
+    return {
+      error: `Invalid taskName "${taskName}". Reserved subagent targets cannot be used as taskName values.`,
+    };
+  }
+  return { taskName };
 }

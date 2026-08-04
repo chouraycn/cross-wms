@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Test fixtures for bash process registry state.
  * Provides complete session objects so tests can focus on the field under

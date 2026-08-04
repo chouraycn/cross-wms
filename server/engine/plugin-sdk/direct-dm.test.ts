@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests direct-message guard policy helpers exposed through the SDK.
  */

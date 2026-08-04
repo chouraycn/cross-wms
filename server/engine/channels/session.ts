@@ -1,65 +1,83 @@
-import { logger } from '../../logger.js';
+// Inbound channel session recorder and last-route updater.
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import type { MsgContext } from "../auto-reply/templating.js";
+import type { GroupKeyResolution } from "../config/sessions/types.js";
+import { normalizeSessionKeyPreservingOpaquePeerIds } from "../sessions/session-key-utils.js";
+import type { InboundLastRouteUpdate } from "./session.types.js";
+export type { InboundLastRouteUpdate, RecordInboundSession } from "./session.types.js";
 
-export interface ChannelSession {
-  sessionId: string;
-  channelId: string;
-  channelType: string;
-  targetId?: string;
-  userId?: string;
-  startTime: number;
-  lastActivityTime: number;
-  metadata?: Record<string, unknown>;
+let inboundSessionRuntimePromise: Promise<
+  typeof import("../config/sessions/inbound.runtime.js")
+> | null = null;
+
+function loadInboundSessionRuntime() {
+  // Keep session persistence lazy so channel SDK type paths do not load disk writers.
+  inboundSessionRuntimePromise ??= import("../config/sessions/inbound.runtime.js");
+  return inboundSessionRuntimePromise;
 }
 
-const channelSessions = new Map<string, ChannelSession>();
-
-export function createChannelSession(params: {
-  channelId: string;
-  channelType: string;
-  targetId?: string;
-  userId?: string;
-}): ChannelSession {
-  const sessionId = `${params.channelId}-${Date.now()}`;
-  const session: ChannelSession = {
-    sessionId,
-    channelId: params.channelId,
-    channelType: params.channelType,
-    targetId: params.targetId,
-    userId: params.userId,
-    startTime: Date.now(),
-    lastActivityTime: Date.now(),
-    metadata: {},
-  };
-
-  channelSessions.set(sessionId, session);
-  logger.debug(`[Channels:Session] Created session ${sessionId}`);
-  return session;
-}
-
-export function getChannelSession(sessionId: string): ChannelSession | undefined {
-  return channelSessions.get(sessionId);
-}
-
-export function getChannelSessionsByChannel(channelId: string): ChannelSession[] {
-  return Array.from(channelSessions.values()).filter(s => s.channelId === channelId);
-}
-
-export function updateChannelSessionActivity(sessionId: string): void {
-  const session = channelSessions.get(sessionId);
-  if (session) {
-    session.lastActivityTime = Date.now();
+function shouldSkipPinnedMainDmRouteUpdate(
+  pin: InboundLastRouteUpdate["mainDmOwnerPin"] | undefined,
+): boolean {
+  if (!pin) {
+    return false;
   }
-}
-
-export function closeChannelSession(sessionId: string): void {
-  channelSessions.delete(sessionId);
-  logger.debug(`[Channels:Session] Closed session ${sessionId}`);
-}
-
-export function closeChannelSessionsByChannel(channelId: string): void {
-  for (const [id, session] of channelSessions) {
-    if (session.channelId === channelId) {
-      channelSessions.delete(id);
-    }
+  const owner = normalizeLowercaseStringOrEmpty(pin.ownerRecipient);
+  const sender = normalizeLowercaseStringOrEmpty(pin.senderRecipient);
+  if (!owner || !sender || owner === sender) {
+    return false;
   }
+  pin.onSkip?.({ ownerRecipient: pin.ownerRecipient, senderRecipient: pin.senderRecipient });
+  return true;
+}
+
+export async function recordInboundSession(params: {
+  storePath: string;
+  sessionKey: string;
+  ctx: MsgContext;
+  groupResolution?: GroupKeyResolution | null;
+  createIfMissing?: boolean;
+  updateLastRoute?: InboundLastRouteUpdate;
+  onRecordError: (err: unknown) => void;
+  trackSessionMetaTask?: (task: Promise<unknown>) => void;
+}): Promise<void> {
+  // Session keys may contain opaque peer ids; preserve case-sensitive payloads while normalizing shape.
+  const { storePath, sessionKey, ctx, groupResolution, createIfMissing } = params;
+  const canonicalSessionKey = normalizeSessionKeyPreservingOpaquePeerIds(sessionKey);
+  const runtime = await loadInboundSessionRuntime();
+  const metaTask = runtime
+    .recordSessionMetaFromInbound({
+      storePath,
+      sessionKey: canonicalSessionKey,
+      ctx,
+      groupResolution,
+      createIfMissing,
+    })
+    .catch(params.onRecordError);
+  params.trackSessionMetaTask?.(metaTask);
+  void metaTask;
+
+  const update = params.updateLastRoute;
+  if (!update) {
+    return;
+  }
+  if (shouldSkipPinnedMainDmRouteUpdate(update.mainDmOwnerPin)) {
+    return;
+  }
+  const targetSessionKey = normalizeSessionKeyPreservingOpaquePeerIds(update.sessionKey);
+  await runtime.updateLastRoute({
+    storePath,
+    sessionKey: targetSessionKey,
+    route: update.route,
+    deliveryContext: {
+      channel: update.channel,
+      to: update.to,
+      accountId: update.accountId,
+      threadId: update.threadId,
+    },
+    // Avoid leaking inbound origin metadata into a different target session.
+    ctx: targetSessionKey === canonicalSessionKey ? ctx : undefined,
+    groupResolution,
+    createIfMissing,
+  });
 }

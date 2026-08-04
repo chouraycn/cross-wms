@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Cron simple command registration: remove, toggle, show, runs, and run-now.
 import {
   resolvePositiveTimerTimeoutMs,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import type { Command } from "commander";
 import type { CronDeliveryPreview, CronJob } from "../../cron/types.js";
 import { parseStrictPositiveInteger } from "../../infra/parse-finite-number.js";
@@ -297,7 +296,7 @@ export function registerCronSimpleCommands(cron: Command) {
               timeoutMs: waitTimeoutMs,
               pollIntervalMs,
             });
-            printCronJson({ ...res, completed: true, status: run.status, run });
+            printCronJson({ ...(res as any), completed: true, status: run.status, run });
             defaultRuntime.exit(run.status === "ok" ? 0 : 1);
             return;
           }

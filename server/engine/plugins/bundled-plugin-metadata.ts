@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/bundled-plugin-metadata.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-normalization 的 uniqueStrings。
+//  - 原文件依赖 @cdf-know/normalization-core/string-normalization 的 uniqueStrings。
 //    改用 cross-wms 的 ../infra/string-normalization.js，已提供同名导出。
 //  - 原文件依赖 ../infra/json-files.js 的 tryReadJsonSync。改用 cross-wms 的
 //    ../infra/_fs-safe-stubs.js 中同名导出，行为一致。
@@ -25,6 +25,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { uniqueStrings } from "../infra/string-normalization.js";
 import { tryReadJsonSync } from "../infra/_fs-safe-stubs.js";
 import {
@@ -160,12 +161,14 @@ function collectBundledChannelConfigs(_params: {
 // bundled-plugin-metadata 实现
 // ============================================================================
 
+const currentModulePath = fileURLToPath(import.meta.url);
+const currentModuleDir = path.dirname(currentModulePath);
 const OPENCLAW_PACKAGE_ROOT =
   resolveLoaderPackageRoot({
-    modulePath: __filename,
-    moduleUrl: __filename,
-  }) ?? path.resolve(__dirname, "..", "..");
-const CURRENT_MODULE_PATH = __filename;
+    modulePath: currentModulePath,
+    moduleUrl: import.meta.url,
+  }) ?? path.resolve(currentModuleDir, "..", "..");
+const CURRENT_MODULE_PATH = currentModulePath;
 const RUNNING_FROM_BUILT_ARTIFACT =
   CURRENT_MODULE_PATH.includes(`${path.sep}dist${path.sep}`) ||
   CURRENT_MODULE_PATH.includes(`${path.sep}dist-runtime${path.sep}`);

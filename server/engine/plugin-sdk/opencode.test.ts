@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests OpenCode SDK helpers and provider-facing OpenCode contracts.
  */

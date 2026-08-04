@@ -79,7 +79,7 @@ function buildPluginRecordFromInstalledIndex(
       ? { version: plugin.packageVersion ?? manifest?.version }
       : {}),
     ...(manifest?.description ? { description: manifest.description } : {}),
-    format,
+    format: format as any,
     ...(bundleFormat ? { bundleFormat } : {}),
     ...(manifest?.kind ? { kind: manifest.kind } : {}),
     source: plugin.source ?? plugin.manifestPath,
@@ -125,7 +125,7 @@ function buildPluginRecordFromInstalledIndex(
         optionalDependencies: manifest?.packageOptionalDependencies,
       }),
     } as { dependencyStatus: ReturnType<typeof buildPluginDependencyStatus> }),
-  };
+  } as any;
 }
 
 /** Resolves the best available plugin registry snapshot and annotates dependency status. */

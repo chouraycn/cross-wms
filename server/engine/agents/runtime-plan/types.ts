@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public type contract for prepared agent runtime plans. These types describe
  * provider auth, prompt, tool, transcript, delivery, outcome, transport, and

@@ -1,6 +1,6 @@
 // Bash tool helper tests cover conversion from model-facing timeout seconds to
 // timer-safe millisecond values.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@cdf-know/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
 import { resolveBashTimeoutMs } from "./bash.js";
 

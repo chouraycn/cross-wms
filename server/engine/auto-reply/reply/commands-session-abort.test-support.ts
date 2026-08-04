@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared mocks for session abort command tests.
 import { vi } from "vitest";
 

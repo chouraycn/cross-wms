@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Schema-level tests for gateway.tls certPath and keyPath validation.
 import { describe, expect, it } from "vitest";
 import { validateConfigObject } from "./validation.js";

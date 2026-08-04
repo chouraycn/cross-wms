@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * OpenClaw-owned agent runtime facade.
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Config mutation helpers used by chat commands that edit OpenClaw config. */
 import { setConfigValueAtPath, unsetConfigValueAtPath } from '@openclaw-src/config/config-paths.js';
 import {

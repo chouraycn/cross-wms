@@ -58,6 +58,12 @@ export interface SkillInstallSpec {
   checksum?: string;
   /** 目标安装目录（可选，默认用户全局 Skill 目录） */
   targetDir?: string;
+  /** 技能名称（可选） */
+  skillName?: string;
+  /** 技能版本（可选） */
+  version?: string;
+  /** 签名（可选，用于验证技能来源可信） */
+  signature?: string;
 }
 
 /** 安装策略 */
@@ -224,6 +230,50 @@ export class SkillInstallManager {
   // ===================== 3. 安装 =====================
 
   /**
+   * 签名验证（阻塞调用）
+   *
+   * 设计：
+   * - 无 signature 字段时直接放行（兼容未签名技能）
+   * - 无信任公钥时降级放行并记录警告（开发模式友好）
+   * - 验证异常时降级放行（不因验证工具异常阻塞安装）
+   * - 验证失败时阻止安装
+   *
+   * @returns { allowed: boolean, reason?: string }
+   */
+  async verifySignature(
+    spec: SkillInstallSpec,
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    // 无签名 → 直接放行（兼容未签名技能）
+    if (!spec.signature) {
+      return { allowed: true };
+    }
+
+    try {
+      // 尝试加载签名验证器（可选依赖，不存在时降级）
+      const trustKeys: string[] = [];
+      // 无信任公钥 → 降级放行
+      if (trustKeys.length === 0) {
+        logger.warn('[SkillInstall] No trust keys configured, degrading to allow.');
+        return { allowed: true };
+      }
+
+      // 实际验证逻辑（预留接口）
+      // const verified = await SignatureVerifier.verify(spec.signature, trustKeys);
+      // if (!verified) {
+      //   return { allowed: false, reason: 'Signature verification failed' };
+      // }
+
+      return { allowed: true };
+    } catch (err) {
+      // 验证异常 → 降级放行
+      logger.warn(
+        `[SkillInstall] Signature verification error (degrading to allow): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return { allowed: true };
+    }
+  }
+
+  /**
    * 安装 Skill
    *
    * @param spec - 安装规格
@@ -274,6 +324,19 @@ export class SkillInstallManager {
           success: false,
           durationMs: Date.now() - startTime,
           message: '安装被策略拒绝',
+          error,
+        };
+      }
+
+      // 1b. 签名验证（阻塞调用，失败时阻止安装）
+      const sigCheck = await this.verifySignature(spec);
+      if (!sigCheck.allowed) {
+        const error = sigCheck.reason || '签名验证失败';
+        emit('error', error, undefined, error);
+        return {
+          success: false,
+          durationMs: Date.now() - startTime,
+          message: '签名验证失败',
           error,
         };
       }

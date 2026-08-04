@@ -1,11 +1,9 @@
-/**
- * 移植自 openclaw/src/agents/embedded-agent-subscribe.promise.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
-
-export function isPromiseLike(..._args: unknown[]): unknown {
-  return false;
+/** Narrow unknown values to PromiseLike without requiring a concrete Promise. */
+export function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return Boolean(
+    value &&
+    (typeof value === "object" || typeof value === "function") &&
+    "then" in value &&
+    typeof (value as { then?: unknown }).then === "function",
+  );
 }

@@ -5,7 +5,7 @@
  * Collects provider/profile ids from configured models, runtimes, auth order,
  * and agent defaults to limit CLI credential probing.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,

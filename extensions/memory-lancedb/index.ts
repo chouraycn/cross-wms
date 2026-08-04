@@ -229,12 +229,19 @@ class MemoryDB {
   private db: LanceDB.Connection | null = null;
   private table: LanceDB.Table | null = null;
   private initPromise: Promise<void> | null = null;
+  private readonly dbPath: string;
+  private readonly vectorDim: number;
+  private readonly storageOptions?: Record<string, string>;
 
   constructor(
-    private readonly dbPath: string,
-    private readonly vectorDim: number,
-    private readonly storageOptions?: Record<string, string>,
-  ) {}
+    dbPath: string,
+    vectorDim: number,
+    storageOptions?: Record<string, string>,
+  ) {
+    this.dbPath = dbPath;
+    this.vectorDim = vectorDim;
+    this.storageOptions = storageOptions;
+  }
 
   private async ensureInitialized(): Promise<void> {
     if (this.table) {
@@ -372,13 +379,17 @@ type Embeddings = {
 
 class OpenAiCompatibleEmbeddings implements Embeddings {
   private clientPromise: Promise<OpenAiEmbeddingClient>;
+  private model: string;
+  private dimensions?: number;
 
   constructor(
     apiKey: string,
-    private model: string,
+    model: string,
     baseUrl?: string,
-    private dimensions?: number,
+    dimensions?: number,
   ) {
+    this.model = model;
+    this.dimensions = dimensions;
     this.clientPromise = loadOpenAiModule().then(
       ({ default: OpenAI }) => new OpenAI({ apiKey, baseURL: baseUrl }) as OpenAiEmbeddingClient,
     );
@@ -409,11 +420,16 @@ class OpenAiCompatibleEmbeddings implements Embeddings {
 
 class ProviderAdapterEmbeddings implements Embeddings {
   private providerPromise: Promise<MemoryEmbeddingProvider> | undefined;
+  private api: OpenClawPluginApi;
+  private embedding: MemoryConfig["embedding"];
 
   constructor(
-    private api: OpenClawPluginApi,
-    private embedding: MemoryConfig["embedding"],
-  ) {}
+    api: OpenClawPluginApi,
+    embedding: MemoryConfig["embedding"],
+  ) {
+    this.api = api;
+    this.embedding = embedding;
+  }
 
   private getProvider(): Promise<MemoryEmbeddingProvider> {
     // Auth profiles and local providers can be repaired while the Gateway stays up.
@@ -530,9 +546,11 @@ function buildMemoryRecallUnavailableResult(error: string): AgentToolResult<{
 }
 
 class MemoryRecallEmbeddingError extends Error {
-  constructor(readonly originalError: unknown) {
+  readonly originalError: unknown;
+  constructor(originalError: unknown) {
     super(formatMemoryRecallError(originalError));
     this.name = "MemoryRecallEmbeddingError";
+    this.originalError = originalError;
   }
 }
 

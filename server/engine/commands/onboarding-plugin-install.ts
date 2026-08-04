@@ -7,8 +7,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
 import { resolveBundledInstallPlanForCatalogEntry } from "@openclaw-src/cli/plugin-install-plan.js";
 import { invalidatePluginRuntimeDiscoveryAfterConfigMutation } from "@openclaw-src/cli/plugins-registry-refresh.js";
 import { assertConfigWriteAllowedInCurrentMode } from "@openclaw-src/config/nix-mode-write-guard.js";

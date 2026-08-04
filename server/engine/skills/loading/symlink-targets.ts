@@ -1,11 +1,11 @@
 // Shared helpers for config-trusted skill symlink targets.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "../../infra/string-coerce.js";
-import { uniqueStrings } from "../../infra/string-normalization.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { isPathInside } from "../../infra/path-guards.js";
-import { resolveUserPath } from "../../infra/_fs-safe-stubs.js";
+import { resolveUserPath } from "../../utils.js";
 
 export function resolveAllowedSkillSymlinkTargetRealPaths(config?: OpenClawConfig): string[] {
   const rawTargets = config?.skills?.load?.allowSymlinkTargets ?? [];
@@ -24,8 +24,7 @@ export function findContainingAllowedSkillSymlinkTarget(
   const resolvedCandidate = path.resolve(candidateRealPath);
   for (const rootRealPath of rootRealPaths) {
     const resolvedRoot = path.resolve(rootRealPath);
-    // cross-wms isPathInside(target, root) 参数顺序与 openclaw isPathInside(root, target) 相反
-    if (isPathInside(resolvedCandidate, resolvedRoot)) {
+    if (isPathInside(resolvedRoot, resolvedCandidate)) {
       return resolvedRoot;
     }
   }

@@ -34,7 +34,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Run lint
         run: npm run lint
@@ -84,7 +84,7 @@ jobs:
           cache-modules: false
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Run npm audit (moderate level)
         run: npm audit --audit-level=moderate --omit=dev

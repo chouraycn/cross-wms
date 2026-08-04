@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === SIMPLIFIED MIGRATION — 部分移植 ===
 // Source: openclaw/src/secrets/provider-env-vars.ts
 // Used by: server/engine/plugins/{provider-auth-ref,provider-auth-helpers}.ts

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime-only dispatch dependencies shared by config-driven reply delivery. */
 import { updateSessionEntry } from '@openclaw-src/config/sessions/session-accessor.js';
 import type { SessionEntry } from '@openclaw-src/config/sessions/types.js';

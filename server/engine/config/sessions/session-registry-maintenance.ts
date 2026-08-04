@@ -2,11 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../../../logger.js';
 import { listSessionFiles, listArchivedSessionFiles, readSessionFirstLine } from './session-file.js';
-import type { SessionMetadata, SessionStatus } from './types.js';
+import type { SessionMetadata, SessionGoalStatus } from './types.js';
 
 export interface RegistryEntry {
   sessionId: string;
-  status: SessionStatus;
+  status: SessionGoalStatus;
   title: string;
   createdAt: string;
   updatedAt: string;
@@ -112,7 +112,7 @@ export function rebuildRegistry(
 function buildRegistryEntry(
   dir: string,
   sessionId: string,
-  status: SessionStatus
+  status: SessionGoalStatus
 ): RegistryEntry | null {
   try {
     const firstLine = readSessionFirstLine(dir, sessionId);
@@ -186,7 +186,7 @@ export function removeRegistryEntry(registry: SessionRegistry, sessionId: string
 export function findRegistryEntries(
   registry: SessionRegistry,
   options: {
-    status?: SessionStatus | SessionStatus[];
+    status?: SessionGoalStatus | SessionGoalStatus[];
     searchQuery?: string;
     tags?: string[];
   } = {}

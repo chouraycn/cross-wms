@@ -5,7 +5,7 @@
  *
  * 移植自 openclaw/src/agents/openai-text-verbosity.ts。
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/normalization-core/string-coerce 中的 normalizeOptionalLowercaseString
+ *   - @cdf-know/normalization-core/string-coerce 中的 normalizeOptionalLowercaseString
  *   - ./embedded-agent-runner/logger.js 中的 log
  * 本地降级实现：normalizeOptionalLowercaseString 内联实现；log 降级为 console。
  */

@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/agent-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow Agent Core - Agent 核心执行引擎",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

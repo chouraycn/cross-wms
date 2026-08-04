@@ -1,93 +1,254 @@
-import { logger } from '../../logger.js';
-import { evaluateToolPolicies, type PolicyEvaluationContext, type PolicyEvaluationResult } from './tool-policy-match.js';
+// @ts-nocheck
+/**
+ * Applies layered tool policy in runtime resolution order. Policy diagnostics
+ * stay tied to the layer that introduced them, while plugin groups are
+ * expanded only after unknown core/plugin entries are classified.
+ */
+import { filterToolsByPolicy } from "./agent-tools.policy.js";
+import type { AnyAgentTool } from "./agent-tools.types.js";
+import { isKnownCoreToolId } from "./tool-catalog.js";
+import { auditToolPolicyFilter, type ToolPolicyAuditLogLevel } from "./tool-policy-audit.js";
+import {
+  analyzeAllowlistByToolType,
+  buildPluginToolGroups,
+  expandPolicyWithPluginGroups,
+  normalizeToolName,
+  type DeclaredToolAllowlistContext,
+  type ToolPolicyLike,
+} from "./tool-policy.js";
 
-export type PipelineStage = 'pre_validation' | 'policy_check' | 'post_validation' | 'final';
+const MAX_TOOL_POLICY_WARNING_CACHE = 256;
+const seenToolPolicyWarnings = new Set<string>();
+const toolPolicyWarningOrder: string[] = [];
 
-export interface PipelineHook {
-  stage: PipelineStage;
-  name: string;
-  handler: (context: PolicyEvaluationContext) => PolicyEvaluationResult | Promise<PolicyEvaluationResult>;
-  priority: number;
-}
-
-const hooks: PipelineHook[] = [];
-
-export function registerPipelineHook(hook: Omit<PipelineHook, 'priority'> & { priority?: number }): void {
-  const fullHook: PipelineHook = {
-    ...hook,
-    priority: hook.priority ?? 0,
-  };
-  hooks.push(fullHook);
-  hooks.sort((a, b) => b.priority - a.priority);
-  logger.debug(`[Agents:ToolPolicyPipeline] Registered hook: ${hook.name} (${hook.stage})`);
-}
-
-export function unregisterPipelineHook(name: string): boolean {
-  const index = hooks.findIndex(h => h.name === name);
-  if (index === -1) return false;
-  hooks.splice(index, 1);
-  logger.debug(`[Agents:ToolPolicyPipeline] Unregistered hook: ${name}`);
+function rememberToolPolicyWarning(warning: string): boolean {
+  if (seenToolPolicyWarnings.has(warning)) {
+    return false;
+  }
+  if (seenToolPolicyWarnings.size >= MAX_TOOL_POLICY_WARNING_CACHE) {
+    const oldest = toolPolicyWarningOrder.shift();
+    if (oldest) {
+      seenToolPolicyWarnings.delete(oldest);
+    }
+  }
+  seenToolPolicyWarnings.add(warning);
+  toolPolicyWarningOrder.push(warning);
   return true;
 }
 
-export function listPipelineHooks(): PipelineHook[] {
-  return [...hooks];
+/** One named policy layer in the effective runtime tool policy pipeline. */
+export type ToolPolicyPipelineStep = {
+  policy: ToolPolicyLike | undefined;
+  label: string;
+  stripPluginOnlyAllowlist?: boolean;
+  suppressUnavailableCoreToolWarning?: boolean;
+  suppressUnavailableCoreToolWarningAllowlist?: string[];
+  unavailableCoreToolReason?: string;
+};
+
+/** Builds the default profile, provider, agent, group, and sender policy layers. */
+export function buildDefaultToolPolicyPipelineSteps(params: {
+  profilePolicy?: ToolPolicyLike;
+  profile?: string;
+  profileUnavailableCoreWarningAllowlist?: string[];
+  providerProfilePolicy?: ToolPolicyLike;
+  providerProfile?: string;
+  providerProfileUnavailableCoreWarningAllowlist?: string[];
+  globalPolicy?: ToolPolicyLike;
+  globalProviderPolicy?: ToolPolicyLike;
+  agentPolicy?: ToolPolicyLike;
+  agentProviderPolicy?: ToolPolicyLike;
+  groupPolicy?: ToolPolicyLike;
+  senderPolicy?: ToolPolicyLike;
+  agentId?: string;
+  unavailableCoreToolReason?: string;
+}): ToolPolicyPipelineStep[] {
+  const agentId = params.agentId?.trim();
+  const profile = params.profile?.trim();
+  const providerProfile = params.providerProfile?.trim();
+  const unavailableCoreToolReason = params.unavailableCoreToolReason?.trim();
+  return [
+    {
+      policy: params.profilePolicy,
+      label: profile ? `tools.profile (${profile})` : "tools.profile",
+      stripPluginOnlyAllowlist: true,
+      suppressUnavailableCoreToolWarningAllowlist: params.profileUnavailableCoreWarningAllowlist,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.providerProfilePolicy,
+      label: providerProfile
+        ? `tools.byProvider.profile (${providerProfile})`
+        : "tools.byProvider.profile",
+      stripPluginOnlyAllowlist: true,
+      suppressUnavailableCoreToolWarningAllowlist:
+        params.providerProfileUnavailableCoreWarningAllowlist,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.globalPolicy,
+      label: "tools.allow",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.globalProviderPolicy,
+      label: "tools.byProvider.allow",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.agentPolicy,
+      label: agentId ? `agents.${agentId}.tools.allow` : "agent tools.allow",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.agentProviderPolicy,
+      label: agentId ? `agents.${agentId}.tools.byProvider.allow` : "agent tools.byProvider.allow",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.groupPolicy,
+      label: "group tools.allow",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+    {
+      policy: params.senderPolicy,
+      label: "tools.toolsBySender",
+      stripPluginOnlyAllowlist: true,
+      unavailableCoreToolReason,
+    },
+  ];
 }
 
-export function getHooksByStage(stage: PipelineStage): PipelineHook[] {
-  return hooks.filter(h => h.stage === stage);
-}
+/** Applies configured policy layers to a tool list and emits deduped warnings/audit events. */
+export function applyToolPolicyPipeline(params: {
+  tools: AnyAgentTool[];
+  toolMeta: (tool: AnyAgentTool) => { pluginId: string } | undefined;
+  warn: (message: string) => void;
+  steps: ToolPolicyPipelineStep[];
+  auditLogLevel?: ToolPolicyAuditLogLevel;
+  declaredToolAllowlist?: DeclaredToolAllowlistContext;
+}): AnyAgentTool[] {
+  const coreToolNames = new Set(
+    params.tools
+      .filter((tool) => !params.toolMeta(tool))
+      .map((tool) => normalizeToolName(tool.name))
+      .filter(Boolean),
+  );
 
-export async function runPolicyPipeline(context: PolicyEvaluationContext): Promise<PolicyEvaluationResult> {
-  const result: PolicyEvaluationResult = {
-    decision: 'allow',
-    matchedPolicies: [],
-    reasons: [],
-  };
+  const pluginGroups = buildPluginToolGroups({
+    tools: params.tools,
+    toolMeta: params.toolMeta,
+  });
 
-  const stages: PipelineStage[] = ['pre_validation', 'policy_check', 'post_validation', 'final'];
+  let filtered = params.tools;
+  for (const step of params.steps) {
+    if (!step.policy) {
+      continue;
+    }
 
-  for (const stage of stages) {
-    const stageHooks = getHooksByStage(stage);
-    
-    for (const hook of stageHooks) {
-      try {
-        const hookResult = await hook.handler(context);
-        
-        result.matchedPolicies.push(...hookResult.matchedPolicies);
-        result.reasons.push(...hookResult.reasons);
-        
-        if (hookResult.decision === 'deny') {
-          result.decision = 'deny';
-          logger.debug(`[Agents:ToolPolicyPipeline] Deny from hook: ${hook.name}`);
-          return result;
-        } else if (hookResult.decision === 'require_approval' && result.decision === 'allow') {
-          result.decision = 'require_approval';
+    let policy: ToolPolicyLike | undefined = step.policy;
+    if (step.stripPluginOnlyAllowlist) {
+      // Plugin-only allowlists are valid for deferred tools; warn only for entries that cannot match.
+      const resolved = analyzeAllowlistByToolType(
+        policy,
+        pluginGroups,
+        coreToolNames,
+        params.declaredToolAllowlist,
+      );
+      if (resolved.unknownAllowlist.length > 0) {
+        const unavailableCoreWarningAllowlist = new Set(
+          (step.suppressUnavailableCoreToolWarningAllowlist ?? []).map((entry) =>
+            normalizeToolName(entry),
+          ),
+        );
+        const gatedCoreEntries = resolved.unknownAllowlist.filter((entry) =>
+          isKnownCoreToolId(entry),
+        );
+        const warnableGatedCoreEntries = step.suppressUnavailableCoreToolWarning
+          ? []
+          : gatedCoreEntries.filter((entry) => !unavailableCoreWarningAllowlist.has(entry));
+        const otherEntries = resolved.unknownAllowlist.filter(
+          (entry) => !isKnownCoreToolId(entry) && !unavailableCoreWarningAllowlist.has(entry),
+        );
+        const warningEntries = [...warnableGatedCoreEntries, ...otherEntries];
+        if (
+          shouldWarnAboutUnknownAllowlist({
+            hasGatedCoreEntries: warnableGatedCoreEntries.length > 0,
+            hasOtherEntries: otherEntries.length > 0,
+          })
+        ) {
+          const entries = warningEntries.join(", ");
+          const suffix = describeUnknownAllowlistSuffix({
+            pluginOnlyAllowlist: resolved.pluginOnlyAllowlist,
+            hasGatedCoreEntries: warnableGatedCoreEntries.length > 0,
+            hasOtherEntries: otherEntries.length > 0,
+            unavailableCoreToolReason: step.unavailableCoreToolReason,
+          });
+          const warning = `tools: ${step.label} allowlist contains unknown entries (${entries}). ${suffix}`;
+          if (rememberToolPolicyWarning(warning)) {
+            params.warn(warning);
+          }
         }
-      } catch (err) {
-        logger.error(`[Agents:ToolPolicyPipeline] Hook ${hook.name} failed:`, err);
       }
+      policy = resolved.policy;
     }
 
-    if (stage === 'policy_check') {
-      const policyResult = evaluateToolPolicies(context);
-      result.matchedPolicies.push(...policyResult.matchedPolicies);
-      result.reasons.push(...policyResult.reasons);
-      
-      if (policyResult.decision === 'deny') {
-        result.decision = 'deny';
-        return result;
-      } else if (policyResult.decision === 'require_approval' && result.decision === 'allow') {
-        result.decision = 'require_approval';
-      }
+    const expanded = expandPolicyWithPluginGroups(policy, pluginGroups);
+    if (!expanded) {
+      continue;
     }
+    const before = filtered;
+    filtered = filterToolsByPolicy(before, expanded);
+    auditToolPolicyFilter({
+      stepLabel: step.label,
+      policy: expanded,
+      before,
+      after: filtered,
+      logLevel: params.auditLogLevel,
+    });
   }
-
-  return result;
+  return filtered;
 }
 
-export function clearPipelineHooks(): void {
-  hooks.length = 0;
+function shouldWarnAboutUnknownAllowlist(params: {
+  hasGatedCoreEntries: boolean;
+  hasOtherEntries: boolean;
+}): boolean {
+  return params.hasGatedCoreEntries || params.hasOtherEntries;
 }
 
-logger.debug('[Agents:ToolPolicyPipeline] Module loaded');
+function describeUnknownAllowlistSuffix(params: {
+  pluginOnlyAllowlist: boolean;
+  hasGatedCoreEntries: boolean;
+  hasOtherEntries: boolean;
+  unavailableCoreToolReason?: string;
+}): string {
+  const preface = params.pluginOnlyAllowlist
+    ? "Allowlist contains only plugin entries; core tools will not be available."
+    : "";
+  const unavailableCoreToolReason = params.unavailableCoreToolReason?.trim();
+  const unavailableCoreDetail = unavailableCoreToolReason
+    ? `These entries are shipped core tools but unavailable here: ${unavailableCoreToolReason}.`
+    : "These entries are shipped core tools but unavailable in the current runtime/provider/model/config.";
+  const mixedUnavailableCoreDetail = unavailableCoreToolReason
+    ? `Some entries are shipped core tools but unavailable here: ${unavailableCoreToolReason}; other entries won't match any tool unless the plugin is enabled.`
+    : "Some entries are shipped core tools but unavailable in the current runtime/provider/model/config; other entries won't match any tool unless the plugin is enabled.";
+  const detail =
+    params.hasGatedCoreEntries && params.hasOtherEntries
+      ? mixedUnavailableCoreDetail
+      : params.hasGatedCoreEntries
+        ? unavailableCoreDetail
+        : "These entries won't match any tool unless the plugin is enabled.";
+  return preface ? `${preface} ${detail}` : detail;
+}
+
+/** Clears process-local warning dedupe state between tests. */
+export function resetToolPolicyWarningCacheForTest(): void {
+  seenToolPolicyWarnings.clear();
+  toolPolicyWarningOrder.length = 0;
+}

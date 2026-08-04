@@ -1,4 +1,7 @@
 import { logger } from '../../logger.js';
+import type { OpenClawConfig } from '../config/types.openclaw.js';
+import { collectEnabledInsecureOrDangerousFlagsFromContracts } from './dangerous-config-flags-core.js';
+import { isRecord } from '../utils.js';
 import type { SecurityFinding, SecurityLevel } from './types.js';
 
 export type CurrentConfigFlag = {
@@ -232,4 +235,26 @@ export function validateCurrentConfigFlag(key: string, value: unknown): {
   }
 
   return { valid: true };
+}
+
+/**
+ * Stub: 基于当前配置快照收集 dangerous flags。
+ *
+ * 对应 openclaw 版本的 collectEnabledInsecureOrDangerousFlagsFromCurrentSnapshot：
+ * 完整实现会从 gateway 当前插件元数据快照中读取 plugin configContracts，
+ * 若任一插件缺失则返回 undefined（调用方回退到 manifest discovery）。
+ *
+ * 此 stub 不支持插件快照：
+ *  - 若 cfg.plugins.entries 不是对象，直接委托给 collectEnabledInsecureOrDangerousFlagsFromContracts；
+ *  - 否则返回 undefined，调用方会回退到 manifest discovery 路径。
+ */
+export function collectEnabledInsecureOrDangerousFlagsFromCurrentSnapshot(
+  cfg: OpenClawConfig,
+): string[] | undefined {
+  const pluginEntries = cfg.plugins?.entries;
+  if (!isRecord(pluginEntries)) {
+    return collectEnabledInsecureOrDangerousFlagsFromContracts(cfg);
+  }
+  // 插件元数据快照不可用，触发调用方回退到 manifest discovery 路径。
+  return undefined;
 }

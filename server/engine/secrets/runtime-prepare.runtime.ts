@@ -1,11 +1,9 @@
 /**
- * Simplified port of openclaw/src/secrets/runtime-prepare.runtime.ts
- *
  * Lazy runtime facade for preparing a secrets snapshot. Runtime callers import
  * this compact boundary to avoid pulling CLI/configure-only helpers.
- *
- * Simplification: resolveSecretRefValues, collectAuthStoreAssignments, and
- * resolveRuntimeWebTools are not ported yet. Only available functions are re-exported.
  */
+export { resolveSecretRefValues } from "./resolve.js";
+export { collectAuthStoreAssignments } from "./runtime-auth-collectors.js";
 export { collectConfigAssignments } from "./runtime-config-collectors.js";
 export { applyResolvedAssignments, createResolverContext } from "./runtime-shared.js";
+export { resolveRuntimeWebTools } from "./runtime-web-tools.js";

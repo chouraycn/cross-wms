@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Normalizes inbound message metadata before it is exposed to reply prompts.
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import { getLoadedChannelPluginById } from '@openclaw-src/channels/plugins/registry-loaded.js';
 import type { ChannelPlugin } from '@openclaw-src/channels/plugins/types.plugin.js';

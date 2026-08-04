@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Handles diagnostics commands and private owner routing for sensitive diagnostics output. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { createExecTool } from '@openclaw-src/agents/bash-tools.js';
 import type { ExecToolDetails } from '@openclaw-src/agents/bash-tools.js';

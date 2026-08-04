@@ -1,29 +1,30 @@
-/**
- * Cron Service State - 服务状态管理
- *
- * 定义 cron 服务的依赖注入、事件类型、状态对象及创建函数。
- * 使用简单的可变对象 + 锁机制管理服务状态。
- */
-
-import type { Logger } from "../../../logger.js";
+/** Cron service dependency, event, state, and public result types. */
+import type { CronConfig } from "../../config/types.cron.js";
+import type { HeartbeatRunResult, HeartbeatWakeRequest } from "../../infra/heartbeat-wake.js";
+import type { DeliveryContext } from "../../utils/delivery-context.types.js";
+import type { QuarantinedCronConfigJob } from "../store.js";
 import type {
-  CronJob,
-  CronStoreFile,
-  CronRunStatus,
-  CronRunOutcome,
+  CronAgentExecutionPhaseUpdate,
+  CronAgentExecutionStarted,
+  CronFailureNotificationDelivery,
   CronDeliveryStatus,
   CronDeliveryTrace,
-  CronFailureNotificationDelivery,
+  CronJob,
+  CronJobCreate,
+  CronJobPatch,
   CronRunDiagnostics,
+  CronMessageChannel,
+  CronRunOutcome,
+  CronRunStatus,
   CronRunTelemetry,
+  CronStoreFile,
 } from "../types.js";
-import type { CronQuarantineEntry } from "../store.js";
 
-/** Cron 事件类型：任务生命周期变化和运行完成时触发 */
+/** Event payload emitted for cron lifecycle changes and completed runs. */
 export type CronEvent = {
   jobId: string;
   action: "added" | "updated" | "removed" | "started" | "finished";
-  /** 事件发生时的任务快照，在可访问任务的所有操作中存在 */
+  /** Snapshot of the job at the time of the event. Present for all actions where the job is accessible. */
   job?: CronJob;
   runAtMs?: number;
   durationMs?: number;
@@ -42,104 +43,175 @@ export type CronEvent = {
   nextRunAtMs?: number;
 } & CronRunTelemetry;
 
-/** 任务执行函数类型 */
-export type CronJobExecutor = (job: CronJob) => Promise<CronRunOutcome>;
-
-/** 系统事件入队选项 */
-export type EnqueueSystemEventOptions = {
-  sessionKey?: string;
-  agentId?: string;
-  deliveryContext?: unknown;
+/** Logger contract consumed by cron service internals. */
+export type Logger = {
+  debug: (obj: unknown, msg?: string) => void;
+  info: (obj: unknown, msg?: string) => void;
+  warn: (obj: unknown, msg?: string) => void;
+  error: (obj: unknown, msg?: string) => void;
 };
 
-/** 心跳请求选项 */
-export type RequestHeartbeatOptions = {
-  source: string;
-  intent: "immediate" | "event";
-  reason: string;
-  sessionKey?: string;
-  agentId?: string;
-};
+export type CronSystemEventEnqueueResult =
+  | boolean
+  | void
+  | {
+      accepted?: boolean;
+      remove?: () => boolean | void;
+    };
 
-/** Cron 服务依赖注入接口 */
+/** Dependency injection surface for the cron service runtime. */
 export type CronServiceDeps = {
-  /** 获取当前时间（毫秒），可注入用于测试 */
   nowMs?: () => number;
-  /** 日志器 */
   log: Logger;
-  /** 存储文件路径 */
   storePath: string;
-  /** cron 功能是否启用 */
   cronEnabled: boolean;
-  /** 默认 agent id */
+  /** CronConfig for session retention settings. */
+  cronConfig?: CronConfig;
+  /** Default agent id for jobs without an agent id. */
   defaultAgentId?: string;
-  /** 事件回调 */
-  onEvent?: (evt: CronEvent) => void;
-  /** 任务执行器，实际执行 cron 任务的逻辑 */
-  onJobExecute?: CronJobExecutor;
-  /** 将系统事件入队到主会话 */
-  enqueueSystemEvent?: (text: string, opts?: EnqueueSystemEventOptions) => unknown;
-  /** 请求心跳唤醒 */
-  requestHeartbeat?: (opts: RequestHeartbeatOptions) => void;
-  /** 隔离 agent 设置超时回调 */
-  onIsolatedAgentSetupTimeout?: (info: { job: CronJob; error: string; timeoutMs: number }) => void;
-  /** 解析会话存储路径 */
-  resolveSessionStorePath?: (agentId: string) => string;
-  /** 会话存储路径 */
+  /** Resolve session store path for a given agent id. */
+  resolveSessionStorePath?: (agentId?: string) => string;
+  /** Path to the session store (sessions.json) for reaper use. */
   sessionStorePath?: string;
-  /** 解析原始投递上下文 */
-  resolveOriginDeliveryContext?: (opts: { sessionKey?: string; agentId?: string }) => unknown;
+  /**
+   * Delay in ms between missed job executions on startup.
+   * Prevents overwhelming the gateway when many jobs are overdue.
+   * See: https://github.com/openclaw/openclaw/issues/18892
+   */
+  missedJobStaggerMs?: number;
+  /**
+   * Maximum number of missed jobs to run immediately on startup.
+   * Additional missed jobs will be rescheduled to fire gradually.
+   * See: https://github.com/openclaw/openclaw/issues/18892
+   */
+  maxMissedJobsPerRestart?: number;
+  /**
+   * Delay before replaying missed agent-turn jobs found during gateway startup.
+   * Keeps model/tool bootstrap work out of the channel connect window.
+   */
+  startupDeferredMissedAgentJobDelayMs?: number;
+  enqueueSystemEvent: (
+    text: string,
+    opts?: {
+      agentId?: string;
+      sessionKey?: string;
+      contextKey?: string;
+      deliveryContext?: DeliveryContext;
+    },
+  ) => CronSystemEventEnqueueResult;
+  /**
+   * Resolve the channel-correct origin delivery context for a session key (the
+   * value the channel's send expects, e.g. Telegram message_thread_id), sourced
+   * from the session store entry the wake targets. Used to carry the bound
+   * thread/topic onto manual wake system events. Optional: when unset, wakes
+   * route as before. Returning `undefined` is also a no-op (default routing).
+   */
+  resolveOriginDeliveryContext?: (params: {
+    sessionKey?: string;
+    agentId?: string;
+  }) => DeliveryContext | undefined;
+  requestHeartbeat: (opts: HeartbeatWakeRequest) => void;
+  runHeartbeatOnce?: (opts?: {
+    source?: HeartbeatWakeRequest["source"];
+    intent?: HeartbeatWakeRequest["intent"];
+    reason?: string;
+    agentId?: string;
+    sessionKey?: string;
+    /** Optional heartbeat config override (e.g. target: "last" for cron-triggered heartbeats). */
+    heartbeat?: HeartbeatWakeRequest["heartbeat"];
+  }) => Promise<HeartbeatRunResult>;
+  /**
+   * WakeMode=now: max time to wait for runHeartbeatOnce to stop returning
+   * { status:"skipped", reason:"requests-in-flight" } before falling back to
+   * requestHeartbeat.
+   */
+  wakeNowHeartbeatBusyMaxWaitMs?: number;
+  /** WakeMode=now: delay between runHeartbeatOnce retries while busy. */
+  wakeNowHeartbeatBusyRetryDelayMs?: number;
+  runIsolatedAgentJob: (params: {
+    job: CronJob;
+    message: string;
+    abortSignal?: AbortSignal;
+    onExecutionStarted?: (info?: CronAgentExecutionStarted) => void;
+    onExecutionPhase?: (info: CronAgentExecutionPhaseUpdate) => void;
+    onLaneWait?: (info?: { waiting?: boolean }) => void;
+  }) => Promise<
+    {
+      summary?: string;
+      /** Last non-empty agent text output (not truncated). */
+      outputText?: string;
+      /**
+       * `true` when the isolated run already delivered its output to the target
+       * channel (including matching messaging-tool sends). See:
+       * https://github.com/openclaw/openclaw/issues/15692
+       */
+      delivered?: boolean;
+      /**
+       * `true` when announce/direct delivery was attempted for this run, even
+       * if the final per-message ack status is uncertain.
+       */
+      deliveryAttempted?: boolean;
+      delivery?: CronDeliveryTrace;
+    } & CronRunOutcome &
+      CronRunTelemetry
+  >;
+  runCommandJob?: (params: { job: CronJob; abortSignal?: AbortSignal }) => Promise<
+    {
+      delivered?: boolean;
+      deliveryAttempted?: boolean;
+      delivery?: CronDeliveryTrace;
+    } & CronRunOutcome
+  >;
+  cleanupTimedOutAgentRun?: (params: {
+    job: CronJob;
+    timeoutMs: number;
+    execution?: CronAgentExecutionStarted;
+  }) => Promise<void>;
+  onIsolatedAgentSetupTimeout?: (params: {
+    job: CronJob;
+    error: string;
+    timeoutMs: number;
+  }) => void | Promise<void>;
+  sendCronFailureAlert?: (params: {
+    job: CronJob;
+    text: string;
+    channel: CronMessageChannel;
+    to?: string;
+    mode?: "announce" | "webhook";
+    accountId?: string;
+  }) => Promise<void>;
+  onEvent?: (evt: CronEvent) => void;
 };
 
-/** 内部使用的依赖类型，可选字段已补全默认值 */
+/** Cron deps after optional defaults have been made concrete. */
 export type CronServiceDepsInternal = Omit<CronServiceDeps, "nowMs"> & {
   nowMs: () => number;
 };
 
-/**
- * Cron 服务可变状态
- *
- * 在 store、任务调度、定时器和操作辅助函数之间共享。
- * 使用 op Promise 链序列化变更操作，确保存储写入和定时器保持有序。
- */
+/** Mutable cron service state shared across store, job, timer, and ops helpers. */
 export type CronServiceState = {
-  /** 服务依赖（已补全默认值） */
   deps: CronServiceDepsInternal;
-  /** 内存中的存储数据 */
   store: CronStoreFile | null;
-  /** 定时器句柄 */
   timer: NodeJS.Timeout | null;
-  /** 服务是否正在运行 */
   running: boolean;
-  /** 服务是否已停止 */
   stopped: boolean;
-  /** 重启恢复是否待处理 */
   restartRecoveryPending: boolean;
-  /** 当前正在手动运行的任务 id 集合 */
   activeManualRunJobIds: Set<string>;
-  /**
-   * 操作序列化 Promise 链
-   * 用于序列化变更服务的操作，确保存储写入和定时器保持有序
-   */
+  manualSetupTimeoutRestartNotified: boolean;
+  /** Serializes mutating service operations so store writes and timers stay ordered. */
   op: Promise<unknown>;
-  /** 是否已警告过 cron 功能被禁用 */
   warnedDisabled: boolean;
-  /** 已警告过的无效持久化任务 key 集合 */
+  /**
+   * Persisted job rows with non-canonical storage shape are skipped in memory
+   * until the runtime can quarantine and sanitize the active store.
+   */
   warnedInvalidPersistedJobKeys: Set<string>;
-  /** 待处理的隔离配置任务列表 */
-  pendingQuarantineConfigJobs: CronQuarantineEntry[];
-  /** 上次隔离失败警告的 key */
+  pendingQuarantineConfigJobs: QuarantinedCronConfigJob[];
   lastQuarantineFailureWarnKey: string | null;
-  /** 存储加载时间（毫秒） */
   storeLoadedAtMs: number | null;
 };
 
-/**
- * 创建 cron 服务状态对象
- *
- * @param deps 服务依赖
- * @returns 初始化的服务状态
- */
+/** Creates mutable cron service state with a concrete clock dependency. */
 export function createCronServiceState(deps: CronServiceDeps): CronServiceState {
   return {
     deps: { ...deps, nowMs: deps.nowMs ?? (() => Date.now()) },
@@ -149,6 +221,7 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     stopped: false,
     restartRecoveryPending: false,
     activeManualRunJobIds: new Set<string>(),
+    manualSetupTimeoutRestartNotified: false,
     op: Promise.resolve(),
     warnedDisabled: false,
     warnedInvalidPersistedJobKeys: new Set<string>(),
@@ -157,3 +230,48 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     storeLoadedAtMs: null,
   };
 }
+
+/** Direct-run mode: respect due time or force execution. */
+export type CronRunMode = "due" | "force";
+
+/** Main-session wake strategy used after enqueuing cron text. */
+export type CronWakeMode = "now" | "next-heartbeat";
+
+/** Lightweight service status returned to gateway/control surfaces. */
+export type CronStatusSummary = {
+  enabled: boolean;
+  /** @deprecated Legacy partition key; actual storage is SQLite. Use `sqlitePath`. */
+  storePath: string;
+  /** Storage backend identifier. */
+  storage: "sqlite";
+  /** Resolved path to the shared state SQLite database. */
+  sqlitePath: string;
+  jobs: number;
+  nextWakeAtMs: number | null;
+};
+
+/** Result shape for immediate or queued cron run requests. */
+export type CronRunResult =
+  | { ok: true; ran: true }
+  | { ok: true; enqueued: true; runId: string }
+  | { ok: true; ran: false; reason: "not-due" }
+  | { ok: true; ran: false; reason: "already-running" }
+  | { ok: true; ran: false; reason: "restart-recovery-pending" }
+  | { ok: true; ran: false; reason: "invalid-spec" }
+  | { ok: true; ran: false; reason: "stopped" }
+  | { ok: false };
+
+/** Remove result that distinguishes missing jobs from failed removal. */
+export type CronRemoveResult = { ok: true; removed: boolean } | { ok: false; removed: false };
+
+/** Created cron job returned by service mutation calls. */
+export type CronAddResult = CronJob;
+/** Updated cron job returned by service mutation calls. */
+export type CronUpdateResult = CronJob;
+
+/** Chronological job list returned by service read calls. */
+export type CronListResult = CronJob[];
+/** Normalized create input accepted by the cron service. */
+export type CronAddInput = CronJobCreate;
+/** Normalized patch input accepted by cron service updates. */
+export type CronUpdateInput = CronJobPatch;

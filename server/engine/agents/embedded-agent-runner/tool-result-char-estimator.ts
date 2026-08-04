@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Estimates message and tool-result character costs for context guards.
  */

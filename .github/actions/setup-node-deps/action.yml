@@ -1,0 +1,33 @@
+# P2-⑩: 可复用的 Node.js 环境配置 composite action
+# 统一 checkout + setup-node + npm ci 三步，消除每个 job 中的重复代码
+# Quick-CI 和 PR-Quality-Gate 共用此 action，避免维护双份逻辑
+name: 'Setup Node.js + Dependencies'
+description: 'Checkout, setup Node.js with cache, install dependencies'
+
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '22'
+  install-flags:
+    description: 'Extra flags for npm install (e.g. --legacy-peer-deps)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci ${{ inputs.install-flags }}

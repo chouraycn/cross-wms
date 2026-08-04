@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Implements subagent log retrieval and pagination.
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { parseStrictNonNegativeInteger } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { stripToolMessages } from "../../../agents/tools/chat-history-text.js";
 import { callGateway } from "../../../gateway/call.js";
 import type { CommandHandlerResult } from "../commands-types.js";

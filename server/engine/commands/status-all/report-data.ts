@@ -10,20 +10,20 @@ import { readRestartSentinel } from "@openclaw-src/infra/restart-sentinel.js";
 import { buildPluginCompatibilityNotices } from "@openclaw-src/plugins/status.js";
 import { buildWorkspaceSkillStatus } from "@openclaw-src/skills/discovery/status.js";
 import { getRemoteSkillEligibility } from "@openclaw-src/skills/runtime/remote.js";
-import { buildStatusAllOverviewRows } from "@openclaw-src/status-overview-rows.ts";
+import { buildStatusAllOverviewRows } from "@openclaw-src/commands/status-overview-rows.ts";
 import {
   buildStatusOverviewSurfaceFromOverview,
   type StatusOverviewSurface,
-} from "@openclaw-src/status-overview-surface.ts";
+} from "@openclaw-src/commands/status-overview-surface.ts";
 import {
   resolveStatusGatewayDiagnosticsSafe,
   resolveStatusGatewayHealthSafe,
   type resolveStatusServiceSummaries,
-} from "@openclaw-src/status-runtime-shared.ts";
-import { formatUpdateRestartStatusValue } from "@openclaw-src/status-update-restart.ts";
-import { resolveStatusAllConnectionDetails } from "@openclaw-src/status.gateway-connection.ts";
-import type { NodeOnlyGatewayInfo } from "@openclaw-src/status.node-mode.js";
-import type { StatusScanOverviewResult } from "@openclaw-src/status.scan-overview.ts";
+} from "@openclaw-src/commands/status-runtime-shared.ts";
+import { formatUpdateRestartStatusValue } from "@openclaw-src/commands/status-update-restart.ts";
+import { resolveStatusAllConnectionDetails } from "@openclaw-src/commands/status.gateway-connection.ts";
+import type { NodeOnlyGatewayInfo } from "@openclaw-src/commands/status.node-mode.js";
+import type { StatusScanOverviewResult } from "@openclaw-src/commands/status.scan-overview.ts";
 
 type StatusServiceSummaries = Awaited<ReturnType<typeof resolveStatusServiceSummaries>>;
 type StatusGatewayServiceSummary = StatusServiceSummaries[0];

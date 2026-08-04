@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Group/direct chat prompt context, activation, and silent-reply helpers. */
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveChannelGroupRequireMention } from '@openclaw-src/config/group-policy.js';
 import type { GroupKeyResolution, SessionEntry } from '@openclaw-src/config/sessions.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

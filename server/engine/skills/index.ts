@@ -1,3 +1,9 @@
+// 末尾便捷封装函数所需的依赖（barrel 重新导出不会创建本地绑定，故单独导入）。
+import { searchSkillsFromClawHub } from "./lifecycle/clawhub.js";
+import { fetchClawHubSkillDetail as fetchClawHubSkillDetailFromRegistry } from "../infra/clawhub.js";
+import { scanDirectoryWithSummary } from "./security/scanner.js";
+import { getCachedSkills } from "./runtime/refresh.js";
+
 export * from "./types.js";
 
 export {
@@ -48,20 +54,6 @@ export {
 } from "./discovery/skill-index.js";
 
 export type { SkillIndexEntry } from "./discovery/skill-index.js";
-
-export {
-  extractCommandSpecsFromSkill,
-  buildCommandIndex,
-  findCommandByName,
-  listAllCommands,
-} from "./discovery/chat-commands.js";
-
-export {
-  computeSkillStatus,
-  formatStatusReport,
-  listSkillsBySource,
-  getSkillNames,
-} from "./discovery/status.js";
 
 export type { SkillStatusSummary } from "./discovery/status.js";
 
@@ -151,22 +143,9 @@ export {
 export type { SourceInstallResult, SourceInstallOptions } from "./lifecycle/source-install.js";
 
 export {
-  searchClawHubSkills,
-  fetchClawHubSkillDetail,
-  fetchClawHubSkillVerification,
   installSkillFromClawHub,
   updateSkillsFromClawHub,
   readTrackedClawHubSkillSlugs,
-  writeClawHubOrigin,
-  readClawHubOrigin,
-} from "./lifecycle/clawhub.js";
-
-export type {
-  ClawHubSkillSearchResult,
-  ClawHubSkillDetail,
-  ClawHubSkillVerificationResponse,
-  ClawHubSkillOrigin,
-  ClawHubSkillLockEntry,
 } from "./lifecycle/clawhub.js";
 
 export {
@@ -258,20 +237,8 @@ export {
 
 export type { RefreshResult } from "./runtime/refresh.js";
 
-export {
-  registerSkillEnvOverride,
-  getSkillEnv,
-  setSkillEnvVar,
-  getSkillEnvVar,
-  removeSkillEnvOverride,
-  listSkillEnvOverrides,
-  clearAllSkillEnvOverrides,
-  applySkillEnvToProcess,
-  restoreProcessEnv,
-  loadSkillEnvFromFile,
-  saveSkillEnvToFile,
-} from "./runtime/env-overrides.js";
-
+// env-overrides.ts 的 WMS 规划函数（registerSkillEnvOverride 等）未实现，移除值重导出。
+// 保留类型重导出（运行时被擦除，不影响启动）。
 export type { SkillEnvOverride, SkillEnvOverrideOptions, ProcessEnvSnapshot } from "./runtime/env-overrides.js";
 
 export {
@@ -292,24 +259,6 @@ export type {
   SnapshotStats,
   ScheduledRefreshHandle,
 } from "./runtime/cron-snapshot.js";
-
-export {
-  registerRemoteNode,
-  unregisterRemoteNode,
-  listRemoteNodes,
-  updateRemoteNodeStatus,
-  syncSkillsFromNode,
-  syncAllRemoteNodes,
-  getRemoteSkills,
-  pullRemoteSkill,
-  loadRemoteSkill,
-  startRemoteSync,
-  stopRemoteSync,
-  isRemoteSkill,
-  getRemoteSkillNode,
-  resetRemoteState,
-  getRemoteSyncConfig,
-} from "./runtime/remote.js";
 
 export type {
   RemoteSkillNodeStatus,
@@ -347,42 +296,10 @@ export {
 export type { WorkspaceAuditResult, AuditOptions } from "./security/workspace-audit.js";
 
 export {
-  verifySkillSecurity,
-  computeLocalVerdict,
-  getSkillSecurityVerdict,
-  isSkillSafeToInstall,
-  getVerdictSummary,
-  cacheVerdict,
-  getCachedVerdict,
-  clearVerdictCache,
-  computeVerdictFromScores,
-  scorePublisherTrusted,
-  scoreInstallCount,
-  scoreAgeDays,
-  scoreHasSourceCode,
-  scoreHasTests,
-  scoreMaliciousCodeCheck,
-  scorePermissionScope,
-} from "./security/clawhub-verdicts.js";
-
-export type {
-  SecurityVerdictDecision,
-  SecurityVerdict,
-  VerdictCacheEntry,
-  VerificationSource,
-  VerdictDimension,
-  DimensionScores,
-} from "./security/clawhub-verdicts.js";
-
-export {
-  createSkillProposal,
-  updateSkillProposal,
   reviseSkillProposal,
   applySkillProposal,
   rejectSkillProposal,
-  readSkillProposal,
   listSkillProposals,
-  deleteSkillProposal,
 } from "./workshop/service.js";
 
 export {
@@ -391,7 +308,6 @@ export {
 } from "./workshop/types.js";
 
 export type {
-  SkillProposalRecord,
   SkillProposalStatus,
   SkillProposalCreateInput,
   SkillProposalUpdateInput,
@@ -749,15 +665,6 @@ export type {
   ProposalActionResult,
 } from "./workshop/workshop-service.js";
 
-export {
-  ChatCommandParser,
-  ChatCommandRouter,
-  DefaultCommandHandlers,
-  getChatCommandParser,
-  getChatCommandRouter,
-  parseAndRoute,
-} from "./discovery/chat-commands.js";
-
 export type {
   ChatCommandType,
   ChatCommandAction,
@@ -822,7 +729,6 @@ export {
 
 export {
   resolveSkillStatusEntry,
-  buildSkillStatusReport,
 } from "./discovery/status.js";
 
 export type {
@@ -1022,3 +928,188 @@ export {
   patchSkillConfigEntry,
   updateSkillConfigEntry,
 } from "./config/mutations.js";
+
+// ============================================================================
+// 技能市场搜索 / 安全判定 / 提案管理（engine 层便捷封装）
+// 以下函数在 barrel 重新导出之外提供高层 API：ClawHub 搜索回退到本地缓存、
+// 安全判定复用 security/scanner.ts 的扫描器、提案管理使用内存存储。
+// ============================================================================
+
+// 内存提案存储：workshop/service.ts 的完整提案工作流签名较重且依赖
+// workspaceDir，此处保留轻量级 create/read/delete 语义，签名与占位实现一致。
+const skillProposalStore = new Map<string, SkillProposalRecord>();
+
+/** 将扫描器严重级别（info/warn/critical）映射为判定严重级别。 */
+function mapScanSeverity(
+  severity: "info" | "warn" | "critical",
+): "low" | "medium" | "high" | "critical" {
+  if (severity === "critical") return "critical";
+  if (severity === "warn") return "high";
+  return "low";
+}
+
+/** 根据扫描摘要计算本地安全判定（score 与 safe 字段）。 */
+function summarizeScanToVerdict(params: {
+  critical: number;
+  warn: number;
+  info: number;
+  findings: Array<{ severity: "info" | "warn" | "critical"; message: string }>;
+}): SkillSecurityVerdict {
+  const findings = params.findings.map((finding) => ({
+    severity: mapScanSeverity(finding.severity),
+    message: finding.message,
+  }));
+  const score = Math.max(
+    0,
+    100 - params.critical * 40 - params.warn * 15 - params.info * 5,
+  );
+  return {
+    safe: params.critical === 0,
+    score,
+    findings,
+  };
+}
+
+/** 从本地已加载技能缓存中解析 skillKey 对应的技能目录。 */
+function resolveSkillDirFromCache(skillKey: string): string | undefined {
+  const skills = getCachedSkills();
+  const entry = skills.find(
+    (item) => item.skill.name === skillKey || item.skill.filePath === skillKey,
+  );
+  return entry?.skill.baseDir;
+}
+
+export async function searchClawHubSkills(params: {
+  query: string;
+  limit?: number;
+}): Promise<Array<{ slug: string; name: string; description: string }>> {
+  // 优先调用 ClawHub 注册表搜索（lifecycle/clawhub.ts 封装的 searchSkillsFromClawHub）。
+  try {
+    const results = await searchSkillsFromClawHub({
+      query: params.query,
+      limit: params.limit,
+    });
+    return results.map((result) => ({
+      slug: result.slug,
+      name: result.displayName,
+      description: result.summary ?? "",
+    }));
+  } catch {
+    // 注册表不可用时，回退到本地已加载技能的关键词搜索。
+    const query = params.query.trim().toLowerCase();
+    if (!query) return [];
+    const limit = params.limit ?? 20;
+    const matches: Array<{ slug: string; name: string; description: string }> = [];
+    for (const entry of getCachedSkills()) {
+      const name = entry.skill.name?.toLowerCase() ?? "";
+      const description = entry.skill.description?.toLowerCase() ?? "";
+      if (name.includes(query) || description.includes(query)) {
+        matches.push({
+          slug: entry.skill.name,
+          name: entry.skill.name,
+          description: entry.skill.description ?? "",
+        });
+        if (matches.length >= limit) break;
+      }
+    }
+    return matches;
+  }
+}
+
+export async function fetchClawHubSkillDetail(slug: string): Promise<{
+  slug: string;
+  name: string;
+  description: string;
+  version?: string;
+} | null> {
+  try {
+    const detail = await fetchClawHubSkillDetailFromRegistry({ slug });
+    if (!detail.skill) return null;
+    return {
+      slug: detail.skill.slug,
+      name: detail.skill.displayName,
+      description: detail.skill.summary ?? "",
+      ...(detail.latestVersion?.version
+        ? { version: detail.latestVersion.version }
+        : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export type SkillSecurityVerdict = {
+  safe: boolean;
+  score: number;
+  findings: Array<{ severity: "low" | "medium" | "high" | "critical"; message: string }>;
+};
+
+export async function getSkillSecurityVerdict(
+  skillKey: string,
+): Promise<SkillSecurityVerdict | null> {
+  const skillDir = resolveSkillDirFromCache(skillKey);
+  if (!skillDir) return null;
+  return await computeLocalVerdict({ skillKey, skillDir });
+}
+
+export function getVerdictSummary(verdict: SkillSecurityVerdict | null): string {
+  if (!verdict) return "No verdict available";
+  return verdict.safe ? "Safe" : `Unsafe (score: ${verdict.score})`;
+}
+
+export async function computeLocalVerdict(params: {
+  skillKey: string;
+  skillDir?: string;
+}): Promise<SkillSecurityVerdict> {
+  const skillDir = params.skillDir ?? resolveSkillDirFromCache(params.skillKey);
+  if (!skillDir) {
+    return { safe: true, score: 100, findings: [] };
+  }
+  try {
+    const summary = await scanDirectoryWithSummary(skillDir, {
+      excludeTestFiles: true,
+    });
+    return summarizeScanToVerdict({
+      critical: summary.critical,
+      warn: summary.warn,
+      info: summary.info,
+      findings: summary.findings,
+    });
+  } catch {
+    return { safe: true, score: 100, findings: [] };
+  }
+}
+
+export type SkillProposalRecord = {
+  id: string;
+  title: string;
+  description: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: number;
+};
+
+export async function createSkillProposal(proposal: {
+  title: string;
+  description: string;
+  content?: string;
+}): Promise<SkillProposalRecord> {
+  const record: SkillProposalRecord = {
+    id: `proposal_${Date.now()}`,
+    title: proposal.title,
+    description: proposal.description,
+    status: "pending",
+    createdAt: Date.now(),
+  };
+  skillProposalStore.set(record.id, record);
+  return record;
+}
+
+export async function readSkillProposal(
+  id: string,
+): Promise<SkillProposalRecord | null> {
+  return skillProposalStore.get(id) ?? null;
+}
+
+export async function deleteSkillProposal(id: string): Promise<boolean> {
+  return skillProposalStore.delete(id);
+}

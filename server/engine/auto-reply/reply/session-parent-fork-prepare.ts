@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Prepares parent-context fork metadata for guarded reply session initialization.
 import path from "node:path";
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';

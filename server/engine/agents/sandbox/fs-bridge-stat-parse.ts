@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * Stat output parsers for sandbox filesystem bridges.
  *
  * Handles GNU/BSD size and mtime formats returned through backend shell commands.
  */
 import { parseStrictNonNegativeInteger } from "../../infra/parse-finite-number.js";
-import { asDateTimestampMs } from "../../shared/number-coercion.js";
+import { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";
 
 /** Parses file sizes, capping huge integer strings at the largest safe JS integer. */
 export function parseSandboxStatSize(value: string | undefined): number {

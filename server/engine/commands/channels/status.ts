@@ -1,9 +1,9 @@
 // @ts-nocheck
 // Implements `openclaw channels status` with gateway status and config-only fallback.
 import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import { formatDocsLink } from "@openclaw/terminal-core/links";
+import { theme } from "@openclaw/terminal-core/theme";
 import { normalizeChannelId } from "@openclaw-src/channels/plugins/index.js";
 import { resolveCommandConfigWithSecrets } from "@openclaw-src/cli/command-config-resolution.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
@@ -15,7 +15,7 @@ import { callGateway } from "@openclaw-src/gateway/call.js";
 import { isGatewaySecretRefUnavailableError } from "@openclaw-src/gateway/credentials.js";
 import { collectChannelStatusIssues } from "@openclaw-src/infra/channels-status-issues.js";
 import { formatErrorMessage } from "@openclaw-src/infra/errors.js";
-import { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative.ts";
+import { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative";
 import { listConfiguredAnnounceChannelIdsForConfig } from "@openclaw-src/plugins/channel-plugin-ids.js";
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 import {

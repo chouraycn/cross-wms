@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Channel resolution exposes read-only outbound runtime facades and performs
 // optional bootstrap for deliverable channels that are not loaded yet.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import type { ChannelMessageAdapterShape } from "../../channels/message/types.js";
 import { getChannelPlugin, getLoadedChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
@@ -92,12 +91,12 @@ function resolveDirectFromRegistry(
   for (const entry of registry.channels) {
     const plugin = entry?.plugin;
     if (
-      normalizeOptionalLowercaseString(plugin?.id) === normalizedChannel ||
-      plugin?.meta?.aliases?.some(
+      normalizeOptionalLowercaseString((plugin as any)?.id) === normalizedChannel ||
+      (plugin as any)?.meta?.aliases?.some(
         (alias) => normalizeOptionalLowercaseString(alias) === normalizedChannel,
       )
     ) {
-      return plugin;
+      return plugin as any;
     }
   }
   return undefined;

@@ -2,9 +2,9 @@
 /** Doctor repairs for legacy auth profile JSON stores and OpenAI provider-id migrations. */
 import fs from "node:fs";
 import path from "node:path";
-import { collectConfiguredModelRefs } from "@openclaw/model-catalog-core/configured-model-refs";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { collectConfiguredModelRefs } from "@cdf-know/model-catalog-core/configured-model-refs";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveAgentDir, resolveDefaultAgentDir, listAgentIds } from "@openclaw-src/agents/agent-scope.js";
 import { AUTH_STORE_VERSION } from "@openclaw-src/agents/auth-profiles/constants.js";
 import {

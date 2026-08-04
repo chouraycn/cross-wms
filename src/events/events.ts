@@ -60,6 +60,8 @@ export const CdfEvents = {
 
   // ===== UI 交互 =====
   CHAT_INPUT_BLUR: 'cdf-chat-input-blur',
+  /** 向聊天输入框插入引用文本 */
+  CHAT_INSERT_QUOTE: 'cdf-chat-insert-quote',
   TODOS_UPDATED: 'cdf-todos-updated',
   TRIGGER_SKILL: 'trigger-skill',
 } as const;
@@ -110,6 +112,7 @@ export interface CdfEventDetailMap {
 
   // UI 交互
   [CdfEvents.CHAT_INPUT_BLUR]: unknown;
+  [CdfEvents.CHAT_INSERT_QUOTE]: { text: string };
   [CdfEvents.TODOS_UPDATED]: unknown;
   [CdfEvents.TRIGGER_SKILL]: { skillId: string };
 }

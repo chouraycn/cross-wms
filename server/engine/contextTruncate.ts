@@ -1,5 +1,5 @@
 import { logger } from '../logger.js';
-import type { MessageContent, ToolCall } from '../aiClient.js';
+import type { MessageContent, ToolCall } from '../aiCore.js';
 
 /**
  * Context Truncation — 上下文截断工具

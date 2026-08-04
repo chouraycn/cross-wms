@@ -1,9 +1,9 @@
 // @ts-nocheck
 /** Collects and renders gateway health for channels, agents, plugins, and sessions. */
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { styleHealthChannelLine } from "@openclaw-src/packages/terminal-core/src/health-style.js";
-import { isRich } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { resolveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
+import { asNullableRecord } from "@cdf-know/normalization-core/record-coerce";
+import { styleHealthChannelLine } from "@openclaw/terminal-core/health-style";
+import { isRich } from "@openclaw/terminal-core/theme";
 import { resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { inspectChannelAccount } from "@openclaw-src/channels/account-inspection.js";
 import {

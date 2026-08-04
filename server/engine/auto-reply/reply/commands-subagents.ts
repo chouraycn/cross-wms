@@ -197,6 +197,14 @@ export async function handleSubagentCommand(
   args: string[] = [],
   context: SubagentCommandContext = {},
 ): Promise<SubagentCommandResult> {
+  return handleSubagentsCommand(command, args, context);
+}
+
+export async function handleSubagentsCommand(
+  command: string,
+  args: string[] = [],
+  context: SubagentCommandContext = {},
+): Promise<SubagentCommandResult> {
   const action = normalizeCommand(command);
   switch (action) {
     case 'spawn':

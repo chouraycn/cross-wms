@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves whether replies should route to the originating channel or current surface. */
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from '@openclaw-src/utils/message-channel.js';
 

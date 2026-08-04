@@ -2,20 +2,20 @@
 // Shared formatting helpers for status overview, gateway summaries, and JSON payloads.
 // These functions keep text and JSON status surfaces aligned without pulling in command orchestration.
 
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveGatewayPort } from "@openclaw-src/config/config.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { resolveControlUiLinks } from "@openclaw-src/gateway/control-ui-links.js";
-import { formatDurationPrecise } from "@openclaw-src/infra/format-time/format-duration.ts";
+import { formatDurationPrecise } from "@openclaw-src/infra/format-time/format-duration";
 import {
   normalizeUpdateChannel,
   resolveUpdateChannelDisplay,
 } from "@openclaw-src/infra/update-channels.js";
 import { formatGitInstallLabel, type UpdateCheckResult } from "@openclaw-src/infra/update-check.js";
 import { VERSION } from "@openclaw-src/version.js";
-import { formatUpdateOneLiner, resolveUpdateAvailability } from "@openclaw-src/status.update.js";
+import { formatUpdateOneLiner, resolveUpdateAvailability } from "@openclaw-src/commands/status.update.js";
 
-export { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative.ts";
+export { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative";
 
 export type StatusOverviewRow = {
   Item: string;

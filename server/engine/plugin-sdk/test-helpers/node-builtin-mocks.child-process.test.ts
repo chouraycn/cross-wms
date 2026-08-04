@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests child_process behavior in the shared Node builtin mock helpers.
  */

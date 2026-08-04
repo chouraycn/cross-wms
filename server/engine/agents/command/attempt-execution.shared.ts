@@ -3,8 +3,9 @@
  * Shared session persistence and prompt-body helpers for agent attempt
  * execution paths.
  */
-import { patchSessionEntry } from "../../config/sessions/session-accessor.js";
-import { mergeSessionEntry, type SessionEntry } from "../../config/sessions/types.js";
+import { patchSessionEntry } from "@openclaw-src/config/sessions/store.js";
+import { mergeSessionEntry } from "@openclaw-src/agents/subagent-spawn.runtime.js";
+import type { SessionEntry } from "../../config/sessions/types.js";
 import {
   formatAgentInternalEventsForPlainPrompt,
   formatAgentInternalEventsForPrompt,
@@ -126,3 +127,6 @@ export function resolveInternalEventTranscriptBody(
   }
   return resolvePlainInternalEventBody(body, events);
 }
+
+export { mergeSessionEntry } from "@openclaw-src/agents/subagent-spawn.runtime.js";
+export { patchSessionEntry } from "@openclaw-src/config/sessions/store.js";

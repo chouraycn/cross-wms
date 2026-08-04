@@ -2,9 +2,9 @@
 // 移植自 openclaw/src/cli/config-set-input.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 与 `json5`，
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 与 `json5`，
 //    cross-wms 已有等效 `./_openclaw-stubs.js`（间接通过 infra/string-coerce）与 json5 依赖。
-//  - 此处将 `@openclaw/normalization-core/string-coerce` 替换为本地
+//  - 此处将 `@cdf-know/normalization-core/string-coerce` 替换为本地
 //    `../infra/string-coerce.js`，json5 保留原依赖。
 
 import fs from "node:fs";

@@ -21,6 +21,7 @@ import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { CircuitBreaker } from './circuitBreaker.js';
 import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
+import { isHttpToolName, executeHttpToolFromCall } from '../staff/staffHttpToolBridge.js';
 import type { SkillPermissionConfig } from '../types/skill-runtime.js';
 import toolPolicyEngine from './toolPolicyEngine.js';
 import approvalManager from './approvalManager.js';
@@ -118,6 +119,8 @@ export interface ToolExecutorOptions {
   extraSkills?: import('../types/skill-runtime.js').SkillDefinition[];
   /** 数字员工（per-call）物化技能执行器 */
   extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  /** 数字员工（per-call）HTTP API 工具定义列表（sd_tools tool_type='http'） */
+  staffHttpTools?: ToolDefinition[];
   /** 会话 ID（用于审批流和插件钩子） */
   sessionId?: string;
   /** 助手消息 ID（用于关联工具调用到特定消息） */
@@ -200,7 +203,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const extraSkillExecutor = options.extraSkillExecutor;
   const { getSkillToolDefinitions } = await import('./skillToolBridge.js');
   const skillTools = getSkillToolDefinitions(skillPermissionConfig);
-  const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...skillTools];
+  const staffHttpTools = options.staffHttpTools ?? [];
+  const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...skillTools, ...staffHttpTools];
 
   // 应用 Tool Profile 过滤（如果指定）
   let filteredTools = tools;
@@ -819,6 +823,12 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           extraSkillExecutor,
         );
         return skillResult.content || JSON.stringify(skillResult);
+      } else if (isHttpToolName(effectiveToolName)) {
+        // 数字员工 HTTP API 工具：从 staffHttpToolBridge registry 查找配置并执行
+        return executeHttpToolFromCall({
+          ...toolCall,
+          function: { ...toolCall.function, name: effectiveToolName, arguments: JSON.stringify(normalizedArgs) },
+        });
       } else if (isMcpToolName(effectiveToolName)) {
         // 优先使用数字员工隔离的 MCP manager（属于它的 server 走它，否则回退全局）
         const prefix = getMcpServerPrefix(effectiveToolName);

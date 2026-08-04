@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/infra/gateway-processes.ts
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-normalization → ./string-normalization.js
+//  - @cdf-know/normalization-core/string-normalization → ./string-normalization.js
 import { spawnSync } from "node:child_process";
 import fsSync from "node:fs";
 import { uniqueValues } from "./string-normalization.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Builds the static and plugin-derived registry of secret migration targets. */
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import { listBundledPluginMetadata } from "../plugins/bundled-plugin-metadata.js";
@@ -40,7 +39,7 @@ function hasSensitiveConfigHint(
   plugin: PluginManifestRecord,
   configPath: WebProviderSecretConfig["configPath"],
 ): boolean {
-  return plugin.configUiHints?.[configPath]?.sensitive === true;
+  return (plugin.configUiHints?.[configPath] as any)?.sensitive === true;
 }
 
 function hasWebProviderContract(

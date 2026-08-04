@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared test fixtures for reply queue and typing-controller tests. */
 import { vi } from "vitest";
 import type { FollowupRun } from "./queue.js";

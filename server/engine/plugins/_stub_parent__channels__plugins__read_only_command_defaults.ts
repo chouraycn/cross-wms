@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED FROM OPENCLAW SOURCE (simplified) ===
 // Source: openclaw/src/channels/plugins/read-only-command-defaults.ts
 // Status: 已移植类型定义；resolveReadOnlyChannelCommandDefaults 保留简化 no-op

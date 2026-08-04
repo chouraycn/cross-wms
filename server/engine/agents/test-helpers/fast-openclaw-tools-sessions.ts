@@ -1,10 +1,9 @@
-// @ts-nocheck
 /**
  * Fast OpenClaw sessions-tool mocks.
  *
  * Stubs unrelated tool factories so sessions/subagent registration tests import cheaply.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { vi } from "vitest";
 import { stubTool } from "./fast-tool-stubs.js";
 

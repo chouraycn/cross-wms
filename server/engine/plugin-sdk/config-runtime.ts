@@ -29,29 +29,20 @@ export {
   resolveLivePluginConfigObject,
   resolvePluginConfigObject,
 } from "./plugin-config-runtime.js";
-export {
-  clearConfigCache,
-  clearRuntimeConfigSnapshot,
-  getRuntimeConfigSourceSnapshot,
-  getRuntimeConfigSnapshot,
-  getRuntimeConfig,
-  /**
+export {clearConfigCache, type clearRuntimeConfigSnapshot, type getRuntimeConfigSourceSnapshot, type getRuntimeConfigSnapshot, getRuntimeConfig, /**
    * @deprecated Use getRuntimeConfig(), runtime.config.current(), or pass the
    * already loaded config through the call path. Runtime code must not reload
    * config on demand. Bundled plugins and repo code are blocked from using
    * this by the deprecated-internal-config-api architecture guard.
    */
-  loadConfig,
-  readConfigFileSnapshotForWrite,
-  setRuntimeConfigSnapshot,
-  /**
+  loadConfig, readConfigFileSnapshotForWrite, type setRuntimeConfigSnapshot, /**
    * @deprecated Use mutateConfigFile() or replaceConfigFile() with an explicit
    * afterWrite intent so restart behavior stays under host control. Bundled
    * plugins and repo code are blocked from using this by the
    * deprecated-internal-config-api architecture guard.
    */
-  writeConfigFile,
-} from "../config/io.js";
+  writeConfigFile, 
+} from '../config/io.js';
 export { mutateConfigFile, replaceConfigFile } from "../config/mutate.js";
 export type { ConfigWriteAfterWrite } from "../config/runtime-snapshot.js";
 export { logConfigUpdated } from "../config/logging.js";

@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/config/sessions/plugin-host-cleanup.ts
 //
 // 降级策略：
-//  - normalizeLowercaseStringOrEmpty 内联实现（原依赖 @openclaw/normalization-core/string-coerce）。
+//  - normalizeLowercaseStringOrEmpty 内联实现（原依赖 @cdf-know/normalization-core/string-coerce）。
 //  - normalizeSessionEntrySlotKey 保持从 ../../plugins/session-entry-slot-keys.js 导入
 //    （cross-wms 已移植该模块）。
 //  - SessionEntry 类型使用本地占位定义（cross-wms 的 types.ts schema 不同）。

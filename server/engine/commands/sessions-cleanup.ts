@@ -5,8 +5,8 @@
  * It can delegate cleanup to a live gateway or run local store maintenance,
  * with dry-run tables that explain every planned pruning action.
  */
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { getRuntimeConfig } from "@openclaw-src/config/config.js";
 import {
   resolveSessionCleanupAction,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Parses inline reply directives such as media, reply targets, audio, and silence. */
 import { splitMediaFromOutput } from '@openclaw-src/media/parse.js';
 import { parseInlineDirectives } from '@openclaw-src/utils/directive-tags.js';

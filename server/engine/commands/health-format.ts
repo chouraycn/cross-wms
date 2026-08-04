@@ -1,8 +1,8 @@
 // @ts-nocheck
 /** Formatting helpers for `openclaw health` failures and channel summaries. */
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
-import { colorize, isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { asNullableRecord } from "@cdf-know/normalization-core/record-coerce";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
+import { colorize, isRich, theme } from "@openclaw/terminal-core/theme";
 import { formatChannelStatusState } from "@openclaw-src/channels/plugins/status-state.js";
 import { isGatewayTransportError } from "@openclaw-src/gateway/call.js";
 import type { ChannelAccountHealthSummary, HealthSummary } from "./health.types.js";

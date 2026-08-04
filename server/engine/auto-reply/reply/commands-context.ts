@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Builds normalized command context from inbound message and authorization state. */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { normalizeAnyChannelId } from '@openclaw-src/channels/registry.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { resolveCommandAuthorization } from "../command-auth.js";

@@ -278,9 +278,9 @@ export interface OutboundResponse {
   transaction: InventoryTransaction;
 }
 
-/** 入库操作：调用 POST /api/inbound */
+/** 入库操作：调用 POST /api/inbound-records */
 export async function createInbound(data: InboundPayload): Promise<InboundResponse> {
-  const res = await fetchWithTimeout(`${BASE_URL}/api/inbound`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/inbound-records`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -290,9 +290,9 @@ export async function createInbound(data: InboundPayload): Promise<InboundRespon
   return json.data as InboundResponse;
 }
 
-/** 出库操作：调用 POST /api/outbound */
+/** 出库操作：调用 POST /api/outbound-records */
 export async function createOutbound(data: OutboundPayload): Promise<OutboundResponse> {
-  const res = await fetchWithTimeout(`${BASE_URL}/api/outbound`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/outbound-records`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Narrow mutable handle for the active reply session entry.
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';
 

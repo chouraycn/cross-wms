@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Shared Vitest harness mocks and helpers for doctor command e2e-style tests. */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { afterEach, beforeEach, vi } from "vitest";
 import { createEmptyPluginRegistry } from "@openclaw-src/plugins/registry-empty.js";
 import type { MockFn } from "@openclaw-src/test-utils/vitest-mock-fn.js";

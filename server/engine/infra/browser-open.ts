@@ -20,7 +20,7 @@ export async function openInBrowser(url: string, options: BrowserOpenOptions = {
     const platform = process.platform;
 
     if (platform === 'darwin') {
-      const args = [];
+      const args: string[] = [];
       if (options.app) {
         args.push('-a', options.app);
       }

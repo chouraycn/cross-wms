@@ -1,6 +1,6 @@
 import { logger } from '../../logger.js';
 import type { PluginLifecycle, PluginManifest, PluginContext, PluginEvent } from './types.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import { setPluginStatus } from './status.js';
 import { recordPluginInstall, removePluginInstallRecord } from './installs.js';
 import { checkPluginPermission, requestPermission } from './permissions.js';
@@ -111,7 +111,7 @@ export async function invokeLifecycleHook(
     limits: { timeoutMs: 10_000 },
   });
   if (!result.ok) {
-    throw new Error(`[Plugins:Lifecycle] ${pluginId}.${hookName} 失败: ${result.error}`);
+    throw new Error(`[Plugins:Lifecycle] ${pluginId}.${String(hookName)} 失败: ${String(result.error)}`);
   }
 }
 
@@ -151,7 +151,7 @@ export async function enablePlugin(
 
     await invokeLifecycleHook(pluginId, 'enable', options.lifecycle, options.context);
     setState(pluginId, 'enabled');
-    pluginRuntimeRegistry.setStatus(pluginId, 'enabled');
+    PluginRegistry.setStatus(pluginId, 'enabled');
     recordEvent(pluginId, 'activate');
   } catch (e) {
     setState(pluginId, 'error');
@@ -174,7 +174,7 @@ export async function disablePlugin(
   try {
     await invokeLifecycleHook(pluginId, 'disable', options.lifecycle, options.context);
     setState(pluginId, 'disabled');
-    pluginRuntimeRegistry.setStatus(pluginId, 'disabled');
+    PluginRegistry.setStatus(pluginId, 'disabled');
   } catch (e) {
     setState(pluginId, 'error');
     recordEvent(pluginId, 'error', e instanceof Error ? e.message : String(e));
@@ -232,7 +232,7 @@ export async function uninstallPlugin(
   try {
     await invokeLifecycleHook(pluginId, 'uninstall', options.lifecycle, options.context);
     setState(pluginId, 'uninstalled');
-    pluginRuntimeRegistry.unregister(pluginId);
+    PluginRegistry.unregister(pluginId);
     removePluginInstallRecord(pluginId);
     recordEvent(pluginId, 'uninstall');
   } catch (e) {
@@ -258,11 +258,11 @@ export async function updatePlugin(
   const from = getState(pluginId);
   assertTransition(from, 'updating');
   setState(pluginId, 'updating');
-  pluginRuntimeRegistry.setStatus(pluginId, 'updating');
+  PluginRegistry.setStatus(pluginId, 'updating');
 
   try {
     await invokeLifecycleHook(pluginId, 'update', options.lifecycle, options.context);
-    pluginRuntimeRegistry.setManifest(pluginId, options.manifest);
+    PluginRegistry.setManifest(pluginId, options.manifest);
     recordPluginInstall({
       pluginId,
       version: options.toVersion,
@@ -270,7 +270,7 @@ export async function updatePlugin(
     });
     const nextState: LifecycleState = from === 'enabled' ? 'enabled' : 'installed';
     setState(pluginId, nextState);
-    pluginRuntimeRegistry.setStatus(pluginId, nextState === 'enabled' ? 'enabled' : 'installed');
+    PluginRegistry.setStatus(pluginId, nextState === 'enabled' ? 'enabled' : 'installed');
     recordEvent(pluginId, 'update', { from: options.fromVersion, to: options.toVersion });
   } catch (e) {
     setState(pluginId, 'error');

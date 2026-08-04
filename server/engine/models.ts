@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../logger.js';
-import { resolveModelRuntimePolicy } from './modelRuntimePolicy.js';
+import { resolveModelRuntimePolicy } from "@openclaw-src/agents/model-runtime-policy.js";
 
 export interface ModelInfo {
   modelId: string;
@@ -125,12 +125,12 @@ export async function modelAuthStatus(modelId: string): Promise<ModelAuthStatusR
 }
 
 export async function modelResolve(params: ModelResolveParams): Promise<ModelResolveResult> {
-  const result = resolveModelRuntimePolicy(params);
+  const result = resolveModelRuntimePolicy(params) as any;
 
   return {
     modelId: result.modelId ?? 'claude-3-5-sonnet',
-    provider: result.provider ?? 'anthropic',
-    source: result.source,
+    provider: result.provider ?? result.matchedProvider ?? 'anthropic',
+    source: result.source ?? 'implicit',
   };
 }
 

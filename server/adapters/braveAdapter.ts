@@ -1,6 +1,6 @@
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 export const BRAVE_BASE_URL = 'https://api.brave.com';
 export const BRAVE_DEFAULT_MODEL_ID = 'brave/mistral-7b';

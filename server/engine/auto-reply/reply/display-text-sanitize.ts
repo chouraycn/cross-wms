@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Removes internal runtime context from text shown back to users.
 import { stripInternalRuntimeContext } from '@openclaw-src/agents/internal-runtime-context.js';
 import { stripEnvelope, stripMessageIdHints } from '@openclaw-src/shared/chat-envelope.js';

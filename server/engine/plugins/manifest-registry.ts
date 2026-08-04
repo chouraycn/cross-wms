@@ -3,7 +3,7 @@
  *
  * 移植自 openclaw/src/plugins/manifest-registry.ts。
  *
- * 降级策略：原文件依赖 node:fs、node:path、@openclaw/normalization-core/*、
+ * 降级策略：原文件依赖 node:fs、node:path、@cdf-know/normalization-core/*、
  * 多个本地模块。运行时函数降级为返回空注册表。类型定义保留。
  */
 

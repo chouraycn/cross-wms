@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared reply test harness with mocked agent/runtime dependencies and temp HOME isolation. */
 import fs from "node:fs/promises";
 import os from "node:os";

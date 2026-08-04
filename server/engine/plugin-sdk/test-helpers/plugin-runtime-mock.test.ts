@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests plugin runtime mock helpers stay aligned with channel runtime contracts.
  */

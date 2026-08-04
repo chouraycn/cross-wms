@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared E2E mocks for directive behavior tests that exercise reply-agent dispatch. */
 import { vi, type Mock } from "vitest";
 

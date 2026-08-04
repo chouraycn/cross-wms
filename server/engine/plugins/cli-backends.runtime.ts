@@ -9,7 +9,7 @@ export type PluginCliBackendEntry = CliBackendPlugin & {
 
 /** Resolves CLI backends from the active runtime plugin registry. */
 export function resolveRuntimeCliBackends(): PluginCliBackendEntry[] {
-  return (getActiveRuntimePluginRegistry()?.cliBackends ?? []).map((entry) =>
+  return ((getActiveRuntimePluginRegistry()?.cliBackends ?? []).map((entry) =>
     Object.assign({}, entry.backend, { pluginId: entry.pluginId }),
-  );
+  ) as any);
 }

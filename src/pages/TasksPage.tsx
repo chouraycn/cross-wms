@@ -53,21 +53,22 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 import * as tasksApi from '../services/tasksApi';
 import { getGrayScale } from '../constants/theme';
+import { t } from '../i18n';
 
 // 状态配置
 const STATUS_CONFIG = {
-  pending: { label: '待处理', color: 'default' as const, icon: <PendingIcon fontSize="small" /> },
-  in_progress: { label: '进行中', color: 'primary' as const, icon: <PlayCircleIcon fontSize="small" /> },
-  completed: { label: '已完成', color: 'success' as const, icon: <CheckCircleIcon fontSize="small" /> },
-  cancelled: { label: '已取消', color: 'error' as const, icon: <CancelIcon fontSize="small" /> },
+  pending: { label: t('tasksPage:pending'), color: 'default' as const, icon: <PendingIcon fontSize="small" /> },
+  in_progress: { label: t('tasksPage:inProgress'), color: 'primary' as const, icon: <PlayCircleIcon fontSize="small" /> },
+  completed: { label: t('tasksPage:completed'), color: 'success' as const, icon: <CheckCircleIcon fontSize="small" /> },
+  cancelled: { label: t('tasksPage:cancelled'), color: 'error' as const, icon: <CancelIcon fontSize="small" /> },
 };
 
 // 优先级配置
 const PRIORITY_CONFIG = {
-  low: { label: '低', color: 'default' as const, icon: <LowPriorityIcon fontSize="small" /> },
-  medium: { label: '中', color: 'info' as const, icon: <RemoveCircleOutlineIcon fontSize="small" /> },
-  high: { label: '高', color: 'warning' as const, icon: <WarningIcon fontSize="small" /> },
-  urgent: { label: '紧急', color: 'error' as const, icon: <PriorityHighIcon fontSize="small" /> },
+  low: { label: t('tasksPage:low'), color: 'default' as const, icon: <LowPriorityIcon fontSize="small" /> },
+  medium: { label: t('tasksPage:medium'), color: 'info' as const, icon: <RemoveCircleOutlineIcon fontSize="small" /> },
+  high: { label: t('tasksPage:high'), color: 'warning' as const, icon: <WarningIcon fontSize="small" /> },
+  urgent: { label: t('tasksPage:urgent'), color: 'error' as const, icon: <PriorityHighIcon fontSize="small" /> },
 };
 
 // 任务状态（适配 API）
@@ -187,7 +188,7 @@ const TasksPage: React.FC = () => {
       }));
       setTasks(mappedTasks);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载任务失败');
+      setError(e instanceof Error ? e.message : t('tasksPage:loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -259,7 +260,7 @@ const TasksPage: React.FC = () => {
   // 保存任务
   const handleSaveTask = async () => {
     if (!formTitle.trim()) {
-      setError('任务标题不能为空');
+      setError(t('tasksPage:titleRequired'));
       return;
     }
 
@@ -275,7 +276,7 @@ const TasksPage: React.FC = () => {
           status: mapFrontendStatusToApi(formStatus) as 'todo' | 'in_progress' | 'done' | 'blocked',
           priority: mapFrontendPriorityToApi(formPriority) as 'low' | 'medium' | 'high',
         });
-        setSuccess('任务更新成功');
+        setSuccess(t('tasksPage:updateSuccess'));
       } else {
         // 创建任务
         await tasksApi.createTask({
@@ -285,13 +286,13 @@ const TasksPage: React.FC = () => {
           priority: mapFrontendPriorityToApi(formPriority) as 'low' | 'medium' | 'high',
           projectId: 'default',
         });
-        setSuccess('任务创建成功');
+        setSuccess(t('tasksPage:createSuccess'));
       }
 
       handleCloseDialog();
       await loadTasks();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '保存任务失败');
+      setError(e instanceof Error ? e.message : t('tasksPage:saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -318,11 +319,11 @@ const TasksPage: React.FC = () => {
 
     try {
       await tasksApi.deleteTask(deletingTask.id);
-      setSuccess('任务删除成功');
+      setSuccess(t('tasksPage:deleteSuccess'));
       handleCloseDeleteDialog();
       await loadTasks();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '删除任务失败');
+      setError(e instanceof Error ? e.message : t('tasksPage:deleteFailed'));
     } finally {
       setSaving(false);
     }
@@ -342,15 +343,15 @@ const TasksPage: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography variant="h4" fontWeight={600}>
-            任务管理
+            {t('tasksPage:title')}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            管理项目任务，支持创建、编辑、删除和过滤
+            {t('tasksPage:description')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           {loading && <LinearProgress sx={{ width: 100 }} />}
-          <IconButton onClick={loadTasks} disabled={loading} title="刷新">
+          <IconButton onClick={loadTasks} disabled={loading} title={t('tasksPage:refresh')}>
             <RefreshIcon />
           </IconButton>
           <Button
@@ -358,7 +359,7 @@ const TasksPage: React.FC = () => {
             startIcon={<AddIcon />}
             onClick={handleOpenCreate}
           >
-            新建任务
+            {t('tasksPage:createButton')}
           </Button>
         </Box>
       </Box>
@@ -383,7 +384,7 @@ const TasksPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <AssignmentIcon color="primary" />
                 <Typography variant="body2" color="text.secondary">
-                  任务总数
+                  {t('tasksPage:totalTasks')}
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight={600}>
@@ -398,7 +399,7 @@ const TasksPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <PendingIcon color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  待处理
+                  {t('tasksPage:pending')}
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight={600}>
@@ -413,7 +414,7 @@ const TasksPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <PlayCircleIcon color="primary" />
                 <Typography variant="body2" color="text.secondary">
-                  进行中
+                  {t('tasksPage:inProgress')}
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight={600}>
@@ -428,7 +429,7 @@ const TasksPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <CheckCircleIcon color="success" />
                 <Typography variant="body2" color="text.secondary">
-                  已完成
+                  {t('tasksPage:completed')}
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight={600}>
@@ -445,7 +446,7 @@ const TasksPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <FilterListIcon fontSize="small" />
             <Typography variant="h6" fontWeight={600}>
-              过滤条件
+              {t('tasksPage:filterSection')}
             </Typography>
           </Box>
 
@@ -454,7 +455,7 @@ const TasksPage: React.FC = () => {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="搜索任务..."
+                placeholder={t('tasksPage:searchPlaceholder')}
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                 InputProps={{
@@ -468,13 +469,13 @@ const TasksPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth size="small">
-                <InputLabel>状态</InputLabel>
+                <InputLabel>{t('tasksPage:status')}</InputLabel>
                 <Select
                   value={filters.status}
-                  label="状态"
+                  label={t('tasksPage:status')}
                   onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
                 >
-                  <MenuItem value="">全部</MenuItem>
+                  <MenuItem value="">{t('tasksPage:all')}</MenuItem>
                   {Object.entries(STATUS_CONFIG).map(([value, config]) => (
                     <MenuItem key={value} value={value}>
                       {config.label}
@@ -485,13 +486,13 @@ const TasksPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth size="small">
-                <InputLabel>优先级</InputLabel>
+                <InputLabel>{t('tasksPage:priority')}</InputLabel>
                 <Select
                   value={filters.priority}
-                  label="优先级"
+                  label={t('tasksPage:priority')}
                   onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
                 >
-                  <MenuItem value="">全部</MenuItem>
+                  <MenuItem value="">{t('tasksPage:all')}</MenuItem>
                   {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
                     <MenuItem key={value} value={value}>
                       {config.label}
@@ -509,9 +510,9 @@ const TasksPage: React.FC = () => {
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6" fontWeight={600}>
-              任务列表
+              {t('tasksPage:taskList')}
             </Typography>
-            <Chip label={`${filteredTasks.length} 条记录`} size="small" />
+            <Chip label={t('tasksPage:recordCount', { count: filteredTasks.length })} size="small" />
           </Box>
 
           {loading ? (
@@ -521,7 +522,7 @@ const TasksPage: React.FC = () => {
           ) : filteredTasks.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography color="text.secondary">
-                {tasks.length === 0 ? '暂无任务，点击"新建任务"开始创建' : '没有符合条件的任务'}
+                {tasks.length === 0 ? t('tasksPage:emptyCreate') : t('tasksPage:emptyFiltered')}
               </Typography>
             </Box>
           ) : (
@@ -559,11 +560,11 @@ const TasksPage: React.FC = () => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                            {task.description || '暂无描述'}
+                            {task.description || t('tasksPage:noDescription')}
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <Typography variant="caption" color="text.secondary">
-                              创建于: {new Date(task.createdAt).toLocaleString()}
+                              {t('tasksPage:createdAt')}: {new Date(task.createdAt).toLocaleString()}
                             </Typography>
                             {task.tags.length > 0 && (
                               <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -582,12 +583,12 @@ const TasksPage: React.FC = () => {
                       }
                     />
                     <ListItemSecondaryAction>
-                      <Tooltip title="编辑">
+                      <Tooltip title={t('tasksPage:edit')}>
                         <IconButton edge="end" onClick={() => handleOpenEdit(task)} sx={{ mr: 0.5 }}>
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="删除">
+                      <Tooltip title={t('tasksPage:delete')}>
                         <IconButton edge="end" onClick={() => handleOpenDeleteConfirm(task)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -603,29 +604,29 @@ const TasksPage: React.FC = () => {
 
       {/* 创建/编辑对话框 */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingTask ? '编辑任务' : '新建任务'}</DialogTitle>
+        <DialogTitle>{editingTask ? t('tasksPage:editDialogTitle') : t('tasksPage:createDialogTitle')}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               fullWidth
-              label="任务标题"
+              label={t('tasksPage:taskTitleLabel')}
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               required
             />
             <TextField
               fullWidth
-              label="任务描述"
+              label={t('tasksPage:taskDescriptionLabel')}
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               multiline
               rows={3}
             />
             <FormControl fullWidth>
-              <InputLabel>状态</InputLabel>
+              <InputLabel>{t('tasksPage:status')}</InputLabel>
               <Select
                 value={formStatus}
-                label="状态"
+                label={t('tasksPage:status')}
                 onChange={(e) => setFormStatus(e.target.value as TaskStatus)}
               >
                 {Object.entries(STATUS_CONFIG).map(([value, config]) => (
@@ -639,10 +640,10 @@ const TasksPage: React.FC = () => {
               </Select>
             </FormControl>
             <FormControl fullWidth>
-              <InputLabel>优先级</InputLabel>
+              <InputLabel>{t('tasksPage:priority')}</InputLabel>
               <Select
                 value={formPriority}
-                label="优先级"
+                label={t('tasksPage:priority')}
                 onChange={(e) => setFormPriority(e.target.value as TaskPriority)}
               >
                 {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
@@ -658,28 +659,28 @@ const TasksPage: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>取消</Button>
+          <Button onClick={handleCloseDialog}>{t('tasksPage:cancel')}</Button>
           <Button
             variant="contained"
             onClick={handleSaveTask}
             disabled={saving || !formTitle.trim()}
             startIcon={saving ? <CircularProgress size={16} /> : null}
           >
-            {editingTask ? '保存' : '创建'}
+            {editingTask ? t('tasksPage:save') : t('tasksPage:create')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* 删除确认对话框 */}
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle>确认删除</DialogTitle>
+        <DialogTitle>{t('tasksPage:deleteDialogTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            确定要删除任务 "{deletingTask?.title}" 吗？此操作无法撤销。
+            {t('tasksPage:deleteDialogText', { title: deletingTask?.title })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>取消</Button>
+          <Button onClick={handleCloseDeleteDialog}>{t('tasksPage:cancel')}</Button>
           <Button
             variant="contained"
             color="error"
@@ -687,7 +688,7 @@ const TasksPage: React.FC = () => {
             disabled={saving}
             startIcon={saving ? <CircularProgress size={16} /> : null}
           >
-            删除
+            {t('tasksPage:delete')}
           </Button>
         </DialogActions>
       </Dialog>

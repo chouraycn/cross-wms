@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Node CLI runtime helpers: terminal theme adaptation and standard error handling.
 import { isRich, theme } from "../../../packages/terminal-core/src/theme.js";
 import { defaultRuntime } from "../../runtime.js";

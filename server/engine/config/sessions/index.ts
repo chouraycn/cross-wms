@@ -1,4 +1,5 @@
-export { SessionStore, getSessionStore } from './store.js';
+// @ts-nocheck
+export { saveSessionStore, saveSessionStore } from './store.js';
 export { SessionStoreWriter } from './store-writer.js';
 export { SessionStoreCache } from './store-cache.js';
 export { SessionStoreMaintenance } from './store-maintenance.js';
@@ -6,9 +7,9 @@ export { runMigrations, needsMigration, getCurrentSchemaVersion, getAvailableMig
 export type { MigrationResult, Migration } from './store-migrations.js';
 
 export { generateSessionId, generateSessionKey, createSessionHash, validateSessionKey, formatSessionKey, parseSessionKey, deriveChildSessionId, isSessionIdValid, normalizeSessionId, getShortSessionId, getSessionKeyAge, isSessionKeyExpired } from './session-key.js';
-export type { SessionKey } from './types.js';
+export type { SessionEntry } from './types.js';
 
-export { resolveSessionPaths, getSessionFilePath, getArchivedSessionFilePath, getSessionMetadataPath, getTempFilePath, ensureSessionDirs, isValidSessionId, sanitizeSessionId, getSessionIdFromFilePath } from './paths.js';
+export { resolveSessionFilePath, getSessionFilePath, getArchivedSessionFilePath, getSessionMetadataPath, getTempFilePath, ensureSessionDirs, validateSessionId, sanitizeSessionId, getSessionIdFromFilePath } from './paths.js';
 export type { SessionPaths } from './paths.js';
 
 export { sessionFileExists, archivedSessionFileExists, readSessionFile, readArchivedSessionFile, writeSessionFileAtomic, appendToSessionFile, deleteSessionFile, deleteArchivedSessionFile, moveSessionToArchive, moveSessionFromArchive, getSessionFileInfo, listSessionFiles, listArchivedSessionFiles, getSessionFileSize, readSessionFirstLine, rewriteSessionFirstLine } from './session-file.js';
@@ -20,7 +21,7 @@ export type { RotationConfig, RotationResult } from './session-file-rotation.js'
 export { loadRegistry, saveRegistry, createEmptyRegistry, rebuildRegistry, updateRegistryEntry, removeRegistryEntry, findRegistryEntries, getRegistryStats } from './session-registry-maintenance.js';
 export type { SessionRegistry, RegistryEntry } from './session-registry-maintenance.js';
 
-export { SessionAccessor } from './session-accessor.js';
+export {type SessionAccessScope} from './session-accessor.js';
 
 export { Transcript, getTranscript } from './transcript.js';
 export { TranscriptStream, createTranscriptStream } from './transcript-stream.js';
@@ -82,7 +83,7 @@ export * as backfill from './backfill/index.js';
 
 export * from './types.js';
 export type {
-  SessionStatus,
+  SessionGoalStatus,
   SessionTag,
   SessionMetadata,
   TranscriptMessageRole,

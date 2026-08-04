@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Manages active embedded-agent run handles, queues, aborts, and waiters.
  */
@@ -33,6 +32,7 @@ import {
   ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_KEY,
   EMBEDDED_RUN_WAITERS,
   getActiveEmbeddedRunCount,
+  resolveActiveEmbeddedRunSessionId,
   type ActiveEmbeddedRunSnapshot,
   type AbandonedEmbeddedRun,
   type EmbeddedAgentQueueHandle,
@@ -798,3 +798,20 @@ export const testing = {
   },
 };
 export { testing as __testing };
+
+// Register hooks into the leaf registry to break the
+// runs.ts → diagnostic.ts → diagnostic-stuck-session-recovery.runtime.ts → runs.ts cycle (#10).
+// recovery.runtime.ts calls these via the registry instead of statically importing runs.ts;
+// the remaining edge (diagnostic.ts → recovery.runtime.ts) is a one-way lazy dynamic import.
+// runs.ts loads at startup (statically imported by auto-reply/gateway); its module body runs
+// after diagnostic.ts finishes loading, so hooks are registered before any runtime use.
+import { registerEmbeddedAgentRunsHooks } from "./runs-hooks.js";
+registerEmbeddedAgentRunsHooks({
+  isEmbeddedAgentRunActive,
+  isEmbeddedAgentRunHandleActive,
+  resolveActiveEmbeddedRunHandleSessionId,
+  resolveActiveEmbeddedRunHandleSessionIdBySessionFile,
+  resolveActiveEmbeddedRunSessionIdBySessionFile,
+  resolveActiveEmbeddedRunSessionId,
+  abortAndDrainEmbeddedAgentRun,
+});

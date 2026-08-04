@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Mention matching, stripping, and explicit mention handling for group triggers. */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveAgentConfig } from '@openclaw-src/agents/agent-scope.js';
 import { resolveMentionPatternPolicy } from '@openclaw-src/channels/mention-pattern-policy.js';
 import type { ChannelId } from '@openclaw-src/channels/plugins/channel-id.types.js';

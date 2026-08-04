@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Plugin HTTP runtime-scope integration tests.
  */

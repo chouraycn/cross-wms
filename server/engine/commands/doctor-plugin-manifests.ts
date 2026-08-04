@@ -2,10 +2,10 @@
 /** Doctor migration for legacy plugin manifest capability keys into contracts.* fields. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@cdf-know/normalization-core/string-normalization";
 import { z } from "zod";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { loadPluginManifestRegistry } from "@openclaw-src/plugins/manifest-registry.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";

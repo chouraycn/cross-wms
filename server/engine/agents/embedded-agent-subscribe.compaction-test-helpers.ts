@@ -1,17 +1,53 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-subscribe.compaction-test-helpers.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Test helpers for seeding and observing compaction counts in session stores.
  */
+import fs from "node:fs/promises";
+import path from "node:path";
 
-export function seedSessionStore(..._args: unknown[]): unknown {
-  return undefined;
+export async function seedSessionStore(params: {
+  storePath: string;
+  sessionKey: string;
+  compactionCount: number;
+  updatedAt?: number;
+}) {
+  await fs.mkdir(path.dirname(params.storePath), { recursive: true });
+  await fs.writeFile(
+    params.storePath,
+    JSON.stringify(
+      {
+        [params.sessionKey]: {
+          sessionId: "session-1",
+          updatedAt: params.updatedAt ?? 1_000,
+          compactionCount: params.compactionCount,
+        },
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
 }
-export function readCompactionCount(..._args: unknown[]): unknown {
-  return undefined;
+
+export async function readCompactionCount(storePath: string, sessionKey: string): Promise<number> {
+  const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+    string,
+    { compactionCount?: number }
+  >;
+  return store[sessionKey]?.compactionCount ?? 0;
 }
-export function waitForCompactionCount(..._args: unknown[]): unknown {
-  return undefined;
+
+export async function waitForCompactionCount(params: {
+  storePath: string;
+  sessionKey: string;
+  expected: number;
+}) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if ((await readCompactionCount(params.storePath, params.sessionKey)) === params.expected) {
+      return;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
+  }
+  throw new Error(`timed out waiting for compactionCount=${params.expected}`);
 }

@@ -1,49 +1,41 @@
-export interface ListPageOptions {
-  offset?: number;
-  limit?: number;
-  sortBy?: string;
-  sortDir?: "asc" | "desc";
-  query?: string;
-  filters?: Record<string, unknown>;
-}
+/** Shared filter, sort, and page result types for cron job listing. */
+import type { CronJob, CronRunStatus } from "../types.js";
 
-export interface ListPageResult<T> {
-  items: T[];
+/** Enabled-state filter accepted by paginated cron listing. */
+export type CronJobsEnabledFilter = "all" | "enabled" | "disabled";
+
+/** Schedule-kind filter accepted by paginated cron listing. */
+export type CronJobsScheduleKindFilter = "all" | "at" | "every" | "cron";
+
+/** Last-run status filter, including jobs that have not produced a status yet. */
+export type CronJobsLastRunStatusFilter = "all" | CronRunStatus | "unknown";
+
+/** Stable sort keys supported by paginated cron listing. */
+export type CronJobsSortBy = "nextRunAtMs" | "updatedAtMs" | "name";
+
+/** Sort direction for paginated cron listing. */
+export type CronSortDir = "asc" | "desc";
+
+/** Input contract for filtered, sorted, offset-based cron job pages. */
+export type CronListPageOptions = {
+  includeDisabled?: boolean;
+  limit?: number;
+  offset?: number;
+  query?: string;
+  enabled?: CronJobsEnabledFilter;
+  scheduleKind?: CronJobsScheduleKindFilter;
+  lastRunStatus?: CronJobsLastRunStatusFilter;
+  sortBy?: CronJobsSortBy;
+  sortDir?: CronSortDir;
+  agentId?: string;
+};
+
+/** Offset-page result returned by cron listPage callers. */
+export type CronListPageResult<TJobs extends readonly CronJob[] = CronJob[]> = {
+  jobs: TJobs;
   total: number;
   offset: number;
   limit: number;
   hasMore: boolean;
   nextOffset: number | null;
-}
-
-export interface SortConfig {
-  field: string;
-  direction: "asc" | "desc";
-}
-
-export interface FilterConfig {
-  field: string;
-  operator: "eq" | "ne" | "contains" | "startsWith" | "endsWith" | "in" | "gt" | "lt" | "gte" | "lte";
-  value: unknown;
-}
-
-export function createListPageResult<T>(
-  items: T[],
-  total: number,
-  options: ListPageOptions,
-): ListPageResult<T> {
-  const limit = Math.max(1, Math.min(200, Math.floor(options.limit ?? 50)));
-  const offset = Math.max(0, Math.floor(options.offset ?? 0));
-  const boundedOffset = Math.min(total, offset);
-  const pageItems = items.slice(boundedOffset, boundedOffset + limit);
-  const nextOffset = boundedOffset + pageItems.length;
-
-  return {
-    items: pageItems,
-    total,
-    offset: boundedOffset,
-    limit,
-    hasMore: nextOffset < total,
-    nextOffset: nextOffset < total ? nextOffset : null,
-  };
-}
+};

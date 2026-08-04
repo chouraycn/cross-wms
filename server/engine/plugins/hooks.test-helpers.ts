@@ -83,7 +83,7 @@ export function addTestHook(params: {
   priority?: number;
   timeoutMs?: number;
 }) {
-  params.registry.typedHooks.push({
+  (params.registry as any).typedHooks.push({
     pluginId: params.pluginId,
     hookName: params.hookName,
     handler: params.handler,
@@ -149,6 +149,6 @@ export function createHookRunnerWithRegistry(
   const registry = createMockPluginRegistry(hooks);
   return {
     registry,
-    runner: createHookRunner(registry, options),
+    runner: createHookRunner(registry as any, options),
   };
 }

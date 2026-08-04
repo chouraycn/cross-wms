@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Parses config command set/unset requests into typed config operations.
 import { parseStandardSetUnsetSlashCommand } from "./commands-setunset-standard.js";
 

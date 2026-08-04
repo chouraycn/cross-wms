@@ -1,10 +1,9 @@
 /** Shared parsing and file helpers for secrets migration/runtime code. */
 import fs from "node:fs";
 import path from "node:path";
-import { privateFileStoreSync } from "../infra/private-file-store.js";
-import { replaceFileAtomicSync } from "../infra/replace-file.js";
-import { resolvePositiveTimerTimeoutMs } from "../infra/_runtime-stubs.js";
-export { isRecord } from "../shared/safe-record.js";
+import { resolvePositiveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
+import { privateFileStoreSync, replaceFileAtomicSync } from "./_deps.js";
+export { isRecord } from "../../utils.js";
 
 /**
  * Narrows to strings that contain non-whitespace content.
@@ -100,5 +99,5 @@ export function writeTextFileAtomic(pathname: string, value: string, mode = 0o60
     });
     return;
   }
-  privateFileStoreSync(path.dirname(pathname)).writeFileSync(path.basename(pathname), value);
+  privateFileStoreSync(path.dirname(pathname)).writeText(path.basename(pathname), value);
 }

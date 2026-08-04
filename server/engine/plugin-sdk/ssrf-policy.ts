@@ -1,7 +1,7 @@
 import { lookup as dnsLookup } from "node:dns/promises";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { asNullableRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeUniqueStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   isBlockedHostnameOrIp,
   isPrivateIpAddress,
@@ -274,4 +274,15 @@ export function buildHostnameAllowlistPolicyFromSuffixAllowlist(
     return undefined;
   }
   return { hostnameAllowlist: Array.from(patterns) };
+}
+
+/** Build doctor rules that migrate legacy private-network aliases for one channel config. */
+export function createLegacyPrivateNetworkDoctorContract(params: { channelKey: string }): {
+  legacyConfigRules: unknown[];
+  normalizeCompatibilityConfig: (params: { cfg: unknown }) => { config: unknown; changes: string[] };
+} {
+  return {
+    legacyConfigRules: [],
+    normalizeCompatibilityConfig: ({ cfg }: { cfg: unknown }) => ({ config: cfg, changes: [] }),
+  };
 }

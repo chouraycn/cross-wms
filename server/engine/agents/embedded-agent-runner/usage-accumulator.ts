@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Accumulates and normalizes per-call token usage across embedded runs.
  */

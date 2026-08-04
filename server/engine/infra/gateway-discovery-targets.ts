@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/infra/gateway-discovery-targets.ts
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-coerce → ./string-coerce.js
+//  - @cdf-know/normalization-core/string-coerce → ./string-coerce.js
 import { normalizeOptionalString } from "./string-coerce.js";
 import {
   resolveGatewayDiscoveryEndpoint,

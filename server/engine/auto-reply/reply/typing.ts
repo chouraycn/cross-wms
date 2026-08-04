@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Typing indicator lifecycle controller for reply runs. */
 import {
   finiteSecondsToTimerSafeMilliseconds,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { createTypingKeepaliveLoop } from '@openclaw-src/channels/typing-lifecycle.js';
 import { createTypingStartGuard } from '@openclaw-src/channels/typing-start-guard.js';
 import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";

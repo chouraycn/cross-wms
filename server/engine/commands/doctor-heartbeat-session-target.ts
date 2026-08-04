@@ -1,5 +1,5 @@
 /** Doctor warnings for heartbeat.session values that resolve to missing delivery sessions. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { listAgentEntries, listAgentIds, resolveAgentConfig } from "@openclaw-src/agents/agent-scope.js";
 import { canonicalizeMainSessionAlias } from "@openclaw-src/config/sessions/main-session.js";
 import { resolveStorePath } from "@openclaw-src/config/sessions/paths.js";

@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * fs-safe 本地 stub 与降级实现 — 为移植自 openclaw 的 facade 模块提供
  * @openclaw/fs-safe/* 子包外部依赖的占位实现。
  *
@@ -777,13 +783,19 @@ export function configureFsSafePython(_options: { mode: "off" | "auto" | "on" })
 // ============================================================================
 
 export class JsonFileReadError extends Error {
+  public readonly filePath: string;
+  public readonly operation: string;
+  public readonly cause?: unknown;
   constructor(
-    public readonly filePath: string,
-    public readonly operation: string,
-    public readonly cause?: unknown,
+    filePath: string,
+    operation: string,
+    cause?: unknown,
   ) {
     super(`JSON file read failed: ${filePath} (${operation})`);
     this.name = "JsonFileReadError";
+    this.filePath = filePath;
+    this.operation = operation;
+    this.cause = cause;
   }
 }
 

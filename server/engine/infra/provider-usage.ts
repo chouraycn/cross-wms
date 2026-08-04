@@ -1,17 +1,14 @@
-// 移植自 openclaw/src/infra/provider-usage.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-
-export type ProviderUsageSnapshot = unknown;
-export type UsageProviderId = unknown;
-export type UsageSummary = unknown;
-export type UsageWindow = unknown;
-export type formatUsageReportLines = unknown;
-export const formatUsageReportLines: unknown = undefined;
-export type formatUsageSummaryLine = unknown;
-export const formatUsageSummaryLine: unknown = undefined;
-export type formatUsageWindowSummary = unknown;
-export const formatUsageWindowSummary: unknown = undefined;
-export type loadProviderUsageSummary = unknown;
-export const loadProviderUsageSummary: unknown = undefined;
-export type resolveUsageProviderId = unknown;
-export const resolveUsageProviderId: unknown = undefined;
+// Public provider usage facade for formatting, loading, and shared types.
+export {
+  formatUsageReportLines,
+  formatUsageSummaryLine,
+  formatUsageWindowSummary,
+} from "./provider-usage.format.js";
+export { loadProviderUsageSummary } from "./provider-usage.load.js";
+export { resolveUsageProviderId } from "./provider-usage.shared.js";
+export type {
+  ProviderUsageSnapshot,
+  UsageProviderId,
+  UsageSummary,
+  UsageWindow,
+} from "./provider-usage.types.js";

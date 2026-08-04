@@ -16,6 +16,7 @@ import type { Message, Session } from '../types/chat.js';
 import type { AgentIdentity } from '../components/CDFChat/AgentProfile.js';
 import type { SendAgentMessageOptions } from './useAgentChat.js';
 import { useToast } from '../contexts/ToastContext.js';
+import { dispatchCdfEvent, CdfEvents } from '../events/events.js';
 
 /** 导出 Markdown 文件时的默认免责声明 */
 export const EXPORT_DISCLAIMER = '\n\n---\n\n*本内容由 AI 助手自动生成，仅供参考。*';
@@ -148,12 +149,10 @@ export function useChatActions({
   }, [showToast]);
 
   const handleQuote = useCallback((msg: Message) => {
-    const quoteText = `> ${msg.role === 'user' ? '用户' : 'AI'}：${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`;
-    navigator.clipboard.writeText(quoteText).then(() => {
-      showToast('引用内容已复制，请粘贴到输入框', 'info', 2000);
-    }).catch(() => {
-      showToast('引用功能开发中', 'info', 2000);
-    });
+    const quoteText = `> ${msg.role === 'user' ? '用户' : 'AI'}：${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}\n\n`;
+    // 通过事件广播将引用文本插入到聊天输入框
+    dispatchCdfEvent(CdfEvents.CHAT_INSERT_QUOTE, { text: quoteText });
+    showToast('已引用消息到输入框', 'success', 1500);
   }, [showToast]);
 
   // ===================== 新增消息操作回调 =====================
@@ -187,8 +186,19 @@ export function useChatActions({
       URL.revokeObjectURL(url);
       showToast('已导出为 Markdown', 'success', 1500);
     } else {
-      // TODO: 实现 PDF 导出
-      showToast('PDF 导出功能开发中', 'info', 2000);
+      // PDF 导出：使用浏览器原生 print API
+      const cleanedContent = cleanAIDisclaimer(msg.content || '');
+      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+      if (!printWindow) {
+        showToast('无法打开打印窗口，请检查弹窗拦截设置', 'error', 2000);
+        return;
+      }
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>消息导出 - ${msg.id}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;}pre{white-space:pre-wrap;word-wrap:break-word;}</style></head><body><h1>${msg.role === 'user' ? '用户消息' : 'AI 回复'}</h1><pre>${cleanedContent.replace(/</g, '&lt;')}</pre></body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => printWindow.close(), 500);
+      showToast('已打开打印对话框，可选择另存为 PDF', 'success', 2000);
     }
   }, [showToast]);
 
@@ -248,7 +258,24 @@ export function useChatActions({
       URL.revokeObjectURL(url);
       showToast(`已导出 ${messages.length} 条消息为 Markdown`, 'success', 1500);
     } else {
-      showToast('PDF 导出功能开发中', 'info', 2000);
+      // PDF 导出：使用浏览器原生 print API 将多条消息写入打印窗口
+      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+      if (!printWindow) {
+        showToast('无法打开打印窗口，请检查弹窗拦截设置', 'error', 2000);
+        return;
+      }
+      const bodyHtml = messages
+        .map(m => {
+          const content = cleanAIDisclaimer(m.content || '').replace(/</g, '&lt;');
+          return `<div style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee;"><h3 style="margin:0 0 8px 0;color:${m.role === 'user' ? '#2563EB' : '#10b981'};">${m.role === 'user' ? '用户' : 'AI'}</h3><pre style="white-space:pre-wrap;word-wrap:break-word;font-family:inherit;margin:0;">${content}</pre></div>`;
+        })
+        .join('');
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>对话导出 - ${new Date().toLocaleString('zh-CN')}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#1f2937;}h1{font-size:1.25rem;border-bottom:2px solid #10b981;padding-bottom:8px;}</style></head><body><h1>对话导出（${messages.length} 条消息）</h1>${bodyHtml}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(() => printWindow.close(), 500);
+      showToast('已打开打印对话框，可选择另存为 PDF', 'success', 2000);
     }
   }, [showToast]);
 

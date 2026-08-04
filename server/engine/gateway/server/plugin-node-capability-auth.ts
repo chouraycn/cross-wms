@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Plugin node capability auth lets node-issued route capabilities supplement normal bearer gateway auth.
 import type { IncomingMessage } from "node:http";
 import type { AuthRateLimiter } from "../auth-rate-limit.js";
@@ -55,7 +54,7 @@ export async function authorizePluginNodeCapabilityRequest(params: {
       trustedProxies,
       allowRealIpFallback,
       rateLimiter,
-      browserOriginPolicy: resolveHttpBrowserOriginPolicy(req),
+      browserOriginPolicy: resolveHttpBrowserOriginPolicy(req) as any,
     });
     if (authResult.ok) {
       return authResult;

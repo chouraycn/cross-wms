@@ -501,7 +501,7 @@ describe("plugin-sdk root alias", () => {
 
     expect((lazyModule.moduleExports.slowHelper as () => string)()).toBe("loaded");
     const aliasMap = (lazyModule.createJitiOptions.at(-1)?.alias ?? {}) as Record<string, string>;
-    expect(aliasMap["@openclaw/llm-core"]).toBe(sourceLlmCorePath);
+    expect(aliasMap["@cdf-know/llm-core"]).toBe(sourceLlmCorePath);
   });
 
   it("keeps bootstrap plugin-sdk aliases deterministic and ignores unsafe subpaths", () => {
@@ -528,11 +528,11 @@ describe("plugin-sdk root alias", () => {
       "@openclaw/plugin-sdk/group-access",
       "openclaw/plugin-sdk/zeta",
       "@openclaw/plugin-sdk/zeta",
-      "@openclaw/llm-core",
-      "@openclaw/llm-core/diagnostics",
-      "@openclaw/llm-core/event-stream",
-      "@openclaw/llm-core/types",
-      "@openclaw/llm-core/validation",
+      "@cdf-know/llm-core",
+      "@cdf-know/llm-core/diagnostics",
+      "@cdf-know/llm-core/event-stream",
+      "@cdf-know/llm-core/types",
+      "@cdf-know/llm-core/validation",
       "openclaw/plugin-sdk",
       "@openclaw/plugin-sdk",
     ]);

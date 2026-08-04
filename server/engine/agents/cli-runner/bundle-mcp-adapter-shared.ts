@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared normalization helpers for CLI-specific bundle MCP adapters.
  */

@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Session update helpers for skill snapshots, compaction, and lifecycle hooks. */
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { canExecRequestNode } from '@openclaw-src/agents/exec-defaults.js';
 import { resolveCompactionSessionFile, type SessionEntry } from '@openclaw-src/config/sessions.js';

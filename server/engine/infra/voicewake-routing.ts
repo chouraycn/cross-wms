@@ -2,8 +2,8 @@
 // 移植自 openclaw/src/infra/voicewake-routing.ts（降级实现）。
 //
 // 降级说明：
-//  - @openclaw/normalization-core/record-coerce 替换为 ./record-coerce.js 中的 isRecord
-//  - @openclaw/normalization-core/string-coerce 替换为 ./string-coerce.js
+//  - @cdf-know/normalization-core/record-coerce 替换为 ./record-coerce.js 中的 isRecord
+//  - @cdf-know/normalization-core/string-coerce 替换为 ./string-coerce.js
 //  - ../routing/session-key.js 未移植，classifySessionKeyShape/isValidAgentId/normalizeAgentId 内联降级实现
 //  - ../state/openclaw-state-db.js 未移植，降级为文件 JSON 持久化
 //  - ./kysely-sync.js 保留类型引用但运行时降级

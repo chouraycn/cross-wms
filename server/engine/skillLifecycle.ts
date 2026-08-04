@@ -19,7 +19,10 @@
 
 import fs from 'fs';
 import { skillRegistry } from './skillRegistry.js';
-import { initSkillRuntime, resetSkillRuntime, setSkillDisabled, listAvailableSkills } from './skillRuntimeBridge.js';
+// Import from the leaf hook registry instead of skillRuntimeBridge.js to break the
+// skillRuntimeBridge.ts ↔ skillLifecycle.ts static cycle (#12). skillRuntimeBridge
+// registers these functions at module load; both modules load at startup.
+import { initSkillRuntime, resetSkillRuntime, setSkillDisabled, listAvailableSkills } from './skillRuntimeBridgeHooks.js';
 import { auditSkillSecurity, type SecurityRiskLevel } from './skillSecurity.js';
 import { logger } from '../logger.js';
 import type { SkillPermissionGroup } from '../types/skill-runtime.js';

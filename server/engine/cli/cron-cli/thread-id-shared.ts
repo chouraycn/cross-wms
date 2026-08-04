@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Cron CLI parsing helpers for Telegram topic thread ids and session targets.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 
 export function parseCronThreadIdOption(value: unknown): number | undefined {
   const raw = normalizeOptionalString(value);

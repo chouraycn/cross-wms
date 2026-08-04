@@ -6,9 +6,9 @@ import { isDeepStrictEqual } from "node:util";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+} from "@cdf-know/normalization-core/number-coercion";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   ErrorCodes,
   errorShape,

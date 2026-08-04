@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Implements MCP server command parsing and persisted enablement settings.
 import { parseStandardSetUnsetSlashCommand } from "./commands-setunset-standard.js";
 

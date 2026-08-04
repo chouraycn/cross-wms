@@ -1,20 +1,94 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/agent-list.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway agent list projection.
+// Combines configured agents and existing on-disk agent state for lightweight UI use.
+import fs from "node:fs";
+import path from "node:path";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveStateDir } from "../config/paths.js";
+import type { SessionScope } from "../config/sessions.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeAgentId, normalizeMainKey } from "../routing/session-key.js";
 
-export function listGatewayAgentIds(..._args: unknown[]): unknown {
-  return [];
+type GatewayAgentListRow = {
+  id: string;
+  name?: string;
+};
+
+function listExistingAgentIdsFromDisk(): string[] {
+  const root = resolveStateDir();
+  const agentsDir = path.join(root, "agents");
+  try {
+    const entries = fs.readdirSync(agentsDir, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => normalizeAgentId(entry.name))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
-export function listGatewayAgentsBasic(..._args: unknown[]): unknown {
-  return [];
+export function listGatewayAgentIds(cfg: OpenClawConfig): string[] {
+  const ids = new Set<string>();
+  const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
+  ids.add(defaultId);
+
+  for (const entry of cfg.agents?.list ?? []) {
+    if (entry?.id) {
+      ids.add(normalizeAgentId(entry.id));
+    }
+  }
+
+  for (const id of listExistingAgentIdsFromDisk()) {
+    ids.add(id);
+  }
+
+  const sorted = Array.from(ids).filter(Boolean);
+  sorted.sort((a, b) => a.localeCompare(b));
+  // Keep the default agent first for UI selection while preserving deterministic
+  // ordering for the remaining configured/on-disk ids.
+  return sorted.includes(defaultId)
+    ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
+    : sorted;
+}
+
+/** Lists gateway-visible agent ids with default/main session metadata. */
+export function listGatewayAgentsBasic(cfg: OpenClawConfig): {
+  defaultId: string;
+  mainKey: string;
+  scope: SessionScope;
+  agents: GatewayAgentListRow[];
+} {
+  const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
+  const mainKey = normalizeMainKey(cfg.session?.mainKey);
+  const scope = cfg.session?.scope ?? "per-sender";
+  const configuredById = new Map<string, { name?: string }>();
+  for (const entry of cfg.agents?.list ?? []) {
+    if (!entry?.id) {
+      continue;
+    }
+    const configuredName = normalizeOptionalString(entry.name);
+    const identityName = normalizeOptionalString(entry.identity?.name);
+    configuredById.set(normalizeAgentId(entry.id), {
+      name: configuredName ?? identityName,
+    });
+  }
+  const explicitIds = new Set(
+    (cfg.agents?.list ?? [])
+      .map((entry) => (entry?.id ? normalizeAgentId(entry.id) : ""))
+      .filter(Boolean),
+  );
+  const allowedIds = explicitIds.size > 0 ? new Set([...explicitIds, defaultId]) : null;
+  let agentIds = listGatewayAgentIds(cfg).filter((id) => (allowedIds ? allowedIds.has(id) : true));
+  if (mainKey && !agentIds.includes(mainKey) && (!allowedIds || allowedIds.has(mainKey))) {
+    agentIds = [...agentIds, mainKey];
+  }
+  const agents = agentIds.map((id) => {
+    const meta = configuredById.get(id);
+    return {
+      id,
+      name: meta?.name,
+    };
+  });
+  return { defaultId, mainKey, scope, agents };
 }

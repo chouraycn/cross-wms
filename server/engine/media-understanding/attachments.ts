@@ -36,3 +36,27 @@ export function filterAttachmentsByCapability(
     return kind === capability;
   });
 }
+
+// ============================================================================
+// Kind predicate helpers (merged from openclaw/src/media-understanding/attachments.normalize.ts)
+// ============================================================================
+
+/** Returns true when the attachment is classified as video media. */
+export function isVideoAttachment(attachment: MediaAttachment): boolean {
+  return resolveAttachmentKind(attachment) === "video";
+}
+
+/** Returns true when the attachment is classified as audio media. */
+export function isAudioAttachment(attachment: MediaAttachment): boolean {
+  return resolveAttachmentKind(attachment) === "audio";
+}
+
+/** Returns true when the attachment is classified as image media. */
+export function isImageAttachment(attachment: MediaAttachment): boolean {
+  return resolveAttachmentKind(attachment) === "image";
+}
+
+/** Returns true when the attachment is classified as document media. */
+export function isDocumentAttachment(attachment: MediaAttachment): boolean {
+  return resolveAttachmentKind(attachment) === "document";
+}

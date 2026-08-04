@@ -1,6 +1,6 @@
 // Tests task command routing and persisted task state replies.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveSessionAgentId } from "../../agents/agent-scope.js";
+import { resolveSessionAgentId } from "@openclaw-src/agents/agent-scope.js";
 import {
   completeTaskRunByRunId,
   createQueuedTaskRun,

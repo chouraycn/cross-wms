@@ -3,10 +3,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { asNullableObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { asNullableObjectRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
+import { note } from "@openclaw/terminal-core/note";
 import { listAgentEntries, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import {
   clearWedgedSubagentRecoveryAbort,

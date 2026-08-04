@@ -30,6 +30,7 @@ import {
   clearExecutionLogs,
 } from '../services/automation/api';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
+import { t } from '../i18n';
 import type {
   Automation,
   TaskType,
@@ -158,7 +159,7 @@ const AutomationPage: React.FC = () => {
       );
     } catch (err) {
       // console.error('[AutomationPage] 加载自动化失败:', err);
-      showToast('加载自动化失败: ' + (err instanceof Error ? err.message : ''), 'error');
+      showToast(t('automationPage:loadFailed') + ': ' + (err instanceof Error ? err.message : ''), 'error');
     } finally {
       setLoading(false);
     }
@@ -385,11 +386,11 @@ const AutomationPage: React.FC = () => {
 
   const handleSave = async () => {
     const errors: Record<string, string> = {};
-    if (!formName.trim()) errors.name = '请输入名称';
-    if (!formPrompt.trim()) errors.prompt = '请输入指令';
-    if (formScheduleType === 'once' && !formScheduledAt) errors.scheduledAt = '请选择执行时间';
+    if (!formName.trim()) errors.name = t('automationPage:nameRequired');
+    if (!formPrompt.trim()) errors.prompt = t('automationPage:promptRequired');
+    if (formScheduleType === 'once' && !formScheduledAt) errors.scheduledAt = t('automationPage:scheduledAtRequired');
     if (formTriggerType === 'schedule' && formScheduleType === 'recurring' && !(formTriggerConfig.cronExpression as string)?.trim()) {
-      errors.cronExpression = '请配置定时表达式';
+      errors.cronExpression = t('automationPage:cronRequired');
     }
 
     if (Object.keys(errors).length > 0) {
@@ -486,7 +487,7 @@ const AutomationPage: React.FC = () => {
               : a
           )
         );
-        showToast('自动化已更新');
+        showToast(t('automationPage:updatedToast'));
       } else {
         const created = await createAutomationApi(payload as Parameters<typeof createAutomationApi>[0]);
 
@@ -498,12 +499,12 @@ const AutomationPage: React.FC = () => {
         };
 
         setAutomations((prev) => [newAuto, ...prev]);
-        showToast('自动化已创建');
+        showToast(t('automationPage:createdToast'));
       }
 
       setDialogOpen(false);
     } catch (err) {
-      showToast(`保存失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      showToast(`${t('automationPage:saveFailed')}: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   };
 
@@ -520,7 +521,7 @@ const AutomationPage: React.FC = () => {
         )
       );
     } catch (err) {
-      showToast(`状态更新失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      showToast(`${t('automationPage:statusUpdateFailed')}: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   };
 
@@ -528,9 +529,9 @@ const AutomationPage: React.FC = () => {
     try {
       await deleteAutomationApi(id);
       setAutomations((prev) => prev.filter((a) => a.id !== id));
-      showToast('自动化已删除');
+      showToast(t('automationPage:deletedToast'));
     } catch (err) {
-      showToast(`删除失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      showToast(`${t('automationPage:deleteFailed')}: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   };
 
@@ -547,12 +548,12 @@ const AutomationPage: React.FC = () => {
       setExecutionLogs((prev) => ({ ...prev, [id]: logs }));
 
       if (res.result?.success) {
-        showToast(`执行成功: ${res.result.message}`);
+        showToast(`${t('automationPage:executeSuccess')}: ${res.result.message}`);
       } else {
-        showToast(`执行失败: ${res.result?.message || '未知错误'}`, 'error');
+        showToast(`${t('automationPage:executeFailed')}: ${res.result?.message || t('automationPage:unknownError')}`, 'error');
       }
     } catch (err) {
-      showToast(`执行出错: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      showToast(`${t('automationPage:executeError')}: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setTriggeringIds((prev) => {
         const next = new Set(prev);
@@ -619,9 +620,9 @@ const AutomationPage: React.FC = () => {
       await loadAllLogs();
 
       if (res.result?.success) {
-        showToast(`重试成功: ${res.result.message}`);
+        showToast(`${t('automationPage:retrySuccess')}: ${res.result.message}`);
       } else {
-        showToast(`重试失败: ${res.result?.message || '未知错误'}`, 'error');
+        showToast(`${t('automationPage:retryFailed')}: ${res.result?.message || t('automationPage:unknownError')}`, 'error');
       }
     } catch (err) {
       showToast(`重试出错: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -784,10 +785,10 @@ const AutomationPage: React.FC = () => {
       {/* 页面标题 */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>
-          自动化调度
+          {t('automationPage:title')}
         </Typography>
         <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>
-          管理自动化调度，支持周期执行、一次性执行、动作链和有效期
+          {t('automationPage:description')}
         </Typography>
       </Box>
 
@@ -832,13 +833,13 @@ const AutomationPage: React.FC = () => {
           onRetry={handleRetry}
           onViewDetail={handleViewDetail}
           onClearLogs={async () => {
-            if (!window.confirm('确定要清空所有执行日志吗？此操作不可恢复。')) return;
+            if (!window.confirm(t('automationPage:clearLogsConfirm'))) return;
             try {
               const result = await clearExecutionLogs();
-              showToast(`已清空 ${result.deleted} 条执行记录`, 'success');
+              showToast(t('automationPage:clearedLogsToast', { count: result.deleted }), 'success');
               void loadAllLogs();
             } catch (e) {
-              showToast(`清空失败: ${(e as Error).message}`, 'error');
+              showToast(`${t('automationPage:clearLogsFailed')}: ${(e as Error).message}`, 'error');
             }
           }}
         />

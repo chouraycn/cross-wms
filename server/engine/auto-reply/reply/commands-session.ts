@@ -1,11 +1,11 @@
 // @ts-nocheck
 // Implements session commands for list, show, fork, reset, and routing state.
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
+import { timestampMsToIsoString } from "@cdf-know/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { formatFastModeCurrentStatus, resolveFastModeState } from '@openclaw-src/agents/fast-mode.js';
 import {

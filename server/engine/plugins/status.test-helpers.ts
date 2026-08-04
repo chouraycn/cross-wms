@@ -107,12 +107,12 @@ export function createTypedHook(params: {
   hookName: PluginHookName;
   source?: string;
 }): PluginLoadResult["typedHooks"][number] {
-  return {
+  return ({
     pluginId: params.pluginId,
     hookName: params.hookName,
     handler: () => undefined,
     source: params.source ?? `/tmp/${params.pluginId}/index.ts`,
-  };
+  }) as any;
 }
 
 export function createCustomHook(params: {

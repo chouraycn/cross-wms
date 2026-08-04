@@ -4,8 +4,8 @@ import type {
   PluginCommandDefinition,
   SdkValidationResult,
   SdkValidationError,
-  PluginManifest,
 } from './types.js';
+import type { PluginManifest } from './manifest.js';
 import { isValidPluginId } from './decorators.js';
 
 /**

@@ -1,7 +1,7 @@
 // Coordinates managed task-flow creation, updates, ownership, and snapshots.
 // 移植自 openclaw/src/tasks/task-flow-registry.ts。
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {

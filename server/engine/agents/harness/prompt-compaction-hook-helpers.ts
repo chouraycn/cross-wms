@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Agent harness prompt and compaction hook helpers.
  *

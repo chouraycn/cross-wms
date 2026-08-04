@@ -2,14 +2,8 @@
  * Runtime SDK subpath for plugin doctor migrations, compat checks, and uninstall helpers.
  */
 export { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
-export {
-  asObjectRecord,
-  hasLegacyAccountStreamingAliases,
-  hasLegacyStreamingAliases,
-  normalizeLegacyChannelAliases,
-  normalizeLegacyDmAliases,
-  normalizeLegacyStreamingAliases,
-} from "../config/channel-compat-normalization.js";
+export {asObjectRecord, hasLegacyAccountStreamingAliases, hasLegacyStreamingAliases, normalizeLegacyChannelAliases, type normalizeLegacyDmAliases, normalizeLegacyStreamingAliases, 
+} from '../config/channel-compat-normalization.js';
 export type {
   CompatMutationResult,
   LegacyStreamingAliasOptions,

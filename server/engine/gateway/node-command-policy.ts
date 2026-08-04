@@ -2,9 +2,9 @@
 // Computes per-platform allowlists from built-in, plugin, runtime, and config inputs.
 //
 // 降级说明：
-//  - `@openclaw/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`
+//  - `@cdf-know/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`
 //    改从 `../infra/string-coerce.js` 导入。
-//  - `@openclaw/normalization-core/string-normalization` 的 `normalizeUniqueStringEntries`
+//  - `@cdf-know/normalization-core/string-normalization` 的 `normalizeUniqueStringEntries`
 //    改从 `../infra/string-normalization.js` 导入。
 //  - `../config/types.openclaw.js` 的 `OpenClawConfig` 改从 `./_openclaw-stubs.js` 导入。
 //  - `../plugins/active-runtime-registry.js` 的 `getActiveRuntimePluginRegistry`

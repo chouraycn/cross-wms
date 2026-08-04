@@ -1,30 +1,96 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/live-chat-projector.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway live chat projector.
+// Converts streaming assistant events into display-safe live chat text.
+import { stripInternalRuntimeContext } from "../agents/internal-runtime-context.js";
+import {
+  SILENT_REPLY_TOKEN,
+  startsWithSilentToken,
+  stripLeadingSilentToken,
+} from "../auto-reply/tokens.js";
+import { resolveAssistantEventPhase } from "../shared/chat-message-content.js";
+import { stripInlineDirectiveTagsForDisplay } from "../utils/directive-tags.js";
+import {
+  isSuppressedControlReplyLeadFragment,
+  isSuppressedControlReplyText,
+} from "./control-reply-text.js";
 
-export function resolveMergedAssistantText(..._args: unknown[]): unknown {
-  return undefined;
+export const MAX_LIVE_CHAT_BUFFER_CHARS = 500_000;
+
+function capLiveAssistantBuffer(text: string): string {
+  if (text.length <= MAX_LIVE_CHAT_BUFFER_CHARS) {
+    return text;
+  }
+  return text.slice(-MAX_LIVE_CHAT_BUFFER_CHARS);
 }
 
-export function normalizeLiveAssistantEventText(..._args: unknown[]): unknown {
-  return undefined;
+/** Merges assistant full-text and delta events into a capped live buffer. */
+export function resolveMergedAssistantText(params: {
+  previousText: string;
+  nextText: string;
+  nextDelta: string;
+}): string {
+  const { previousText, nextText, nextDelta } = params;
+  if (nextText && previousText) {
+    if (nextText.startsWith(previousText) && nextText.length > previousText.length) {
+      return capLiveAssistantBuffer(nextText);
+    }
+    if (previousText.startsWith(nextText) && !nextDelta) {
+      return capLiveAssistantBuffer(previousText);
+    }
+  }
+  if (nextDelta) {
+    return capLiveAssistantBuffer(previousText + nextDelta);
+  }
+  if (nextText) {
+    return capLiveAssistantBuffer(nextText);
+  }
+  return capLiveAssistantBuffer(previousText);
 }
 
-export function projectLiveAssistantBufferedText(..._args: unknown[]): unknown {
-  return undefined;
+/** Removes runtime-only context/directive tags from live assistant event text. */
+export function normalizeLiveAssistantEventText(params: { text: string; delta?: unknown }): {
+  text: string;
+  delta: string;
+} {
+  return {
+    text: stripInternalRuntimeContext(stripInlineDirectiveTagsForDisplay(params.text).text),
+    delta:
+      typeof params.delta === "string"
+        ? stripInternalRuntimeContext(stripInlineDirectiveTagsForDisplay(params.delta).text)
+        : "",
+  };
 }
 
-export function shouldSuppressAssistantEventForLiveChat(..._args: unknown[]): unknown {
-  return false;
+/** Projects buffered assistant text into display text or a suppressed/pending state. */
+export function projectLiveAssistantBufferedText(
+  rawText: string,
+  options?: { suppressLeadFragments?: boolean },
+): {
+  text: string;
+  suppress: boolean;
+  pendingLeadFragment: boolean;
+} {
+  if (!rawText) {
+    return { text: "", suppress: true, pendingLeadFragment: false };
+  }
+  if (isSuppressedControlReplyText(rawText)) {
+    return { text: "", suppress: true, pendingLeadFragment: false };
+  }
+  if (options?.suppressLeadFragments !== false && isSuppressedControlReplyLeadFragment(rawText)) {
+    return { text: rawText, suppress: true, pendingLeadFragment: true };
+  }
+  const text = startsWithSilentToken(rawText, SILENT_REPLY_TOKEN)
+    ? stripLeadingSilentToken(rawText, SILENT_REPLY_TOKEN)
+    : rawText;
+  if (!text || isSuppressedControlReplyText(text)) {
+    return { text: "", suppress: true, pendingLeadFragment: false };
+  }
+  if (options?.suppressLeadFragments !== false && isSuppressedControlReplyLeadFragment(text)) {
+    return { text, suppress: true, pendingLeadFragment: true };
+  }
+  return { text, suppress: false, pendingLeadFragment: false };
 }
 
-export const MAX_LIVE_CHAT_BUFFER_CHARS: unknown = undefined;
+/** Returns true when an assistant event phase should not appear in live chat. */
+export function shouldSuppressAssistantEventForLiveChat(data: unknown): boolean {
+  return resolveAssistantEventPhase(data) === "commentary";
+}

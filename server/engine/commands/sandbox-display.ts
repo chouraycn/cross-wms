@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * Display utilities for sandbox CLI
  */
 
 import type { SandboxBrowserInfo, SandboxContainerInfo } from "@openclaw-src/agents/sandbox.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
-import { formatDurationCompact } from "@openclaw-src/infra/format-time/format-duration.ts";
+import { formatDurationCompact } from "@openclaw-src/infra/format-time/format-duration";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { formatImageMatch, formatSimpleStatus, formatStatus } from "./sandbox-formatters.js";
 

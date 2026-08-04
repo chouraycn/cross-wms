@@ -247,22 +247,21 @@ export default function EmployeeCard({
                 发起对话
               </DropdownMenuItem>
               {online ? (
-              <DropdownMenuItem
-                disabled={!canManage || busy}
-                onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
-                onSelect={() => onStatus('archived')}
+                <DropdownMenuItem
+                  disabled={!canManage || busy}
+                  onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
+                  onSelect={() => onStatus('archived')}
                 >
                   <StaffdeckIcon name="pause" size={16} />
                   下线
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
-                  disabled={!canManage || busy}
-                  onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
-                  onSelect={() => onStatus('active')}
+                  disabled
+                  className="opacity-60 cursor-not-allowed"
                 >
-                  <StaffdeckIcon name="play" size={16} />
-                  上线
+                  <StaffdeckIcon name="pause" size={16} />
+                  当前未上线
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem

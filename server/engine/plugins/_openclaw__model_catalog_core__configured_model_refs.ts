@@ -1,12 +1,2 @@
-import type { OpenClawConfig } from '../config/types/openclaw.js';
-
-export interface ConfiguredModelRef {
-  path: string;
-  value: string;
-  providerId: string;
-  modelId: string;
-}
-
-export function collectConfiguredModelRefs(config: OpenClawConfig): ConfiguredModelRef[] {
-  return [];
-}
+// Re-export from @cdf-know/model-catalog-core to replace local stub.
+export * from "@cdf-know/model-catalog-core/configured-model-refs";

@@ -17,7 +17,7 @@ import os from 'os';
 import path from 'path';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import type { McpServerRow, McpServerRead } from '../../types/staff.js';
-import * as mcpServerDao from '../../dao/staff/staffMcpServerDao.js';
+import * as mcpServerDao from '../../engine/mcpConfigStore.js';
 import * as toolDao from '../../dao/staff/staffToolDao.js';
 import { discoverMcpTools, type McpConnectionConfig } from '../../staff/mcpDiscovery.js';
 
@@ -39,6 +39,9 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
 
 function mcpServerRead(row: McpServerRow): McpServerRead {
   const tools = toolDao.getToolsByMcpServer(row.id);
+  const headers = parseJson<Record<string, string>>(row.headers_json, {});
+  const args = parseJson<string[]>(row.args_json, []);
+  const env = parseJson<Record<string, string>>(row.env_json, {});
   return {
     id: row.id,
     tenant_id: row.tenant_id,
@@ -46,16 +49,28 @@ function mcpServerRead(row: McpServerRow): McpServerRead {
     display_name: row.display_name,
     description: row.description,
     bucket: row.bucket || 'MCP 工具',
+    // 前端 ToolsPage 直接读 row.connection.transport，缺失会抛 TypeError 白屏。
+    // 扁平字段同时保留，兼容既有内部调用方。
+    connection: {
+      transport: row.transport,
+      url: row.url,
+      headers,
+      command: row.command,
+      args,
+      env,
+      cwd: row.cwd,
+    },
     transport: row.transport,
     url: row.url,
-    headers: parseJson(row.headers_json, {}),
+    headers,
     command: row.command,
-    args: parseJson(row.args_json, []),
-    env: parseJson(row.env_json, {}),
+    args,
+    env,
     cwd: row.cwd,
     discovered_tools: parseJson(row.discovered_tools_json, []),
     last_synced_at: row.last_synced_at,
     enabled: row.enabled === 1,
+    tool_count: tools.length,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

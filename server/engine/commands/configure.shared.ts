@@ -8,12 +8,12 @@ import {
   select as clackSelect,
   text as clackText,
 } from "@clack/prompts";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   stylePromptHint,
   stylePromptMessage,
   stylePromptTitle,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 
 export const CONFIGURE_WIZARD_SECTIONS = [
   "workspace",

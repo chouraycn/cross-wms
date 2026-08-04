@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Channel setup tests cover setup wizard finalize behavior and config write contracts.
 import { runSetupWizardFinalize } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it } from "vitest";

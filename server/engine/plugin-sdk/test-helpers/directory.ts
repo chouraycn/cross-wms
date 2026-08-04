@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared directory adapter fixtures for channel contract tests.
  */

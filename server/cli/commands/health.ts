@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { logger } from "../../logger.js";
-import { pluginRuntimeRegistry } from "../../engine/plugins/registry.js";
+import { PluginRegistry } from "../../engine/plugins/registry.js";
 import {
   type StatusPluginHealthSnapshot,
   type PluginHealthRecord,
@@ -32,7 +32,7 @@ interface HealthSummary {
 }
 
 function collectPluginHealthSnapshot(): StatusPluginHealthSnapshot {
-  const entries = pluginRuntimeRegistry.list();
+  const entries = PluginRegistry.list();
   const plugins: PluginHealthRecord[] = entries.map((entry) => ({
     id: entry.pluginId,
     status: entry.status === "enabled" ? "loaded" : entry.status === "error" ? "error" : "disabled",

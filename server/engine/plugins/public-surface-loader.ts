@@ -14,13 +14,15 @@ import {
 import { resolveBundledPluginPublicSurfacePath } from "./public-surface-runtime.js";
 import { resolvePluginLoaderTryNative, resolveLoaderPackageRoot } from "./sdk-alias.js";
 
+const moduleFilePath = fileURLToPath(import.meta.url);
+const moduleDirPath = path.dirname(moduleFilePath);
 const OPENCLAW_PACKAGE_ROOT =
   resolveLoaderPackageRoot({
-    modulePath: __filename,
-    moduleUrl: __filename,
-  }) ?? path.resolve(__dirname, "../..");
+    modulePath: moduleFilePath,
+    moduleUrl: import.meta.url,
+  }) ?? path.resolve(moduleDirPath, "../..");
 const publicSurfaceModuleCache = new Map<string, unknown>();
-const sourceArtifactRequire = createRequire(__filename);
+const sourceArtifactRequire = createRequire(import.meta.url);
 const publicSurfaceLocationCache = new Map<
   string,
   {

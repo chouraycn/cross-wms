@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Resolves media attachments available to the current agent turn. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { AcpTurnAttachment as AgentTurnAttachment } from '@openclaw-src/acp/control-plane/manager.types.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { logVerbose } from '@openclaw-src/globals.js';

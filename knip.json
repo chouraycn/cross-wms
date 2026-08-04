@@ -31,6 +31,19 @@
     "server/engine/executeSingleTool.ts",
     "@types/**"
   ],
+  "ignoreIssues": {
+    "src/components/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/pages/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/contexts/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/hooks/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/stores/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/services/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"],
+    "src/capabilities/**": ["exports", "nsExports", "types", "nsTypes", "enumMembers", "namespaceMembers"]
+  },
+  "ignoreDependencies": [
+    "katex",
+    "hosted-git-info"
+  ],
   "workspaces": {
     ".": {
       "paths": {
@@ -46,12 +59,7 @@
         "src/pages/**/*.tsx!",
         "src/pages/**/*.ts!",
         "server/tui/cli.ts!",
-        "cli/index.ts!",
-        "cli/src/index.ts!",
         "bin/cdf-cli.mjs!",
-        "electron/main.ts!",
-        "electron/preload.ts!",
-        "electron/exec-approval-server.ts!",
         "vite.config.ts!",
         "vitest.config.ts!",
         "vitest.config.e2e.ts!"
@@ -59,8 +67,6 @@
       "project": [
         "src/**/*.{ts,tsx}!",
         "server/**/*.ts!",
-        "cli/**/*.ts!",
-        "electron/**/*.ts!",
         "shared/**/*.ts!",
         "*.config.{ts,mjs,cjs,js}!"
       ],

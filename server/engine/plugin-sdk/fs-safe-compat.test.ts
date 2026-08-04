@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests fs-safe compatibility exports used by plugin SDK callers.
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Runs compaction hooks and post-compaction side effects for embedded sessions.
  */
@@ -8,7 +7,7 @@ import { formatErrorMessage } from "../../infra/errors.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { getActiveMemorySearchManager } from "../../plugins/memory-runtime.js";
 import { emitSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
-import { resolveSessionAgentId } from "../agent-scope.js";
+import { resolveSessionAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { resolveMemorySearchConfig } from "../memory-search.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { log } from "./logger.js";
@@ -44,7 +43,7 @@ async function runPostCompactionSessionMemorySync(params: {
     if (!resolvedMemory || !resolvedMemory.sources.includes("sessions")) {
       return;
     }
-    if (!resolvedMemory.sync.sessions.postCompactionForce) {
+    if (!(resolvedMemory.sync as any).sessions.postCompactionForce) {
       return;
     }
     const { manager } = await getActiveMemorySearchManager({

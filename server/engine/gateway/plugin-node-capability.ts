@@ -1,7 +1,7 @@
 // Capability-token helpers for plugin-hosted node surfaces.
 //
 // 降级说明：
-//  - `@openclaw/normalization-core/number-coercion` 的 asDateTimestampMs、
+//  - `@cdf-know/normalization-core/number-coercion` 的 asDateTimestampMs、
 //    asPositiveSafeInteger、isFutureDateTimestampMs、resolveExpiresAtMsFromDurationMs
 //    内联降级实现。
 //  - `../security/secret-equal.js` 的 safeEqualSecret 降级为基于
@@ -15,7 +15,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 /**
  * 将值强制为合法的日期时间戳（毫秒），降级实现。
  *
- * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
+ * 降级原因：openclaw `@cdf-know/normalization-core/number-coercion` 的同名函数
  * 还会处理字符串日期、Date 对象等。这里仅处理 number。
  */
 function asDateTimestampMs(value: unknown): number | undefined {
@@ -28,7 +28,7 @@ function asDateTimestampMs(value: unknown): number | undefined {
 /**
  * 将值强制为正的安全整数，降级实现。
  *
- * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
+ * 降级原因：openclaw `@cdf-know/normalization-core/number-coercion` 的同名函数
  * 还会处理字符串数字。这里仅处理 number。
  */
 function asPositiveSafeInteger(value: unknown): number | undefined {
@@ -45,7 +45,7 @@ function asPositiveSafeInteger(value: unknown): number | undefined {
 /**
  * 判断时间戳是否在未来（相对于 nowMs），降级实现。
  *
- * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
+ * 降级原因：openclaw `@cdf-know/normalization-core/number-coercion` 的同名函数
  * 还会处理字符串日期。这里仅处理 number。
  */
 function isFutureDateTimestampMs(

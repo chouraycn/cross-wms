@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Lifecycle callback state helpers for a single agent attempt.
  */

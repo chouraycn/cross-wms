@@ -1,13 +1,13 @@
-import { z } from 'zod';
-import { logger } from '../../logger.js';
+/**
+ * Tool allow/deny policy helpers.
+ * Normalizes core and plugin tool groups, expands plugin entries, and extracts
+ * explicit operator allow/deny lists.
+ */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { sanitizeServerName, TOOL_NAME_SEPARATOR } from "./agent-bundle-mcp-names.js";
-import {
-  expandToolGroups,
-  normalizeToolList,
-  normalizeToolName,
-  resolveToolProfilePolicy,
-  TOOL_GROUPS,
-} from "./tool-policy-shared.js";
+import { IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW } from "./sandbox-tool-policy.js";
+import { expandToolGroups, normalizeToolList, normalizeToolName } from "./tool-policy-shared.js";
 export {
   couldNormalizeToolNamePrefixToAllowedTool,
   expandToolGroups,
@@ -18,116 +18,79 @@ export {
 } from "./tool-policy-shared.js";
 export type { ToolProfileId } from "./tool-policy-shared.js";
 
-export const ToolPolicySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  effect: z.enum(['allow', 'deny', 'require_approval']),
-  toolPatterns: z.array(z.string()).default([]),
-  agentPatterns: z.array(z.string()).default([]),
-  conditions: z.record(z.string(), z.unknown()).default({}),
-  priority: z.number().default(0),
-  description: z.string().default(''),
-  enabled: z.boolean().default(true),
-});
+// ============================================================================
+// WMS 兼容：tool-policy-match.ts 依赖 listToolPolicies / matchToolPattern /
+// matchAgentPattern / ToolPolicy 类型。openclaw 没有这些 API，此处提供
+// 最小可运行 stub（默认无策略、glob 匹配退化为相等比较）。
+// ============================================================================
 
-export type ToolPolicy = z.infer<typeof ToolPolicySchema>;
+export type ToolPolicyEffect = "allow" | "deny" | "require_approval";
 
-const policyStore = new Map<string, ToolPolicy>();
+export type ToolPolicy = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  effect: ToolPolicyEffect;
+  toolPatterns: string[];
+  agentPatterns: string[];
+};
 
-export function registerToolPolicy(policy: Omit<ToolPolicy, 'description' | 'enabled'> & { description?: string; enabled?: boolean }): ToolPolicy {
-  const fullPolicy: ToolPolicy = {
-    ...policy,
-    description: policy.description ?? '',
-    enabled: policy.enabled ?? true,
-  };
+const registeredToolPolicies = new Map<string, ToolPolicy>();
 
-  const result = ToolPolicySchema.safeParse(fullPolicy);
-  if (!result.success) {
-    throw new Error(`Invalid tool policy: ${result.error.message}`);
-  }
-
-  policyStore.set(policy.id, result.data);
-  logger.debug(`[Agents:ToolPolicy] Registered policy: ${policy.id}`);
-  return result.data;
-}
-
-export function getToolPolicy(id: string): ToolPolicy | undefined {
-  return policyStore.get(id);
-}
-
+/** 列出所有已注册的工具策略。 */
 export function listToolPolicies(): ToolPolicy[] {
-  return Array.from(policyStore.values()).sort((a, b) => b.priority - a.priority);
+  return Array.from(registeredToolPolicies.values());
 }
 
-export function updateToolPolicy(id: string, updates: Partial<ToolPolicy>): ToolPolicy | undefined {
-  const existing = policyStore.get(id);
-  if (!existing) return undefined;
-
-  const updated: ToolPolicy = {
-    ...existing,
-    ...updates,
-    id,
-  };
-
-  policyStore.set(id, updated);
-  logger.debug(`[Agents:ToolPolicy] Updated policy: ${id}`);
-  return updated;
+/** 注册或覆盖一个工具策略。 */
+export function registerToolPolicy(policy: ToolPolicy): void {
+  registeredToolPolicies.set(policy.id, policy);
 }
 
-export function deleteToolPolicy(id: string): boolean {
-  const existed = policyStore.has(id);
-  if (existed) {
-    policyStore.delete(id);
-    logger.debug(`[Agents:ToolPolicy] Deleted policy: ${id}`);
-  }
-  return existed;
-}
-
-export function enableToolPolicy(id: string): boolean {
-  const policy = policyStore.get(id);
-  if (!policy) return false;
-  policy.enabled = true;
-  return true;
-}
-
-export function disableToolPolicy(id: string): boolean {
-  const policy = policyStore.get(id);
-  if (!policy) return false;
-  policy.enabled = false;
-  return true;
-}
-
+/** 清空所有已注册的工具策略（主要用于测试）。 */
 export function clearToolPolicies(): void {
-  policyStore.clear();
+  registeredToolPolicies.clear();
 }
 
+/** 匹配工具名模式（支持简单通配符 * 与 ?）。 */
 export function matchToolPattern(toolName: string, pattern: string): boolean {
-  if (pattern === '*') return true;
-  if (pattern === toolName) return true;
-
+  if (!pattern) return false;
+  if (pattern === "*") return true;
+  // 将 glob 模式转为 RegExp
   const regexStr = pattern
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*/g, '.*');
-
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, ".*")
+    .replace(/\?/g, ".");
   try {
-    return new RegExp(`^${regexStr}$`).test(toolName);
+    return new RegExp(`^${regexStr}$`, "i").test(toolName);
   } catch {
-    return false;
+    return toolName.toLowerCase() === pattern.toLowerCase();
   }
 }
 
+/** 匹配 agentId 模式（支持简单通配符 * 与 ?）。 */
 export function matchAgentPattern(agentId: string, pattern: string): boolean {
   return matchToolPattern(agentId, pattern);
 }
 
+/** Tool allow/deny policy shape accepted by agent and sandbox config. */
 export type ToolPolicyLike = {
   allow?: string[];
   deny?: string[];
+  [IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW]?: true;
 };
 
+/** Plugin-owned tool group expansion state. */
 export type PluginToolGroups = {
   all: string[];
   byPlugin: Map<string, string[]>;
+};
+
+/** Analysis of an allowlist after matching core and plugin tool ids. */
+type AllowlistResolution = {
+  policy: ToolPolicyLike | undefined;
+  unknownAllowlist: string[];
+  pluginOnlyAllowlist: boolean;
 };
 
 export type DeclaredToolAllowlistContext = {
@@ -136,17 +99,10 @@ export type DeclaredToolAllowlistContext = {
   mcpServerNames?: Iterable<string>;
 };
 
+/** Synthetic allowlist entry that means "use default plugin tools". */
 export const DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY = "__openclaw_default_plugin_tools__";
 
-function normalizeOptionalLowercaseString(value?: string): string | undefined {
-  if (!value) return undefined;
-  return value.toLowerCase().trim();
-}
-
-function uniqueStrings(list: string[]): string[] {
-  return Array.from(new Set(list));
-}
-
+/** Returns true when an allow policy is narrower than all/default plugin tools. */
 export function hasRestrictiveAllowPolicy(policy?: { allow?: string[] }): boolean {
   return (
     Array.isArray(policy?.allow) &&
@@ -161,14 +117,14 @@ export function hasRestrictiveAllowPolicy(policy?: { allow?: string[] }): boolea
   );
 }
 
+/** Replaces an allowlist with the normalized names of an effective tool array. */
 export function replaceWithEffectiveToolAllowlist(
   target: string[],
   tools: Array<{ name: string }>,
 ): void {
   target.length = 0;
   const seen = new Set<string>();
-  for (let i = 0; i < tools.length; i++) {
-    const tool = tools[i];
+  for (const tool of tools) {
     const normalized = normalizeToolName(tool.name);
     if (!normalized || seen.has(normalized)) {
       continue;
@@ -178,36 +134,42 @@ export function replaceWithEffectiveToolAllowlist(
   }
 }
 
+/** Collects explicit allow entries from layered policies. */
 export function collectExplicitAllowlist(policies: Array<ToolPolicyLike | undefined>): string[] {
   const entries: string[] = [];
-  for (let i = 0; i < policies.length; i++) {
-    const policy = policies[i];
+  for (const policy of policies) {
     if (!policy?.allow) {
       continue;
     }
-    for (let j = 0; j < policy.allow.length; j++) {
-      const value = policy.allow[j];
+    for (const value of policy.allow) {
       if (typeof value !== "string") {
         continue;
       }
       const trimmed = value.trim();
+      if (trimmed === "*" && policy[IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW] === true) {
+        // alsoAllow implicitly injects "*" for sandbox compatibility; do not
+        // report that implicit wildcard as an explicit operator allow entry.
+        continue;
+      }
       if (trimmed) {
         entries.push(trimmed);
       }
+    }
+    if (policy[IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW] === true) {
+      entries.push(DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY);
     }
   }
   return uniqueStrings(entries);
 }
 
+/** Collects explicit deny entries from layered policies. */
 export function collectExplicitDenylist(policies: Array<ToolPolicyLike | undefined>): string[] {
   const entries: string[] = [];
-  for (let i = 0; i < policies.length; i++) {
-    const policy = policies[i];
+  for (const policy of policies) {
     if (!policy?.deny) {
       continue;
     }
-    for (let j = 0; j < policy.deny.length; j++) {
-      const value = policy.deny[j];
+    for (const value of policy.deny) {
       if (typeof value !== "string") {
         continue;
       }
@@ -220,14 +182,14 @@ export function collectExplicitDenylist(policies: Array<ToolPolicyLike | undefin
   return entries;
 }
 
+/** Builds plugin tool groups from tool metadata. */
 export function buildPluginToolGroups<T extends { name: string }>(params: {
   tools: T[];
   toolMeta: (tool: T) => { pluginId: string } | undefined;
 }): PluginToolGroups {
   const all: string[] = [];
   const byPlugin = new Map<string, string[]>();
-  for (let i = 0; i < params.tools.length; i++) {
-    const tool = params.tools[i];
+  for (const tool of params.tools) {
     const meta = params.toolMeta(tool);
     if (!meta) {
       continue;
@@ -245,6 +207,7 @@ export function buildPluginToolGroups<T extends { name: string }>(params: {
   return { all, byPlugin };
 }
 
+/** Expands group:plugins and plugin-id entries into concrete plugin tool names. */
 function expandPluginGroups(
   list: string[] | undefined,
   groups: PluginToolGroups,
@@ -253,8 +216,7 @@ function expandPluginGroups(
     return list;
   }
   const expanded: string[] = [];
-  for (let i = 0; i < list.length; i++) {
-    const entry = list[i];
+  for (const entry of list) {
     const normalized = normalizeToolName(entry);
     if (normalized === "group:plugins") {
       if (groups.all.length > 0) {
@@ -274,6 +236,7 @@ function expandPluginGroups(
   return uniqueStrings(expanded);
 }
 
+/** Expands plugin groups in a policy while preserving undefined policies. */
 export function expandPolicyWithPluginGroups(
   policy: ToolPolicyLike | undefined,
   groups: PluginToolGroups,
@@ -287,4 +250,109 @@ export function expandPolicyWithPluginGroups(
   };
 }
 
-logger.debug('[Agents:ToolPolicy] Module loaded');
+function buildDeclaredMcpToolPrefixes(serverNames?: Iterable<string>): Set<string> {
+  const prefixes = new Set<string>();
+  const usedNames = new Set<string>();
+  for (const serverName of serverNames ?? []) {
+    const safeName = sanitizeServerName(serverName, usedNames);
+    const prefix = normalizeToolName(safeName + TOOL_NAME_SEPARATOR);
+    if (prefix) {
+      prefixes.add(prefix);
+    }
+  }
+  return prefixes;
+}
+
+function normalizeDeclaredPluginIds(values?: Iterable<string>): Set<string> {
+  return new Set(
+    Array.from(values ?? [], (value) => normalizeOptionalLowercaseString(value)).filter(
+      (value): value is string => Boolean(value),
+    ),
+  );
+}
+
+function normalizeDeclaredToolNames(values?: Iterable<string>): Set<string> {
+  return new Set(
+    Array.from(values ?? [], (value) => normalizeToolName(value)).filter((value): value is string =>
+      Boolean(value),
+    ),
+  );
+}
+
+function isDeclaredMcpAllowlistEntry(entry: string, prefixes: Set<string>): boolean {
+  if (prefixes.size === 0) {
+    return false;
+  }
+  if (entry === "bundle-mcp") {
+    return true;
+  }
+  for (const prefix of prefixes) {
+    if (entry.length > prefix.length && entry.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Classifies allowlists as core, plugin-only, or unknown for diagnostics. */
+export function analyzeAllowlistByToolType(
+  policy: ToolPolicyLike | undefined,
+  groups: PluginToolGroups,
+  coreTools: Set<string>,
+  declaredTools?: DeclaredToolAllowlistContext,
+): AllowlistResolution {
+  if (!policy?.allow || policy.allow.length === 0) {
+    return { policy, unknownAllowlist: [], pluginOnlyAllowlist: false };
+  }
+  const normalized = normalizeToolList(policy.allow);
+  if (normalized.length === 0) {
+    return { policy, unknownAllowlist: [], pluginOnlyAllowlist: false };
+  }
+  const pluginIds = new Set([
+    ...groups.byPlugin.keys(),
+    ...normalizeDeclaredPluginIds(declaredTools?.pluginIds),
+  ]);
+  const pluginTools = new Set([
+    ...groups.all,
+    ...normalizeDeclaredToolNames(declaredTools?.pluginToolNames),
+  ]);
+  const mcpToolPrefixes = buildDeclaredMcpToolPrefixes(declaredTools?.mcpServerNames);
+  const unknownAllowlist: string[] = [];
+  let hasOnlyPluginEntries = true;
+  for (const entry of normalized) {
+    if (entry === "*") {
+      hasOnlyPluginEntries = false;
+      continue;
+    }
+    const isPluginEntry =
+      entry === "group:plugins" ||
+      pluginIds.has(entry) ||
+      pluginTools.has(entry) ||
+      isDeclaredMcpAllowlistEntry(entry, mcpToolPrefixes);
+    const expanded = expandToolGroups([entry]);
+    const isCoreEntry = expanded.some((tool) => coreTools.has(tool));
+    if (!isPluginEntry) {
+      hasOnlyPluginEntries = false;
+    }
+    if (!isCoreEntry && !isPluginEntry) {
+      unknownAllowlist.push(entry);
+    }
+  }
+  const pluginOnlyAllowlist = hasOnlyPluginEntries;
+  return {
+    policy,
+    unknownAllowlist: uniqueStrings(unknownAllowlist),
+    pluginOnlyAllowlist,
+  };
+}
+
+/** Merges alsoAllow entries into an existing allow policy. */
+export function mergeAlsoAllowPolicy<TPolicy extends { allow?: string[] }>(
+  policy: TPolicy | undefined,
+  alsoAllow?: string[],
+): TPolicy | undefined {
+  if (!policy?.allow || !Array.isArray(alsoAllow) || alsoAllow.length === 0) {
+    return policy;
+  }
+  return { ...policy, allow: uniqueStrings([...policy.allow, ...alsoAllow]) };
+}

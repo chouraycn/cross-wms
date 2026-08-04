@@ -5,7 +5,7 @@
  *
  * 移植自 openclaw/src/agents/openai-responses-payload-policy.ts。
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/normalization-core/string-coerce 中的 readStringValue
+ *   - @cdf-know/normalization-core/string-coerce 中的 readStringValue
  *   - ../infra/parse-finite-number.js 中的 parseStrictPositiveInteger
  *   - ../utils/boolean.js 中的 asBoolean
  *   - ./openai-reasoning-effort.js 中的 supportsOpenAIReasoningEffort

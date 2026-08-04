@@ -1,16 +1,80 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-control-ui-root.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway Control UI root resolver.
+// Finds configured, bundled, or source-built UI assets during startup.
+import path from "node:path";
+import {
+  ensureControlUiAssetsBuilt,
+  isPackageProvenControlUiRootSync,
+  resolveControlUiRootOverrideSync,
+  resolveControlUiRootSync,
+} from "../infra/control-ui-assets.js";
+import type { RuntimeEnv } from "../runtime.js";
+import type { ControlUiRootState } from "./control-ui.js";
 
-export async function resolveGatewayControlUiRootState(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
+function startControlUiAssetsBuild(params: {
+  gatewayRuntime: RuntimeEnv;
+  log: { warn: (message: string) => void };
+}): void {
+  void ensureControlUiAssetsBuilt(params.gatewayRuntime)
+    .then((result) => {
+      if (!result.ok && result.message) {
+        params.log.warn(`gateway: ${result.message}`);
+      }
+    })
+    .catch((error: unknown) => {
+      params.log.warn(
+        `gateway: Control UI assets build failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    });
+}
+
+/** Resolves the Control UI asset root state for gateway startup. */
+export async function resolveGatewayControlUiRootState(params: {
+  controlUiRootOverride?: string;
+  controlUiEnabled: boolean;
+  gatewayRuntime: RuntimeEnv;
+  log: { warn: (message: string) => void };
+}): Promise<ControlUiRootState | undefined> {
+  if (params.controlUiRootOverride) {
+    const resolvedOverride = resolveControlUiRootOverrideSync(params.controlUiRootOverride);
+    const resolvedOverridePath = path.resolve(params.controlUiRootOverride);
+    if (!resolvedOverride) {
+      params.log.warn(`gateway: controlUi.root not found at ${resolvedOverridePath}`);
+    }
+    return resolvedOverride
+      ? { kind: "resolved", path: resolvedOverride }
+      : { kind: "invalid", path: resolvedOverridePath };
+  }
+
+  if (!params.controlUiEnabled) {
+    return undefined;
+  }
+
+  const resolveRoot = () =>
+    resolveControlUiRootSync({
+      moduleUrl: import.meta.url,
+      argv1: process.argv[1],
+      cwd: process.cwd(),
+    });
+
+  const resolvedRoot = resolveRoot();
+  if (!resolvedRoot) {
+    // Source checkouts may need to build Control UI assets on demand; startup
+    // continues and the route can become available after the build completes.
+    startControlUiAssetsBuild({
+      gatewayRuntime: params.gatewayRuntime,
+      log: params.log,
+    });
+    return undefined;
+  }
+
+  return {
+    kind: isPackageProvenControlUiRootSync(resolvedRoot, {
+      moduleUrl: import.meta.url,
+      argv1: process.argv[1],
+      cwd: process.cwd(),
+    })
+      ? "bundled"
+      : "resolved",
+    path: resolvedRoot,
+  };
 }

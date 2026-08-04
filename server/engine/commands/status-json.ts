@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Thin `openclaw status --json` wrapper.
 // Command wiring lives here; scan/payload behavior lives in the shared JSON command runner.
 
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
-import { runStatusJsonCommand } from "./status-json-command.ts";
+import { runStatusJsonCommand } from "./status-json-command";
 import { scanStatusJsonFast } from "./status.scan.fast-json.js";
 
 /** Runs status JSON with the standard fast scan and all-mode security audit behavior. */

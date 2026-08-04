@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Channel entry contract tests cover SDK channel entrypoint exports and package boundaries.
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import fs from "node:fs";

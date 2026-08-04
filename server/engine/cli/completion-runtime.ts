@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/completion-runtime.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeLowercaseStringOrEmpty`/`normalizeOptionalString`、
 //    `../config/paths.js` 的 `resolveStateDir`、`../utils.js` 的 `pathExists`。
 //    cross-wms 已移植 `../infra/string-coerce.js`（同名导出）与

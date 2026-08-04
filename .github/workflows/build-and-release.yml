@@ -46,7 +46,7 @@ jobs:
           node-version: '22'
 
       - name: Install Node.js dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Pre-build check (打包前预检)
         run: bash scripts/pre-build-check.sh --quick

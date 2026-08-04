@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Implements `openclaw channels list` across runtime accounts, local config, and catalog-only entries.
-import { formatDocsLink } from "@openclaw-src/packages/terminal-core/src/links.js";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { formatDocsLink } from "@openclaw/terminal-core/links";
+import { theme } from "@openclaw/terminal-core/theme";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import type { ChannelPluginCatalogEntry } from "@openclaw-src/channels/plugins/catalog.js";
 import { isChannelVisibleInConfiguredLists } from "@openclaw-src/channels/plugins/exposure.js";

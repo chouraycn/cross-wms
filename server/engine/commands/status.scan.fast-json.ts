@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Fast `openclaw status --json` scan policy.
 // Skips channel tables and most network/update work unless `--all` asks for fuller evidence.
 
@@ -6,13 +5,13 @@ import { GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA } from "@openclaw-src/config/
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import { isRecord } from "@openclaw-src/utils.js";
-import { executeStatusScanFromOverview } from "./status.scan-execute.ts";
+import { executeStatusScanFromOverview } from "./status.scan-execute";
 import {
   resolveDefaultMemoryDatabasePath,
   resolveStatusMemoryStatusSnapshot,
-} from "./status.scan-memory.ts";
-import { collectStatusScanOverview } from "./status.scan-overview.ts";
-import type { StatusScanResult } from "./status.scan-result.ts";
+} from "./status.scan-memory";
+import { collectStatusScanOverview } from "./status.scan-overview";
+import type { StatusScanResult } from "./status.scan-result";
 
 const IGNORED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel"]);
 const STATUS_JSON_CHANNEL_ENV_PREFIXES = GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA.filter(

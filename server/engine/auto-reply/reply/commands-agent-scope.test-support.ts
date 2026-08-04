@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared command test mocks for resolving agent scope and directories.
 import { vi } from "vitest";
 

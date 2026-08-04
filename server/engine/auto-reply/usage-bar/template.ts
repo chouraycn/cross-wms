@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { type FSWatcher, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, resolve } from "node:path";

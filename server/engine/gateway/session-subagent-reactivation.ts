@@ -1,16 +1,39 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/session-subagent-reactivation.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Subagent session reactivation helper.
+// Replaces completed subagent run records when a user steers the child session.
+import { getLatestSubagentRunByChildSessionKey } from "../agents/subagent-registry-read.js";
 
-export async function reactivateCompletedSubagentSession(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
+// Completed subagent sessions can be reactivated after a user steer by replacing
+// the previous completed run id with the next run id through a lazy runtime
+// import. Active subagent runs are never replaced here.
+async function loadSessionSubagentReactivationRuntime() {
+  return import("./session-subagent-reactivation.runtime.js");
+}
+
+/** Reactivates a completed subagent session by swapping in the new run id. */
+export async function reactivateCompletedSubagentSession(params: {
+  sessionKey: string;
+  runId?: string;
+}): Promise<boolean> {
+  const runId = params.runId?.trim();
+  if (!runId) {
+    return false;
+  }
+  const existing = getLatestSubagentRunByChildSessionKey(params.sessionKey);
+  if (!existing || typeof existing.endedAt !== "number") {
+    return false;
+  }
+  const runtime = await loadSessionSubagentReactivationRuntime() as {
+    replaceSubagentRunAfterSteer: (params: {
+      previousRunId: string;
+      nextRunId: string;
+      fallback: typeof existing;
+      runTimeoutSeconds: number;
+    }) => Promise<boolean>;
+  };
+  return runtime.replaceSubagentRunAfterSteer({
+    previousRunId: existing.runId,
+    nextRunId: runId,
+    fallback: existing,
+    runTimeoutSeconds: existing.runTimeoutSeconds ?? 0,
+  });
 }

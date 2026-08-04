@@ -1,174 +1,795 @@
-import { z } from 'zod';
+// Session store types define durable per-session metadata and merge/usage helpers.
+import crypto from "node:crypto";
+import type {
+  AcpSessionRuntimeOptions,
+  SessionAcpIdentity,
+  SessionAcpIdentitySource,
+  SessionAcpIdentityState,
+  SessionAcpMeta,
+} from "@openclaw/acp-core/types";
+import {
+  normalizeOptionalString,
+  type FastMode,
+} from "@cdf-know/normalization-core/string-coerce";
+import type { ChatType } from "../../channels/chat-type.js";
+import type { ChannelId } from "../../channels/plugins/channel-id.types.js";
+import type { ChannelRouteRef } from "../../plugin-sdk/channel-route.js";
+import type { Skill } from "../../skills/loading/skill-contract.js";
+import type { DeliveryContext } from "../../utils/delivery-context.types.js";
+import type { TtsAutoMode } from "../types.tts.js";
+import { rewriteSessionFileForNewSessionId } from "./session-file-rotation.js";
 
-export const SessionStatusSchema = z.enum(['active', 'archived', 'daily_reset', 'deleted']);
-export type SessionStatus = z.infer<typeof SessionStatusSchema>;
+export type SessionScope = "per-sender" | "global";
 
-export const SessionTagSchema = z.string();
-export type SessionTag = z.infer<typeof SessionTagSchema>;
+export type SessionChannelId = ChannelId;
 
-export const SessionMetadataSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  model: z.string(),
-  agentId: z.string().optional().nullable(),
-  folderId: z.string().optional().nullable(),
-  parentSessionId: z.string().optional().nullable(),
-  status: SessionStatusSchema,
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  lastActiveAt: z.string(),
-  sessionDate: z.string(),
-  tags: z.array(SessionTagSchema),
-  summary: z.string().optional(),
-  messageCount: z.number().int().nonnegative(),
-  schemaVersion: z.string(),
-  extra: z.record(z.string(), z.unknown()),
-});
-export type SessionMetadata = z.infer<typeof SessionMetadataSchema>;
+export type SessionChatType = ChatType;
 
-export const TranscriptMessageRoleSchema = z.enum(['user', 'assistant', 'system', 'tool']);
-export type TranscriptMessageRole = z.infer<typeof TranscriptMessageRoleSchema>;
+export type SessionOrigin = {
+  label?: string;
+  provider?: string;
+  surface?: string;
+  chatType?: SessionChatType;
+  from?: string;
+  to?: string;
+  nativeChannelId?: string;
+  nativeDirectUserId?: string;
+  accountId?: string;
+  threadId?: string | number;
+};
 
-export const TranscriptMessageSchema = z.object({
-  id: z.string().optional(),
-  role: TranscriptMessageRoleSchema,
-  content: z.string(),
-  timestamp: z.string(),
-  toolCalls: z.array(z.unknown()).optional(),
-  toolResult: z.unknown().optional(),
-  attachments: z.array(z.unknown()).optional(),
-  generatedFiles: z.array(z.unknown()).optional(),
-  metadata: z.record(z.string(), z.unknown()),
-});
-export type TranscriptMessage = z.infer<typeof TranscriptMessageSchema>;
+export type {
+  AcpSessionRuntimeOptions,
+  SessionAcpIdentity,
+  SessionAcpIdentitySource,
+  SessionAcpIdentityState,
+  SessionAcpMeta,
+};
 
-export const SessionGoalSchema = z.object({
-  id: z.string(),
-  description: z.string(),
-  status: z.enum(['pending', 'in_progress', 'completed', 'failed', 'cancelled']),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  completedAt: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']),
-  progress: z.number().min(0).max(100),
-  subtasks: z.array(z.object({
-    id: z.string(),
-    description: z.string(),
-    completed: z.boolean(),
-  })),
-});
-export type SessionGoal = z.infer<typeof SessionGoalSchema>;
-
-export const SessionArtifactSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.string(),
-  path: z.string().optional(),
-  size: z.number().int().nonnegative(),
-  createdAt: z.string(),
-  mimeType: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()),
-});
-export type SessionArtifact = z.infer<typeof SessionArtifactSchema>;
-
-export const SessionTargetSchema = z.object({
-  type: z.string(),
-  value: z.string(),
-  label: z.string().optional(),
-});
-export type SessionTarget = z.infer<typeof SessionTargetSchema>;
-
-export const ThreadInfoSchema = z.object({
-  threadId: z.string(),
-  parentThreadId: z.string().optional(),
-  rootThreadId: z.string().optional(),
-  depth: z.number().int().nonnegative(),
-  branchFromMessageId: z.string().optional(),
-});
-export type ThreadInfo = z.infer<typeof ThreadInfoSchema>;
-
-export const SessionDataSchema = z.object({
-  metadata: SessionMetadataSchema,
-  goals: z.array(SessionGoalSchema),
-  artifacts: z.array(SessionArtifactSchema),
-  targets: z.array(SessionTargetSchema),
-  threadInfo: ThreadInfoSchema.optional(),
-  extra: z.record(z.string(), z.unknown()),
-});
-export type SessionData = z.infer<typeof SessionDataSchema>;
-
-export const SessionStoreStatsSchema = z.object({
-  totalSessions: z.number().int().nonnegative(),
-  activeSessions: z.number().int().nonnegative(),
-  archivedSessions: z.number().int().nonnegative(),
-  totalSizeBytes: z.number().int().nonnegative(),
-  cacheHitCount: z.number().int().nonnegative(),
-  cacheMissCount: z.number().int().nonnegative(),
-});
-export type SessionStoreStats = z.infer<typeof SessionStoreStatsSchema>;
-
-export const DiskBudgetConfigSchema = z.object({
-  maxTotalBytes: z.number().int().positive(),
-  maxSessionSizeBytes: z.number().int().positive(),
-  warningThresholdPercent: z.number().min(0).max(100),
-  cleanupStrategy: z.enum(['oldest_first', 'largest_first', 'archived_first']),
-});
-export type DiskBudgetConfig = z.infer<typeof DiskBudgetConfigSchema>;
-
-export const SessionStoreConfigSchema = z.object({
-  baseDir: z.string(),
-  archivedDir: z.string().optional(),
-  cacheMaxSize: z.number().int().positive(),
-  cacheTTLMs: z.number().int().positive(),
-  enableFileLocking: z.boolean(),
-  atomicWrites: z.boolean(),
-  diskBudget: DiskBudgetConfigSchema,
-  enableAutoMaintenance: z.boolean(),
-  maintenanceIntervalMs: z.number().int().positive(),
-});
-export type SessionStoreConfig = z.infer<typeof SessionStoreConfigSchema>;
-
-export const TranscriptFormatSchema = z.enum(['jsonl', 'json', 'markdown']);
-export type TranscriptFormat = z.infer<typeof TranscriptFormatSchema>;
-
-export const TranscriptWriteModeSchema = z.enum(['append', 'overwrite', 'stream']);
-export type TranscriptWriteMode = z.infer<typeof TranscriptWriteModeSchema>;
-
-export interface SessionKey {
+export type CliSessionBinding = {
   sessionId: string;
-  timestamp: number;
+  /** Trust an explicitly attached CLI session even when auth, prompt, or MCP fingerprints drift. */
+  forceReuse?: boolean;
+  authProfileId?: string;
+  authEpoch?: string;
+  authEpochVersion?: number;
+  extraSystemPromptHash?: string;
+  messageToolPolicyHash?: string;
+  promptToolNamesHash?: string;
+  cwdHash?: string;
+  mcpConfigHash?: string;
+  mcpResumeHash?: string;
+};
+
+export type SessionCompactionCheckpointReason =
+  | "manual"
+  | "auto-threshold"
+  | "overflow-retry"
+  | "timeout-retry";
+
+export type SessionCompactionTranscriptReference = {
+  sessionId: string;
+  sessionFile?: string;
+  leafId?: string;
+  entryId?: string;
+};
+
+export type SessionCompactionCheckpoint = {
+  checkpointId: string;
+  sessionKey: string;
+  sessionId: string;
+  createdAt: number;
+  reason: SessionCompactionCheckpointReason;
+  tokensBefore?: number;
+  tokensAfter?: number;
+  summary?: string;
+  firstKeptEntryId?: string;
+  preCompaction: SessionCompactionTranscriptReference;
+  postCompaction: SessionCompactionTranscriptReference;
+};
+
+export type SessionContextBudgetStatusRoute =
+  | "fits"
+  | "compact_only"
+  | "truncate_tool_results_only"
+  | "compact_then_truncate";
+
+export type SessionContextBudgetStatus = {
+  schemaVersion: 1;
+  source: "pre-prompt-estimate";
+  updatedAt: number;
+  provider: string;
+  model: string;
+  route: SessionContextBudgetStatusRoute;
+  shouldCompact: boolean;
+  estimatedPromptTokens: number;
+  contextTokenBudget: number;
+  promptBudgetBeforeReserve: number;
+  reserveTokens: number;
+  effectiveReserveTokens: number;
+  remainingPromptBudgetTokens: number;
+  overflowTokens: number;
+  toolResultReducibleChars: number;
+  messageCount: number;
+  unwindowedMessageCount: number;
+  sessionId?: string;
+};
+
+export type SessionPluginDebugEntry = {
+  pluginId: string;
+  lines: string[];
+};
+
+export type SessionPluginJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | SessionPluginJsonValue[]
+  | { [key: string]: SessionPluginJsonValue };
+
+export type SessionPluginNextTurnInjection = {
+  id: string;
+  pluginId: string;
+  pluginName?: string;
+  text: string;
+  idempotencyKey?: string;
+  placement: "prepend_context" | "append_context";
+  ttlMs?: number;
+  createdAt: number;
+  metadata?: SessionPluginJsonValue;
+};
+
+export type SubagentRecoveryState = {
+  /** Consecutive accepted automatic orphan-recovery resumes in the rapid re-wedge window. */
+  automaticAttempts?: number;
+  /** Timestamp (ms) of the latest accepted automatic orphan-recovery resume. */
+  lastAttemptAt?: number;
+  /** Registry run id that triggered the latest automatic orphan-recovery resume. */
+  lastRunId?: string;
+  /** Timestamp (ms) when automatic recovery was tombstoned for this session. */
+  wedgedAt?: number;
+  /** Human-readable reason automatic recovery was tombstoned. */
+  wedgedReason?: string;
+};
+
+export type LaneExecutionState =
+  | "active"
+  | "draining"
+  | "suspended"
+  | "resuming"
+  | "circuit_open"
+  | "failed_handoff";
+
+export interface QuotaSuspension {
+  schemaVersion: 1;
+  suspendedAt: number; // epoch ms
+  reason: "quota_exhausted" | "manual" | "circuit_open";
+  failedProvider: string;
+  failedModel: string;
+  /** Recovery briefing text injected into the next attempt when state === "resuming". */
+  summary?: string;
+  /** Opaque pointer to an external snapshot blob (path/key); not the briefing text itself. */
+  snapshotRef?: string;
+  /** Lane that was set to concurrency=0 when this suspension was issued. */
+  laneId?: string;
+  expectedResumeBy?: number; // Reaper TTL (e.g. 30min)
+  state: LaneExecutionState; // State machine check for hot-path
+}
+
+export type SessionGoalStatus =
+  | "active"
+  | "paused"
+  | "blocked"
+  | "usage_limited"
+  | "budget_limited"
+  | "complete";
+
+export type SessionGoal = {
+  schemaVersion: 1;
+  id: string;
+  objective: string;
+  status: SessionGoalStatus;
+  createdAt: number;
+  updatedAt: number;
+  tokenStart: number;
+  tokenStartFresh?: boolean;
+  tokensUsed: number;
+  tokenBudget?: number;
+  continuationTurns: number;
+  lastStatusNote?: string;
+  pausedAt?: number;
+  blockedAt?: number;
+  completedAt?: number;
+  usageLimitedAt?: number;
+  budgetLimitedAt?: number;
+};
+
+export type RestartRecoveryRun = {
+  runId: string;
+  lifecycleGeneration: string;
+};
+
+export type SessionEntry = {
+  /**
+   * Last delivered heartbeat payload (used to suppress duplicate heartbeat notifications).
+   * Stored on the main session entry.
+   */
+  lastHeartbeatText?: string;
+  /** Timestamp (ms) when lastHeartbeatText was delivered. */
+  lastHeartbeatSentAt?: number;
+  /**
+   * Base session key for heartbeat-created isolated sessions.
+   * When present, `<base>:heartbeat` is a synthetic isolated session rather than
+   * a real user/session-scoped key that merely happens to end with `:heartbeat`.
+   */
+  heartbeatIsolatedBaseSessionKey?: string;
+  /** Heartbeat task state (task name -> last run timestamp ms). */
+  heartbeatTaskState?: Record<string, number>;
+  /** Plugin-owned session state, grouped by plugin id then extension namespace. */
+  pluginExtensions?: Record<string, Record<string, SessionPluginJsonValue>>;
+  /** Top-level SessionEntry mirror slots owned by plugin session extensions. */
+  pluginExtensionSlotKeys?: Record<string, Record<string, string>>;
+  /** Durable one-shot prompt additions drained before the next agent turn. */
+  pluginNextTurnInjections?: Record<string, SessionPluginNextTurnInjection[]>;
+  sessionId: string;
+  updatedAt: number;
+  sessionFile?: string;
+  /** Parent session key that spawned this session (used for sandbox session-tool scoping). */
+  spawnedBy?: string;
+  /** Workspace inherited by spawned sessions and reused on later turns for the same child session. */
+  spawnedWorkspaceDir?: string;
+  /** Task working directory inherited by spawned sessions and reused on later turns. */
+  spawnedCwd?: string;
+  /** Explicit parent session linkage for dashboard-created child sessions. */
+  parentSessionKey?: string;
+  /** True after a thread/topic session has been forked from its parent transcript once. */
+  forkedFromParent?: boolean;
+  /** Subagent spawn depth (0 = main, 1 = sub-agent, 2 = sub-sub-agent). */
+  spawnDepth?: number;
+  /** Explicit role assigned at spawn time for subagent tool policy/control decisions. */
+  subagentRole?: "orchestrator" | "leaf";
+  /** Explicit control scope assigned at spawn time for subagent control decisions. */
+  subagentControlScope?: "children" | "none";
+  /** Session-scoped tool deny entries inherited from the caller that created this session. */
+  inheritedToolDeny?: string[];
+  /** Session-scoped tool allow entries inherited from the caller that created this session. */
+  inheritedToolAllow?: string[];
+  /** Plugin id that created this session through api.runtime.subagent. */
+  pluginOwnerId?: string;
+  systemSent?: boolean;
+  abortedLastRun?: boolean;
+  /** Interrupted run generations whose late lifecycle events must be ignored. */
+  restartRecoveryRuns?: RestartRecoveryRun[];
+  /** Durable guard state for automatic subagent orphan recovery. */
+  subagentRecovery?: SubagentRecoveryState;
+  /** Quota cascade protection and state-aware failover status. */
+  quotaSuspension?: QuotaSuspension;
+  /** Core-owned durable goal state for this thread/session. */
+  goal?: SessionGoal;
+  /** Timestamp (ms) when the current sessionId first became active. */
+  sessionStartedAt?: number;
+  /** Stable usage lineage key for transcript-backed rollups across sessionId rotations. */
+  usageFamilyKey?: string;
+  /** Session ids known to belong to this usage lineage, including archived predecessors. */
+  usageFamilySessionIds?: string[];
+  /** Timestamp (ms) of the last user/channel interaction that should extend idle lifetime. */
+  lastInteractionAt?: number;
+  /** Stable first-run start time for subagent sessions, persisted after completion. */
+  startedAt?: number;
+  /** Latest completed run end time for subagent sessions, persisted after completion. */
+  endedAt?: number;
+  /** Accumulated runtime across subagent follow-up runs, persisted after completion. */
+  runtimeMs?: number;
+  /** Final persisted subagent run status, used after in-memory run archival. */
+  status?: "running" | "done" | "failed" | "killed" | "timeout";
+  /**
+   * Session-level stop cutoff captured when /stop is received.
+   * Messages at/before this boundary are skipped to avoid replaying
+   * queued pre-stop backlog.
+   */
+  abortCutoffMessageSid?: string;
+  /** Epoch ms cutoff paired with abortCutoffMessageSid when available. */
+  abortCutoffTimestamp?: number;
+  chatType?: SessionChatType;
+  thinkingLevel?: string;
+  fastMode?: FastMode;
+  verboseLevel?: string;
+  traceLevel?: string;
+  reasoningLevel?: string;
+  elevatedLevel?: string;
+  ttsAuto?: TtsAutoMode;
+  /** Hash of the latest assistant reply that was sent through `/tts latest`. */
+  lastTtsReadLatestHash?: string;
+  /** Timestamp (ms) when `/tts latest` last sent audio for this session. */
+  lastTtsReadLatestAt?: number;
+  execHost?: string;
+  execSecurity?: string;
+  execAsk?: string;
+  execNode?: string;
+  responseUsage?: "on" | "off" | "tokens" | "full";
+  providerOverride?: string;
+  modelOverride?: string;
+  /** Session-scoped agent runtime/harness override selected with the model picker. */
+  agentRuntimeOverride?: string;
+  /**
+   * Tracks whether the persisted model override came from an explicit user
+   * action (`/model`, `sessions.patch`) or from a temporary runtime fallback.
+   * Resets only preserve user-driven overrides.
+   */
+  modelOverrideSource?: "auto" | "user";
+  /** Selected model that produced the current auto fallback override. */
+  modelOverrideFallbackOriginProvider?: string;
+  modelOverrideFallbackOriginModel?: string;
+  authProfileOverride?: string;
+  authProfileOverrideSource?: "auto" | "user";
+  authProfileOverrideCompactionCount?: number;
+  /**
+   * Set on explicit user-driven session model changes (for example `/model`
+   * and `sessions.patch`) during an active run. The embedded runner checks
+   * this flag to decide whether to throw `LiveSessionModelSwitchError`.
+   * System-initiated fallbacks (rate-limit retry rotation) never set this
+   * flag, so they are never mistaken for user-initiated switches.
+   */
+  liveModelSwitchPending?: boolean;
+  groupActivation?: "mention" | "always";
+  groupActivationNeedsSystemIntro?: boolean;
+  sendPolicy?: "allow" | "deny";
+  queueMode?: "steer" | "followup" | "collect" | "interrupt";
+  queueDebounceMs?: number;
+  queueCap?: number;
+  queueDrop?: "old" | "new" | "summarize";
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  /** Durable marker that final user reply delivery still needs a retry/resume pass. */
+  pendingFinalDelivery?: boolean;
+  pendingFinalDeliveryCreatedAt?: number;
+  pendingFinalDeliveryLastAttemptAt?: number;
+  pendingFinalDeliveryAttemptCount?: number;
+  pendingFinalDeliveryLastError?: string | null;
+  /** Frozen reply text that needs delivery. */
+  pendingFinalDeliveryText?: string | null;
+  /** Original delivery context (channel, recipient, etc). */
+  pendingFinalDeliveryContext?: DeliveryContext;
+  /** Durable send intent backing pending final delivery, when already created. */
+  pendingFinalDeliveryIntentId?: string | null;
+  /** Current visible run delivery context used only for restart recovery. */
+  restartRecoveryDeliveryContext?: DeliveryContext;
+  /** Active run id that owns restartRecoveryDeliveryContext cleanup. */
+  restartRecoveryDeliveryRunId?: string;
+  /**
+   * Whether totalTokens reflects a fresh context snapshot for the latest run.
+   * Undefined means legacy/unknown freshness; false forces consumers to treat
+   * totalTokens as stale/unknown for context-utilization displays.
+   */
+  totalTokensFresh?: boolean;
+  estimatedCostUsd?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+  modelProvider?: string;
+  model?: string;
+  /**
+   * Embedded agent harness selected for this session id.
+   * Prevents config/env changes from moving an existing transcript between
+   * incompatible runtime harnesses.
+   */
+  agentHarnessId?: string;
+  /**
+   * Last selected/runtime model pair for which a fallback notice was emitted.
+   * Used to avoid repeating the same fallback notice every turn.
+   */
+  fallbackNoticeSelectedModel?: string;
+  fallbackNoticeActiveModel?: string;
+  fallbackNoticeReason?: string;
+  contextTokens?: number;
+  contextBudgetStatus?: SessionContextBudgetStatus;
+  compactionCount?: number;
+  compactionCheckpoints?: SessionCompactionCheckpoint[];
+  memoryFlushAt?: number;
+  memoryFlushCompactionCount?: number;
+  memoryFlushContextHash?: string;
+  /** Consecutive memory flush failures since the last successful flush. */
+  memoryFlushFailureCount?: number;
+  /** Timestamp (ms) of the last failed memory flush attempt. */
+  memoryFlushLastFailedAt?: number;
+  /** Last memory flush failure error message, truncated for durable metadata. */
+  memoryFlushLastFailureError?: string;
+  cliSessionIds?: Record<string, string>;
+  cliSessionBindings?: Record<string, CliSessionBinding>;
+  claudeCliSessionId?: string;
+  label?: string;
+  displayName?: string;
+  channel?: string;
+  groupId?: string;
+  subject?: string;
+  groupChannel?: string;
+  space?: string;
+  origin?: SessionOrigin;
+  route?: ChannelRouteRef;
+  deliveryContext?: DeliveryContext;
+  lastChannel?: SessionChannelId;
+  lastTo?: string;
+  lastAccountId?: string;
+  lastThreadId?: string | number;
+  skillsSnapshot?: SessionSkillSnapshot;
+  systemPromptReport?: SessionSystemPromptReport;
+  /**
+   * Generic plugin-owned runtime debug entries shown in verbose status surfaces.
+   * Each plugin owns and may overwrite only its own entry between turns.
+   */
+  pluginDebugEntries?: SessionPluginDebugEntry[];
+  acp?: SessionAcpMeta;
+};
+
+export function isTerminalSessionStatus(
+  status: unknown,
+): status is Exclude<NonNullable<SessionEntry["status"]>, "running"> {
+  return status === "done" || status === "failed" || status === "killed" || status === "timeout";
+}
+
+function isSessionPluginTraceLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith("🔎 ") || /(?:^|\s)(?:Debug|Trace):/.test(trimmed);
+}
+
+function resolveSessionPluginLines(
+  entry: Pick<SessionEntry, "pluginDebugEntries"> | undefined,
+  includeLine: (line: string) => boolean,
+): string[] {
+  // Status and trace surfaces share the same plugin-owned lines but apply different filters.
+  return Array.isArray(entry?.pluginDebugEntries)
+    ? entry.pluginDebugEntries.flatMap((pluginEntry) =>
+        Array.isArray(pluginEntry?.lines)
+          ? pluginEntry.lines.filter(
+              (line): line is string =>
+                typeof line === "string" && line.trim().length > 0 && includeLine(line),
+            )
+          : [],
+      )
+    : [];
+}
+
+export function resolveSessionPluginStatusLines(
+  entry: Pick<SessionEntry, "pluginDebugEntries"> | undefined,
+): string[] {
+  return resolveSessionPluginLines(entry, (line) => !isSessionPluginTraceLine(line));
+}
+
+export function resolveSessionPluginTraceLines(
+  entry: Pick<SessionEntry, "pluginDebugEntries"> | undefined,
+): string[] {
+  return resolveSessionPluginLines(entry, isSessionPluginTraceLine);
+}
+
+export function normalizeSessionRuntimeModelFields(entry: SessionEntry): SessionEntry {
+  const normalizedModel = normalizeOptionalString(entry.model);
+  const normalizedProvider = normalizeOptionalString(entry.modelProvider);
+  let next = entry;
+
+  if (!normalizedModel) {
+    // A model without a valid provider/model pair is not durable runtime metadata.
+    if (entry.model !== undefined || entry.modelProvider !== undefined) {
+      next = { ...next };
+      delete next.model;
+      delete next.modelProvider;
+    }
+    return next;
+  }
+
+  if (entry.model !== normalizedModel) {
+    if (next === entry) {
+      next = { ...next };
+    }
+    next.model = normalizedModel;
+  }
+
+  if (!normalizedProvider) {
+    if (entry.modelProvider !== undefined) {
+      if (next === entry) {
+        next = { ...next };
+      }
+      delete next.modelProvider;
+    }
+    return next;
+  }
+
+  if (entry.modelProvider !== normalizedProvider) {
+    if (next === entry) {
+      next = { ...next };
+    }
+    next.modelProvider = normalizedProvider;
+  }
+  return next;
+}
+
+export function setSessionRuntimeModel(
+  entry: SessionEntry,
+  runtime: { provider: string; model: string },
+): boolean {
+  const provider = runtime.provider.trim();
+  const model = runtime.model.trim();
+  if (!provider || !model) {
+    return false;
+  }
+  entry.modelProvider = provider;
+  entry.model = model;
+  return true;
+}
+
+export type SessionEntryMergePolicy = "touch-activity" | "preserve-activity";
+
+type MergeSessionEntryOptions = {
+  policy?: SessionEntryMergePolicy;
+  now?: number;
+};
+
+function resolveMergedUpdatedAt(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+  options?: MergeSessionEntryOptions,
+): number {
+  const now = options?.now ?? Date.now();
+  const existingUpdatedAt = normalizeMergedUpdatedAt(existing?.updatedAt, now);
+  const patchUpdatedAt = normalizeMergedUpdatedAt(patch.updatedAt, now);
+  if (options?.policy === "preserve-activity" && existing) {
+    return existingUpdatedAt ?? patchUpdatedAt ?? now;
+  }
+  return Math.max(existingUpdatedAt ?? 0, patchUpdatedAt ?? 0, now);
+}
+
+function normalizeMergedUpdatedAt(value: number | undefined, now: number): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return undefined;
+  }
+  return Math.min(value, now);
+}
+
+export function mergeSessionEntryWithPolicy(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+  options?: MergeSessionEntryOptions,
+): SessionEntry {
+  const sessionId = patch.sessionId ?? existing?.sessionId ?? crypto.randomUUID();
+  const updatedAt = resolveMergedUpdatedAt(existing, patch, options);
+  if (!existing) {
+    return normalizeSessionRuntimeModelFields({
+      ...patch,
+      sessionId,
+      updatedAt,
+      sessionStartedAt: patch.sessionStartedAt ?? updatedAt,
+    });
+  }
+  const next = {
+    ...existing,
+    ...patch,
+    sessionId,
+    updatedAt,
+    sessionStartedAt:
+      patch.sessionStartedAt ??
+      (existing.sessionId === sessionId ? existing.sessionStartedAt : updatedAt),
+  };
+
+  if (existing.sessionId !== sessionId) {
+    // Session id rotations should move transcript paths when they match known reset/fork shapes.
+    const patchHasSessionFile = Object.hasOwn(patch, "sessionFile");
+    const candidateSessionFile = patchHasSessionFile ? patch.sessionFile : existing.sessionFile;
+    const rewrittenSessionFile = rewriteSessionFileForNewSessionId({
+      sessionFile: candidateSessionFile,
+      previousSessionId: existing.sessionId,
+      nextSessionId: sessionId,
+    });
+    if (rewrittenSessionFile) {
+      next.sessionFile = rewrittenSessionFile;
+    }
+  }
+
+  // Guard against stale provider carry-over when callers patch runtime model
+  // without also patching runtime provider.
+  if (Object.hasOwn(patch, "model") && !Object.hasOwn(patch, "modelProvider")) {
+    const patchedModel = normalizeOptionalString(patch.model);
+    const existingModel = normalizeOptionalString(existing.model);
+    if (patchedModel && patchedModel !== existingModel) {
+      delete next.modelProvider;
+    }
+  }
+  return normalizeSessionRuntimeModelFields(next);
+}
+
+export function mergeSessionEntry(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+): SessionEntry {
+  return mergeSessionEntryWithPolicy(existing, patch);
+}
+
+export function mergeSessionEntryPreserveActivity(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+): SessionEntry {
+  return mergeSessionEntryWithPolicy(existing, patch, {
+    policy: "preserve-activity",
+  });
+}
+
+export function resolveSessionTotalTokens(
+  entry?: Pick<SessionEntry, "totalTokens" | "totalTokensFresh"> | null,
+): number | undefined {
+  const total = entry?.totalTokens;
+  if (typeof total !== "number" || !Number.isFinite(total) || total < 0) {
+    return undefined;
+  }
+  return total;
+}
+
+export function resolveFreshSessionTotalTokens(
+  entry?: Pick<SessionEntry, "totalTokens" | "totalTokensFresh"> | null,
+): number | undefined {
+  const total = resolveSessionTotalTokens(entry);
+  if (total === undefined) {
+    return undefined;
+  }
+  if (entry?.totalTokensFresh === false) {
+    return undefined;
+  }
+  return total;
+}
+
+export type GroupKeyResolution = {
+  key: string;
+  channel?: string;
+  id?: string;
+  chatType?: SessionChatType;
+};
+
+export type SessionSkillPromptRef = {
+  version: 1;
+  algorithm: "sha256";
   hash: string;
-}
+  bytes: number;
+};
 
-export interface SessionFileInfo {
-  path: string;
+export type SessionSkillSnapshot = {
+  prompt: string;
+  /** Persisted stores may replace large duplicate prompts with a content-addressed blob ref. */
+  promptRef?: SessionSkillPromptRef;
+  skills: Array<{ name: string; primaryEnv?: string; requiredEnv?: string[] }>;
+  /** Normalized agent-level filter used to build this snapshot; undefined means unrestricted. */
+  skillFilter?: string[];
+  /**
+   * Runtime-only, never persisted. Carries the full parsed Skill[] (including
+   * each SKILL.md body) so the embedded runner can skip a workspace skill
+   * scan within a turn. Stripped from sessions.json on every read and write
+   * via normalizeSessionStore — see store-load.ts. On a cold session resume
+   * this is undefined and src/skills/runtime/embedded-run-entries.ts
+   * rebuilds it by reloading skill entries from disk.
+   */
+  resolvedSkills?: Skill[];
+  version?: number;
+};
+
+export type SessionSystemPromptReport = {
+  source: "run" | "estimate";
+  generatedAt: number;
+  sessionId?: string;
+  sessionKey?: string;
+  provider?: string;
+  model?: string;
+  workspaceDir?: string;
+  bootstrapMaxChars?: number;
+  bootstrapTotalMaxChars?: number;
+  bootstrapTruncation?: {
+    warningMode?: "off" | "once" | "always";
+    warningShown?: boolean;
+    promptWarningSignature?: string;
+    warningSignaturesSeen?: string[];
+    truncatedFiles?: number;
+    nearLimitFiles?: number;
+    totalNearLimit?: boolean;
+  };
+  sandbox?: {
+    mode?: string;
+    sandboxed?: boolean;
+  };
+  systemPrompt: {
+    chars: number;
+    projectContextChars: number;
+    nonProjectContextChars: number;
+    hash?: string;
+  };
+  currentTurn?: {
+    kind?: "user_request" | "room_event";
+    promptChars: number;
+    runtimeContextChars: number;
+  };
+  injectedWorkspaceFiles: Array<{
+    name: string;
+    path: string;
+    missing: boolean;
+    rawChars: number;
+    injectedChars: number;
+    truncated: boolean;
+  }>;
+  skills: {
+    promptChars: number;
+    hash?: string;
+    entries: Array<{ name: string; blockChars: number }>;
+  };
+  tools: {
+    listChars: number;
+    schemaChars: number;
+    entries: Array<{
+      name: string;
+      summaryChars: number;
+      summaryHash?: string;
+      schemaChars: number;
+      schemaHash?: string;
+      propertiesCount?: number | null;
+    }>;
+  };
+};
+
+export const DEFAULT_RESET_TRIGGERS = ["/new", "/reset"];
+export const DEFAULT_IDLE_MINUTES = 0;
+
+/**
+ * 会话产物（artifact）：用于记录附加到会话上的文件、生成物等。
+ * 仅在 server/engine/config/sessions/artifacts.ts 中使用，是 WMS 扩展。
+ */
+export type SessionArtifact = {
+  id: string;
+  name: string;
+  type: string;
+  createdAt: string;
   size: number;
-  modifiedAt: Date;
-  createdAt: Date;
-  isArchived: boolean;
-}
-
-export interface StoreWriteResult {
-  success: boolean;
+  metadata?: Record<string, unknown>;
   path?: string;
-  error?: Error;
-  durationMs: number;
-}
+  mimeType?: string;
+};
 
-export interface SessionListOptions {
-  status?: SessionStatus | SessionStatus[];
-  limit?: number;
-  offset?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'lastActiveAt' | 'title';
-  sortOrder?: 'asc' | 'desc';
-  searchQuery?: string;
+/**
+ * SessionArtifactSchema：兼容旧调用方 SessionArtifactSchema.parse(input) 的透传 stub。
+ * artifacts.ts 之前依赖一个 Zod schema，但该 schema 在合并过程中遗失；
+ * 此 stub 保留 API 形状（.parse 直接返回输入对象），避免运行时 import 失败。
+ */
+export const SessionArtifactSchema = {
+  parse<T>(input: T): T {
+    return input;
+  },
+};
+
+/**
+ * SessionMetadata：会话元数据最小类型。
+ * cross-wms 的 SessionMetadataManager 使用字段：id、createdAt、updatedAt、lastActiveAt、
+ * sessionDate、title、summary、status、model、agentId、folderId、tags、messageCount 等。
+ */
+export interface SessionMetadata {
+  id: string;
+  createdAt: string;
+  updatedAt?: string;
+  lastActiveAt?: string;
+  sessionDate?: string;
+  title?: string;
+  summary?: string;
+  status?: 'active' | 'archived' | 'deleted' | string;
+  model?: string;
+  agentId?: string | null;
+  folderId?: string | null;
   tags?: string[];
-  dateFrom?: string;
-  dateTo?: string;
+  messageCount?: number;
+  [key: string]: unknown;
 }
 
-export interface SessionListResult {
-  sessions: SessionMetadata[];
-  total: number;
-  hasMore: boolean;
-}
+/**
+ * SessionMetadataSchema：兼容 metadata.ts 中 SessionMetadataSchema.parse / safeParse 调用的透传 stub。
+ * openclaw 原版使用 Zod schema 在此处做运行时校验，但 cross-wms 合并过程中 schema 丢失。
+ * 此 stub 保留 API 形状（.parse 直接返回输入；.safeParse 总是返回 success=true），避免运行时 import 失败。
+ */
+export const SessionMetadataSchema = {
+  parse<T>(input: T): T {
+    return input;
+  },
+  safeParse<T>(input: T): { success: true; data: T } {
+    return { success: true, data: input };
+  },
+};

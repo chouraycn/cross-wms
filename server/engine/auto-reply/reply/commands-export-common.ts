@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Shared export-command parsing and target session resolution helpers. */
 import {
   resolveDefaultSessionStorePath,

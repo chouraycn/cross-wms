@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared metadata and result types for embedded-agent runner surfaces.
  */

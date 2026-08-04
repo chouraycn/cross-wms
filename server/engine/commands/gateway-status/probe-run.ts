@@ -3,7 +3,7 @@
 import {
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { probeGateway } from "@openclaw-src/gateway/probe.js";
 import {

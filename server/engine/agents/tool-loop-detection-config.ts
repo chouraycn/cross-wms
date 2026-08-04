@@ -1,17 +1,40 @@
 /**
- * Ported from openclaw/src/agents/tool-loop-detection-config.ts
- *
  * Tool loop-detection config resolver.
- * Cross-wms degradation: overlays agent settings on globals with simplified types.
+ * Overlays per-agent loop detection settings on global tool defaults while
+ * preserving nested detector and post-compaction guard fields.
  */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
+import { resolveAgentConfig } from "./agent-scope.js";
 
 /** Resolves effective tool loop-detection config by overlaying agent settings on globals. */
 export function resolveToolLoopDetectionConfig(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: OpenClawConfig;
   agentId?: string;
-}): Record<string, unknown> | undefined {
-  const tools = params.cfg?.tools as Record<string, unknown> | undefined;
-  const global = tools?.loopDetection as Record<string, unknown> | undefined;
-  // Cross-wms does not have resolveAgentConfig; return global config only.
-  return global;
+}): ToolLoopDetectionConfig | undefined {
+  const global = params.cfg?.tools?.loopDetection;
+  const agent =
+    params.agentId && params.cfg
+      ? resolveAgentConfig(params.cfg, params.agentId)?.tools?.loopDetection
+      : undefined;
+
+  if (!agent) {
+    return global;
+  }
+  if (!global) {
+    return agent;
+  }
+
+  return {
+    ...global,
+    ...agent,
+    detectors: {
+      ...global.detectors,
+      ...agent.detectors,
+    },
+    postCompactionGuard: {
+      ...global.postCompactionGuard,
+      ...agent.postCompactionGuard,
+    },
+  };
 }

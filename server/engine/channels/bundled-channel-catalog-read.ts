@@ -2,7 +2,7 @@
  * Bundled channel catalog reader. — 移植自 openclaw/src/channels/bundled-channel-catalog-read.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/{string-coerce,string-normalization} →
+ *  - @cdf-know/normalization-core/{string-coerce,string-normalization} →
  *    cross-wms ../infra/{string-coerce,string-normalization}.js
  *  - import.meta.url → __filename（CommonJS 模块，无 import.meta）
  *  - ../infra/json-files.js (tryReadJsonSync) → ./_openclaw-stubs.js
@@ -23,6 +23,11 @@ import {
   tryReadJsonSync,
   type PluginPackageChannel,
 } from "./_openclaw-stubs.js";
+import { fileURLToPath } from "node:url";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 type ChannelCatalogEntryLike = {
   openclaw?: {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Generates short labels for sessions from conversation context.
 import { resolveModelAsync } from '@openclaw-src/agents/embedded-agent-runner/model.js';
 import { requireApiKey } from '@openclaw-src/agents/model-auth.js';

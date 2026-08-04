@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Webchat reply media path normalizer for display-safe outbound payloads.
 import { isPassThroughRemoteMediaSource } from "@openclaw/media-core/media-source-url";
 import { isAudioFileName } from "@openclaw/media-core/mime";
@@ -58,7 +57,7 @@ export async function normalizeWebchatReplyMediaPathsForDisplay(params: {
     }
     const mediaUrls = resolveSendableOutboundReplyParts(payload).mediaUrls;
     if (!mediaUrls.some((mediaUrl) => shouldPreserveDisplayMediaUrl(payload, mediaUrl))) {
-      normalized.push(await normalizeMediaPaths(payload));
+      normalized.push(await (normalizeMediaPaths as any)(payload));
       continue;
     }
     if (!mediaUrls.some((mediaUrl) => !shouldPreserveDisplayMediaUrl(payload, mediaUrl))) {

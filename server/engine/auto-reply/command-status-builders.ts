@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/auto-reply/command-status-builders.ts
 //
 // 降级说明：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce、channels/plugins、
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce、channels/plugins、
 //    config/commands.flags、plugins/commands、skills/types、commands-registry 等，
 //    cross-wms 暂未移植部分依赖，这里提供类型契约占位与最小降级实现。
 //  - OpenClawConfig 改为从 ../infra/_runtime-stubs.js 导入降级类型
@@ -13,7 +13,7 @@
 import type { OpenClawConfig } from "../infra/_runtime-stubs.js";
 import type { ChatCommandDefinition } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import { listCommands } from "./commands-registry.js";
+import { listChatCommands } from "./commands-registry.js";
 
 const CATEGORY_LABELS: Record<CommandCategory, string> = {
   session: "Session",
@@ -38,7 +38,7 @@ const CATEGORY_ORDER: CommandCategory[] = [
 /** Maps a registered command to its category (降级：简化版无 category 字段，按 scope 推断)。 */
 function resolveCommandCategory(command: ChatCommandDefinition): CommandCategory {
   // cross-wms 简化版 ChatCommandDefinition 无 category 字段，降级为按 scope 推断。
-  const scope = command.scope;
+  const scope = command.scope as string;
   if (scope === "session" || scope === "global") {
     return "session";
   }
@@ -139,7 +139,7 @@ export function buildCommandsMessagePaginated(
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);
-  const commands = listCommands();
+  const commands = listChatCommands();
   const grouped = groupCommandsByCategory(commands);
 
   const lines = ["ℹ️ Slash commands", ""];

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public native agent harness contracts and capability shapes.
  */

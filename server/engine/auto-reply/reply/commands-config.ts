@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Implements config inspection and mutation commands for reply sessions.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveConfigWriteTargetFromPath } from '@openclaw-src/channels/plugins/config-writes.js';
 import { normalizeChannelId } from '@openclaw-src/channels/registry.js';
 import {

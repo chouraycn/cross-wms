@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Model selection state for reply runs, including catalog and override handling. */
 import {
   hasLegacyAutoFallbackWithoutOrigin,

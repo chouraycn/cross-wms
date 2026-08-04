@@ -2,7 +2,7 @@
  * Normalizes inherited tool allow/deny lists and ACP compatibility errors.
  *
  * 降级说明：
- *  - `@openclaw/normalization-core/string-normalization` 的 `uniqueStrings`
+ *  - `@cdf-know/normalization-core/string-normalization` 的 `uniqueStrings`
  *    改从 `../infra/string-normalization.js` 导入。
  *  - openclaw `./tool-policy-shared.js` 的 `normalizeToolName` 与
  *    `./tool-policy-match.js` 的 `isToolAllowedByPolicyName` 在 cross-wms

@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Conversation id helpers derive stable outbound conversation keys from
 // explicit thread ids or safe channel/group target shapes.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { stringifyRouteThreadId } from "../../plugin-sdk/channel-route.js";
 
 function resolveExplicitConversationTargetId(target: string): string | undefined {

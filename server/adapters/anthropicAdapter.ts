@@ -9,8 +9,8 @@
  */
 
 import type { IAiApiAdapter, AdapterConfig, StreamCallbacks, ModelApiType } from './types.js';
-import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiClient.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiCore.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 import { extractAnthropicThinkingSignature } from '../engine/thinkingSignatureManager.js';
 import { logger } from '../logger.js';
 

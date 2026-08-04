@@ -1,7 +1,7 @@
 // Windows command helpers resolve executable and shell invocation details.
 import path from "node:path";
 import process from "node:process";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { getWindowsCmdExePath } from "../infra/windows-install-roots.js";
 
 const WINDOWS_UNSAFE_CMD_CHARS_RE = /[&|<>%\r\n]/;

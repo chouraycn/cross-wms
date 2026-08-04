@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Builds embedded-agent run parameters from queued follow-up run state. */
 import { resolveEffectiveModelFallbacks } from '@openclaw-src/agents/agent-scope.js';
 import type { resolveProviderScopedAuthProfile } from "./agent-runner-auth-profile.js";

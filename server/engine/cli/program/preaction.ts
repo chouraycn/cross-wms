@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Global Commander pre-action hook: startup presentation, config guard, logging, and plugin preflight.
 import type { Command } from "commander";
 import type { ConfigFileSnapshot } from "../../config/types.js";
@@ -63,7 +62,7 @@ function getCliLogLevel(actionCommand: Command): LogLevel | undefined {
     return undefined;
   }
   const logLevel = root.opts<Record<string, unknown>>().logLevel;
-  return typeof logLevel === "string" ? (logLevel as LogLevel) : undefined;
+  return typeof logLevel === "string" ? (logLevel as unknown as LogLevel) : undefined;
 }
 
 function isBareParentDefaultHelpInvocation(actionCommand: Command, argv: string[]): boolean {
@@ -131,7 +130,7 @@ export function registerPreActionHooks(program: Command, programVersion: string)
     setVerbose(verbose);
     const cliLogLevel = getCliLogLevel(actionCommand);
     if (cliLogLevel) {
-      process.env.OPENCLAW_LOG_LEVEL = cliLogLevel;
+      process.env.OPENCLAW_LOG_LEVEL = cliLogLevel as any;
     }
     if (!verbose) {
       process.env.NODE_NO_WARNINGS ??= "1";
@@ -171,7 +170,7 @@ export function registerPreActionHooks(program: Command, programVersion: string)
       allowInvalid: shouldAllowInvalidConfigForAction(actionCommand, commandPath),
       ...(beforeStateMigrations ? { beforeStateMigrations } : {}),
       skipConfigGuard: shouldBypassConfigGuardForCommandPath(commandPath),
-    });
+    } as any);
     if (beforeStateMigrations) {
       const { reloadTrustedGatewayRunEnvironment } =
         await import("../gateway-cli/pre-bootstrap.js");

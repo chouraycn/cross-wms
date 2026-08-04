@@ -1,3 +1,3 @@
 // Public package facade for provider auth contracts.
 
-export * from "../../../src/plugin-sdk/provider-auth.js";
+export * from "../../../engine/plugin-sdk/provider-auth.js";

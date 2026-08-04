@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for tool catalog gateway methods and plugin tool visibility.
  */

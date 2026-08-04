@@ -3,9 +3,9 @@
 // 移植自 openclaw/src/plugins/bundled-dir.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的
 //    normalizeOptionalLowercaseString。改用 cross-wms 的 ../infra/string-coerce.js。
-//  - 原文件依赖 @openclaw/normalization-core/string-normalization 的 uniqueStrings。
+//  - 原文件依赖 @cdf-know/normalization-core/string-normalization 的 uniqueStrings。
 //    改用 cross-wms 的 ../infra/string-normalization.js。
 //  - 原文件依赖 ../infra/openclaw-root.js 的 resolveOpenClawPackageRootSync。
 //    cross-wms 尚未移植该模块。这里内联降级实现：始终返回 undefined（降级模式
@@ -24,6 +24,11 @@ import path from "node:path";
 import { normalizeOptionalLowercaseString } from "../infra/string-coerce.js";
 import { uniqueStrings } from "../infra/string-normalization.js";
 import { isPathInside } from "../infra/path-safety.js";
+import { fileURLToPath } from "node:url";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // 内联降级：../infra/openclaw-root.js —— resolveOpenClawPackageRootSync

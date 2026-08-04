@@ -1,5 +1,5 @@
 import { retireSessionMcpRuntime } from "../../agents/agent-bundle-mcp-tools.js";
-import { isCronSessionKey } from "../../sessions/session-key.js";
+import { isCronSessionKey } from "../../routing/session-key.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import type { CronJob } from "../types.js";
 
@@ -24,14 +24,8 @@ export async function cleanupCronRunSessionAfterRun(params: {
     return false;
   }
   try {
-    const gatewayRuntime = (await loadGatewayCallRuntime()) as {
-      callGateway: (params: {
-        method: string;
-        params: Record<string, unknown>;
-        timeoutMs: number;
-      }) => Promise<unknown>;
-    };
-    await gatewayRuntime.callGateway({
+    const { callGateway } = await loadGatewayCallRuntime();
+    await callGateway({
       method: "sessions.delete",
       params: {
         key: params.agentSessionKey,

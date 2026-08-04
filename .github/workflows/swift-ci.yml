@@ -17,6 +17,7 @@ jobs:
   test:
     name: Swift Test (${{ matrix.swift }})
     runs-on: macos-14
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false
@@ -63,6 +64,7 @@ jobs:
   lint:
     name: SwiftLint
     runs-on: macos-14
+    timeout-minutes: 30
     if: false
 
     steps:
@@ -78,6 +80,7 @@ jobs:
   build-release:
     name: Build Release
     runs-on: macos-14
+    timeout-minutes: 30
     needs: test
 
     steps:

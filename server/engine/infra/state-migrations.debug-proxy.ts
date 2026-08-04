@@ -1,24 +1,14 @@
-// Debug proxy state migration 将随附的 capture sidecar 导入共享 SQLite state。
-// 降级：
-//  - runOpenClawStateWriteTransaction 来自 _runtime-stubs（抛出 "not implemented"）
-//  - resolveOpenClawStateSqlitePath 内联降级实现（返回默认 state 路径）
+// Debug proxy state migration imports the shipped capture sidecar into shared SQLite state.
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { gunzipSync } from "node:zlib";
-import { runOpenClawStateWriteTransaction } from "./_runtime-stubs.js";
+import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 
 const DEBUG_PROXY_SQLITE_SIDECAR_SUFFIXES = ["", "-shm", "-wal", "-journal"] as const;
-
-/** 降级版 resolveOpenClawStateSqlitePath：返回默认 state 目录下的 sqlite 路径。 */
-function resolveOpenClawStateSqlitePath(env: NodeJS.ProcessEnv): string {
-  const stateDir = env.OPENCLAW_STATE_DIR
-    ? path.resolve(env.OPENCLAW_STATE_DIR)
-    : path.join(env.HOME ?? env.USERPROFILE ?? process.cwd(), ".openclaw");
-  return path.join(stateDir, "state.sqlite");
-}
 
 export type LegacyDebugProxyCaptureDetection = {
   sourcePath: string;
@@ -413,13 +403,12 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
   try {
     runOpenClawStateWriteTransaction(
       ({ db }) => {
-        const sqliteDb = db as DatabaseSync;
-        const selectBlob = sqliteDb.prepare(
+        const selectBlob = db.prepare(
           `SELECT encoding, size_bytes AS sizeBytes, sha256, data
            FROM capture_blobs
            WHERE blob_id = ?`,
         );
-        const insertBlob = sqliteDb.prepare(
+        const insertBlob = db.prepare(
           `INSERT INTO capture_blobs (
             blob_id, content_type, encoding, size_bytes, sha256, data, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -451,7 +440,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
           );
         }
 
-        const selectSession = sqliteDb.prepare(
+        const selectSession = db.prepare(
           `SELECT
             started_at AS startedAt,
             ended_at AS endedAt,
@@ -462,7 +451,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
            FROM capture_sessions
            WHERE id = ?`,
         );
-        const insertSession = sqliteDb.prepare(
+        const insertSession = db.prepare(
           `INSERT INTO capture_sessions (
             id, started_at, ended_at, mode, source_scope, source_process, proxy_url
           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -495,7 +484,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
           insertSession.run(...values);
         }
 
-        const existingEventCount = sqliteDb.prepare(
+        const existingEventCount = db.prepare(
           `SELECT COUNT(*) AS count
            FROM capture_events
            WHERE session_id IS ? AND ts IS ? AND source_scope IS ? AND source_process IS ?
@@ -505,7 +494,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
              AND data_sha256 IS ? AND error_text IS ? AND meta_json IS ?
           `,
         );
-        const insertEvent = sqliteDb.prepare(
+        const insertEvent = db.prepare(
           `INSERT INTO capture_events (
             session_id, ts, source_scope, source_process, protocol, direction, kind, flow_id,
             method, host, path, status, close_code, content_type, headers_json, data_text,

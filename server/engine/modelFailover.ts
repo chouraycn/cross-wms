@@ -91,7 +91,7 @@
  *    - 两者是分层关系：先在模型内切 Key，Key 都失败后再切模型
  */
 
-import type { ModelConfig, ModelCapability } from '../modelsStore.js';
+import type { ModelConfig, ModelCapability } from '../../shared/types/models.js';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 import * as path from 'path';
@@ -894,3 +894,11 @@ export function resetModelHealthById(modelId: string): void {
     logger.warn(`[ModelFailover] 清理模型 ${modelId} 健康状态失败:`, String(e));
   }
 }
+
+// Register hooks into the leaf registry to break the
+// modelFailover.ts ↔ modelsStore.ts cycle (#1). modelsStore calls these via the
+// registry instead of dynamically importing modelFailover; the remaining edge
+// (modelFailover → modelsStore) is a one-way dynamic import. modelFailover loads
+// at startup (statically imported by aiClient/reactExecutor/routes).
+import { registerModelFailoverHooks } from './modelFailoverHooks.js';
+registerModelFailoverHooks({ invalidateFailoverModelsCache, resetModelHealthById });

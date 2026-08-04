@@ -2,7 +2,7 @@
 /** Doctor repair for HEARTBEAT.md files that accidentally contain docs template wrappers. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { resolveWorkspaceTemplateDir } from "@openclaw-src/agents/workspace-templates.js";
 import { DEFAULT_HEARTBEAT_FILENAME } from "@openclaw-src/agents/workspace.js";

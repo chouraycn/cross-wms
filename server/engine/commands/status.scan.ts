@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Top-level status scan entrypoint.
 // Chooses fast JSON policy or full human scan and returns one normalized scan result.
 
@@ -6,10 +5,10 @@ import { withProgress } from "@openclaw-src/cli/progress.js";
 import { hasConfiguredChannelsForReadOnlyScope } from "@openclaw-src/plugins/channel-plugin-ids.js";
 import { buildPluginCompatibilitySnapshotNotices } from "@openclaw-src/plugins/status.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
-import { executeStatusScanFromOverview } from "./status.scan-execute.ts";
-import { resolveStatusMemoryStatusSnapshot } from "./status.scan-memory.ts";
-import { collectStatusScanOverview } from "./status.scan-overview.ts";
-import type { StatusScanResult } from "./status.scan-result.ts";
+import { executeStatusScanFromOverview } from "./status.scan-execute";
+import { resolveStatusMemoryStatusSnapshot } from "./status.scan-memory";
+import { collectStatusScanOverview } from "./status.scan-overview";
+import type { StatusScanResult } from "./status.scan-result";
 import { scanStatusJsonWithPolicy } from "./status.scan.fast-json.js";
 
 /** Runs the status scan for text or JSON command modes. */

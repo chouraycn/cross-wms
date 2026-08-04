@@ -6,7 +6,7 @@ import {
   getSessionFilePath,
   getArchivedSessionFilePath,
   getTempFilePath,
-  isValidSessionId,
+  validateSessionId,
   getSessionIdFromFilePath,
 } from './paths.js';
 import type { SessionFileInfo } from './types.js';
@@ -15,19 +15,19 @@ const READ_LOCK_TIMEOUT_MS = 5000;
 const WRITE_LOCK_TIMEOUT_MS = 10000;
 
 export function sessionFileExists(baseDir: string, sessionId: string): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
   const filePath = getSessionFilePath(baseDir, sessionId);
   return fs.existsSync(filePath);
 }
 
 export function archivedSessionFileExists(archivedDir: string, sessionId: string): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
   const filePath = getArchivedSessionFilePath(archivedDir, sessionId);
   return fs.existsSync(filePath);
 }
 
 export function readSessionFile(baseDir: string, sessionId: string): string | null {
-  if (!isValidSessionId(sessionId)) return null;
+  if (!validateSessionId(sessionId)) return null;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
   try {
@@ -40,7 +40,7 @@ export function readSessionFile(baseDir: string, sessionId: string): string | nu
 }
 
 export function readArchivedSessionFile(archivedDir: string, sessionId: string): string | null {
-  if (!isValidSessionId(sessionId)) return null;
+  if (!validateSessionId(sessionId)) return null;
 
   const filePath = getArchivedSessionFilePath(archivedDir, sessionId);
   try {
@@ -58,7 +58,7 @@ export async function writeSessionFileAtomic(
   content: string,
   enableLocking: boolean = true
 ): Promise<boolean> {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
   const tempPath = getTempFilePath(filePath, sessionId);
@@ -104,7 +104,7 @@ export async function appendToSessionFile(
   line: string,
   enableLocking: boolean = true
 ): Promise<boolean> {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
 
@@ -141,7 +141,7 @@ export async function appendToSessionFile(
 }
 
 export function deleteSessionFile(baseDir: string, sessionId: string): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
   try {
@@ -157,7 +157,7 @@ export function deleteSessionFile(baseDir: string, sessionId: string): boolean {
 }
 
 export function deleteArchivedSessionFile(archivedDir: string, sessionId: string): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getArchivedSessionFilePath(archivedDir, sessionId);
   try {
@@ -177,7 +177,7 @@ export function moveSessionToArchive(
   archivedDir: string,
   sessionId: string
 ): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const srcPath = getSessionFilePath(baseDir, sessionId);
   const destPath = getArchivedSessionFilePath(archivedDir, sessionId);
@@ -203,7 +203,7 @@ export function moveSessionFromArchive(
   archivedDir: string,
   sessionId: string
 ): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const srcPath = getArchivedSessionFilePath(archivedDir, sessionId);
   const destPath = getSessionFilePath(baseDir, sessionId);
@@ -229,7 +229,7 @@ export function getSessionFileInfo(
   sessionId: string,
   isArchived: boolean = false
 ): SessionFileInfo | null {
-  if (!isValidSessionId(sessionId)) return null;
+  if (!validateSessionId(sessionId)) return null;
 
   const dir = isArchived
     ? path.dirname(getArchivedSessionFilePath(baseDir, sessionId))
@@ -286,7 +286,7 @@ export function getSessionFileSize(baseDir: string, sessionId: string): number {
 }
 
 export function readSessionFirstLine(baseDir: string, sessionId: string): string | null {
-  if (!isValidSessionId(sessionId)) return null;
+  if (!validateSessionId(sessionId)) return null;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
   try {
@@ -316,7 +316,7 @@ export async function rewriteSessionFirstLine(
   newFirstLine: string,
   enableLocking: boolean = true
 ): Promise<boolean> {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
 
@@ -354,4 +354,9 @@ export async function rewriteSessionFirstLine(
   }
 
   return rewriteFn();
+}
+
+// Stub export for session file resolution referenced by consumer modules.
+export async function resolveAndPersistSessionFile(_params?: unknown): Promise<string> {
+  return "";
 }

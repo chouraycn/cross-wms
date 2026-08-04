@@ -96,7 +96,7 @@ async function explainShellPolicySegments(params: {
 }): Promise<ExecCommandSegment[]> {
   try {
     const explanation = await explainShellCommand(params.command);
-    const steps = [...explanation.topLevelCommands, ...explanation.nestedCommands];
+    const steps = [...(explanation as any).topLevelCommands, ...(explanation as any).nestedCommands];
     return steps.map((step) => commandStepToPolicySegment(step, params));
   } catch {
     return [];

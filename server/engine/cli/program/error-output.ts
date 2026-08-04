@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Friendly parse-error formatter for Commander errors and root CLI recovery hints.
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";

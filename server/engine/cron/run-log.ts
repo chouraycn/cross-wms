@@ -1,312 +1,394 @@
-/**
- * Run Log - cron 运行日志记录
- *
- * 对齐 openclaw/src/cron/run-log.ts 的职责：记录每次 cron 运行的开始、成功、失败，
- * 并提供历史查询能力。cdf-know 采用进程内内存存储实现，按 jobId 分桶并保留最近
- * N 条记录，避免长跑实例无界增长。
- */
+/** Public cron run-log API with serialized writes and paged reads. */
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+  normalizeStringifiedOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { uniqueValues } from "@cdf-know/normalization-core/string-normalization";
+import { parseByteSize } from "../cli/parse-bytes.js";
+import type { CronConfig } from "../config/types.cron.js";
+import {
+  openOpenClawStateDatabase,
+  runOpenClawStateWriteTransaction,
+} from "../state/openclaw-state-db.js";
+import type { CronRunLogEntry } from "./run-log-types.js";
+import {
+  countCronRunLogRows,
+  insertCronRunLogEntry,
+  parseStoredRunLogEntry,
+  pruneCronRunLogRows,
+  readCronRunLogRows,
+  readCronRunLogRowsPage,
+} from "./run-log/sqlite-store.js";
+import { cronStoreKey } from "./store/key.js";
+import type { CronDeliveryStatus, CronRunStatus } from "./types.js";
 
-import { logger } from "../../logger.js";
+export type { CronRunLogEntry } from "./run-log-types.js";
 
-/** cron 运行状态 */
-export type CronRunStatus = "running" | "ok" | "error" | "skipped";
+type CronRunLogSortDir = "asc" | "desc";
+type CronRunLogStatusFilter = "all" | "ok" | "error" | "skipped";
 
-/** 单次 cron 运行日志条目 */
-export interface CronRunLogEntry {
-  /** 运行唯一 ID */
-  runId: string;
-  /** 所属 cron 任务 ID */
-  jobId: string;
-  /** 任务名（可选，便于人读） */
-  jobName?: string;
-  /** 开始时间（毫秒） */
-  startTime: number;
-  /** 结束时间（毫秒） */
-  endTime?: number;
-  /** 运行耗时（毫秒） */
-  durationMs?: number;
-  /** 运行状态 */
-  status: CronRunStatus;
-  /** 错误信息 */
-  error?: string;
-  /** 结构化错误原因（provider 分类等） */
-  errorReason?: string;
-  /** 摘要（成功/失败概要） */
-  summary?: string;
-  /** 投递状态 */
-  deliveryStatus?: "delivered" | "not-delivered" | "unknown" | "not-requested";
-}
-
-/** 每个 jobId 最多保留的条目数 */
-const DEFAULT_MAX_ENTRIES_PER_JOB = 2000;
-/** 全局最多保留的条目数 */
-const DEFAULT_MAX_TOTAL_ENTRIES = 50000;
-
-interface RunLogStoreOptions {
-  maxEntriesPerJob?: number;
-  maxTotalEntries?: number;
-}
-
-/** 按 jobId 分桶的运行日志 */
-const runsByJob = new Map<string, CronRunLogEntry[]>();
-/** runId → 条目 索引，便于按 runId 更新 */
-const runsById = new Map<string, CronRunLogEntry>();
-/** 全局时间序条目（按 startTime 升序） */
-const allRuns: CronRunLogEntry[] = [];
-
-/** 当前生效的存储上限配置 */
-let storeOptions: Required<RunLogStoreOptions> = {
-  maxEntriesPerJob: DEFAULT_MAX_ENTRIES_PER_JOB,
-  maxTotalEntries: DEFAULT_MAX_TOTAL_ENTRIES,
+type ReadCronRunLogPageOptions = {
+  limit?: number;
+  offset?: number;
+  jobId?: string;
+  runId?: string;
+  status?: CronRunLogStatusFilter;
+  statuses?: CronRunStatus[];
+  deliveryStatus?: CronDeliveryStatus;
+  deliveryStatuses?: CronDeliveryStatus[];
+  query?: string;
+  sortDir?: CronRunLogSortDir;
 };
 
-/** 配置运行日志存储上限（用于测试或自定义部署） */
-export function configureCronRunLogStore(options: RunLogStoreOptions): void {
-  storeOptions = {
-    maxEntriesPerJob: Math.max(1, Math.floor(options.maxEntriesPerJob ?? DEFAULT_MAX_ENTRIES_PER_JOB)),
-    maxTotalEntries: Math.max(1, Math.floor(options.maxTotalEntries ?? DEFAULT_MAX_TOTAL_ENTRIES)),
-  };
-}
-
-/** 清空运行日志（用于测试） */
-export function clearCronRunLogForTests(): void {
-  runsByJob.clear();
-  runsById.clear();
-  allRuns.length = 0;
-}
-
-/** 修剪单个 jobId 桶，保留最新的 N 条 */
-function trimJobBucket(jobId: string, limit: number): void {
-  const bucket = runsByJob.get(jobId);
-  if (!bucket || bucket.length <= limit) {
-    return;
-  }
-  // bucket 按 startTime 升序，丢弃最旧的
-  const removed = bucket.splice(0, bucket.length - limit);
-  for (const entry of removed) {
-    runsById.delete(entry.runId);
-  }
-}
-
-/** 修剪全局时间序，保留最新的 N 条 */
-function trimGlobal(limit: number): void {
-  if (allRuns.length <= limit) {
-    return;
-  }
-  const removed = allRuns.splice(0, allRuns.length - limit);
-  for (const entry of removed) {
-    runsById.delete(entry.runId);
-    const bucket = runsByJob.get(entry.jobId);
-    if (bucket) {
-      const idx = bucket.indexOf(entry);
-      if (idx >= 0) {
-        bucket.splice(idx, 1);
-      }
-      if (bucket.length === 0) {
-        runsByJob.delete(entry.jobId);
-      }
-    }
-  }
-}
-
-/**
- * 记录（或更新）一次 cron 运行
- *
- * 行为：
- * - 若 runId 已存在，则合并更新（用于先记“running”再回填“ok/error”的场景）
- * - 新增时按 startTime 插入到对应桶与全局列表，并执行上限修剪
- */
-export function recordCronRun(entry: CronRunLogEntry): CronRunLogEntry {
-  if (!entry.runId || !entry.jobId) {
-    throw new Error("invalid cron run log entry: runId and jobId are required");
-  }
-
-  const existing = runsById.get(entry.runId);
-  if (existing) {
-    // 合并更新：以新值覆盖旧值，保留首次记录的 startTime（若未提供新值）
-    const merged: CronRunLogEntry = {
-      ...existing,
-      ...entry,
-      startTime: entry.startTime ?? existing.startTime,
-    };
-    runsById.set(entry.runId, merged);
-    // 同步桶内引用
-    const bucket = runsByJob.get(merged.jobId);
-    if (bucket) {
-      const idx = bucket.findIndex((item) => item.runId === merged.runId);
-      if (idx >= 0) {
-        bucket[idx] = merged;
-      } else {
-        // jobId 变更的极端情况：补到新桶
-        bucket.push(merged);
-      }
-    }
-    // 同步全局列表引用
-    const allIdx = allRuns.findIndex((item) => item.runId === merged.runId);
-    if (allIdx >= 0) {
-      allRuns[allIdx] = merged;
-    }
-    return merged;
-  }
-
-  const normalized: CronRunLogEntry = { ...entry };
-  runsById.set(normalized.runId, normalized);
-
-  let bucket = runsByJob.get(normalized.jobId);
-  if (!bucket) {
-    bucket = [];
-    runsByJob.set(normalized.jobId, bucket);
-  }
-  bucket.push(normalized);
-  allRuns.push(normalized);
-
-  trimJobBucket(normalized.jobId, storeOptions.maxEntriesPerJob);
-  trimGlobal(storeOptions.maxTotalEntries);
-
-  return normalized;
-}
-
-/** 标记一次运行成功（便捷方法） */
-export function recordCronRunSuccess(
-  runId: string,
-  endTime: number,
-  summary?: string,
-): CronRunLogEntry | undefined {
-  const existing = runsById.get(runId);
-  if (!existing) {
-    logger.warn(`[cron-run-log] success update missed runId=${runId}`);
-    return undefined;
-  }
-  return recordCronRun({
-    ...existing,
-    status: "ok",
-    endTime,
-    durationMs: endTime - existing.startTime,
-    summary,
-  });
-}
-
-/** 标记一次运行失败（便捷方法） */
-export function recordCronRunFailure(
-  runId: string,
-  endTime: number,
-  error: string,
-  errorReason?: string,
-): CronRunLogEntry | undefined {
-  const existing = runsById.get(runId);
-  if (!existing) {
-    logger.warn(`[cron-run-log] failure update missed runId=${runId}`);
-    return undefined;
-  }
-  return recordCronRun({
-    ...existing,
-    status: "error",
-    endTime,
-    durationMs: endTime - existing.startTime,
-    error,
-    errorReason,
-  });
-}
-
-/** 历史查询选项 */
-export interface GetCronRunHistoryOptions {
-  /** 限定 jobId */
-  jobId?: string;
-  /** 限定 runId */
-  runId?: string;
-  /** 限定状态 */
-  status?: CronRunStatus | "all";
-  /** 限定状态集合 */
-  statuses?: readonly CronRunStatus[];
-  /** 文本模糊匹配（匹配 summary / error / jobName） */
-  query?: string;
-  /** 返回条数上限，默认 50，上限 200 */
-  limit?: number;
-  /** 偏移量 */
-  offset?: number;
-  /** 排序方向，默认 desc（最新优先） */
-  sortDir?: "asc" | "desc";
-}
-
-/** 分页结果 */
-export interface CronRunHistoryPage {
+type CronRunLogPageResult = {
   entries: CronRunLogEntry[];
   total: number;
   offset: number;
   limit: number;
   hasMore: boolean;
   nextOffset: number | null;
+};
+
+type ReadCronRunLogAllPageOptions = Omit<ReadCronRunLogPageOptions, "jobId"> & {
+  storePath: string;
+  jobNameById?: Record<string, string>;
+};
+
+type AppendCronRunLogOptions = {
+  keepLines?: number | false;
+};
+
+const INVALID_CRON_RUN_LOG_JOB_ID_MESSAGE = "invalid cron run log job id";
+
+function assertSafeCronRunLogJobId(jobId: string): string {
+  const trimmed = jobId.trim();
+  if (!trimmed) {
+    throw new Error(INVALID_CRON_RUN_LOG_JOB_ID_MESSAGE);
+  }
+  if (trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("\0")) {
+    throw new Error(INVALID_CRON_RUN_LOG_JOB_ID_MESSAGE);
+  }
+  return trimmed;
 }
 
-function matchesStatus(entry: CronRunLogEntry, statuses: CronRunStatus[] | null): boolean {
-  if (!statuses || statuses.length === 0) {
-    return true;
-  }
-  return entry.status !== undefined && statuses.includes(entry.status);
+/** Returns whether an error came from cron run-log job id validation. */
+export function isInvalidCronRunLogJobIdError(err: unknown): boolean {
+  return err instanceof Error && err.message === INVALID_CRON_RUN_LOG_JOB_ID_MESSAGE;
 }
 
-function matchesQuery(entry: CronRunLogEntry, query: string): boolean {
-  if (!query) {
-    return true;
+const writesByTarget = new Map<string, Promise<void>>();
+
+/** Legacy byte cap kept for config parsing compatibility with older file-backed run logs. */
+const DEFAULT_CRON_RUN_LOG_MAX_BYTES = 2_000_000;
+/** Default SQLite row retention per cron job when no explicit keepLines value is configured. */
+const DEFAULT_CRON_RUN_LOG_KEEP_LINES = 2_000;
+
+/** Resolves configured run-log pruning limits while preserving legacy maxBytes parsing. */
+export function resolveCronRunLogPruneOptions(cfg?: CronConfig["runLog"]): {
+  maxBytes: number;
+  keepLines: number;
+} {
+  let maxBytes = DEFAULT_CRON_RUN_LOG_MAX_BYTES;
+  if (cfg?.maxBytes !== undefined) {
+    try {
+      const configuredMaxBytes = normalizeStringifiedOptionalString(cfg.maxBytes);
+      if (configuredMaxBytes) {
+        maxBytes = parseByteSize(configuredMaxBytes, { defaultUnit: "b" });
+      }
+    } catch {
+      maxBytes = DEFAULT_CRON_RUN_LOG_MAX_BYTES;
+    }
   }
-  const haystack = [entry.summary ?? "", entry.error ?? "", entry.errorReason ?? "", entry.jobName ?? "", entry.jobId]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query);
+
+  let keepLines = DEFAULT_CRON_RUN_LOG_KEEP_LINES;
+  if (typeof cfg?.keepLines === "number" && Number.isFinite(cfg.keepLines) && cfg.keepLines > 0) {
+    keepLines = Math.floor(cfg.keepLines);
+  }
+
+  // `maxBytes` remains accepted for older file-backed config. SQLite runtime
+  // pruning uses row counts (`keepLines`) only.
+  return { maxBytes, keepLines };
 }
 
-/**
- * 查询 cron 运行历史
- * 不传 jobId 时跨所有任务查询
- */
-export function getCronRunHistory(options: GetCronRunHistoryOptions = {}): CronRunLogEntry[] {
-  const page = getCronRunHistoryPage(options);
-  return page.entries;
+/** Exposes the in-process async write queue size for run-log concurrency tests. */
+export function getPendingCronRunLogWriteCountForTests() {
+  return writesByTarget.size;
 }
 
-/** 分页查询 cron 运行历史（带 total / hasMore 元信息） */
-export function getCronRunHistoryPage(options: GetCronRunHistoryOptions = {}): CronRunHistoryPage {
-  const limit = Math.max(1, Math.min(200, Math.floor(options.limit ?? 50)));
-  const offset = Math.max(0, Math.floor(options.offset ?? 0));
-  const sortDir: "asc" | "desc" = options.sortDir === "asc" ? "asc" : "desc";
+function cronRunLogWriteKey(storePath: string, jobId?: string): string {
+  return `${cronStoreKey(storePath)}\0${jobId ?? ""}`;
+}
 
-  // 解析状态过滤
-  let statuses: CronRunStatus[] | null = null;
-  if (options.statuses && options.statuses.length > 0) {
-    statuses = [...options.statuses];
-  } else if (options.status && options.status !== "all") {
-    statuses = [options.status];
+async function drainPendingWrite(storePath: string, jobId?: string): Promise<void> {
+  if (jobId) {
+    await writesByTarget.get(cronRunLogWriteKey(storePath, jobId))?.catch(() => undefined);
+    return;
   }
+  const storePrefix = `${cronStoreKey(storePath)}\0`;
+  const pending = [...writesByTarget.entries()]
+    .filter(([key]) => key.startsWith(storePrefix))
+    .map(([, write]) => write.catch(() => undefined));
+  await Promise.all(pending);
+}
 
-  const query = (options.query ?? "").trim().toLowerCase();
-
-  // 选定候选集合
-  let candidates: CronRunLogEntry[];
-  if (options.jobId) {
-    candidates = runsByJob.get(options.jobId) ?? [];
-  } else {
-    candidates = allRuns;
+/** Appends a cron run-log row and serializes writes per store/job before pruning old rows. */
+export async function appendCronRunLog(params: {
+  storePath: string;
+  entry: CronRunLogEntry;
+  opts?: AppendCronRunLogOptions;
+}) {
+  // Normalize the jobId on write the same way reads do (assertSafeCronRunLogJobId
+  // trims + validates). Otherwise a jobId with surrounding whitespace is stored
+  // verbatim while reads trim before querying — the row is written but never read
+  // back — and a jobId containing "/" or "\\" is rejected on read yet silently
+  // accepted on write. Normalizing here keeps the write/read roundtrip symmetric.
+  const normalizedJobId = assertSafeCronRunLogJobId(params.entry.jobId);
+  const entry =
+    normalizedJobId === params.entry.jobId
+      ? params.entry
+      : { ...params.entry, jobId: normalizedJobId };
+  const storeKey = cronStoreKey(params.storePath);
+  const writeKey = cronRunLogWriteKey(params.storePath, entry.jobId);
+  const prev = writesByTarget.get(writeKey) ?? Promise.resolve();
+  // Keep writes for the same store/job ordered so prune-by-count cannot race a later insert.
+  const next = prev
+    .catch(() => undefined)
+    .then(async () => {
+      runOpenClawStateWriteTransaction(({ db }) => {
+        insertCronRunLogEntry(db, storeKey, entry);
+        if (params.opts?.keepLines !== false) {
+          pruneCronRunLogRows(
+            db,
+            storeKey,
+            entry.jobId,
+            params.opts?.keepLines ?? DEFAULT_CRON_RUN_LOG_KEEP_LINES,
+          );
+        }
+      });
+    });
+  writesByTarget.set(writeKey, next);
+  try {
+    await next;
+  } finally {
+    if (writesByTarget.get(writeKey) === next) {
+      writesByTarget.delete(writeKey);
+    }
   }
+}
 
-  // 过滤
-  const filtered = candidates.filter(
-    (entry) =>
-      (!options.runId || entry.runId === options.runId) &&
-      matchesStatus(entry, statuses) &&
-      matchesQuery(entry, query),
-  );
+/** Reads recent run-log entries synchronously for startup/task reconciliation paths. */
+export function readCronRunLogEntriesSync(params: {
+  storePath: string;
+  jobId?: string;
+  limit?: number;
+}): CronRunLogEntry[] {
+  const limit = Math.max(1, Math.min(5000, Math.floor(params.limit ?? 200)));
+  const storeKey = cronStoreKey(params.storePath);
+  const jobId = params.jobId ? assertSafeCronRunLogJobId(params.jobId) : undefined;
+  const rows = readCronRunLogRows(openOpenClawStateDatabase().db, storeKey, jobId);
+  return rows
+    .map(parseStoredRunLogEntry)
+    .filter((entry): entry is CronRunLogEntry => entry !== null)
+    .slice(-limit);
+}
 
-  // 排序（拷贝后排序，避免污染内部引用）
-  const sorted = filtered.slice().sort((a, b) => {
-    const diff = a.startTime - b.startTime;
-    return sortDir === "asc" ? diff : -diff;
+function normalizeRunStatusFilter(status?: string): CronRunLogStatusFilter {
+  if (status === "ok" || status === "error" || status === "skipped" || status === "all") {
+    return status;
+  }
+  return "all";
+}
+
+function normalizeRunStatuses(opts?: {
+  statuses?: CronRunStatus[];
+  status?: CronRunLogStatusFilter;
+}): CronRunStatus[] | null {
+  if (Array.isArray(opts?.statuses) && opts.statuses.length > 0) {
+    const filtered = opts.statuses.filter(
+      (status): status is CronRunStatus =>
+        status === "ok" || status === "error" || status === "skipped",
+    );
+    if (filtered.length > 0) {
+      return uniqueValues(filtered);
+    }
+  }
+  const status = normalizeRunStatusFilter(opts?.status);
+  if (status === "all") {
+    return null;
+  }
+  return [status];
+}
+
+function normalizeDeliveryStatuses(opts?: {
+  deliveryStatuses?: CronDeliveryStatus[];
+  deliveryStatus?: CronDeliveryStatus;
+}): CronDeliveryStatus[] | null {
+  if (Array.isArray(opts?.deliveryStatuses) && opts.deliveryStatuses.length > 0) {
+    const filtered = opts.deliveryStatuses.filter(
+      (status): status is CronDeliveryStatus =>
+        status === "delivered" ||
+        status === "not-delivered" ||
+        status === "unknown" ||
+        status === "not-requested",
+    );
+    if (filtered.length > 0) {
+      return uniqueValues(filtered);
+    }
+  }
+  if (
+    opts?.deliveryStatus === "delivered" ||
+    opts?.deliveryStatus === "not-delivered" ||
+    opts?.deliveryStatus === "unknown" ||
+    opts?.deliveryStatus === "not-requested"
+  ) {
+    return [opts.deliveryStatus];
+  }
+  return null;
+}
+
+function runIdMatches(entry: CronRunLogEntry, runId?: string): boolean {
+  const normalized = normalizeOptionalString(runId);
+  return !normalized || entry.runId === normalized;
+}
+
+function filterRunLogEntries(
+  entries: CronRunLogEntry[],
+  opts: {
+    runId?: string;
+    statuses: CronRunStatus[] | null;
+    deliveryStatuses: CronDeliveryStatus[] | null;
+    query: string;
+    queryTextForEntry: (entry: CronRunLogEntry) => string;
+  },
+): CronRunLogEntry[] {
+  return entries.filter((entry) => {
+    if (!runIdMatches(entry, opts.runId)) {
+      return false;
+    }
+    if (opts.statuses && (!entry.status || !opts.statuses.includes(entry.status))) {
+      return false;
+    }
+    if (opts.deliveryStatuses) {
+      const deliveryStatus = entry.deliveryStatus ?? "not-requested";
+      if (!opts.deliveryStatuses.includes(deliveryStatus)) {
+        return false;
+      }
+    }
+    if (!opts.query) {
+      return true;
+    }
+    return normalizeLowercaseStringOrEmpty(opts.queryTextForEntry(entry)).includes(opts.query);
   });
+}
 
+/** Reads a bounded, filterable run-log page for CLI and UI list views. */
+export async function readCronRunLogEntriesPage(
+  opts: ReadCronRunLogPageOptions & { storePath: string; jobNameById?: Record<string, string> },
+): Promise<CronRunLogPageResult> {
+  const jobId = opts.jobId ? assertSafeCronRunLogJobId(opts.jobId) : undefined;
+  await drainPendingWrite(opts.storePath, jobId);
+  const limit = Math.max(1, Math.min(200, Math.floor(opts.limit ?? 50)));
+  const statuses = normalizeRunStatuses(opts);
+  const deliveryStatuses = normalizeDeliveryStatuses(opts);
+  const query = normalizeLowercaseStringOrEmpty(opts.query);
+  const sortDir: CronRunLogSortDir = opts.sortDir === "asc" ? "asc" : "desc";
+  const db = openOpenClawStateDatabase().db;
+  const storeKey = cronStoreKey(opts.storePath);
+  const offset = Math.max(0, Math.floor(opts.offset ?? 0));
+
+  if (!query) {
+    // Without a text query SQLite can page directly; query mode filters in JS
+    // because diagnostics and derived job names are not all indexed columns.
+    const total = countCronRunLogRows({
+      db,
+      storeKey,
+      jobId,
+      statuses,
+      deliveryStatuses,
+      runId: opts.runId,
+    });
+    const boundedOffset = Math.min(total, offset);
+    const entries = readCronRunLogRowsPage({
+      db,
+      storeKey,
+      jobId,
+      statuses,
+      deliveryStatuses,
+      runId: opts.runId,
+      sortDir,
+      offset: boundedOffset,
+      limit,
+    })
+      .map(parseStoredRunLogEntry)
+      .filter((entry): entry is CronRunLogEntry => entry !== null);
+    if (opts.jobNameById) {
+      for (const entry of entries) {
+        const jobName = opts.jobNameById[entry.jobId];
+        if (jobName) {
+          (entry as CronRunLogEntry & { jobName?: string }).jobName = jobName;
+        }
+      }
+    }
+    const nextOffset = boundedOffset + entries.length;
+    return {
+      entries,
+      total,
+      offset: boundedOffset,
+      limit,
+      hasMore: nextOffset < total,
+      nextOffset: nextOffset < total ? nextOffset : null,
+    };
+  }
+
+  const all = readCronRunLogRowsPage({
+    db,
+    storeKey,
+    jobId,
+    statuses,
+    deliveryStatuses,
+    runId: opts.runId,
+    sortDir,
+  })
+    .map(parseStoredRunLogEntry)
+    .filter((entry): entry is CronRunLogEntry => entry !== null);
+  const filtered = filterRunLogEntries(all, {
+    runId: opts.runId,
+    statuses: null,
+    deliveryStatuses: null,
+    query,
+    queryTextForEntry: (entry) => {
+      const jobName = opts.jobNameById?.[entry.jobId] ?? "";
+      return [
+        entry.summary ?? "",
+        entry.error ?? "",
+        entry.errorReason ?? "",
+        entry.diagnostics?.summary ?? "",
+        ...(entry.diagnostics?.entries ?? []).map((diagnostic) => diagnostic.message),
+        entry.jobId,
+        jobName,
+        entry.delivery?.intended?.channel ?? "",
+        entry.delivery?.resolved?.channel ?? "",
+        ...(entry.delivery?.messageToolSentTo ?? []).map((target) => target.channel),
+      ].join(" ");
+    },
+  });
+  const sorted =
+    sortDir === "asc"
+      ? filtered.toSorted((a, b) => a.ts - b.ts)
+      : filtered.toSorted((a, b) => b.ts - a.ts);
   const total = sorted.length;
   const boundedOffset = Math.min(total, offset);
   const entries = sorted.slice(boundedOffset, boundedOffset + limit);
+  if (opts.jobNameById) {
+    for (const entry of entries) {
+      const jobName = opts.jobNameById[entry.jobId];
+      if (jobName) {
+        (entry as CronRunLogEntry & { jobName?: string }).jobName = jobName;
+      }
+    }
+  }
   const nextOffset = boundedOffset + entries.length;
-
   return {
     entries,
     total,
@@ -317,12 +399,28 @@ export function getCronRunHistoryPage(options: GetCronRunHistoryOptions = {}): C
   };
 }
 
-/** 获取单个 runId 的日志条目 */
-export function getCronRunEntry(runId: string): CronRunLogEntry | undefined {
-  return runsById.get(runId);
+/** Reads a run-log page across all jobs for a specific cron store. */
+export async function readCronRunLogEntriesPageAll(
+  opts: ReadCronRunLogAllPageOptions,
+): Promise<CronRunLogPageResult> {
+  return readCronRunLogEntriesPage(opts);
 }
 
-/** 获取当前日志存储的条目总数（用于测试） */
-export function getCronRunLogSizeForTests(): number {
-  return allRuns.length;
+export type GetCronRunHistoryOptions = any;
+export type CronRunHistoryPage = any;
+
+export function recordCronRun(...args: any[]): any {
+  throw new Error("recordCronRun: 需要从 OpenClaw 移植此函数实现。路径: server/engine/cron/run-log.ts");
+}
+
+export function recordCronRunSuccess(...args: any[]): any {
+  throw new Error("recordCronRunSuccess: 需要从 OpenClaw 移植此函数实现。路径: server/engine/cron/run-log.ts");
+}
+
+export function recordCronRunFailure(...args: any[]): any {
+  throw new Error("recordCronRunFailure: 需要从 OpenClaw 移植此函数实现。路径: server/engine/cron/run-log.ts");
+}
+
+export function getCronRunHistoryPage(...args: any[]): any {
+  throw new Error("getCronRunHistoryPage: 需要从 OpenClaw 移植此函数实现。路径: server/engine/cron/run-log.ts");
 }

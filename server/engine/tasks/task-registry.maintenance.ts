@@ -5,7 +5,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   listTasksForFlowId,

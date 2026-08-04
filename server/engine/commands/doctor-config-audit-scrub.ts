@@ -2,7 +2,7 @@
 /** Doctor repair for redacting historical config audit log argv records. */
 import fs from "node:fs/promises";
 import os from "node:os";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { scrubConfigAuditLog } from "@openclaw-src/config/io.audit.js";
 
 const NOTE_TITLE = "Config audit";

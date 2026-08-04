@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway startup checks that must run before shared CLI bootstrap can migrate state.
 import { ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV } from "../../config/future-version-guard.js";
 import type { ConfigFileSnapshot } from "../../config/types.js";
@@ -105,17 +104,17 @@ function resolveGatewayRunDotEnvPaths(params: {
 
 function resolveInvocationDestructiveOverride(): string | undefined {
   if (process.env.OPENCLAW_SERVICE_MARKER?.trim()) {
-    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV];
+    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string];
     return undefined;
   }
-  return process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV];
+  return process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string];
 }
 
 function applyInvocationDestructiveOverride(value: string | undefined): void {
   if (process.env.OPENCLAW_SERVICE_MARKER?.trim() || value === undefined) {
-    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV];
+    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string];
   } else {
-    process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV] = value;
+    process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string] = value;
   }
 }
 
@@ -178,8 +177,8 @@ function restoreAppliedGatewayRunConfigEnvironment(preserveSelection = true): vo
 async function readGuardedGatewayRunConfig(
   params: GatewayRunGuardParams,
 ): Promise<ConfigFileSnapshot | null> {
-  const { readConfigFileSnapshot } = await import("../../config/config.js");
-  const snapshot = await readConfigFileSnapshot({ isolateEnv: true, observe: false });
+  const { readConfigFileSnapshot } = (await import("../../config/config.js")) as any;
+  const snapshot = await readConfigFileSnapshot({ isolateEnv: true, observe: false }) as any;
   return enforceGatewayRunFutureConfigGuard({
     opts: params.opts,
     runtime: params.runtime,
@@ -217,9 +216,9 @@ function resolveGatewayConfigSelectionDeclarationSignature(
 async function recoverGuardedGatewayRunConfig(
   params: GatewayRunGuardParams & { restoreSuspicious: boolean },
 ): Promise<ConfigFileSnapshot | null> {
-  const { readConfigFileSnapshot } = await import("../../config/config.js");
+  const { readConfigFileSnapshot } = (await import("../../config/config.js")) as any;
   let recoveryAllowed = true;
-  const recoveredSnapshot = await readConfigFileSnapshot({
+  const recoveredSnapshot = await (readConfigFileSnapshot as any)({
     isolateEnv: true,
     recoverSuspicious: true,
     allowSuspiciousRecovery: (config, current) => {
@@ -268,7 +267,7 @@ async function guardGatewayRunSelectedConfig(
     { resolveConfigDir },
   ] = await Promise.all([
     import("node:path"),
-    import("../../config/env-vars.js"),
+    import("../../config/env-vars.js") as any,
     import("../../infra/dotenv-global.js"),
     import("../../infra/env.js"),
     import("../../config/paths.js"),
@@ -490,7 +489,7 @@ export async function applyFinalGatewayRunConfigEnv(params: {
     { normalizeStateDirEnv },
     { clearShellEnvAppliedKeys },
   ] = await Promise.all([
-    import("../../config/env-vars.js"),
+    import("../../config/env-vars.js") as any,
     import("../../infra/env.js"),
     import("../../config/paths.js"),
     import("../../infra/shell-env.js"),
@@ -548,7 +547,7 @@ export async function reloadTrustedGatewayRunEnvironment(params: {
     { resolveConfigDir },
   ] = await Promise.all([
     import("node:path"),
-    import("../../config/env-vars.js"),
+    import("../../config/env-vars.js") as any,
     import("../../infra/dotenv-global.js"),
     import("../../infra/env.js"),
     import("../../config/paths.js"),

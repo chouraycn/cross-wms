@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Handles /bash and ! shell command chat shortcuts. */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { getFinishedSession, getSession } from '@openclaw-src/agents/bash-process-registry.js';
 import { createExecTool } from '@openclaw-src/agents/bash-tools.js';

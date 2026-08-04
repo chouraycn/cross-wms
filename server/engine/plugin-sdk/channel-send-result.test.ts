@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel send result normalization and adapter wrapping helpers.
  */

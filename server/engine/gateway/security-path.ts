@@ -1,6 +1,6 @@
 // Gateway 路径安全规范化重复编码的路径，并在畸形编码下保护 plugin HTTP 路由。
 // 移植自 openclaw/src/gateway/security-path.ts。
-// 依赖调整：@openclaw/normalization-core/string-coerce → ../infra/string-coerce.js。
+// 依赖调整：@cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js。
 import { normalizeLowercaseStringOrEmpty } from "../infra/string-coerce.js";
 
 type SecurityPathCanonicalization = {

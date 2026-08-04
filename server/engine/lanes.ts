@@ -16,18 +16,20 @@
  *
  * 使用 const enum 确保编译后内联，避免运行时开销
  */
-export const enum CommandLane {
+export const CommandLane = {
   /** 主聊天流程 */
-  Main = 'main',
+  Main: 'main',
   /** 定时任务 */
-  Cron = 'cron',
+  Cron: 'cron',
   /** 定时任务嵌套 */
-  CronNested = 'cron-nested',
+  CronNested: 'cron-nested',
   /** 子代理任务 */
-  Subagent = 'subagent',
+  Subagent: 'subagent',
   /** 嵌套任务 */
-  Nested = 'nested',
-}
+  Nested: 'nested',
+} as const;
+
+export type CommandLane = (typeof CommandLane)[keyof typeof CommandLane];
 
 /**
  * 通道并发限制配置

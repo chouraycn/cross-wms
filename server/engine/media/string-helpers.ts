@@ -1,5 +1,5 @@
 // String coercion helpers — cross-wms stub for openclaw's
-// @openclaw/normalization-core/string-coerce. Only the helpers used by the
+// @cdf-know/normalization-core/string-coerce. Only the helpers used by the
 // ported media module are provided here.
 
 /** Trims string input and returns undefined for non-strings or empty strings. */

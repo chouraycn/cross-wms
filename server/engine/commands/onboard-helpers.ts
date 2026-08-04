@@ -4,15 +4,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { inspect } from "node:util";
 import { cancel, isCancel } from "@clack/prompts";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import { visibleWidth } from "@openclaw-src/packages/terminal-core/src/ansi.js";
+import { resolveTimerTimeoutMs } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
+import { visibleWidth } from "@openclaw/terminal-core/ansi";
 import {
   decorativeEmoji,
   supportsDecorativeEmoji,
-} from "@openclaw-src/packages/terminal-core/src/decorative-emoji.js";
-import { stylePromptTitle } from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/decorative-emoji";
+import { stylePromptTitle } from "@openclaw/terminal-core/prompt-style";
 import {
   DEFAULT_AGENT_WORKSPACE_DIR,
   ensureAgentWorkspace,

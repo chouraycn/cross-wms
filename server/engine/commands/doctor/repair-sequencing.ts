@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Doctor repair sequence coordinator for config, auth, plugin, and warning repairs.
-import { sanitizeForLog } from "@openclaw-src/packages/terminal-core/src/ansi.js";
+import { sanitizeForLog } from "@openclaw/terminal-core/ansi";
 import {
   applyPluginAutoEnable,
   materializePluginAutoEnableCandidates,

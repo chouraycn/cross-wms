@@ -1,2 +1,5 @@
-// Re-export from parent (file moved up from channels/plugins/ to channels/)
-export * from "../pairing-message.js";
+/**
+ * Default approval message sent after channel pairing succeeds.
+ */
+export const PAIRING_APPROVED_MESSAGE =
+  "✅ OpenClaw access approved. Send a message to start chatting.";

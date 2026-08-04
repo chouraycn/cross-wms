@@ -283,7 +283,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   // ---- Menu view ----
   if (activeTab === 'menu') {
     return (
-      <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
+      <Box className="settings-panel" sx={{ width: '100%', height: '100%', color: textPrimary, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -337,7 +337,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
 
   // ---- Detail view — delegate to sub-components ----
   return (
-    <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
+    <Box className="settings-panel" sx={{ width: '100%', height: '100%', color: textPrimary, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
         <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><ArrowBackIcon sx={{ fontSize: 18 }} /></IconButton>
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{currentLabel}</Typography>
@@ -402,7 +402,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock disableEnforceFocus
       slotProps={{
         paper: {
-          sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '85vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)', border: `1px solid ${gs.border}`, overflow: 'hidden' },
+          sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '78vh', borderRadius: '12px', marginLeft: '-5px', marginTop: '-8px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)', border: `1px solid ${gs.border}`, overflow: 'hidden', display: 'flex', flexDirection: 'column' },
         },
       }}
       hideBackdrop

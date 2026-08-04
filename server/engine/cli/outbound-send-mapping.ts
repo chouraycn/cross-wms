@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/outbound-send-mapping.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeLowercaseStringOrEmpty`、`../channels/registry.js` 的
 //    `normalizeChannelId`、`../infra/outbound/send-deps.js` 的
 //    `resolveLegacyOutboundSendDepKeys` 与 `OutboundSendDeps` 类型。

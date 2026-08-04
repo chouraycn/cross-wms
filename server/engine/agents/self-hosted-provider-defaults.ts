@@ -1,11 +1,15 @@
 /**
- * 移植自 openclaw/src/agents/self-hosted-provider-defaults.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Conservative defaults for self-hosted providers when the model catalog
+ * cannot supply pricing or token limits.
  */
-
-export const SELF_HOSTED_DEFAULT_CONTEXT_WINDOW: unknown = undefined;
-export const SELF_HOSTED_DEFAULT_MAX_TOKENS: unknown = undefined;
-export const SELF_HOSTED_DEFAULT_COST: unknown = undefined;
+/** Default context window used for self-hosted provider catalog entries. */
+export const SELF_HOSTED_DEFAULT_CONTEXT_WINDOW = 128000;
+/** Default output-token cap used for self-hosted provider catalog entries. */
+export const SELF_HOSTED_DEFAULT_MAX_TOKENS = 8192;
+/** Zero-cost pricing used for self-hosted provider catalog entries. */
+export const SELF_HOSTED_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};

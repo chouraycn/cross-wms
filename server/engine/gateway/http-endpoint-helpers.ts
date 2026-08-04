@@ -150,3 +150,33 @@ export function createJsonEndpoint<TResult>(
 export function clearEndpointsForTests(): void {
   endpoints.length = 0;
 }
+
+// ============================================================================
+// handleGatewayPostJsonEndpoint — ported from openclaw gateway/http-endpoint-helpers
+// ============================================================================
+
+import type { IncomingMessage as NodeIncomingMessage, ServerResponse as NodeServerResponse } from "node:http";
+
+/**
+ * Handles a gateway POST JSON endpoint and returns the parsed body when authorized.
+ *
+ * Stub implementation: always returns false (not handled) so callers fall through
+ * to their own handling. The openclaw implementation performs auth, scope checks,
+ * and JSON body parsing here.
+ */
+export async function handleGatewayPostJsonEndpoint(
+  req: NodeIncomingMessage,
+  res: NodeServerResponse,
+  opts: {
+    pathname: string;
+    auth: unknown;
+    maxBodyBytes: number;
+    trustedProxies?: string[];
+    allowRealIpFallback?: boolean;
+    rateLimiter?: unknown;
+    requiredOperatorMethod?: string;
+    resolveOperatorScopes?: (req: NodeIncomingMessage, requestAuth: any) => string[];
+  },
+): Promise<false | { body: unknown; requestAuth: any } | undefined> {
+  return false;
+}

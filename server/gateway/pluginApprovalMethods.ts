@@ -10,6 +10,8 @@
 
 import type { GatewayMethodContext } from './types.js';
 import { getMethodRegistry } from './methodRegistry.js';
+import { getWebSocketHub } from './webSocketHub.js';
+import { GATEWAY_EVENT_TYPES } from './gatewayEventTypes.js';
 import { ExecApprovalManager } from '../engine/execApprovalManager.js';
 
 // Registry 类型从 getMethodRegistry 推导，避免依赖未导出的 MethodRegistry 类
@@ -33,6 +35,24 @@ const pluginApprovalManager = new ExecApprovalManager<PluginApprovalRequestPaylo
 
 async function pluginApprovalList(_params: unknown, _ctx: GatewayMethodContext) {
   const pending = pluginApprovalManager.listPending();
+
+  // 广播 plugin.approval.requested 事件，通知 WS 客户端有待审批的插件请求
+  const hub = getWebSocketHub();
+  for (const record of pending) {
+    const payload = record.request;
+    hub.broadcastEvent(GATEWAY_EVENT_TYPES.PLUGIN_APPROVAL_REQUESTED, {
+      approvalId: record.id,
+      kind: 'plugin' as const,
+      title: payload.title,
+      description: payload.description,
+      severity: payload.severity,
+      sessionKey: payload.sessionKey,
+      agentId: payload.agentId,
+      toolName: payload.toolName,
+      toolCallId: payload.toolCallId,
+      requestedAt: record.createdAtMs,
+    });
+  }
 
   return {
     ok: true,
@@ -61,7 +81,21 @@ async function pluginApprovalApprove(params: unknown, _ctx: GatewayMethodContext
     };
   }
 
+  // 在 resolve 之前取出 payload，用于广播事件
+  const record = pluginApprovalManager.listPending().find((r) => r.id === approvalId);
+  const sessionKey = record?.request.sessionKey;
+
   pluginApprovalManager.resolve(approvalId, 'approve', resolvedBy);
+
+  // 广播 plugin.approval.resolved 事件（decision=approve）
+  getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.PLUGIN_APPROVAL_RESOLVED, {
+    approvalId,
+    kind: 'plugin' as const,
+    decision: 'approve' as const,
+    resolvedBy: resolvedBy ?? null,
+    resolvedAt: Date.now(),
+    ...(sessionKey ? { sessionKey } : {}),
+  });
 
   return {
     ok: true,
@@ -74,9 +108,10 @@ async function pluginApprovalApprove(params: unknown, _ctx: GatewayMethodContext
 // ========== Plugin Approval Deny ==========
 
 async function pluginApprovalDeny(params: unknown, _ctx: GatewayMethodContext) {
-  const { approvalId, resolvedBy } = params as {
+  const { approvalId, resolvedBy, reason } = params as {
     approvalId: string;
     resolvedBy?: string;
+    reason?: string;
   };
 
   if (!approvalId) {
@@ -91,7 +126,22 @@ async function pluginApprovalDeny(params: unknown, _ctx: GatewayMethodContext) {
     };
   }
 
+  // 在 resolve 之前取出 payload，用于广播事件
+  const record = pluginApprovalManager.listPending().find((r) => r.id === approvalId);
+  const sessionKey = record?.request.sessionKey;
+
   pluginApprovalManager.resolve(approvalId, 'reject', resolvedBy);
+
+  // 广播 plugin.approval.resolved 事件（decision=deny）
+  getWebSocketHub().broadcastEvent(GATEWAY_EVENT_TYPES.PLUGIN_APPROVAL_RESOLVED, {
+    approvalId,
+    kind: 'plugin' as const,
+    decision: 'deny' as const,
+    resolvedBy: resolvedBy ?? null,
+    resolvedAt: Date.now(),
+    ...(sessionKey ? { sessionKey } : {}),
+    ...(reason ? { reason } : {}),
+  });
 
   return {
     ok: true,

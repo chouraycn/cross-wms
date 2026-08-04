@@ -2,7 +2,7 @@
  * 移植自 openclaw/src/agents/tools/web-shared.ts
  *
  * cross-wms 降级实现：Web 工具缓存、超时和响应处理的简化版本。
- * 不依赖 @openclaw/normalization-core 包。
+ * 不依赖 @cdf-know/normalization-core 包。
  */
 
 export type CacheEntry<T> = {

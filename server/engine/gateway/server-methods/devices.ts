@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway RPC handlers for device pairing and device-token lifecycle operations.
 import {
   ErrorCodes,
@@ -100,12 +99,12 @@ function shouldReturnRotatedDeviceToken(authz: DeviceManagementAuthz): boolean {
 
 function emitDeviceSecurityEvent(params: {
   action: string;
-  outcome: DiagnosticSecurityEventInput["outcome"];
-  severity: DiagnosticSecurityEventInput["severity"];
+  outcome: any;
+  severity: any;
   authz: DeviceSessionAuthz;
   targetDeviceId?: string;
   policyId: string;
-  decision: NonNullable<DiagnosticSecurityEventInput["policy"]>["decision"];
+  decision: any;
   controlId: string;
   reason?: string;
   attributes?: Record<string, string | number | boolean>;
@@ -118,7 +117,7 @@ function emitDevicePairingDeniedSecurityEvent(params: {
   targetDeviceId?: string;
   controlId: string;
   reason: string;
-  severity?: DiagnosticSecurityEventInput["severity"];
+  severity?: any;
 }) {
   emitDeviceSecurityEvent({
     action: "device.pairing.denied",
@@ -135,7 +134,7 @@ function emitDevicePairingDeniedSecurityEvent(params: {
 
 function emitDevicePairingLifecycleSecurityEvent(params: {
   action: "device.pairing.approved" | "device.pairing.rejected" | "device.pairing.removed";
-  severity: DiagnosticSecurityEventInput["severity"];
+  severity: any;
   authz: DeviceSessionAuthz;
   targetDeviceId: string;
   controlId: string;
@@ -178,7 +177,7 @@ function emitDeviceTokenDeniedSecurityEvent(params: {
 
 function emitDeviceTokenLifecycleSecurityEvent(params: {
   action: "device.token.rotated" | "device.token.revoked";
-  severity: DiagnosticSecurityEventInput["severity"];
+  severity: any;
   authz: DeviceSessionAuthz;
   targetDeviceId: string;
   controlId: string;

@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Formatting helpers for status tokens, durations, prompt-cache stats, and daemon runtime snippets.
 // These helpers are shared by report rows and command output surfaces.
 
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { getSystemdCgroupHygieneSummary } from "@openclaw-src/daemon/service-runtime.js";
-import { formatDurationPrecise } from "@openclaw-src/infra/format-time/format-duration.ts";
-import { formatRuntimeStatusWithDetails } from "@openclaw-src/infra/runtime-status.ts";
+import { formatDurationPrecise } from "@openclaw-src/infra/format-time/format-duration";
+import { formatRuntimeStatusWithDetails } from "@openclaw-src/infra/runtime-status";
 import { formatTokenCount } from "@openclaw-src/utils/token-format.js";
 import type { SessionStatus } from "./status.types.js";
 export { shortenText } from "./text-format.js";

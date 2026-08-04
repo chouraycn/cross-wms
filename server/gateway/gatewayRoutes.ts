@@ -18,8 +18,23 @@ import { registerChannelsMethods } from "./channelsMethods.js";
 import { registerNodeMethods } from "./nodeMethods.js";
 import { registerAgentIdentityMethods } from "./agentIdentityMethods.js";
 import { registerSkillsProposalsMethods } from "./skillsProposalsMethods.js";
+import { registerSessionsMethods } from "./sessionsMethods.js";
+import { registerSkillsMethods } from "./skillsMethods.js";
 import { registerConfigMethods } from "./configMethods.js";
 import { registerSecretsMethods } from "./secretsMethods.js";
+import { registerArtifactsMethods } from "./artifactsMethods.js";
+import { registerTalkMethods } from "./talkMethods.js";
+import { registerTtsMethods } from "./ttsMethods.js";
+import { registerGatewayMethods } from "./gatewayMethods.js";
+import { registerStatusMethods } from "./statusMethods.js";
+import { registerTasksMethods } from "./tasksMethods.js";
+import { registerWizardMethods } from "./wizardMethods.js";
+import { registerUpdateMethods } from "./updateMethods.js";
+import { registerCommandsMethods } from "./commandsMethods.js";
+import { registerEnvironmentsMethods } from "./environmentsMethods.js";
+import { registerLogsMethods } from "./logsMethods.js";
+import { registerPushMethods } from "./pushMethods.js";
+import { registerPluginsMethods } from "./pluginsMethods.js";
 import { initSessionSync } from "./sessionSync.js";
 import {
   callAIModelStream,
@@ -32,6 +47,7 @@ import {
 import { loadModelsConfig } from "../modelsStore.js";
 import { selectKey, reportKeyResult } from "../keyRotator.js";
 import { logger } from "../logger.js";
+import { executeToolCall } from "../engine/toolRegistry.js";
 
 // 确保所有方法已注册
 registerCoreMethods();
@@ -56,8 +72,29 @@ registerWorkboardMethods();
   registerNodeMethods(registry);
   registerAgentIdentityMethods(registry);
   registerSkillsProposalsMethods(registry);
+  registerSessionsMethods(registry);
+  registerSkillsMethods(registry);
   registerConfigMethods(registry);
   registerSecretsMethods(registry);
+  registerArtifactsMethods(registry);
+  registerTalkMethods(registry);
+  registerTtsMethods(registry);
+
+  // Gateway 自身 / 状态 / 任务 / 向导 / 更新 域方法
+  registerGatewayMethods(registry);
+  registerStatusMethods(registry);
+  registerTasksMethods(registry);
+  registerWizardMethods(registry);
+  registerUpdateMethods(registry);
+
+  // 命令 / 环境 / 日志 域方法
+  registerCommandsMethods(registry);
+  registerEnvironmentsMethods(registry);
+  registerLogsMethods(registry);
+
+  // 推送 / 插件 域方法
+  registerPushMethods(registry);
+  registerPluginsMethods(registry);
 }
 
 // 初始化会话同步
@@ -116,7 +153,7 @@ export async function gatewayRpcHandler(req: Request, res: Response): Promise<vo
  */
 async function resolveModelCallConfig(
   modelId: string,
-): Promise<{ config: ModelCallConfig; keyIndex: number } | { error: { message: string; type: string; code?: string } }> {
+): Promise<{ config: ModelCallConfig; keyIndex: number } | { error: { message: string; type: string; code?: string; param?: string } }> {
   let modelsFile;
   try {
     modelsFile = await loadModelsConfig();
@@ -1195,6 +1232,358 @@ export function registerGatewayRoutes(app: {
     const registry = getMethodRegistry();
     const result = await registry.invoke("workboard.stats", {}, {
       requestId: `wb_stats_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
+  });
+
+  // ====== OpenAI Responses API ======
+
+  // POST /v1/responses — OpenAI Responses API
+  // 将 Responses API 请求转发到现有 chat 处理逻辑（callAIModelStream），返回 responses 格式响应
+  app.post("/v1/responses", async (req, res) => {
+    const {
+      model,
+      input,
+      stream = false,
+      temperature,
+      max_output_tokens,
+      top_p,
+      tools,
+      tool_choice,
+    } = req.body as {
+      model?: string;
+      input?: unknown;
+      stream?: boolean;
+      temperature?: number;
+      max_output_tokens?: number;
+      top_p?: number;
+      tools?: unknown;
+      tool_choice?: unknown;
+    };
+
+    if (!model || typeof model !== "string") {
+      res.status(400).json({
+        error: {
+          message: "Missing required parameter: 'model'",
+          type: "invalid_request_error",
+          param: "model",
+        },
+      });
+      return;
+    }
+
+    if (input === undefined || input === null) {
+      res.status(400).json({
+        error: {
+          message: "Missing required parameter: 'input'",
+          type: "invalid_request_error",
+          param: "input",
+        },
+      });
+      return;
+    }
+
+    // 将 Responses API 的 input 转换为 OpenAI messages 格式
+    let messages: OpenAIMessage[];
+    if (typeof input === "string") {
+      messages = [{ role: "user", content: input }];
+    } else if (Array.isArray(input)) {
+      messages = input.map((item) => {
+        if (typeof item === "string") {
+          return { role: "user", content: item } as OpenAIMessage;
+        }
+        const it = item as { role?: string; content?: unknown };
+        return { role: it.role || "user", content: it.content } as OpenAIMessage;
+      });
+    } else if (typeof input === "object" && input !== null) {
+      const it = input as { role?: string; content?: unknown };
+      messages = [{ role: it.role || "user", content: it.content }];
+    } else {
+      res.status(400).json({
+        error: {
+          message: "'input' must be a string, array, or object",
+          type: "invalid_request_error",
+          param: "input",
+        },
+      });
+      return;
+    }
+
+    // 解析模型配置（含 API Key 轮询）
+    const resolved = await resolveModelCallConfig(model);
+    if ("error" in resolved) {
+      const status = resolved.error.code === "model_not_found" ? 404 : 500;
+      res.status(status).json({ error: resolved.error });
+      return;
+    }
+    const modelCallConfig = resolved.config;
+    const keyIndex = resolved.keyIndex;
+
+    const finalConfig: ModelCallConfig = {
+      ...modelCallConfig,
+      ...(typeof temperature === "number" ? { temperature } : {}),
+      ...(typeof max_output_tokens === "number" ? { maxTokens: max_output_tokens } : {}),
+      ...(typeof top_p === "number" ? { topP: top_p } : {}),
+    };
+
+    const normalizedMessages = normalizeOpenAIMessages(messages);
+    const toolDefs = convertOpenAITools(tools);
+    const effectiveToolChoice = convertOpenAIToolChoice(tool_choice);
+
+    const responseId = `resp_${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const created = Math.floor(Date.now() / 1000);
+    const abortController = new AbortController();
+    const onClose = () => abortController.abort();
+    req.on("close", onClose);
+
+    const collectedToolCalls: ToolCall[] = [];
+
+    if (stream) {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+      if (req.socket) {
+        req.socket.setNoDelay(true);
+      }
+
+      const writeEvent = (event: string, obj: unknown) => {
+        res.write(`event: ${event}\n`);
+        res.write(`data: ${JSON.stringify(obj)}\n\n`);
+      };
+
+      // response.created — 初始事件
+      writeEvent("response.created", {
+        type: "response.created",
+        response: {
+          id: responseId,
+          object: "response",
+          created_at: created,
+          status: "in_progress",
+          model,
+          output: [],
+        },
+      });
+
+      try {
+        let fullText = "";
+        await callAIModelStream(
+          finalConfig,
+          normalizedMessages,
+          (text) => {
+            if (text) {
+              fullText += text;
+              writeEvent("response.output_text.delta", {
+                type: "response.output_text.delta",
+                item_id: `msg_${responseId}`,
+                output_index: 0,
+                content_index: 0,
+                delta: text,
+              });
+            }
+          },
+          abortController.signal,
+          undefined,
+          toolDefs.length > 0 ? toolDefs : undefined,
+          (toolCall) => {
+            collectedToolCalls.push(toolCall);
+          },
+          finalConfig.capabilities,
+          undefined,
+          undefined,
+          effectiveToolChoice,
+        );
+
+        reportKeyResult(model, keyIndex, true);
+
+        const status = collectedToolCalls.length > 0 ? "incomplete" : "completed";
+
+        // text done
+        writeEvent("response.output_text.done", {
+          type: "response.output_text.done",
+          item_id: `msg_${responseId}`,
+          output_index: 0,
+          content_index: 0,
+          text: fullText,
+        });
+
+        // response.completed
+        writeEvent("response.completed", {
+          type: "response.completed",
+          response: {
+            id: responseId,
+            object: "response",
+            created_at: created,
+            status,
+            model,
+            output: [
+              {
+                type: "message",
+                id: `msg_${responseId}`,
+                status,
+                role: "assistant",
+                content: [{ type: "output_text", text: fullText }],
+              },
+            ],
+          },
+        });
+
+        res.end();
+      } catch (e) {
+        reportKeyResult(model, keyIndex, false);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        logger.error(`[OpenAI compat /v1/responses stream] ${errMsg}`);
+        writeEvent("error", {
+          type: "error",
+          error: {
+            message: errMsg,
+            type: e instanceof AIAPIError ? "api_error" : "internal_error",
+          },
+        });
+        res.end();
+      } finally {
+        req.off("close", onClose);
+      }
+      return;
+    }
+
+    // ====== 非流式响应 ======
+    try {
+      let responseText = "";
+      const response = await callAIModelStream(
+        finalConfig,
+        normalizedMessages,
+        (text) => {
+          responseText += text;
+        },
+        abortController.signal,
+        undefined,
+        toolDefs.length > 0 ? toolDefs : undefined,
+        (toolCall) => {
+          collectedToolCalls.push(toolCall);
+        },
+        finalConfig.capabilities,
+        undefined,
+        undefined,
+        effectiveToolChoice,
+      );
+
+      reportKeyResult(model, keyIndex, true);
+
+      const usage = response.usage;
+      const promptTokens = usage?.promptTokens ?? 0;
+      const completionTokens = usage?.completionTokens ?? 0;
+      const totalTokens = usage?.totalTokens ?? promptTokens + completionTokens;
+
+      const status = collectedToolCalls.length > 0 ? "incomplete" : "completed";
+
+      res.json({
+        id: responseId,
+        object: "response",
+        created_at: created,
+        status,
+        model,
+        output: [
+          {
+            type: "message",
+            id: `msg_${responseId}`,
+            status,
+            role: "assistant",
+            content: [{ type: "output_text", text: responseText || "" }],
+          },
+        ],
+        usage: {
+          input_tokens: promptTokens,
+          output_tokens: completionTokens,
+          total_tokens: totalTokens,
+        },
+      });
+    } catch (e) {
+      reportKeyResult(model, keyIndex, false);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      logger.error(`[OpenAI compat /v1/responses] ${errMsg}`);
+
+      if (e instanceof AIAPIError) {
+        const httpStatus = e.statusCode && e.statusCode >= 400 && e.statusCode < 600 ? e.statusCode : 500;
+        res.status(httpStatus).json({
+          error: {
+            message: errMsg,
+            type: e.category === "auth" ? "invalid_request_error" : "api_error",
+            code: e.category,
+          },
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: { message: errMsg, type: "internal_error" },
+      });
+    } finally {
+      req.off("close", onClose);
+    }
+  });
+
+  // ====== HTTP 触发工具调用 ======
+
+  // POST /tools/invoke — HTTP 触发工具调用
+  // 请求体: { tool: string, args: object }
+  // 响应: { result: any, error?: string }
+  app.post("/tools/invoke", async (req, res) => {
+    const { tool, args } = req.body as { tool?: string; args?: unknown };
+
+    if (!tool || typeof tool !== "string") {
+      res.status(400).json({ result: null, error: "Missing required parameter: 'tool'" });
+      return;
+    }
+
+    try {
+      const toolCall: ToolCall = {
+        id: `invoke_${Date.now()}`,
+        type: "function",
+        function: {
+          name: tool,
+          arguments: typeof args === "string" ? args : JSON.stringify(args ?? {}),
+        },
+      };
+      const resultStr = await executeToolCall(toolCall);
+      let result: unknown = resultStr;
+      try {
+        result = JSON.parse(resultStr);
+      } catch {
+        // 非 JSON 结果保持字符串
+      }
+      res.json({ result, error: undefined });
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      logger.error(`[/tools/invoke] ${errMsg}`);
+      res.status(500).json({ result: null, error: errMsg });
+    }
+  });
+
+  // ====== 会话管理 HTTP 端点 ======
+
+  // GET /api/gateway/sessions/:id/history — 获取会话历史
+  app.get("/api/gateway/sessions/:id/history", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("chat.history", { sessionKey: req.params.id }, {
+      requestId: `sess_hist_${Date.now()}`,
+      sessionKey: req.params.id,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  // POST /api/gateway/sessions/:id/kill — 强制终止会话
+  app.post("/api/gateway/sessions/:id/kill", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("chat.abort", { sessionKey: req.params.id }, {
+      requestId: `sess_kill_${Date.now()}`,
+      sessionKey: req.params.id,
       timestamp: Date.now(),
     });
     res.json(result);

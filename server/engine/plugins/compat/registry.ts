@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Plugin compatibility registry exposes known plugin compatibility metadata to doctor/update flows.
 import type { PluginCompatRecord } from "./types.js";
 

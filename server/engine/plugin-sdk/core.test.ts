@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests core plugin SDK exports and channel plugin construction.
  */

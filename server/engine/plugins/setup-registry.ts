@@ -34,6 +34,10 @@ import type {
   ProviderPlugin,
 } from "./types.js";
 
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const SETUP_API_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] as const;
 const CURRENT_MODULE_PATH = __filename;
 const RUNNING_FROM_BUILT_ARTIFACT =

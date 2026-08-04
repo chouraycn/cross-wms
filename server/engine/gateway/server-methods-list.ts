@@ -1,22 +1,67 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-methods-list.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway method/event catalog.
+// Lists advertised core, auxiliary, channel plugin methods, and websocket events.
+import { listLoadedChannelPlugins } from "../channels/plugins/registry-loaded.js";
+import { GATEWAY_EVENT_UPDATE_AVAILABLE } from "./events.js";
+import { listCoreAdvertisedGatewayMethodNames } from "./methods/core-descriptors.js";
+import { GATEWAY_AUX_METHODS } from "./server-aux-methods.js";
 
-export function listCoreGatewayMethods(..._args: unknown[]): unknown {
-  return [];
+type GatewayMethodChannelPlugin = {
+  gatewayMethods?: readonly string[];
+  gatewayMethodDescriptors?: readonly { name: string }[];
+};
+
+/** Lists core methods intentionally advertised to gateway clients. */
+export function listCoreGatewayMethods(): string[] {
+  return listCoreAdvertisedGatewayMethodNames();
 }
 
-export function listGatewayMethods(..._args: unknown[]): unknown {
-  return [];
+function listChannelGatewayMethods(): string[] {
+  const methods: string[] = [];
+  for (const plugin of listLoadedChannelPlugins() as GatewayMethodChannelPlugin[]) {
+    // Plugins may still expose legacy names while newer plugins expose descriptors.
+    // Merge both so method discovery stays compatible during descriptor adoption.
+    methods.push(...(plugin.gatewayMethods ?? []));
+    for (const descriptor of plugin.gatewayMethodDescriptors ?? []) {
+      methods.push(descriptor.name);
+    }
+  }
+  return methods;
 }
 
-export const GATEWAY_EVENTS: unknown = undefined;
+/** Returns the de-duplicated gateway method catalog advertised through method-list APIs. */
+export function listGatewayMethods(): string[] {
+  return Array.from(
+    new Set([...listCoreGatewayMethods(), ...GATEWAY_AUX_METHODS, ...listChannelGatewayMethods()]),
+  );
+}
+
+/** Gateway event names that clients can subscribe to or receive over the wire. */
+export const GATEWAY_EVENTS = [
+  "connect.challenge",
+  "agent",
+  "chat",
+  "session.message",
+  "session.operation",
+  "session.tool",
+  "sessions.changed",
+  "presence",
+  "tick",
+  "talk.mode",
+  "talk.event",
+  "shutdown",
+  "health",
+  "heartbeat",
+  "cron",
+  "node.pair.requested",
+  "node.pair.resolved",
+  "node.invoke.request",
+  "device.pair.requested",
+  "device.pair.resolved",
+  "voicewake.changed",
+  "voicewake.routing.changed",
+  "exec.approval.requested",
+  "exec.approval.resolved",
+  "plugin.approval.requested",
+  "plugin.approval.resolved",
+  GATEWAY_EVENT_UPDATE_AVAILABLE,
+];

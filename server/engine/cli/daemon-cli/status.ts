@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway service status command entrypoint: gathers status, prints it, and handles probe failures.
 import { colorize, isRich, theme } from "../../../packages/terminal-core/src/theme.js";
 import { defaultRuntime } from "../../runtime.js";

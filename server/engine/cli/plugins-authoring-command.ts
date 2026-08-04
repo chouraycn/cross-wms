@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/plugins-authoring-command.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-normalization` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-normalization` 的
 //    `uniqueStrings`。降级内联实现。
 //  - 原模块依赖 `../plugin-sdk/tool-plugin.js` 的 `getToolPluginMetadata`、
 //    `ToolPluginMetadata`。cross-wms 未移植 plugin-sdk；降级内联占位。
@@ -20,6 +20,12 @@
 //  - 这里对涉及这些依赖的函数提供降级 stub，保留函数签名以便未来替换为正式实现。
 
 import { unwrapDefaultModuleExport } from "../plugins/module-export.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== 内联 ToolPluginMetadata 类型占位 =====
 type ToolPluginMetadataTool = {

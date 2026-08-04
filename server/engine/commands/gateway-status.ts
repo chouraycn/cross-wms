@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** CLI entrypoint for `openclaw gateway status`. */
-import { isRich } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { isRich } from "@openclaw/terminal-core/theme";
 import { parseGatewayPortOption } from "@openclaw-src/cli/gateway-port-option.js";
 import { withProgress } from "@openclaw-src/cli/progress.js";
 import { readBestEffortConfig, resolveGatewayPort } from "@openclaw-src/config/config.js";

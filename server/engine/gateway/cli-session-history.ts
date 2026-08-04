@@ -1,16 +1,56 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/cli-session-history.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway CLI session history importer.
+// Augments local chat history with bound external Claude CLI transcripts.
+import { normalizeProviderId } from "../agents/model-selection.js";
+import type { SessionEntry } from "../config/sessions.js";
+import {
+  type ClaudeCliFallbackSeed,
+  CLAUDE_CLI_PROVIDER,
+  readClaudeCliFallbackSeed,
+  readClaudeCliSessionMessages,
+  resolveClaudeCliBindingSessionId,
+  resolveClaudeCliSessionFilePath,
+} from "./cli-session-history.claude.js";
+import { mergeImportedChatHistoryMessages } from "./cli-session-history.merge.js";
 
-export function augmentChatHistoryWithCliSessionImports(..._args: unknown[]): unknown {
-  return undefined;
+const ANTHROPIC_PROVIDER = "anthropic";
+
+export {
+  mergeImportedChatHistoryMessages,
+  readClaudeCliFallbackSeed,
+  readClaudeCliSessionMessages,
+  resolveClaudeCliBindingSessionId,
+  resolveClaudeCliSessionFilePath,
+};
+export type { ClaudeCliFallbackSeed };
+
+/** Augments local chat history with bound Claude CLI session messages when applicable. */
+export function augmentChatHistoryWithCliSessionImports(params: {
+  entry: SessionEntry | undefined;
+  provider?: string;
+  localMessages: unknown[];
+  homeDir?: string;
+}): unknown[] {
+  const cliSessionId = resolveClaudeCliBindingSessionId(params.entry);
+  if (!cliSessionId) {
+    return params.localMessages;
+  }
+
+  const normalizedProvider = normalizeProviderId(params.provider ?? "");
+  if (
+    normalizedProvider &&
+    normalizedProvider !== CLAUDE_CLI_PROVIDER &&
+    normalizedProvider !== ANTHROPIC_PROVIDER &&
+    params.localMessages.length > 0
+  ) {
+    return params.localMessages;
+  }
+
+  const importedMessages = readClaudeCliSessionMessages({
+    cliSessionId,
+    homeDir: params.homeDir,
+  });
+  return mergeImportedChatHistoryMessages({
+    localMessages: params.localMessages,
+    importedMessages,
+  });
 }

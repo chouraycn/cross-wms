@@ -35,14 +35,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node.js + Dependencies
+        uses: ./.github/actions/setup-node-deps
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+          install-flags: '--legacy-peer-deps'
 
       - name: Build frontend
         run: npm run build
@@ -130,21 +126,10 @@ jobs:
             echo "EOF"
           } >> $GITHUB_ENV
 
-      - name: Create Git Tag
-        run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git tag -l "v${VERSION}" | grep -q "v${VERSION}"; then
-            echo "Tag v${VERSION} already exists"
-          else
-            git tag "v${VERSION}"
-            git push origin "v${VERSION}" 2>/dev/null || echo "Tag push skipped"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release
+      - name: Create GitHub Release (tag + release atomically)
+        # P1-⑧: 幂等化 — action-gh-release 原子创建 tag + release + 上传 DMG
+        # 如果失败，不会留下 "tag 已存在但 Release 没文件" 的脏状态
+        # 重试时 action-gh-release 会自动检测已存在的 release 并更新
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.version }}

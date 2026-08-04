@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public SDK subpath for session keys, account bindings, and message-channel routing.
  */

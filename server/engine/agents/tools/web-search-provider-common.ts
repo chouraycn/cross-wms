@@ -6,7 +6,7 @@
  * Ported from openclaw/src/agents/tools/web-search-provider-common.ts.
  *
  * cross-wms adjustments:
- * - Replaced `@openclaw/normalization-core/string-coerce` with the cross-wms stub at
+ * - Replaced `@cdf-know/normalization-core/string-coerce` with the cross-wms stub at
  *   `../../plugins/_openclaw__normalization_core__string_coerce.js`.
  * - Relative imports to `../../config/types.openclaw.js`, `../../config/types.secrets.js`,
  *   `../../shared/lazy-promise.js`, `../../utils/normalize-secret-input.js` are kept as-is

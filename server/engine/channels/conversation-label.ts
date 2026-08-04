@@ -2,7 +2,7 @@
  * 会话标签解析器 — 移植自 openclaw/src/channels/conversation-label.ts
  *
  * 降级策略：
- *  - 依赖 @openclaw/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
+ *  - 依赖 @cdf-know/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
  *  - 依赖 ../auto-reply/templating.js 的 MsgContext 类型 → 未移植，定义为最小本地 stub
  *  - 依赖 ./chat-type.js 的 normalizeChatType → cross-wms 已有实现
  *

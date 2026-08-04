@@ -5,8 +5,8 @@ import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
   resolvePrimaryStringValue,
-} from "@openclaw/normalization-core/string-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveModelAgentRuntimeMetadata } from "@openclaw-src/agents/agent-runtime-metadata.js";
 import {
   listAgentIds,

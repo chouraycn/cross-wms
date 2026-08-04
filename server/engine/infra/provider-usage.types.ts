@@ -1,7 +1,31 @@
-// 移植自 openclaw/src/infra/provider-usage.types.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+/** One quota window reported by a provider usage endpoint. */
+export type UsageWindow = {
+  label: string;
+  usedPercent: number;
+  resetAt?: number;
+};
 
-export type UsageWindow = unknown;
-export type ProviderUsageSnapshot = unknown;
-export type UsageSummary = unknown;
-export type UsageProviderId = unknown;
+export type ProviderUsageSnapshot = {
+  provider: UsageProviderId;
+  displayName: string;
+  windows: UsageWindow[];
+  summary?: string;
+  plan?: string;
+  error?: string;
+};
+
+export type UsageSummary = {
+  updatedAt: number;
+  providers: ProviderUsageSnapshot[];
+};
+
+export type UsageProviderId =
+  | "anthropic"
+  | "deepseek"
+  | "github-copilot"
+  | "google-gemini-cli"
+  | "minimax"
+  | "openai"
+  | "xiaomi"
+  | "xiaomi-token-plan"
+  | "zai";

@@ -35,6 +35,19 @@ export interface PluginManifest {
   version: string;
   description?: string;
   author?: string;
+  displayName?: string;
+  apiVersion?: string;
+  capabilities?: string[];
+  metadata?: Record<string, unknown>;
+  tools?: Array<{
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, { type: string; description?: string }>;
+      required?: string[];
+    };
+  }>;
   kind?: PluginCapabilityKind | PluginCapabilityKind[];
   channels?: string[];
   providers?: string[];

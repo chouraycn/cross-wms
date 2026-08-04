@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests that session send rejects sessions whose configured agent was deleted.
  */

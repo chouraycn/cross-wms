@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Sanitizes pending final delivery text before channel-visible output. */
 import {
   isSilentReplyPayloadText,

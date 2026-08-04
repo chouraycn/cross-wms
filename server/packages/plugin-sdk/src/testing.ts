@@ -1,2 +1,2 @@
 // Plugin SDK module implements testing behavior.
-export * from "../../../src/plugin-sdk/testing.js";
+export * from "../../../engine/plugin-sdk/testing.js";

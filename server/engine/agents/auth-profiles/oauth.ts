@@ -5,7 +5,7 @@
  * Converts selected auth profiles into provider API keys, refreshes OAuth
  * credentials, resolves SecretRefs, and maintains runtime store snapshots.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../../config/config.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";

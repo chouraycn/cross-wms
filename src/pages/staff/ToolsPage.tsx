@@ -1285,11 +1285,16 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: McpEditorProps) {
           {isEdit && toolId ? (
             <UIButton
               variant="outline"
-              sx={{"height":'32px',"minWidth":'120px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","&:hover":{"bgcolor":"#f6f6f6"}}}
+              sx={{"height":'32px',"minWidth":'120px',"borderRadius":'10px',"borderColor":'divider',"bgcolor":'background.paper',"px":'12px',"fontSize":'14px',"color":"#464c5e","display":'flex',"alignItems":'center',"gap":'6px',"&:hover":{"bgcolor":"#f6f6f6"}}}
               onClick={() => void syncNow()}
               disabled={syncing || saving}
             >
-              {syncing ? '同步中…' : '发现并同步工具'}
+              {syncing ? (
+                <Box component="span" sx={{"display":'inline-flex',"alignItems":'center',"gap":'6px',"animation":'cdf-spin 1s linear infinite',"@keyframes cdf-spin":{"from":{"transform":'rotate(0deg)'},"to":{"transform":'rotate(360deg)'}}}}>
+                  <RefreshCw size={14} />
+                  同步中…
+                </Box>
+              ) : '发现并同步工具'}
             </UIButton>
           ) : null}
           <UIButton

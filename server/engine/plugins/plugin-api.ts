@@ -88,7 +88,7 @@ export async function handleListPlugins(
       const search = query.search.toLowerCase();
       plugins = plugins.filter((p) =>
         p.pluginId.toLowerCase().includes(search) ||
-        p.manifest.name.toLowerCase().includes(search) ||
+        (p.manifest.name ?? '').toLowerCase().includes(search) ||
         (p.manifest.description ?? '').toLowerCase().includes(search),
       );
     }
@@ -107,7 +107,7 @@ export async function handleListPlugins(
           version: p.manifest.version,
           status: p.status,
           capabilities: p.capabilities,
-        })),
+        } as any)),
         total,
         page,
         pageSize,

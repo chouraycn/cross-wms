@@ -131,12 +131,12 @@ export function createImageGenerateStatusActionResult(
       content: [
         {
           type: "text",
-          text: buildImageGenerationTaskStatusListText(activeTasks) as string,
+          text: buildImageGenerationTaskStatusListText((activeTasks as any)) as string,
         },
       ],
       details: {
         action: "status",
-        ...(buildImageGenerationTaskStatusListDetails(activeTasks) as Record<string, unknown>),
+        ...(buildImageGenerationTaskStatusListDetails((activeTasks as any)) as Record<string, unknown>),
       },
     };
   }

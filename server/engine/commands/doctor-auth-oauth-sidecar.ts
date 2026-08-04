@@ -2,8 +2,8 @@
 /** Doctor repair for legacy OAuth sidecar files and inline auth profile stores. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { listAgentIds, resolveAgentDir, resolveDefaultAgentDir } from "@openclaw-src/agents/agent-scope.js";
 import { AUTH_STORE_VERSION } from "@openclaw-src/agents/auth-profiles/constants.js";
 import { resolveAuthStorePath } from "@openclaw-src/agents/auth-profiles/paths.js";

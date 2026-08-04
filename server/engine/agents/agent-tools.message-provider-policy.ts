@@ -1,11 +1,37 @@
 /**
- * 移植自 openclaw/src/agents/agent-tools.message-provider-policy.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Message-provider tool filtering.
+ * Channels can restrict tool names after runtime assembly when the active
+ * transport cannot safely render or execute a class of tools.
  */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 
-export function filterToolsByMessageProvider(..._args: unknown[]): unknown {
-  return undefined;
+const TOOL_DENY_BY_MESSAGE_PROVIDER: Readonly<Record<string, readonly string[]>> = {
+  "discord-voice": ["tts"],
+  voice: ["tts"],
+};
+
+const TOOL_ALLOW_BY_MESSAGE_PROVIDER: Readonly<Record<string, readonly string[]>> = {
+  node: ["canvas", "image", "pdf", "tts", "web_fetch", "web_search"],
+};
+
+/** Applies message-provider filtering while preserving duplicate tool entries. */
+export function filterToolsByMessageProvider<TTool extends { name: string }>(
+  tools: readonly TTool[],
+  messageProvider?: string,
+): TTool[] {
+  const normalizedProvider = normalizeOptionalLowercaseString(messageProvider);
+  if (!normalizedProvider) {
+    return [...tools];
+  }
+  const allowedTools = TOOL_ALLOW_BY_MESSAGE_PROVIDER[normalizedProvider];
+  if (allowedTools && allowedTools.length > 0) {
+    const allowedSet = new Set(allowedTools);
+    return tools.filter((tool) => allowedSet.has(tool.name));
+  }
+  const deniedTools = TOOL_DENY_BY_MESSAGE_PROVIDER[normalizedProvider];
+  if (!deniedTools || deniedTools.length === 0) {
+    return [...tools];
+  }
+  const deniedSet = new Set(deniedTools);
+  return tools.filter((tool) => !deniedSet.has(tool.name));
 }

@@ -15,6 +15,7 @@ import type {
 import { registerGatewayMethod, getMethodRegistry } from "./methodRegistry.js";
 import { AcpSessionManager } from "../engine/acp/sessionManager.js";
 import { getActiveTurnCount } from "../engine/acp/activeTurns.js";
+import { executeToolCall } from "../engine/toolRegistry.js";
 
 // 内存存储（生产环境应使用数据库）
 const sessions = new Map<string, GatewaySession>();
@@ -246,6 +247,41 @@ async function toolsList(params: unknown, _ctx: GatewayMethodContext) {
 async function toolsGet(params: unknown, _ctx: GatewayMethodContext) {
   const { name } = params as { name: string };
   return tools.get(name) ?? null;
+}
+
+// ========== Tools Invoke ==========
+
+/**
+ * tools.invoke — 触发工具调用
+ * 参数: { tool: string, args?: object }
+ * 复用 toolRegistry.executeToolCall 执行内置工具，返回执行结果。
+ */
+async function toolsInvoke(params: unknown, _ctx: GatewayMethodContext) {
+  const { tool, args } = params as { tool?: string; args?: Record<string, unknown> };
+
+  if (!tool || typeof tool !== "string") {
+    return { ok: false, error: { code: "MISSING_PARAMS", message: "tool is required" } };
+  }
+
+  try {
+    const resultStr = await executeToolCall({
+      id: `invoke_${Date.now()}`,
+      type: "function" as const,
+      function: { name: tool, arguments: JSON.stringify(args ?? {}) },
+    });
+    let result: unknown = resultStr;
+    try {
+      result = JSON.parse(resultStr);
+    } catch {
+      // 非 JSON 结果保持字符串
+    }
+    return { ok: true, result };
+  } catch (e) {
+    return {
+      ok: false,
+      error: { code: "TOOL_ERROR", message: e instanceof Error ? e.message : String(e) },
+    };
+  }
 }
 
 // ========== Health Methods ==========
@@ -500,6 +536,10 @@ export function registerCoreMethods(): void {
   registerGatewayMethod("models.authLogout", modelsAuthLogout);
   registerGatewayMethod("tools.list", toolsList);
   registerGatewayMethod("tools.get", toolsGet);
+  // ---- 兼容别名（openclaw 命名，复用现有处理函数）----
+  registerGatewayMethod("tools.catalog", toolsList);   // tools.catalog = tools.list 别名
+  registerGatewayMethod("tools.effective", toolsList);  // tools.effective = tools.list 别名（返回当前生效工具）
+  registerGatewayMethod("tools.invoke", toolsInvoke);   // tools.invoke — 新增，触发工具调用
   registerGatewayMethod("health.get", healthGet);
   registerGatewayMethod("system.stats", systemStats);
   registerGatewayMethod("system.methods.list", systemMethodsList);

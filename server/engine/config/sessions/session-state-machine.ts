@@ -1,7 +1,7 @@
 import { logger } from '../../../logger.js';
-import type { SessionStatus } from './types.js';
+import type { SessionGoalStatus } from './types.js';
 
-type State = SessionStatus;
+type State = SessionGoalStatus;
 
 interface Transition {
   from: State | State[];
@@ -12,7 +12,7 @@ interface Transition {
 
 interface StateMachineContext {
   sessionId: string;
-  currentStatus: SessionStatus;
+  currentStatus: SessionGoalStatus;
   metadata: Record<string, unknown>;
 }
 
@@ -85,7 +85,7 @@ export class SessionStateMachine {
   private currentState: State;
   private context: StateMachineContext;
 
-  constructor(sessionId: string, initialStatus: SessionStatus) {
+  constructor(sessionId: string, initialStatus: SessionGoalStatus) {
     this.currentState = initialStatus;
     this.context = {
       sessionId,
@@ -171,14 +171,14 @@ export class SessionStateMachine {
   }
 }
 
-export function isValidTransition(from: SessionStatus, to: SessionStatus): boolean {
+export function isValidTransition(from: SessionGoalStatus, to: SessionGoalStatus): boolean {
   return TRANSITIONS.some(t => {
     const fromStates = Array.isArray(t.from) ? t.from : [t.from];
     return fromStates.includes(from) && t.to === to;
   });
 }
 
-export function getValidTransitions(from: SessionStatus): SessionStatus[] {
+export function getValidTransitions(from: SessionGoalStatus): SessionGoalStatus[] {
   const transitions = TRANSITIONS.filter(t => {
     const fromStates = Array.isArray(t.from) ? t.from : [t.from];
     return fromStates.includes(from);

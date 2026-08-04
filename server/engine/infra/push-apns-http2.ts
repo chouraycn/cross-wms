@@ -1,6 +1,6 @@
 // 打开 APNs HTTP/2 会话，可选通过受管代理隧道。
 // 降级：
-//  - @openclaw/normalization-core/number-coercion → ./_runtime-stubs.js
+//  - @cdf-know/normalization-core/number-coercion → ./_runtime-stubs.js
 //  - net/proxy/active-proxy-state 未移植 → 内联降级为 undefined（无代理）
 //  - net/proxy/proxy-tls 未移植 → 内联类型降级
 //  - openHttpConnectTunnel 未移植 → probeApnsHttp2ReachabilityViaProxy 返回降级结果（status=0）

@@ -2,7 +2,7 @@
 // 在心跳事件文本被加入 prompt 之前进行过滤。
 //
 // 降级策略：
-//  - 源文件依赖 @openclaw/normalization-core/string-coerce 的 normalizeLowercaseStringOrEmpty
+//  - 源文件依赖 @cdf-know/normalization-core/string-coerce 的 normalizeLowercaseStringOrEmpty
 //    （cross-wms 已在 ./string-coerce.js 中提供同名导出）。
 //  - 源文件依赖 ../auto-reply/heartbeat.js 的 HEARTBEAT_RESPONSE_TOOL_INSTRUCTIONS 与
 //    ../auto-reply/tokens.js 的 HEARTBEAT_TOKEN。cross-wms 未移植这些模块，

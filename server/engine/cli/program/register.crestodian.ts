@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Crestodian command registration: setup/repair assistant entrypoint exposed from the root CLI.
 import type { Command } from "commander";
 import { theme } from "../../../packages/terminal-core/src/theme.js";

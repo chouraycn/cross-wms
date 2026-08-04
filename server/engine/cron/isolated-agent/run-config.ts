@@ -1,32 +1,52 @@
-import type { IsolatedAgentRuntimeConfig } from "./types.js";
+/** Builds isolated cron runner config from global defaults plus agent overrides. */
+import type { resolveAgentConfig } from "../../agents/agent-scope.js";
+import type { AgentDefaultsConfig } from "../../config/types.js";
 
-const DEFAULT_TIMEOUT_SECONDS = 300;
-const DEFAULT_NO_OUTPUT_TIMEOUT_SECONDS = 120;
-const DEFAULT_MAX_OUTPUT_BYTES = 1024 * 1024 * 10;
+type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
 
-export function resolveIsolatedAgentRuntimeConfig(
-  raw?: Partial<IsolatedAgentRuntimeConfig>,
-): IsolatedAgentRuntimeConfig {
+function extractCronAgentDefaultsOverride(agentConfigOverride?: ResolvedAgentConfig) {
+  const {
+    model: overrideModel,
+    sandbox: _agentSandboxOverride,
+    ...agentOverrideRest
+  } = agentConfigOverride ?? {};
   return {
-    allowUnsafeExternalContent: raw?.allowUnsafeExternalContent ?? false,
-    lightContext: raw?.lightContext ?? false,
-    toolsAllow: raw?.toolsAllow ? [...raw.toolsAllow] : undefined,
-    timeoutSeconds: raw?.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS,
-    noOutputTimeoutSeconds: raw?.noOutputTimeoutSeconds ?? DEFAULT_NO_OUTPUT_TIMEOUT_SECONDS,
-    maxOutputBytes: raw?.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
+    overrideModel,
+    definedOverrides: Object.fromEntries(
+      Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
+    ) as Partial<AgentDefaultsConfig>,
   };
 }
 
-export function validateIsolatedAgentRuntimeConfig(config: IsolatedAgentRuntimeConfig): string[] {
-  const errors: string[] = [];
-  if (config.timeoutSeconds !== undefined && (config.timeoutSeconds < 1 || config.timeoutSeconds > 86400)) {
-    errors.push("timeoutSeconds must be between 1 and 86400");
+function mergeCronAgentModelOverride(params: {
+  defaults: AgentDefaultsConfig;
+  overrideModel: ResolvedAgentConfig["model"] | undefined;
+}) {
+  const nextDefaults: AgentDefaultsConfig = { ...params.defaults };
+  const existingModel =
+    nextDefaults.model && typeof nextDefaults.model === "object" ? nextDefaults.model : {};
+  if (typeof params.overrideModel === "string") {
+    nextDefaults.model = { ...existingModel, primary: params.overrideModel };
+  } else if (params.overrideModel) {
+    nextDefaults.model = { ...existingModel, ...params.overrideModel };
   }
-  if (config.noOutputTimeoutSeconds !== undefined && (config.noOutputTimeoutSeconds < 1 || config.noOutputTimeoutSeconds > 86400)) {
-    errors.push("noOutputTimeoutSeconds must be between 1 and 86400");
-  }
-  if (config.maxOutputBytes !== undefined && (config.maxOutputBytes < 1024 || config.maxOutputBytes > 1024 * 1024 * 100)) {
-    errors.push("maxOutputBytes must be between 1024 and 104857600");
-  }
-  return errors;
+  return nextDefaults;
+}
+
+/** Builds the agent defaults snapshot used by isolated cron runs. */
+export function buildCronAgentDefaultsConfig(params: {
+  defaults?: AgentDefaultsConfig;
+  agentConfigOverride?: ResolvedAgentConfig;
+}) {
+  const { overrideModel, definedOverrides } = extractCronAgentDefaultsOverride(
+    params.agentConfigOverride,
+  );
+  // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
+  // already merges global defaults with per-agent overrides using `agentId`;
+  // copying the agent sandbox into defaults clobbers global defaults and can
+  // double-apply nested agent overrides during isolated cron runs.
+  return mergeCronAgentModelOverride({
+    defaults: Object.assign({}, params.defaults, definedOverrides),
+    overrideModel,
+  });
 }

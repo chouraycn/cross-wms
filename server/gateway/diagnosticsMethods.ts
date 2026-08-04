@@ -119,6 +119,95 @@ function measureEventLoopLagMs(): number {
   return Math.round(elapsed * 1000) / 1000;
 }
 
+// 进程级稳定性计数器（不持久化，进程重启后归零）
+const stabilityCounters = {
+  /** 累计未捕获异常次数 */
+  uncaughtExceptions: 0,
+  /** 累计未处理的 Promise rejection 次数 */
+  unhandledRejections: 0,
+  /** 模块加载时间戳 */
+  since: Date.now(),
+};
+
+// 注册进程级异常监听以累计稳定性计数（仅注册一次）
+let stabilityListenersRegistered = false;
+function ensureStabilityListeners(): void {
+  if (stabilityListenersRegistered) return;
+  stabilityListenersRegistered = true;
+  try {
+    process.on('uncaughtException', () => {
+      stabilityCounters.uncaughtExceptions++;
+    });
+    process.on('unhandledRejection', () => {
+      stabilityCounters.unhandledRejections++;
+    });
+  } catch {
+    // ignore — 某些环境可能不允许注册监听
+  }
+}
+
+// ========== Diagnostics Stability ==========
+
+async function diagnosticsStability(_params: unknown, _ctx: GatewayMethodContext) {
+  ensureStabilityListeners();
+
+  const memoryUsage = process.memoryUsage();
+  const now = Date.now();
+  const uptimeMs = now - serverStartedAt;
+
+  const heapUsedMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
+  const heapTotalMB = Math.round(memoryUsage.heapTotal / 1024 / 1024);
+  const heapUsageRatio = heapTotalMB > 0 ? heapUsedMB / heapTotalMB : 0;
+  const rssMB = Math.round(memoryUsage.rss / 1024 / 1024);
+
+  // 事件循环延迟（粗略）
+  const eventLoopLagMs = measureEventLoopLagMs();
+
+  // 平均响应时间（来自性能采样窗口）
+  const avgResponseTimeMs = computeAvgResponseTimeMs();
+
+  // 内存压力等级
+  const memoryPressure: 'nominal' | 'elevated' | 'high' =
+    heapUsageRatio < 0.7 ? 'nominal' : heapUsageRatio < 0.9 ? 'elevated' : 'high';
+
+  // 综合稳定性评分（0-100，越高越稳定）
+  let stabilityScore = 100;
+  if (heapUsageRatio >= 0.9) stabilityScore -= 30;
+  else if (heapUsageRatio >= 0.7) stabilityScore -= 15;
+  if (eventLoopLagMs > 100) stabilityScore -= 20;
+  else if (eventLoopLagMs > 50) stabilityScore -= 10;
+  if (avgResponseTimeMs > 2000) stabilityScore -= 20;
+  else if (avgResponseTimeMs > 1000) stabilityScore -= 10;
+  stabilityScore -= Math.min(30, stabilityCounters.uncaughtExceptions * 10);
+  stabilityScore -= Math.min(20, stabilityCounters.unhandledRejections * 5);
+  stabilityScore = Math.max(0, Math.min(100, stabilityScore));
+
+  const status: 'stable' | 'degraded' | 'unstable' =
+    stabilityScore >= 80 ? 'stable' : stabilityScore >= 50 ? 'degraded' : 'unstable';
+
+  return {
+    ok: true,
+    timestamp: now,
+    status,
+    stabilityScore,
+    uptimeMs,
+    since: stabilityCounters.since,
+    memory: {
+      heapUsedMB,
+      heapTotalMB,
+      heapUsageRatio: Math.round(heapUsageRatio * 100) / 100,
+      rssMB,
+      pressure: memoryPressure,
+    },
+    eventLoopLagMs,
+    avgResponseTimeMs,
+    incidents: {
+      uncaughtExceptions: stabilityCounters.uncaughtExceptions,
+      unhandledRejections: stabilityCounters.unhandledRejections,
+    },
+  };
+}
+
 /**
  * 注册所有诊断方法
  */
@@ -126,4 +215,5 @@ export function registerDiagnosticsMethods(registry: GatewayMethodRegistry): voi
   registry.register('diagnostics.health', diagnosticsHealth);
   registry.register('diagnostics.system', diagnosticsSystem);
   registry.register('diagnostics.performance', diagnosticsPerformance);
+  registry.register('diagnostics.stability', diagnosticsStability);
 }

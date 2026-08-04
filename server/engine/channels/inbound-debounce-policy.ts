@@ -2,7 +2,7 @@
  * Channel inbound debounce policy. — 移植自 openclaw/src/channels/inbound-debounce-policy.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/string-coerce (normalizeOptionalString) →
+ *  - @cdf-know/normalization-core/string-coerce (normalizeOptionalString) →
  *    cross-wms ../infra/string-coerce.js
  *  - ../auto-reply/command-detection.js (isControlCommandMessage) → ./_openclaw-stubs.js
  *  - ../auto-reply/commands-registry.js (CommandNormalizeOptions) → ./_openclaw-stubs.js

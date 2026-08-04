@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Interactive terminal theme loader.
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves auth profile settings that agent runner forwards to providers.
 import {
   resolveProviderIdForAuth,

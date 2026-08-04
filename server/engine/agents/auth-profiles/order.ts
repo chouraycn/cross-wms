@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Auth profile ordering and eligibility.
@@ -8,7 +7,7 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
+} from "@cdf-know/model-catalog-core/provider-id";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
   type ProviderAuthAliasLookupParams,

@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/gateway/server-utils.ts
 //
 // 适配说明：
-//  - @openclaw/normalization-core/string-normalization → ../infra/string-coerce.js
+//  - @cdf-know/normalization-core/string-normalization → ../infra/string-coerce.js
 //    （normalizeTrimmedStringList 在 cross-wms string-coerce 中不存在，此处内联实现）
 //  - ../infra/voicewake.js → ../infra/voicewake.js（cross-wms 已移植，含 defaultVoiceWakeTriggers）
 
@@ -12,7 +12,7 @@ import { defaultVoiceWakeTriggers } from "../infra/voicewake.js";
 /**
  * 将任意输入规范化为去重排序后的 trimmed 字符串列表。
  *
- * 内联实现：openclaw 的 @openclaw/normalization-core/string-normalization 提供
+ * 内联实现：openclaw 的 @cdf-know/normalization-core/string-normalization 提供
  * normalizeTrimmedStringList，但 cross-wms 的 string-coerce 尚未包含此函数。
  * 行为与 openclaw 一致：字符串按逗号/换行拆分，数组逐项处理，trim 后去重排序。
  */

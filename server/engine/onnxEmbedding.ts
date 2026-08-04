@@ -19,6 +19,11 @@ import { createHash } from 'crypto';
 import https from 'https';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
+import { fileURLToPath } from 'node:url';
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===================== 常量 =====================
 

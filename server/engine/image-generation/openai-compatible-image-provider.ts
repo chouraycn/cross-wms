@@ -16,6 +16,8 @@ import type {
   ImageGenerationResult,
 } from "./types.js";
 
+export { createOpenAiCompatibleImageProvider as createOpenAiCompatibleImageGenerationProvider };
+
 export type OpenAiCompatibleImageProviderOptions = {
   id: string;
   label: string;

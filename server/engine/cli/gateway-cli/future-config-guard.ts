@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   cloneEnvWithPlatformSemantics,
   createConfigRuntimeEnv,
@@ -30,7 +29,7 @@ function resolveGatewayRunFutureConfigBlock(params: GatewayRunFutureConfigGuardP
     !params.opts.reset &&
     Boolean(
       candidateConfig
-        ? createConfigRuntimeEnv(candidateConfig, process.env).OPENCLAW_SERVICE_MARKER?.trim()
+        ? (createConfigRuntimeEnv(candidateConfig, process.env) as any).OPENCLAW_SERVICE_MARKER?.trim()
         : undefined,
     );
   const serviceMode = processServiceMode || candidateServiceMode;
@@ -42,9 +41,9 @@ function resolveGatewayRunFutureConfigBlock(params: GatewayRunFutureConfigGuardP
       : params.opts.force
         ? { action: "force-kill gateway port listeners", exitCode: 1 }
         : { action: "run automatic gateway startup migrations", exitCode: 1 };
-  const guardEnv = serviceMode ? cloneEnvWithPlatformSemantics(process.env) : process.env;
+  const guardEnv = serviceMode ? cloneEnvWithPlatformSemantics(process.env) : process.env as any;
   if (serviceMode) {
-    delete guardEnv[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV];
+    delete guardEnv[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string];
   }
   const block = resolveFutureConfigActionBlock({
     action: futureAction.action,
@@ -69,7 +68,7 @@ export function enforceGatewayRunFutureConfigGuard(
     return true;
   }
   if (resolved.serviceMode) {
-    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV];
+    delete process.env[ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV as string];
   }
   params.runtime.error(formatFutureConfigActionBlock(resolved.block));
   params.runtime.exit(resolved.exitCode);

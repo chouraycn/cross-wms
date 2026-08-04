@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests agent harness runtime helpers and task dispatch behavior.
  */

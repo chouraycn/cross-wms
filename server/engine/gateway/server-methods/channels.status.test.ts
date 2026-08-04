@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Gateway channels.status method tests.
  */

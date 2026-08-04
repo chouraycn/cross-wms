@@ -1,17 +1,54 @@
 /**
- * 移植自 openclaw/src/agents/model-catalog-lookup.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Looks up model catalog entries and input capability support.
  */
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import type { ModelCatalogEntry, ModelInputType } from "./model-catalog.types.js";
 
-export function modelSupportsInput(..._args: unknown[]): unknown {
-  return undefined;
+/** Returns whether a catalog entry declares support for an input modality. */
+export function modelSupportsInput(
+  entry: ModelCatalogEntry | undefined,
+  input: ModelInputType,
+): boolean {
+  return entry?.input?.includes(input) ?? false;
 }
-export function findModelInCatalog(..._args: unknown[]): unknown {
-  return [];
+
+/** Finds a provider-qualified model entry in a catalog. */
+export function findModelInCatalog(
+  catalog: ModelCatalogEntry[],
+  provider: string,
+  modelId: string,
+): ModelCatalogEntry | undefined {
+  const normalizedProvider = normalizeProviderId(provider);
+  const normalizedModelId = normalizeLowercaseStringOrEmpty(modelId);
+  return catalog.find(
+    (entry) =>
+      normalizeProviderId(entry.provider) === normalizedProvider &&
+      normalizeLowercaseStringOrEmpty(entry.id) === normalizedModelId,
+  );
 }
-export function findModelCatalogEntry(..._args: unknown[]): unknown {
-  return [];
+
+/** Finds a model entry, requiring uniqueness when provider is omitted. */
+export function findModelCatalogEntry(
+  catalog: ModelCatalogEntry[],
+  params: { provider?: string; modelId: string },
+): ModelCatalogEntry | undefined {
+  const modelId = normalizeOptionalString(params.modelId) ?? "";
+  if (!modelId) {
+    return undefined;
+  }
+
+  const provider = normalizeOptionalString(params.provider);
+  if (provider) {
+    return findModelInCatalog(catalog, provider, modelId);
+  }
+
+  const normalizedModelId = normalizeLowercaseStringOrEmpty(modelId);
+  const matches = catalog.filter(
+    (entry) => normalizeLowercaseStringOrEmpty(entry.id) === normalizedModelId,
+  );
+  return matches.length === 1 ? matches[0] : undefined;
 }

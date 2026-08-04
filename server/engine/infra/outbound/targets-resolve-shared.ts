@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared target resolution applies plugin defaults, allowlists, prefixes, and
 // fallback errors for direct and loaded-channel send paths.
 import { mapAllowFromEntries } from "openclaw/plugin-sdk/channel-config-helpers";

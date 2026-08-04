@@ -5,8 +5,8 @@
  * 负载前在此映射请求值。
  *
  * 注意：原 openclaw 实现依赖：
- *   - @openclaw/normalization-core/string-coerce 中的 normalizeLowercaseStringOrEmpty
- *   - @openclaw/normalization-core/string-normalization 中的 normalizeStringEntries、uniqueStrings
+ *   - @cdf-know/normalization-core/string-coerce 中的 normalizeLowercaseStringOrEmpty
+ *   - @cdf-know/normalization-core/string-normalization 中的 normalizeStringEntries、uniqueStrings
  * 本地降级实现：以上工具函数均内联实现。
  */
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared contract fixtures for agent prompt overlay runtime behavior.
  */

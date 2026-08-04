@@ -5,7 +5,7 @@ import {
   isValidEnvSecretRefId,
   type SecretRef,
   type SecretRefSource,
-} from "../config/types/secrets.js";
+} from "./config-secret-types.js";
 
 /**
  * Runtime secret-reference grammar shared by config parsing, plugin SDK schemas,

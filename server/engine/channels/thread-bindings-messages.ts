@@ -2,7 +2,7 @@
  * 通道中立的 thread-binding 消息构建器 — 移植自 openclaw/src/channels/thread-bindings-messages.ts
  *
  * 降级策略：
- *  - 依赖 @openclaw/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
+ *  - 依赖 @cdf-know/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
  *  - 依赖 ../infra/system-message.js 的 prefixSystemMessage → cross-wms 已有实现
  *
  * Keep text system-prefixed and compact because callers post it directly into user-visible threads.

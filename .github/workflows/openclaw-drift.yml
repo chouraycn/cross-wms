@@ -14,9 +14,14 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+concurrency:
+  group: openclaw-drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   drift-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:

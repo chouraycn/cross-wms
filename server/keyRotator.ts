@@ -11,7 +11,7 @@
 
 import path from 'path';
 import fs from 'fs';
-import type { ModelConfig } from './modelsStore.js';
+import type { ModelConfig } from '../shared/types/models.js';
 import { logger } from './logger.js';
 import { AppPaths } from './config/appPaths.js';
 

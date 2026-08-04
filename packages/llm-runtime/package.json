@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/llm-runtime",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow LlmRuntime - LLM 运行时",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

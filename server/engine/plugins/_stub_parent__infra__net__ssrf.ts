@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED STUB → REAL IMPLEMENTATION ===
 // Source: openclaw/src/plugin-sdk/ssrf-policy.ts
 // Status: 已迁移 — 真实实现在 server/engine/infra/net/ssrf-policy.ts

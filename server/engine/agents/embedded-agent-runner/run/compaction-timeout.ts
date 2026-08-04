@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Computes run timeout behavior while compaction is in progress.
  */

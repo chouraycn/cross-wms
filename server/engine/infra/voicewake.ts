@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/infra/voicewake.ts（降级实现）。
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-coerce 替换为 ./string-coerce.js
+//  - @cdf-know/normalization-core/string-coerce 替换为 ./string-coerce.js
 //  - ../state/openclaw-state-db.js 未移植，降级为文件 JSON 持久化
 //  - ./kysely-sync.js 保留类型引用但运行时降级
 //  - 状态持久化到 ${stateDir}/voicewake-triggers.json

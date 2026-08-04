@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime-loaded channel target helpers used by cron delivery resolution. */
 import type { ChannelId } from "../../channels/plugins/types.public.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";

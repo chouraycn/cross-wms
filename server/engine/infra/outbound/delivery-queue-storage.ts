@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Delivery queue storage persists replayable outbound send intents and tracks
 // platform-send recovery state in the shared SQLite queue.
 import type { ReplyDispatchKind } from "../../auto-reply/reply/reply-dispatcher.types.js";

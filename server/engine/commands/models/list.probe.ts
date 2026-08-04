@@ -2,7 +2,7 @@
 /** Auth probe planning and execution helpers for model diagnostics. */
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
@@ -35,7 +35,7 @@ import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { coerceSecretRef, normalizeSecretInputString } from "@openclaw-src/config/types.secrets.js";
 import { type SecretRefResolveCache, resolveSecretRefString } from "@openclaw-src/secrets/resolve.js";
 import { createLazyImportLoader } from "@openclaw-src/shared/lazy-promise.js";
-import { redactSecrets } from "@openclaw-src/status-all/format.js";
+import { redactSecrets } from "@openclaw-src/commands/status-all/format.js";
 import { DEFAULT_PROVIDER, formatMs } from "./shared.js";
 
 const PROBE_PROMPT = "Reply with OK. Do not use tools.";

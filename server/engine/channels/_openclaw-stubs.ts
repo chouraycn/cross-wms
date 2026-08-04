@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * Channels 本地 stub 与降级实现 — 为移植自 openclaw 的 channels 模块提供缺失依赖的占位实现。
  *
  * 设计原则：
@@ -25,6 +31,13 @@
  *  - ../agents/embedded-agent-utils.js
  *  - ../utils.js / utils/boolean.js / utils/directive-tags.js / utils/conversation-target.js / utils/delivery-context.shared.js
  */
+
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // ./mention-gating.js —— InboundImplicitMentionKind / InboundMentionFacts
@@ -302,27 +315,14 @@ export function listBundledChannelIds(
   env?: NodeJS.ProcessEnv,
   discovery?: unknown,
 ): readonly string[] {
-  try {
-    // 延迟导入以避免循环依赖
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { listChannelCatalogEntries } = require("../plugins/channel-catalog-registry.js") as {
-      listChannelCatalogEntries: (params: {
-        origin?: string;
-        env?: NodeJS.ProcessEnv;
-        discovery?: unknown;
-      }) => Array<{ channel?: { id?: string } }>;
-    };
-    return listChannelCatalogEntries({
-      origin: "bundled",
-      env,
-      discovery,
-    })
-      .map((entry) => entry.channel?.id)
-      .filter((id): id is string => Boolean(id))
-      .sort((a, b) => a.localeCompare(b));
-  } catch {
-    return [];
-  }
+  return listChannelCatalogEntries({
+    origin: "bundled",
+    env,
+    discovery,
+  })
+    .map((entry) => entry.channel?.id)
+    .filter((id): id is string => Boolean(id))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 // ============================================================================
@@ -439,25 +439,35 @@ export function listOfficialExternalChannelEnvVars(): ReadonlyArray<{
 // ./streaming.js —— StreamingCompatEntry / StreamingMode / 进度草稿辅助
 // ============================================================================
 //
-// 降级原因：cross-wms 的 streaming.ts 是独立简化实现，未导出 openclaw 的
-// StreamingCompatEntry / StreamingMode / ChannelProgressDraftLine / 进度草稿合成器辅助等。
-// 这里给出最小类型与降级函数实现，保证依赖方在 cross-wms 中可编译且优雅降级。
+// 复用 cross-wms 已有的真实实现（channels/streaming.ts），
+// 该文件已完整移植自 openclaw，提供流式配置解析、进度草稿合成等全部能力。
+// 以下通过重新导出与薄包装函数委托给真实实现。
 
-/** 流式预览兼容条目（与 openclaw streaming 一致的最小结构）。 */
-export type StreamingCompatEntry = {
-  minChars?: number;
-  maxChars?: number;
-  breakPreference?: "paragraph" | "newline" | "sentence";
-  previewToolProgress?: boolean;
-  commentaryProgress?: boolean;
-  suppressDefaultToolProgressMessages?: boolean;
-  [key: string]: unknown;
-};
+import {
+  createChannelProgressDraftGate as createChannelProgressDraftGateImpl,
+  formatChannelProgressDraftText as formatChannelProgressDraftTextImpl,
+  isChannelProgressDraftWorkToolName as isChannelProgressDraftWorkToolNameImpl,
+  mergeChannelProgressDraftLine as mergeChannelProgressDraftLineImpl,
+  normalizeChannelProgressDraftLineIdentity as normalizeChannelProgressDraftLineIdentityImpl,
+  resolveChannelProgressDraftMaxLineChars as resolveChannelProgressDraftMaxLineCharsImpl,
+  resolveChannelProgressDraftMaxLines as resolveChannelProgressDraftMaxLinesImpl,
+  resolveChannelStreamingPreviewChunk as resolveChannelStreamingPreviewChunkImpl,
+  resolveChannelStreamingPreviewToolProgress as resolveChannelStreamingPreviewToolProgressImpl,
+  resolveChannelStreamingProgressCommentary as resolveChannelStreamingProgressCommentaryImpl,
+  resolveChannelStreamingSuppressDefaultToolProgressMessages as resolveChannelStreamingSuppressDefaultToolProgressMessagesImpl,
+  type StreamingCompatEntry as StreamingCompatEntryImpl,
+} from "./streaming.js";
 
-/** 流式模式（与 openclaw streaming 一致）。 */
+/** 流式预览兼容条目（重新导出自 streaming.ts）。 */
+export type StreamingCompatEntry = StreamingCompatEntryImpl;
+
+/** 流式模式（重新导出自 streaming.ts）。 */
 export type StreamingMode = "off" | "progress" | "live";
 
-/** 进度草稿行（与 openclaw streaming 一致的最小结构）。 */
+/**
+ * 进度草稿行（兼容包装：在 streaming.ts 真实类型基础上添加索引签名，
+ * 保证依赖方解构访问额外字段时类型兼容）。
+ */
 export type ChannelProgressDraftLine = {
   id?: string;
   kind?: string;
@@ -471,31 +481,16 @@ export type ChannelProgressDraftLine = {
   [key: string]: unknown;
 };
 
-/** 解析通道流式预览块大小（移植自 openclaw channels/streaming.ts）。 */
+/** 解析通道流式预览块大小（委托给 streaming.ts 真实实现）。 */
 export function resolveChannelStreamingPreviewChunk(
   entry: unknown,
 ): StreamingCompatEntry | undefined {
-  if (!entry || typeof entry !== "object") {
-    return undefined;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  const configChunk =
-    streaming && streaming.preview && typeof streaming.preview === "object"
-      ? (streaming.preview as Record<string, unknown>).chunk
-      : undefined;
-  const draftChunk = record.draftChunk;
-  const chunk = configChunk ?? draftChunk;
-  if (!chunk || typeof chunk !== "object") {
-    return undefined;
-  }
-  return chunk as StreamingCompatEntry;
+  return resolveChannelStreamingPreviewChunkImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
+  ) as StreamingCompatEntry | undefined;
 }
 
-/** 创建进度草稿门控（移植自 openclaw channels/streaming.ts）。 */
+/** 创建进度草稿门控（委托给 streaming.ts 真实实现）。 */
 export function createChannelProgressDraftGate(params: {
   onStart: () => Promise<void> | void;
 }): {
@@ -504,322 +499,94 @@ export function createChannelProgressDraftGate(params: {
   noteWork: () => Promise<boolean>;
   cancel: () => void;
 } {
-  const initialDelayMs = 5_000;
-  let started = false;
-  let disposed = false;
-  let workEvents = 0;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let startPromise: Promise<void> | undefined;
-
-  const clearTimer = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = undefined;
-    }
-  };
-
-  const start = (): Promise<void> => {
-    if (disposed || started) {
-      return startPromise ?? Promise.resolve();
-    }
-    if (startPromise) {
-      return startPromise;
-    }
-    clearTimer();
-    started = true;
-    const nextStart = Promise.resolve()
-      .then(params.onStart)
-      .then(() => {
-        if (disposed) {
-          started = false;
-        }
-        if (startPromise === nextStart) {
-          startPromise = undefined;
-        }
-      })
-      .catch((error: unknown) => {
-        if (startPromise === nextStart) {
-          startPromise = undefined;
-        }
-        started = false;
-        throw error;
-      });
-    startPromise = nextStart;
-    return startPromise;
-  };
-
-  const schedule = () => {
-    if (timer || started || disposed || initialDelayMs < 0) {
-      return;
-    }
-    timer = setTimeout(() => {
-      timer = undefined;
-      void start().catch((error: unknown) => {
-        // 定时器启动失败没有等待的调用方，在此 SDK 边界报告
-        console.warn(`[progress-draft] channel progress draft failed to start: ${String(error)}`);
-      });
-    }, initialDelayMs);
-  };
-
-  return {
-    get hasStarted() {
-      return started;
-    },
-    async noteWork(): Promise<boolean> {
-      if (disposed) {
-        return false;
-      }
-      workEvents += 1;
-      if (startPromise) {
-        await startPromise;
-        return started;
-      }
-      if (started) {
-        return true;
-      }
-      // 第二个工作事件立即启动
-      if (workEvents > 1) {
-        await start();
-        return started;
-      }
-      schedule();
-      return false;
-    },
-    async startNow(): Promise<boolean> {
-      await start();
-      return started;
-    },
-    cancel(): void {
-      disposed = true;
-      started = false;
-      clearTimer();
-    },
+  return createChannelProgressDraftGateImpl(params) as {
+    hasStarted: boolean;
+    startNow: () => Promise<boolean>;
+    noteWork: () => Promise<boolean>;
+    cancel: () => void;
   };
 }
 
-/** 格式化进度草稿文本（移植自 openclaw channels/streaming.ts）。 */
+/** 格式化进度草稿文本（委托给 streaming.ts 真实实现）。 */
 export function formatChannelProgressDraftText(params: {
   entry?: StreamingCompatEntry | null;
   lines?: ReadonlyArray<string | ChannelProgressDraftLine>;
   seed?: string;
   formatLine?: (line: string) => string;
 }): string {
-  const lines = params.lines ?? [];
-  if (lines.length === 0) {
-    return "";
-  }
-  const maxLineChars = resolveChannelProgressDraftMaxLineChars(params.entry);
-  const formatLine = params.formatLine ?? ((line: string) => line);
-  const bullet = "•";
-
-  const renderedLines = lines
-    .map((line) => {
-      const rawText = typeof line === "string" ? line : (line.text ?? line.label ?? "");
-      const text = rawText.replace(/\s+/g, " ").trim();
-      if (!text) {
-        return undefined;
-      }
-      // 超长行截断
-      const chars = Array.from(text);
-      const compacted =
-        chars.length <= maxLineChars
-          ? text
-          : `${chars.slice(0, maxLineChars - 1).join("").trimEnd()}…`;
-      return formatLine(compacted);
-    })
-    .filter((line): line is string => Boolean(line));
-
-  if (renderedLines.length === 0) {
-    return "";
-  }
-  return renderedLines.join("\n");
+  return formatChannelProgressDraftTextImpl({
+    entry: params.entry as StreamingCompatEntryImpl | null | undefined,
+    lines: params.lines as Array<string | Parameters<typeof formatChannelProgressDraftTextImpl>[0]["lines"][number]>,
+    seed: params.seed,
+    formatLine: params.formatLine,
+  });
 }
 
-/** 非工作类工具名集合（移植自 openclaw channels/streaming.ts）。 */
-const NON_WORK_PROGRESS_TOOL_NAMES = new Set([
-  "message",
-  "messages",
-  "reply",
-  "send",
-  "reaction",
-  "react",
-  "typing",
-]);
-
-/** 判断是否为工作类型工具名（移植自 openclaw channels/streaming.ts）。 */
+/** 判断是否为工作类型工具名（委托给 streaming.ts 真实实现）。 */
 export function isChannelProgressDraftWorkToolName(toolName: string): boolean {
-  const normalized = toolName?.trim().toLowerCase();
-  return Boolean(normalized && !NON_WORK_PROGRESS_TOOL_NAMES.has(normalized));
+  return isChannelProgressDraftWorkToolNameImpl(toolName);
 }
 
-/** 合并进度草稿行（移植自 openclaw channels/streaming.ts）。 */
+/** 合并进度草稿行（委托给 streaming.ts 真实实现）。 */
 export function mergeChannelProgressDraftLine<TLine>(
   lines: TLine[],
   line: ChannelProgressDraftLine | string,
   options?: { maxLines?: number },
 ): TLine[] {
-  const normalized = normalizeChannelProgressDraftLineIdentity(line);
-  if (!normalized) {
-    return lines;
-  }
-  const maxLines = Math.max(1, options?.maxLines ?? 8);
-  // 检查是否有可匹配的 id（用于原地更新）
-  if (typeof line === "object" && line.id) {
-    const lineId = line.id;
-    const existingIndex = lines.findIndex((entry) => {
-      if (typeof entry === "object" && entry !== null) {
-        const entryId = (entry as ChannelProgressDraftLine).id;
-        return entryId === lineId;
-      }
-      return false;
-    });
-    if (existingIndex >= 0) {
-      const next = [...lines];
-      next[existingIndex] = line as unknown as TLine;
-      return next.slice(-maxLines);
-    }
-  }
-  // 去重：与最后一行相同则不追加
-  const previous = lines.at(-1);
-  if (previous && normalizeChannelProgressDraftLineIdentity(previous) === normalized) {
-    return lines;
-  }
-  return [...lines, line as unknown as TLine].slice(-maxLines);
+  return mergeChannelProgressDraftLineImpl(
+    lines as Array<string | Parameters<typeof mergeChannelProgressDraftLineImpl>[0]>,
+    line as Parameters<typeof mergeChannelProgressDraftLineImpl>[1],
+    options,
+  ) as TLine[];
 }
 
-/** 规范化进度草稿行身份（移植自 openclaw channels/streaming.ts）。 */
+/** 规范化进度草稿行身份（委托给 streaming.ts 真实实现）。 */
 export function normalizeChannelProgressDraftLineIdentity(
   line: unknown,
 ): string | undefined {
-  if (!line) {
-    return undefined;
-  }
-  const text = typeof line === "string"
-    ? line
-    : typeof line === "object" && line !== null
-      ? ((line as ChannelProgressDraftLine).text ?? (line as ChannelProgressDraftLine).label ?? "")
-      : "";
-  return (
-    text
-      ?.replace(/`([^`]+)`/gu, "$1")
-      .replace(/\s+/g, " ")
-      .trim() ?? ""
+  const result = normalizeChannelProgressDraftLineIdentityImpl(
+    line as Parameters<typeof normalizeChannelProgressDraftLineIdentityImpl>[0],
+  );
+  return result || undefined;
+}
+
+/** 解析进度草稿最大行字符数（委托给 streaming.ts 真实实现）。 */
+export function resolveChannelProgressDraftMaxLineChars(entry: unknown): number {
+  return resolveChannelProgressDraftMaxLineCharsImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
   );
 }
 
-/** 解析进度草稿最大行字符数（移植自 openclaw channels/streaming.ts）。 */
-export function resolveChannelProgressDraftMaxLineChars(entry: unknown): number {
-  const defaultChars = 120;
-  if (!entry || typeof entry !== "object") {
-    return defaultChars;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  const progress =
-    streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
-      : null;
-  const configured = progress?.maxLineChars;
-  return typeof configured === "number" && Number.isInteger(configured) && configured > 0
-    ? configured
-    : defaultChars;
-}
-
-/** 解析进度草稿最大行数（移植自 openclaw channels/streaming.ts）。 */
+/** 解析进度草稿最大行数（委托给 streaming.ts 真实实现）。 */
 export function resolveChannelProgressDraftMaxLines(entry: unknown): number {
-  const defaultLines = 8;
-  if (!entry || typeof entry !== "object") {
-    return defaultLines;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  const progress =
-    streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
-      : null;
-  const configured = progress?.maxLines;
-  return typeof configured === "number" && Number.isInteger(configured) && configured > 0
-    ? configured
-    : defaultLines;
+  return resolveChannelProgressDraftMaxLinesImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
+  );
 }
 
-/** 解析通道流式进度评论开关（移植自 openclaw channels/streaming.ts）。 */
+/** 解析通道流式进度评论开关（委托给 streaming.ts 真实实现）。 */
 export function resolveChannelStreamingProgressCommentary(entry: unknown): boolean {
-  if (!entry || typeof entry !== "object") {
-    return false;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  // 仅 progress 模式下才可能开启评论
-  const mode = streaming?.mode ?? record.streamMode;
-  if (mode !== "progress") {
-    return false;
-  }
-  const progress =
-    streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
-      : null;
-  const commentary = progress?.commentary;
-  if (typeof commentary === "boolean") {
-    return commentary;
-  }
-  return false;
+  return resolveChannelStreamingProgressCommentaryImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
+  );
 }
 
-/** 解析通道流式预览工具进度开关（移植自 openclaw channels/streaming.ts）。 */
+/** 解析通道流式预览工具进度开关（委托给 streaming.ts 真实实现）。 */
 export function resolveChannelStreamingPreviewToolProgress(entry: unknown): boolean {
-  if (!entry || typeof entry !== "object") {
-    return true;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  const preview =
-    streaming && streaming.preview && typeof streaming.preview === "object"
-      ? (streaming.preview as Record<string, unknown>)
-      : null;
-  const toolProgress = preview?.toolProgress;
-  return typeof toolProgress === "boolean" ? toolProgress : true;
+  return resolveChannelStreamingPreviewToolProgressImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
+  );
 }
 
-/** 解析通道流式抑制默认工具进度消息（移植自 openclaw channels/streaming.ts）。 */
+/** 解析通道流式抑制默认工具进度消息（委托给 streaming.ts 真实实现）。 */
 export function resolveChannelStreamingSuppressDefaultToolProgressMessages(
   entry: unknown,
   options?: { draftStreamActive?: boolean; previewToolProgressEnabled?: boolean },
 ): boolean {
-  if (options?.draftStreamActive === false) {
-    return false;
-  }
-  if (!entry || typeof entry !== "object") {
-    return false;
-  }
-  const record = entry as Record<string, unknown>;
-  const streaming =
-    record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
-      : null;
-  const mode = streaming?.mode ?? record.streamMode;
-  if (mode === "off" || !mode) {
-    return false;
-  }
-  if (mode === "progress") {
-    return true;
-  }
-  if (options?.draftStreamActive === true) {
-    return true;
-  }
-  return options?.previewToolProgressEnabled ?? resolveChannelStreamingPreviewToolProgress(entry);
+  return resolveChannelStreamingSuppressDefaultToolProgressMessagesImpl(
+    entry as StreamingCompatEntryImpl | null | undefined,
+    options,
+  );
 }
 
 // ============================================================================
@@ -976,35 +743,15 @@ export async function expandAllowFromWithAccessGroups(params: {
   isSenderAllowed: (senderId: string, allowFrom: string[]) => boolean;
   resolveMembership?: AccessGroupMembershipResolver;
 }): Promise<string[]> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { expandAllowFromWithAccessGroups: expandImpl } = require("../plugin-sdk/access-groups.js") as {
-      expandAllowFromWithAccessGroups: (params: {
-        cfg?: unknown;
-        allowFrom?: Array<string | number> | null;
-        channel: string;
-        accountId: string;
-        senderId: string;
-        senderAllowEntry?: string;
-        isSenderAllowed?: (senderId: string, allowFrom: string[]) => boolean;
-        resolveMembership?: unknown;
-      }) => Promise<string[]>;
-    };
-    return await expandImpl({
-      cfg: params.cfg,
-      allowFrom: params.allowFrom,
-      channel: params.channel,
-      accountId: params.accountId,
-      senderId: params.senderId,
-      isSenderAllowed: params.isSenderAllowed,
-      // resolveMembership 类型与真实实现不同，这里传递 undefined 以触发
-      // 真实实现中的静态 message.senders 组降级逻辑
-      resolveMembership: undefined,
-    });
-  } catch {
-    // 降级：直接返回 allowFrom 字符串化
-    return (params.allowFrom ?? []).map((entry) => String(entry));
-  }
+  return expandAllowFromWithAccessGroupsImpl({
+    cfg: params.cfg as Parameters<typeof expandAllowFromWithAccessGroupsImpl>[0]["cfg"],
+    allowFrom: params.allowFrom,
+    channel: params.channel,
+    accountId: params.accountId,
+    senderId: params.senderId,
+    isSenderAllowed: params.isSenderAllowed,
+    resolveMembership: params.resolveMembership as Parameters<typeof expandAllowFromWithAccessGroupsImpl>[0]["resolveMembership"],
+  });
 }
 
 // ============================================================================
@@ -1053,7 +800,7 @@ export async function readStoreAllowFromForDmPolicy(params: {
 // plugin-sdk/group-access.js 的最小内联实现）
 // ----------------------------------------------------------------------------
 
-/** 规范化字符串条目列表（移植自 @openclaw/normalization-core/string-normalization）。 */
+/** 规范化字符串条目列表（移植自 @cdf-know/normalization-core/string-normalization）。 */
 function normalizeStringEntries(entries: Array<string | number> | null | undefined): string[] {
   if (!Array.isArray(entries)) {
     return [];
@@ -1321,24 +1068,11 @@ export function getActivePluginChannelRegistrySnapshotFromState(): {
  * 该文件已完整移植自 openclaw。延迟 require 避免循环依赖。
  */
 export function resolveEnvelopeFormatOptions(cfg: unknown): Record<string, unknown> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { resolveEnvelopeFormatOptions: resolveImpl } = require("../auto-reply/envelope.js") as {
-      resolveEnvelopeFormatOptions: (cfg?: {
-        envelopeTimezone?: string;
-        envelopeTimestamp?: string;
-        envelopeElapsed?: string;
-        userTimezone?: string;
-      }) => Record<string, unknown>;
-    };
-    // cross-wms 的 agents.defaults 子结构包含 envelope 相关字段
-    const defaults = (cfg as { agents?: { defaults?: Record<string, unknown> } })?.agents?.defaults;
-    return resolveImpl(
-      defaults as Parameters<typeof resolveImpl>[0],
-    );
-  } catch {
-    return {};
-  }
+  // cross-wms 的 agents.defaults 子结构包含 envelope 相关字段
+  const defaults = (cfg as { agents?: { defaults?: Record<string, unknown> } })?.agents?.defaults;
+  return resolveEnvelopeFormatOptionsImpl(
+    defaults as Parameters<typeof resolveEnvelopeFormatOptionsImpl>[0],
+  ) as Record<string, unknown>;
 }
 
 /** 读取会话 updatedAt（移植自 openclaw config/sessions/store.ts，最小实现）。 */
@@ -1429,6 +1163,16 @@ import {
   type InboundDebounceCreateParams as InboundDebounceCreateParamsImpl,
 } from "../auto-reply/inbound-debounce.js";
 
+// 以下静态导入替换原先的 require() + try/catch 降级包装，
+// 直接复用 cross-wms 已有的真实实现。
+import { listChannelCatalogEntries } from "../plugins/channel-catalog-registry.js";
+import { expandAllowFromWithAccessGroups as expandAllowFromWithAccessGroupsImpl } from "../plugin-sdk/access-groups.js";
+import { resolveEnvelopeFormatOptions as resolveEnvelopeFormatOptionsImpl } from "../auto-reply/envelope.js";
+import { isControlCommandMessage as isControlCommandMessageImpl } from "../auto-reply/command-detection.js";
+import { resolveAccountEntry as resolveAccountEntryImpl } from "../routing/account-lookup.js";
+import { resolveThreadBindingLifecycle as resolveThreadBindingLifecycleImpl } from "../shared/thread-binding-lifecycle.js";
+import { formatReasoningMessage as formatReasoningMessageImpl } from "../agents/embedded-agent-utils.js";
+
 /** 解析入站去抖动毫秒（复用真实实现）。 */
 export function resolveInboundDebounceMs(params: {
   cfg: unknown;
@@ -1470,19 +1214,7 @@ export function isControlCommandMessage(
   cfg: unknown,
   options?: CommandNormalizeOptions,
 ): boolean {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { isControlCommandMessage: detectImpl } = require("../auto-reply/command-detection.js") as {
-      isControlCommandMessage: (
-        text?: string,
-        cfg?: unknown,
-        options?: { botUsername?: string },
-      ) => boolean;
-    };
-    return detectImpl(text, cfg, options);
-  } catch {
-    return false;
-  }
+  return isControlCommandMessageImpl(text, cfg, options);
 }
 
 // ============================================================================
@@ -1511,26 +1243,7 @@ export function resolveAccountEntry(
   if (!accounts || typeof accounts !== "object" || !accountId) {
     return undefined;
   }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { resolveAccountEntry: lookupImpl } = require("../routing/account-lookup.js") as {
-      resolveAccountEntry: <T>(
-        accounts: Record<string, T> | undefined,
-        accountId: string,
-      ) => T | undefined;
-    };
-    return lookupImpl(accounts, accountId);
-  } catch {
-    // 降级：基础查找（直接 key 匹配 + 大小写不敏感）
-    if (Object.hasOwn(accounts, accountId)) {
-      return accounts[accountId];
-    }
-    const normalized = accountId.trim().toLowerCase();
-    const matchKey = Object.keys(accounts).find(
-      (key) => key.trim().toLowerCase() === normalized,
-    );
-    return matchKey ? accounts[matchKey] : undefined;
-  }
+  return resolveAccountEntryImpl(accounts, accountId);
 }
 
 // ============================================================================
@@ -1564,36 +1277,19 @@ export function resolveSharedThreadBindingLifecycle(params: {
   defaultIdleTimeoutMs?: number;
   defaultMaxAgeMs?: number;
 }): { expiresAt?: number; reason?: "idle-expired" | "max-age-expired" } {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { resolveThreadBindingLifecycle: resolveImpl } = require("../shared/thread-binding-lifecycle.js") as {
-      resolveThreadBindingLifecycle: (params: {
-        record: {
-          boundAt: number;
-          lastActivityAt: number;
-          idleTimeoutMs?: number;
-          maxAgeMs?: number;
-        };
-        defaultIdleTimeoutMs: number;
-        defaultMaxAgeMs: number;
-      }) => { expiresAt?: number; reason?: "idle-expired" | "max-age-expired" };
-    };
-    // 兼容 createdAt / boundAt 两种字段名
-    const record = params.record;
-    const boundAt = record.boundAt ?? record.createdAt ?? record.lastActivityAt;
-    return resolveImpl({
-      record: {
-        boundAt,
-        lastActivityAt: record.lastActivityAt,
-        idleTimeoutMs: record.idleTimeoutMs,
-        maxAgeMs: record.maxAgeMs,
-      },
-      defaultIdleTimeoutMs: params.defaultIdleTimeoutMs ?? 0,
-      defaultMaxAgeMs: params.defaultMaxAgeMs ?? 0,
-    });
-  } catch {
-    return { expiresAt: undefined };
-  }
+  // 兼容 createdAt / boundAt 两种字段名
+  const record = params.record;
+  const boundAt = record.boundAt ?? record.createdAt ?? record.lastActivityAt;
+  return resolveThreadBindingLifecycleImpl({
+    record: {
+      boundAt,
+      lastActivityAt: record.lastActivityAt,
+      idleTimeoutMs: record.idleTimeoutMs,
+      maxAgeMs: record.maxAgeMs,
+    },
+    defaultIdleTimeoutMs: params.defaultIdleTimeoutMs ?? 0,
+    defaultMaxAgeMs: params.defaultMaxAgeMs ?? 0,
+  });
 }
 
 // ============================================================================
@@ -1644,24 +1340,7 @@ export function isInsideCode(offset: number, regions: CodeRegion[]): boolean {
  * 延迟 require 避免循环依赖。
  */
 export function formatReasoningMessage(text: string): string {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const { formatReasoningMessage: formatImpl } = require("../agents/embedded-agent-utils.js") as {
-      formatReasoningMessage: (text: string) => string;
-    };
-    return formatImpl(text);
-  } catch {
-    // 降级：最小实现（与 openclaw 一致）
-    const trimmed = text.trim();
-    if (!trimmed) {
-      return "";
-    }
-    const italicLines = trimmed
-      .split("\n")
-      .map((line) => (line ? `_${line}_` : line))
-      .join("\n");
-    return `Thinking\n\n${italicLines}`;
-  }
+  return formatReasoningMessageImpl(text);
 }
 
 // ============================================================================
@@ -1971,7 +1650,7 @@ export function resolveStateDir(
 // 注：hasNonEmptyString 已在 ../utils.js 段落定义，此处不再重复。
 
 // ============================================================================
-// @openclaw/normalization-core/number-coercion —— MAX_DATE_TIMESTAMP_MS
+// @cdf-know/normalization-core/number-coercion —— MAX_DATE_TIMESTAMP_MS
 // ============================================================================
 
 /** Date-valid 毫秒时间戳最大值（与 cross-wms infra/number-coercion 一致）。 */

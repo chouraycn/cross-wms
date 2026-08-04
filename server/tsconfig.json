@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "es2022",
     "lib": [
-      "ES2023",
-      "DOM"
+      "ES2023"
     ],
     "types": [
       "vitest/globals",
@@ -14,11 +13,11 @@
     "rootDir": "..",
     "baseUrl": ".",
     "strict": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "jsx": "preserve",
     "paths": {
       "@src/*": [
         "../src/*"
@@ -35,47 +34,11 @@
       "@openclaw/media-core/*": [
         "../packages/media-core/src/*"
       ],
-      "@openclaw/normalization-core": [
-        "../packages/normalization-core/src/index.ts"
-      ],
-      "@openclaw/normalization-core/*": [
-        "../packages/normalization-core/src/*"
-      ],
-      "@openclaw/llm-core": [
-        "../packages/llm-core/src/index.ts"
-      ],
-      "@openclaw/llm-core/*": [
-        "../packages/llm-core/src/*"
-      ],
       "@openclaw/llm-runtime": [
         "../packages/llm-runtime/src/index.ts"
       ],
       "@openclaw/llm-runtime/*": [
         "../packages/llm-runtime/src/*"
-      ],
-      "@openclaw/model-catalog-core": [
-        "../packages/model-catalog-core/src/index.ts"
-      ],
-      "@openclaw/model-catalog-core/*": [
-        "../packages/model-catalog-core/src/*"
-      ],
-      "@openclaw/gateway-client": [
-        "../packages/gateway-client/src/index.ts"
-      ],
-      "@openclaw/gateway-client/*": [
-        "../packages/gateway-client/src/*"
-      ],
-      "@openclaw/gateway-protocol": [
-        "../packages/gateway-protocol/src/index.ts"
-      ],
-      "@openclaw/gateway-protocol/*": [
-        "../packages/gateway-protocol/src/*"
-      ],
-      "@openclaw/media-generation-core": [
-        "../packages/media-generation-core/src/index.ts"
-      ],
-      "@openclaw/media-generation-core/*": [
-        "../packages/media-generation-core/src/*"
       ],
       "@openclaw/media-understanding-common": [
         "../packages/media-understanding-common/src/index.ts"
@@ -90,10 +53,10 @@
         "../packages/markdown-core/src/*"
       ],
       "@openclaw/acp-core": [
-        "../packages/acp-core/src/index.ts"
+        "../server/packages/acp-core/src/index.ts"
       ],
       "@openclaw/acp-core/*": [
-        "../packages/acp-core/src/*"
+        "../server/packages/acp-core/src/*"
       ],
       "@openclaw/terminal-core": [
         "../packages/terminal-core/src/index.ts"
@@ -130,15 +93,6 @@
       ],
       "@openclaw/tool-call-repair/*": [
         "../packages/tool-call-repair/src/*"
-      ],
-      "@openclaw/sdk": [
-        "../packages/sdk/src/index.ts"
-      ],
-      "@openclaw/memory-host-sdk": [
-        "../packages/memory-host-sdk/src/index.ts"
-      ],
-      "@openclaw/memory-host-sdk/*": [
-        "../packages/memory-host-sdk/src/*"
       ],
       "@openclaw/*": [
         "../extensions/*"
@@ -203,12 +157,6 @@
     "node_modules",
     "../src",
     "../openclaw",
-    "**/__tests__/**",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.test-helpers.ts",
-    "**/*.spec.ts",
-    "**/*.spec.tsx",
     "tui/**"
   ]
 }

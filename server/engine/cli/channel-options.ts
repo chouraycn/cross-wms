@@ -1,15 +1,21 @@
 // CLI channel 选项格式化器，当可用时由生成的启动元数据支持。
 //
 // 降级说明：
-// 1. 原 openclaw 版本依赖 `@openclaw/normalization-core/string-normalization` 的 `uniqueStrings`，
+// 1. 原 openclaw 版本依赖 `@cdf-know/normalization-core/string-normalization` 的 `uniqueStrings`，
 //    这里改为本地实现以避免引入外部包。
 // 2. 原 openclaw 版本调用 `readCliStartupMetadata(import.meta.url)`，由于本项目
 //    `module: "commonjs"` 不可用 `import.meta`（TS1343），改为传入 `__filename`。
 import { readCliStartupMetadata } from "./startup-metadata.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * 去重字符串数组并保留顺序。
- * 本地降级实现，替代 `@openclaw/normalization-core/string-normalization` 的 `uniqueStrings`。
+ * 本地降级实现，替代 `@cdf-know/normalization-core/string-normalization` 的 `uniqueStrings`。
  */
 function uniqueStrings(values: readonly string[]): string[] {
   const seen = new Set<string>();

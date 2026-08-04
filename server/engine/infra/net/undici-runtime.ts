@@ -3,12 +3,12 @@
 // 移植自 openclaw/src/infra/net/undici-runtime.ts
 import { createRequire } from "node:module";
 import net from "node:net";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 import { addActiveManagedProxyTlsOptions } from "../managed-proxy-undici.js";
 import { resolveUndiciAutoSelectFamilyConnectOptions } from "./undici-family-policy.js";
 
-// 降级：tsconfig module 为 commonjs，import.meta.url 不可用，改用 __filename（CJS 全局变量）
-const nodeRequire = createRequire(__filename);
+// ESM 模块下 __filename 不可用，使用 import.meta.url 创建 require
+const nodeRequire = createRequire(import.meta.url);
 
 export const TEST_UNDICI_RUNTIME_DEPS_KEY = "__OPENCLAW_TEST_UNDICI_RUNTIME_DEPS__";
 

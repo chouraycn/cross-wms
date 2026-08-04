@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/gateway/origin-check.ts。
 // 依赖调整：
 //  - @openclaw/net-policy/ip 的 isPrivateOrLoopbackIpAddress → 本地 _openclaw-stubs.ts
-//  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js
+//  - @cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js
 //  - ./net.js 的 normalizeHostHeader（目标已存在）；isLoopbackHost、resolveHostName → 本地 _openclaw-stubs.ts
 import net from "node:net";
 import { isPrivateOrLoopbackIpAddress } from "./_openclaw-stubs.js";

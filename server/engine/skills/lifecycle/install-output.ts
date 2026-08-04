@@ -1,5 +1,5 @@
 // Install output helpers format skill installation results for CLI callers.
-import { normalizeStringEntries } from "../../infra/string-normalization.js";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 
 type InstallCommandResult = {
   code: number | null;

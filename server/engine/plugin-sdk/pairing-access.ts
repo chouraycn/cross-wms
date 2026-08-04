@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Pairing access helpers resolve channel/device pairing visibility for plugin callers.
 import type { ChannelId } from "../channels/plugins/types.public.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";

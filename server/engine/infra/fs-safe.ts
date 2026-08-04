@@ -1,125 +1,153 @@
-import { readFile, writeFile, mkdir, stat, access } from 'node:fs/promises';
-import { dirname, resolve, isAbsolute, join, relative } from 'node:path';
-import { logger } from '../../logger.js';
+// @ts-nocheck
+// Re-exports fs-safe helpers with OpenClaw defaults and wrappers.
+import "./fs-safe-defaults.js";
+import fs from "node:fs/promises";
+import path from "node:path";
+import {
+  ensureDirectoryWithinRoot,
+  findExistingAncestor,
+  writeViaSiblingTempPath,
+} from "@openclaw/fs-safe/advanced";
+import { root as fsSafeRoot, type ReadResult } from "@openclaw/fs-safe/root";
+
+export { FsSafeError, type FsSafeErrorCode } from "@openclaw/fs-safe/errors";
+export {
+  assertAbsolutePathInput,
+  canonicalPathFromExistingAncestor,
+  findExistingAncestor,
+  resolveAbsolutePathForRead,
+  resolveAbsolutePathForWrite,
+  type AbsolutePathSymlinkPolicy,
+  type EnsureAbsoluteDirectoryOptions,
+  type EnsureAbsoluteDirectoryResult,
+  type ResolvedAbsolutePath,
+  type ResolvedWritableAbsolutePath,
+} from "@openclaw/fs-safe/advanced";
+export { isPathInside } from "@openclaw/fs-safe/path";
+export { pathExists, pathExistsSync } from "@openclaw/fs-safe/advanced";
+export { movePathToTrash, type MovePathToTrashOptions } from "@openclaw/fs-safe/advanced";
+export { readLocalFileFromRoots, resolveLocalPathFromRootsSync } from "@openclaw/fs-safe/advanced";
+export {
+  appendRegularFile,
+  appendRegularFileSync,
+  readRegularFile,
+  readRegularFileSync,
+  resolveRegularFileAppendFlags,
+  statRegularFile,
+  statRegularFileSync,
+} from "@openclaw/fs-safe/advanced";
+export {
+  openLocalFileSafely,
+  readLocalFileSafely,
+  resolveOpenedFileRealPathForHandle,
+  root,
+  type OpenResult,
+  type ReadResult,
+  type Root,
+} from "@openclaw/fs-safe/root";
+export { sanitizeUntrustedFileName } from "@openclaw/fs-safe/advanced";
+export {
+  readSecureFile,
+  type SecureFileReadOptions,
+  type SecureFileReadResult,
+} from "@openclaw/fs-safe/secure-file";
+export {
+  walkDirectory,
+  walkDirectorySync,
+  type WalkDirectoryEntry,
+  type WalkDirectoryOptions,
+  type WalkDirectoryResult,
+} from "@openclaw/fs-safe/walk";
+export { withTimeout } from "@openclaw/fs-safe/advanced";
 
 export type ExternalFileWriteOptions = {
   rootDir: string;
-  filePath: string;
-  content: string | Buffer;
-  encoding?: BufferEncoding;
+  path: string;
+  write: (tempPath: string) => Promise<void>;
+  fallbackFileName?: string;
+  tempPrefix?: string;
 };
 
 export type ExternalFileWriteResult = {
-  ok: boolean;
-  path?: string;
-  error?: string;
+  path: string;
 };
 
-export function assertAbsolutePathInput(path: string): void {
-  if (!isAbsolute(path)) throw new Error(`Path must be absolute: ${path}`);
-}
-
-export function isPathInside(path: string, root: string): boolean {
-  const rel = relative(root, path);
-  return !rel.startsWith('..') && !isAbsolute(rel);
-}
-
-export async function pathExists(path: string): Promise<boolean> {
-  try { await access(path); return true; } catch { return false; }
-}
-
-export async function readLocalFileSafely(path: string): Promise<string | undefined> {
-  try {
-    const content = await readFile(path, 'utf-8');
-    return content;
-  } catch (err) {
-    logger.debug(`[FsSafe] Could not read file: ${path}`);
-    return undefined;
-  }
-}
-
-export async function findExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (current !== dirname(current)) {
-    if (await pathExists(current)) return current;
-    current = dirname(current);
-  }
-  return current;
-}
-
-export async function ensureAbsoluteDirectory(dirPath: string): Promise<ExternalFileWriteResult> {
-  assertAbsolutePathInput(dirPath);
-  try {
-    await mkdir(dirPath, { recursive: true });
-    return { ok: true, path: dirPath };
-  } catch (err) {
-    return { ok: false, error: String(err) };
-  }
-}
-
-export async function writeExternalFileWithinRoot(options: ExternalFileWriteOptions): Promise<ExternalFileWriteResult> {
-  const { rootDir, filePath, content, encoding } = options;
-  const absRoot = resolve(rootDir);
-  const absPath = resolve(absRoot, filePath);
-  if (!isPathInside(absPath, absRoot)) {
-    return { ok: false, error: `Path ${filePath} escapes root ${rootDir}` };
-  }
-  try {
-    await mkdir(dirname(absPath), { recursive: true });
-    await writeFile(absPath, content, { encoding: encoding ?? 'utf-8' });
-    return { ok: true, path: absPath };
-  } catch (err) {
-    return { ok: false, error: String(err) };
-  }
-}
-
-export async function readRegularFile(path: string): Promise<string> {
-  return readFile(path, 'utf-8');
-}
-
-export async function statRegularFile(path: string) {
-  return stat(path);
-}
-
-export async function walkDirectory(
+export async function ensureAbsoluteDirectory(
   dirPath: string,
-  fn: (entry: string) => void | Promise<void>,
-): Promise<void> {
-  const entries = await import('node:fs/promises').then(fs => fs.readdir(dirPath, { withFileTypes: true }));
-  for (const entry of entries) {
-    const fullPath = join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      await walkDirectory(fullPath, fn);
-    } else {
-      await fn(fullPath);
-    }
+  options?: { scopeLabel?: string; mode?: number },
+): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
+  const absolutePath = path.resolve(dirPath);
+  const scopeLabel = options?.scopeLabel ?? "directory";
+  const existingAncestor = await findExistingAncestor(absolutePath);
+  if (!existingAncestor) {
+    return { ok: false, error: new Error(`Invalid path: must stay within ${scopeLabel}`) };
   }
+  if (existingAncestor === absolutePath) {
+    try {
+      const stat = await fs.lstat(absolutePath);
+      if (!stat.isSymbolicLink() && stat.isDirectory()) {
+        return { ok: true, path: absolutePath };
+      }
+    } catch {
+      // Fall through to the uniform invalid-path result below.
+    }
+    return { ok: false, error: new Error(`Invalid path: must stay within ${scopeLabel}`) };
+  }
+  const result = await ensureDirectoryWithinRoot({
+    rootDir: existingAncestor,
+    requestedPath: path.relative(existingAncestor, absolutePath),
+    scopeLabel,
+    mode: options?.mode,
+  });
+  if (result.ok) {
+    return result;
+  }
+  return { ok: false, error: new Error(result.error) };
 }
 
-/**
- * 包装 Promise 以在指定毫秒后超时。
- * 超时返回的 Promise 会 reject 一个 TimeoutError。
- *
- * 参考 openclaw/src/infra/fs-safe.ts 中的 withTimeout。
- */
-export async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  label = 'operation',
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      const err = new Error(`${label} timed out after ${timeoutMs}ms`);
-      err.name = 'TimeoutError';
-      reject(err);
-    }, Math.max(0, timeoutMs));
+export async function writeExternalFileWithinRoot(
+  options: ExternalFileWriteOptions,
+): Promise<ExternalFileWriteResult> {
+  const targetPath = path.resolve(options.rootDir, options.path);
+  await writeViaSiblingTempPath({
+    rootDir: options.rootDir,
+    targetPath,
+    writeTemp: options.write,
+    fallbackFileName: options.fallbackFileName,
+    tempPrefix: options.tempPrefix,
   });
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
+  return { path: targetPath };
+}
+
+/** @deprecated Use root(rootDir).read(relativePath, options). */
+export async function readFileWithinRoot(params: {
+  rootDir: string;
+  relativePath: string;
+  rejectHardlinks?: boolean;
+  nonBlockingRead?: boolean;
+  allowSymlinkTargetWithinRoot?: boolean;
+  maxBytes?: number;
+}): Promise<ReadResult> {
+  const root = await fsSafeRoot(params.rootDir);
+  return await root.read(params.relativePath, {
+    hardlinks: params.rejectHardlinks === false ? "allow" : "reject",
+    maxBytes: params.maxBytes,
+    nonBlockingRead: params.nonBlockingRead,
+    symlinks: params.allowSymlinkTargetWithinRoot === true ? "follow-within-root" : "reject",
+  });
+}
+
+/** @deprecated Use root(rootDir).write(relativePath, data, options). */
+export async function writeFileWithinRoot(params: {
+  rootDir: string;
+  relativePath: string;
+  data: string | Buffer;
+  encoding?: BufferEncoding;
+  mkdir?: boolean;
+}): Promise<void> {
+  const root = await fsSafeRoot(params.rootDir);
+  await root.write(params.relativePath, params.data, {
+    encoding: params.encoding,
+    mkdir: params.mkdir,
+  });
 }

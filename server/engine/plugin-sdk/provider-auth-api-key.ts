@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public SDK subpath for API-key provider auth setup and secret input handling.
  */

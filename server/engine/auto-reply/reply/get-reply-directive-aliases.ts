@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Exposes reply directive aliases for parsing and command help.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import type { SkillCommandSpec } from '@openclaw-src/skills/types.js';
 

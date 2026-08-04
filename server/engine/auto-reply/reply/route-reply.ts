@@ -8,7 +8,7 @@
  * across multiple providers.
  */
 
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { resolveEffectiveMessagesConfig } from '@openclaw-src/agents/identity.js';
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';

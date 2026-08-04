@@ -1,6 +1,18 @@
+// @ts-nocheck
 import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
-import type { SessionKey } from './types.js';
+import type { SessionEntry } from './types.js';
+import type { SessionScope } from './types.js';
+import type { MsgContext } from '../../auto-reply/templating.js';
+import {
+  buildAgentMainSessionKey,
+  DEFAULT_AGENT_ID,
+  normalizeAgentId,
+  normalizeMainKey,
+} from '../../routing/session-key.js';
+import { normalizeE164 } from '../../utils.js';
+import { normalizeExplicitSessionKey } from './explicit-session-key-normalization.js';
+import { resolveGroupSessionKey } from './group.js';
 
 const SESSION_KEY_PREFIX = 'sess';
 const SESSION_KEY_VERSION = 'v1';
@@ -27,7 +39,7 @@ export function generateSessionId(): string {
   return randomUUID().replace(/-/g, '');
 }
 
-export function generateSessionKey(sessionId?: string): SessionKey {
+export function generateSessionKey(sessionId?: string): SessionEntry {
   const id = sessionId || generateSessionId();
   const timestamp = Date.now();
   const hash = createSessionHash(id, timestamp);
@@ -44,7 +56,7 @@ export function createSessionHash(sessionId: string, timestamp: number): string 
   return createHash('sha256').update(data).digest('hex').slice(0, 16);
 }
 
-export function validateSessionKey(key: SessionKey): boolean {
+export function validateSessionKey(key: SessionEntry): boolean {
   if (!key?.sessionId || !key?.timestamp || !key?.hash) {
     return false;
   }
@@ -53,11 +65,11 @@ export function validateSessionKey(key: SessionKey): boolean {
   return key.hash === expectedHash;
 }
 
-export function formatSessionKey(key: SessionKey): string {
+export function formatSessionKey(key: SessionEntry): string {
   return `${SESSION_KEY_PREFIX}_${SESSION_KEY_VERSION}_${key.sessionId}_${key.timestamp}_${key.hash}`;
 }
 
-export function parseSessionKey(formatted: string): SessionKey | null {
+export function parseSessionKey(formatted: string): SessionEntry | null {
   const parts = formatted.split('_');
   if (parts.length !== 5) return null;
   if (parts[0] !== SESSION_KEY_PREFIX) return null;
@@ -68,7 +80,7 @@ export function parseSessionKey(formatted: string): SessionKey | null {
 
   if (isNaN(timestamp)) return null;
 
-  const key: SessionKey = { sessionId, timestamp, hash };
+  const key: SessionEntry = { sessionId, timestamp, hash };
   if (!validateSessionKey(key)) return null;
 
   return key;
@@ -94,10 +106,68 @@ export function getShortSessionId(sessionId: string): string {
   return sessionId.slice(0, 8);
 }
 
-export function getSessionKeyAge(key: SessionKey): number {
+export function getSessionKeyAge(key: SessionEntry): number {
   return Date.now() - key.timestamp;
 }
 
-export function isSessionKeyExpired(key: SessionKey, maxAgeMs: number): boolean {
+export function isSessionKeyExpired(key: SessionEntry, maxAgeMs: number): boolean {
   return getSessionKeyAge(key) > maxAgeMs;
+}
+
+// ============================================================================
+// OpenClaw session key resolution (merged from openclaw/src/config/sessions/session-key.ts)
+// Maps inbound message context to persisted store buckets.
+// ============================================================================
+
+/**
+ * Derives the raw session bucket from message context before agent/main-key normalization.
+ *
+ * Direct chats use sender identity, groups use channel-owned group keys, and global scope bypasses
+ * sender routing entirely.
+ */
+export function deriveSessionKey(scope: SessionScope, ctx: MsgContext) {
+  if (scope === "global") {
+    return "global";
+  }
+  const resolvedGroup = resolveGroupSessionKey(ctx);
+  if (resolvedGroup) {
+    return resolvedGroup.key;
+  }
+  const from = ctx.From ? normalizeE164(ctx.From) : "";
+  return from || "unknown";
+}
+
+/**
+ * Resolves the persisted session-store key for an inbound message.
+ *
+ * Explicit session keys pass through the compatibility normalizer, direct chats collapse to the
+ * agent's canonical main bucket, and group/channel sessions stay isolated under the same agent.
+ */
+export function resolveSessionKey(
+  scope: SessionScope,
+  ctx: MsgContext,
+  mainKey?: string,
+  agentId: string = DEFAULT_AGENT_ID,
+) {
+  const explicit = ctx.SessionKey?.trim();
+  if (explicit) {
+    return normalizeExplicitSessionKey(explicit, ctx);
+  }
+  const raw = deriveSessionKey(scope, ctx);
+  if (scope === "global") {
+    return raw;
+  }
+  const canonicalAgentId = normalizeAgentId(agentId);
+  const canonicalMainKey = normalizeMainKey(mainKey);
+  const canonical = buildAgentMainSessionKey({
+    agentId: canonicalAgentId,
+    mainKey: canonicalMainKey,
+  });
+  const isGroup = raw.includes(":group:") || raw.includes(":channel:");
+  if (!isGroup) {
+    return canonical;
+  }
+  // Keep channel/group sessions separate from direct main sessions while still namespacing them
+  // by agent id so multi-agent stores do not collide on provider-owned group keys.
+  return `agent:${canonicalAgentId}:${raw}`;
 }

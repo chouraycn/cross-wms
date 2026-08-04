@@ -1,19 +1,16 @@
-import type { CronJob, CronDelivery } from "../types.js";
+/** Resolves create-time default delivery for new cron jobs. */
+import type { CronDelivery, CronJobCreate } from "../types.js";
 
-export interface InitialDeliveryConfig {
-  mode?: "none" | "announce" | "webhook";
-  channel?: string;
-  to?: string;
-}
-
-export function resolveInitialDelivery(job: CronJob): InitialDeliveryConfig {
-  if (!job.delivery || job.delivery.mode === "none") {
-    return { mode: "none" };
+/** Resolves default cron delivery for new jobs when callers omit explicit delivery config. */
+export function resolveInitialCronDelivery(input: CronJobCreate): CronDelivery | undefined {
+  if (input.delivery) {
+    return input.delivery;
   }
-
-  return {
-    mode: job.delivery.mode,
-    channel: job.delivery.channel,
-    to: job.delivery.to,
-  };
+  if (
+    input.sessionTarget === "isolated" &&
+    (input.payload.kind === "agentTurn" || input.payload.kind === "command")
+  ) {
+    return { mode: "announce" };
+  }
+  return undefined;
 }

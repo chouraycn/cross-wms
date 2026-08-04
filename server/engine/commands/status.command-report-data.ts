@@ -2,9 +2,9 @@
 // Builds the data model for the standard `openclaw status` text report.
 // It converts scan/runtime state into table rows and section lines before rendering.
 
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import type { ConnectPairingRequiredReason } from "@openclaw-src/packages/gateway-protocol/src/connect-error-details.js";
-import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
+import { timestampMsToIsoString } from "@cdf-know/normalization-core/number-coercion";
+import type { ConnectPairingRequiredReason } from "@cdf-know/gateway-protocol/connect-error-details";
+import type { RenderTableOptions, TableColumn } from "@openclaw/terminal-core/table";
 import type { HeartbeatEventPayload } from "@openclaw-src/infra/heartbeat-events.js";
 import type { resolveOsSummary } from "@openclaw-src/infra/os-summary.js";
 import type { PluginCompatibilityNotice } from "@openclaw-src/plugins/status.js";
@@ -14,8 +14,8 @@ import {
   buildStatusChannelsTableRows,
   statusChannelsTableColumns,
 } from "./status-all/channels-table.js";
-import { buildStatusCommandOverviewRows } from "./status-overview-rows.ts";
-import type { StatusOverviewSurface } from "./status-overview-surface.ts";
+import { buildStatusCommandOverviewRows } from "./status-overview-rows";
+import type { StatusOverviewSurface } from "./status-overview-surface";
 import type { AgentLocalStatus } from "./status.agent-local.js";
 import {
   buildStatusFooterLines,

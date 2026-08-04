@@ -1,157 +1,204 @@
-/**
- * 模型覆盖配置
- *
- * 提供每会话的模型/提供者覆盖选择和应用功能
- */
+// Session model override helpers normalize per-session provider model choices.
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import type { SessionEntry } from "../config/sessions.js";
 
-import type { ModelOverrideSelection, SessionRecord } from './types.js';
-import { logger } from '../../logger.js';
+/** User or automatic model/provider override selection for a session entry. */
+export type ModelOverrideSelection = {
+  provider: string;
+  model: string;
+  isDefault?: boolean;
+};
 
-export type { ModelOverrideSelection } from './types.js';
-
-function normalizeOptionalString(value: string | undefined | null): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
+function clearFallbackOrigin(entry: SessionEntry): boolean {
+  let updated = false;
+  if (entry.modelOverrideFallbackOriginProvider !== undefined) {
+    delete entry.modelOverrideFallbackOriginProvider;
+    updated = true;
+  }
+  if (entry.modelOverrideFallbackOriginModel !== undefined) {
+    delete entry.modelOverrideFallbackOriginModel;
+    updated = true;
+  }
+  return updated;
 }
 
-export interface ApplyModelOverrideOptions {
-  entry: SessionRecord;
+/** Applies a model/auth-profile override to a session entry and clears stale runtime fields. */
+export function applyModelOverrideToSessionEntry(params: {
+  entry: SessionEntry;
   selection: ModelOverrideSelection;
   profileOverride?: string;
-  profileOverrideSource?: 'auto' | 'user';
+  profileOverrideSource?: "auto" | "user";
   preserveAuthProfileOverride?: boolean;
-  selectionSource?: 'auto' | 'user';
+  selectionSource?: "auto" | "user";
   markLiveSwitchPending?: boolean;
-}
-
-export interface ApplyModelOverrideResult {
-  updated: boolean;
-}
-
-export function applyModelOverrideToSessionEntry(
-  params: ApplyModelOverrideOptions,
-): ApplyModelOverrideResult {
+}): { updated: boolean } {
   const { entry, selection, profileOverride } = params;
-  const profileOverrideSource = params.profileOverrideSource ?? 'user';
-  const selectionSource = params.selectionSource ?? 'user';
+  const profileOverrideSource = params.profileOverrideSource ?? "user";
+  const selectionSource = params.selectionSource ?? "user";
   let updated = false;
   let selectionUpdated = false;
   let profileUpdated = false;
 
   if (selection.isDefault) {
-    if (entry.metadata.provider) {
-      entry.metadata.provider = undefined;
+    if (entry.providerOverride) {
+      delete entry.providerOverride;
       updated = true;
       selectionUpdated = true;
     }
-    if (entry.metadata.modelId) {
-      entry.metadata.modelId = undefined;
+    if (entry.modelOverride) {
+      delete entry.modelOverride;
       updated = true;
       selectionUpdated = true;
     }
+    if (entry.modelOverrideSource) {
+      delete entry.modelOverrideSource;
+      updated = true;
+    }
+    updated = clearFallbackOrigin(entry) || updated;
   } else {
-    if (entry.metadata.provider !== selection.provider) {
-      entry.metadata.provider = selection.provider;
+    if (entry.providerOverride !== selection.provider) {
+      entry.providerOverride = selection.provider;
       updated = true;
       selectionUpdated = true;
     }
-    if (entry.metadata.modelId !== selection.model) {
-      entry.metadata.modelId = selection.model;
+    if (entry.modelOverride !== selection.model) {
+      entry.modelOverride = selection.model;
       updated = true;
       selectionUpdated = true;
     }
+    if (entry.modelOverrideSource !== selectionSource) {
+      entry.modelOverrideSource = selectionSource;
+      updated = true;
+    }
+    updated = clearFallbackOrigin(entry) || updated;
   }
 
-  const runtimeModel = normalizeOptionalString(entry.metadata.modelId) ?? '';
-  const runtimeProvider = normalizeOptionalString(entry.metadata.provider) ?? '';
+  // Model overrides supersede previously recorded runtime model identity.
+  // If runtime fields are stale (or the override changed), clear them so status
+  // surfaces reflect the selected model immediately.
+  const runtimeModel = normalizeOptionalString(entry.model) ?? "";
+  const runtimeProvider = normalizeOptionalString(entry.modelProvider) ?? "";
   const runtimePresent = runtimeModel.length > 0 || runtimeProvider.length > 0;
   const runtimeAligned =
     runtimeModel === selection.model &&
     (runtimeProvider.length === 0 || runtimeProvider === selection.provider);
-
   if (runtimePresent && (selectionUpdated || !runtimeAligned)) {
-    if (entry.metadata.modelId !== undefined) {
-      entry.metadata.modelId = selection.isDefault ? undefined : selection.model;
+    if (entry.model !== undefined) {
+      delete entry.model;
       updated = true;
     }
-    if (entry.metadata.provider !== undefined) {
-      entry.metadata.provider = selection.isDefault ? undefined : selection.provider;
+    if (entry.modelProvider !== undefined) {
+      delete entry.modelProvider;
       updated = true;
     }
+  }
+
+  // contextTokens are derived from the active session model. When the selected
+  // model changes (or runtime model is already stale), the cached window can
+  // pin the session to an older/smaller limit until another run refreshes it.
+  if (
+    entry.contextTokens !== undefined &&
+    (selectionUpdated || (runtimePresent && !runtimeAligned))
+  ) {
+    delete entry.contextTokens;
+    updated = true;
+  }
+  if (
+    entry.contextBudgetStatus !== undefined &&
+    (selectionUpdated || (runtimePresent && !runtimeAligned))
+  ) {
+    delete entry.contextBudgetStatus;
+    updated = true;
   }
 
   if (profileOverride) {
-    if (entry.metadata.tags?.authProfile !== profileOverride) {
-      if (!entry.metadata.tags) {
-        entry.metadata.tags = {};
-      }
-      entry.metadata.tags.authProfile = profileOverride;
+    if (entry.authProfileOverride !== profileOverride) {
+      entry.authProfileOverride = profileOverride;
       updated = true;
       profileUpdated = true;
     }
-    if (entry.metadata.tags?.authProfileSource !== profileOverrideSource) {
-      if (!entry.metadata.tags) {
-        entry.metadata.tags = {};
-      }
-      entry.metadata.tags.authProfileSource = profileOverrideSource;
+    if (entry.authProfileOverrideSource !== profileOverrideSource) {
+      entry.authProfileOverrideSource = profileOverrideSource;
       updated = true;
       profileUpdated = true;
+    }
+    if (entry.authProfileOverrideCompactionCount !== undefined) {
+      delete entry.authProfileOverrideCompactionCount;
+      updated = true;
     }
   } else if (!params.preserveAuthProfileOverride) {
-    if (entry.metadata.tags?.authProfile) {
-      delete entry.metadata.tags.authProfile;
+    if (entry.authProfileOverride) {
+      delete entry.authProfileOverride;
       updated = true;
       profileUpdated = true;
     }
-    if (entry.metadata.tags?.authProfileSource) {
-      delete entry.metadata.tags.authProfileSource;
+    if (entry.authProfileOverrideSource) {
+      delete entry.authProfileOverrideSource;
       updated = true;
       profileUpdated = true;
+    }
+    if (entry.authProfileOverrideCompactionCount !== undefined) {
+      delete entry.authProfileOverrideCompactionCount;
+      updated = true;
     }
   }
 
+  // Clear stale fallback notice when the user explicitly switches models.
   if (updated) {
-    entry.stats.lastActivityAt = Date.now();
-    logger.debug(
-      `[ModelOverrides] 会话 ${entry.id} 模型覆盖已更新`,
-      { provider: selection.provider, model: selection.model, source: selectionSource },
-    );
+    if ((selectionUpdated || profileUpdated) && params.markLiveSwitchPending) {
+      entry.liveModelSwitchPending = true;
+    }
+    delete entry.fallbackNoticeSelectedModel;
+    delete entry.fallbackNoticeActiveModel;
+    delete entry.fallbackNoticeReason;
+    entry.updatedAt = Date.now();
   }
 
   return { updated };
 }
 
-export function parseModelOverrideString(
-  value: string,
-  defaultProvider?: string,
-): ModelOverrideSelection | undefined {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-
-  const parts = trimmed.split('/');
-  if (parts.length === 2) {
-    const [provider, model] = parts;
-    if (provider && model) {
-      return { provider: provider.trim(), model: model.trim() };
-    }
-  }
-
-  if (parts.length === 1 && defaultProvider) {
-    return { provider: defaultProvider, model: trimmed };
-  }
-
-  return undefined;
+function wrappedOverrideModel(provider: string, model: string): string {
+  return `${provider}/${model}`;
 }
 
-export function formatModelOverride(selection: ModelOverrideSelection): string {
-  return `${selection.provider}/${selection.model}`;
-}
+/** Repairs overrides where legacy provider/model fields were stored as provider/model strings. */
+export function repairProviderWrappedModelOverride(params: {
+  entry: SessionEntry;
+  defaultProvider: string;
+  defaultModel?: string;
+}): { updated: boolean } {
+  const overrideProvider = normalizeOptionalString(params.entry.providerOverride);
+  const overrideModel = normalizeOptionalString(params.entry.modelOverride);
+  if (!overrideProvider || !overrideModel) {
+    return { updated: false };
+  }
 
-export function isDefaultModelOverride(
-  selection: ModelOverrideSelection | undefined,
-  defaultProvider: string,
-  defaultModel: string,
-): boolean {
-  if (!selection) return true;
-  return selection.provider === defaultProvider && selection.model === defaultModel;
+  const wrappedModel = wrappedOverrideModel(overrideProvider, overrideModel);
+  const runtimeProvider = normalizeOptionalString(params.entry.modelProvider);
+  const runtimeModel = normalizeOptionalString(params.entry.model);
+  if (runtimeProvider && runtimeModel === wrappedModel && runtimeProvider !== overrideProvider) {
+    return applyModelOverrideToSessionEntry({
+      entry: params.entry,
+      selection: {
+        provider: runtimeProvider,
+        model: runtimeModel,
+        isDefault:
+          runtimeProvider === params.defaultProvider && runtimeModel === params.defaultModel,
+      },
+      selectionSource: params.entry.modelOverrideSource === "auto" ? "auto" : "user",
+    });
+  }
+
+  if (params.defaultProvider !== overrideProvider && params.defaultModel === wrappedModel) {
+    return applyModelOverrideToSessionEntry({
+      entry: params.entry,
+      selection: {
+        provider: params.defaultProvider,
+        model: params.defaultModel,
+        isDefault: true,
+      },
+    });
+  }
+
+  return { updated: false };
 }

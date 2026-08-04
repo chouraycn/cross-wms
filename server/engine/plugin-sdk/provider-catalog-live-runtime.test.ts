@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { beforeEach, describe, expect, it, vi, type MockedFunction } from "vitest";
 import { NON_ENV_SECRETREF_MARKER } from "./provider-auth-runtime.js";
 import {

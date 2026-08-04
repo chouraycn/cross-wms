@@ -1,11 +1,30 @@
 /**
- * 移植自 openclaw/src/agents/subagent-initial-user-message.ts
+ * First user turn for a native `sessions_spawn` / subagent run.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Keep the delegated task transcript-visible and single-sourced here. The
+ * system prompt owns runtime/subagent rules; this user turn owns the actual
+ * task envelope so delivery is easy to audit without duplicating tokens.
  */
-
-export function buildSubagentInitialUserMessage(..._args: unknown[]): unknown {
-  return undefined;
+export function buildSubagentInitialUserMessage(params: {
+  childDepth: number;
+  maxSpawnDepth: number;
+  /** When true, this subagent uses a persistent session for follow-up messages. */
+  persistentSession: boolean;
+  task?: string;
+}): string {
+  const lines = [
+    `[Subagent Context] You are running as a subagent (depth ${params.childDepth}/${params.maxSpawnDepth}). Results auto-announce to your requester; do not busy-poll for status.`,
+  ];
+  if (params.persistentSession) {
+    lines.push(
+      "[Subagent Context] This subagent session is persistent and remains available for thread follow-up messages.",
+    );
+  }
+  const taskBody = params.task?.trim();
+  if (taskBody) {
+    lines.push("[Subagent Task]", taskBody, "Begin. Execute the assigned task to completion.");
+  } else {
+    lines.push("Begin. Execute the assigned task to completion.");
+  }
+  return lines.join("\n\n");
 }

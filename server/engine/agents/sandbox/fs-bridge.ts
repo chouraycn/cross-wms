@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Sandbox filesystem bridge implementation.
@@ -6,7 +5,7 @@
  * Resolves container paths to mounted host paths and executes guarded reads, writes, stats, renames, and deletes.
  */
 import fs from "node:fs";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import type {
   SandboxBackendCommandResult,
   SandboxFsBridgeContext,

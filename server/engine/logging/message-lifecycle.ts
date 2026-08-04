@@ -1,5 +1,9 @@
 import { formatTimestamp } from './timestamps.js';
 
+// Compat re-export: createDiagnosticMessageLifecycle was removed from the
+// diagnostic surface during the refactor; the shim lives in ./diagnostic.ts.
+export { createDiagnosticMessageLifecycle } from "./diagnostic.js";
+
 export type MessageLifecycleStage =
   | 'created'
   | 'queued'

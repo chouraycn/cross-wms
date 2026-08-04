@@ -1,33 +1,119 @@
-import { logger } from '../../logger.js';
+// Centralizes fetch access, timeout relay, and response parsing helpers.
+import { bindAbortRelay } from "../utils/fetch-timeout.js";
+import { normalizeRequestInitHeadersForFetch } from "./fetch-headers.js";
 
-const WRAPPED_SYMBOL = Symbol('openclaw.fetch.abort-signal-wrapped');
+type FetchWithPreconnect = typeof fetch & {
+  preconnect: (url: string, init?: { credentials?: RequestCredentials }) => void;
+};
 
-type FetchWithWrap = typeof fetch & { [WRAPPED_SYMBOL]?: boolean };
+type RequestInitWithDuplex = RequestInit & { duplex?: "half" };
 
-export function wrapFetchWithAbortSignal(fetchImpl: typeof fetch): typeof fetch {
-  if ((fetchImpl as FetchWithWrap)[WRAPPED_SYMBOL]) return fetchImpl;
+// Mark wrapped fetch functions so repeated resolver calls preserve identity and
+// avoid stacking abort relays around the same implementation.
+const wrapFetchWithAbortSignalMarker = Symbol.for("openclaw.fetch.abort-signal-wrapped");
 
-  const wrapped: typeof fetch = (input, init) => {
-    const normalizedInit = init ?? {};
-    if (normalizedInit.body && typeof normalizedInit.body === 'object' && 'stream' in normalizedInit.body) {
-      (normalizedInit as unknown as Record<string, unknown>).duplex = 'half';
-    }
-    if (normalizedInit.signal) {
-      const controller = new AbortController();
-      const externalSignal = normalizedInit.signal;
-      if (externalSignal.aborted) controller.abort(externalSignal.reason);
-      else externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
-      normalizedInit.signal = controller.signal;
-    }
-    return fetchImpl(input, normalizedInit);
-  };
+type FetchWithAbortSignalMarker = typeof fetch & {
+  [wrapFetchWithAbortSignalMarker]?: true;
+};
 
-  (wrapped as FetchWithWrap)[WRAPPED_SYMBOL] = true;
-  return wrapped;
+function withDuplex(
+  init: RequestInit | undefined,
+  input: RequestInfo | URL,
+): RequestInit | undefined {
+  const hasInitBody = init?.body != null;
+  const hasRequestBody =
+    !hasInitBody &&
+    typeof Request !== "undefined" &&
+    input instanceof Request &&
+    input.body != null;
+  if (!hasInitBody && !hasRequestBody) {
+    return init;
+  }
+  if (init && "duplex" in (init as Record<string, unknown>)) {
+    return init;
+  }
+  // Node requires `duplex: "half"` for streaming request bodies; browsers ignore it.
+  return init
+    ? ({ ...init, duplex: "half" as const } as RequestInitWithDuplex)
+    : ({ duplex: "half" as const } as RequestInitWithDuplex);
 }
 
-export function resolveFetch(fetchImpl?: typeof fetch): typeof fetch {
-  const impl = fetchImpl ?? globalThis.fetch;
-  if (!impl) throw new Error('No fetch implementation available');
-  return wrapFetchWithAbortSignal(impl);
+/**
+ * Wraps fetch so Node-compatible duplex bodies, normalized headers, and foreign
+ * AbortSignal implementations work against runtimes expecting native signals.
+ */
+export function wrapFetchWithAbortSignal(fetchImpl: typeof fetch): typeof fetch {
+  if ((fetchImpl as FetchWithAbortSignalMarker)[wrapFetchWithAbortSignalMarker]) {
+    return fetchImpl;
+  }
+
+  const wrapped = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const patchedInit = normalizeRequestInitHeadersForFetch(withDuplex(init, input));
+    const signal = patchedInit?.signal;
+    if (!signal) {
+      return fetchImpl(input, patchedInit);
+    }
+    if (typeof AbortSignal !== "undefined" && signal instanceof AbortSignal) {
+      return fetchImpl(input, patchedInit);
+    }
+    if (typeof AbortController === "undefined") {
+      return fetchImpl(input, patchedInit);
+    }
+    if (typeof signal.addEventListener !== "function") {
+      return fetchImpl(input, patchedInit);
+    }
+    const controller = new AbortController();
+    const onAbort = bindAbortRelay(controller);
+    let listenerAttached = false;
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener("abort", onAbort, { once: true });
+      listenerAttached = true;
+    }
+    const cleanup = () => {
+      if (!listenerAttached || typeof signal.removeEventListener !== "function") {
+        return;
+      }
+      listenerAttached = false;
+      try {
+        signal.removeEventListener("abort", onAbort);
+      } catch {
+        // Foreign/custom AbortSignal implementations may throw here.
+        // Never let cleanup mask the original fetch result/error.
+      }
+    };
+    try {
+      const response = fetchImpl(input, { ...patchedInit, signal: controller.signal });
+      return response.finally(cleanup);
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
+  }) as FetchWithPreconnect;
+
+  const wrappedFetch = Object.assign(wrapped, fetchImpl) as FetchWithPreconnect;
+  const fetchWithPreconnect = fetchImpl as FetchWithPreconnect;
+  wrappedFetch.preconnect =
+    typeof fetchWithPreconnect.preconnect === "function"
+      ? fetchWithPreconnect.preconnect.bind(fetchWithPreconnect)
+      : () => {};
+
+  Object.defineProperty(wrappedFetch, wrapFetchWithAbortSignalMarker, {
+    value: true,
+    enumerable: false,
+    configurable: false,
+    writable: false,
+  });
+
+  return wrappedFetch;
+}
+
+/** Resolves an optional fetch implementation, wrapping it when fetch is available. */
+export function resolveFetch(fetchImpl?: typeof fetch): typeof fetch | undefined {
+  const resolved = fetchImpl ?? globalThis.fetch;
+  if (!resolved) {
+    return undefined;
+  }
+  return wrapFetchWithAbortSignal(resolved);
 }

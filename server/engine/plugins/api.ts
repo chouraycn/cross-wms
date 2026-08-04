@@ -9,7 +9,7 @@ import {
   checkPluginPermission,
   requestPermission,
 } from './permissions.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import { registerPluginHook, unregisterPluginHook } from './hook-registry.js';
 import type { PluginHookRegistration } from './hook-registry.js';
 import { pluginConfigManager } from './config-manager.js';
@@ -136,7 +136,7 @@ export function createPluginApi(options: CreatePluginApiOptions): PluginApi {
   };
 
   // 同步注册到 runtime registry（让 health-checker 可见）
-  pluginRuntimeRegistry.registerManifest(manifest, {
+  PluginRegistry.registerManifest(manifest, {
     capabilities: manifest.capabilities ?? [],
   });
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -751,7 +750,7 @@ export async function persistSessionCompactionCheckpoint(
   }
 
   const target = resolveGatewaySessionStoreTarget({
-    cfg: params.cfg,
+    cfg: params.cfg as any,
     key: params.sessionKey,
   });
   const createdAt = params.createdAt ?? Date.now();

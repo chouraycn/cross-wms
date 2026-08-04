@@ -2,42 +2,57 @@
  * transcripts built-in tool.
  *
  * Manages live capture, manual import, summarization, and process-local transcript sessions.
- *
- * Simplified for cross-wms: preserves schema, types, and manual import/summarization;
- * live capture requires transcript provider integration.
  */
 import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { Type } from "typebox";
+import { resolveStateDir } from "../../config/paths.js";
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import {
+  type ResolvedTranscriptsAutoStartConfig,
+  resolveTranscriptsConfig,
+} from "../../transcripts/config.js";
+import { manualTranscriptSourceProvider } from "../../transcripts/manual-source.js";
+import {
+  getTranscriptSourceProvider,
+  listTranscriptSourceProviders,
+} from "../../transcripts/provider-registry.js";
+import type {
+  TranscriptSessionDescriptor,
+  TranscriptSourceLocator,
+} from "../../transcripts/provider-types.js";
+import { TranscriptsStore, type TranscriptsSessionEntry } from "../../transcripts/store.js";
+import { summarizeTranscripts } from "../../transcripts/summary.js";
 import type { AnyAgentTool } from "./common.js";
 
 type TranscriptsLogger = {
   warn: (message: string) => void;
 };
 
-type TranscriptSourceLocator = {
+type TranscriptsRuntimeContext = {
+  config?: OpenClawConfig;
+  stateDir: string;
+  logger: TranscriptsLogger;
+};
+
+type ActiveTranscriptsSession = {
+  session: TranscriptSessionDescriptor;
   providerId: string;
-  accountId?: string;
-  guildId?: string;
-  channelId?: string;
-  meetingUrl?: string;
 };
 
-type TranscriptUtterance = {
-  speaker?: string;
-  text: string;
-  timestamp?: string;
-};
+const activeSessions = new Map<string, ActiveTranscriptsSession>();
+const AUTO_START_RETRY_ATTEMPTS = 12;
+const AUTO_START_RETRY_MS = 5_000;
+const AUTO_START_STOP_TIMEOUT_MS = 5_000;
+const AUTO_START_PROVIDER_READY_TIMEOUT_MS = 30_000;
 
-type TranscriptSessionDescriptor = {
-  sessionId: string;
-  title?: string;
-  source: TranscriptSourceLocator;
-  startedAt: string;
-  stoppedAt?: string;
-  metadata?: Record<string, unknown>;
-};
-
-const activeSessions = new Map<string, { session: TranscriptSessionDescriptor; providerId: string }>();
+function sameSessionIdentity(
+  left: TranscriptSessionDescriptor,
+  right: TranscriptSessionDescriptor,
+): boolean {
+  return left.sessionId === right.sessionId && left.startedAt === right.startedAt;
+}
 
 function asParamsRecord(params: unknown): Record<string, unknown> {
   return params && typeof params === "object" && !Array.isArray(params)
@@ -96,13 +111,34 @@ function createSessionId(): string {
   return `transcript-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
 }
 
-function toolText(text: string, details?: Record<string, unknown>) {
-  return {
-    content: [{ type: "text" as const, text }],
-    details: details ?? {},
-  };
+function createStore(ctx: TranscriptsRuntimeContext): TranscriptsStore {
+  return new TranscriptsStore(path.join(ctx.stateDir, "transcripts"));
 }
 
+async function waitForPendingAutoStartsToSettle(
+  pendingStarts: Set<Promise<void>>,
+): Promise<boolean> {
+  if (pendingStarts.size === 0) {
+    return true;
+  }
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.allSettled(pendingStarts).then(() => true),
+      new Promise<boolean>((resolve) => {
+        timeout = setTimeout(() => resolve(false), AUTO_START_STOP_TIMEOUT_MS);
+        timeout.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
+// Provider routing comes from tool params so manual imports and live providers
+// share one persisted source descriptor.
 function sourceFromParams(params: Record<string, unknown>): TranscriptSourceLocator {
   const providerId = readStringParam(params, "providerId", { trim: true }) ?? "manual-transcript";
   return {
@@ -114,77 +150,177 @@ function sourceFromParams(params: Record<string, unknown>): TranscriptSourceLoca
   };
 }
 
-function parseTranscriptLines(text: string, speakerLabel?: string): TranscriptUtterance[] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  const utterances: TranscriptUtterance[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    const speakerMatch = trimmed.match(/^([^:：]+)[:：]\s*(.+)$/);
-    if (speakerMatch) {
-      utterances.push({
-        speaker: speakerLabel ?? speakerMatch[1].trim(),
-        text: speakerMatch[2].trim(),
-      });
-    } else {
-      utterances.push({
-        speaker: speakerLabel,
-        text: trimmed,
-      });
-    }
-  }
-
-  return utterances;
+function resolveSourceProvider(providerId: string, ctx: TranscriptsRuntimeContext) {
+  return providerId === manualTranscriptSourceProvider.id
+    ? manualTranscriptSourceProvider
+    : getTranscriptSourceProvider(providerId, ctx.config);
 }
 
-function summarizeTranscript(utterances: TranscriptUtterance[]): string {
-  if (utterances.length === 0) {
-    return "No transcript content.";
+function toolText(text: string, details?: Record<string, unknown>) {
+  return {
+    content: [{ type: "text" as const, text }],
+    details: details ?? {},
+  };
+}
+
+// Summaries are persisted beside the session so stop/import/summarize actions
+// return both model-readable details and a durable artifact path.
+async function summarizeAndPersist(params: {
+  config: ReturnType<typeof resolveTranscriptsConfig>;
+  store: TranscriptsStore;
+  session: TranscriptSessionDescriptor;
+  sessionDir?: string;
+}) {
+  const utterances =
+    params.sessionDir !== undefined
+      ? await params.store.readUtterancesFromSessionDir(params.sessionDir, {
+          maxUtterances: params.config.maxUtterances,
+        })
+      : await params.store.readUtterancesForSession(params.session, {
+          maxUtterances: params.config.maxUtterances,
+        });
+  const summary = summarizeTranscripts({ session: params.session, utterances });
+  const summaryPath =
+    params.sessionDir !== undefined
+      ? await params.store.writeSummaryToDir(summary, params.sessionDir)
+      : await params.store.writeSummary(summary, params.session);
+  return { summary, summaryPath };
+}
+
+async function startTranscripts(params: {
+  ctx: TranscriptsRuntimeContext;
+  store: TranscriptsStore;
+  rawParams: Record<string, unknown>;
+  abortSignal?: AbortSignal;
+  startupWaitMs?: number;
+}) {
+  if (params.abortSignal?.aborted) {
+    throw new Error("transcripts start aborted");
   }
-
-  const speakers = new Set<string>();
-  let totalChars = 0;
-  for (const u of utterances) {
-    if (u.speaker) {
-      speakers.add(u.speaker);
-    }
-    totalChars += u.text.length;
+  const source = sourceFromParams(params.rawParams);
+  const provider = resolveSourceProvider(source.providerId, params.ctx);
+  if (!provider?.start) {
+    throw new Error(`transcripts provider ${source.providerId} cannot start live capture`);
   }
+  const session: TranscriptSessionDescriptor = {
+    sessionId: readStringParam(params.rawParams, "sessionId", { trim: true }) ?? createSessionId(),
+    title: readStringParam(params.rawParams, "title", { trim: true }),
+    source,
+    startedAt: new Date().toISOString(),
+  };
+  await params.store.writeSession(session);
+  const result = await provider.start({
+    cfg: params.ctx.config,
+    session,
+    abortSignal: params.abortSignal,
+    startupWaitMs: params.startupWaitMs,
+    onUtterance: (utterance) => params.store.appendUtteranceForSession(session, utterance),
+  });
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+  if (params.abortSignal?.aborted) {
+    await provider.stop?.({
+      cfg: params.ctx.config,
+      sessionId: session.sessionId,
+      source: session.source,
+      reason: "service-stop",
+    });
+    throw new Error("transcripts start aborted");
+  }
+  activeSessions.set(session.sessionId, { session, providerId: provider.id });
+  return toolText(`Transcripts started: ${session.sessionId}`, {
+    sessionId: session.sessionId,
+    providerId: provider.id,
+  });
+}
 
-  const lines: string[] = [];
-  lines.push(`Transcript Summary`);
-  lines.push(`- Utterances: ${utterances.length}`);
-  lines.push(`- Speakers: ${speakers.size > 0 ? [...speakers].join(", ") : "unknown"}`);
-  lines.push(`- Total characters: ${totalChars}`);
-
-  if (utterances.length <= 10) {
-    lines.push("");
-    lines.push("Full transcript:");
-    for (const u of utterances) {
-      lines.push(u.speaker ? `${u.speaker}: ${u.text}` : u.text);
+async function stopTranscripts(params: {
+  ctx: TranscriptsRuntimeContext;
+  store: TranscriptsStore;
+  rawParams: Record<string, unknown>;
+}) {
+  const sessionSelector = readStringParam(params.rawParams, "sessionId", {
+    required: true,
+    trim: true,
+  });
+  const directActive = activeSessions.get(sessionSelector);
+  const resolvedEntry: TranscriptsSessionEntry | undefined = directActive
+    ? { session: directActive.session, sessionDir: params.store.sessionDir(directActive.session) }
+    : await params.store.readSessionEntry(sessionSelector);
+  const resolvedSession = resolvedEntry?.session;
+  const activeCandidate =
+    resolvedSession !== undefined ? activeSessions.get(resolvedSession.sessionId) : undefined;
+  const activeMatchesResolved =
+    activeCandidate !== undefined &&
+    resolvedSession !== undefined &&
+    sameSessionIdentity(activeCandidate.session, resolvedSession);
+  const selectedActive = directActive ?? (activeMatchesResolved ? activeCandidate : undefined);
+  const session = selectedActive?.session ?? resolvedSession;
+  if (!session) {
+    throw new Error(`transcripts session not found: ${sessionSelector}`);
+  }
+  const sessionId = session.sessionId;
+  const providerId = selectedActive?.providerId ?? session.source.providerId;
+  const provider = resolveSourceProvider(providerId, params.ctx);
+  let providerStopError: string | undefined;
+  if (selectedActive && provider?.stop) {
+    const result = await provider.stop({
+      cfg: params.ctx.config,
+      sessionId,
+      source: session.source,
+      reason: "tool-stop",
+    });
+    if (!result.ok) {
+      providerStopError = result.error;
     }
+  }
+  const stoppedAt = new Date().toISOString();
+  if (selectedActive) {
+    activeSessions.delete(sessionId);
+  }
+  const stoppedSession: TranscriptSessionDescriptor = {
+    ...session,
+    stoppedAt,
+    ...(providerStopError
+      ? {
+          metadata: {
+            ...session.metadata,
+            providerStopError,
+            providerStopFailedAt: stoppedAt,
+          },
+        }
+      : {}),
+  };
+  if (selectedActive) {
+    await params.store.writeSession(stoppedSession);
   } else {
-    lines.push("");
-    lines.push("First 5 utterances:");
-    for (let i = 0; i < 5 && i < utterances.length; i += 1) {
-      const u = utterances[i];
-      lines.push(u.speaker ? `${u.speaker}: ${u.text}` : u.text);
-    }
-    lines.push("...");
-    lines.push("Last 5 utterances:");
-    for (let i = Math.max(0, utterances.length - 5); i < utterances.length; i += 1) {
-      const u = utterances[i];
-      lines.push(u.speaker ? `${u.speaker}: ${u.text}` : u.text);
-    }
+    await params.store.updateStopped(sessionSelector, stoppedAt);
   }
-
-  return lines.join("\n");
+  const { summaryPath, summary } = await summarizeAndPersist({
+    config: resolveTranscriptsConfig(params.ctx.config?.transcripts),
+    store: params.store,
+    session: stoppedSession,
+    sessionDir: selectedActive ? undefined : resolvedEntry?.sessionDir,
+  });
+  return toolText(`Transcripts stopped: ${sessionId}\nSummary: ${summaryPath}`, {
+    sessionId,
+    ...(providerStopError ? { providerStopError } : {}),
+    summary,
+    summaryPath,
+  });
 }
 
 async function importTranscripts(params: {
+  ctx: TranscriptsRuntimeContext;
+  store: TranscriptsStore;
   rawParams: Record<string, unknown>;
 }) {
   const source = sourceFromParams(params.rawParams);
+  const provider = resolveSourceProvider(source.providerId, params.ctx);
+  if (!provider?.importTranscript) {
+    throw new Error(`transcripts provider ${source.providerId} cannot import transcripts`);
+  }
   const session: TranscriptSessionDescriptor = {
     sessionId: readStringParam(params.rawParams, "sessionId", { trim: true }) ?? createSessionId(),
     title: readStringParam(params.rawParams, "title", { trim: true }),
@@ -196,37 +332,61 @@ async function importTranscripts(params: {
     required: true,
     trim: false,
   });
-  const utterances = parseTranscriptLines(
-    transcript,
-    readStringParam(params.rawParams, "speakerLabel", { trim: true }),
-  );
-  const summary = summarizeTranscript(utterances);
-  return toolText(`Transcript imported: ${session.sessionId}`, {
+  await params.store.writeSession(session);
+  const utterances = await provider.importTranscript({
+    cfg: params.ctx.config,
+    session,
+    text: transcript,
+    speakerLabel: readStringParam(params.rawParams, "speakerLabel", { trim: true }),
+  });
+  for (const utterance of utterances) {
+    await params.store.appendUtteranceForSession(session, utterance);
+  }
+  const { summaryPath, summary } = await summarizeAndPersist({
+    config: resolveTranscriptsConfig(params.ctx.config?.transcripts),
+    store: params.store,
+    session,
+  });
+  return toolText(`Transcript imported: ${session.sessionId}\nSummary: ${summaryPath}`, {
     sessionId: session.sessionId,
     utteranceCount: utterances.length,
     summary,
+    summaryPath,
   });
 }
 
 async function summarizeExisting(params: {
+  config: ReturnType<typeof resolveTranscriptsConfig>;
+  store: TranscriptsStore;
   rawParams: Record<string, unknown>;
 }) {
   const sessionId = readStringParam(params.rawParams, "sessionId", {
     required: true,
     trim: true,
   });
-  const active = activeSessions.get(sessionId);
-  if (!active) {
+  const entry = await params.store.readSessionEntry(sessionId);
+  if (!entry) {
     throw new Error(`transcripts session not found: ${sessionId}`);
   }
-  const summary = `Summary for session ${sessionId}`;
-  return toolText(`Transcripts summarized: ${sessionId}\nSummary: ${summary}`, {
+  const { summaryPath, summary } = await summarizeAndPersist({
+    config: params.config,
+    store: params.store,
+    session: entry.session,
+    sessionDir: entry.sessionDir,
+  });
+  return toolText(`Transcripts summarized: ${sessionId}\nSummary: ${summaryPath}`, {
     sessionId,
     summary,
+    summaryPath,
   });
 }
 
-async function statusTranscripts() {
+async function statusTranscripts(ctx: TranscriptsRuntimeContext) {
+  const providers = [
+    manualTranscriptSourceProvider.id,
+    ...listTranscriptSourceProviders(ctx.config).map((provider) => provider.id),
+  ];
+  const uniqueProviders = uniqueStrings(providers);
   const active = [...activeSessions.values()].map((entry) => ({
     sessionId: entry.session.sessionId,
     providerId: entry.providerId,
@@ -235,68 +395,175 @@ async function statusTranscripts() {
   }));
   return toolText(
     [
-      `Transcripts providers: manual-transcript`,
+      `Transcripts providers: ${uniqueProviders.length ? uniqueProviders.join(", ") : "none"}`,
       `Active sessions: ${active.length}`,
     ].join("\n"),
-    { providers: ["manual-transcript"], active },
+    { providers: uniqueProviders, active },
   );
 }
 
+/** Create the agent-facing transcripts tool. */
 export function createTranscriptsTool(options?: {
-  config?: unknown;
+  config?: OpenClawConfig;
   stateDir?: string;
   logger?: TranscriptsLogger;
 }): AnyAgentTool {
+  const ctx: TranscriptsRuntimeContext = {
+    config: options?.config,
+    stateDir: options?.stateDir ?? resolveStateDir(),
+    logger: options?.logger ?? console,
+  };
   return {
     name: "transcripts",
     label: "Transcripts",
     description:
-      "Start, stop, import, summarize, or inspect transcripts. Manual import supports plain text with optional speaker labels.",
-    parameters: TranscriptsSchema as unknown as Record<string, {
-      name: string;
-      type: "string" | "number" | "boolean" | "object" | "any" | "array";
-      description: string;
-      required: boolean;
-      default?: unknown;
-      enum?: string[] | undefined;
-      items?: { type: string } | undefined;
-      properties?: Record<string, unknown> | undefined;
-    }>,
-    async execute(_toolCallId: string, rawParams: unknown) {
+      "Start, stop, import, summarize, or inspect transcripts from Discord, Google Meet, Slack huddles, and other meeting sources.",
+    parameters: TranscriptsSchema,
+    async execute(_toolCallId, rawParams) {
+      const config = resolveTranscriptsConfig(ctx.config?.transcripts);
+      if (!config.enabled) {
+        throw new Error("transcripts are disabled");
+      }
       const params = asParamsRecord(rawParams);
       const action = readStringParam(params, "action", { required: true, trim: true });
+      const store = createStore(ctx);
       switch (action) {
         case "start":
-          throw new Error(
-            "transcripts start not implemented in cross-wms. Use action='import' for manual transcript import.",
-          );
+          return await startTranscripts({ ctx, store, rawParams: params });
         case "stop":
-          throw new Error(
-            "transcripts stop not implemented in cross-wms. Use action='import' for manual transcript import.",
-          );
+          return await stopTranscripts({ ctx, store, rawParams: params });
         case "import":
-          return await importTranscripts({ rawParams: params });
+          return await importTranscripts({ ctx, store, rawParams: params });
         case "summarize":
-          return await summarizeExisting({ rawParams: params });
+          return await summarizeExisting({ config, store, rawParams: params });
         case "status":
-          return await statusTranscripts();
+          return await statusTranscripts(ctx);
         default:
           throw new Error(`unsupported transcripts action: ${action}`);
       }
     },
-  } as unknown as AnyAgentTool;
+  };
 }
 
-export function createTranscriptsAutoStartService(_ctx: {
-  config?: unknown;
-  stateDir?: string;
-  logger?: TranscriptsLogger;
-}): {
+/** Create the process lifecycle service that starts configured transcript captures. */
+export function createTranscriptsAutoStartService(ctx: TranscriptsRuntimeContext): {
   start: () => void;
   stop: () => Promise<void>;
 } {
+  let stopped = false;
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const startedSessionIds = new Set<string>();
+  const pendingStartControllers = new Set<AbortController>();
+  const pendingStarts = new Set<Promise<void>>();
+
+  // Auto-start is retrying and stoppable; each scheduled timer is tracked so a
+  // gateway shutdown can cancel retries before stopping any started sessions.
+  const schedule = (run: () => void, delayMs: number) => {
+    const timer = setTimeout(() => {
+      timers.delete(timer);
+      run();
+    }, delayMs);
+    timers.add(timer);
+  };
+
+  const startEntry = (
+    entry: ResolvedTranscriptsAutoStartConfig,
+    attempt: number,
+    store: TranscriptsStore,
+  ) => {
+    if (stopped || startedSessionIds.has(entry.sessionId ?? "")) {
+      return;
+    }
+    const abortController = new AbortController();
+    pendingStartControllers.add(abortController);
+    const startTask = startTranscripts({
+      ctx,
+      store,
+      abortSignal: abortController.signal,
+      startupWaitMs: AUTO_START_PROVIDER_READY_TIMEOUT_MS,
+      rawParams: {
+        action: "start",
+        ...entry,
+        sessionId: entry.sessionId ?? createSessionId(),
+      },
+    })
+      .then((result) => {
+        const sessionId = result.details?.sessionId;
+        if (typeof sessionId === "string") {
+          startedSessionIds.add(sessionId);
+        }
+      })
+      .catch((err: unknown) => {
+        if (stopped) {
+          return;
+        }
+        if (attempt >= AUTO_START_RETRY_ATTEMPTS) {
+          ctx.logger.warn(
+            `transcripts autoStart failed provider=${entry.providerId}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+          return;
+        }
+        schedule(() => startEntry(entry, attempt + 1, store), AUTO_START_RETRY_MS);
+      })
+      .finally(() => {
+        pendingStartControllers.delete(abortController);
+        pendingStarts.delete(startTask);
+      });
+    pendingStarts.add(startTask);
+  };
+
   return {
-    start() {},
-    async stop() {},
+    start() {
+      const config = resolveTranscriptsConfig(ctx.config?.transcripts);
+      if (!config.enabled || config.autoStart.length === 0) {
+        return;
+      }
+      const store = new TranscriptsStore(path.join(ctx.stateDir, "transcripts"));
+      for (const entry of config.autoStart) {
+        startEntry(
+          {
+            ...entry,
+            sessionId: entry.sessionId ?? createSessionId(),
+          },
+          1,
+          store,
+        );
+      }
+    },
+    async stop() {
+      stopped = true;
+      for (const timer of timers) {
+        clearTimeout(timer);
+      }
+      timers.clear();
+      for (const controller of pendingStartControllers) {
+        controller.abort();
+      }
+      const pendingStartsSettled = await waitForPendingAutoStartsToSettle(pendingStarts);
+      if (!pendingStartsSettled) {
+        ctx.logger.warn(
+          `transcripts autoStart stop timed out waiting for ${pendingStarts.size} pending start${
+            pendingStarts.size === 1 ? "" : "s"
+          }`,
+        );
+      }
+      const store = new TranscriptsStore(path.join(ctx.stateDir, "transcripts"));
+      for (const sessionId of startedSessionIds) {
+        await stopTranscripts({
+          ctx,
+          store,
+          rawParams: { action: "stop", sessionId },
+        }).catch((err: unknown) =>
+          ctx.logger.warn(
+            `transcripts autoStart stop failed session=${sessionId}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          ),
+        );
+      }
+      startedSessionIds.clear();
+    },
   };
 }

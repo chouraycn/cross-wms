@@ -6,7 +6,7 @@
  *
  * 移植自 openclaw/src/agents/context-window-guard.ts。
  * 降级策略：
- *   - `findNormalizedProviderValue` 来自 @openclaw/model-catalog-core/provider-id，
+ *   - `findNormalizedProviderValue` 来自 @cdf-know/model-catalog-core/provider-id，
  *     本地降级为基于 normalizeProviderId 的最小实现。
  *   - `resolveProviderEndpoint` 来自 ./provider-attribution.js（cross-wms 未实现），
  *     本地降级为基于 baseUrl host 的最小分类。

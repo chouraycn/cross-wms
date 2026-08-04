@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Verifies backup archives by validating their manifest, payload entries, and hardlink targets.
 import path from "node:path";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@cdf-know/normalization-core/string-coerce";
 import * as tar from "tar";
 import { type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 import { isRecord, resolveUserPath } from "@openclaw-src/utils.js";

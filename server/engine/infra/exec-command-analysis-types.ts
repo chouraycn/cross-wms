@@ -1,6 +1,17 @@
-// 移植自 openclaw/src/infra/exec-command-analysis-types.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+import type { CommandResolution } from "./exec-command-resolution.js";
 
-export type ExecCommandSegment = unknown;
-export type ExecCommandAnalysis = unknown;
-export type ShellChainOperator = unknown;
+export type ExecCommandSegment = {
+  raw: string;
+  argv: string[];
+  sourceArgv?: string[];
+  resolution: CommandResolution | null;
+};
+
+export type ExecCommandAnalysis = {
+  ok: boolean;
+  reason?: string;
+  segments: ExecCommandSegment[];
+  chains?: ExecCommandSegment[][];
+};
+
+export type ShellChainOperator = "&&" | "||" | ";" | "&";

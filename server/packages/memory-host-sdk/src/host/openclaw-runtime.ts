@@ -1,70 +1,67 @@
 // Agent/runtime helpers.
-export { resolveCronStyleNow } from "../../../../src/agents/current-time.js";
+export { resolveCronStyleNow } from "../../../../engine/agents/current-time.js";
 export {
   resolveAgentContextLimits,
   resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
   resolveSessionAgentId,
-} from "../../../../src/agents/agent-scope.js";
-export { requireApiKey, resolveApiKeyForProvider } from "../../../../src/agents/model-auth.js";
-export { stripInternalRuntimeContext } from "../../../../src/agents/internal-runtime-context.js";
-export { DEFAULT_AGENT_COMPACTION_RESERVE_TOKENS_FLOOR } from "../../../../src/agents/agent-settings.js";
+} from "../../../../engine/agents/agent-scope.js";
+export { requireApiKey, resolveApiKeyForProvider } from "../../../../engine/agents/model-auth.js";
+export { stripInternalRuntimeContext } from "../../../../engine/agents/internal-runtime-context.js";
+export { DEFAULT_AGENT_COMPACTION_RESERVE_TOKENS_FLOOR } from "../../../../engine/agents/agent-settings.js";
 export {
   asToolParamsRecord,
   jsonResult,
   readNumberParam,
   readStringParam,
-} from "../../../../src/agents/tools/common.js";
-export type { AnyAgentTool } from "../../../../src/agents/tools/common.js";
+} from "../../../../engine/agents/tools/common.js";
+export type { AnyAgentTool } from "../../../../engine/agents/tools/common.js";
 export {
   resolveMemorySearchConfig,
   resolveMemorySearchSyncConfig,
   type ResolvedMemorySearchConfig,
   type ResolvedMemorySearchSyncConfig,
-} from "../../../../src/agents/memory-search.js";
+} from "../../../../engine/agents/memory-search.js";
 
 // Session and reply helpers.
-export { isHeartbeatUserMessage } from "../../../../src/auto-reply/heartbeat-filter.js";
-export { HEARTBEAT_PROMPT } from "../../../../src/auto-reply/heartbeat.js";
-export { stripInboundMetadata } from "../../../../src/auto-reply/reply/strip-inbound-meta.js";
+export { isHeartbeatUserMessage } from "../../../../engine/auto-reply/heartbeat-filter.js";
+export { HEARTBEAT_PROMPT } from "../../../../engine/auto-reply/heartbeat.js";
+export { stripInboundMetadata } from "../../../../engine/auto-reply/reply/strip-inbound-meta.js";
 export {
   HEARTBEAT_TOKEN,
   SILENT_REPLY_TOKEN,
   isSilentReplyPayloadText,
-} from "../../../../src/auto-reply/tokens.js";
+} from "../../../../engine/auto-reply/tokens.js";
 
 // CLI/runtime/config helpers.
-export { formatErrorMessage, withManager } from "../../../../src/cli/cli-utils.js";
-export { resolveCommandSecretRefsViaGateway } from "../../../../src/cli/command-secret-gateway.js";
-export { formatHelpExamples } from "../../../../src/cli/help-format.js";
-export { parseDurationMs } from "../../../../src/cli/parse-duration.js";
-export { withProgress, withProgressTotals } from "../../../../src/cli/progress.js";
-export { parseNonNegativeByteSize } from "../../../../src/config/byte-size.js";
+export { formatErrorMessage, withManager } from "../../../../engine/cli/cli-utils.js";
+export { resolveCommandSecretRefsViaGateway } from "../../../../engine/cli/command-secret-gateway.js";
+export { formatHelpExamples } from "../../../../engine/cli/help-format.js";
+export { parseDurationMs } from "../../../../engine/cli/parse-duration.js";
+export { withProgress, withProgressTotals } from "../../../../engine/cli/progress.js";
+export { parseNonNegativeByteSize } from "../../../../engine/config/byte-size.js";
 export {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
   getRuntimeConfig,
   /** @deprecated Use getRuntimeConfig(), or pass the already loaded config through the call path. */
   loadConfig,
-} from "../../../../src/config/config.js";
-export type { OpenClawConfig } from "../../../../src/config/config.js";
-export { resolveStateDir } from "../../../../src/config/paths.js";
+} from "../../../../engine/config/config.js";
+export type { OpenClawConfig } from "../../../../engine/config/config.js";
+export { resolveStateDir } from "../../../../engine/config/paths.js";
 export {
   isCompactionCheckpointTranscriptFileName,
-  isSessionArchiveArtifactName,
-  isUsageCountedSessionTranscriptFileName,
-  parseUsageCountedSessionIdFromFileName,
-} from "../../../../src/config/sessions/artifacts.js";
-export { canonicalizeMainSessionAlias } from "../../../../src/config/sessions/main-session.js";
-export { resolveSessionTranscriptsDirForAgent } from "../../../../src/config/sessions/paths.js";
+} from "../../../../engine/config/sessions/artifacts.js";
+export { canonicalizeMainSessionAlias } from "../../../../engine/config/sessions/main-session.js";
+export { resolveSessionTranscriptsDirForAgent } from "../../../../engine/config/sessions/paths.js";
 export {
   listSessionEntries,
   resolveSessionFilePath,
   resolveStorePath,
-} from "../../../../src/plugin-sdk/session-store-runtime.js";
-export type { SessionEntry } from "../../../../src/config/sessions/types.js";
-export type { SessionSendPolicyConfig } from "../../../../src/config/types.base.js";
+} from "../../../../engine/plugin-sdk/session-store-runtime.js";
+export type { SessionEntry } from "../../../../engine/config/sessions/types.js";
+export type { SessionSendPolicyConfig } from "../../../../engine/config/types.base.js";
 export type {
   MemoryBackend,
   MemoryCitationsMode,
@@ -72,69 +69,60 @@ export type {
   MemoryQmdIndexPath,
   MemoryQmdMcporterConfig,
   MemoryQmdSearchMode,
-} from "../../../../src/config/types.memory.js";
+} from "../../../../engine/config/types.memory.js";
 export {
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,
-} from "../../../../src/config/types.secrets.js";
-export type { SecretInput } from "../../../../src/config/types.secrets.js";
-export type { MemorySearchConfig } from "../../../../src/config/types.tools.js";
-export { isVerbose, setVerbose } from "../../../../src/globals.js";
+} from "../../../../engine/config/types.secrets.js";
+export type { SecretInput } from "../../../../engine/config/types.secrets.js";
+export type { MemorySearchConfig } from "../../../../engine/config/types.tools.js";
+export { isVerbose, setVerbose } from "../../../../engine/globals.js";
 
 // IO, network, and logging helpers.
-export { isExecCompletionEvent } from "../../../../src/infra/heartbeat-events-filter.js";
-export { root } from "../../../../src/infra/fs-safe.js";
-export { fetchWithSsrFGuard } from "../../../../src/infra/net/fetch-guard.js";
-export { shouldUseEnvHttpProxyForUrl } from "../../../../src/infra/net/proxy-env.js";
-export { ssrfPolicyFromHttpBaseUrlAllowedHostname } from "../../../../src/infra/net/ssrf.js";
+export { isExecCompletionEvent } from "../../../../engine/infra/heartbeat-events-filter.js";
+export { fetchWithSsrFGuard } from "../../../../engine/infra/net/fetch-guard.js";
+export { shouldUseEnvHttpProxyForUrl } from "../../../../engine/infra/net/proxy-env.js";
+export { ssrfPolicyFromHttpBaseUrlAllowedHostname } from "../../../../engine/infra/net/ssrf.js";
 export {
   DEFAULT_SQLITE_WAL_AUTOCHECKPOINT_PAGES,
   DEFAULT_SQLITE_WAL_CHECKPOINT_INTERVAL_MS,
   DEFAULT_SQLITE_WAL_TRUNCATE_INTERVAL_MS,
   configureSqliteConnectionPragmas,
   configureSqliteWalMaintenance,
-} from "../../../../src/infra/sqlite-wal.js";
+} from "../../../../engine/infra/sqlite-wal.js";
 export type {
   SqliteConnectionPragmaOptions,
   SqliteWalMaintenance,
   SqliteWalMaintenanceOptions,
-} from "../../../../src/infra/sqlite-wal.js";
+} from "../../../../engine/infra/sqlite-wal.js";
 export {
   installProcessWarningFilter,
   shouldIgnoreWarning,
-} from "../../../../src/infra/warning-filter.js";
-export type { ProcessWarning } from "../../../../src/infra/warning-filter.js";
-export { redactSensitiveText } from "../../../../src/logging/redact.js";
-export { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
+} from "../../../../engine/infra/warning-filter.js";
+export type { ProcessWarning } from "../../../../engine/infra/warning-filter.js";
+export { redactSensitiveText } from "../../../../engine/logging/redact.js";
+export { createSubsystemLogger } from "../../../../engine/logging/subsystem.js";
 export { detectMime } from "@openclaw/media-core/mime";
 
 // Memory plugin helpers.
-export {
-  resolveCanonicalRootMemoryFile,
-  shouldSkipRootMemoryAuxiliaryPath,
-} from "../../../../src/memory/root-memory-files.js";
 export {
   getMemoryEmbeddingProvider,
   listMemoryEmbeddingProviders,
   listRegisteredMemoryEmbeddingProviderAdapters,
   listRegisteredMemoryEmbeddingProviders,
-} from "../../../../src/plugins/memory-embedding-provider-runtime.js";
+} from "../../../../engine/plugins/memory-embedding-provider-runtime.js";
+export {
+  clearMemoryEmbeddingProviders,
+} from "../../../../engine/plugins/memory-embedding-providers.js";
 export type {
-  MemoryEmbeddingBatchChunk,
-  MemoryEmbeddingBatchOptions,
-  MemoryEmbeddingProvider,
   MemoryEmbeddingProviderAdapter,
-  MemoryEmbeddingProviderCallOptions,
-  MemoryEmbeddingProviderCreateOptions,
-  MemoryEmbeddingProviderCreateResult,
-  MemoryEmbeddingProviderRuntime,
-} from "../../../../src/plugins/memory-embedding-providers.js";
-export { emptyPluginConfigSchema } from "../../../../src/plugins/config-schema.js";
+} from "../../../../engine/plugins/memory-embedding-providers.js";
+export { emptyPluginConfigSchema } from "../../../../engine/plugins/config-schema.js";
 export {
   buildMemoryPromptSection as buildActiveMemoryPromptSection,
   getMemoryCapabilityRegistration,
   listActiveMemoryPublicArtifacts,
-} from "../../../../src/plugins/memory-state.js";
+} from "../../../../engine/plugins/memory-state.js";
 export type {
   MemoryFlushPlan,
   MemoryFlushPlanResolver,
@@ -143,33 +131,33 @@ export type {
   MemoryPluginPublicArtifactsProvider,
   MemoryPluginRuntime,
   MemoryPromptSectionBuilder,
-} from "../../../../src/plugins/memory-state.js";
-export type { OpenClawPluginApi } from "../../../../src/plugins/types.js";
+} from "../../../../engine/plugins/memory-state.js";
+export type { OpenClawPluginApi } from "../../../../engine/plugins/types.js";
 
 // Shared session/text utilities.
-export { defaultRuntime } from "../../../../src/runtime.js";
-export { parseAgentSessionKey } from "../../../../src/routing/session-key.js";
-export { hasInterSessionUserProvenance } from "../../../../src/sessions/input-provenance.js";
-export { isCronRunSessionKey } from "../../../../src/sessions/session-key-utils.js";
-export { onSessionTranscriptUpdate } from "../../../../src/sessions/transcript-events.js";
+export { defaultRuntime } from "../../../../engine/runtime.js";
+export { parseAgentSessionKey } from "../../../../engine/routing/session-key.js";
+export { hasInterSessionUserProvenance } from "../../../../engine/sessions/input-provenance.js";
+export { isCronRunSessionKey } from "../../../../engine/sessions/session-key-utils.js";
+export { onSessionTranscriptUpdate } from "../../../../engine/sessions/transcript-events.js";
 export { formatDocsLink } from "../../../terminal-core/src/links.js";
 export { colorize, isRich, theme } from "../../../terminal-core/src/theme.js";
-export { CHARS_PER_TOKEN_ESTIMATE, estimateStringChars } from "../../../../src/utils/cjk-chars.js";
-export { runTasksWithConcurrency } from "../../../../src/utils/run-with-concurrency.js";
-export { splitShellArgs } from "../../../../src/utils/shell-argv.js";
+export { CHARS_PER_TOKEN_ESTIMATE, estimateStringChars } from "../../../../engine/utils/cjk-chars.js";
+export { runTasksWithConcurrency } from "../../../../engine/utils/run-with-concurrency.js";
+export { splitShellArgs } from "../../../../engine/utils/shell-argv.js";
 export {
   resolveUserPath,
   shortenHomeInString,
   shortenHomePath,
   truncateUtf16Safe,
-} from "../../../../src/utils.js";
+} from "../../../../engine/utils.js";
 export {
   applyWindowsSpawnProgramPolicy,
   materializeWindowsSpawnProgram,
   resolveWindowsExecutablePath,
   resolveWindowsSpawnProgram,
   resolveWindowsSpawnProgramCandidate,
-} from "../../../../src/plugin-sdk/windows-spawn.js";
+} from "../../../../engine/plugin-sdk/windows-spawn.js";
 export type {
   ResolveWindowsSpawnProgramCandidateParams,
   ResolveWindowsSpawnProgramParams,
@@ -178,5 +166,107 @@ export type {
   WindowsSpawnProgram,
   WindowsSpawnProgramCandidate,
   WindowsSpawnResolution,
-} from "../../../../src/plugin-sdk/windows-spawn.js";
-export { resolveGlobalSingleton } from "../../../../src/shared/global-singleton.js";
+} from "../../../../engine/plugin-sdk/windows-spawn.js";
+export { resolveGlobalSingleton } from "../../../../engine/shared/global-singleton.js";
+
+// Local stubs for helpers not yet ported to the cross-wms engine modules.
+// Signatures mirror openclaw/src; implementations degrade safely.
+export function isSessionArchiveArtifactName(_fileName: string): boolean {
+  return false;
+}
+export function isUsageCountedSessionTranscriptFileName(_fileName: string): boolean {
+  return false;
+}
+export function parseUsageCountedSessionIdFromFileName(_fileName: string): string | null {
+  return null;
+}
+export async function root(_rootDir: string): Promise<unknown> {
+  throw new Error("fs-safe root() is not implemented in cross-wms");
+}
+export async function resolveCanonicalRootMemoryFile(_workspaceDir: string): Promise<string | null> {
+  return null;
+}
+export function shouldSkipRootMemoryAuxiliaryPath(_params: {
+  workspaceDir: string;
+  absPath: string;
+}): boolean {
+  return false;
+}
+
+// Local type stubs for memory embedding types not yet ported to cross-wms engine.
+export type MemoryEmbeddingBatchChunk = {
+  text: string;
+  embeddingInput?: unknown;
+};
+export type MemoryEmbeddingBatchOptions = {
+  agentId: string;
+  chunks: MemoryEmbeddingBatchChunk[];
+  wait: boolean;
+  concurrency: number;
+  pollIntervalMs: number;
+  timeoutMs: number;
+  debug: (message: string, data?: Record<string, unknown>) => void;
+};
+export type MemoryEmbeddingProviderCallOptions = {
+  signal?: AbortSignal;
+};
+export type MemoryEmbeddingProviderRuntime = {
+  id: string;
+  cacheKeyData?: Record<string, unknown>;
+  indexIdentityAliases?: Array<{
+    model: string;
+    cacheKeyData: Record<string, unknown>;
+  }>;
+  inlineQueryTimeoutMs?: number;
+  inlineBatchTimeoutMs?: number;
+  sourceWideBatchEmbed?: boolean;
+  batchEmbed?: (options: MemoryEmbeddingBatchOptions) => Promise<number[][] | null>;
+};
+export type MemoryEmbeddingProvider = {
+  id: string;
+  model: string;
+  maxInputTokens?: number;
+  embedQuery: (text: string, options?: MemoryEmbeddingProviderCallOptions) => Promise<number[]>;
+  embedBatch: (
+    texts: string[],
+    options?: MemoryEmbeddingProviderCallOptions,
+  ) => Promise<number[][]>;
+  embedBatchInputs?: (
+    inputs: unknown[],
+    options?: MemoryEmbeddingProviderCallOptions,
+  ) => Promise<number[][]>;
+  close?: () => Promise<void> | void;
+};
+export type MemoryEmbeddingProviderCreateOptions = {
+  config: unknown;
+  agentDir?: string;
+  provider?: string;
+  fallback?: string;
+  remote?: {
+    baseUrl?: string;
+    apiKey?: unknown;
+    headers?: Record<string, string>;
+  };
+  model: string;
+  inputType?: string;
+  queryInputType?: string;
+  documentInputType?: string;
+  local?: {
+    modelPath?: string;
+    modelCacheDir?: string;
+    contextSize?: number | "auto";
+  };
+  outputDimensionality?: number;
+  taskType?:
+    | "RETRIEVAL_QUERY"
+    | "RETRIEVAL_DOCUMENT"
+    | "SEMANTIC_SIMILARITY"
+    | "CLASSIFICATION"
+    | "CLUSTERING"
+    | "QUESTION_ANSWERING"
+    | "FACT_VERIFICATION";
+};
+export type MemoryEmbeddingProviderCreateResult = {
+  provider: MemoryEmbeddingProvider | null;
+  runtime?: MemoryEmbeddingProviderRuntime;
+};

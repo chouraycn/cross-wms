@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === PENDING MIGRATION STUB ===
 // Source: openclaw/src/runtime/types.ts (待迁移)
 // Status: 结构化类型占位 stub — 类型为 PluginRuntime 接口

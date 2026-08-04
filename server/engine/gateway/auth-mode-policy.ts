@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { GatewayAuthSurface, GatewayAuthResult } from './auth.js';
 
 export type AuthModePolicy = {
@@ -47,7 +46,7 @@ export function evaluateAuthPolicy(params: {
     };
   }
 
-  const policy = modePolicies.get(authResult.method);
+  const policy = modePolicies.get(authResult.method as any) as any;
   if (policy) {
     if (!policy.surfaces.includes(surface)) {
       return {
@@ -59,7 +58,7 @@ export function evaluateAuthPolicy(params: {
   }
 
   if (requiredModes && requiredModes.length > 0) {
-    if (!requiredModes.includes(authResult.method)) {
+    if (!requiredModes.includes(authResult.method as any)) {
       return {
         allowed: false,
         mode: authResult.method,
@@ -116,3 +115,8 @@ registerAuthModePolicy({
   priority: 5,
   required: false,
 });
+
+export function assertExplicitGatewayAuthModeWhenBothConfigured(_cfg: unknown): void {
+  // Stub: no-op in cross-wms port. The openclaw implementation validates that
+  // explicit auth mode is asserted when both token and password are configured.
+}

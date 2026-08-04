@@ -1,14 +1,39 @@
 /**
- * 移植自 openclaw/src/agents/schema/string-enum.ts
+ * Provider-safe TypeBox string enum helpers.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * 移植自 openclaw/src/agents/schema/string-enum.ts
+ * Emits flat `enum` schemas instead of `anyOf` unions so provider tool-schema validators accept them.
  */
+import { Type } from "typebox";
 
-export function stringEnum(..._args: unknown[]): unknown {
-  return undefined;
+type StringEnumOptions<T extends readonly string[]> = {
+  description?: string;
+  title?: string;
+  default?: T[number];
+  deprecated?: boolean;
+};
+
+// Avoid Type.Union([Type.Literal(...)]) which compiles to anyOf.
+// Some providers reject anyOf in tool schemas; a flat string enum is safer.
+export function stringEnum<T extends readonly string[]>(
+  values: T,
+  options: StringEnumOptions<T> = {},
+) {
+  const enumValues = Array.isArray(values)
+    ? values
+    : values && typeof values === "object"
+      ? Object.values(values).filter((value): value is T[number] => typeof value === "string")
+      : [];
+  return Type.Unsafe<T[number]>({
+    type: "string",
+    ...(enumValues.length > 0 ? { enum: [...enumValues] } : {}),
+    ...options,
+  });
 }
-export function optionalStringEnum(..._args: unknown[]): unknown {
-  return undefined;
+
+export function optionalStringEnum<T extends readonly string[]>(
+  values: T,
+  options: StringEnumOptions<T> = {},
+) {
+  return Type.Optional(stringEnum(values, options));
 }

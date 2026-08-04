@@ -1,8 +1,2 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export function asNullableRecord(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value)) return null;
-  return value;
-}
+// Re-export from @cdf-know/normalization-core to replace local stub.
+export * from "@cdf-know/normalization-core/record-coerce";

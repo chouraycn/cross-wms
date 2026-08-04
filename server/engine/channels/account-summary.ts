@@ -2,7 +2,7 @@
  * Channel account summary helpers. — 移植自 openclaw/src/channels/account-summary.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/string-normalization (normalizeStringEntries) →
+ *  - @cdf-know/normalization-core/string-normalization (normalizeStringEntries) →
  *    cross-wms ../infra/string-normalization.js
  *  - ../config/types.openclaw.js (OpenClawConfig) → cross-wms ../config/types/openclaw.js
  *  - ../utils.js (isRecord) → ./_openclaw-stubs.js

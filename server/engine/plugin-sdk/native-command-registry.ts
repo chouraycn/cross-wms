@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public SDK subpath for chat/native command definitions and argument helpers.
  */

@@ -94,7 +94,7 @@ const CONFIG_MUTATION_ALLOWED = { mode: "allowed" } as const;
 /**
  * Return whether a parsed value contains a `$include` directive (recursively).
  *
- * 降级实现：openclaw 使用 `@openclaw/normalization-core/record-coerce` 的 `isRecord`。
+ * 降级实现：openclaw 使用 `@cdf-know/normalization-core/record-coerce` 的 `isRecord`。
  * 这里使用本地实现，行为与 openclaw 一致。
  */
 export function containsConfigIncludeDirective(value: unknown): boolean {
@@ -114,7 +114,7 @@ export function containsConfigIncludeDirective(value: unknown): boolean {
 /**
  * Return whether an authored section supports the single-top-level $include shape.
  *
- * 降级实现：openclaw 使用 `@openclaw/normalization-core/record-coerce` 的 `isRecord`。
+ * 降级实现：openclaw 使用 `@cdf-know/normalization-core/record-coerce` 的 `isRecord`。
  * 这里使用本地实现，行为与 openclaw 一致。
  */
 export function supportsInstallConfigSingleTopLevelIncludeShape(authoredSection: unknown): boolean {

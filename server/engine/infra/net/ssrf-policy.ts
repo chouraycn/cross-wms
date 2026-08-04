@@ -18,7 +18,7 @@ export type { SsrFPolicy };
 export type LookupFn = typeof dnsLookup;
 
 // ---------------------------------------------------------------------------
-// Inlined normalization helpers (replace @openclaw/normalization-core deps).
+// Inlined normalization helpers (replace @cdf-know/normalization-core deps).
 // ---------------------------------------------------------------------------
 
 /** Coerces an unknown value into a nullable record for safe property access. */

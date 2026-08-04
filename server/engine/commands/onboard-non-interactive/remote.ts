@@ -5,7 +5,7 @@
  * It writes gateway.remote config without local gateway setup, preserving the
  * same config commit path as local onboarding.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { logConfigUpdated } from "@openclaw-src/config/logging.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

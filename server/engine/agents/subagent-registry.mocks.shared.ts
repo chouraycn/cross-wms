@@ -1,10 +1,25 @@
 /**
- * 移植自 openclaw/src/agents/subagent-registry.mocks.shared.ts
+ * Shared subagent registry mocks.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tests import this module to hoist gateway/event mocks consistently before
+ * registry modules resolve their runtime dependencies.
  */
+import { vi } from "vitest";
 
-// No direct exports in source file (reexports skipped)
-export {};
+const noop = () => {};
+const sharedMocks = vi.hoisted(() => ({
+  callGateway: vi.fn(async () => ({
+    status: "ok" as const,
+    startedAt: 111,
+    endedAt: 222,
+  })),
+  onAgentEvent: vi.fn(() => noop),
+}));
+
+vi.mock("../gateway/call.js", () => ({
+  callGateway: sharedMocks.callGateway,
+}));
+
+vi.mock("../infra/agent-events.js", () => ({
+  onAgentEvent: sharedMocks.onAgentEvent,
+}));

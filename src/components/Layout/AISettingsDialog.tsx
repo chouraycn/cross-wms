@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Alert, Button, CircularProgress, useTheme,
   ToggleButtonGroup, ToggleButton, TextField, Slider, Switch, FormControlLabel,
   Dialog, DialogTitle, DialogContent, IconButton,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
 } from '@mui/material';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -21,11 +22,14 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import HandymanIcon from '@mui/icons-material/Handyman';
 import CompressIcon from '@mui/icons-material/Compress';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import BranchIcon from '@mui/icons-material/CallSplit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ExternalLinkIcon from '@mui/icons-material/OpenInNew';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import { useNavigate } from 'react-router-dom';
 import { useModels } from '../../contexts/ModelsContext';
 import { useAppSettings, type AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
@@ -44,6 +48,7 @@ import AgentsPage from '../../pages/AgentsPage';
 import GoalsPage from '../../pages/GoalsPage';
 import ContextEngineRegistryPage from '../../pages/ContextEngineRegistryPage';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode, type ToolProfile, type CompactionStrategy } from '../../contexts/AppSettingsContext';
+import { fetchApiKeys, deleteApiKey, type ApiKeyRecord } from '../../services/apikeys/api';
 
 type MainTab = 'basic' | 'ai' | 'tools' | 'system' | 'comms';
 type SubTab = 'model' | 'chat' | 'agents' | 'soul' | 'goals' | 'mcp' | 'lsp' | 'image' | 'secrets' | 'git' | 'auth' | 'context' | 'talk' | 'channels';
@@ -93,6 +98,147 @@ const PlaceholderTab: React.FC<{ title: string; description?: string; colors: { 
     </Box>
   </Box>
 );
+
+/** 外部应用授权管理 Tab —— 展示已授权的 API Key 列表，支持撤销授权与跳转管理 */
+function ExternalAppAuthTab({ colors }: { colors: { textPrimary: string; textSecondary: string; textMuted: string; textDisabled: string; border: string; bgHover: string } }) {
+  const navigate = useNavigate();
+  const [keys, setKeys] = useState<ApiKeyRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchApiKeys();
+      setKeys(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载 API Key 列表失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRevoke = useCallback(async (id: string) => {
+    setRevokingId(id);
+    try {
+      await deleteApiKey(id);
+      setKeys(prev => prev.filter(k => k.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '撤销授权失败');
+    } finally {
+      setRevokingId(null);
+    }
+  }, []);
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box>
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: colors.textPrimary, mb: 0.5 }}>外部应用授权</Typography>
+          <Typography sx={{ fontSize: '0.8rem', color: colors.textSecondary }}>
+            管理通过 API Key 授权的外部应用，可撤销授权或新增 API Key
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={load}
+            disabled={loading}
+            sx={{ textTransform: 'none', fontSize: '0.8rem', color: colors.textSecondary }}
+          >
+            刷新
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/api-keys')}
+            sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: '8px', bgcolor: '#10b981', boxShadow: 'none', '&:hover': { bgcolor: '#059669', boxShadow: 'none' } }}
+          >
+            新增授权
+          </Button>
+        </Box>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
+          <CircularProgress size={20} />
+          <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>正在加载授权列表...</Typography>
+        </Box>
+      ) : keys.length === 0 ? (
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <VpnKeyOutlinedIcon sx={{ fontSize: 40, color: colors.textDisabled, mb: 1 }} />
+            <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted, mb: 1 }}>暂无已授权的外部应用</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: colors.textDisabled }}>
+              点击「新增授权」跳转到 API Keys 管理页面创建新的 API Key
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5, border: `1px solid ${colors.border}` }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: colors.bgHover }}>
+                <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600, color: colors.textSecondary }}>名称</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600, color: colors.textSecondary }}>Key 前缀</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600, color: colors.textSecondary }}>状态</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600, color: colors.textSecondary }}>创建时间</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600, color: colors.textSecondary }} align="right">操作</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {keys.map((key) => (
+                <TableRow key={key.id} hover>
+                  <TableCell sx={{ fontSize: '0.8rem', color: colors.textPrimary }}>{key.name}</TableCell>
+                  <TableCell sx={{ fontSize: '0.75rem', color: colors.textMuted, fontFamily: 'monospace' }}>{key.prefix}...</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={key.enabled ? '已启用' : '已禁用'}
+                      size="small"
+                      sx={{
+                        height: 20, fontSize: '0.7rem',
+                        bgcolor: key.enabled ? 'rgba(16,185,129,0.1)' : 'rgba(156,163,175,0.1)',
+                        color: key.enabled ? '#10b981' : '#9ca3af',
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.75rem', color: colors.textMuted }}>
+                    {key.createdAt ? new Date(key.createdAt).toLocaleString('zh-CN') : '-'}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRevoke(key.id)}
+                      disabled={revokingId === key.id}
+                      sx={{ color: '#ef4444' }}
+                      title="撤销授权"
+                    >
+                      {revokingId === key.id ? <CircularProgress size={14} /> : <DeleteIcon sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
+  );
+}
 
 export interface AISettingsDialogProps {
   open: boolean;
@@ -248,7 +394,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
             {activeSubTab === 'image' && <ImageGenerationSettingsTab />}
             {activeSubTab === 'secrets' && <SettingsSecrets />}
             {activeSubTab === 'git' && <GitSettingsTab />}
-            {activeSubTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+            {activeSubTab === 'auth' && <ExternalAppAuthTab colors={{ textPrimary: gs.textPrimary, textSecondary: gs.textSecondary, textMuted: gs.textMuted, textDisabled: gs.textDisabled, border: gs.border, bgHover: gs.bgHover }} />}
             {activeSubTab === 'context' && <ContextEngineRegistryPage />}
             {activeSubTab === 'talk' && <TalkSettingsPanel />}
             {activeSubTab === 'channels' && <ChannelManagerPanel />}

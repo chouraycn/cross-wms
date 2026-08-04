@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Built-in grep session tool.
  *

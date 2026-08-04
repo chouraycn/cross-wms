@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Helper predicates and gates used while streaming agent-runner payloads. */
 import { isAudioFileName } from "@openclaw/media-core/mime";
 import {

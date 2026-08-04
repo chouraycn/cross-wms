@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Configure wizard helper for removing channel config sections safely.
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
+import { note } from "@openclaw/terminal-core/note";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
 import { listChatChannels } from "@openclaw-src/channels/chat-meta.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { CONFIG_PATH } from "@openclaw-src/config/config.js";

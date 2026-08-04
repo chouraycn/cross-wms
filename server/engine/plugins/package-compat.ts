@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/package-compat.ts。
 //
 // 降级策略：
-//  - 原文件依赖 `@openclaw/normalization-core/record-coerce` 的 `isRecord`。
+//  - 原文件依赖 `@cdf-know/normalization-core/record-coerce` 的 `isRecord`。
 //    cross-wms 的 `../infra/record-coerce.js` 已提供同名导出，行为一致，
 //    直接替换 import 路径即可，无需进一步降级。
 

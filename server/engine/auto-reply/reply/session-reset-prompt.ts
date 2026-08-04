@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds reset prompts that preserve session context and bootstrap mode.
 import { resolveBootstrapMode, type BootstrapMode } from '@openclaw-src/agents/bootstrap-mode.js';
 import {

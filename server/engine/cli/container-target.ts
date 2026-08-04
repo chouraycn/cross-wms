@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/container-target.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce`，已替换为本地
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce`，已替换为本地
 //    `../infra/string-coerce.js`（cross-wms 已有 `normalizeOptionalString`）。
 //  - 原模块依赖 `../infra/cli-root-options.js`，cross-wms 中已移植为 `./cli-root-options.js`。
 //  - 原模块依赖 `./argv-invocation.js`、`./root-option-scan.js`、`./root-option-value.js`，

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared assertions for provider replay policy passthrough behavior.
  */

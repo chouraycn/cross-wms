@@ -49,6 +49,11 @@ import { AppPaths } from '../config/appPaths.js';
 import type { ToolDefinition } from '../aiClient.js';
 import type { ToolHandler } from './toolTypes.js';
 import { auditSkillSecurity } from './skillSecurity.js';
+import { fileURLToPath } from 'node:url';
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * 产物回写约定（T3）：注入到 `skill use` 返回的指令尾部，指导技能把生成文件回显给用户。
@@ -458,3 +463,11 @@ export const skillRuntimeBridge = {
   buildSkillToolDefinition,
   skillToolHandler,
 };
+
+// Register hooks into the leaf registry to break the
+// skillRuntimeBridge.ts ↔ skillLifecycle.ts static cycle (#12).
+// skillLifecycle calls these via the registry instead of statically importing
+// skillRuntimeBridge; the remaining edge (skillRuntimeBridge → skillLifecycle)
+// is a one-way dynamic import. Both modules load at startup.
+import { registerSkillRuntimeBridgeHooks } from './skillRuntimeBridgeHooks.js';
+registerSkillRuntimeBridgeHooks({ initSkillRuntime, resetSkillRuntime, setSkillDisabled, listAvailableSkills });

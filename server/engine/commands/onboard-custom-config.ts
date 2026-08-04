@@ -8,7 +8,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { CONTEXT_WINDOW_HARD_MIN_TOKENS } from "@openclaw-src/agents/context-window-guard.js";
 import { DEFAULT_PROVIDER } from "@openclaw-src/agents/defaults.js";
 import { buildModelAliasIndex, modelKey } from "@openclaw-src/agents/model-selection.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Contract suite for bundled plugin registration ownership and manifest auth metadata.
  */

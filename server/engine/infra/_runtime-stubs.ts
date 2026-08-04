@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * 共享运行时 stub — 为移植自 openclaw 的 infra 模块提供 openclaw 运行时依赖的降级实现。
  *
  * 设计原则：
@@ -136,7 +142,7 @@ export const defaultRuntime: {
 // ../utils.js —— resolveConfigDir 占位（与 _openclaw-stubs.ts 中重复，这里保留兼容）
 // ============================================================================
 
-export { resolveConfigDir as resolveOpenClawConfigDir } from "./_runtime-stubs.js";
+export { resolveConfigDir as resolveOpenClawConfigDir };
 
 // ============================================================================
 // ../shared/pid-alive.js —— PID 存活检测降级
@@ -176,51 +182,37 @@ export function formatCliCommand(command: string, _env?: NodeJS.ProcessEnv): str
 }
 
 // ============================================================================
-// ../state/openclaw-state-db.js —— 状态数据库降级（抛出错误）
+// ../state/openclaw-state-db.js —— 状态数据库（直接复用真实实现）
 // ============================================================================
+// 直接 import 真实实现，不再使用 try/catch 降级包装。
+// 真实实现在 ../state/openclaw-state-db.ts，提供带缓存的 SQLite 连接管理。
+import {
+  openOpenClawStateDatabase as openOpenClawStateDatabaseImpl,
+  runOpenClawStateWriteTransaction as runOpenClawStateWriteTransactionImpl,
+  type OpenClawStateDatabase as OpenClawStateDatabaseImpl,
+  type OpenClawStateDatabaseOptions as OpenClawStateDatabaseOptionsImpl,
+} from "../state/openclaw-state-db.js";
 
-export type OpenClawStateDatabase = {
-  db: unknown;
-};
+export type OpenClawStateDatabase = OpenClawStateDatabaseImpl;
+export type OpenClawStateDatabaseOptions = OpenClawStateDatabaseOptionsImpl;
 
-/**
- * 打开 OpenClaw 状态数据库。
- * 委托给 cross-wms 的 state/openclaw-state-db.ts 真实实现。
- */
-export function openOpenClawStateDatabase(_options?: {
-  env?: NodeJS.ProcessEnv;
-}): OpenClawStateDatabase {
-  try {
-    // 动态导入避免循环依赖
-    const { openStateDatabase } = require("../state/openclaw-state-db.js");
-    const result = openStateDatabase(_options);
-    return { db: result.db };
-  } catch (err) {
-    logger.debug(`[runtime-stubs] openOpenClawStateDatabase 降级: ${err}`);
-    return { db: undefined };
-  }
+/** 打开 OpenClaw 状态数据库（直接委托真实实现）。 */
+export function openOpenClawStateDatabase(
+  options?: OpenClawStateDatabaseOptions,
+): OpenClawStateDatabase {
+  return openOpenClawStateDatabaseImpl(options ?? {});
 }
 
-/**
- * 运行 OpenClaw 状态写事务。
- * 委托给 cross-wms 的 state/openclaw-state-db.ts 真实实现。
- */
+/** 运行 OpenClaw 状态写事务（直接委托真实实现）。 */
 export function runOpenClawStateWriteTransaction<T>(
-  fn: (params: { db: unknown }) => T,
-  _options?: { env?: NodeJS.ProcessEnv },
+  fn: (database: OpenClawStateDatabase) => T,
+  options?: OpenClawStateDatabaseOptions,
 ): T {
-  try {
-    const { openStateDatabase } = require("../state/openclaw-state-db.js");
-    const result = openStateDatabase(_options);
-    return fn({ db: result.db });
-  } catch (err) {
-    logger.debug(`[runtime-stubs] runOpenClawStateWriteTransaction 降级: ${err}`);
-    return fn({ db: undefined });
-  }
+  return runOpenClawStateWriteTransactionImpl<T>(fn, options ?? {});
 }
 
 // ============================================================================
-// @openclaw/normalization-core/number-coercion —— 数字规范化（完整移植）
+// @cdf-know/normalization-core/number-coercion —— 数字规范化（完整移植）
 // 移植自 openclaw/packages/normalization-core/src/number-coercion.ts
 // ============================================================================
 
@@ -598,7 +590,7 @@ export function resolveExpiresAtMsFromDurationOrEpoch(
   return asDateTimestampMs(parsed);
 }
 // ============================================================================
-// @openclaw/normalization-core/record-coerce —— 记录规范化（完整移植）
+// @cdf-know/normalization-core/record-coerce —— 记录规范化（完整移植）
 // 移植自 openclaw/packages/normalization-core/src/record-coerce.ts
 // ============================================================================
 

@@ -3,7 +3,7 @@
  *
  * 测试计划拓扑排序、计划推进等操作的性能。
  */
-import { BenchmarkRunner } from '@cdf-know/benchmark';
+import { BenchmarkRunner, type BenchmarkResult } from '@cdf-know/benchmark';
 
 const runner = new BenchmarkRunner({ defaultIterations: 10, defaultWarmup: 3 });
 
@@ -204,7 +204,7 @@ async function advancePlan10Layers() {
 export async function runPlannerBenchmarks() {
   console.log('\n=== Planner 性能基准测试 ===\n');
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   results.push(await topoSort100Steps());
   results.push(await topoSort1000Steps());

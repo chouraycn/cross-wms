@@ -1,11 +1,32 @@
 /**
- * 移植自 openclaw/src/agents/openclaw-tools.nodes-workspace-guard.ts
+ * Workspace guard adapter for the nodes tool.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Applies the shared output-path guard only when filesystem policy requires workspace-only writes.
  */
+import { wrapToolWorkspaceRootGuardWithOptions } from "./agent-tools.read.js";
+import type { ToolFsPolicy } from "./tool-fs-policy.js";
+import type { AnyAgentTool } from "./tools/common.js";
 
-export function applyNodesToolWorkspaceGuard(..._args: unknown[]): unknown {
-  return undefined;
+/** Wraps the nodes tool with a workspace-only output-path guard when policy requires it. */
+export function applyNodesToolWorkspaceGuard(
+  nodesToolBase: AnyAgentTool,
+  options: {
+    fsPolicy?: ToolFsPolicy;
+    sandboxContainerWorkdir?: string;
+    sandboxRoot?: string;
+    workspaceDir: string;
+  },
+): AnyAgentTool {
+  if (options.fsPolicy?.workspaceOnly !== true) {
+    return nodesToolBase;
+  }
+  return wrapToolWorkspaceRootGuardWithOptions(
+    nodesToolBase,
+    options.sandboxRoot ?? options.workspaceDir,
+    {
+      containerWorkdir: options.sandboxContainerWorkdir,
+      normalizeGuardedPathParams: true,
+      pathParamKeys: ["outPath"],
+    },
+  ) as AnyAgentTool;
 }

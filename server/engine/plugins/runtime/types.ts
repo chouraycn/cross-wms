@@ -1,30 +1,102 @@
-// Re-export from parent
-export * from "../types.js";
+// Plugin runtime types describe activated plugin capabilities exposed to core execution.
+import type { PluginRuntimeCore, RuntimeLogger } from "./types-core.js";
 
-// openclaw compat: runtime types used by plugin-sdk/core.ts
-// Minimal stubs until the full runtime is ported.
+export type { RuntimeLogger };
 
-/** Trusted runtime logger surface (openclaw compat stub). */
-export type RuntimeLogger = {
-  debug?: (message: string, meta?: Record<string, unknown>) => void;
-  info: (message: string, meta?: Record<string, unknown>) => void;
-  warn: (message: string, meta?: Record<string, unknown>) => void;
-  error: (message: string, meta?: Record<string, unknown>) => void;
+type PluginRuntimeChannel = import("./types-channel.js").PluginRuntimeChannel;
+
+// ── Subagent runtime types ──────────────────────────────────────────
+
+export type SubagentRunParams = {
+  sessionKey: string;
+  message: string;
+  provider?: string;
+  model?: string;
+  extraSystemPrompt?: string;
+  lane?: string;
+  lightContext?: boolean;
+  deliver?: boolean;
+  idempotencyKey?: string;
 };
 
-/** Trusted in-process runtime surface injected into native plugins (openclaw compat stub). */
-export type PluginRuntime = {
-  subagent?: {
-    run?: (params: unknown) => Promise<unknown>;
-    waitForRun?: (params: unknown) => Promise<unknown>;
-    getSessionMessages?: (params: unknown) => Promise<unknown>;
-    deleteSession?: (params: unknown) => Promise<void>;
+export type SubagentRunResult = {
+  runId: string;
+};
+
+export type SubagentWaitParams = {
+  runId: string;
+  timeoutMs?: number;
+};
+
+export type SubagentWaitResult = {
+  status: "ok" | "error" | "timeout";
+  error?: string;
+};
+
+export type SubagentGetSessionMessagesParams = {
+  sessionKey: string;
+  limit?: number;
+};
+
+export type SubagentGetSessionMessagesResult = {
+  messages: unknown[];
+};
+
+/** @deprecated Use SubagentGetSessionMessagesParams. */
+export type SubagentGetSessionParams = SubagentGetSessionMessagesParams;
+
+/** @deprecated Use SubagentGetSessionMessagesResult. */
+export type SubagentGetSessionResult = SubagentGetSessionMessagesResult;
+
+export type SubagentDeleteSessionParams = {
+  sessionKey: string;
+  deleteTranscript?: boolean;
+};
+
+export type RuntimeNodeListParams = {
+  connected?: boolean;
+};
+
+export type RuntimeNodeListResult = {
+  nodes: Array<{
+    nodeId: string;
+    displayName?: string;
+    remoteIp?: string;
+    connected?: boolean;
+    caps?: string[];
+    commands?: string[];
+  }>;
+};
+
+export type RuntimeNodeInvokeParams = {
+  nodeId: string;
+  command: string;
+  params?: unknown;
+  timeoutMs?: number;
+  idempotencyKey?: string;
+};
+
+/** Trusted in-process runtime surface injected into native plugins. */
+export type PluginRuntime = PluginRuntimeCore & {
+  subagent: {
+    run: (params: SubagentRunParams) => Promise<SubagentRunResult>;
+    waitForRun: (params: SubagentWaitParams) => Promise<SubagentWaitResult>;
+    getSessionMessages: (
+      params: SubagentGetSessionMessagesParams,
+    ) => Promise<SubagentGetSessionMessagesResult>;
+    /** @deprecated Use getSessionMessages. */
+    getSession: (params: SubagentGetSessionParams) => Promise<SubagentGetSessionResult>;
+    deleteSession: (params: SubagentDeleteSessionParams) => Promise<void>;
   };
-  nodes?: {
-    list?: (params?: unknown) => Promise<unknown>;
-    invoke?: (params: unknown) => Promise<unknown>;
+  nodes: {
+    list: (params?: RuntimeNodeListParams) => Promise<RuntimeNodeListResult>;
+    invoke: (params: RuntimeNodeInvokeParams) => Promise<unknown>;
   };
-  channel?: unknown;
-  logger?: RuntimeLogger;
-  [key: string]: unknown;
+  channel: PluginRuntimeChannel;
+};
+
+export type CreatePluginRuntimeOptions = {
+  subagent?: PluginRuntime["subagent"];
+  nodes?: PluginRuntime["nodes"];
+  allowGatewaySubagentBinding?: boolean;
 };

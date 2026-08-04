@@ -20,7 +20,7 @@ import type { SessionsResolveResult } from "../../gateway/sessions-resolve.js";
 import {
   normalizeFastMode,
   type FastMode,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { readPositiveIntegerParam } from "./common.js";
 

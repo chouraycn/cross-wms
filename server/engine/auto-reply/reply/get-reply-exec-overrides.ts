@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves effective exec-tool overrides for reply runs. */
 import type { ExecToolDefaults } from '@openclaw-src/agents/bash-tools.js';
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';

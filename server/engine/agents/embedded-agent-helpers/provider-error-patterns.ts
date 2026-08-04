@@ -10,6 +10,12 @@
 
 import { resolveNodeRequireFromMeta } from "../../logging/node-require.js";
 import type { FailoverReason } from "./types.js";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 type ProviderErrorPattern = {
   /** Regex to match against the raw error message. */

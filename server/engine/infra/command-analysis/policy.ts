@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Approval-policy command analysis normalizes shell and argv inputs into the
 // shared exec segment shape consumed by risk checks.
 import {
@@ -33,7 +32,7 @@ export function analyzeCommandForPolicy(
     env?: NodeJS.ProcessEnv;
   },
 ): CommandPolicyAnalysis {
-  const analysis = analyzeArgvCommand({ argv: params.argv, cwd: params.cwd, env: params.env });
+  const analysis = analyzeArgvCommand({ argv: params.argv, cwd: params.cwd, env: params.env }) as any;
   if (!analysis.ok) {
     return {
       ok: false,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { UsageBarTemplate } from "./translator.js";
 
 export const DEFAULT_USAGE_BAR_TEMPLATE: UsageBarTemplate = {

@@ -1,16 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/hooks-policy.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway hook routing policy helpers.
+// Normalizes configured agent allowlists for hook dispatch.
+import { normalizeAgentId } from "../routing/session-key.js";
 
-export function resolveAllowedAgentIds(..._args: unknown[]): unknown {
-  return undefined;
+// Hook policy config narrows hooks to explicit agent ids. A wildcard means no
+// restriction, matching the gateway hook routing contract.
+/** Resolves configured hook agent ids, or undefined when all agents are allowed. */
+export function resolveAllowedAgentIds(raw: string[] | undefined): Set<string> | undefined {
+  if (!Array.isArray(raw)) {
+    return undefined;
+  }
+  const allowed = new Set<string>();
+  let hasWildcard = false;
+  for (const entry of raw) {
+    const trimmed = entry.trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (trimmed === "*") {
+      hasWildcard = true;
+      break;
+    }
+    allowed.add(normalizeAgentId(trimmed));
+  }
+  if (hasWildcard) {
+    return undefined;
+  }
+  return allowed;
 }

@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * Gateway 本地 stub 与降级实现 — 为移植自 openclaw 的 gateway 模块提供缺失依赖的占位实现。
  *
  * 设计原则：
@@ -18,26 +24,13 @@
 import type { OperatorScope } from "./operator-scopes.js";
 
 // ============================================================================
-// ../config/types.openclaw.js —— OpenClawConfig 宽松类型占位
+// ../config/types.openclaw.js —— OpenClawConfig 直接复用真实类型
 // ============================================================================
-
-/**
- * OpenClaw 配置的宽松类型占位。
- *
- * 降级原因：cross-wms 已移植 ../config/types.openclaw.js 与 ../config/types.gateway.js
- * 的完整类型层级，但 gateway 本地 stub 仍使用结构化子集与索引签名，便于
- * 移植文件中对 gateway/auth/remote 等字段的访问，且与 types.openclaw 中
- * 的完整 OpenClawConfig 兼容。
- */
-export type OpenClawConfig = {
-  gateway?: {
-    reload?: { mode?: GatewayReloadMode; debounceMs?: number };
-    auth?: { token?: string; password?: string };
-    remote?: { token?: string; password?: string };
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-};
+//
+// 直接从 ../config/types.openclaw.js 重新导出 OpenClawConfig，避免 gateway 内部
+// stub 定义的宽松类型与 config/types/openclaw.ts 中的完整 OpenClawConfig 产生
+// 结构性不兼容（TS2345）。
+export type { OpenClawConfig } from "../config/types.openclaw.js";
 
 // ============================================================================
 // ../config/types.gateway.js —— GatewayReloadMode
@@ -47,15 +40,13 @@ export type OpenClawConfig = {
 export type GatewayReloadMode = "off" | "restart" | "hot" | "hybrid";
 
 // ============================================================================
-// ./auth.js —— ResolvedGatewayAuth（目标 auth.ts 未导出此类型）
+// ./auth-resolve.js —— ResolvedGatewayAuth 直接复用真实类型
 // ============================================================================
-
-/** 已解析的 Gateway 鉴权凭据（降级占位）。 */
-export type ResolvedGatewayAuth = {
-  mode: "token" | "password" | "none";
-  token?: string;
-  password?: string;
-};
+//
+// 直接从 ./auth-resolve.js 重新导出 ResolvedGatewayAuth，避免 gateway 内部
+// stub 定义的占位类型与 auth-resolve.ts 中的完整 ResolvedGatewayAuth 产生
+// 结构性不兼容（TS2345）。
+export type { ResolvedGatewayAuth } from "./auth-resolve.js";
 
 // ============================================================================
 // ./auth-rate-limit.js —— 限流序列化所需导出（目标侧未导出）

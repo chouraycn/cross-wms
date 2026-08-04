@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Classifies embedded-agent run results for model fallback decisions.
  */

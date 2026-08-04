@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Private helper surface for bundled plugins with configured local IPC.
 // Keep managed proxy bypass capabilities out of the public plugin SDK surface.
 

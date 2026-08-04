@@ -125,6 +125,10 @@ export interface ExecuteChatParams {
   extraSkills?: SkillDefinition[];
   /** 数字员工（per-call）物化技能执行器 */
   extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
+  /** 数字员工（per-call）HTTP API 工具定义列表（sd_tools tool_type='http'） */
+  staffHttpTools?: import('../aiClient.js').ToolDefinition[];
+  /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入 */
+  onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
 }
 
 export interface ExecuteChatStreamResult {
@@ -357,6 +361,8 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       staffMcpManager: params.staffMcpManager,
       extraSkills: params.extraSkills,
       extraSkillExecutor: params.extraSkillExecutor,
+      staffHttpTools: params.staffHttpTools,
+      onSkillExecuted: params.onSkillExecuted,
     };
 
     const toolResult: ToolExecutionResult = await strategy.execute(strategyOptions);

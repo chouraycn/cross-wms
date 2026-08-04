@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests provider stream shared helpers and stream hook capture.
  */

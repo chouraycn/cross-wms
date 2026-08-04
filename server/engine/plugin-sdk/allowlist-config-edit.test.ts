@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests allowlist config edit helpers for flat, nested, and account-scoped records.
  */

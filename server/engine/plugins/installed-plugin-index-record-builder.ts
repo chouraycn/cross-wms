@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/installed-plugin-index-record-builder.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-normalization 的
+//  - 原文件依赖 @cdf-know/normalization-core/string-normalization 的
 //    normalizeSortedUniqueStringEntries。改用 cross-wms 的
 //    ../infra/string-normalization.js，已提供同名导出。
 //  - 原文件依赖 ../config/types.js 的 OpenClawConfig。cross-wms 尚未移植完整配置

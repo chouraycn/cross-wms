@@ -12,6 +12,12 @@ import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
 import { logger } from '../../logger.js';
 import type { ChunkPlan } from './chunkWorker.js';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** Worker 任务输入 */
 export interface WorkerTaskInput {

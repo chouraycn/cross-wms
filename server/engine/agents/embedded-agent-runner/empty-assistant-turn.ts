@@ -1,7 +1,7 @@
 /**
  * Detects provider stop turns that contain no assistant-visible content.
  */
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@cdf-know/normalization-core/number-coercion";
 
 type EmptyAssistantTurnLike = {
   content?: unknown;

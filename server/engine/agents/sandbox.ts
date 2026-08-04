@@ -1,142 +1,139 @@
 /**
- * Agent 沙箱运行时
+ * Public sandbox barrel for agent runtime code.
  *
- * 提供执行环境隔离（模拟）、超时控制、资源限制和安全策略。
- * 通过 runInSandbox 在受控环境中运行任意函数。
+ * Keep sandbox implementation modules behind this export surface so callers use
+ * the same config, backend, Docker, SSH, filesystem, and policy contracts.
  */
+export {
+  resolveSandboxBrowserConfig,
+  resolveSandboxConfigForAgent,
+  resolveSandboxDockerConfig,
+  resolveSandboxPruneConfig,
+  resolveSandboxScope,
+} from "./sandbox/config.js";
+export {
+  DEFAULT_SANDBOX_BROWSER_IMAGE,
+  DEFAULT_SANDBOX_COMMON_IMAGE,
+  DEFAULT_SANDBOX_IMAGE,
+} from "./sandbox/constants.js";
+export { ensureSandboxWorkspaceForSession, resolveSandboxContext } from "./sandbox/context.js";
+export {
+  getSandboxBackendFactory,
+  getSandboxBackendManager,
+  getSandboxBackendWorkdirResolver,
+  registerSandboxBackend,
+  requireSandboxBackendFactory,
+} from "./sandbox/backend.js";
 
-export interface SandboxConfig {
-  /** Agent ID */
-  agentId: string;
-  /** 执行超时（毫秒） */
-  timeoutMs: number;
-  /** 最大内存限制（MB） */
-  maxMemoryMB: number;
-  /** 最大 CPU 时间（毫秒） */
-  maxCpuTimeMs: number;
-  /** 禁止访问的 API 列表 */
-  blockedApis: string[];
-}
+export { buildSandboxCreateArgs, isDockerDaemonUnavailable } from "./sandbox/docker.js";
+export {
+  listSandboxBrowsers,
+  listSandboxContainers,
+  removeSandboxBrowserContainer,
+  removeSandboxContainer,
+  type SandboxBrowserInfo,
+  type SandboxContainerInfo,
+} from "./sandbox/manage.js";
+export {
+  formatSandboxToolPolicyBlockedMessage,
+  resolveSandboxRuntimeStatus,
+} from "./sandbox/runtime-status.js";
 
-/**
- * Agent 沙箱类
- *
- * 模拟执行环境隔离，提供超时与资源限制。
- */
+export { isToolAllowed, resolveSandboxToolPolicyForAgent } from "./sandbox/tool-policy.js";
+export type { SandboxFsBridge, SandboxFsStat, SandboxResolvedPath } from "./sandbox/fs-bridge.js";
+export {
+  buildExecRemoteCommand,
+  buildRemoteCommand,
+  buildSshSandboxArgv,
+  buildValidatedExecRemoteCommand,
+  createSshSandboxSessionFromConfigText,
+  createSshSandboxSessionFromSettings,
+  disposeSshSandboxSession,
+  runSshSandboxCommand,
+  shellEscape,
+  uploadDirectoryToSshTarget,
+} from "./sandbox/ssh.js";
+export { sanitizeEnvVars } from "./sandbox/sanitize-env-vars.js";
+export { createRemoteShellSandboxFsBridge } from "./sandbox/remote-fs-bridge.js";
+export { createWritableRenameTargetResolver } from "./sandbox/fs-bridge-rename-targets.js";
+export { resolveWritableRenameTargets } from "./sandbox/fs-bridge-rename-targets.js";
+export { resolveWritableRenameTargetsForBridge } from "./sandbox/fs-bridge-rename-targets.js";
+
+export type {
+  CreateSandboxBackendParams,
+  SandboxBackendCommandParams,
+  SandboxBackendCommandResult,
+  SandboxBackendExecSpec,
+  SandboxBackendFactory,
+  SandboxBackendHandle,
+  SandboxBackendId,
+  SandboxBackendManager,
+  SandboxBackendRegistration,
+  SandboxBackendRuntimeInfo,
+  SandboxBackendWorkdirResolver,
+} from "./sandbox/backend.js";
+export type { RemoteShellSandboxHandle } from "./sandbox/remote-fs-bridge.js";
+export type {
+  RunSshSandboxCommandParams,
+  SshSandboxSession,
+  SshSandboxSettings,
+} from "./sandbox/ssh.js";
+
+export type {
+  SandboxBrowserConfig,
+  SandboxBrowserContext,
+  SandboxConfig,
+  SandboxContext,
+  SandboxDockerConfig,
+  SandboxPruneConfig,
+  SandboxScope,
+  SandboxSshConfig,
+  SandboxToolPolicy,
+  SandboxToolPolicyResolved,
+  SandboxToolPolicySource,
+  SandboxWorkspaceAccess,
+  SandboxWorkspaceInfo,
+} from "./sandbox/types.js";
+
+// ============================================================================
+// WMS 兼容：agents.ts 通过 createAgentSandbox / getAgentSandbox 管理 per-agent
+// 运行时沙箱实例。openclaw 没有这个抽象，此处提供最小可运行 stub。
+// ============================================================================
+
+export type AgentSandboxOptions = {
+  timeoutMs?: number;
+  maxMemoryMB?: number;
+  maxCpuTimeMs?: number;
+};
+
 export class AgentSandbox {
-  agentId: string;
-  timeoutMs: number;
-  maxMemoryMB: number;
-  maxCpuTimeMs: number;
-  blockedApis: Set<string>;
+  readonly agentId: string;
+  readonly options: AgentSandboxOptions;
 
-  constructor(config: Partial<SandboxConfig> & { agentId: string }) {
-    this.agentId = config.agentId;
-    this.timeoutMs = config.timeoutMs ?? 30000;
-    this.maxMemoryMB = config.maxMemoryMB ?? 512;
-    this.maxCpuTimeMs = config.maxCpuTimeMs ?? 10000;
-    this.blockedApis = new Set(config.blockedApis ?? DEFAULT_BLOCKED_APIS);
-  }
-
-  /**
-   * 在沙箱中执行函数
-   *
-   * 执行前进行安全策略检查（扫描函数体字符串中是否包含被禁用的 API），
-   * 并在超时后自动拒绝。
-   *
-   * @template T 返回值类型
-   * @param fn 要执行的函数
-   * @returns Promise<T>
-   * @throws 安全策略阻止或超时
-   */
-  async runInSandbox<T>(fn: () => T | Promise<T>): Promise<T> {
-    const fnStr = fn.toString();
-    for (const api of this.blockedApis) {
-      if (fnStr.includes(api)) {
-        throw new Error(`沙箱安全策略阻止: 禁止访问 API "${api}"`);
-      }
-    }
-
-    return new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`沙箱执行超时: 超过 ${this.timeoutMs}ms`));
-      }, this.timeoutMs);
-
-      try {
-        const result = fn();
-        if (result instanceof Promise) {
-          result
-            .then((val) => {
-              clearTimeout(timer);
-              resolve(val);
-            })
-            .catch((err) => {
-              clearTimeout(timer);
-              reject(err);
-            });
-        } else {
-          clearTimeout(timer);
-          resolve(result);
-        }
-      } catch (err) {
-        clearTimeout(timer);
-        reject(err);
-      }
-    });
-  }
-
-  /**
-   * 检查 API 是否允许访问
-   * @param api API 名称
-   * @returns 是否允许
-   */
-  isApiAllowed(api: string): boolean {
-    return !this.blockedApis.has(api);
+  constructor(agentId: string, options: AgentSandboxOptions = {}) {
+    this.agentId = agentId;
+    this.options = options;
   }
 }
 
-/** 默认禁止访问的 API 列表 */
-const DEFAULT_BLOCKED_APIS = [
-  'eval',
-  'Function',
-  'require',
-  'process.exit',
-  'child_process',
-  'fs.writeFileSync',
-  'fs.unlinkSync',
-];
+const runtimeAgentSandboxes = new Map<string, AgentSandbox>();
 
-// ============================================================================
-// 运行时存储与辅助函数
-// ============================================================================
-
-const sandboxStore = new Map<string, AgentSandbox>();
-
-/**
- * 为指定 Agent 创建沙箱
- * @param agentId Agent ID
- * @param config 可选配置
- * @returns 沙箱实例
- */
+/** 创建并注册一个 AgentSandbox 实例。 */
 export function createAgentSandbox(
   agentId: string,
-  config?: Partial<Omit<SandboxConfig, 'agentId'>>,
+  options?: AgentSandboxOptions,
 ): AgentSandbox {
-  const sandbox = new AgentSandbox({ agentId, ...config });
-  sandboxStore.set(agentId, sandbox);
+  const sandbox = new AgentSandbox(agentId, options);
+  runtimeAgentSandboxes.set(agentId, sandbox);
   return sandbox;
 }
 
-/**
- * 获取指定 Agent 的沙箱
- * @param agentId Agent ID
- * @returns 沙箱实例或 undefined
- */
+/** 获取已注册的 AgentSandbox；未注册返回 undefined。 */
 export function getAgentSandbox(agentId: string): AgentSandbox | undefined {
-  return sandboxStore.get(agentId);
+  return runtimeAgentSandboxes.get(agentId);
 }
 
-/** 清空所有沙箱 */
+/** 清空所有已注册的 AgentSandbox（主要用于测试）。 */
 export function clearAgentSandboxes(): void {
-  sandboxStore.clear();
+  runtimeAgentSandboxes.clear();
 }

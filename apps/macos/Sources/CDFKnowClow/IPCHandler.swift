@@ -10,6 +10,9 @@ let ipcLogger = Logger(subsystem: "com.cdf.knowclow", category: "ipc")
 final class IPCHandler: NSObject, WKScriptMessageHandler {
     private var pendingCallbacks: [String: (Response) -> Void] = [:]
 
+    /// 前端 React 渲染完成回调（由 main.tsx 通过 IPC 发送 reactReady 通知）
+    var onReactReady: (() -> Void)?
+
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
@@ -67,6 +70,11 @@ final class IPCHandler: NSObject, WKScriptMessageHandler {
                 return Response(ok: false, message: "Missing title or body")
             }
             return handleNotification(title: title, body: notifBody)
+
+        case "reactReady":
+            ipcLogger.info("React ready signal received")
+            onReactReady?()
+            return Response(ok: true)
 
         default:
             ipcLogger.warning("Unknown IPC request type: \(type, privacy: .public)")

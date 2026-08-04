@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Stream hook test helpers for capturing provider thinking config.
  */

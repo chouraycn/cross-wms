@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * 设备共享模块 stub — 为移植自 openclaw 的 device-* 模块提供 ../shared/* 依赖的本地实现。
  *
  * 降级原因：openclaw 的 ../shared/device-auth.js、../shared/device-auth-store.js、
@@ -396,7 +402,7 @@ export function resolveScopeOutsideRequestedRoles(params: {
 }
 
 // ============================================================================
-// @openclaw/normalization-core/record-coerce —— 记录判断降级
+// @cdf-know/normalization-core/record-coerce —— 记录判断降级
 // ============================================================================
 
 /** 判断值是否为普通记录对象 */

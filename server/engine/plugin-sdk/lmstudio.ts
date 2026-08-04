@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public SDK facade for LM Studio provider config, discovery, and auth helpers.
  */

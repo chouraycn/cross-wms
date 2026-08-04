@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Implements plugin command listing, install, and configuration helpers.
 import fs from "node:fs";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { buildNpmInstallRecordFields } from '@openclaw-src/cli/npm-resolution.js';
 import { resolveOfficialExternalNpmPackageTrust } from '@openclaw-src/cli/plugin-install-plan.js';
 import {

@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Defines base reply payload helpers shared by delivery and dedupe logic.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { ReplyToMode } from '@openclaw-src/config/types.js';
 import { hasReplyPayloadContent } from '@openclaw-src/interactive/payload.js';
 import { copyReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";

@@ -26,6 +26,7 @@ import {
   updateAutomationApi,
   fetchAllExecutions,
   clearExecutionLogs as clearExecutionLogsApi,
+  triggerAutomationApi,
 } from './api';
 
 // ===================== 调度辅助函数 =====================
@@ -301,11 +302,24 @@ class AutomationEngine implements AutomationEngineAPI {
   }
 
   /** 获取执行结果详情 */
-  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[] {
-    // v2.0: 执行结果不再存储在 localStorage，改为通过 API 获取
-    // 临时返回空数组，后续可通过 /api/automation/executions 获取
-    // console.warn('[AutomationEngine] getExecutionResults 已废弃，请通过 API 获取执行结果');
-    return [];
+  async getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): Promise<unknown[]> {
+    // 通过 API 获取执行历史，按类型过滤结果
+    try {
+      const { data: logs } = await fetchAllExecutions(200, 0);
+      const typeMap: Record<string, string> = {
+        snapshots: 'inventory-snapshot',
+        reports: 'report-gen',
+        alerts: 'volume-alert',
+      };
+      const targetType = typeMap[type];
+      if (!targetType) return [];
+      // 只返回成功的执行记录，按时间倒序
+      return logs
+        .filter((l) => l.taskType === targetType && l.status === 'success')
+        .slice(0, 50);
+    } catch {
+      return [];
+    }
   }
 
   /** 清空执行日志 */
@@ -368,12 +382,18 @@ class AutomationEngine implements AutomationEngineAPI {
 
         const nextRun = new Date(auto.nextRunAt);
         if (nextRun <= now) {
-          // 到期执行（异步，不阻塞检查循环）
-          this.runTask(auto).then((exec) => {
-            this.notifyCallbacks(exec);
-          }).catch((err) => {
-            // console.error('[AutomationEngine] 任务执行失败:', err);
-          });
+          // 后端已有轮询引擎（engine.ts pollSchedules），前端不再本地执行
+          // 仅通过 API 触发手动执行（避免前后端重复执行）
+          // 前端 checkAndExecute 仅负责刷新状态和通知回调
+          // 如果后端引擎未启动（开发环境），才降级到前端执行
+          try {
+            await triggerAutomationApi(auto.id);
+          } catch {
+            // 后端触发失败时降级到前端执行（仅开发环境）
+            this.runTask(auto).then((exec) => {
+              this.notifyCallbacks(exec);
+            }).catch(() => { /* ignore */ });
+          }
 
           // 更新任务状态（通过 API）
           await updateAutomationApi(auto.id, {
@@ -383,7 +403,7 @@ class AutomationEngine implements AutomationEngineAPI {
           });
         }
       }
-    } catch (err) {
+    } catch {
       // console.error('[AutomationEngine] 检查任务失败:', err);
     }
   }

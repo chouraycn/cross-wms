@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lazy tree-sitter runtime resolves WASM assets, caches the bash parser, and
 // enforces source-size/time limits for command explanation.
 import fs from "node:fs";

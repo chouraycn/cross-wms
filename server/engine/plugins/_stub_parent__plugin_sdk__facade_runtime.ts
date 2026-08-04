@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === DEGRADED IMPLEMENTATION (facade) ===
 // Source: openclaw/src/plugin-sdk/facade-runtime.ts (待迁移)
 // Status: 降级实现 stub — 函数体返回 {} (空对象)

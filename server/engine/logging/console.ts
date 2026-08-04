@@ -231,3 +231,7 @@ export function enableConsoleCapture(): void {
   console.debug = forward(LogLevel.Debug, original.debug);
   console.trace = forward(LogLevel.Trace, original.trace);
 }
+
+export function setConsoleConfigLoaderForTests(_loader: (() => ConsoleLoggerSettings | undefined) | null): void {
+  // Test-only hook; currently a no-op since console settings are resolved from global state
+}

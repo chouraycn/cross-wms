@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../../../logger.js';
-import { isValidSessionId } from './paths.js';
+import { validateSessionId } from './paths.js';
 import { createWriteContext, shouldFlush, addToBuffer, clearBuffer, closeContext, formatMessageLine } from './transcript-write-context.js';
 import type { TranscriptWriteContext, TranscriptWriteOptions } from './transcript-write-context.js';
 import type { TranscriptMessage } from './types.js';
@@ -170,4 +170,12 @@ export function createTranscriptStream(
   options?: TranscriptWriteOptions
 ): TranscriptStream {
   return new TranscriptStream(sessionId, filePath, options);
+}
+
+// Stub exports for transcript streaming helpers referenced by consumer modules.
+export async function* streamSessionTranscriptLines(_params?: unknown): AsyncGenerator<string> {
+  return;
+}
+export async function* streamSessionTranscriptLinesReverse(_params?: unknown): AsyncGenerator<string> {
+  return;
 }

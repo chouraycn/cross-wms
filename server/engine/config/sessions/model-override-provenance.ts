@@ -4,7 +4,7 @@
 //
 // 降级策略：
 //  - normalizeOptionalString 改用 cross-wms 的 ../../infra/string-coerce.js，
-//    语义与 @openclaw/normalization-core/string-coerce 一致（trim 后非空才返回）。
+//    语义与 @cdf-know/normalization-core/string-coerce 一致（trim 后非空才返回）。
 //  - SessionEntry 类型使用本地占位定义（cross-wms 的 ./types.js 尚未导出该类型）。
 
 import { normalizeOptionalString } from "../../infra/string-coerce.js";

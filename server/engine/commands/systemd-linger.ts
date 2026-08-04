@@ -2,7 +2,7 @@
 // Systemd lingering setup helpers for gateway install/start flows.
 // Lingering keeps user services alive after logout on Linux hosts.
 
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import {
   enableSystemdUserLinger,
   isSystemdUserServiceAvailable,

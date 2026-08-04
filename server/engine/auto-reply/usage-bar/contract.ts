@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { PluginHookReplyUsageState } from '@openclaw-src/plugins/hook-types.js';
 import type { UsageContract } from "./translator.js";
 

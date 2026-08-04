@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Plugin HTTP route auth helpers decide when gateway auth must protect a plugin route path.
 import type { PluginRegistry } from "../../../plugins/registry.js";
 import {

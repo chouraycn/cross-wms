@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Builds prompt body and envelope metadata for reply runs. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { CurrentInboundPromptContext } from '@openclaw-src/agents/embedded-agent-runner/run/params.js';
 import type { InboundEventKind } from '@openclaw-src/channels/inbound-event/kind.js';
 import { annotateInterSessionPromptText } from '@openclaw-src/sessions/input-provenance.js';

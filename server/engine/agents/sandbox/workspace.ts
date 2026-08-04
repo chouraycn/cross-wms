@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Sandbox workspace bootstrapper.
  *

@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Doctor contribution for low disk space around the OpenClaw state directory. */
 import os from "node:os";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import type { OpenClawConfig } from "@openclaw-src/config/config.js";
 import { resolveStateDir } from "@openclaw-src/config/paths.js";
 import { tryReadDiskSpace } from "@openclaw-src/infra/disk-space.js";

@@ -1,11 +1,25 @@
 /**
- * 移植自 openclaw/src/agents/session-runtime-compat.ts
+ * Session runtime compatibility helpers.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Resolves persisted runtime overrides without leaking provider-specific CLI runtime bindings across model routes.
  */
+import type { SessionEntry } from "../config/sessions.js";
+import { isDefaultAgentRuntimeId } from "./agent-runtime-id.js";
+import { normalizeOptionalAgentRuntimeId } from "./agent-runtime-id.js";
 
-export function resolvePersistedSessionRuntimeId(..._args: unknown[]): unknown {
-  return undefined;
+/** Persisted runtime fields used to recover session runtime compatibility. */
+type SessionRuntimeCompatEntry = Pick<
+  SessionEntry,
+  "agentHarnessId" | "agentRuntimeOverride"
+>;
+
+/** Resolves the persisted runtime id, preferring explicit overrides. */
+export function resolvePersistedSessionRuntimeId(
+  entry?: SessionRuntimeCompatEntry,
+): string | undefined {
+  const runtimeOverride = normalizeOptionalAgentRuntimeId(entry?.agentRuntimeOverride);
+  if (runtimeOverride && !isDefaultAgentRuntimeId(runtimeOverride)) {
+    return runtimeOverride;
+  }
+  return normalizeOptionalAgentRuntimeId(entry?.agentHarnessId);
 }

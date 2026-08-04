@@ -2,7 +2,7 @@
  * Mention-pattern policy resolver. — 移植自 openclaw/src/channels/mention-pattern-policy.ts
  *
  * 降级策略：
- *  - 原 openclaw 通过 @openclaw/normalization-core/string-coerce 引用 normalizeOptionalString。
+ *  - 原 openclaw 通过 @cdf-know/normalization-core/string-coerce 引用 normalizeOptionalString。
  *  - cross-wms 在 server/engine/infra/string-coerce.ts 已有同名实现，直接复用。
  *  - 类型 MentionPatternsMode / MentionPatternsPolicyConfig / OpenClawConfig 已在
  *    cross-wms 的 config/types/{messages,openclaw}.ts 中定义。

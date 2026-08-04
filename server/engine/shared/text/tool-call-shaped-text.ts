@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Tool-call shaped text helpers detect malformed text that resembles tool calls.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString as readTrimmedString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString as readTrimmedString } from "@cdf-know/normalization-core/string-coerce";
 
 type ToolCallShapedTextDetection = {
   kind: "json_tool_call" | "xml_tool_call" | "bracketed_tool_call" | "react_action";

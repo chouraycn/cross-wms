@@ -1,14 +1,38 @@
-/**
- * 移植自 openclaw/src/agents/replay-turn-classification.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
+type AssistantTurnLike = {
+  role?: unknown;
+  stopReason?: unknown;
+  content?: unknown;
+};
 
-export function hasOnlyAssistantReasoningContent(..._args: unknown[]): unknown {
-  return false;
+/** Returns true when an assistant turn contains only provider reasoning and blank text. */
+export function hasOnlyAssistantReasoningContent(message: AssistantTurnLike): boolean {
+  if (message.role !== "assistant") {
+    return false;
+  }
+  const content = Array.isArray(message.content)
+    ? message.content
+    : message.content != null && typeof message.content === "object"
+      ? [message.content]
+      : [];
+  let hasThinking = false;
+  for (const block of content) {
+    if (!block || typeof block !== "object") {
+      return false;
+    }
+    const record = block as { type?: unknown; text?: unknown };
+    if (record.type === "thinking" || record.type === "redacted_thinking") {
+      hasThinking = true;
+      continue;
+    }
+    if (record.type === "text" && typeof record.text === "string" && !record.text.trim()) {
+      continue;
+    }
+    return false;
+  }
+  return hasThinking;
 }
-export function isReasoningOnlyLengthAssistantTurn(..._args: unknown[]): unknown {
-  return false;
+
+/** Returns true when a token-limited turn contains only incomplete provider reasoning. */
+export function isReasoningOnlyLengthAssistantTurn(message: AssistantTurnLike): boolean {
+  return message.stopReason === "length" && hasOnlyAssistantReasoningContent(message);
 }

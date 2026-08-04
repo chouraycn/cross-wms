@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Handles abort requests and active reply run cancellation.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { getAcpSessionManager } from '@openclaw-src/acp/control-plane/manager.js';
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import {

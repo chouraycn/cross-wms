@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Shared directive parsing helpers used by model and auth directive handlers.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { formatCliCommand } from '@openclaw-src/cli/command-format.js';
 import { SYSTEM_MARK, prefixSystemMessage } from '@openclaw-src/infra/system-message.js';
 import { isInternalMessageChannel } from '@openclaw-src/utils/message-channel.js';

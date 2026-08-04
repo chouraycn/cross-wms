@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/terminal-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow TerminalCore - 终端核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

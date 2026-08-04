@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tool binary manager for agent-side helper commands.
  *

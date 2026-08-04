@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests shared approval helpers used by gateway method handlers.
  */

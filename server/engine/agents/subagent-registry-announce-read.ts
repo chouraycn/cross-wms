@@ -1,12 +1,77 @@
 /**
- * Subagent registry announce and read helpers.
- * Ported from openclaw/src/agents/subagent-registry-announce-read.ts
- * Simplified: session lookup replaced with empty defaults.
+ * Read-side helpers for subagent completion announcements. These wrappers keep
+ * announce delivery code on normalized registry snapshots instead of reaching
+ * into persistence or mutation paths.
  */
+import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
+import type { DeliveryContext } from "../utils/delivery-context.types.js";
+import { subagentRuns } from "./subagent-registry-memory.js";
+import {
+  countPendingDescendantRunsExcludingRunFromRuns,
+  countPendingDescendantRunsFromRuns,
+  isSubagentSessionRunActiveFromRuns,
+  listRunsForRequesterFromRuns,
+  resolveRequesterForChildSessionFromRuns,
+  shouldIgnorePostCompletionAnnounceForSessionFromRuns,
+} from "./subagent-registry-queries.js";
+import { getSubagentRunsSnapshotForRead } from "./subagent-registry-state.js";
+import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-export function resolveRequesterForChildSession(): undefined { return undefined; }
-export function isSubagentSessionRunActive(): boolean { return false; }
-export function shouldIgnorePostCompletionAnnounceForSession(): boolean { return false; }
-export function listSubagentRunsForRequester(): unknown[] { return []; }
-export function countPendingDescendantRuns(): number { return 0; }
-export function countPendingDescendantRunsExcludingRun(): number { return 0; }
+/** Resolves the requester session and origin for a child subagent session. */
+export function resolveRequesterForChildSession(childSessionKey: string): {
+  requesterSessionKey: string;
+  requesterOrigin?: DeliveryContext;
+} | null {
+  const resolved = resolveRequesterForChildSessionFromRuns(
+    (getSubagentRunsSnapshotForRead as any)(subagentRuns),
+    childSessionKey,
+  );
+  if (!resolved) {
+    return null;
+  }
+  return {
+    requesterSessionKey: resolved.requesterSessionKey,
+    requesterOrigin: normalizeDeliveryContext((resolved as any).requesterOrigin),
+  };
+}
+
+/** True when a subagent session still has an active run record. */
+export function isSubagentSessionRunActive(childSessionKey: string): boolean {
+  return isSubagentSessionRunActiveFromRuns((subagentRuns as any), childSessionKey);
+}
+
+/** True when post-completion announce should be skipped for a child session. */
+export function shouldIgnorePostCompletionAnnounceForSession(childSessionKey: string): boolean {
+  return shouldIgnorePostCompletionAnnounceForSessionFromRuns(
+    (getSubagentRunsSnapshotForRead as any)(subagentRuns),
+    childSessionKey,
+  );
+}
+
+/** Lists subagent runs requested by one session key. */
+export function listSubagentRunsForRequester(
+  requesterSessionKey: string,
+  options?: { requesterRunId?: string },
+): SubagentRunRecord[] {
+  return listRunsForRequesterFromRuns((subagentRuns as any), requesterSessionKey, options) as any;
+}
+
+/** Counts pending descendant subagent runs below a root session. */
+export function countPendingDescendantRuns(rootSessionKey: string): number {
+  return countPendingDescendantRunsFromRuns(
+    (getSubagentRunsSnapshotForRead as any)(subagentRuns),
+    rootSessionKey,
+  );
+}
+
+/** Counts pending descendant runs while excluding one run id. */
+export function countPendingDescendantRunsExcludingRun(
+  rootSessionKey: string,
+  excludeRunId: string,
+): number {
+  return countPendingDescendantRunsExcludingRunFromRuns(
+    (getSubagentRunsSnapshotForRead as any)(subagentRuns),
+    rootSessionKey,
+    excludeRunId,
+  );
+}

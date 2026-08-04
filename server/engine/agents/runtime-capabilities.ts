@@ -1,11 +1,72 @@
 /**
- * 移植自 openclaw/src/agents/runtime-capabilities.ts
+ * Runtime channel capability collector.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Agent startup uses this to merge configured channel capabilities with prompt
+ * tools and thread-bound spawn features that depend on channel policy.
  */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntriesLower } from "@cdf-know/normalization-core/string-normalization";
+import {
+  resolveThreadBindingSpawnPolicy,
+  supportsAutomaticThreadBindingSpawn,
+} from "../channels/thread-bindings-policy.js";
+import { resolveChannelCapabilities } from "../config/channel-capabilities.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveChannelPromptCapabilities } from "./channel-tools.js";
 
-export function collectRuntimeChannelCapabilities(..._args: unknown[]): unknown {
-  return [];
+const THREAD_BOUND_SUBAGENT_SPAWN_CAPABILITY = "threadbound-subagent-spawn";
+const THREAD_BOUND_ACP_SPAWN_CAPABILITY = "threadbound-acp-spawn";
+
+function mergeRuntimeCapabilities(
+  base?: readonly string[] | null,
+  additions: readonly string[] = [],
+): string[] | undefined {
+  const merged = [...(base ?? [])];
+  const seen = new Set(normalizeStringEntriesLower(merged));
+
+  for (const capability of additions) {
+    const normalizedCapability = normalizeOptionalLowercaseString(capability);
+    if (!normalizedCapability || seen.has(normalizedCapability)) {
+      continue;
+    }
+    seen.add(normalizedCapability);
+    merged.push(capability);
+  }
+
+  return merged.length > 0 ? merged : undefined;
+}
+
+/** Collects the effective runtime capabilities for a channel/account pair. */
+export function collectRuntimeChannelCapabilities(params: {
+  cfg?: OpenClawConfig;
+  channel?: string | null;
+  accountId?: string | null;
+}): string[] | undefined {
+  if (!params.channel) {
+    return undefined;
+  }
+  const threadSpawnCapabilities: string[] = [];
+  if (params.cfg && supportsAutomaticThreadBindingSpawn(params.channel)) {
+    for (const [kind, capability] of [
+      ["subagent", THREAD_BOUND_SUBAGENT_SPAWN_CAPABILITY],
+      ["acp", THREAD_BOUND_ACP_SPAWN_CAPABILITY],
+    ] as const) {
+      const policy = resolveThreadBindingSpawnPolicy({
+        cfg: params.cfg,
+        channel: params.channel,
+        accountId: params.accountId ?? undefined,
+        kind,
+      });
+      if (policy.enabled && policy.spawnEnabled) {
+        // Thread-bound spawn is only advertised when both policy gates are enabled.
+        threadSpawnCapabilities.push(capability);
+      }
+    }
+  }
+  return mergeRuntimeCapabilities(
+    resolveChannelCapabilities(params) as readonly string[],
+    params.cfg
+      ? [...resolveChannelPromptCapabilities(params), ...threadSpawnCapabilities]
+      : threadSpawnCapabilities,
+  );
 }

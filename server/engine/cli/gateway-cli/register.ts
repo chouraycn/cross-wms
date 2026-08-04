@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Commander registration for gateway status, health, diagnostics, discovery, and run commands.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
@@ -183,7 +182,7 @@ async function resolveGatewayRpcOptionsWithLocalPort(
     throw new Error("Use either --url or --port, not both.");
   }
   const { readBestEffortConfig } = await loadConfigModule();
-  const config = await readBestEffortConfig();
+  const config = await readBestEffortConfig() as any;
   return {
     ...rpcOpts,
     localPortOverride: port,
@@ -263,8 +262,8 @@ function formatStabilityEvent(record: DiagnosticStabilityEventRecord): string {
     record.droppedEvents !== undefined ? `dropped=${record.droppedEvents}` : "",
     record.maxQueueLength !== undefined ? `maxQueue=${record.maxQueueLength}` : "",
     record.queued !== undefined ? `queued=${record.queued}` : "",
-    record.memory ? `rss=${formatBytes(record.memory.rssBytes)}` : "",
-    record.memory ? `heap=${formatBytes(record.memory.heapUsedBytes)}` : "",
+    record.memory ? `rss=${formatBytes((record.memory as any).rssBytes)}` : "",
+    record.memory ? `heap=${formatBytes((record.memory as any).heapUsedBytes)}` : "",
   ].filter(Boolean);
   return parts.join(" ");
 }
@@ -286,7 +285,7 @@ function renderStabilitySummary(snapshot: DiagnosticStabilitySnapshot, rich: boo
     lines.push(`${colorize(rich, theme.muted, "Types:")} ${topTypes}`);
   }
 
-  const memory = snapshot.summary.memory;
+  const memory = snapshot.summary.memory as any;
   if (memory) {
     lines.push(
       `${colorize(rich, theme.muted, "Memory:")} rss=${formatBytes(
@@ -386,7 +385,7 @@ function renderStabilityBundleSummary(params: {
       lines.push(`${colorize(rich, theme.muted, "Error:")} ${errorParts.join(" ")}`);
     }
   }
-  const memoryPressure = bundle.evidence?.memoryPressure;
+  const memoryPressure = bundle.evidence?.memoryPressure as any;
   if (memoryPressure) {
     lines.push(
       `${colorize(rich, theme.muted, "Memory pressure:")} ${memoryPressure.level}/${
@@ -611,7 +610,7 @@ export function registerGatewayCli(program: Command) {
               const { readBestEffortConfig } = await loadConfigModule();
               const handled = await emitReachableGatewayAuthDiagnostic({
                 error,
-                config: rpcOpts.config ?? (await readBestEffortConfig()),
+                config: rpcOpts.config ?? ((await readBestEffortConfig()) as any),
                 runtime: defaultRuntime,
                 timeoutMs: parseGatewayRpcTimeoutOption(rpcOpts.timeout),
                 token: rpcOpts.token,
@@ -820,7 +819,7 @@ export function registerGatewayCli(program: Command) {
           import("./discover.js"),
           import("../progress.js"),
         ]);
-        const cfg = await readSourceConfigBestEffort();
+        const cfg = await readSourceConfigBestEffort() as any;
         const wideAreaDomain = resolveWideAreaDiscoveryDomain({
           configDomain: cfg.discovery?.wideArea?.domain,
         });

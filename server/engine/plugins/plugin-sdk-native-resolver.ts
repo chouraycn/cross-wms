@@ -13,6 +13,10 @@ import Module from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** 占位：插件 SDK 解析偏好。 */
 export type PluginSdkResolutionPreference = "source" | "dist" | "auto";
 

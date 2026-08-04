@@ -19,6 +19,7 @@ export function shouldSkipMutatingLoggingConfigRead(argv: string[] = process.arg
 
 function resolveConfigPath(): string | undefined {
   const candidates = [
+    process.env.OPENCLAW_CONFIG_PATH,
     process.env.CROSS_WMS_CONFIG,
     path.join(process.cwd(), 'cross-wms.json'),
     path.join(process.cwd(), 'config.json'),
@@ -77,6 +78,8 @@ export function normalizeLoggerSettings(cfg?: LoggerSettings): Required<LoggerSe
     maxFileBytes: resolveMaxLogFileBytes(cfg?.maxFileBytes),
     consoleLevel: cfg?.consoleLevel ?? LogLevel.Info,
     consoleStyle: cfg?.consoleStyle ?? (process.stdout.isTTY ? 'pretty' : 'compact'),
+    redactSensitive: cfg?.redactSensitive ?? 'tools',
+    redactPatterns: cfg?.redactPatterns ?? [],
   };
 }
 

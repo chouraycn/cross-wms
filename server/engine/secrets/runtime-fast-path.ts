@@ -1,8 +1,7 @@
-// @ts-nocheck
 /** Detects when secrets runtime preparation can safely use a fast path. */
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import {
   listAgentIds,
   resolveAgentDir,
@@ -15,7 +14,7 @@ import {
 } from "../agents/auth-profiles/path-constants.js";
 import { resolveAuthProfileDatabasePath } from "../agents/auth-profiles/sqlite.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
-import { resolveOAuthPath } from "../config/paths.js";
+import { resolveOAuthPath } from "@openclaw-src/config/paths.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginOrigin } from "../plugins/plugin-origin.types.js";

@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/llm-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow LLM Core - 大语言模型核心模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

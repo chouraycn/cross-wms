@@ -5,7 +5,7 @@ import {
   stylePromptHint,
   stylePromptMessage,
   stylePromptTitle,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { withProgress } from "@openclaw-src/cli/progress.js";
 import { promptYesNo } from "@openclaw-src/cli/prompt.js";

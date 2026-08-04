@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Agent harness tool/message hook helpers.
  *

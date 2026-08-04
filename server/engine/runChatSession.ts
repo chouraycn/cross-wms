@@ -49,7 +49,7 @@ import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from '../rout
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { resetDefaultCircuitBreaker } from './toolExecutor.js';
 import { recordMessageCreated, recordTurnStarted, recordTurnCompleted, recordTurnFailed } from './eventRecorder.js';
-import { classifyAndFormatError } from '../routes/chatService.js';
+import { classifyAndFormatError } from './error-handling/chat-error-classifier.js';
 import { logger } from '../logger.js';
 import { runHooks, createHookEvent } from './hooks/index.js';
 import { getKeywordTriggerEngine } from './keywordTriggerEngine.js';

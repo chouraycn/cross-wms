@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Security warnings for gateway exposure, exec policy drift, channel DMs, and plaintext secrets. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveDmAllowAuditState } from "@openclaw-src/channels/message-access/dm-allow-state.js";
 import { listReadOnlyChannelPluginsForConfig } from "@openclaw-src/channels/plugins/read-only.js";
 import type { ChannelId } from "@openclaw-src/channels/plugins/types.public.js";

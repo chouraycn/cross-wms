@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Loads startup context snippets injected into the first reply turn.
 import fs from "node:fs";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { formatDateStamp, resolveUserTimezone } from '@openclaw-src/agents/date-time.js';
 import type { OpenClawConfig } from '@openclaw-src/config/config.js';
 import { openRootFile } from '@openclaw-src/infra/boundary-file-read.js';

@@ -1,5 +1,5 @@
 // Scheduled turn contract tests cover plugin scheduled turn metadata and timestamp bounds.
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@cdf-know/normalization-core/number-coercion";
 import {
   createPluginRegistryFixture,
   registerTestPlugin,

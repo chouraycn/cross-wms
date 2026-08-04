@@ -1,14 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-channel-runtime.types.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway channel runtime snapshot types.
+// Exposes read-only channel/account state to status and server-method surfaces.
+import type { ChannelId, ChannelAccountSnapshot } from "../channels/plugins/types.public.js";
 
-export type ChannelRuntimeSnapshot = unknown;
+/** Snapshot of channel runtime state keyed by channel and account id. */
+export type ChannelRuntimeSnapshot = {
+  channels: Partial<Record<ChannelId, ChannelAccountSnapshot>>;
+  channelAccounts: Partial<Record<ChannelId, Record<string, ChannelAccountSnapshot>>>;
+};

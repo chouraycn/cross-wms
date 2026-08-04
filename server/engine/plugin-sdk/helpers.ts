@@ -2,7 +2,8 @@
  * SDK 辅助工具 — 通用 helper 函数
  */
 
-import type { PluginDefinition, PluginSdkApi, PluginContext, PluginManifest } from './types.js';
+import type { PluginDefinition, PluginSdkApi, PluginContext } from './types.js';
+import type { PluginManifest } from './manifest.js';
 
 /**
  * 生成插件 ID（基于名称 + 随机后缀）。
@@ -32,6 +33,7 @@ export function definitionToManifest(def: PluginDefinition): PluginManifest {
     apiVersion: '1.0.0',
     capabilities: def.capabilities,
     configSchema: def.configSchema,
+    entry: './index.js',
     metadata: {
       generatedAt: Date.now(),
     },

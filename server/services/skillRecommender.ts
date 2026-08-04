@@ -11,7 +11,7 @@
 import fs from 'fs';
 import path from 'path';
 import { FileStorage } from '../storage/FileStorage.js';
-import { scanWorkbuddySkills } from '../routes/skills.js';
+import { scanWorkbuddySkills } from './skillScanner.js';
 import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================

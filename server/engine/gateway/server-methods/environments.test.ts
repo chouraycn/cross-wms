@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for environment gateway methods and configured environment discovery.
  */

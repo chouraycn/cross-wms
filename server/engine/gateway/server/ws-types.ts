@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway WebSocket client types describe authenticated client state retained by the server.
 import type { WebSocket } from "ws";
 import type { ConnectParams } from "../../../packages/gateway-protocol/src/index.js";

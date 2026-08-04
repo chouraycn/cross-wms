@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/trajectory/cleanup.ts
 //
 // 适配说明：
-// - isRecord: 从 ../infra/record-coerce.js 导入（替代 @openclaw/normalization-core/record-coerce）
+// - isRecord: 从 ../infra/record-coerce.js 导入（替代 @cdf-know/normalization-core/record-coerce）
 // - resolveSessionFilePath: cross-wms 未提供该函数，本地 stub 实现
 // - isPathInside: 从 ../infra/path-guards.js 导入，签名为 (targetPath, rootDir)
 //   openclaw 为 (basePath, targetPath)，调用时参数顺序互换

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @deprecated Compatibility shim only. Keep old plugins working, but do not
  * add new imports here and do not use this subpath from repo code.
@@ -28,7 +27,23 @@ export * from "../infra/exec-approvals.js";
 export * from "../infra/approval-native-delivery.js";
 export * from "../infra/approval-native-runtime.js";
 export * from "../infra/approval-display-paths.js";
-export * from "../infra/plugin-approvals.js";
+export {
+  type PluginApprovalActionView,
+  type PluginApprovalRequestPayload,
+  type PluginApprovalRequest,
+  type PluginApprovalResolved,
+  DEFAULT_PLUGIN_APPROVAL_TIMEOUT_MS,
+  MAX_PLUGIN_APPROVAL_TIMEOUT_MS,
+  PLUGIN_APPROVAL_TITLE_MAX_LENGTH,
+  PLUGIN_APPROVAL_DESCRIPTION_MAX_LENGTH,
+  DEFAULT_PLUGIN_APPROVAL_DECISIONS,
+  resolvePluginApprovalTimeoutMs,
+  approvalDecisionLabel,
+  resolvePluginApprovalRequestAllowedDecisions,
+  buildPluginApprovalRequestMessage,
+  buildPluginApprovalResolvedMessage,
+  buildPluginApprovalExpiredMessage,
+} from "../infra/plugin-approvals.js";
 export * from "../infra/fetch.js";
 export * from "../infra/file-lock.js";
 export * from "../infra/format-time/format-duration.js";
@@ -75,4 +90,16 @@ export * from "../infra/wsl.js";
 export * from "../utils/fetch-timeout.js";
 export * from "../utils/run-with-concurrency.js";
 export { createRuntimeOutboundDelegates } from "../channels/plugins/runtime-forwarders.js";
-export * from "./ssrf-policy.js";
+export {
+  isPrivateNetworkOptInEnabled,
+  ssrfPolicyFromPrivateNetworkOptIn,
+  ssrfPolicyFromDangerouslyAllowPrivateNetwork,
+  hasLegacyFlatAllowPrivateNetworkAlias,
+  migrateLegacyFlatAllowPrivateNetworkAlias,
+  ssrfPolicyFromAllowPrivateNetwork,
+  assertHttpUrlTargetsPrivateNetwork,
+  normalizeHostnameSuffixAllowlist,
+  isHttpsUrlAllowedByHostnameSuffixAllowlist,
+  buildHostnameAllowlistPolicyFromSuffixAllowlist,
+  type PrivateNetworkOptInInput,
+} from "./ssrf-policy.js";

@@ -43,3 +43,5 @@ export type ProviderIndex = {
   version: number;
   providers: Readonly<Record<string, ProviderIndexProvider>>;
 };
+
+export type OpenClawProviderIndex = ProviderIndex;

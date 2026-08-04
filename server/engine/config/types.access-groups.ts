@@ -1,7 +1,28 @@
-// 移植自 openclaw/src/config/types.access-groups.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Defines access-group config types for channel audiences.
+export type DiscordChannelAudienceAccessGroup = {
+  /**
+   * Discord dynamic audience backed by the users who can currently view a guild
+   * channel.
+   */
+  type: "discord.channelAudience";
+  /** Guild ID that owns the channel. */
+  guildId: string;
+  /** Channel ID whose effective ViewChannel permission defines the audience. */
+  channelId: string;
+  /** Audience predicate. Defaults to canViewChannel. */
+  membership?: "canViewChannel";
+};
 
-export type DiscordChannelAudienceAccessGroup = unknown;
-export type MessageSendersAccessGroup = unknown;
-export type AccessGroupConfig = unknown;
-export type AccessGroupsConfig = unknown;
+export type MessageSendersAccessGroup = {
+  /**
+   * Static sender allowlists that can be referenced by any message channel via
+   * accessGroup:<name>.
+   */
+  type: "message.senders";
+  /** Sender entries by channel id, plus optional "*" entries shared by all channels. */
+  members: Record<string, string[]>;
+};
+
+export type AccessGroupConfig = DiscordChannelAudienceAccessGroup | MessageSendersAccessGroup;
+
+export type AccessGroupsConfig = Record<string, AccessGroupConfig>;

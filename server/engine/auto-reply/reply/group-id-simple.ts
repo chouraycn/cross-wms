@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Derives stable group ids from simple channel and conversation facts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 
 /** Extracts a simple group/channel id from stable group-like source ids. */
 export function extractSimpleExplicitGroupId(raw: string | undefined | null): string | undefined {

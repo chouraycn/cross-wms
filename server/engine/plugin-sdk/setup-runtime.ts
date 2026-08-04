@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Runtime SDK subpath for channel setup wizards, prompts, and allowlist helpers.
  */

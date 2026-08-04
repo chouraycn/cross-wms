@@ -39,7 +39,7 @@ vi.mock("./manifest-registry-installed.js", async (importOriginal) => {
   };
 });
 
-import { resolveExternalAuthProfilesWithPlugins } from "./provider-runtime.js";
+import { resolveExternalAuthProfilesWithPlugins } from "@openclaw-src/plugins/provider-runtime.js";
 import { isPluginProvidersLoadInFlight, resolvePluginProviders } from "./providers.runtime.js";
 
 const WORKSPACE = "/workspace/a";

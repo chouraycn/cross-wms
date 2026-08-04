@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Runtime send adapter used by CLI send commands for channel plugins.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { loadChannelOutboundAdapter } from "../../channels/plugins/outbound/load.js";
 import type { ChannelId } from "../../channels/plugins/types.public.js";
 import { getRuntimeConfig } from "../../config/config.js";
@@ -70,7 +69,7 @@ export function createChannelOutboundRuntimeSend(params: {
       const hasMedia = Boolean(opts.mediaUrl);
       if (opts.blocks && outbound?.sendPayload) {
         return await outbound.sendPayload({
-          ...buildContext(),
+          ...(buildContext() as any),
           payload: {
             text,
             channelData: {
@@ -82,12 +81,12 @@ export function createChannelOutboundRuntimeSend(params: {
         });
       }
       if (hasMedia && outbound?.sendMedia) {
-        return await outbound.sendMedia(buildContext());
+        return await outbound.sendMedia(buildContext() as any);
       }
       if (!outbound?.sendText) {
         throw new Error(params.unavailableMessage);
       }
-      return await outbound.sendText(buildContext());
+      return await outbound.sendText(buildContext() as any);
     },
   };
 }

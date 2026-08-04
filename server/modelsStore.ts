@@ -14,6 +14,7 @@ import type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig } from
 import { PROVIDER_ENDPOINTS } from '../shared/data/providerEndpoints.js';
 import { logger } from './logger.js';
 import { AppPaths } from './config/appPaths.js';
+import { invalidateFailoverModelsCache, resetModelHealthById } from './engine/modelFailoverHooks.js';
 
 // 重新导出共享类型，供其他 server 模块使用
 export type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig };
@@ -665,10 +666,10 @@ export async function saveModelsConfig(
   };
   await writeModelsFile(data);
   // v2.x: 失效 failover 模型列表缓存，确保下次 ensureFailoverModelsLoaded 重新加载
-  // 用动态导入避免循环依赖
-  import('./engine/modelFailover.js')
-    .then(({ invalidateFailoverModelsCache }) => invalidateFailoverModelsCache())
-    .catch(() => {});
+  // 通过叶子注册表调用，避免与 modelFailover 的循环依赖（原动态 import 仍被 madge 跟踪，#1）
+  try {
+    invalidateFailoverModelsCache();
+  } catch { /* modelFailover 尚未加载时安全跳过 */ }
   return data;
 }
 
@@ -681,10 +682,10 @@ export async function saveModelsConfig(
 export function deleteModelConfig(modelId: string): void {
   deleteAllApiKeys(modelId);
   clearRotationState(modelId);
-  // v2.x: 清理故障转移健康状态（动态导入避免循环依赖）
-  import('./engine/modelFailover.js')
-    .then(({ resetModelHealthById }) => resetModelHealthById(modelId))
-    .catch(() => {});
+  // v2.x: 清理故障转移健康状态（通过叶子注册表调用，避免循环依赖 #1）
+  try {
+    resetModelHealthById(modelId);
+  } catch { /* modelFailover 尚未加载时安全跳过 */ }
 }
 
 /** 获取内置模型列表（供前端参考） */

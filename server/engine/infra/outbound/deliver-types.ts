@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Delivery result types define the normalized channel send contract plus
 // partial-failure metadata for multi-payload outbound sends.
 import type { MessageReceipt } from "../../channels/message/types.js";

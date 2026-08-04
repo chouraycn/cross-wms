@@ -5,7 +5,7 @@
  * Keeps profile id construction and human metadata lookup centralized for auth
  * status, storage, and provider selection.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../../config/types/openclaw.js";
 import type { AuthProfileStore } from "./types.js";
 

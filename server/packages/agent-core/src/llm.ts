@@ -1,2 +1,2 @@
 // LLM-core compatibility barrel for agent-core consumers.
-export * from "@openclaw/llm-core";
+export * from "@cdf-know/llm-core";

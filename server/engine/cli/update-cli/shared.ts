@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Shared update command primitives for channel resolution, install roots, and subprocess steps.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
 import { resolveOpenClawPackageRoot } from "../../infra/openclaw-root.js";
@@ -131,7 +130,7 @@ export async function isGitCheckout(root: string): Promise<boolean> {
 
 async function isCorePackage(root: string): Promise<boolean> {
   const name = await readPackageName(root);
-  return Boolean(name && CORE_PACKAGE_NAMES.has(name));
+  return Boolean(name && CORE_PACKAGE_NAMES.has(name as string));
 }
 
 /** Return true only for existing directories with no entries. */

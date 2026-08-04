@@ -1,17 +1,7 @@
-import type { IsolatedAgentRunContext } from "./run-types.js";
+/** Converts cron payload timeout overrides into embedded-runner timeout signals. */
+import { finiteSecondsToTimerSafeMilliseconds } from "@cdf-know/normalization-core/number-coercion";
 
-export function setupIsolatedAgentTimeout(context: IsolatedAgentRunContext) {
-  const { timeoutSeconds = 30 } = context.config;
-  const abortController = new AbortController();
-
-  const timeoutId = setTimeout(() => {
-    abortController.abort();
-  }, timeoutSeconds * 1000);
-
-  return {
-    timeoutSignal: abortController,
-    cleanup: () => {
-      clearTimeout(timeoutId);
-    },
-  };
+/** Converts explicit cron payload timeoutSeconds into a timer-safe millisecond override signal. */
+export function resolveCronRunTimeoutOverrideMs(timeoutSeconds: unknown): number | undefined {
+  return finiteSecondsToTimerSafeMilliseconds(timeoutSeconds);
 }

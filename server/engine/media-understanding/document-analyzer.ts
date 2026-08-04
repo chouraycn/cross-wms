@@ -122,7 +122,6 @@ async function tryLocalExtraction(
   maxLength: number,
 ): Promise<DocumentAnalysis> {
   if (docType === 'pdf') {
-    // @ts-expect-error - pdf-parse 没有类型声明
     const mod = await import('pdf-parse');
     const pdfParse = (mod && (mod.default ?? mod)) as (buf: Buffer) => Promise<{
       text: string;

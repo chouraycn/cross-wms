@@ -1,11 +1,15 @@
 /**
- * 移植自 openclaw/src/agents/auth-profiles.runtime.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime seam for auth-profile store loading.
+ * Tests can stub this facade without importing the full auth profile store
+ * implementation.
  */
+import { ensureAuthProfileStore as ensureAuthProfileStoreImpl } from "./auth-profiles/store.js";
 
-export function ensureAuthProfileStore(..._args: unknown[]): unknown {
-  return undefined;
+type EnsureAuthProfileStore = typeof import("./auth-profiles/store.js").ensureAuthProfileStore;
+
+/** Ensure an auth-profile store using the production store implementation. */
+export function ensureAuthProfileStore(
+  ...args: Parameters<EnsureAuthProfileStore>
+): ReturnType<EnsureAuthProfileStore> {
+  return ensureAuthProfileStoreImpl(...args);
 }

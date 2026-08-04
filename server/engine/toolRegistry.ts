@@ -1102,3 +1102,10 @@ export function unregisterPluginTool(name: string): boolean {
 export function listPluginTools(): string[] {
   return Array.from(builtinRegistry.keys()).filter(name => name.startsWith('plugin_'));
 }
+
+// Register executeToolCall into the leaf registry to break the
+// skillContextFactory.ts → toolRegistry.ts dynamic-import cycle (#11).
+// skillContextFactory calls executeToolCall via this registry instead of
+// dynamically importing toolRegistry; both modules load at startup.
+import { registerSkillToolExecutor } from './skillToolExecutorRegistry.js';
+registerSkillToolExecutor(executeToolCall);

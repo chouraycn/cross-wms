@@ -1,123 +1,73 @@
-import { logger } from "../../../logger.js";
-import type { DispatchResult, DispatchStatus } from "./types.js";
+// Dispatch-result helpers for counting visible channel turn deliveries.
+// 移植自 openclaw/src/channels/turn/dispatch-result.ts
+import type { ReplyDispatchKind } from "../../auto-reply/reply/reply-dispatcher.types.js";
 
-const dispatchResults = new Map<string, DispatchResult>();
-const dispatchQueue: DispatchResult[] = [];
+/** Minimal dispatch result shape needed to count visible channel deliveries. */
+export type ChannelTurnDispatchResultLike =
+  | {
+      queuedFinal?: boolean;
+      counts?: Partial<Record<ReplyDispatchKind, number>>;
+      observedReplyDelivery?: boolean;
+    }
+  | null
+  | undefined;
 
-export function createDispatchResult(params: {
-  turnId: string;
-  status: DispatchStatus;
-  reason?: string;
-  queuePosition?: number;
-  metadata?: Record<string, unknown>;
-}): DispatchResult {
+/** Extra delivery signals observed outside the normal dispatch count payload. */
+export type ChannelTurnVisibleDeliverySignals = {
+  observedReplyDelivery?: boolean;
+  fallbackDelivered?: boolean;
+  deliverySummaryDelivered?: boolean;
+};
+
+/** Zero-filled reply dispatch count map used before merging optional provider counts. */
+export const EMPTY_CHANNEL_TURN_DISPATCH_COUNTS: Record<ReplyDispatchKind, number> = {
+  tool: 0,
+  block: 0,
+  final: 0,
+};
+
+/** Resolves dispatch counts with missing reply kinds filled as zero. */
+export function resolveChannelTurnDispatchCounts(
+  result: ChannelTurnDispatchResultLike,
+): Record<ReplyDispatchKind, number> {
   return {
-    turnId: params.turnId,
-    status: params.status,
-    reason: params.reason,
-    queuePosition: params.queuePosition,
-    metadata: params.metadata,
+    ...EMPTY_CHANNEL_TURN_DISPATCH_COUNTS,
+    ...result?.counts,
   };
 }
 
-export function recordDispatch(result: DispatchResult): void {
-  dispatchResults.set(result.turnId, result);
-
-  if (result.status === "queued") {
-    dispatchQueue.push(result);
-  }
-
-  logger.debug(`[Turn:DispatchResult] Dispatch ${result.turnId}: ${result.status}`);
+/** Returns whether a turn produced any visible reply delivery signal. */
+export function hasVisibleChannelTurnDispatch(
+  result: ChannelTurnDispatchResultLike,
+  signals: ChannelTurnVisibleDeliverySignals = {},
+): boolean {
+  const counts = resolveChannelTurnDispatchCounts(result);
+  // Non-count signals cover delivery paths that bypass the buffered reply dispatcher.
+  return (
+    result?.observedReplyDelivery === true ||
+    signals.observedReplyDelivery === true ||
+    signals.fallbackDelivered === true ||
+    signals.deliverySummaryDelivered === true ||
+    result?.queuedFinal === true ||
+    counts.tool > 0 ||
+    counts.block > 0 ||
+    counts.final > 0
+  );
 }
 
-export function getDispatchResult(turnId: string): DispatchResult | undefined {
-  return dispatchResults.get(turnId);
-}
-
-export function isDispatchAccepted(result: DispatchResult): boolean {
-  return result.status === "accepted" || result.status === "queued";
-}
-
-export function isDispatchRejected(result: DispatchResult): boolean {
-  return result.status === "rejected" || result.status === "duplicate";
-}
-
-export function acceptDispatch(
-  turnId: string,
-  metadata?: Record<string, unknown>
-): DispatchResult {
-  const result = createDispatchResult({
-    turnId,
-    status: "accepted",
-    metadata,
-  });
-  recordDispatch(result);
-  return result;
-}
-
-export function rejectDispatch(
-  turnId: string,
-  reason: string,
-  metadata?: Record<string, unknown>
-): DispatchResult {
-  const result = createDispatchResult({
-    turnId,
-    status: "rejected",
-    reason,
-    metadata,
-  });
-  recordDispatch(result);
-  return result;
-}
-
-export function queueDispatch(
-  turnId: string,
-  position: number,
-  metadata?: Record<string, unknown>
-): DispatchResult {
-  const result = createDispatchResult({
-    turnId,
-    status: "queued",
-    queuePosition: position,
-    metadata,
-  });
-  recordDispatch(result);
-  return result;
-}
-
-export function markDuplicateDispatch(
-  turnId: string,
-  reason?: string,
-  metadata?: Record<string, unknown>
-): DispatchResult {
-  const result = createDispatchResult({
-    turnId,
-    status: "duplicate",
-    reason: reason ?? "Duplicate dispatch",
-    metadata,
-  });
-  recordDispatch(result);
-  return result;
-}
-
-export function getQueuePosition(turnId: string): number | undefined {
-  const idx = dispatchQueue.findIndex((r) => r.turnId === turnId);
-  return idx >= 0 ? idx + 1 : undefined;
-}
-
-export function getQueueSize(): number {
-  return dispatchQueue.length;
-}
-
-export function dequeueNextDispatch(): DispatchResult | undefined {
-  return dispatchQueue.shift();
-}
-
-export function clearDispatchQueue(): void {
-  dispatchQueue.length = 0;
-}
-
-export function clearDispatchResults(): void {
-  dispatchResults.clear();
-  dispatchQueue.length = 0;
+/** Returns whether a turn produced a final reply, fallback, summary, or queued final payload. */
+export function hasFinalChannelTurnDispatch(
+  result: ChannelTurnDispatchResultLike,
+  signals: Pick<
+    ChannelTurnVisibleDeliverySignals,
+    "fallbackDelivered" | "deliverySummaryDelivered"
+  > = {},
+): boolean {
+  const counts = resolveChannelTurnDispatchCounts(result);
+  return (
+    signals.fallbackDelivered === true ||
+    signals.deliverySummaryDelivered === true ||
+    result?.queuedFinal === true ||
+    counts.final > 0
+  );
 }

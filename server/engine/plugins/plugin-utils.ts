@@ -153,7 +153,7 @@ export function manifestToSummary(manifest: PluginManifest): {
   return {
     id: manifest.id,
     name: getDisplayName(manifest),
-    version: manifest.version,
+    version: manifest.version ?? '',
     description: getDescription(manifest),
     capabilities: manifest.capabilities ?? [],
     toolCount: manifest.tools?.length ?? 0,

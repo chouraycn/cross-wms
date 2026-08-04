@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Tests exported HTML transcript escaping and template safety.
 import fs from "node:fs";
 import path from "node:path";

@@ -1,21 +1,65 @@
+// @ts-nocheck
 /**
- * 移植自 openclaw/src/agents/tool-fs-policy.ts
+ * Tool filesystem policy resolver.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Combines global and agent fs/tool policy into workspace-only and root-expansion decisions.
  */
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveAgentConfig } from "./agent-scope.js";
+import { pickSandboxToolPolicy } from "./sandbox-tool-policy.js";
+import type { ToolFsPolicy } from "./tool-fs-policy.types.js";
+import { isToolAllowedByPolicies } from "./tool-policy-match.js";
+import { mergeAlsoAllowPolicy, resolveToolProfilePolicy } from "./tool-policy.js";
 
 export type { ToolFsPolicy } from "./tool-fs-policy.types.js";
-export function createToolFsPolicy(..._args: unknown[]): unknown {
-  return undefined;
+
+export function createToolFsPolicy(params: { workspaceOnly?: boolean }): ToolFsPolicy {
+  return {
+    workspaceOnly: params.workspaceOnly === true,
+  };
 }
-export function resolveToolFsConfig(..._args: unknown[]): unknown {
-  return undefined;
+
+export function resolveToolFsConfig(params: { cfg?: OpenClawConfig; agentId?: string }): {
+  workspaceOnly?: boolean;
+} {
+  const cfg = params.cfg;
+  const globalFs = cfg?.tools?.fs;
+  const agentFs =
+    cfg && params.agentId ? resolveAgentConfig(cfg, params.agentId)?.tools?.fs : undefined;
+  return {
+    workspaceOnly: agentFs?.workspaceOnly ?? globalFs?.workspaceOnly,
+  };
 }
-export function resolveEffectiveToolFsWorkspaceOnly(..._args: unknown[]): unknown {
-  return undefined;
+
+export function resolveEffectiveToolFsWorkspaceOnly(params: {
+  cfg?: OpenClawConfig;
+  agentId?: string;
+}): boolean {
+  return resolveToolFsConfig(params).workspaceOnly === true;
 }
-export function resolveEffectiveToolFsRootExpansionAllowed(..._args: unknown[]): unknown {
-  return undefined;
+
+export function resolveEffectiveToolFsRootExpansionAllowed(params: {
+  cfg?: OpenClawConfig;
+  agentId?: string;
+}): boolean {
+  const cfg = params.cfg;
+  if (!cfg) {
+    return true;
+  }
+  const agentTools = params.agentId ? resolveAgentConfig(cfg, params.agentId)?.tools : undefined;
+  const globalTools = cfg.tools;
+  const profile = agentTools?.profile ?? globalTools?.profile;
+  const profileAlsoAllow = new Set(agentTools?.alsoAllow ?? globalTools?.alsoAllow ?? []);
+  const fsConfig = resolveToolFsConfig(params);
+  if (fsConfig.workspaceOnly === true) {
+    return false;
+  }
+  // tools.fs presence does not grant access; require profile or alsoAllow (#47487).
+  const profilePolicy = mergeAlsoAllowPolicy(
+    resolveToolProfilePolicy(profile),
+    profileAlsoAllow.size > 0 ? Array.from(profileAlsoAllow) : undefined,
+  );
+  const globalPolicy = pickSandboxToolPolicy(globalTools);
+  const agentPolicy = pickSandboxToolPolicy(agentTools);
+  return isToolAllowedByPolicies("read", [profilePolicy, globalPolicy, agentPolicy]);
 }

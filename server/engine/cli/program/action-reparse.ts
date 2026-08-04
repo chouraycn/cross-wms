@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Reparse support for lazy commands after their placeholder has been replaced.
 import type { Command } from "commander";
 import { buildParseArgv } from "../argv.js";

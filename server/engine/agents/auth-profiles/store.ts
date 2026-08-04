@@ -6,7 +6,7 @@
  */
 import { isDeepStrictEqual } from "node:util";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { asDateTimestampMs } from "../../shared/number-coercion.js";
+import { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { isRecord } from "../../utils.js";
 import { cloneAuthProfileStore } from "./clone.js";
@@ -1074,3 +1074,5 @@ export function saveAuthProfileStore(
     );
   }
 }
+
+export { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";

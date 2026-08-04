@@ -1,11 +1,47 @@
 /**
- * 移植自 openclaw/src/agents/live-provider-owner.ts
+ * Live provider ownership helpers.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Live provider checks use this to decide when two provider ids belong to the
+ * same plugin owner without repeating manifest/provider resolution work.
  */
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveOwningPluginIdsForProviderRef } from "../plugins/providers.js";
 
-export function liveProvidersShareOwningPlugin(..._args: unknown[]): unknown {
-  return undefined;
+type LiveProviderOwnerContext = {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  env?: NodeJS.ProcessEnv;
+  ownerCache: Map<string, readonly string[]>;
+};
+
+function resolveCachedOwningPluginIdsForProvider(
+  provider: string,
+  context: LiveProviderOwnerContext,
+): readonly string[] {
+  const normalized = normalizeProviderId(provider);
+  const cached = context.ownerCache.get(normalized);
+  if (cached) {
+    return cached;
+  }
+  const owners =
+    resolveOwningPluginIdsForProviderRef({
+      provider: normalized,
+      config: context.config,
+      workspaceDir: context.workspaceDir,
+      env: context.env,
+    }) ?? [];
+  context.ownerCache.set(normalized, owners);
+  return owners;
+}
+
+/** Returns whether two live provider ids resolve to at least one shared plugin owner. */
+export function liveProvidersShareOwningPlugin(
+  left: string,
+  right: string,
+  context: LiveProviderOwnerContext,
+): boolean {
+  const leftOwners = resolveCachedOwningPluginIdsForProvider(left, context);
+  const rightOwners = resolveCachedOwningPluginIdsForProvider(right, context);
+  return leftOwners.some((owner) => rightOwners.includes(owner));
 }

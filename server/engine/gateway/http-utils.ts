@@ -1,82 +1,251 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/http-utils.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway HTTP request helpers.
+// Resolves OpenAI-compatible agent/model/session headers and re-exports auth helpers.
+import { randomUUID } from "node:crypto";
+import type { IncomingMessage } from "node:http";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { modelKey, parseModelRef, resolveDefaultModelForAgent } from "../agents/model-selection.js";
+import { createModelVisibilityPolicy } from "../agents/model-visibility-policy.js";
+import { getRuntimeConfig } from "../config/io.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { loadManifestMetadataSnapshot } from "../plugins/manifest-contract-eligibility.js";
+import {
+  buildAgentMainSessionKey,
+  isAcpSessionKey,
+  isCronSessionKey,
+  isSubagentSessionKey,
+  isValidAgentId,
+  normalizeAgentId,
+} from "../routing/session-key.js";
+import { normalizeMessageChannel } from "../utils/message-channel.js";
+import { getHeader } from "./http-auth-utils.js";
+import { loadGatewayModelCatalog } from "./server-model-catalog.js";
 
-export const authorizeOpenAiCompatibleHttpModelOverride: unknown = undefined;
+export {
+  authorizeOpenAiCompatibleHttpModelOverride,
+  authorizeGatewayHttpRequestOrReply,
+  authorizeScopedGatewayHttpRequestOrReply,
+  checkGatewayHttpRequestAuth,
+  getBearerToken,
+  getHeader,
+  isGatewayBearerHttpRequest,
+  resolveHttpBrowserOriginPolicy,
+  resolveHttpSenderIsOwner,
+  resolveOpenAiCompatibleHttpOperatorScopes,
+  resolveOpenAiCompatibleHttpSenderIsOwner,
+  resolveSharedSecretHttpOperatorScopes,
+  resolveTrustedHttpOperatorScopes,
+  type AuthorizedGatewayHttpRequest,
+  type GatewayHttpRequestAuthCheckResult,
+} from "./http-auth-utils.js";
 
-export const authorizeGatewayHttpRequestOrReply: unknown = undefined;
+export const OPENCLAW_MODEL_ID = "openclaw";
+/** Default OpenAI-compatible model alias that targets the default OpenClaw agent. */
+export const OPENCLAW_DEFAULT_MODEL_ID = "openclaw/default";
 
-export const authorizeScopedGatewayHttpRequestOrReply: unknown = undefined;
-
-export const checkGatewayHttpRequestAuth: unknown = undefined;
-
-export const getBearerToken: unknown = undefined;
-
-export const getHeader: unknown = undefined;
-
-export const isGatewayBearerHttpRequest: unknown = undefined;
-
-export const resolveHttpBrowserOriginPolicy: unknown = undefined;
-
-export const resolveHttpSenderIsOwner: unknown = undefined;
-
-export const resolveOpenAiCompatibleHttpOperatorScopes: unknown = undefined;
-
-export const resolveOpenAiCompatibleHttpSenderIsOwner: unknown = undefined;
-
-export const resolveSharedSecretHttpOperatorScopes: unknown = undefined;
-
-export const resolveTrustedHttpOperatorScopes: unknown = undefined;
-
-export const AuthorizedGatewayHttpRequest: unknown = undefined;
-
-export const GatewayHttpRequestAuthCheckResult: unknown = undefined;
-
-export function isUnknownGatewayAgentError(..._args: unknown[]): unknown {
-  return false;
-}
-
-export function isGatewaySessionKeyOverrideError(..._args: unknown[]): unknown {
-  return false;
-}
-
-export function resolveAgentIdFromModel(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export async function resolveOpenAiCompatModelOverride(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
-}
-
-export function resolveAgentIdForRequest(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export function resolveGatewayRequestContext(..._args: unknown[]): unknown {
-  return undefined;
-}
-
-export class UnknownGatewayAgentError {
-  constructor(..._args: unknown[]) {
-    // Stub: not fully ported
+export class UnknownGatewayAgentError extends Error {
+  constructor(readonly agentId: string) {
+    super(`Unknown agent '${agentId}'.`);
+    this.name = "UnknownGatewayAgentError";
   }
 }
 
-export class GatewaySessionKeyOverrideError {
-  constructor(..._args: unknown[]) {
-    // Stub: not fully ported
+export class GatewaySessionKeyOverrideError extends Error {
+  constructor() {
+    super("`x-openclaw-session-key` cannot use reserved internal session namespaces.");
+    this.name = "GatewaySessionKeyOverrideError";
   }
 }
 
-export const OPENCLAW_MODEL_ID: unknown = undefined;
+export function isUnknownGatewayAgentError(err: unknown): err is UnknownGatewayAgentError {
+  return err instanceof UnknownGatewayAgentError;
+}
 
-export const OPENCLAW_DEFAULT_MODEL_ID: unknown = undefined;
+export function isGatewaySessionKeyOverrideError(
+  err: unknown,
+): err is GatewaySessionKeyOverrideError {
+  return err instanceof GatewaySessionKeyOverrideError;
+}
+
+function assertKnownAgentId(agentId: string, cfg: OpenClawConfig = getRuntimeConfig() as OpenClawConfig): void {
+  if (!listAgentIds(cfg).includes(agentId)) {
+    throw new UnknownGatewayAgentError(agentId);
+  }
+}
+
+function resolveAgentIdFromHeader(req: IncomingMessage): string | undefined {
+  const raw =
+    normalizeOptionalString(getHeader(req, "x-openclaw-agent-id")) ||
+    normalizeOptionalString(getHeader(req, "x-openclaw-agent")) ||
+    "";
+  if (!raw) {
+    return undefined;
+  }
+  if (!isValidAgentId(raw)) {
+    throw new UnknownGatewayAgentError(raw);
+  }
+  return normalizeAgentId(raw);
+}
+
+/** Resolves the target agent encoded by an OpenAI-compatible model id. */
+export function resolveAgentIdFromModel(
+  model: string | undefined,
+  cfg: OpenClawConfig = getRuntimeConfig() as OpenClawConfig,
+): string | undefined {
+  const raw = model?.trim();
+  if (!raw) {
+    return undefined;
+  }
+  const lowered = normalizeLowercaseStringOrEmpty(raw);
+  if (lowered === OPENCLAW_MODEL_ID || lowered === OPENCLAW_DEFAULT_MODEL_ID) {
+    return resolveDefaultAgentId(cfg);
+  }
+
+  const m =
+    raw.match(/^openclaw[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ??
+    raw.match(/^agent:(?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i);
+  const agentId = m?.groups?.agentId;
+  if (!agentId) {
+    return undefined;
+  }
+  return normalizeAgentId(agentId);
+}
+
+/** Validates and resolves the `x-openclaw-model` override for OpenAI-compatible requests. */
+export async function resolveOpenAiCompatModelOverride(params: {
+  req: IncomingMessage;
+  agentId: string;
+  model: string | undefined;
+}): Promise<{ modelOverride?: string; errorMessage?: string }> {
+  const requestModel = params.model?.trim();
+  if (requestModel && !resolveAgentIdFromModel(requestModel)) {
+    return {
+      errorMessage: "Invalid `model`. Use `openclaw` or `openclaw/<agentId>`.",
+    };
+  }
+
+  const raw = getHeader(params.req, "x-openclaw-model")?.trim();
+  if (!raw) {
+    return {};
+  }
+
+  const cfg = getRuntimeConfig() as OpenClawConfig;
+  const defaultModelRef = resolveDefaultModelForAgent({ cfg, agentId: params.agentId });
+  const defaultProvider = defaultModelRef.provider;
+  const manifestMetadataSnapshot = loadManifestMetadataSnapshot({
+    config: cfg,
+    env: process.env,
+  });
+  const modelManifestContext = {
+    manifestPlugins: manifestMetadataSnapshot.plugins,
+  };
+  const parsed = parseModelRef(raw, defaultProvider, {
+    allowManifestNormalization: true,
+    allowPluginNormalization: true,
+    ...modelManifestContext,
+  });
+  if (!parsed) {
+    return { errorMessage: "Invalid `x-openclaw-model`." };
+  }
+
+  // Overrides must pass the same visibility policy as model picker surfaces;
+  // otherwise API clients could target hidden plugin/provider models by header.
+  const catalog = await loadGatewayModelCatalog();
+  const policy = createModelVisibilityPolicy({
+    cfg,
+    catalog,
+    defaultProvider,
+    agentId: params.agentId,
+    allowManifestNormalization: true,
+    allowPluginNormalization: true,
+    ...modelManifestContext,
+  });
+  const normalized = modelKey(parsed.provider, parsed.model);
+  if (!(policy as any).allowsKey(normalized)) {
+    return {
+      errorMessage: `Model '${normalized}' is not allowed for agent '${params.agentId}'.`,
+    };
+  }
+
+  return { modelOverride: raw };
+}
+
+/** Resolves the request agent from headers, model alias, or the configured default. */
+export function resolveAgentIdForRequest(params: {
+  req: IncomingMessage;
+  model: string | undefined;
+}): string {
+  const cfg = getRuntimeConfig() as OpenClawConfig;
+  const fromHeader = resolveAgentIdFromHeader(params.req);
+  if (fromHeader) {
+    assertKnownAgentId(fromHeader, cfg);
+    return fromHeader;
+  }
+
+  const fromModel = resolveAgentIdFromModel(params.model, cfg);
+  if (fromModel) {
+    assertKnownAgentId(fromModel, cfg);
+    return fromModel;
+  }
+
+  return resolveDefaultAgentId(cfg);
+}
+
+function resolveSessionKey(params: {
+  req: IncomingMessage;
+  agentId: string;
+  user?: string | undefined;
+  prefix: string;
+}): string {
+  const explicit = getHeader(params.req, "x-openclaw-session-key")?.trim();
+  if (explicit) {
+    if (isReservedSessionKeyOverride(explicit)) {
+      throw new GatewaySessionKeyOverrideError();
+    }
+    return explicit;
+  }
+
+  const user = params.user?.trim();
+  const mainKey = user ? `${params.prefix}-user:${user}` : `${params.prefix}:${randomUUID()}`;
+  return buildAgentMainSessionKey({ agentId: params.agentId, mainKey });
+}
+
+function isReservedSessionKeyOverride(sessionKey: string): boolean {
+  const lowered = normalizeLowercaseStringOrEmpty(sessionKey);
+  return (
+    lowered.startsWith("subagent:") ||
+    lowered.startsWith("cron:") ||
+    lowered.startsWith("acp:") ||
+    isSubagentSessionKey(sessionKey) ||
+    isCronSessionKey(sessionKey) ||
+    isAcpSessionKey(sessionKey)
+  );
+}
+
+/** Resolves gateway agent/session/channel context for OpenAI-compatible handlers. */
+export function resolveGatewayRequestContext(params: {
+  req: IncomingMessage;
+  model: string | undefined;
+  user?: string | undefined;
+  sessionPrefix: string;
+  defaultMessageChannel: string;
+  useMessageChannelHeader?: boolean;
+}): { agentId: string; sessionKey: string; messageChannel: string } {
+  const agentId = resolveAgentIdForRequest({ req: params.req, model: params.model });
+  const sessionKey = resolveSessionKey({
+    req: params.req,
+    agentId,
+    user: params.user,
+    prefix: params.sessionPrefix,
+  });
+
+  const messageChannel = params.useMessageChannelHeader
+    ? (normalizeMessageChannel(getHeader(params.req, "x-openclaw-message-channel")) ??
+      params.defaultMessageChannel)
+    : params.defaultMessageChannel;
+
+  return { agentId, sessionKey, messageChannel };
+}

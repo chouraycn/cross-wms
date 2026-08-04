@@ -2,9 +2,9 @@
 // Stores normalized pricing rows and source-health failures for runtime reads.
 //
 // 降级说明：
-//  - `@openclaw/model-catalog-core/provider-id` 的 `normalizeProviderId` 降级为
+//  - `@cdf-know/model-catalog-core/provider-id` 的 `normalizeProviderId` 降级为
 //    内联实现（去除首尾空白、转小写）。
-//  - `@openclaw/normalization-core/string-coerce` 的 `normalizeLowercaseStringOrEmpty`
+//  - `@cdf-know/normalization-core/string-coerce` 的 `normalizeLowercaseStringOrEmpty`
 //    改从 `../infra/string-coerce.js` 导入。
 //  - `../agents/model-selection.js` 的 `normalizeModelRef` 降级为内联实现：
 //    从 "provider/model" 形式中拆分 provider 与 model。
@@ -17,7 +17,7 @@ import { normalizeLowercaseStringOrEmpty } from "../infra/string-coerce.js";
 /**
  * 规范化 provider id（降级实现）。
  *
- * 降级原因：openclaw `@openclaw/model-catalog-core/provider-id` 还会处理别名
+ * 降级原因：openclaw `@cdf-know/model-catalog-core/provider-id` 还会处理别名
  * （如 "anthropic" ↔ "claude"）。这里仅做基础小写化与空白清理。
  */
 function normalizeProviderId(provider: string): string {

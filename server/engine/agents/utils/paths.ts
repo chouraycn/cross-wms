@@ -1,55 +1,62 @@
 /**
- * Agent 路径规范化工具
+ * Agent path formatting helpers.
  *
- * 提供路径分隔符归一化、相对路径解析与父子关系判断，
- * 用于 agent 工具在跨平台场景下的路径预处理。
- *
- * 参考自 openclaw/src/agents/utils/paths.ts。
+ * Canonicalizes local paths and formats paths relative to a workspace when possible.
  */
-import { isAbsolute, resolve as resolveNodePath } from 'node:path';
+import { realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve as resolvePath, sep } from "node:path";
 
 /**
- * 将路径中的反斜杠统一为正斜杠，并合并多余的连续分隔符。
- * @param p 原始路径
+ * Resolve a path to its canonical (real) form, following symlinks.
+ * Falls back to the raw path if resolution fails (e.g. the target does
+ * not exist yet), so that callers never crash on missing filesystem
+ * entries.
  */
-export function normalizePath(p: string): string {
-  if (typeof p !== 'string' || !p) {
-    return '';
+export function canonicalizePath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
   }
-  return p.replace(/\\/g, '/').replace(/\/+/g, '/');
 }
 
 /**
- * 基于 base 解析 relative 路径，返回规范化后的绝对路径。
- * 若 relative 已是绝对路径，则直接返回其规范化形式。
- * @param base 基准目录
- * @param relativePath 相对路径
+ * Returns true if the value is NOT a package source (npm:, git:, etc.)
+ * or a URL protocol. Bare names and relative paths without ./ prefix
+ * are considered local.
  */
-export function resolvePath(base: string, relativePath: string): string {
-  const safeBase = base ?? '';
-  const safeRelative = relativePath ?? '';
-  const resolved = isAbsolute(safeRelative)
-    ? resolveNodePath(safeRelative)
-    : resolveNodePath(safeBase, safeRelative);
-  return normalizePath(resolved);
-}
-
-/**
- * 判断 child 是否位于 parent 目录之下（含两者相等的情况）。
- * 比较前会先将两者解析为绝对路径并规范化分隔符，跨平台一致。
- * @param parent 父目录
- * @param child 待检测路径
- */
-export function isSubPath(parent: string, child: string): boolean {
-  const resolvedParent = normalizePath(resolveNodePath(parent ?? ''));
-  const resolvedChild = normalizePath(resolveNodePath(child ?? ''));
-  if (!resolvedParent || !resolvedChild) {
+export function isLocalPath(value: string): boolean {
+  const trimmed = value.trim();
+  // Known non-local prefixes
+  if (
+    trimmed.startsWith("npm:") ||
+    trimmed.startsWith("git:") ||
+    trimmed.startsWith("github:") ||
+    trimmed.startsWith("http:") ||
+    trimmed.startsWith("https:") ||
+    trimmed.startsWith("ssh:")
+  ) {
     return false;
   }
-  if (resolvedParent === resolvedChild) {
-    return true;
-  }
-  // 确保 parent 以 / 结尾，避免 /foo 被误判为 /foobar 的父目录
-  const prefix = resolvedParent.endsWith('/') ? resolvedParent : `${resolvedParent}/`;
-  return resolvedChild.startsWith(prefix);
+  return true;
+}
+
+function resolveAgainstCwd(filePath: string, cwd: string): string {
+  return isAbsolute(filePath) ? resolvePath(filePath) : resolvePath(cwd, filePath);
+}
+
+function getCwdRelativePath(filePath: string, cwd: string): string | undefined {
+  const resolvedCwd = resolvePath(cwd);
+  const resolvedPath = resolveAgainstCwd(filePath, resolvedCwd);
+  const relativePath = relative(resolvedCwd, resolvedPath);
+  const isInsideCwd =
+    relativePath === "" ||
+    (relativePath !== ".." && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath));
+
+  return isInsideCwd ? relativePath || "." : undefined;
+}
+
+export function formatPathRelativeToCwdOrAbsolute(filePath: string, cwd: string): string {
+  const absolutePath = resolveAgainstCwd(filePath, cwd);
+  return (getCwdRelativePath(absolutePath, cwd) ?? absolutePath).split(sep).join("/");
 }

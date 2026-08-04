@@ -3,7 +3,7 @@
  *
  * 移植自 openclaw/src/agents/context-resolution.ts。
  * 降级策略：
- *   - `normalizeLowercaseStringOrEmpty` 来自 @openclaw/normalization-core/string-coerce，
+ *   - `normalizeLowercaseStringOrEmpty` 来自 @cdf-know/normalization-core/string-coerce，
  *     本地内联实现。
  *   - `normalizeProviderId` 来自 ./model-selection.js（cross-wms 中位于 ../models/model-selection.js）。
  *   - `OpenClawConfig` 用本地最小子集类型。

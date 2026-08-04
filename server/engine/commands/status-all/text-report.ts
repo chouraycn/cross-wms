@@ -2,7 +2,7 @@
 // Generic text-report primitives for status command output.
 // Callers assemble typed sections; this file owns heading insertion and table rendering order.
 
-import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
+import type { RenderTableOptions, TableColumn } from "@openclaw/terminal-core/table";
 
 type HeadingFn = (text: string) => string;
 type TableRenderer = (input: RenderTableOptions) => string;

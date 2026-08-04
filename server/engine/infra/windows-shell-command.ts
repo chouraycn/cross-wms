@@ -1,5 +1,5 @@
 // Windows shell 命令分析和转义。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-coerce 导入 normalizeLowercaseStringOrEmpty，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-coerce 导入 normalizeLowercaseStringOrEmpty，
 // 从 ./exec-command-analysis-types.js 导入 ExecCommandAnalysis 类型，
 // 从 ./exec-command-resolution.js 导入 resolveCommandResolutionFromArgv；
 // cross-wms 使用本地 string-coerce、本地类型定义和降级的 resolveCommandResolutionFromArgv。

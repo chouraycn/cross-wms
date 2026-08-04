@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Wraps stream functions with pre-call message transforms.
  */

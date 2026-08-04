@@ -1,4 +1,11 @@
-// 移植自 openclaw/src/config/types.bot-loop-protection.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
-
-export type ChannelBotLoopProtectionConfig = unknown;
+// Defines channel bot-loop protection configuration types.
+export type ChannelBotLoopProtectionConfig = {
+  /** Enable pair loop protection for channels that support it. */
+  enabled?: boolean;
+  /** Maximum events a sender/receiver pair may exchange within the window. */
+  maxEventsPerWindow?: number;
+  /** Sliding window length in seconds. */
+  windowSeconds?: number;
+  /** Cooldown seconds applied to a pair after the limit is hit. */
+  cooldownSeconds?: number;
+};

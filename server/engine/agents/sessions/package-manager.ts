@@ -8,7 +8,12 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { globSync } from "glob";
+import glob from "glob";
+
+// glob v7 没有 globSync 导出，使用 glob.sync 兼容。
+function globSync(pattern: string, options: { cwd?: string; absolute?: boolean; dot?: boolean; nodir?: boolean }): string[] {
+  return (glob as unknown as { sync: (p: string, o: unknown) => string[] }).sync(pattern, options);
+}
 import ignore from "ignore";
 import { minimatch } from "minimatch";
 import { addIgnoreRules, toPosixPath, type IgnoreMatcher } from "../../shared/ignore-rules.js";

@@ -18,7 +18,7 @@ function resolveBundledChannelMeta(id: string): ChannelMeta | undefined {
 }
 
 function resolveGeneratedBundledChannelMeta(id: string): ChannelMeta | undefined {
-  const metadata = GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA as Array<{ channelId: string; configurable?: boolean; label?: string; description?: string }>;
+  const metadata = GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA as unknown as Array<{ channelId: string; configurable?: boolean; label?: string; description?: string }>;
   const channel = metadata.find(
     (entry) => entry.channelId === id && entry.configurable !== false,
   );

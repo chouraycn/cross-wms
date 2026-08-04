@@ -1,9 +1,9 @@
 /** Builds provider auth summaries for model-list/status output. */
-import { normalizeProviderIdForAuth } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderIdForAuth } from "@cdf-know/model-catalog-core/provider-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { formatRemainingShort } from "@openclaw-src/agents/auth-health.js";
 import { resolveAuthProfileDisplayLabel } from "@openclaw-src/agents/auth-profiles/display.js";
 import { resolveAuthStorePathForDisplay } from "@openclaw-src/agents/auth-profiles/paths.js";

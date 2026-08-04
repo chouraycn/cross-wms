@@ -659,3 +659,9 @@ export function createCommitmentRuntime(
     resetForTests,
   };
 }
+
+const defaultRuntime = createCommitmentRuntime();
+
+export function enqueueCommitmentExtraction(input: CommitmentExtractionEnqueueInput): boolean {
+  return defaultRuntime.enqueueExtraction(input);
+}

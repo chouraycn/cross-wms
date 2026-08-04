@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger.js';
-import { BUILTIN_DOMAINS } from './dao/apiDomainWhitelist.js';
+import { BUILTIN_DOMAINS } from './dao/apiDomainWhitelistData.js';
 
 // ===================== v3.0: Plugin & API Types =====================
 

@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-lanes.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway command-lane concurrency applier.
+// Pushes config-derived agent/cron limits into the process command queue.
+import { resolveAgentMaxConcurrent, resolveSubagentMaxConcurrent } from "../config/agent-limits.js";
+import { resolveCronMaxConcurrentRuns } from "../config/cron-limits.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { setCommandLaneConcurrency } from "../process/command-queue.js";
+import { CommandLane } from "../process/lanes.js";
 
-export function applyGatewayLaneConcurrency(..._args: unknown[]): unknown {
-  return undefined;
+export function applyGatewayLaneConcurrency(cfg: OpenClawConfig) {
+  const cronMaxConcurrentRuns = resolveCronMaxConcurrentRuns(cfg.cron);
+  setCommandLaneConcurrency(CommandLane.Cron, cronMaxConcurrentRuns);
+  // Cron isolated agent turns remap inner LLM work to this lane.
+  setCommandLaneConcurrency(CommandLane.CronNested, cronMaxConcurrentRuns);
+  setCommandLaneConcurrency(CommandLane.Main, resolveAgentMaxConcurrent(cfg));
+  setCommandLaneConcurrency(CommandLane.Subagent, resolveSubagentMaxConcurrent(cfg));
 }

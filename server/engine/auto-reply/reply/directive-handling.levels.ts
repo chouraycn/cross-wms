@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Parses directive level values for reasoning, verbosity, and elevated mode.
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import { normalizeFastMode, type FastMode } from "../thinking.js";

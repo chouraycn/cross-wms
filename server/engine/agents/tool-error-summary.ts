@@ -2,7 +2,7 @@
  * 紧凑工具错误摘要类型 — 移植自 openclaw/src/agents/tool-error-summary.ts
  *
  * 降级策略：
- *  - 依赖 @openclaw/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
+ *  - 依赖 @cdf-know/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
  *  - 依赖 ./tool-mutation.js 的 FileTarget 类型 → cross-wms 未移植 tool-mutation 模块，
  *    这里按 openclaw 源定义复制最小 FileTarget 类型别名
  *

@@ -8,7 +8,7 @@
  */
 
 import type { ToolDefinition } from '../aiClient.js';
-import type { ToolHandler } from './toolRegistry.js';
+import type { ToolHandler } from './toolTypes.js';
 import {
   startWebhookListen,
   getWebhookRequests,

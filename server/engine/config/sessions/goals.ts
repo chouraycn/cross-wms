@@ -1,185 +1,304 @@
-import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../../../logger.js';
-import { SessionStore } from './store.js';
-import type { SessionGoal } from './types.js';
-import { SessionGoalSchema } from './types.js';
+// Session goal state tracks objective progress and token budgets in the session store.
+import crypto from "node:crypto";
+import { formatTokenCount } from "../../utils/token-format.js";
+import { getSessionEntry, patchSessionEntry } from "./store.js";
+import { resolveFreshSessionTotalTokens } from "./types.js";
+import type { SessionEntry, SessionGoal, SessionGoalStatus } from "./types.js";
 
-export class SessionGoalsManager {
-  private store: SessionStore;
+export type SessionGoalSnapshot = {
+  status: "missing" | "found";
+  goal?: SessionGoal;
+};
 
-  constructor(store: SessionStore) {
-    this.store = store;
+type SessionGoalStoreOptions = {
+  sessionKey: string;
+  storePath?: string;
+  now?: number;
+  fallbackEntry?: SessionEntry;
+  persist?: boolean;
+};
+
+type CreateSessionGoalOptions = SessionGoalStoreOptions & {
+  objective: string;
+  tokenBudget?: number;
+};
+
+type UpdateSessionGoalStatusOptions = SessionGoalStoreOptions & {
+  status: Extract<SessionGoalStatus, "active" | "paused" | "blocked" | "complete">;
+  note?: string;
+};
+
+export const MODEL_UPDATABLE_SESSION_GOAL_STATUSES = ["complete", "blocked"] as const;
+
+const TERMINAL_GOAL_STATUSES = new Set<SessionGoalStatus>(["complete"]);
+
+function nowMs(value: number | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : Date.now();
+}
+
+function normalizeTokenCount(value: number | undefined): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : undefined;
+}
+
+function resolveEntryFreshTotalTokens(
+  entry: Pick<SessionEntry, "totalTokens" | "totalTokensFresh">,
+): number | undefined {
+  return normalizeTokenCount(resolveFreshSessionTotalTokens(entry));
+}
+
+function resolveEntryGoalStartTokens(
+  entry: Pick<SessionEntry, "totalTokens" | "totalTokensFresh">,
+): number {
+  return resolveEntryFreshTotalTokens(entry) ?? 0;
+}
+
+function normalizeTokenBudget(value: number | undefined): number | undefined {
+  const normalized = normalizeTokenCount(value);
+  return normalized && normalized > 0 ? normalized : undefined;
+}
+
+function cloneGoal(goal: SessionGoal): SessionGoal {
+  return { ...goal };
+}
+
+export function resolveSessionGoalDisplayState(
+  entry: Pick<SessionEntry, "goal" | "totalTokens" | "totalTokensFresh">,
+  now?: number,
+  options?: { adoptFreshBaseline?: boolean },
+): SessionGoal | undefined {
+  return accountGoalUsage(entry, nowMs(now), options);
+}
+
+function accountGoalUsage(
+  entry: Pick<SessionEntry, "goal" | "totalTokens" | "totalTokensFresh">,
+  now: number,
+  options?: { adoptFreshBaseline?: boolean },
+): SessionGoal | undefined {
+  // `goal` is introduced here as a core-owned slot; no shipped plugin-owned
+  // goal state exists to migrate, and plugin slot registration now reserves it.
+  const goal = entry.goal;
+  if (!goal) {
+    return undefined;
   }
-
-  getGoals(sessionId: string): SessionGoal[] {
-    const sessionData = this.store.getSession(sessionId);
-    return sessionData?.goals || [];
+  const totalTokens = resolveEntryFreshTotalTokens(entry);
+  const hasFreshStart = goal.tokenStartFresh !== false;
+  // Old entries may have a stale token baseline; display-only reads can hold it, while persisted
+  // reads adopt the fresh total so future budget checks use current accounting.
+  const shouldHoldStaleStart = !hasFreshStart && options?.adoptFreshBaseline === false;
+  const shouldAdoptFreshStart =
+    !shouldHoldStaleStart && totalTokens !== undefined && !hasFreshStart;
+  const tokenStart = shouldAdoptFreshStart
+    ? totalTokens
+    : (normalizeTokenCount(goal.tokenStart) ?? totalTokens ?? 0);
+  const tokensUsed =
+    totalTokens === undefined || shouldAdoptFreshStart || shouldHoldStaleStart
+      ? goal.tokensUsed
+      : Math.max(goal.tokensUsed, Math.max(0, totalTokens - tokenStart));
+  const next: SessionGoal = {
+    ...goal,
+    tokenStart,
+    tokenStartFresh: hasFreshStart || shouldAdoptFreshStart,
+    tokensUsed,
+  };
+  if (
+    next.status === "active" &&
+    next.tokenBudget !== undefined &&
+    tokensUsed >= next.tokenBudget
+  ) {
+    next.status = "budget_limited";
+    next.budgetLimitedAt = now;
+    next.updatedAt = now;
   }
+  return next;
+}
 
-  getGoal(sessionId: string, goalId: string): SessionGoal | null {
-    const goals = this.getGoals(sessionId);
-    return goals.find(g => g.id === goalId) || null;
+function goalsEqual(a: SessionGoal | undefined, b: SessionGoal | undefined): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export function formatSessionGoalStatus(goal: SessionGoal | undefined): string {
+  if (!goal) {
+    return "No goal for this session.\nStart one with /goal start <objective>.";
   }
+  const budget =
+    goal.tokenBudget === undefined
+      ? ""
+      : `\nToken budget: ${formatTokenCount(goal.tokensUsed)}/${formatTokenCount(goal.tokenBudget)}`;
+  const note = goal.lastStatusNote ? `\nNote: ${goal.lastStatusNote}` : "";
+  const commands = resolveGoalCommandHint(goal.status);
+  return [
+    "Goal",
+    `Status: ${goal.status}`,
+    `Objective: ${goal.objective}`,
+    `Tokens used: ${formatTokenCount(goal.tokensUsed)}`,
+    ...(budget ? [budget.slice(1)] : []),
+    ...(note ? [note.slice(1)] : []),
+    "",
+    `Commands: ${commands}`,
+  ].join("\n");
+}
 
-  async addGoal(
-    sessionId: string,
-    goal: Partial<SessionGoal> & { description: string }
-  ): Promise<SessionGoal | null> {
-    const goals = this.getGoals(sessionId);
-
-    const newGoal: SessionGoal = SessionGoalSchema.parse({
-      ...goal,
-      id: goal.id || uuidv4(),
-      createdAt: goal.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: goal.status || 'pending',
-      priority: goal.priority || 'medium',
-      progress: goal.progress ?? 0,
-      subtasks: goal.subtasks || [],
-    });
-
-    goals.push(newGoal);
-    const updated = await this.updateGoals(sessionId, goals);
-    return updated ? newGoal : null;
+function resolveGoalCommandHint(status: SessionGoalStatus): string {
+  switch (status) {
+    case "active":
+      return "/goal pause, /goal complete, /goal clear";
+    case "paused":
+    case "blocked":
+    case "usage_limited":
+    case "budget_limited":
+      return "/goal resume, /goal clear";
+    case "complete":
+      return "/goal clear";
   }
+  return "/goal";
+}
 
-  async updateGoal(
-    sessionId: string,
-    goalId: string,
-    updates: Partial<SessionGoal>
-  ): Promise<SessionGoal | null> {
-    const goals = this.getGoals(sessionId);
-    const index = goals.findIndex(g => g.id === goalId);
-
-    if (index < 0) return null;
-
-    goals[index] = SessionGoalSchema.parse({
-      ...goals[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    });
-
-    const updated = await this.updateGoals(sessionId, goals);
-    return updated ? goals[index] : null;
+export async function getSessionGoal(
+  options: SessionGoalStoreOptions,
+): Promise<SessionGoalSnapshot> {
+  const now = nowMs(options.now);
+  if (options.persist === false) {
+    // Status rendering should not write incidental budget/baseline adoption unless callers opt in.
+    const entry =
+      getSessionEntry({ sessionKey: options.sessionKey, storePath: options.storePath }) ??
+      options.fallbackEntry;
+    const projected = entry
+      ? resolveSessionGoalDisplayState(entry, now, { adoptFreshBaseline: false })
+      : undefined;
+    return projected ? { status: "found", goal: projected } : { status: "missing" };
   }
-
-  async removeGoal(sessionId: string, goalId: string): Promise<boolean> {
-    const goals = this.getGoals(sessionId);
-    const filtered = goals.filter(g => g.id !== goalId);
-
-    if (filtered.length === goals.length) return false;
-
-    const updated = await this.updateGoals(sessionId, filtered);
-    return updated !== null;
+  let goal: SessionGoal | undefined;
+  const result = await patchSessionEntry({
+    sessionKey: options.sessionKey,
+    storePath: options.storePath,
+    fallbackEntry: options.fallbackEntry,
+    update: (entry) => {
+      const accounted = accountGoalUsage(entry, now);
+      goal = accounted ? cloneGoal(accounted) : undefined;
+      if (!accounted || goalsEqual(accounted, entry.goal)) {
+        return null;
+      }
+      return { goal: accounted };
+    },
+  });
+  if (!result || !goal) {
+    return { status: "missing" };
   }
+  return { status: "found", goal };
+}
 
-  async updateGoals(
-    sessionId: string,
-    goals: SessionGoal[]
-  ): Promise<SessionGoal[] | null> {
-    const sessionData = this.store.getSession(sessionId);
-    if (!sessionData) return null;
-
-    const writer = this.store.getWriter();
-    const firstLine = JSON.stringify({
-      session: sessionData.metadata,
-      messages: [],
-      ...sessionData,
-      goals,
-    });
-
-    const result = await writer.rewriteFirstLine(sessionId, firstLine);
-    if (result.success) {
-      this.store.getCache().invalidateSessionData(sessionId);
-      return goals;
-    }
-
-    return null;
+export async function createSessionGoal(options: CreateSessionGoalOptions): Promise<SessionGoal> {
+  const objective = options.objective.trim();
+  if (!objective) {
+    throw new Error("objective required");
   }
-
-  async setGoalStatus(
-    sessionId: string,
-    goalId: string,
-    status: SessionGoal['status']
-  ): Promise<SessionGoal | null> {
-    return this.updateGoal(sessionId, goalId, {
-      status,
-      completedAt: status === 'completed' ? new Date().toISOString() : undefined,
-    });
+  const now = nowMs(options.now);
+  let created: SessionGoal | undefined;
+  const result = await patchSessionEntry({
+    sessionKey: options.sessionKey,
+    storePath: options.storePath,
+    fallbackEntry: options.fallbackEntry,
+    update: (entry) => {
+      if (entry.goal) {
+        throw new Error("goal already exists");
+      }
+      const tokenBudget = normalizeTokenBudget(options.tokenBudget);
+      const tokenStartFresh = resolveEntryFreshTotalTokens(entry) !== undefined;
+      created = {
+        schemaVersion: 1,
+        id: crypto.randomUUID(),
+        objective,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+        tokenStart: resolveEntryGoalStartTokens(entry),
+        tokenStartFresh,
+        tokensUsed: 0,
+        ...(tokenBudget ? { tokenBudget } : {}),
+        continuationTurns: 0,
+      };
+      return { goal: created };
+    },
+  });
+  if (!result || !created) {
+    throw new Error("session not found");
   }
+  return cloneGoal(created);
+}
 
-  async setGoalProgress(
-    sessionId: string,
-    goalId: string,
-    progress: number
-  ): Promise<SessionGoal | null> {
-    return this.updateGoal(sessionId, goalId, { progress });
+export async function updateSessionGoalStatus(
+  options: UpdateSessionGoalStatusOptions,
+): Promise<SessionGoal> {
+  const now = nowMs(options.now);
+  let updated: SessionGoal | undefined;
+  let foundSession = false;
+  const result = await patchSessionEntry({
+    sessionKey: options.sessionKey,
+    storePath: options.storePath,
+    update: (entry) => {
+      foundSession = true;
+      const accounted = accountGoalUsage(entry, now);
+      if (!accounted) {
+        throw new Error("goal not found");
+      }
+      if (TERMINAL_GOAL_STATUSES.has(accounted.status) && accounted.status !== options.status) {
+        throw new Error(`goal is already ${accounted.status}`);
+      }
+      const resetsBudgetWindow =
+        options.status === "active" &&
+        (accounted.status === "budget_limited" ||
+          accounted.status === "usage_limited" ||
+          (accounted.tokenBudget !== undefined && accounted.tokensUsed >= accounted.tokenBudget));
+      // Resuming from a limited state starts a new budget window at the current fresh token count.
+      const freshTokenStart = resetsBudgetWindow ? resolveEntryFreshTotalTokens(entry) : undefined;
+      const next: SessionGoal = {
+        ...accounted,
+        status: options.status,
+        updatedAt: now,
+        ...(options.note ? { lastStatusNote: options.note } : {}),
+        ...(options.status === "paused" ? { pausedAt: now } : {}),
+        ...(options.status === "blocked" ? { blockedAt: now } : {}),
+        ...(options.status === "complete" ? { completedAt: now } : {}),
+      };
+      if (resetsBudgetWindow) {
+        next.tokenStart = freshTokenStart ?? 0;
+        next.tokenStartFresh = freshTokenStart !== undefined;
+        next.tokensUsed = 0;
+        delete next.budgetLimitedAt;
+        delete next.usageLimitedAt;
+      }
+      if (
+        next.status === "active" &&
+        next.tokenBudget !== undefined &&
+        next.tokensUsed >= next.tokenBudget
+      ) {
+        next.status = "budget_limited";
+        next.budgetLimitedAt = now;
+      }
+      updated = next;
+      return { goal: updated };
+    },
+  });
+  if (!result || !updated) {
+    throw new Error(foundSession ? "goal not found" : "session not found");
   }
+  return cloneGoal(updated);
+}
 
-  async addSubtask(
-    sessionId: string,
-    goalId: string,
-    description: string
-  ): Promise<SessionGoal | null> {
-    const goals = this.getGoals(sessionId);
-    const goal = goals.find(g => g.id === goalId);
-    if (!goal) return null;
-
-    goal.subtasks.push({
-      id: uuidv4(),
-      description,
-      completed: false,
-    });
-
-    goal.updatedAt = new Date().toISOString();
-    const updated = await this.updateGoals(sessionId, goals);
-    return updated ? goal : null;
-  }
-
-  async toggleSubtask(
-    sessionId: string,
-    goalId: string,
-    subtaskId: string
-  ): Promise<SessionGoal | null> {
-    const goals = this.getGoals(sessionId);
-    const goal = goals.find(g => g.id === goalId);
-    if (!goal) return null;
-
-    const subtask = goal.subtasks.find(s => s.id === subtaskId);
-    if (!subtask) return null;
-
-    subtask.completed = !subtask.completed;
-    goal.updatedAt = new Date().toISOString();
-
-    const completedCount = goal.subtasks.filter(s => s.completed).length;
-    goal.progress = goal.subtasks.length > 0
-      ? Math.round((completedCount / goal.subtasks.length) * 100)
-      : 0;
-
-    const updated = await this.updateGoals(sessionId, goals);
-    return updated ? goal : null;
-  }
-
-  async clearGoals(sessionId: string): Promise<boolean> {
-    const updated = await this.updateGoals(sessionId, []);
-    return updated !== null;
-  }
-
-  getProgress(sessionId: string): number {
-    const goals = this.getGoals(sessionId);
-    if (goals.length === 0) return 0;
-
-    const totalProgress = goals.reduce((sum, g) => sum + g.progress, 0);
-    return Math.round(totalProgress / goals.length);
-  }
-
-  getCompletedCount(sessionId: string): number {
-    const goals = this.getGoals(sessionId);
-    return goals.filter(g => g.status === 'completed').length;
-  }
-
-  getActiveCount(sessionId: string): number {
-    const goals = this.getGoals(sessionId);
-    return goals.filter(g => g.status === 'in_progress').length;
-  }
+export async function clearSessionGoal(options: SessionGoalStoreOptions): Promise<boolean> {
+  let removed = false;
+  const result = await patchSessionEntry({
+    sessionKey: options.sessionKey,
+    storePath: options.storePath,
+    update: (entry) => {
+      if (!entry.goal) {
+        return null;
+      }
+      removed = true;
+      return { goal: undefined };
+    },
+  });
+  return Boolean(result && removed);
 }

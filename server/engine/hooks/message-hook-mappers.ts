@@ -398,7 +398,7 @@ export type CanonicalSentMessageHookContext = {
 };
 
 // ---------------------------------------------------------------------------
-// 字符串归一化工具（对应 openclaw @openclaw/normalization-core/string-coerce）
+// 字符串归一化工具（对应 openclaw @cdf-know/normalization-core/string-coerce）
 // ---------------------------------------------------------------------------
 
 function readNonBlankString(value: unknown): string | undefined {

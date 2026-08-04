@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Active-run queue admission for prepared reply turns. */
 import { logVerbose } from '@openclaw-src/globals.js';
 import type { ReplyPayload } from "../types.js";

@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Tracks image attachments that belong to the current reply turn.
 import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { logVerbose } from '@openclaw-src/globals.js';
 import { formatErrorMessage } from '@openclaw-src/infra/errors.js';

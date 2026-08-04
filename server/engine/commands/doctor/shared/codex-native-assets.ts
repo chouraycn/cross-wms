@@ -3,8 +3,8 @@ import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord as hasRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString as normalizeString } from "@cdf-know/normalization-core/string-coerce";
 import { collectConfiguredAgentHarnessRuntimes } from "@openclaw-src/agents/harness-runtimes.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 

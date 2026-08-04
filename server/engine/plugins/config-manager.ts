@@ -124,7 +124,7 @@ class ConfigManagerImpl implements ConfigManager {
     const schema = this.schemas.get(pluginId);
     if (!schema?.properties) return { ...config };
     const result: Record<string, unknown> = {};
-    for (const [key, propSchema] of Object.entries(schema.properties)) {
+    for (const [key, propSchema] of Object.entries(schema.properties) as [string, any][]) {
       if (propSchema.default !== undefined) {
         result[key] = propSchema.default;
       }

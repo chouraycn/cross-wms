@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * Resolves cache-TTL eligibility and session markers for prompt-cache retention.
  */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import {
   isAnthropicFamilyCacheTtlEligible,
   isAnthropicModelRef,
@@ -45,7 +44,7 @@ export function isCacheTtlEligibleProvider(
     },
   });
   if (pluginEligibility !== undefined) {
-    return pluginEligibility;
+    return pluginEligibility as any;
   }
   return (
     isAnthropicFamilyCacheTtlEligible({

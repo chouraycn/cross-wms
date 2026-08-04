@@ -157,6 +157,8 @@ export interface AcpCloseSessionInput {
   cfg: unknown;
   sessionKey: string;
   reason?: string;
+  allowBackendUnavailable?: boolean;
+  requireAcpSession?: boolean;
 }
 
 export interface AcpCloseSessionResult {
@@ -269,4 +271,30 @@ export interface BackendAttempt {
   error: string;
   code: string;
   sawOutput: boolean;
+}
+
+// ============= Agent Info & Provenance =============
+
+/** Agent info advertised in the ACP Initialize response. */
+export const ACP_AGENT_INFO = {
+  name: "openclaw",
+  title: "OpenClaw",
+  version: "1.0.0",
+} as const;
+
+/** Valid ACP provenance modes. */
+export type AcpProvenanceMode = "off" | "meta" | "meta+receipt";
+
+/**
+ * Normalizes a provenance mode string argument.
+ *
+ * @returns the validated mode, or `null` if the value is invalid.
+ */
+export function normalizeAcpProvenanceMode(
+  value: string | undefined,
+): AcpProvenanceMode | null {
+  if (value === "off" || value === "meta" || value === "meta+receipt") {
+    return value;
+  }
+  return null;
 }

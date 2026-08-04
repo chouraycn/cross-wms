@@ -1,5 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+// cross-wms 适配：isPathInside 在 server 由 fs-safe.ts 导出（openclaw 原从 path-safety.js 导入，该文件在 server 不存在）
+import { isPathInside, pathExists, root } from "../../infra/fs-safe.js";
+import { findContainingAllowedSkillSymlinkTarget } from "../loading/symlink-targets.js";
 
 const ALLOWED_SUPPORT_FILE_ROOTS = new Set(
   "assets examples references scripts templates".split(" "),
@@ -10,8 +13,13 @@ type WorkspaceSkillSymlinkWritePolicy = {
   allowWrites: boolean;
   allowedTargetRealPaths: readonly string[];
 };
-
 type WorkspaceSkillSupportFileWrite = { path: string; content: string };
+
+type WorkspaceSkillWriteTargetParams = {
+  workspaceDir: string;
+  filePath: string;
+  symlinkPolicy: WorkspaceSkillSymlinkWritePolicy;
+};
 
 type PreviousSupportFile = { path: string; existed: boolean; previousContent?: string };
 
@@ -45,7 +53,7 @@ export function normalizeWorkspaceSkillSupportPath(input: string): string {
 }
 
 export function assertWorkspaceSkillSupportPathSetIsFileOnly(paths: readonly string[]): void {
-  const sorted = [...paths].sort((a, b) => a.localeCompare(b));
+  const sorted = paths.toSorted((a, b) => a.localeCompare(b));
   for (const filePath of sorted) {
     if (!filePath.includes("/")) {
       throw new Error("Support file paths must include a file below an allowed support directory.");
@@ -61,13 +69,16 @@ export function assertWorkspaceSkillSupportPathSetIsFileOnly(paths: readonly str
 }
 
 export async function readWorkspaceSkillFile(filePath: string): Promise<string | null> {
-  try {
-    await fs.access(filePath);
-    const buffer = await fs.readFile(filePath);
-    return buffer.toString("utf8");
-  } catch {
+  if (!(await pathExists(filePath))) {
     return null;
   }
+  const skillRoot = await root(path.dirname(filePath));
+  const read = await skillRoot.read(path.basename(filePath), {
+    hardlinks: "reject",
+    maxBytes: 1024 * 1024,
+    symlinks: "reject",
+  });
+  return read.buffer.toString("utf8");
 }
 
 export async function readWorkspaceSupportFile(params: {
@@ -75,13 +86,22 @@ export async function readWorkspaceSupportFile(params: {
   relativePath: string;
 }): Promise<string | null> {
   const relativePath = normalizeWorkspaceSkillSupportPath(params.relativePath);
-  const filePath = path.join(params.skillDir, ...relativePath.split("/"));
-  try {
-    const buffer = await fs.readFile(filePath);
-    return buffer.toString("utf8");
-  } catch {
+  if (!(await pathExists(path.join(params.skillDir, ...relativePath.split("/"))))) {
     return null;
   }
+  const skillRoot = await root(params.skillDir);
+  const read = await skillRoot.read(relativePath, {
+    hardlinks: "reject",
+    maxBytes: MAX_WORKSPACE_SKILL_SUPPORT_FILE_BYTES,
+    symlinks: "reject",
+  });
+  return read.buffer.toString("utf8");
+}
+
+export async function assertWorkspaceSkillWriteTarget(
+  params: WorkspaceSkillWriteTargetParams,
+): Promise<void> {
+  await resolveWorkspaceSkillWriteTarget(params);
 }
 
 export async function writeWorkspaceSkill(params: {
@@ -106,16 +126,22 @@ export async function writeWorkspaceSkill(params: {
   const writtenSupportPaths: string[] = [];
   try {
     for (const file of supportFiles) {
-      await fs.mkdir(path.dirname(path.join(params.skillDir, ...file.path.split("/"))), { recursive: true });
-      await fs.writeFile(
-        path.join(params.skillDir, ...file.path.split("/")),
-        file.content,
-        "utf-8",
-      );
+      await writeWorkspaceFile({
+        workspaceDir: params.workspaceDir,
+        filePath: path.join(params.skillDir, ...file.path.split("/")),
+        content: file.content,
+        overwrite: params.mode === "update",
+        symlinkPolicy: params.symlinkPolicy,
+      });
       writtenSupportPaths.push(file.path);
     }
-    await fs.mkdir(path.dirname(params.skillFile), { recursive: true });
-    await fs.writeFile(params.skillFile, params.content, "utf-8");
+    await writeWorkspaceFile({
+      workspaceDir: params.workspaceDir,
+      filePath: params.skillFile,
+      content: params.content,
+      overwrite: params.mode === "update",
+      symlinkPolicy: params.symlinkPolicy,
+    });
   } catch (error) {
     await restoreSupportFilesAfterFailedWrite({
       mode: params.mode,
@@ -148,7 +174,11 @@ async function prepareWorkspaceSkillWrite(params: {
   supportFiles: readonly WorkspaceSkillSupportFileWrite[];
   symlinkPolicy: WorkspaceSkillSymlinkWritePolicy;
 }): Promise<PreviousSupportFile[]> {
-  assertInsideWorkspace(params.workspaceDir, params.skillFile, "skill file");
+  await resolveWorkspaceSkillWriteTarget({
+    workspaceDir: params.workspaceDir,
+    filePath: params.skillFile,
+    symlinkPolicy: params.symlinkPolicy,
+  });
   const previousContent = await readWorkspaceSkillFile(params.skillFile);
   if (params.mode === "create" && previousContent !== null) {
     throw new Error(`Target skill already exists: ${params.skillFile}`);
@@ -160,7 +190,11 @@ async function prepareWorkspaceSkillWrite(params: {
   const previousSupportFiles: PreviousSupportFile[] = [];
   for (const file of params.supportFiles) {
     const filePath = path.join(params.skillDir, ...file.path.split("/"));
-    assertInsideWorkspace(params.workspaceDir, filePath, "support file");
+    await resolveWorkspaceSkillWriteTarget({
+      workspaceDir: params.workspaceDir,
+      filePath,
+      symlinkPolicy: params.symlinkPolicy,
+    });
     if (params.mode === "update") {
       const previousSupportContent = await readWorkspaceSupportFile({
         skillDir: params.skillDir,
@@ -176,6 +210,36 @@ async function prepareWorkspaceSkillWrite(params: {
   return previousSupportFiles;
 }
 
+async function writeWorkspaceFile(params: {
+  workspaceDir: string;
+  filePath: string;
+  content: string;
+  overwrite: boolean;
+  symlinkPolicy: WorkspaceSkillSymlinkWritePolicy;
+}): Promise<void> {
+  const target = await resolveWorkspaceSkillWriteTarget(params);
+  const targetRoot = await root(target.rootDir);
+  await targetRoot.write(target.relativePath, params.content, {
+    encoding: "utf8",
+    mkdir: true,
+    overwrite: params.overwrite,
+  });
+}
+
+async function removeWorkspaceFile(params: {
+  workspaceDir: string;
+  filePath: string;
+  symlinkPolicy: WorkspaceSkillSymlinkWritePolicy;
+}): Promise<void> {
+  const target = await resolveWorkspaceSkillWriteTarget(params);
+  const targetRoot = await root(target.rootDir);
+  await targetRoot.remove(target.relativePath).catch((error: unknown) => {
+    if ((error as { code?: string })?.code !== "ENOENT") {
+      throw error;
+    }
+  });
+}
+
 async function restoreSupportFilesAfterFailedWrite(params: {
   mode: "create" | "update";
   workspaceDir: string;
@@ -186,20 +250,87 @@ async function restoreSupportFilesAfterFailedWrite(params: {
 }): Promise<void> {
   const previousByPath = new Map(params.previousSupportFiles.map((file) => [file.path, file]));
   await Promise.allSettled(
-    [...params.writtenSupportPaths].reverse().map(async (relativePath) => {
+    params.writtenSupportPaths.toReversed().map(async (relativePath) => {
       const filePath = path.join(params.skillDir, ...relativePath.split("/"));
       const previous = previousByPath.get(relativePath);
       if (params.mode === "update" && previous?.existed) {
-        await fs.writeFile(filePath, previous.previousContent ?? "", "utf-8");
+        await writeWorkspaceFile({
+          workspaceDir: params.workspaceDir,
+          filePath,
+          content: previous.previousContent ?? "",
+          overwrite: true,
+          symlinkPolicy: params.symlinkPolicy,
+        });
       } else {
-        await fs.unlink(filePath).catch((error: unknown) => {
-          if ((error as { code?: string })?.code !== "ENOENT") {
-            throw error;
-          }
+        await removeWorkspaceFile({
+          workspaceDir: params.workspaceDir,
+          filePath,
+          symlinkPolicy: params.symlinkPolicy,
         });
       }
     }),
   );
+}
+
+async function resolveWorkspaceSkillWriteTarget(
+  params: WorkspaceSkillWriteTargetParams,
+): Promise<{ rootDir: string; relativePath: string }> {
+  assertInsideWorkspace(params.workspaceDir, params.filePath, "skill file");
+  const workspaceDir = path.resolve(params.workspaceDir);
+  const filePath = path.resolve(params.filePath);
+  const aliasTarget = await resolveWorkspaceAliasTarget({ workspaceDir, filePath });
+  if (!aliasTarget) {
+    return { rootDir: workspaceDir, relativePath: path.relative(workspaceDir, filePath) };
+  }
+  const allowedRoot = params.symlinkPolicy.allowWrites
+    ? findContainingAllowedSkillSymlinkTarget(
+        params.symlinkPolicy.allowedTargetRealPaths,
+        aliasTarget.realTarget,
+      )
+    : null;
+  if (!allowedRoot) {
+    throw new Error(
+      `Skill file resolves through an untrusted symlink target: ${params.filePath}. Configure skills.load.allowSymlinkTargets and enable skills.workshop.allowSymlinkTargetWrites for intentional Skill Workshop symlink writes.`,
+    );
+  }
+  return {
+    rootDir: allowedRoot,
+    relativePath: path.relative(allowedRoot, aliasTarget.realTarget),
+  };
+}
+
+async function resolveWorkspaceAliasTarget(params: {
+  workspaceDir: string;
+  filePath: string;
+}): Promise<{ realTarget: string } | null> {
+  const workspaceRealPath = (await tryRealpath(params.workspaceDir)) ?? params.workspaceDir;
+  const realTarget = await resolveRealPathThroughExistingAncestors(
+    params.workspaceDir,
+    params.filePath,
+  );
+  return isPathInside(workspaceRealPath, realTarget) ? null : { realTarget };
+}
+
+async function resolveRealPathThroughExistingAncestors(
+  workspaceDir: string,
+  filePath: string,
+): Promise<string> {
+  const segments = path.relative(workspaceDir, filePath).split(path.sep).filter(Boolean);
+  let lexicalCursor = workspaceDir;
+  let realCursor = (await tryRealpath(workspaceDir)) ?? workspaceDir;
+  for (const segment of segments) {
+    lexicalCursor = path.join(lexicalCursor, segment);
+    realCursor = (await tryRealpath(lexicalCursor)) ?? path.join(realCursor, segment);
+  }
+  return path.resolve(realCursor);
+}
+
+async function tryRealpath(filePath: string): Promise<string | null> {
+  try {
+    return await fs.realpath(filePath);
+  } catch {
+    return null;
+  }
 }
 
 export function assertInsideWorkspace(
@@ -209,10 +340,9 @@ export function assertInsideWorkspace(
 ): void {
   const resolvedWorkspaceDir = path.resolve(workspaceDir);
   const resolvedTarget = path.resolve(targetPath);
-  const relative = path.relative(resolvedWorkspaceDir, resolvedTarget);
   if (
     resolvedTarget !== resolvedWorkspaceDir &&
-    (relative.startsWith("..") || path.isAbsolute(relative))
+    !isPathInside(resolvedWorkspaceDir, resolvedTarget)
   ) {
     throw new Error(`${label} must stay inside the workspace.`);
   }

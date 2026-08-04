@@ -8,11 +8,11 @@ import { isLoopbackIpAddress } from "@openclaw/net-policy/ip";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
-} from "@openclaw-src/packages/gateway-protocol/src/client-info.js";
+} from "@cdf-know/gateway-protocol/client-info";
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { buildGatewayConnectionDetailsWithResolvers } from "@openclaw-src/gateway/connection-details.js";
 import { normalizeControlUiBasePath } from "@openclaw-src/gateway/control-ui-shared.js";

@@ -2,8 +2,8 @@
 // 移植自 openclaw/src/infra/bonjour-discovery.ts
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-coerce → ./string-coerce.js
-//  - @openclaw/normalization-core/string-normalization → ./string-normalization.js
+//  - @cdf-know/normalization-core/string-coerce → ./string-coerce.js
+//  - @cdf-know/normalization-core/string-normalization → ./string-normalization.js
 //  - ../process/exec.js → ./update-runner.js（runCommandWithTimeout 已移植）
 import { normalizeOptionalLowercaseString } from "./string-coerce.js";
 import { normalizeStringEntries, uniqueStrings } from "./string-normalization.js";

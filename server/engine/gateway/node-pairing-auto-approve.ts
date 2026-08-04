@@ -1,22 +1,79 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/node-pairing-auto-approve.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway node pairing auto-approval policy.
+// Allows first-time node pairing from configured CIDRs while rejecting upgrades/browser paths.
+import { isTrustedProxyAddress } from "./net.js";
 
-export type NodePairingAutoApproveReason = unknown;
+export type NodePairingAutoApproveReason =
+  | "not-paired"
+  | "role-upgrade"
+  | "scope-upgrade"
+  | "metadata-upgrade";
 
-export function resolveNodePairingClientIpSource(..._args: unknown[]): unknown {
-  return undefined;
+type NodePairingAutoApproveClientIpSource =
+  | "direct"
+  | "trusted-proxy"
+  | "loopback-trusted-proxy"
+  | "none";
+
+/** Classifies how the gateway learned the client IP for node auto-approval. */
+export function resolveNodePairingClientIpSource(params: {
+  reportedClientIp?: string;
+  hasProxyHeaders: boolean;
+  remoteIsTrustedProxy: boolean;
+  remoteIsLoopback: boolean;
+}): NodePairingAutoApproveClientIpSource {
+  if (!params.reportedClientIp) {
+    return "none";
+  }
+  if (!params.hasProxyHeaders || !params.remoteIsTrustedProxy) {
+    return "direct";
+  }
+  return params.remoteIsLoopback ? "loopback-trusted-proxy" : "trusted-proxy";
 }
 
-export function shouldAutoApproveNodePairingFromTrustedCidrs(..._args: unknown[]): unknown {
-  return false;
+/** Returns true when a node pairing request can be auto-approved by trusted CIDR policy. */
+export function shouldAutoApproveNodePairingFromTrustedCidrs(params: {
+  existingPairedDevice: boolean;
+  role: string;
+  reason: NodePairingAutoApproveReason;
+  scopes: readonly string[];
+  hasBrowserOriginHeader: boolean;
+  isControlUi: boolean;
+  isWebchat: boolean;
+  reportedClientIpSource: NodePairingAutoApproveClientIpSource;
+  reportedClientIp?: string;
+  autoApproveCidrs?: readonly string[];
+}): boolean {
+  if (params.existingPairedDevice) {
+    return false;
+  }
+  if (params.role !== "node") {
+    return false;
+  }
+  if (params.reason !== "not-paired") {
+    return false;
+  }
+  if (params.scopes.length > 0) {
+    return false;
+  }
+  if (params.hasBrowserOriginHeader || params.isControlUi || params.isWebchat) {
+    return false;
+  }
+  if (
+    params.reportedClientIpSource === "none" ||
+    params.reportedClientIpSource === "loopback-trusted-proxy"
+  ) {
+    return false;
+  }
+  if (!params.reportedClientIp) {
+    return false;
+  }
+
+  const autoApproveCidrs = params.autoApproveCidrs
+    ?.map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  if (!autoApproveCidrs || autoApproveCidrs.length === 0) {
+    return false;
+  }
+
+  return isTrustedProxyAddress(params.reportedClientIp, autoApproveCidrs);
 }

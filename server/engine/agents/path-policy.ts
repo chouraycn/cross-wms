@@ -1,175 +1,162 @@
-import path from 'path';
-import { z } from 'zod';
-import { logger } from '../../logger.js';
+/**
+ * Shared workspace and sandbox path boundary helpers.
+ *
+ * Converts validated absolute or relative inputs into root-relative paths without allowing boundary escapes.
+ */
+import path from "node:path";
+import { normalizeWindowsPathForComparison } from "../infra/path-guards.js";
+import { resolveSandboxInputPath } from "./sandbox-paths.js";
 
-export const PathPolicySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  allowedPaths: z.array(z.string()).default([]),
-  deniedPaths: z.array(z.string()).default([]),
-  allowedExtensions: z.array(z.string()).default([]),
-  deniedExtensions: z.array(z.string()).default([]),
-  maxFileSizeBytes: z.number().optional(),
-  allowSymlinks: z.boolean().default(false),
-  allowHidden: z.boolean().default(false),
-  readOnly: z.boolean().default(false),
-  priority: z.number().default(0),
-  enabled: z.boolean().default(true),
-});
+// Shared path boundary helpers for workspace and sandbox-facing agent inputs.
+// Callers get normalized relative paths only after the candidate proves it stays
+// within the named root.
+type RelativePathOptions = {
+  allowRoot?: boolean;
+  cwd?: string;
+  boundaryLabel?: string;
+  includeRootInError?: boolean;
+};
 
-export type PathPolicy = z.infer<typeof PathPolicySchema>;
-
-const policyStore = new Map<string, PathPolicy>();
-
-export function createPathPolicy(params: {
-  id: string;
-  name: string;
-  allowedPaths?: string[];
-  deniedPaths?: string[];
-  allowedExtensions?: string[];
-  deniedExtensions?: string[];
-  maxFileSizeBytes?: number;
-  allowSymlinks?: boolean;
-  allowHidden?: boolean;
-  readOnly?: boolean;
-  priority?: number;
-}): PathPolicy {
-  const policy: PathPolicy = {
-    id: params.id,
-    name: params.name,
-    allowedPaths: params.allowedPaths ?? [],
-    deniedPaths: params.deniedPaths ?? [],
-    allowedExtensions: params.allowedExtensions ?? [],
-    deniedExtensions: params.deniedExtensions ?? [],
-    maxFileSizeBytes: params.maxFileSizeBytes,
-    allowSymlinks: params.allowSymlinks ?? false,
-    allowHidden: params.allowHidden ?? false,
-    readOnly: params.readOnly ?? false,
-    priority: params.priority ?? 0,
-    enabled: true,
-  };
-
-  const result = PathPolicySchema.safeParse(policy);
-  if (!result.success) {
-    throw new Error(`Invalid path policy: ${result.error.message}`);
-  }
-
-  policyStore.set(params.id, result.data);
-  logger.debug(`[Agents:PathPolicy] Created policy: ${params.id}`);
-  return result.data;
+function throwPathEscapesBoundary(params: {
+  options?: RelativePathOptions;
+  rootResolved: string;
+  candidate: string;
+}): never {
+  const boundary = params.options?.boundaryLabel ?? "workspace root";
+  const suffix = params.options?.includeRootInError ? ` (${params.rootResolved})` : "";
+  throw new Error(`Path escapes ${boundary}${suffix}: ${params.candidate}`);
 }
 
-export function getPathPolicy(id: string): PathPolicy | undefined {
-  return policyStore.get(id);
-}
-
-export function updatePathPolicy(id: string, updates: Partial<PathPolicy>): PathPolicy | undefined {
-  const existing = policyStore.get(id);
-  if (!existing) return undefined;
-
-  const updated: PathPolicy = {
-    ...existing,
-    ...updates,
-    id,
-  };
-
-  policyStore.set(id, updated);
-  logger.debug(`[Agents:PathPolicy] Updated policy: ${id}`);
-  return updated;
-}
-
-export function deletePathPolicy(id: string): boolean {
-  const existed = policyStore.has(id);
-  if (existed) {
-    policyStore.delete(id);
-    logger.debug(`[Agents:PathPolicy] Deleted policy: ${id}`);
-  }
-  return existed;
-}
-
-export function listPathPolicies(): PathPolicy[] {
-  return Array.from(policyStore.values()).sort((a, b) => b.priority - a.priority);
-}
-
-export function isPathAllowed(policyId: string, filePath: string): boolean {
-  const policy = policyStore.get(policyId);
-  if (!policy || !policy.enabled) return true;
-
-  const normalizedPath = normalizePath(filePath);
-  const fileName = getFileName(filePath);
-  const ext = getExtension(filePath);
-
-  if (isHiddenFile(fileName) && !policy.allowHidden) {
-    return false;
-  }
-
-  for (const denied of policy.deniedPaths) {
-    if (normalizedPath.startsWith(normalizePath(denied))) {
-      return false;
+function validateRelativePathWithinBoundary(params: {
+  relativePath: string;
+  isAbsolutePath: (path: string) => boolean;
+  options?: RelativePathOptions;
+  rootResolved: string;
+  candidate: string;
+}): string {
+  // path.relative returns "." for the root itself. Treat that as escaping unless
+  // the caller explicitly accepts root-targeting operations.
+  if (params.relativePath === "" || params.relativePath === ".") {
+    if (params.options?.allowRoot) {
+      return "";
     }
+    throwPathEscapesBoundary({
+      options: params.options,
+      rootResolved: params.rootResolved,
+      candidate: params.candidate,
+    });
+  }
+  // The absolute-path check catches Windows drive-relative oddities after
+  // normalization, while the prefix checks cover ordinary parent traversal.
+  if (
+    params.relativePath === ".." ||
+    params.relativePath.startsWith("../") ||
+    params.relativePath.startsWith("..\\") ||
+    params.isAbsolutePath(params.relativePath)
+  ) {
+    throwPathEscapesBoundary({
+      options: params.options,
+      rootResolved: params.rootResolved,
+      candidate: params.candidate,
+    });
+  }
+  return params.relativePath;
+}
+
+function toRelativePathUnderRoot(params: {
+  root: string;
+  candidate: string;
+  options?: RelativePathOptions;
+}): string {
+  const resolvedInput = resolveSandboxInputPath(
+    params.candidate,
+    params.options?.cwd ?? params.root,
+  );
+
+  if (process.platform === "win32") {
+    // Windows comparisons need normalized separators and drive casing before
+    // path.relative; otherwise the same root can look outside the boundary.
+    const rootResolved = path.win32.resolve(params.root);
+    const resolvedCandidate = path.win32.resolve(resolvedInput);
+    const rootForCompare = normalizeWindowsPathForComparison(rootResolved);
+    const targetForCompare = normalizeWindowsPathForComparison(resolvedCandidate);
+    const relative = path.win32.relative(rootForCompare, targetForCompare);
+    return validateRelativePathWithinBoundary({
+      relativePath: relative,
+      isAbsolutePath: path.win32.isAbsolute,
+      options: params.options,
+      rootResolved,
+      candidate: params.candidate,
+    });
   }
 
-  if (policy.deniedExtensions.length > 0 && ext) {
-    if (policy.deniedExtensions.some(e => e.toLowerCase() === ext.toLowerCase())) {
-      return false;
-    }
-  }
-
-  if (policy.allowedPaths.length > 0) {
-    const allowed = policy.allowedPaths.some(allowed => 
-      normalizedPath.startsWith(normalizePath(allowed))
-    );
-    if (!allowed) return false;
-  }
-
-  if (policy.allowedExtensions.length > 0 && ext) {
-    const extAllowed = policy.allowedExtensions.some(e => e.toLowerCase() === ext.toLowerCase());
-    if (!extAllowed) return false;
-  }
-
-  return true;
+  const rootResolved = path.resolve(params.root);
+  const resolvedCandidate = path.resolve(resolvedInput);
+  const relative = path.relative(rootResolved, resolvedCandidate);
+  return validateRelativePathWithinBoundary({
+    relativePath: relative,
+    isAbsolutePath: path.isAbsolute,
+    options: params.options,
+    rootResolved,
+    candidate: params.candidate,
+  });
 }
 
-export function canWrite(policyId: string, filePath: string): boolean {
-  const policy = policyStore.get(policyId);
-  if (!policy) return true;
-  if (policy.readOnly) return false;
-  return isPathAllowed(policyId, filePath);
+function toRelativeBoundaryPath(params: {
+  root: string;
+  candidate: string;
+  options?: Pick<RelativePathOptions, "allowRoot" | "cwd">;
+  boundaryLabel: string;
+  includeRootInError?: boolean;
+}): string {
+  return toRelativePathUnderRoot({
+    root: params.root,
+    candidate: params.candidate,
+    options: {
+      allowRoot: params.options?.allowRoot,
+      cwd: params.options?.cwd,
+      boundaryLabel: params.boundaryLabel,
+      includeRootInError: params.includeRootInError,
+    },
+  });
 }
 
-export function canRead(policyId: string, filePath: string): boolean {
-  return isPathAllowed(policyId, filePath);
+/**
+ * Return a workspace-relative path for a candidate path after rejecting paths
+ * that escape the workspace root.
+ */
+export function toRelativeWorkspacePath(
+  root: string,
+  candidate: string,
+  options?: Pick<RelativePathOptions, "allowRoot" | "cwd">,
+): string {
+  return toRelativeBoundaryPath({
+    root,
+    candidate,
+    options,
+    boundaryLabel: "workspace root",
+  });
 }
 
-function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/').replace(/\/+$/, '');
+/**
+ * Return a sandbox-relative path for a candidate path after rejecting paths that
+ * escape the sandbox root. Errors include the sandbox root for operator clarity.
+ */
+export function toRelativeSandboxPath(
+  root: string,
+  candidate: string,
+  options?: Pick<RelativePathOptions, "allowRoot" | "cwd">,
+): string {
+  return toRelativeBoundaryPath({
+    root,
+    candidate,
+    options,
+    boundaryLabel: "sandbox root",
+    includeRootInError: true,
+  });
 }
 
-function getFileName(p: string): string {
-  const parts = p.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1] ?? '';
-}
-
-function getExtension(p: string): string {
-  const fileName = getFileName(p);
-  const dotIndex = fileName.lastIndexOf('.');
-  return dotIndex > 0 ? fileName.slice(dotIndex) : '';
-}
-
-function isHiddenFile(fileName: string): boolean {
-  return fileName.startsWith('.');
-}
-
-export function clearPathPolicies(): void {
-  policyStore.clear();
-}
-
-/** Resolves a user-provided file path relative to a sandbox working directory. */
+/** Resolve a user-supplied path against `cwd` using the sandbox input rules. */
 export function resolvePathFromInput(filePath: string, cwd: string): string {
-  const resolved = path.isAbsolute(filePath)
-    ? filePath
-    : path.resolve(cwd, filePath);
-  return path.normalize(resolved);
+  return path.normalize(resolveSandboxInputPath(filePath, cwd));
 }
-
-logger.debug('[Agents:PathPolicy] Module loaded');

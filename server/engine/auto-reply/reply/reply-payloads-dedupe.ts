@@ -3,7 +3,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { isMessagingToolDuplicate } from '@openclaw-src/agents/embedded-agent-helpers.js';
 import type { MessagingToolSend } from '@openclaw-src/agents/embedded-agent-messaging.types.js';
 import { getChannelPlugin } from '@openclaw-src/channels/plugins/index.js';

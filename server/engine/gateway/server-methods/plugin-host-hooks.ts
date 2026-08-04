@@ -1,8 +1,7 @@
-// @ts-nocheck
 // Plugin host hook methods expose plugin UI descriptors and validate plugin
 // session action payload/result JSON against declared schemas.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -56,7 +55,7 @@ export const pluginHostHookHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const descriptors = (getActivePluginRegistry()?.controlUiDescriptors ?? []).map((entry) => {
+    const descriptors = (getActivePluginRegistry()?.controlUiDescriptors ?? []).map((entry: any) => {
       const descriptor: Record<string, unknown> = {
         id: entry.descriptor.id,
         pluginId: entry.pluginId,
@@ -125,8 +124,8 @@ export const pluginHostHookHandlers: GatewayRequestHandlers = {
     const pluginLoaded = Boolean(
       registry?.plugins.some((plugin) => plugin.id === pluginId && plugin.status === "loaded"),
     );
-    const registration = (registry?.sessionActions ?? []).find(
-      (entry) => entry.pluginId === pluginId && entry.action.id === actionId,
+    const registration: any = (registry?.sessionActions ?? []).find(
+      (entry: any) => entry.pluginId === pluginId && entry.action.id === actionId,
     );
     if (!registration || !pluginLoaded) {
       respond(

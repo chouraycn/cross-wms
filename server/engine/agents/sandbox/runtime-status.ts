@@ -1,18 +1,17 @@
-// @ts-nocheck
 
 /**
  * Sandbox runtime status and tool-policy diagnostics.
  *
  * Resolves whether a session is sandboxed and explains policy blocks before tool execution.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { formatCliCommand } from "../../cli/command-format.js";
 import {
   canonicalizeMainSessionAlias,
   resolveAgentMainSessionKey,
 } from "../../config/sessions/main-session.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { resolveSessionAgentId } from "../agent-scope.js";
+import { resolveSessionAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { auditSandboxToolPolicyBlock } from "../tool-policy-audit.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 import {

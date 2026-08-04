@@ -9,7 +9,7 @@
  * - ... 可扩展
  */
 
-import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiClient.js';
+import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../aiCore.js';
 
 /** 支持的 API 类型 */
 export type ModelApiType =

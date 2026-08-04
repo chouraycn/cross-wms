@@ -1,4 +1,3 @@
-// @ts-nocheck
 // STT live audio test helpers provide audio fixtures and expectations for speech plugins.
 import { expect } from "vitest";
 import type {

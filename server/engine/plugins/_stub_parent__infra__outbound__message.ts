@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === STUB (NO-OP) — sendMessage 占位 ===
 // Source: openclaw/src/infra/outbound/message.ts
 // Used by: server/engine/plugins/host-hook-attachments.ts (动态 import)

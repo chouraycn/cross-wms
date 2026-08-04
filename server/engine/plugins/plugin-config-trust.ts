@@ -1,13 +1,13 @@
 // 在清单记录到达控制面决策前，应用工作区插件 allow/deny 配置。
 //
 // 降级说明：
-// - 原 openclaw 版本依赖 `@openclaw/normalization-core/string-coerce` 的
+// - 原 openclaw 版本依赖 `@cdf-know/normalization-core/string-coerce` 的
 //   `normalizeOptionalLowercaseString`，这里改为本地实现。
 // - 原 `OpenClawConfig` 与 `PluginManifestRecord` 类型来自未移植模块，这里用本地占位类型替代。
 
 /**
  * 将可选字符串规范化为小写形式；非字符串或空值返回 undefined。
- * 本地降级实现，替代 `@openclaw/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`。
+ * 本地降级实现，替代 `@cdf-know/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`。
  */
 function normalizeOptionalLowercaseString(value: unknown): string | undefined {
   if (typeof value !== "string") {

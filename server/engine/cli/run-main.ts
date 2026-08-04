@@ -3,7 +3,7 @@
 //
 // 降级策略：
 //  - 原模块依赖大量未移植的 openclaw 内部模块：
-//    `@openclaw/normalization-core/string-coerce`、`../config/paths.js`、
+//    `@cdf-know/normalization-core/string-coerce`、`../config/paths.js`、
 //    `../config/types.openclaw.js`、`../infra/cli-root-options.js`、
 //    `../infra/env.js`、`../infra/net/proxy/proxy-lifecycle.js`、
 //    `../infra/path-env.js`、`../infra/runtime-guard.js`、

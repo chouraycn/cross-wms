@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Plain-text sanitization strips internal runtime scaffolding and converts a
 // conservative subset of model-produced HTML into channel-friendly text.
 import { stripPlainTextToolCallBlocks } from "../../../packages/tool-call-repair/src/index.js";

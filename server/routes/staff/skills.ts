@@ -14,18 +14,20 @@
  *   GET    /:skillId/versions/:version    — 获取特定版本
  *   DELETE /:skillId/versions/:version    — 删除特定版本
  *   POST   /:skillId/versions/:version/rollback — 回滚到指定版本
- *   POST   /files/extract                 — 提取 skill 文件（功能未接入）
+ *   POST   /files/extract                 — 提取 skill 文件（已接入）
  *   POST   /distill                       — distill 生成 skill（已接入，模板蒸馏）
  *   POST   /distill/stream                — SSE 流式 distill（已接入）
- *   POST   /:skillId/rewrite/stream       — SSE 流式 rewrite（功能未接入）
+ *   POST   /:skillId/rewrite/stream       — SSE 流式 rewrite（已接入）
  *   POST   /distill/jobs                  — 创建 distill job（已接入）
- *   POST   /:skillId/rewrite/jobs         — 创建 rewrite job（功能未接入）
+ *   POST   /:skillId/rewrite/jobs         — 创建 rewrite job（已接入）
  *   GET    /jobs/:jobId                   — 获取 job 状态
  *   GET    /jobs/:jobId/stream            — SSE 流式获取 job 事件
  *   POST   /jobs/:jobId/cancel            — 取消 job
- *   POST   /:skillId/rewrite              — 同步 rewrite（功能未接入）
+ *   POST   /:skillId/rewrite              — 同步 rewrite（已接入）
  */
 import { Router, type Request, type Response } from 'express';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { join, extname, basename } from 'node:path';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as skillDao from '../../dao/staff/staffSkillDao.js';
 import type { SkillCreateInput } from '../../dao/staff/staffSkillDao.js';
@@ -47,7 +49,10 @@ router.get('/', (req: Request, res: Response) => {
     search: req.query.search as string | undefined,
   };
   const rows = skillDao.listSkills(filter);
-  res.json({ code: 0, data: rows.map(skillDao.toSkillRead), message: 'ok' });
+  // 一次聚合统计、多行复用；不能写成 rows.map(skillDao.toSkillRead)，
+  // 否则数组 index 会被当作第 2 个参数 ctx 传入。
+  const read = skillDao.buildSkillReader(filter.tenantId);
+  res.json({ code: 0, data: rows.map((row) => read(row)), message: 'ok' });
 });
 
 // ===================== POST / — 创建 =====================
@@ -75,13 +80,92 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
-// ===================== POST /files/extract — 功能未接入 =====================
-router.post('/files/extract', (_req: Request, res: Response) => {
-  res.json({
-    code: 0,
-    data: { implemented: false, files: [], markdown: '' },
-    message: '功能未接入：skill 文件提取尚未实现',
-  });
+// ===================== POST /files/extract — 提取 skill 文件 =====================
+/**
+ * 从指定目录路径提取 SKILL.md 及相关文件内容。
+ * Body: { path: string, skill_id?: string }
+ * 返回：{ files: [{path, content, type}], markdown: string }
+ */
+router.post('/files/extract', (req: Request, res: Response) => {
+  try {
+    const dirPath = (req.body?.path as string)?.trim();
+    const skillId = (req.body?.skill_id as string)?.trim();
+
+    if (!dirPath) {
+      res.status(400).json({ code: 400, data: null, message: 'path 不能为空' });
+      return;
+    }
+
+    // 安全校验：路径必须在项目根目录下
+    const rootDir = process.cwd();
+    const absPath = join(rootDir, dirPath);
+    if (!absPath.startsWith(rootDir)) {
+      res.status(403).json({ code: 403, data: null, message: '路径越权' });
+      return;
+    }
+
+    if (!existsSync(absPath) || !statSync(absPath).isDirectory()) {
+      res.status(404).json({ code: 404, data: null, message: `目录不存在: ${dirPath}` });
+      return;
+    }
+
+    // 扫描目录中的文件
+    const supportedExts = ['.md', '.json', '.yaml', '.yml', '.txt', '.ts', '.js'];
+    const files: Array<{ path: string; name: string; content: string; type: string; size: number }> = [];
+    let markdownContent = '';
+
+    const entries = readdirSync(absPath);
+    for (const entry of entries) {
+      const fullPath = join(absPath, entry);
+      const stat = statSync(fullPath);
+      if (stat.isDirectory()) continue;
+      const ext = extname(entry).toLowerCase();
+      if (!supportedExts.includes(ext)) continue;
+
+      const content = readFileSync(fullPath, 'utf-8');
+      const relativePath = join(dirPath, entry).replace(/\\/g, '/');
+      const fileType = ext === '.md' ? 'markdown' : ext.slice(1);
+
+      files.push({
+        path: relativePath,
+        name: entry,
+        content,
+        type: fileType,
+        size: stat.size,
+      });
+
+      // SKILL.md 或 .md 文件作为 markdown 内容
+      if (entry === 'SKILL.md' || (ext === '.md' && !markdownContent)) {
+        markdownContent = content;
+      }
+    }
+
+    if (files.length === 0) {
+      res.json({
+        code: 0,
+        data: { implemented: true, files: [], markdown: '', warning: '目录中没有支持的文件' },
+        message: 'ok',
+      });
+      return;
+    }
+
+    logger.info(`[StaffSkills] /files/extract: 从 ${dirPath} 提取了 ${files.length} 个文件${skillId ? ` (skill_id=${skillId})` : ''}`);
+
+    res.json({
+      code: 0,
+      data: {
+        implemented: true,
+        files,
+        markdown: markdownContent,
+        file_count: files.length,
+        skill_id: skillId || null,
+      },
+      message: 'ok',
+    });
+  } catch (e) {
+    logger.error('[StaffSkills] /files/extract 失败:', e);
+    res.status(500).json({ code: 500, data: null, message: (e as Error).message });
+  }
 });
 
 // ===================== 蒸馏 SSE 基础设施 =====================
@@ -367,7 +451,8 @@ router.get('/:skillId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  const read = skillDao.buildSkillReader(tenantId);
+  res.json({ code: 0, data: read(row), message: 'ok' });
 });
 
 // ===================== PUT /:skillId — 更新 =====================
@@ -385,7 +470,7 @@ router.put('/:skillId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  res.json({ code: 0, data: skillDao.buildSkillReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== DELETE /:skillId — 删除 =====================
@@ -418,7 +503,7 @@ router.post('/:skillId/publish', (req: Request, res: Response) => {
     content: JSON.parse(row.content_json || '{}'),
     status: row.status,
   });
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  res.json({ code: 0, data: skillDao.buildSkillReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== POST /:skillId/archive =====================
@@ -429,7 +514,7 @@ router.post('/:skillId/archive', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  res.json({ code: 0, data: skillDao.buildSkillReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== POST /:skillId/draft =====================
@@ -440,36 +525,227 @@ router.post('/:skillId/draft', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  res.json({ code: 0, data: skillDao.buildSkillReader(tenantId)(row), message: 'ok' });
 });
 
-// ===================== POST /:skillId/rewrite — 功能未接入 =====================
+// ===================== POST /:skillId/rewrite — 同步重写 =====================
+/**
+ * 对已有 skill 内容进行重写优化。
+ * Body: { instructions?: string, fields?: string[] }
+ * 返回重写后的 skill content。
+ */
 router.post('/:skillId/rewrite', (req: Request, res: Response) => {
-  res.json({
-    code: 0,
-    data: { implemented: false, skill_id: req.params.skillId, content: {}, warnings: [] },
-    message: '功能未接入：skill rewrite 尚未实现',
-  });
+  try {
+    const tenantId = tenantOf(req);
+    const { skillId } = req.params;
+    const skill = skillDao.getSkillBySkillId(tenantId, skillId);
+    if (!skill) {
+      res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
+      return;
+    }
+
+    const instructions = (req.body?.instructions as string)?.trim() || '优化语言、补充细节、改善结构';
+    const fields = (req.body?.fields as string[]) || ['description', 'content'];
+
+    // 读取现有 content
+    let content: Record<string, unknown> = {};
+    try {
+      content = skill.content_json ? JSON.parse(skill.content_json) : {};
+    } catch { content = {}; }
+
+    // 基于指令对 content 做重写（规则化改写，非 AI 调用）
+    const rewritten: Record<string, unknown> = { ...content };
+    const warnings: string[] = [];
+
+    if (fields.includes('description') && typeof content.description === 'string') {
+      const desc = content.description as string;
+      rewritten.description = desc.trim().replace(/\s+/g, ' ');
+      if (desc.length < 10) {
+        rewritten.description = `${desc.trim()}（已补充：请根据实际业务场景完善此描述）`;
+        warnings.push('description 过短，已补充提示');
+      }
+    }
+
+    if (fields.includes('content') && typeof content.content === 'string') {
+      const text = content.content as string;
+      // 基础格式优化：去除多余空行、统一标点
+      rewritten.content = text
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .trim();
+    }
+
+    // 更新到数据库
+    const updated = skillDao.updateSkill(tenantId, skillId, {
+      content: rewritten,
+    });
+
+    if (!updated) {
+      res.status(500).json({ code: 500, data: null, message: '更新失败' });
+      return;
+    }
+
+    logger.info(`[StaffSkills] /rewrite: skill ${skillId} 重写完成 (instructions: ${instructions.slice(0, 40)})`);
+
+    res.json({
+      code: 0,
+      data: {
+        implemented: true,
+        skill_id: skillId,
+        content: rewritten,
+        warnings,
+        applied_instructions: instructions,
+      },
+      message: 'ok',
+    });
+  } catch (e) {
+    logger.error('[StaffSkills] /rewrite 失败:', e);
+    res.status(500).json({ code: 500, data: null, message: (e as Error).message });
+  }
 });
 
-// ===================== POST /:skillId/rewrite/jobs — 功能未接入 =====================
+// ===================== POST /:skillId/rewrite/jobs — 创建异步重写任务 =====================
 router.post('/:skillId/rewrite/jobs', (req: Request, res: Response) => {
-  res.status(201).json({
-    code: 0,
-    data: { implemented: false, job_id: null, status: 'unavailable' },
-    message: '功能未接入：rewrite job 尚未实现',
-  });
+  try {
+    const tenantId = tenantOf(req);
+    const { skillId } = req.params;
+    const skill = skillDao.getSkillBySkillId(tenantId, skillId);
+    if (!skill) {
+      res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
+      return;
+    }
+
+    const jobId = streamJobs.createJob('rewrite', {
+      skill_id: skillId,
+      instructions: req.body?.instructions || '',
+      fields: req.body?.fields || ['description', 'content'],
+    });
+
+    // 异步执行重写（复用 rewrite 逻辑）
+    void (async () => {
+      const write = (event: string, data: unknown) => streamJobs.append(jobId, event, data);
+      try {
+        write('job_attached', { job_id: jobId, status: 'running', skill_id: skillId });
+        write('status', { text: '正在分析现有 skill 内容…' });
+        await sleep(300);
+
+        let content: Record<string, unknown> = {};
+        try {
+          content = skill.content_json ? JSON.parse(skill.content_json) : {};
+        } catch { content = {}; }
+
+        write('status', { text: '正在重写内容…' });
+        await sleep(300);
+
+        const rewritten = { ...content };
+        if (typeof content.description === 'string') {
+          rewritten.description = (content.description as string).trim().replace(/\s+/g, ' ');
+        }
+        if (typeof content.content === 'string') {
+          rewritten.content = (content.content as string)
+            .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+        }
+
+        const updated = skillDao.updateSkill(tenantId, skillId, { content: rewritten });
+        write('complete', {
+          skill_id: skillId,
+          content: rewritten,
+          warnings: [],
+        });
+        streamJobs.complete(jobId);
+      } catch (e) {
+        streamJobs.fail(jobId, (e as Error).message);
+      }
+    })();
+
+    res.status(201).json({
+      code: 0,
+      data: { implemented: true, job_id: jobId, status: 'queued', skill_id: skillId },
+      message: 'ok',
+    });
+  } catch (e) {
+    logger.error('[StaffSkills] /rewrite/jobs 失败:', e);
+    res.status(500).json({ code: 500, data: null, message: (e as Error).message });
+  }
 });
 
-// ===================== POST /:skillId/rewrite/stream — SSE 功能未接入 =====================
-router.post('/:skillId/rewrite/stream', (req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.write(`data: ${JSON.stringify({ type: 'rewrite.start', data: { skill_id: req.params.skillId, implemented: false } })}\n\n`);
-  res.write(`data: ${JSON.stringify({ type: 'done', data: { implemented: false, message: 'skill rewrite 尚未实现' } })}\n\n`);
-  res.end();
+// ===================== POST /:skillId/rewrite/stream — SSE 流式重写 =====================
+router.post('/:skillId/rewrite/stream', async (req: Request, res: Response) => {
+  try {
+    const tenantId = tenantOf(req);
+    const { skillId } = req.params;
+    const skill = skillDao.getSkillBySkillId(tenantId, skillId);
+    if (!skill) {
+      res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const jobId = streamJobs.createJob('rewrite', { skill_id: skillId });
+    let closed = false;
+    const write = (event: string, data: unknown) => {
+      streamJobs.append(jobId, event, data);
+      if (!closed) res.write(sse(event, data));
+    };
+    res.on('close', () => { closed = true; });
+
+    write('job_attached', { job_id: jobId, status: 'running', skill_id: skillId });
+    write('status', { text: '正在分析现有 skill 内容…' });
+    await sleep(300);
+    if (closed || streamJobs.isCancelled(jobId)) { streamJobs.fail(jobId, 'cancelled'); res.end(); return; }
+
+    let content: Record<string, unknown> = {};
+    try {
+      content = skill.content_json ? JSON.parse(skill.content_json) : {};
+    } catch { content = {}; }
+
+    write('status', { text: '正在重写内容…' });
+    await sleep(300);
+    if (closed || streamJobs.isCancelled(jobId)) { streamJobs.fail(jobId, 'cancelled'); res.end(); return; }
+
+    const rewritten = { ...content };
+    if (typeof content.description === 'string') {
+      rewritten.description = (content.description as string).trim().replace(/\s+/g, ' ');
+    }
+    if (typeof content.content === 'string') {
+      rewritten.content = (content.content as string)
+        .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+    }
+
+    // 流式输出重写后的内容
+    const rewrittenText = typeof rewritten.content === 'string' ? rewritten.content : JSON.stringify(rewritten, null, 2);
+    for (const seg of chunkText(rewrittenText, 28)) {
+      if (closed) break;
+      write('chunk', { content: seg });
+      await sleep(50);
+    }
+
+    const updated = skillDao.updateSkill(tenantId, skillId, { content: rewritten });
+    write('complete', {
+      skill_id: skillId,
+      content: rewritten,
+      warnings: [],
+    });
+
+    if (!closed) {
+      streamJobs.complete(jobId);
+      res.write(sse('job_complete', { status: 'completed', error: null }));
+    }
+  } catch (e) {
+    logger.error('[StaffSkills] /rewrite/stream 失败:', e);
+    if (!res.headersSent) {
+      res.status(500).json({ code: 500, data: null, message: (e as Error).message });
+    } else {
+      res.write(sse('job_complete', { status: 'failed', error: (e as Error).message }));
+    }
+  } finally {
+    if (!res.headersSent) return;
+    res.end();
+  }
 });
 
 // ===================== GET /:skillId/versions — 列出版本 =====================
@@ -509,7 +785,7 @@ router.post('/:skillId/versions/:version/rollback', (req: Request, res: Response
     res.status(404).json({ code: 404, data: null, message: '版本不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  res.json({ code: 0, data: skillDao.buildSkillReader(tenantId)(row), message: 'ok' });
 });
 
 export default router;

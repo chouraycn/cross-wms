@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests native approval routing helpers and target matching logic.
  */

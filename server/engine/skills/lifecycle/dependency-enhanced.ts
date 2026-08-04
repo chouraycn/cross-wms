@@ -4,7 +4,7 @@ import type {
   SkillDependency,
   SkillConflict,
 } from "../types.js";
-import { parseDependencyConfig } from "./dependency.js";
+import { parseDependencyConfig } from "./dependency-config.js";
 import {
   parseVersion,
   compareVersions,

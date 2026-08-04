@@ -2,8 +2,8 @@
 /** Optional pre-doctor update prompt for source checkouts and package installs. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { createUpdateProgress } from "@openclaw-src/cli/update-cli/progress.js";
 import { isTruthyEnvValue } from "@openclaw-src/infra/env.js";

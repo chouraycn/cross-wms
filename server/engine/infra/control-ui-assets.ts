@@ -2,12 +2,12 @@
 // 移植自 openclaw/src/infra/control-ui-assets.ts（降级实现）。
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-normalization 替换为本地 ./string-normalization.js
+//  - @cdf-know/normalization-core/string-normalization 替换为本地 ./string-normalization.js
 //  - ../process/exec.js 的 runCommandWithTimeout 从 ./update-runner.js 导入
 //  - ../runtime.js 的 defaultRuntime/RuntimeEnv 降级为本地占位
 import path from "node:path";
 import { normalizeStringEntries } from "./string-normalization.js";
-import { runCommandWithTimeout } from "./update-runner.js";
+import { runCommandWithTimeout } from "../process/exec.js";
 import * as controlUiFsRuntime from "./control-ui-assets.fs.runtime.js";
 import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
 

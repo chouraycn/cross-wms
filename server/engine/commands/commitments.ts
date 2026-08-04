@@ -1,10 +1,10 @@
 // @ts-nocheck
 // Implements commitment listing and dismissal commands for scheduled follow-up records.
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { timestampMsToIsoString } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import {
   listCommitments,

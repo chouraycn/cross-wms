@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel config helper authorization and write-scope behavior.
  */

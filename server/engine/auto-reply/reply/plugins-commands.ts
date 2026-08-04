@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Provides plugin command discovery and handler registration helpers.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 
 /** Parsed `/plugins` command variants accepted by auto-reply command handling. */
 type PluginsCommand =

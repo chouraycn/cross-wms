@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PDF tool model configuration resolver.
  *
@@ -207,7 +206,7 @@ export function resolvePdfModelConfigForTool(params: {
     });
   }
 
-  const explicitImage = coerceImageModelConfig(params.cfg);
+  const explicitImage = coerceImageModelConfig((params as any).cfg);
   if (explicitImage.primary?.trim() || (explicitImage.fallbacks?.length ?? 0) > 0) {
     return resolveConfiguredImageModelRefs({
       cfg: params.cfg,

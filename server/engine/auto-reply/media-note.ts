@@ -1,6 +1,6 @@
 /** Builds compact prompt notes for inbound media attachments. */
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 // cross-wms does not yet port auto-reply/templating.ts (MsgContext) or
 // media/store.ts (getMediaDir). Local minimal stubs keep this module

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Agent tool stub helpers for tests.
  *

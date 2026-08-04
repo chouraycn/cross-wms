@@ -2,7 +2,7 @@
  * Built-in chat channel metadata builder. — 移植自 openclaw/src/channels/chat-meta-shared.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/string-coerce (normalizeOptionalString) →
+ *  - @cdf-know/normalization-core/string-coerce (normalizeOptionalString) →
  *    cross-wms ../infra/string-coerce.js
  *  - ../plugins/manifest.js (PluginPackageChannel) → ./_openclaw-stubs.js
  *  - ./bundled-channel-catalog-read.js (listBundledChannelCatalogEntries) → 本目录已移植

@@ -19,6 +19,8 @@ export type FileStore = {
     value: unknown,
     options?: { mode?: number; trailingNewline?: boolean },
   ) => Promise<void>;
+  /** 别名：与 readJson 等价（openclaw 上游接口名） */
+  readJsonIfExists: (filePath: string) => Promise<unknown>;
 };
 
 /** 同步文件存储接口（与 @openclaw/fs-safe/store 的 FileStoreSync 兼容） */
@@ -103,6 +105,14 @@ export function privateFileStore(rootDir: string): FileStore {
         encoding: "utf-8",
         mode: options?.mode ?? 0o600,
       });
+    },
+    async readJsonIfExists(filePath: string): Promise<unknown> {
+      try {
+        const content = await fs.promises.readFile(resolveRootedPath(rootDir, filePath), "utf-8");
+        return JSON.parse(content);
+      } catch {
+        return null;
+      }
     },
   };
 }

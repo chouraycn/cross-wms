@@ -1,10 +1,9 @@
-// @ts-nocheck
 /**
  * Shared OAuth credential replacement and identity policy.
  * Used by manager, external CLI overlays, and persistence paths to decide when
  * incoming runtime credentials may replace or bootstrap stored profiles.
  */
-import { asDateTimestampMs } from "../../shared/number-coercion.js";
+import { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";
 import { cloneAuthProfileStore } from "./clone.js";
 import { hasUsableOAuthCredential as hasUsableStoredOAuthCredential } from "./credential-state.js";
 import {
@@ -229,3 +228,5 @@ export function shouldPersistRuntimeExternalOAuthProfile(params: {
   }
   return true;
 }
+
+export { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";

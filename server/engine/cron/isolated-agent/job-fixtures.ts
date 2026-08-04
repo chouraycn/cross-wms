@@ -1,58 +1,29 @@
-import type { CronJob, CronSchedule, CronPayload, CronDelivery } from "../types.js";
+/** Shared loose cron fixtures for isolated-agent tests. */
+type LooseRecord = Record<string, unknown>;
 
-export function createTestCronJob(opts?: Partial<CronJob>): CronJob {
-  const now = Date.now();
-  const schedule: CronSchedule = {
-    kind: "every",
-    everyMs: 60000,
-    anchorMs: now,
-  };
-
-  const payload: CronPayload = {
-    kind: "agentTurn",
-    message: "test message",
-  };
-
-  const delivery: CronDelivery = {
-    mode: "none",
-  };
-
+/** Builds a loose cron job fixture for isolated-agent unit tests. */
+export function makeIsolatedAgentJobFixture(overrides?: LooseRecord) {
   return {
-    id: `test-job-${Math.random().toString(36).slice(2, 9)}`,
+    id: "test-job",
     name: "Test Job",
-    description: "Test cron job for isolated agent",
-    enabled: true,
-    createdAtMs: now,
-    updatedAtMs: now,
-    schedule: opts?.schedule ?? schedule,
-    sessionTarget: opts?.sessionTarget ?? "isolated",
-    wakeMode: opts?.wakeMode ?? "now",
-    payload: opts?.payload ?? payload,
-    delivery: opts?.delivery ?? delivery,
-    state: {
-      nextRunAtMs: now + 60000,
-    },
-    ...opts,
-  };
+    schedule: { kind: "cron", expr: "0 9 * * *", tz: "UTC" },
+    sessionTarget: "isolated",
+    payload: { kind: "agentTurn", message: "test" },
+    ...overrides,
+  } as never;
 }
 
-export function createAgentTurnPayload(message: string): CronPayload {
+export function makeIsolatedAgentParamsFixture(overrides?: LooseRecord) {
+  // Keep the fixture deliberately loose so tests can pass partial CronJob shapes
+  // without repeating unrelated scheduler defaults.
+  const jobOverrides =
+    overrides && "job" in overrides ? (overrides.job as LooseRecord | undefined) : undefined;
   return {
-    kind: "agentTurn",
-    message,
-  };
-}
-
-export function createCommandPayload(argv: string[]): CronPayload {
-  return {
-    kind: "command",
-    argv,
-  };
-}
-
-export function createSystemEventPayload(text: string): CronPayload {
-  return {
-    kind: "systemEvent",
-    text,
+    cfg: {},
+    deps: {} as never,
+    job: makeIsolatedAgentJobFixture(jobOverrides),
+    message: "test",
+    sessionKey: "cron:test",
+    ...overrides,
   };
 }

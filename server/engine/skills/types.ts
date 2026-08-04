@@ -1,4 +1,9 @@
+import type { SourceInfo } from "../agents/sessions/source-info.js";
+
 export type SkillSource = "bundled" | "workspace" | "managed" | "unknown";
+
+/** 技能遥测来源（用于指标上报，归一化为有限集合）。 */
+export type SkillTelemetrySource = "bundled" | "workspace" | "unknown";
 
 export type SkillInstallSpec = {
   id?: string;
@@ -14,6 +19,26 @@ export type SkillInstallSpec = {
   extract?: boolean;
   stripComponents?: number;
   targetDir?: string;
+};
+
+/**
+ * OpenClaw 上游技能元数据结构（不含 server 扩展的 disabled/disableModelInvocation 字段）。
+ * 由 resolveOpenClawMetadata 产出，供 workspace.ts 等上游对齐代码使用。
+ */
+export type OpenClawSkillMetadata = {
+  always?: boolean;
+  skillKey?: string;
+  primaryEnv?: string;
+  emoji?: string;
+  homepage?: string;
+  os?: string[];
+  requires?: {
+    bins?: string[];
+    anyBins?: string[];
+    env?: string[];
+    config?: string[];
+  };
+  install?: SkillInstallSpec[];
 };
 
 export type SkillMetadata = {
@@ -75,6 +100,8 @@ export interface Skill {
   filePath: string;
   baseDir: string;
   promptVersion?: string;
+  /** 来源元信息（上游 skill-contract 要求必填；server 旧代码可能缺失，标可选以兼容）。 */
+  sourceInfo?: SourceInfo;
   source: SkillSource;
   disableModelInvocation: boolean;
 }

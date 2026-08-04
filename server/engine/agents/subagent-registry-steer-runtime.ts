@@ -1,17 +1,50 @@
 /**
- * 移植自 openclaw/src/agents/subagent-registry-steer-runtime.ts
+ * Late-bound steer hooks for the subagent registry.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Lets steer/recovery code depend on a small module while the full registry installs concrete mutation hooks.
  */
+import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-export function configureSubagentRegistrySteerRuntime(..._args: unknown[]): unknown {
-  return undefined;
+type ReplaceSubagentRunAfterSteerParams = {
+  previousRunId: string;
+  nextRunId: string;
+  fallback?: SubagentRunRecord;
+  runTimeoutSeconds?: number;
+  preserveFrozenResultFallback?: boolean;
+  transcriptFile?: string;
+};
+
+type ReplaceSubagentRunAfterSteerFn = (params: ReplaceSubagentRunAfterSteerParams) => boolean;
+
+type FinalizeInterruptedSubagentRunParams = {
+  runId?: string;
+  childSessionKey?: string;
+  error: string;
+  endedAt?: number;
+};
+
+type FinalizeInterruptedSubagentRunFn = (
+  params: FinalizeInterruptedSubagentRunParams,
+) => Promise<number>;
+
+let replaceSubagentRunAfterSteerImpl: ReplaceSubagentRunAfterSteerFn | null = null;
+let finalizeInterruptedSubagentRunImpl: FinalizeInterruptedSubagentRunFn | null = null;
+
+/** Installs registry mutation hooks used by steer/recovery runtime paths. */
+export function configureSubagentRegistrySteerRuntime(params: {
+  replaceSubagentRunAfterSteer: ReplaceSubagentRunAfterSteerFn;
+  finalizeInterruptedSubagentRun?: FinalizeInterruptedSubagentRunFn;
+}) {
+  replaceSubagentRunAfterSteerImpl = params.replaceSubagentRunAfterSteer;
+  finalizeInterruptedSubagentRunImpl = params.finalizeInterruptedSubagentRun ?? null;
 }
-export function replaceSubagentRunAfterSteer(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Replaces a previous run id after steering, returning false when no hook is installed. */
+export function replaceSubagentRunAfterSteer(params: ReplaceSubagentRunAfterSteerParams) {
+  return replaceSubagentRunAfterSteerImpl?.(params) ?? false;
 }
-export async function finalizeInterruptedSubagentRun(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
+
+/** Finalizes interrupted runs through the installed registry hook. */
+export async function finalizeInterruptedSubagentRun(params: FinalizeInterruptedSubagentRunParams) {
+  return (await finalizeInterruptedSubagentRunImpl?.(params)) ?? 0;
 }

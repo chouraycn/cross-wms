@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Public SDK subpath for debug proxy capture configuration, storage, and events.
  */
@@ -7,12 +6,8 @@ export {
   resolveDebugProxySettings,
   resolveEffectiveDebugProxyUrl,
 } from "../proxy-capture/env.js";
-export {
-  acquireDebugProxyCaptureStore,
-  DebugProxyCaptureStore,
-  closeDebugProxyCaptureStore,
-  getDebugProxyCaptureStore,
-} from "../proxy-capture/store.sqlite.js";
+export {acquireDebugProxyCaptureStore, type DebugProxyCaptureStore, closeDebugProxyCaptureStore, getDebugProxyCaptureStore, 
+} from '../proxy-capture/store.sqlite.js';
 export {
   captureHttpExchange,
   captureWsEvent,

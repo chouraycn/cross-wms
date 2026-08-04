@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Validation helpers adapt gateway-protocol validators to standard method
 // INVALID_REQUEST responses.
 import {

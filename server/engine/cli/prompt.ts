@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/prompt.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce`，已替换为本地
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce`，已替换为本地
 //    `../infra/string-coerce.js`（cross-wms 已有 `normalizeLowercaseStringOrEmpty`）。
 //  - 原模块依赖 `../globals.js` 中的 `isVerbose`/`isYes`，cross-wms 中未移植该模块；
 //    这里内联一个进程级全局状态 stub，提供等价的 verbose/yes 标志读取能力。

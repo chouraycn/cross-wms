@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for command gateway methods and command registry responses.
  */

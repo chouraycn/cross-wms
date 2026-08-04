@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests approval client helper filters and target recipient matching.
  */

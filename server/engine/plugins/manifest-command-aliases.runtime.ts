@@ -1,33 +1,20 @@
-/**
- * Resolves manifest-declared command and tool ownership at runtime.
- *
- * 移植自 openclaw/src/plugins/manifest-command-aliases.runtime.ts。
- *
- * 降级策略：原文件依赖 @openclaw/normalization-core/string-coerce、
- * ../config/types.openclaw.js、./activation-planner.js、./manifest-command-aliases.js、
- * ./manifest-contract-eligibility.js、./manifest-tool-availability.js。
- * 所有运行时函数降级为返回 undefined 或抛出 "not implemented"。
- */
-
-/** 占位：OpenClawConfig。 */
-type OpenClawConfig = unknown;
-
-/** 占位：PluginManifestCommandAliasRegistry。 */
-type PluginManifestCommandAliasRegistry = unknown;
-
-/** 占位：PluginManifestCommandAliasRecord。 */
-type PluginManifestCommandAliasRecord = {
-  pluginId: string;
-  command: string;
-  alias: string;
-};
-
-/** 占位：PluginManifestToolOwnerRecord。 */
-type PluginManifestToolOwnerRecord = {
-  toolName: string;
-  pluginId: string;
-  availability?: "loaded" | "manifest-only";
-};
+/** Resolves manifest-declared command and tool ownership at runtime. */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveManifestActivationPluginIds } from "./activation-planner.js";
+import {
+  resolveManifestCommandAliasOwnerInRegistry,
+  resolveManifestToolOwnerInRegistry,
+  type PluginManifestCommandAliasRegistry,
+  type PluginManifestCommandAliasRecord,
+  type PluginManifestToolOwnerRecord,
+} from "./manifest-command-aliases.js";
+import {
+  isManifestPluginAvailableForControlPlane,
+  loadManifestMetadataRegistry,
+  loadManifestMetadataSnapshot,
+} from "./manifest-contract-eligibility.js";
+import { hasManifestToolAvailability } from "./manifest-tool-availability.js";
 
 /** Resolves the manifest owner for a CLI command alias when one is declared. */
 export function resolveManifestCommandAliasOwner(params: {
@@ -37,8 +24,17 @@ export function resolveManifestCommandAliasOwner(params: {
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;
 }): PluginManifestCommandAliasRecord | undefined {
-  void params;
-  return undefined;
+  const registry =
+    params.registry ??
+    loadManifestMetadataRegistry({
+      config: params.config,
+      workspaceDir: params.workspaceDir,
+      env: params.env,
+    }).manifestRegistry;
+  return resolveManifestCommandAliasOwnerInRegistry({
+    command: params.command,
+    registry: registry as any,
+  }) as any;
 }
 
 /** Resolves the plugin id that should be activated for a CLI command surface. */
@@ -49,11 +45,46 @@ export function resolveManifestCliCommandSurfaceOwner(params: {
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;
 }): string | undefined {
-  void params;
-  return undefined;
+  const normalizedCommand = normalizeOptionalLowercaseString(params.command);
+  if (!normalizedCommand) {
+    return undefined;
+  }
+  if (params.registry) {
+    return resolveManifestCommandAliasOwnerInRegistry({
+      command: normalizedCommand,
+      registry: params.registry,
+    })?.pluginId;
+  }
+  return resolveManifestActivationPluginIds({
+    trigger: { kind: "command", command: normalizedCommand },
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+    env: params.env,
+  })[0];
 }
 
-/** Resolve which plugin owns an agent-tool name. */
+/**
+ * Resolve which plugin owns an agent-tool name, applying control-plane
+ * availability filters so disabled/denied plugins are not falsely attributed.
+ *
+ * Behavior:
+ * - Walks the full manifest snapshot (not the lighter-weight registry view) so
+ *   per-tool `configSignals`/`authSignals` are visible.
+ * - Skips plugins that fail `isManifestPluginAvailableForControlPlane`
+ *   (`plugins.allow` / `plugins.deny` / `plugins.entries[id].enabled` /
+ *   installed-index).
+ * - For matched tools, runs `hasManifestToolAvailability` to check the
+ *   tool's own configSignals (e.g. Feishu's `appId`/`appSecret` gate).
+ * - Reports `availability: "loaded"` when both filters pass, enough for a
+ *   direct "available from this plugin" diagnostic.
+ * - Reports `availability: "manifest-only"` when the manifest declares
+ *   ownership but availability is not provable from manifest alone (e.g.
+ *   per-account `enabled` flags or per-tool toggles that are runtime-only).
+ *   Caller should soften the wording to "may be provided by".
+ *
+ * Falls back to the pure registry walk only when an explicit registry is
+ * supplied (no snapshot to filter against).
+ */
 export function resolveManifestToolOwner(params: {
   toolName: string | undefined;
   config?: OpenClawConfig;
@@ -61,6 +92,53 @@ export function resolveManifestToolOwner(params: {
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;
 }): PluginManifestToolOwnerRecord | undefined {
-  void params;
+  if (params.registry) {
+    return resolveManifestToolOwnerInRegistry({
+      toolName: params.toolName,
+      registry: params.registry,
+    });
+  }
+  const normalizedToolName = normalizeOptionalLowercaseString(params.toolName);
+  if (!normalizedToolName) {
+    return undefined;
+  }
+  const snapshot = loadManifestMetadataSnapshot({
+    config: params.config,
+    workspaceDir: params.workspaceDir,
+    env: params.env,
+  });
+  const env = params.env ?? process.env;
+  for (const plugin of snapshot.plugins) {
+    const tools = plugin.contracts?.tools;
+    if (!tools || tools.length === 0) {
+      continue;
+    }
+    const match = tools.find(
+      (entry) => normalizeOptionalLowercaseString(entry) === normalizedToolName,
+    );
+    if (!match) {
+      continue;
+    }
+    const pluginAvailable = isManifestPluginAvailableForControlPlane({
+      snapshot,
+      plugin,
+      config: params.config,
+    });
+    if (!pluginAvailable) {
+      // Plugin is denied/disabled/uninstalled; do not attribute this tool to it.
+      continue;
+    }
+    const toolAvailable = hasManifestToolAvailability({
+      plugin,
+      toolNames: [match],
+      config: params.config,
+      env,
+    });
+    return {
+      toolName: match,
+      pluginId: plugin.id,
+      availability: toolAvailable ? "loaded" : "manifest-only",
+    };
+  }
   return undefined;
 }

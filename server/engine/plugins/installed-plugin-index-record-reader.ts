@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/installed-plugin-index-record-reader.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/record-coerce 的 isRecord。
+//  - 原文件依赖 @cdf-know/normalization-core/record-coerce 的 isRecord。
 //    改用 cross-wms 的 ../infra/record-coerce.js，已提供同名导出。
 //  - 原文件依赖 ../config/types.plugins.js 的 PluginInstallRecord。cross-wms 尚未
 //    移植该模块。这里降级为 Record<string, unknown> 占位（与

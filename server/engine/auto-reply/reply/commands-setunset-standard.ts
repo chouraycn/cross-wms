@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Implements standard set/unset command handling for persisted config values.
 import { parseSlashCommandWithSetUnset } from "./commands-setunset.js";
 

@@ -1,446 +1,501 @@
-import { logger } from "../../../logger.js";
+// Remote skill runtime helpers send skill refresh and snapshot state across remotes.
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
+import { listAgentWorkspaceDirs } from "../../agents/workspace-dirs.js";
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { NodeRegistry } from "../../gateway/node-registry.js";
+import { listNodePairing, updatePairedNodeMetadata } from "../../infra/node-pairing.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { loadWorkspaceSkillEntries } from "../loading/workspace.js";
+import type { SkillEligibilityContext, SkillEntry } from "../types.js";
+import { bumpSkillsSnapshotVersion } from "./refresh-state.js";
 
-export type RemoteSkillNodeStatus = "online" | "offline" | "syncing";
-export type RemoteSkillSyncStatus = "synced" | "pending" | "failed";
-
-export interface RemoteSkillNode {
+type RemoteNodeRecord = {
   nodeId: string;
-  nodeUrl: string;
-  nodeName?: string;
-  status: RemoteSkillNodeStatus;
-  lastSeen: number;
-  skillCount: number;
-}
-
-export interface RemoteSkill {
-  nodeId: string;
-  skillName: string;
-  version: string;
-  metadata: Record<string, unknown>;
-  syncStatus: RemoteSkillSyncStatus;
-}
-
-export interface RemoteSyncConfig {
-  enabled: boolean;
-  nodes: RemoteSkillNode[];
-  syncIntervalMs: number;
-  autoPull: boolean;
-}
-
-export interface SyncResult {
-  nodeId: string;
-  syncedSkills: string[];
-  failedSkills: string[];
-  durationMs: number;
-  error?: string;
-}
-
-interface RemoteState {
-  nodes: Map<string, RemoteSkillNode>;
-  skills: Map<string, RemoteSkill>;
-  config: RemoteSyncConfig;
-  syncTimer: ReturnType<typeof setInterval> | null;
-  isSyncing: boolean;
-}
-
-const DEFAULT_SYNC_INTERVAL_MS = 60_000;
-const MIN_SYNC_INTERVAL_MS = 10_000;
-const MOCK_DELAY_MIN_MS = 100;
-const MOCK_DELAY_MAX_MS = 500;
-
-let deterministicMode = false;
-
-const state: RemoteState = {
-  nodes: new Map(),
-  skills: new Map(),
-  config: {
-    enabled: false,
-    nodes: [],
-    syncIntervalMs: DEFAULT_SYNC_INTERVAL_MS,
-    autoPull: false,
-  },
-  syncTimer: null,
-  isSyncing: false,
+  displayName?: string;
+  platform?: string;
+  deviceFamily?: string;
+  commands?: string[];
+  bins: Set<string>;
+  connected: boolean;
+  remoteIp?: string;
 };
 
-function skillKey(nodeId: string, skillName: string): string {
-  return `${nodeId}:${skillName}`;
+const log = createSubsystemLogger("gateway/skills-remote");
+const remoteNodes = new Map<string, RemoteNodeRecord>();
+const remoteBinProbeInflight = new Map<string, Promise<void>>();
+let remoteRegistry: NodeRegistry | null = null;
+
+function describeNode(nodeId: string): string {
+  const record = remoteNodes.get(nodeId);
+  const name = record?.displayName?.trim();
+  const base = name && name !== nodeId ? `${name} (${nodeId})` : nodeId;
+  const ip = record?.remoteIp?.trim();
+  return ip ? `${base} @ ${ip}` : base;
 }
 
-function mockDelay(): Promise<void> {
-  const delay = deterministicMode
-    ? MOCK_DELAY_MIN_MS
-    : Math.floor(Math.random() * (MOCK_DELAY_MAX_MS - MOCK_DELAY_MIN_MS)) + MOCK_DELAY_MIN_MS;
-  return new Promise((resolve) => setTimeout(resolve, delay));
-}
-
-function buildMockSkills(nodeId: string): RemoteSkill[] {
-  const mockPool: Array<{ name: string; version: string; metadata: Record<string, unknown> }> = [
-    { name: "remote-chat", version: "1.0.0", metadata: { category: "chat", author: "node-team" } },
-    { name: "remote-search", version: "2.1.0", metadata: { category: "search", author: "node-team" } },
-    { name: "remote-translate", version: "1.2.3", metadata: { category: "i18n", author: "lang-team" } },
-    { name: "remote-summarize", version: "0.9.0", metadata: { category: "nlp", author: "ai-team" } },
-    { name: "remote-codegen", version: "3.0.0-beta", metadata: { category: "code", author: "dev-team" } },
-  ];
-  const count = deterministicMode ? 4 : 3 + Math.floor(Math.random() * 3);
-  const selected = deterministicMode
-    ? mockPool.slice(0, count)
-    : [...mockPool].sort(() => Math.random() - 0.5).slice(0, count);
-  return selected.map((s) => ({
-    nodeId,
-    skillName: s.name,
-    version: s.version,
-    metadata: s.metadata,
-    syncStatus: "pending" as const,
-  }));
-}
-
-export function registerRemoteNode(node: Omit<RemoteSkillNode, "lastSeen" | "skillCount" | "status"> & {
-  status?: RemoteSkillNodeStatus;
-  lastSeen?: number;
-  skillCount?: number;
-}): RemoteSkillNode {
-  if (state.nodes.has(node.nodeId)) {
-    logger.warn(`[RemoteSkills] Node already registered: ${node.nodeId}, updating`);
+function extractErrorMessage(err: unknown): string | undefined {
+  if (!err) {
+    return undefined;
   }
-
-  const newNode: RemoteSkillNode = {
-    nodeId: node.nodeId,
-    nodeUrl: node.nodeUrl,
-    nodeName: node.nodeName,
-    status: node.status ?? "offline",
-    lastSeen: node.lastSeen ?? 0,
-    skillCount: node.skillCount ?? 0,
-  };
-
-  state.nodes.set(node.nodeId, newNode);
-  logger.info(
-    `[RemoteSkills] Registered node: ${node.nodeId} (${node.nodeName ?? node.nodeUrl})`,
-  );
-  return { ...newNode };
-}
-
-export function unregisterRemoteNode(nodeId: string): boolean {
-  const existed = state.nodes.has(nodeId);
-  if (!existed) {
-    logger.warn(`[RemoteSkills] Cannot unregister - node not found: ${nodeId}`);
-    return false;
+  if (typeof err === "string") {
+    return err;
   }
-
-  state.nodes.delete(nodeId);
-  const keysToDelete: string[] = [];
-  for (const [key, skill] of state.skills) {
-    if (skill.nodeId === nodeId) {
-      keysToDelete.push(key);
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === "object" && "message" in err && typeof err.message === "string") {
+    return err.message;
+  }
+  if (typeof err === "number" || typeof err === "boolean" || typeof err === "bigint") {
+    return String(err);
+  }
+  if (typeof err === "symbol") {
+    return err.toString();
+  }
+  if (typeof err === "object") {
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return undefined;
     }
   }
-  for (const key of keysToDelete) {
-    state.skills.delete(key);
-  }
-
-  logger.info(`[RemoteSkills] Unregistered node: ${nodeId} (removed ${keysToDelete.length} skills)`);
-  return true;
+  return undefined;
 }
 
-export function listRemoteNodes(): RemoteSkillNode[] {
-  return Array.from(state.nodes.values()).map((n) => ({ ...n }));
-}
+type RemoteBinProbeLogContext = {
+  command?: string;
+  timeoutMs?: number;
+  requiredBinCount?: number;
+};
 
-export function updateRemoteNodeStatus(
+function resolveRemoteBinProbeLogContext(
   nodeId: string,
-  status: RemoteSkillNodeStatus,
-): RemoteSkillNode | null {
-  const node = state.nodes.get(nodeId);
-  if (!node) {
-    logger.warn(`[RemoteSkills] Cannot update status - node not found: ${nodeId}`);
-    return null;
-  }
-
-  node.status = status;
-  if (status === "online" || status === "syncing") {
-    node.lastSeen = Date.now();
-  }
-
-  logger.debug(`[RemoteSkills] Node ${nodeId} status updated: ${status}`);
-  return { ...node };
+  context?: RemoteBinProbeLogContext,
+): { label: string; details: string } {
+  const details = [
+    context?.command ? `command=${context.command}` : undefined,
+    typeof context?.timeoutMs === "number" ? `timeoutMs=${context.timeoutMs}` : undefined,
+    typeof context?.requiredBinCount === "number"
+      ? `requiredBins=${context.requiredBinCount}`
+      : undefined,
+    `connected=${remoteNodes.get(nodeId)?.connected === true ? "yes" : "no"}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return { label: describeNode(nodeId), details };
 }
 
-export async function syncSkillsFromNode(nodeId: string): Promise<SyncResult> {
-  const startTime = Date.now();
-  const node = state.nodes.get(nodeId);
-
-  if (!node) {
-    const durationMs = Date.now() - startTime;
-    logger.error(`[RemoteSkills] Sync failed - node not found: ${nodeId}`);
-    return {
-      nodeId,
-      syncedSkills: [],
-      failedSkills: [],
-      durationMs,
-      error: `Node not found: ${nodeId}`,
-    };
-  }
-
-  updateRemoteNodeStatus(nodeId, "syncing");
-  logger.info(`[RemoteSkills] Starting sync from node: ${nodeId}`);
-
-  try {
-    await mockDelay();
-
-    const shouldFail = !deterministicMode && Math.random() < 0.1;
-    if (shouldFail) {
-      throw new Error(`Simulated network error for node ${nodeId}`);
-    }
-
-    const remoteSkills = buildMockSkills(nodeId);
-    const syncedSkills: string[] = [];
-    const failedSkills: string[] = [];
-
-    for (const skill of remoteSkills) {
-      const failSkill = !deterministicMode && Math.random() < 0.05;
-      if (failSkill) {
-        failedSkills.push(skill.skillName);
-        const key = skillKey(nodeId, skill.skillName);
-        const existing = state.skills.get(key);
-        state.skills.set(key, {
-          ...skill,
-          syncStatus: "failed",
-          metadata: existing?.metadata ?? skill.metadata,
-          version: existing?.version ?? skill.version,
-        });
-      } else {
-        const key = skillKey(nodeId, skill.skillName);
-        state.skills.set(key, {
-          ...skill,
-          syncStatus: "synced",
-        });
-        syncedSkills.push(skill.skillName);
-      }
-    }
-
-    node.skillCount = syncedSkills.length + failedSkills.length;
-    node.lastSeen = Date.now();
-    node.status = "online";
-
-    const durationMs = Date.now() - startTime;
-    logger.info(
-      `[RemoteSkills] Sync complete for node ${nodeId}: ${syncedSkills.length} synced, ${failedSkills.length} failed (${durationMs}ms)`,
-    );
-
-    return {
-      nodeId,
-      syncedSkills: syncedSkills.sort(),
-      failedSkills: failedSkills.sort(),
-      durationMs,
-    };
-  } catch (err) {
-    const durationMs = Date.now() - startTime;
-    node.status = "offline";
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    logger.error(`[RemoteSkills] Sync failed for node ${nodeId}:`, err);
-
-    return {
-      nodeId,
-      syncedSkills: [],
-      failedSkills: [],
-      durationMs,
-      error: errorMessage,
-    };
-  }
-}
-
-export async function syncAllRemoteNodes(): Promise<SyncResult[]> {
-  if (state.isSyncing) {
-    logger.warn("[RemoteSkills] Sync already in progress, skipping");
-    return [];
-  }
-
-  state.isSyncing = true;
-  const startTime = Date.now();
-
-  try {
-    const nodeIds = Array.from(state.nodes.keys());
-    const results: SyncResult[] = [];
-
-    for (const nodeId of nodeIds) {
-      const result = await syncSkillsFromNode(nodeId);
-      results.push(result);
-    }
-
-    const totalSynced = results.reduce((sum, r) => sum + r.syncedSkills.length, 0);
-    const totalFailed = results.reduce((sum, r) => sum + r.failedSkills.length, 0);
-    const durationMs = Date.now() - startTime;
-
-    logger.info(
-      `[RemoteSkills] All nodes sync complete: ${results.length} nodes, ${totalSynced} synced, ${totalFailed} failed (${durationMs}ms)`,
-    );
-
-    return results;
-  } finally {
-    state.isSyncing = false;
-  }
-}
-
-export function getRemoteSkills(nodeId?: string): RemoteSkill[] {
-  const all = Array.from(state.skills.values());
-  if (nodeId) {
-    return all.filter((s) => s.nodeId === nodeId).map((s) => ({ ...s }));
-  }
-  return all.map((s) => ({ ...s }));
-}
-
-export async function pullRemoteSkill(
+function logRemoteBinProbeFailure(
   nodeId: string,
-  skillName: string,
-): Promise<RemoteSkill | null> {
-  const node = state.nodes.get(nodeId);
-  if (!node) {
-    logger.warn(`[RemoteSkills] Cannot pull skill - node not found: ${nodeId}`);
-    return null;
-  }
-
-  logger.debug(`[RemoteSkills] Pulling skill ${skillName} from node ${nodeId}`);
-  await mockDelay();
-
-  const key = skillKey(nodeId, skillName);
-  const existing = state.skills.get(key);
-
-  if (existing) {
-    const updated: RemoteSkill = {
-      ...existing,
-      syncStatus: "synced",
-      version: existing.version,
-    };
-    state.skills.set(key, updated);
-    return { ...updated };
-  }
-
-  const newSkill: RemoteSkill = {
-    nodeId,
-    skillName,
-    version: "1.0.0",
-    metadata: { pulled: true, pulledAt: Date.now() },
-    syncStatus: "synced",
-  };
-  state.skills.set(key, newSkill);
-
-  logger.info(`[RemoteSkills] Pulled skill ${skillName} from node ${nodeId}`);
-  return { ...newSkill };
-}
-
-export async function loadRemoteSkill(
-  nodeId: string,
-  skillName: string,
-): Promise<RemoteSkill | null> {
-  const key = skillKey(nodeId, skillName);
-  const skill = state.skills.get(key);
-
-  if (skill && skill.syncStatus === "synced") {
-    logger.debug(`[RemoteSkills] Loading cached skill ${skillName} from node ${nodeId}`);
-    return { ...skill };
-  }
-
-  logger.info(`[RemoteSkills] Skill ${skillName} not synced, pulling from node ${nodeId}`);
-  return pullRemoteSkill(nodeId, skillName);
-}
-
-export function startRemoteSync(config: Partial<RemoteSyncConfig> = {}): () => void {
-  if (state.syncTimer) {
-    logger.warn("[RemoteSkills] Stopping existing sync timer before starting new one");
-    stopRemoteSync();
-  }
-
-  const intervalMs = config.syncIntervalMs
-    ? Math.max(config.syncIntervalMs, MIN_SYNC_INTERVAL_MS)
-    : DEFAULT_SYNC_INTERVAL_MS;
-
-  if (config.syncIntervalMs && config.syncIntervalMs < MIN_SYNC_INTERVAL_MS) {
-    logger.warn(
-      `[RemoteSkills] Sync interval ${config.syncIntervalMs}ms is below minimum ${MIN_SYNC_INTERVAL_MS}ms, using minimum`,
+  err: unknown,
+  context?: RemoteBinProbeLogContext,
+  phase: "preflight" | "probe" = "probe",
+) {
+  const message = extractErrorMessage(err);
+  const { label, details } = resolveRemoteBinProbeLogContext(nodeId, context);
+  if (phase === "preflight") {
+    log.info(
+      `remote bin probe skipped: node connectivity unavailable (${label}; ${details}): ${
+        message ?? "unknown"
+      }`,
     );
+    return;
   }
-
-  state.config = {
-    enabled: true,
-    nodes: config.nodes ?? [],
-    syncIntervalMs: intervalMs,
-    autoPull: config.autoPull ?? false,
-  };
-
-  for (const node of state.config.nodes) {
-    registerRemoteNode(node);
+  // Node unavailable errors (not connected or disconnected mid-operation) are expected
+  // when nodes have transient connections - log at info level instead of warn
+  if (message?.includes("node not connected") || message?.includes("node disconnected")) {
+    log.info(`remote bin probe skipped: node unavailable (${label}; ${details})`);
+    return;
   }
-
-  let running = true;
-
-  logger.info(`[RemoteSkills] Starting remote sync (interval=${intervalMs}ms)`);
-
-  const timerId = setInterval(() => {
-    if (!running) return;
-    void syncAllRemoteNodes();
-  }, intervalMs);
-
-  state.syncTimer = timerId;
-
-  return function stop() {
-    if (!running) return;
-    running = false;
-    if (state.syncTimer === timerId) {
-      clearInterval(timerId);
-      state.syncTimer = null;
-      state.config.enabled = false;
-    }
-    logger.info("[RemoteSkills] Remote sync stopped");
-  };
+  if (message?.includes("invoke timed out") || message?.includes("timeout")) {
+    log.warn(
+      `remote bin probe timed out (${label}; ${details}); check node connectivity for ${label}`,
+    );
+    return;
+  }
+  log.warn(`remote bin probe error (${label}; ${details}): ${message ?? "unknown"}`);
 }
 
-export function stopRemoteSync(): void {
-  if (state.syncTimer) {
-    clearInterval(state.syncTimer);
-    state.syncTimer = null;
-    state.config.enabled = false;
-    logger.info("[RemoteSkills] Remote sync stopped");
-  } else {
-    logger.debug("[RemoteSkills] No active sync timer to stop");
+function isMacPlatform(platform?: string, deviceFamily?: string): boolean {
+  const platformNorm = normalizeLowercaseStringOrEmpty(platform);
+  const familyNorm = normalizeLowercaseStringOrEmpty(deviceFamily);
+  if (platformNorm.includes("mac")) {
+    return true;
   }
-}
-
-export function isRemoteSkill(skillName: string): boolean {
-  for (const skill of state.skills.values()) {
-    if (skill.skillName === skillName) {
-      return true;
-    }
+  if (platformNorm.includes("darwin")) {
+    return true;
+  }
+  if (familyNorm === "mac") {
+    return true;
   }
   return false;
 }
 
-export function getRemoteSkillNode(skillName: string): RemoteSkillNode | null {
-  for (const skill of state.skills.values()) {
-    if (skill.skillName === skillName) {
-      const node = state.nodes.get(skill.nodeId);
-      return node ? { ...node } : null;
+function supportsSystemRun(commands?: string[]): boolean {
+  return Array.isArray(commands) && commands.includes("system.run");
+}
+
+function supportsSystemWhich(commands?: string[]): boolean {
+  return Array.isArray(commands) && commands.includes("system.which");
+}
+
+function upsertNode(record: {
+  nodeId: string;
+  displayName?: string;
+  platform?: string;
+  deviceFamily?: string;
+  commands?: string[];
+  remoteIp?: string;
+  bins?: string[];
+  connected?: boolean;
+}) {
+  const existing = remoteNodes.get(record.nodeId);
+  const bins = new Set<string>(record.bins ?? existing?.bins ?? []);
+  remoteNodes.set(record.nodeId, {
+    nodeId: record.nodeId,
+    displayName: record.displayName ?? existing?.displayName,
+    platform: record.platform ?? existing?.platform,
+    deviceFamily: record.deviceFamily ?? existing?.deviceFamily,
+    commands: record.commands ?? existing?.commands,
+    remoteIp: record.remoteIp ?? existing?.remoteIp,
+    bins,
+    connected: record.connected ?? existing?.connected ?? false,
+  });
+}
+
+function clearRemoteNodeBins(nodeId: string): boolean {
+  const existing = remoteNodes.get(nodeId);
+  if (!existing || existing.bins.size === 0) {
+    return false;
+  }
+  existing.bins = new Set();
+  return true;
+}
+
+export function setSkillsRemoteRegistry(registry: NodeRegistry | null) {
+  remoteRegistry = registry;
+}
+
+export async function primeRemoteSkillsCache() {
+  try {
+    const list = await listNodePairing();
+    let sawMac = false;
+    for (const node of list.paired) {
+      upsertNode({
+        nodeId: node.nodeId,
+        displayName: node.displayName,
+        platform: node.platform,
+        deviceFamily: node.deviceFamily,
+        commands: node.commands,
+        remoteIp: node.remoteIp,
+        bins: node.bins,
+        connected: false,
+      });
+      if (
+        node.bins &&
+        node.bins.length > 0 &&
+        isMacPlatform(node.platform, node.deviceFamily) &&
+        supportsSystemRun(node.commands)
+      ) {
+        sawMac = true;
+      }
+    }
+    if (sawMac) {
+      bumpSkillsSnapshotVersion({ reason: "remote-node" });
+    }
+  } catch (err) {
+    log.warn(`failed to prime remote skills cache: ${String(err)}`);
+  }
+}
+
+export function recordRemoteNodeInfo(node: {
+  nodeId: string;
+  displayName?: string;
+  platform?: string;
+  deviceFamily?: string;
+  commands?: string[];
+  remoteIp?: string;
+}) {
+  upsertNode({ ...node, connected: true });
+}
+
+export function recordRemoteNodeBins(nodeId: string, bins: string[]) {
+  upsertNode({ nodeId, bins });
+}
+
+export function removeRemoteNodeInfo(nodeId: string) {
+  const existing = remoteNodes.get(nodeId);
+  remoteNodes.delete(nodeId);
+  if (
+    existing &&
+    isMacPlatform(existing.platform, existing.deviceFamily) &&
+    supportsSystemRun(existing.commands)
+  ) {
+    bumpSkillsSnapshotVersion({ reason: "remote-node" });
+  }
+}
+
+function collectRequiredBins(entries: SkillEntry[], targetPlatform: string): string[] {
+  const bins = new Set<string>();
+  for (const entry of entries) {
+    const os = entry.metadata?.os ?? [];
+    if (os.length > 0 && !os.includes(targetPlatform)) {
+      continue;
+    }
+    const required = entry.metadata?.requires?.bins ?? [];
+    const anyBins = entry.metadata?.requires?.anyBins ?? [];
+    for (const bin of required) {
+      if (bin.trim()) {
+        bins.add(bin.trim());
+      }
+    }
+    for (const bin of anyBins) {
+      if (bin.trim()) {
+        bins.add(bin.trim());
+      }
     }
   }
-  return null;
+  return [...bins];
 }
 
-export function resetRemoteState(): void {
-  deterministicMode = true;
-  stopRemoteSync();
-  state.nodes.clear();
-  state.skills.clear();
-  state.config = {
-    enabled: false,
-    nodes: [],
-    syncIntervalMs: DEFAULT_SYNC_INTERVAL_MS,
-    autoPull: false,
-  };
-  state.isSyncing = false;
+function buildBinProbeScript(bins: string[]): string {
+  const escaped = bins.map((bin) => `'${bin.replace(/'/g, `'\\''`)}'`).join(" ");
+  return `for b in ${escaped}; do if command -v "$b" >/dev/null 2>&1; then echo "$b"; fi; done`;
 }
 
-export function getRemoteSyncConfig(): RemoteSyncConfig {
+function parseBinProbePayload(payloadJSON: string | null | undefined, payload?: unknown): string[] {
+  if (!payloadJSON && !payload) {
+    return [];
+  }
+  try {
+    const parsed = payloadJSON
+      ? (JSON.parse(payloadJSON) as { stdout?: unknown; bins?: unknown })
+      : (payload as { stdout?: unknown; bins?: unknown });
+    if (Array.isArray(parsed.bins)) {
+      return normalizeStringEntries(parsed.bins);
+    }
+    if (parsed.bins && typeof parsed.bins === "object") {
+      return Object.entries(parsed.bins)
+        .filter(([, resolvedPath]) => normalizeOptionalString(resolvedPath) !== undefined)
+        .map(([bin]) => normalizeOptionalString(bin) ?? "")
+        .filter(Boolean);
+    }
+    if (typeof parsed.stdout === "string") {
+      return parsed.stdout
+        .split(/\r?\n/)
+        .map((line) => normalizeOptionalString(line) ?? "")
+        .filter(Boolean);
+    }
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+function areBinSetsEqual(a: Set<string> | undefined, b: Set<string>): boolean {
+  if (!a) {
+    return false;
+  }
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const bin of b) {
+    if (!a.has(bin)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export async function refreshRemoteNodeBins(params: {
+  nodeId: string;
+  platform?: string;
+  deviceFamily?: string;
+  commands?: string[];
+  cfg: OpenClawConfig;
+  timeoutMs?: number;
+}) {
+  const existing = remoteBinProbeInflight.get(params.nodeId);
+  if (existing) {
+    await existing;
+    return;
+  }
+  const run = refreshRemoteNodeBinsUncoalesced(params).finally(() => {
+    if (remoteBinProbeInflight.get(params.nodeId) === run) {
+      remoteBinProbeInflight.delete(params.nodeId);
+    }
+  });
+  remoteBinProbeInflight.set(params.nodeId, run);
+  await run;
+}
+
+async function refreshRemoteNodeBinsUncoalesced(params: {
+  nodeId: string;
+  platform?: string;
+  deviceFamily?: string;
+  commands?: string[];
+  cfg: OpenClawConfig;
+  timeoutMs?: number;
+}) {
+  if (!remoteRegistry) {
+    return;
+  }
+  if (!isMacPlatform(params.platform, params.deviceFamily)) {
+    return;
+  }
+  const canWhich = supportsSystemWhich(params.commands);
+  const canRun = supportsSystemRun(params.commands);
+  if (!canWhich && !canRun) {
+    return;
+  }
+
+  const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
+  const requiredBins = new Set<string>();
+  for (const workspaceDir of workspaceDirs) {
+    const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.cfg });
+    for (const bin of collectRequiredBins(entries, "darwin")) {
+      requiredBins.add(bin);
+    }
+  }
+  if (requiredBins.size === 0) {
+    return;
+  }
+
+  const binsList = [...requiredBins];
+  const timeoutMs = params.timeoutMs ?? 15_000;
+  const command = canWhich ? "system.which" : "system.run";
+  const logContext = { command, timeoutMs, requiredBinCount: binsList.length };
+  const connectivityTimeoutMs = Math.min(timeoutMs, 2_000);
+  if (typeof remoteRegistry.checkConnectivity === "function") {
+    const preflightConnId = remoteRegistry.get(params.nodeId)?.connId;
+    const connectivity = await remoteRegistry.checkConnectivity(
+      params.nodeId,
+      connectivityTimeoutMs,
+    );
+    if (!connectivity.ok) {
+      const latestSession = remoteRegistry.get(params.nodeId);
+      if (preflightConnId && latestSession && latestSession.connId !== preflightConnId) {
+        await refreshRemoteNodeBinsUncoalesced({
+          nodeId: latestSession.nodeId,
+          platform: latestSession.platform,
+          deviceFamily: latestSession.deviceFamily,
+          commands: latestSession.commands,
+          cfg: params.cfg,
+          timeoutMs: params.timeoutMs,
+        });
+        return;
+      }
+      const cleared = clearRemoteNodeBins(params.nodeId);
+      logRemoteBinProbeFailure(
+        params.nodeId,
+        connectivity.error.message,
+        {
+          command: "websocket.ping",
+          timeoutMs: connectivityTimeoutMs,
+          requiredBinCount: binsList.length,
+        },
+        "preflight",
+      );
+      if (cleared) {
+        bumpSkillsSnapshotVersion({ reason: "remote-node" });
+      }
+      return;
+    }
+  }
+  try {
+    const res = await remoteRegistry.invoke(
+      canWhich
+        ? {
+            nodeId: params.nodeId,
+            command,
+            params: { bins: binsList },
+            timeoutMs,
+          }
+        : {
+            nodeId: params.nodeId,
+            command,
+            params: {
+              command: ["/bin/sh", "-lc", buildBinProbeScript(binsList)],
+            },
+            timeoutMs,
+          },
+    );
+    if (!res.ok) {
+      const cleared = clearRemoteNodeBins(params.nodeId);
+      logRemoteBinProbeFailure(params.nodeId, res.error?.message ?? "unknown", logContext);
+      if (cleared) {
+        bumpSkillsSnapshotVersion({ reason: "remote-node" });
+      }
+      return;
+    }
+    const bins = parseBinProbePayload(res.payloadJSON, res.payload);
+    const existingBins = remoteNodes.get(params.nodeId)?.bins;
+    const nextBins = new Set(bins);
+    const hasChanged = !areBinSetsEqual(existingBins, nextBins);
+    recordRemoteNodeBins(params.nodeId, bins);
+    if (!hasChanged) {
+      return;
+    }
+    await updatePairedNodeMetadata(params.nodeId, { bins });
+    bumpSkillsSnapshotVersion({ reason: "remote-node" });
+  } catch (err) {
+    const cleared = clearRemoteNodeBins(params.nodeId);
+    logRemoteBinProbeFailure(params.nodeId, err, logContext);
+    if (cleared) {
+      bumpSkillsSnapshotVersion({ reason: "remote-node" });
+    }
+  }
+}
+
+export function getRemoteSkillEligibility(options?: {
+  advertiseExecNode?: boolean;
+}): SkillEligibilityContext["remote"] | undefined {
+  const macNodes = [...remoteNodes.values()].filter(
+    (node) =>
+      node.connected &&
+      isMacPlatform(node.platform, node.deviceFamily) &&
+      supportsSystemRun(node.commands),
+  );
+  if (macNodes.length === 0) {
+    return undefined;
+  }
+  const bins = new Set<string>();
+  for (const node of macNodes) {
+    for (const bin of node.bins) {
+      bins.add(bin);
+    }
+  }
+  const labels = macNodes.map((node) => node.displayName ?? node.nodeId).filter(Boolean);
+  const note =
+    options?.advertiseExecNode === false
+      ? undefined
+      : labels.length > 0
+        ? `Remote macOS node available (${labels.join(", ")}). Run macOS-only skills via exec host=node on that node.`
+        : "Remote macOS node available. Run macOS-only skills via exec host=node on that node.";
   return {
-    ...state.config,
-    nodes: state.config.nodes.map((n) => ({ ...n })),
+    platforms: ["darwin"],
+    hasBin: (bin) => bins.has(bin),
+    hasAnyBin: (required) => required.some((bin) => bins.has(bin)),
+    ...(note ? { note } : {}),
   };
+}
+
+export async function refreshRemoteBinsForConnectedNodes(cfg: OpenClawConfig) {
+  if (!remoteRegistry) {
+    return;
+  }
+  const connected = remoteRegistry.listConnected();
+  for (const node of connected) {
+    await refreshRemoteNodeBins({
+      nodeId: node.nodeId,
+      platform: node.platform,
+      deviceFamily: node.deviceFamily,
+      commands: node.commands,
+      cfg,
+    });
+  }
 }

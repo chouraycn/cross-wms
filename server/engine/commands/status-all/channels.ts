@@ -3,9 +3,9 @@
 // This layer stays plugin-generic: channel-specific auth rules live in plugin config/status hooks.
 
 import fs from "node:fs";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { sanitizeForLog } from "@openclaw-src/packages/terminal-core/src/ansi.js";
+import { asRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { sanitizeForLog } from "@openclaw/terminal-core/ansi";
 import { resolveInspectedChannelAccount } from "@openclaw-src/channels/account-inspection.js";
 import { hasConfiguredUnavailableCredentialStatus } from "@openclaw-src/channels/account-snapshot-fields.js";
 import {

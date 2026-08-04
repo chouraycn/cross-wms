@@ -1,4 +1,3 @@
-// @ts-nocheck
 export type ReplyOperationAdmissionSnapshot =
   | { status: "owned" }
   | { status: "skipped"; reason: "active-run" | "aborted" };

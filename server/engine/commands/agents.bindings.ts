@@ -1,6 +1,6 @@
 // Pure helpers for parsing, adding, removing, and generating agent route bindings.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeSortedUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeSortedUniqueStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import { getBundledChannelSetupPlugin } from "@openclaw-src/channels/plugins/bundled.js";
 import { resolveChannelDefaultAccountId } from "@openclaw-src/channels/plugins/helpers.js";
 import { getLoadedChannelPlugin } from "@openclaw-src/channels/plugins/index.js";

@@ -1,12 +1,28 @@
-/**
- * 移植自 openclaw/src/agents/bootstrap-mode.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
- */
+// Bootstrap mode resolver for deciding whether a run gets full, limited, or no
+// workspace bootstrap files.
+export type BootstrapMode = "full" | "limited" | "none";
 
-export type BootstrapMode = unknown;
-export function resolveBootstrapMode(..._args: unknown[]): unknown {
-  return undefined;
+/** Resolve the bootstrap mode for one agent run. */
+export function resolveBootstrapMode(params: {
+  bootstrapPending: boolean;
+  runKind?: "default" | "heartbeat" | "cron";
+  isInteractiveUserFacing: boolean;
+  isPrimaryRun: boolean;
+  isCanonicalWorkspace: boolean;
+  hasBootstrapFileAccess: boolean;
+}): BootstrapMode {
+  if (!params.bootstrapPending) {
+    return "none";
+  }
+  if (params.runKind === "heartbeat" || params.runKind === "cron") {
+    // Background maintenance turns should not consume or mutate bootstrap state.
+    return "none";
+  }
+  if (!params.isPrimaryRun || !params.isInteractiveUserFacing) {
+    return "none";
+  }
+  if (!params.hasBootstrapFileAccess) {
+    return "limited";
+  }
+  return params.isCanonicalWorkspace ? "full" : "limited";
 }

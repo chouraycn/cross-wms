@@ -1,16 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/openresponses-file-content.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// OpenResponses file-content boundary helper.
+// Marks uploaded/read file text as untrusted external model input.
+import { wrapExternalContent } from "../security/external-content.js";
 
-export function wrapUntrustedFileContent(..._args: unknown[]): unknown {
-  return undefined;
+// OpenResponses file content is untrusted model input. The wrapper preserves
+// content while marking it as external so prompt assembly keeps the boundary.
+/** Wraps untrusted file content for OpenResponses input blocks. */
+export function wrapUntrustedFileContent(content: string): string {
+  return wrapExternalContent(content, {
+    source: "unknown",
+    includeWarning: false,
+  });
 }

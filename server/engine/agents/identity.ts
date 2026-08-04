@@ -1,173 +1,238 @@
 /**
- * Agent 身份运行时定义
- *
- * 包含身份标识、前缀标记、确认反应、模拟人类延迟等运行时属性。
- * 支持从文本中解析身份标记，以及 5 个预定义 WMS Agent。
+ * Agent identity and message-prefix resolution.
+ * Applies account, channel, global, and per-agent precedence for reactions,
+ * prefixes, and human-delay settings.
  */
+import type { HumanDelayConfig, IdentityConfig } from "../config/types.base.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { resolveAgentConfig } from "./agent-scope.js";
 
-export interface AgentIdentityConfig {
-  /** 唯一标识 */
+const DEFAULT_ACK_REACTION = "👀";
+
+/** Resolve the configured identity block for one agent. */
+export function resolveAgentIdentity(
+  cfg: OpenClawConfig,
+  agentId: string,
+): IdentityConfig | undefined {
+  return resolveAgentConfig(cfg, agentId)?.identity;
+}
+
+/** Resolve the acknowledgement reaction using account, channel, global, then identity fallback. */
+export function resolveAckReaction(
+  cfg: OpenClawConfig,
+  agentId: string,
+  opts?: { channel?: string; accountId?: string },
+): string {
+  // L1: Channel account level
+  if (opts?.channel && opts?.accountId) {
+    const channelCfg = getChannelConfig(cfg, opts.channel);
+    const accounts = channelCfg?.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accountReaction = accounts?.[opts.accountId]?.ackReaction as string | undefined;
+    if (accountReaction !== undefined) {
+      return accountReaction.trim();
+    }
+  }
+
+  // L2: Channel level
+  if (opts?.channel) {
+    const channelCfg = getChannelConfig(cfg, opts.channel);
+    const channelReaction = channelCfg?.ackReaction as string | undefined;
+    if (channelReaction !== undefined) {
+      return channelReaction.trim();
+    }
+  }
+
+  // L3: Global messages level
+  const configured = cfg.messages?.ackReaction;
+  if (configured !== undefined) {
+    return configured.trim();
+  }
+
+  // L4: Agent identity emoji fallback
+  const emoji = resolveAgentIdentity(cfg, agentId)?.emoji?.trim();
+  return emoji || DEFAULT_ACK_REACTION;
+}
+
+/** Build the automatic `[name]` prefix for an agent identity. */
+export function resolveIdentityNamePrefix(
+  cfg: OpenClawConfig,
+  agentId: string,
+): string | undefined {
+  const name = resolveAgentIdentity(cfg, agentId)?.name?.trim();
+  if (!name) {
+    return undefined;
+  }
+  return `[${name}]`;
+}
+
+/** Resolve the outbound message prefix, preserving explicit empty prefixes. */
+export function resolveMessagePrefix(
+  cfg: OpenClawConfig,
+  agentId: string,
+  opts?: { configured?: string; hasAllowFrom?: boolean; fallback?: string },
+): string {
+  const configured = opts?.configured ?? cfg.messages?.messagePrefix;
+  if (configured !== undefined) {
+    return configured;
+  }
+
+  const hasAllowFrom = opts?.hasAllowFrom === true;
+  if (hasAllowFrom) {
+    return "";
+  }
+
+  return resolveIdentityNamePrefix(cfg, agentId) ?? opts?.fallback ?? "[openclaw]";
+}
+
+/** Helper to extract a channel config value by dynamic key. */
+function getChannelConfig(
+  cfg: OpenClawConfig,
+  channel: string,
+): Record<string, unknown> | undefined {
+  const channels = cfg.channels as Record<string, unknown> | undefined;
+  const value = channels?.[channel];
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+/** Resolve the optional response prefix, expanding `auto` to the identity name prefix. */
+export function resolveResponsePrefix(
+  cfg: OpenClawConfig,
+  agentId: string,
+  opts?: { channel?: string; accountId?: string },
+): string | undefined {
+  // L1: Channel account level
+  if (opts?.channel && opts?.accountId) {
+    const channelCfg = getChannelConfig(cfg, opts.channel);
+    const accounts = channelCfg?.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accountPrefix = accounts?.[opts.accountId]?.responsePrefix as string | undefined;
+    if (accountPrefix !== undefined) {
+      if (accountPrefix === "auto") {
+        return resolveIdentityNamePrefix(cfg, agentId);
+      }
+      return accountPrefix;
+    }
+  }
+
+  // L2: Channel level
+  if (opts?.channel) {
+    const channelCfg = getChannelConfig(cfg, opts.channel);
+    const channelPrefix = channelCfg?.responsePrefix as string | undefined;
+    if (channelPrefix !== undefined) {
+      if (channelPrefix === "auto") {
+        return resolveIdentityNamePrefix(cfg, agentId);
+      }
+      return channelPrefix;
+    }
+  }
+
+  // L4: Global level
+  const configured = cfg.messages?.responsePrefix;
+  if (configured !== undefined) {
+    if (configured === "auto") {
+      return resolveIdentityNamePrefix(cfg, agentId);
+    }
+    return configured;
+  }
+  return undefined;
+}
+
+/** Resolve message and response prefix values together for channel delivery. */
+export function resolveEffectiveMessagesConfig(
+  cfg: OpenClawConfig,
+  agentId: string,
+  opts?: {
+    hasAllowFrom?: boolean;
+    fallbackMessagePrefix?: string;
+    channel?: string;
+    accountId?: string;
+  },
+): { messagePrefix: string; responsePrefix?: string } {
+  return {
+    messagePrefix: resolveMessagePrefix(cfg, agentId, {
+      hasAllowFrom: opts?.hasAllowFrom,
+      fallback: opts?.fallbackMessagePrefix,
+    }),
+    responsePrefix: resolveResponsePrefix(cfg, agentId, {
+      channel: opts?.channel,
+      accountId: opts?.accountId,
+    }),
+  };
+}
+
+/** Resolve per-agent human-delay settings over global agent defaults. */
+export function resolveHumanDelayConfig(
+  cfg: OpenClawConfig,
+  agentId: string,
+): HumanDelayConfig | undefined {
+  const defaults = cfg.agents?.defaults?.humanDelay;
+  const overrides = resolveAgentConfig(cfg, agentId)?.humanDelay;
+  if (!defaults && !overrides) {
+    return undefined;
+  }
+  return {
+    mode: overrides?.mode ?? defaults?.mode,
+    minMs: overrides?.minMs ?? defaults?.minMs,
+    maxMs: overrides?.maxMs ?? defaults?.maxMs,
+  };
+}
+
+// ============================================================================
+// WMS 兼容：agents.ts 通过 `new AgentIdentity({...})` 构造运行时身份对象。
+// openclaw 没有这个类（它只用 IdentityConfig 类型）；此 class 是 WMS 扩展。
+// ============================================================================
+
+export type AgentIdentityInit = {
   id: string;
-  /** 显示名称 */
-  name: string;
-  /** 角色类型 */
-  role: string;
-  /** 前缀标记，如 wms-expert */
-  prefix: string;
-  /** 是否发送确认反应 */
-  ackReaction: boolean;
-  /** 模拟人类延迟（毫秒） */
-  humanDelayMs: number;
-  /** 适用场景列表 */
-  scenarios: string[];
+  name?: string;
+  role?: string;
+  prefix?: string;
+  emoji?: string;
+  ackReaction?: boolean | string;
+  humanDelayMs?: number;
+  scenarios?: string[];
+};
+
+export class AgentIdentity {
+  readonly id: string;
+  readonly name?: string;
+  readonly role?: string;
+  readonly prefix?: string;
+  readonly emoji?: string;
+  readonly ackReaction?: boolean | string;
+  readonly humanDelayMs?: number;
+  readonly scenarios: string[];
+
+  constructor(init: AgentIdentityInit) {
+    this.id = init.id;
+    this.name = init.name;
+    this.role = init.role;
+    this.prefix = init.prefix;
+    this.emoji = init.emoji;
+    this.ackReaction = init.ackReaction;
+    this.humanDelayMs = init.humanDelayMs;
+    this.scenarios = init.scenarios ?? [];
+  }
 }
 
 /**
- * Agent 身份运行时类
+ * 运行时 AgentIdentity 注册表（per-agentId）。
+ * agents.ts 的 getAgentIdentity 会先查这里，再回退到默认构造。
  */
-export class AgentIdentity implements AgentIdentityConfig {
-  id: string;
-  name: string;
-  role: string;
-  prefix: string;
-  ackReaction: boolean;
-  humanDelayMs: number;
-  scenarios: string[];
+const runtimeAgentIdentities = new Map<string, AgentIdentity>();
 
-  constructor(config: Partial<AgentIdentityConfig> & { id: string; name: string; role: string }) {
-    this.id = config.id;
-    this.name = config.name;
-    this.role = config.role;
-    this.prefix = config.prefix ?? config.id;
-    this.ackReaction = config.ackReaction ?? true;
-    this.humanDelayMs = config.humanDelayMs ?? 0;
-    this.scenarios = config.scenarios ?? [];
-  }
-
-  /**
-   * 从文本中解析身份标记
-   * @param input 输入文本，如 "[wms-expert] 请帮我查询库存"
-   * @returns 解析出的 AgentIdentity，若未匹配则返回 general
-   */
-  static parseIdentity(input: string): AgentIdentity {
-    const trimmed = input.trim();
-    // 匹配 [prefix] 格式
-    const bracketMatch = trimmed.match(/^\[([a-z0-9-]+)\]/i);
-    if (bracketMatch) {
-      const prefix = bracketMatch[1].toLowerCase();
-      const predefined = PREDEFINED_AGENTS.find((a) => a.prefix === prefix || a.id === prefix);
-      if (predefined) {
-        return new AgentIdentity(predefined);
-      }
-    }
-    // 匹配 prefix: 格式
-    const colonMatch = trimmed.match(/^([a-z0-9-]+):\s*/i);
-    if (colonMatch) {
-      const prefix = colonMatch[1].toLowerCase();
-      const predefined = PREDEFINED_AGENTS.find((a) => a.prefix === prefix || a.id === prefix);
-      if (predefined) {
-        return new AgentIdentity(predefined);
-      }
-    }
-    // 默认返回 general
-    const general = PREDEFINED_AGENTS.find((a) => a.id === 'general');
-    return new AgentIdentity(general!);
-  }
-
-  /**
-   * 输出身份字符串
-   * @returns 如 "[wms-expert] WMS 专家 (expert)"
-   */
-  toString(): string {
-    return `[${this.prefix}] ${this.name} (${this.role})`;
-  }
+/** 注册或覆盖运行时 AgentIdentity。 */
+export function setAgentIdentity(agentId: string, identity: AgentIdentity): void {
+  runtimeAgentIdentities.set(agentId, identity);
 }
 
-// ============================================================================
-// 预定义 Agent 配置
-// ============================================================================
-
-const PREDEFINED_AGENTS: AgentIdentityConfig[] = [
-  {
-    id: 'wms-expert',
-    name: 'WMS 专家',
-    role: 'expert',
-    prefix: 'wms-expert',
-    ackReaction: true,
-    humanDelayMs: 200,
-    scenarios: ['库存查询', '入库操作', '出库操作', '库间调拨'],
-  },
-  {
-    id: 'wms-analyst',
-    name: 'WMS 分析师',
-    role: 'analyst',
-    prefix: 'wms-analyst',
-    ackReaction: true,
-    humanDelayMs: 300,
-    scenarios: ['报表生成', '趋势分析', '库存预测', '数据洞察'],
-  },
-  {
-    id: 'wms-operator',
-    name: 'WMS 操作员',
-    role: 'operator',
-    prefix: 'wms-operator',
-    ackReaction: false,
-    humanDelayMs: 100,
-    scenarios: ['日常盘点', '补货作业', '库位整理', '订单拣选'],
-  },
-  {
-    id: 'general',
-    name: '通用助手',
-    role: 'general',
-    prefix: 'general',
-    ackReaction: true,
-    humanDelayMs: 150,
-    scenarios: ['通用问答', '任务分发', '简单查询'],
-  },
-  {
-    id: 'debugger',
-    name: '调试专家',
-    role: 'debugger',
-    prefix: 'debugger',
-    ackReaction: true,
-    humanDelayMs: 250,
-    scenarios: ['错误排查', '日志分析', '系统诊断', '修复验证'],
-  },
-];
-
-// ============================================================================
-// 运行时存储与辅助函数
-// ============================================================================
-
-const identityStore = new Map<string, AgentIdentity>();
-
-/** 获取预定义 Agent */
-export function getPredefinedAgent(id: string): AgentIdentity | undefined {
-  const config = PREDEFINED_AGENTS.find((a) => a.id === id);
-  return config ? new AgentIdentity(config) : undefined;
+/** 获取运行时注册的 AgentIdentity；未注册返回 undefined。 */
+export function getAgentIdentity(agentId: string): AgentIdentity | undefined {
+  return runtimeAgentIdentities.get(agentId);
 }
 
-/** 列出所有预定义 Agent */
-export function listPredefinedAgents(): AgentIdentity[] {
-  return PREDEFINED_AGENTS.map((c) => new AgentIdentity(c));
-}
-
-/** 注册 Agent 身份到运行时 */
-export function registerAgentIdentity(identity: AgentIdentity): void {
-  identityStore.set(identity.id, identity);
-}
-
-/** 获取 Agent 身份（优先运行时存储，回退预定义） */
-export function getAgentIdentity(id: string): AgentIdentity | undefined {
-  return identityStore.get(id) ?? getPredefinedAgent(id);
-}
-
-/** 列出所有已注册的 Agent 身份 */
-export function listAgentIdentities(): AgentIdentity[] {
-  return Array.from(identityStore.values());
-}
-
-/** 清空运行时存储 */
-export function clearAgentIdentities(): void {
-  identityStore.clear();
+/** 清空运行时 AgentIdentity 注册表（主要用于测试）。 */
+export function clearRuntimeAgentIdentities(): void {
+  runtimeAgentIdentities.clear();
 }

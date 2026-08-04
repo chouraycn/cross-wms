@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent config mutation helpers wrap retrying config writes for create/update/
 // delete flows and surface typed precondition failures to gateway handlers.
 import { resolveAgentDir, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
@@ -99,7 +98,7 @@ export async function deleteAgentConfigEntry(params: { agentId: string }): Promi
   nextConfig: OpenClawConfig;
   result: AgentDeleteMutationResult | undefined;
 }> {
-  const committed = await mutateConfigFileWithRetry<AgentDeleteMutationResult>({
+  const committed = await mutateConfigFileWithRetry({
     afterWrite: { mode: "auto" },
     mutate: (draft) => {
       if (!isConfiguredAgent(draft, params.agentId)) {
@@ -117,7 +116,7 @@ export async function deleteAgentConfigEntry(params: { agentId: string }): Promi
         removedBindings: result.removedBindings,
       };
     },
-  });
+  }) as any;
   return {
     nextConfig: committed.nextConfig,
     result: committed.result,

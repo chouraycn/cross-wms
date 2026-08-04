@@ -13,12 +13,64 @@ import type {
   AgentUsageRow,
   AgentModelBindingRow,
   AgentResourceBindingRow,
+  AgentResourceBindingRead,
 } from '../../types/staff.js';
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-/** row -> read（含 JSON 反序列化与 boolean 转换） */
-export function toAgentRead(row: AgentProfileRow): AgentProfileRead {
+/** 资源绑定 row -> read（metadata JSON 反序列化） */
+export function toResourceBindingRead(row: AgentResourceBindingRow): AgentResourceBindingRead {
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
+  } catch {
+    metadata = {};
+  }
+  return {
+    id: row.id,
+    tenant_id: row.tenant_id,
+    agent_id: row.agent_id,
+    resource_type: row.resource_type,
+    resource_id: row.resource_id,
+    status: row.status,
+    metadata,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/**
+ * 一次性读出租户下全部资源绑定，按 agent_id 分组。
+ * 用于列表场景避免 N+1 查询。
+ */
+export function getResourceBindingsByAgent(
+  tenantId: string = DEFAULT_TENANT_ID,
+): Map<string, AgentResourceBindingRead[]> {
+  const db = initDb();
+  const rows = db
+    .prepare(
+      `SELECT * FROM sd_agent_resource_bindings WHERE tenant_id = ? ORDER BY updated_at DESC`,
+    )
+    .all(tenantId) as AgentResourceBindingRow[];
+  const grouped = new Map<string, AgentResourceBindingRead[]>();
+  for (const row of rows) {
+    const list = grouped.get(row.agent_id) ?? [];
+    list.push(toResourceBindingRead(row));
+    grouped.set(row.agent_id, list);
+  }
+  return grouped;
+}
+
+/**
+ * row -> read（含 JSON 反序列化与 boolean 转换）。
+ *
+ * `resources` 缺省为空数组，保证旧调用点不崩；但前端 EmployeeCard 依赖它统计
+ * sopCount / skillCount / kbCount，列表与详情端点应改用 buildAgentReader 注入。
+ */
+export function toAgentRead(
+  row: AgentProfileRow,
+  resources: AgentResourceBindingRead[] = [],
+): AgentProfileRead {
   let metadata: Record<string, unknown> = {};
   try {
     metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
@@ -34,9 +86,21 @@ export function toAgentRead(row: AgentProfileRow): AgentProfileRead {
     is_overall: row.is_overall === 1,
     status: row.status,
     metadata,
+    resources,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+/**
+ * 构造带资源绑定的序列化器（一次查询、多行复用）。
+ * 路由层用法：`const read = buildAgentReader(tenantId); rows.map((r) => read(r))`
+ */
+export function buildAgentReader(
+  tenantId: string = DEFAULT_TENANT_ID,
+): (row: AgentProfileRow) => AgentProfileRead {
+  const grouped = getResourceBindingsByAgent(tenantId);
+  return (row: AgentProfileRow) => toAgentRead(row, grouped.get(row.id) ?? []);
 }
 
 /** 列出指定租户下的全部 Agent（按 is_overall desc, updated_at desc） */
@@ -155,21 +219,48 @@ export function listAgentUsagesByUser(
     .all(tenantId, userId) as AgentUsageRow[];
 }
 
-export function upsertAgentUsage(tenantId: string, userId: string, agentId: string): AgentUsageRow {
+export interface UpsertUsageOptions {
+  /** 是否累计一次对话次数（真实 LLM 路径成功时传 true） */
+  incrementChat?: boolean;
+  /** 本次使用的模型 id（写入 metadata 供可观测） */
+  model?: string;
+}
+
+export function upsertAgentUsage(
+  tenantId: string,
+  userId: string,
+  agentId: string,
+  opts?: UpsertUsageOptions,
+): AgentUsageRow {
   const db = initDb();
   const existing = db
     .prepare(`SELECT * FROM sd_agent_usages WHERE tenant_id = ? AND user_id = ? AND agent_id = ?`)
     .get(tenantId, userId, agentId) as AgentUsageRow | undefined;
   const ts = now();
   if (existing) {
-    db.prepare(`UPDATE sd_agent_usages SET updated_at = ? WHERE id = ?`).run(ts, existing.id);
-    return { ...existing, updated_at: ts };
+    let metadata: Record<string, unknown> = {};
+    try {
+      metadata = existing.metadata_json ? JSON.parse(existing.metadata_json) : {};
+    } catch {
+      metadata = {};
+    }
+    if (opts?.incrementChat) {
+      metadata.chatCount = (typeof metadata.chatCount === 'number' ? metadata.chatCount : 0) + 1;
+    }
+    if (opts?.model) metadata.lastModel = opts.model;
+    db.prepare(`UPDATE sd_agent_usages SET updated_at = ?, metadata_json = ? WHERE id = ?`)
+      .run(ts, JSON.stringify(metadata), existing.id);
+    return { ...existing, updated_at: ts, metadata_json: JSON.stringify(metadata) };
   }
   const id = newStaffId(StaffIdPrefix.agentUsage);
+  const initialMeta: Record<string, unknown> = {
+    chatCount: opts?.incrementChat ? 1 : 0,
+    ...(opts?.model ? { lastModel: opts.model } : {}),
+  };
   db.prepare(
     `INSERT INTO sd_agent_usages (id, tenant_id, user_id, agent_id, metadata_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, '{}', ?, ?)`,
-  ).run(id, tenantId, userId, agentId, ts, ts);
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, tenantId, userId, agentId, JSON.stringify(initialMeta), ts, ts);
   return db.prepare(`SELECT * FROM sd_agent_usages WHERE id = ?`).get(id) as AgentUsageRow;
 }
 

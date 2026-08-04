@@ -1,7 +1,7 @@
 /** Public option types for reply generation callbacks, streaming, and delivery policy. */
 import type { PromptImageOrderEntry } from "../media/prompt-image-order.js";
 import type { UserTurnTranscriptRecorder } from "../sessions/user-turn-transcript.types.js";
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@cdf-know/normalization-core/string-coerce";
 import type { ReplyPayload } from "./reply-payload.js";
 
 // cross-wms does not yet port the full llm/types or reply/typing modules.

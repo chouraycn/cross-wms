@@ -130,8 +130,8 @@ export function definePlugin(options: {
   name: string;
   description?: string;
   version?: string;
-  configSchema?: import('../plugins/types.js').PluginConfigSchema;
-  capabilities?: import('../plugins/types.js').PluginCapabilityKind[];
+  configSchema?: any;
+  capabilities?: any[];
   setup?: (context: PluginContext) => Promise<void> | void;
   register: (api: PluginSdkApi) => void | Promise<void>;
 }): PluginDefinition {

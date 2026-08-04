@@ -8,8 +8,8 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { isRich, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+} from "@cdf-know/normalization-core/string-coerce";
+import { isRich, theme } from "@openclaw/terminal-core/theme";
 import { readAcpSessionMetaForEntry } from "@openclaw-src/acp/runtime/session-meta.js";
 import { resolveModelAgentRuntimeMetadata } from "@openclaw-src/agents/agent-runtime-metadata.js";
 import { DEFAULT_CONTEXT_TOKENS } from "@openclaw-src/agents/defaults.js";

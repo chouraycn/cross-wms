@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Model auth status tests cover profile health summaries, provider usage,
 // credential cleanup, secret refresh, and provider run abort side effects.
 import { beforeEach, describe, expect, it, vi } from "vitest";

@@ -6,7 +6,7 @@
  *  - manifest-registry-installed.ts、current-plugin-metadata-snapshot.ts、
  *    config-normalization-shared.ts、installed-plugin-index.ts 的
  *    loadPluginManifestRegistryForInstalledIndex 降级为返回空注册表。
- *  - @openclaw/model-catalog-core/provider-id 与 string-normalization 降级为内联实现。
+ *  - @cdf-know/model-catalog-core/provider-id 与 string-normalization 降级为内联实现。
  *  - OpenClawConfig 降级为 unknown 占位。
  *  - 所有 export 保持签名兼容；行为降级为返回空数组或调用底层已移植 API。
  */
@@ -104,12 +104,12 @@ export type ResolveManifestContractPluginIdsByCompatibilityRuntimePathParams =
     origin?: PluginOrigin;
   };
 
-/** 占位：normalizeProviderId（@openclaw/model-catalog-core 未移植）。 */
+/** 占位：normalizeProviderId（@cdf-know/model-catalog-core 未移植）。 */
 function normalizeProviderId(value: string): string {
   return value.trim().toLowerCase();
 }
 
-/** 占位：规范化排序唯一字符串条目（@openclaw/normalization-core 未移植）。 */
+/** 占位：规范化排序唯一字符串条目（@cdf-know/normalization-core 未移植）。 */
 function normalizeSortedUniqueStringEntries(values: readonly string[]): string[] {
   return [...new Set(values.map((v) => v.trim()).filter((v) => v.length > 0))].sort();
 }

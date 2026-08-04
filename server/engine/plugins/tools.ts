@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Builds agent tools registered by plugins, preserving plugin scope around callbacks and descriptors. */
 import { isRecord } from './_openclaw__normalization_core__record_coerce.js';
 import {

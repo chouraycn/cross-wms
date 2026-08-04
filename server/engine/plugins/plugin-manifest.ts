@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Plugin SDK 清单 — manifest 类型与校验
  *
@@ -10,7 +11,7 @@
 import type {
   PluginManifest,
   PluginToolDefinition,
-  PluginTrigger,
+  PluginLogger,
   PluginConfigSchema,
   PluginDependency,
   PluginCapabilityKind,
@@ -30,7 +31,7 @@ import { ALL_CAPABILITY_KINDS, ALL_RISK_LEVELS, RISK_LEVEL_AUTO } from './plugin
 // 下游可直接从 ./types.js 或 ./manifest.js 导入 PluginManifest。
 export type {
   PluginToolDefinition,
-  PluginTrigger,
+  PluginLogger,
   PluginConfigSchema,
   PluginDependency,
   PluginCapabilityKind,

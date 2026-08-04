@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as os from 'node:os';
 import { logger } from '../../logger.js';
 import { isPrivateIpAddress } from './ssrf.js';
@@ -197,7 +196,7 @@ export function pickMatchingExternalInterfaceAddress(
         if (!entry || entry.internal) continue;
         const address = entry.address?.trim();
         if (!address) continue;
-        const entryFamily = entry.family === 'IPv4' || entry.family === 4 ? 'IPv4' : entry.family === 'IPv6' || entry.family === 6 ? 'IPv6' : undefined;
+        const entryFamily = (entry as any).family === 'IPv4' || (entry as any).family === 4 ? 'IPv4' : (entry as any).family === 'IPv6' || (entry as any).family === 6 ? 'IPv6' : undefined;
         if (!entryFamily || entryFamily !== family) continue;
         addresses.push({ name, address, family: entryFamily });
       }

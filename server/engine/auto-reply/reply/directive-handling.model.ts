@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Handles model directives and persists provider/model selections.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { normalizeOptionalAgentRuntimeId } from '@openclaw-src/agents/agent-runtime-id.js';
 import { resolveAuthStorePathForDisplay } from '@openclaw-src/agents/auth-profiles.js';
 import type { AuthProfileCredential } from '@openclaw-src/agents/auth-profiles/types.js';

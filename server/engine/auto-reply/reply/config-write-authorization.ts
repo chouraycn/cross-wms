@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Authorization helper for channel-originated config writes. */
 import {
   authorizeConfigWrite,

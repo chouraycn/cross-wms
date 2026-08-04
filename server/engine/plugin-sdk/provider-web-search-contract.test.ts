@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests provider web search contract suite behavior.
  */

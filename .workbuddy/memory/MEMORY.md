@@ -1,78 +1,53 @@
 # CrossWMS 项目记忆
 
 ## 核心架构
-- PyWebView + React 18 + Vite + MUI v5 + Express + SQLite 桌面应用 (CDFKnow, 基于 OpenClaw 2026.6.9 硬分叉)
-- 执行策略: Legacy / Observer / Planner / ReAct(v9.0 统一 streamExecutor)
-- 工具: builtin + plugin + MCP (`mcp__{server}__{tool}`); 权限 auto/confirm/high-risk 三级
+- PyWebView + React18 + Vite + MUI v5 + Express3001 + SQLite 桌面应用 (CDFKnow，OpenClaw 2026.6.9 硬分叉)
+- 执行策略 Legacy/Observer/Planner/ReAct(v9.0 统一 streamExecutor)；工具 builtin+plugin+MCP；权限 auto/confirm/high-risk
+- **运行时真实库 = `~/Library/Application Support/CDFKnowClow/chat.db`**（主程序 chat 表 + 全部 `sd_*` 同库）。仓库内 `.dev-data/config/chat.db` 是无人用的 decoy，勿写。直接写库后必须重启 `npm run dev:server` 才重读（dev 用 `tsx watch` 自动重载）。
 
-## 关键约定（铁律）
-- TS 严格模式，提交前 `NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`（默认小堆 OOM exit137）；vite build 须绿
-- **提交解锁（pre-commit 钩子）**：本仓 OpenClaw 硬分叉的 husky 钩子在新环境会连失败——① 缺 `eslint.config.*`（ESLint v10），需补 `eslint.config.mjs`（最小解析配置，仅 @typescript-eslint parser + 空 rules）；② 钩子内 `tsc` 默认小堆 OOM，提交必须 `export NODE_OPTIONS=--max-old-space-size=8192` 再 `git commit`；③ `server/tsconfig.json` 的 `tsc` 门会报 OpenClaw fork 既有源码/测试类型错误（acp/gateway/media 等），`**/*.test.*` 与 `*.test-helpers.ts` 已移出生产类型检查；仍报未改过的源码错误时，用 `git commit --no-verify` 落地（代码本身 tsc 全项目已绿）。
-- 日志统一 `server/logger.ts`，禁裸 console.*（4 级 error/warn/info/debug）
-- WKWebView 兼容: 禁 CSS @keyframes（用 inline transition）；禁 rAF（统一 setTimeout(fn,16)）
-- 窗口: frameless 时前端自定义红黄绿圆点 (WindowDragBar.tsx)，**禁改其按钮逻辑和 pywebview_app.py Api**
-- **ESM 运行时 js-yaml 禁用 `import yaml from 'js-yaml'` default 导入**（依赖解析为 5.2.2 ESM-only 无 default 导出 → 模块加载 SyntaxError → 进程在 listen() 前崩溃 → 全部 API 502）。必须用 `import * as yaml from 'js-yaml'`。2026-07-29 已修 7 处(skillMdParser/docQualityChecker/openclaw/skillMetadata/routes/skills/cli/skills/engine/cli/scanner/scripts/test-skill-parser)
-- 构建: `bash scripts/build-dmg-pywebview.sh`（bump+GitHub Release）；`.npmrc legacy-peer-deps=true`
-- DMG 验证: `grep -c "关键修复字符串" server_dist/index.cjs`
+## 铁律（提交/运行/ESM）
+- 提交前 `NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`（默认小堆 OOM exit137）；vite build 须绿。
+- 日志统一 `server/logger.ts`，禁裸 console.*。
+- WKWebView: 禁 CSS @keyframes(用 inline transition)/禁 rAF(统一 setTimeout 16)。
+- **ESM 运行时禁 `import yaml from 'js-yaml'` default 导入**（用 `import * as yaml`），禁 `require()`（用 `import * as x from 'node:...'`）。
+- 构建 `bash scripts/build-dmg-pywebview.sh`；`.npmrc legacy-peer-deps=true`。
+- 模型双体系：`sd_model_configs`(tenant 前端闸门) vs 主程序 `models.json`(staffChatExecutor 实际取模型，id 须=ollama tag，用 `llama3.1`)。
 
-## SSE/流式稳定性（铁律）
-- 8 核心事件 init/text/thinking/tool_call/permission_request/done/error/debug；非核心走 sendDebugSSE
-- **error 必走 sendSSE**，否则前端卡"思考中"
-- v9.0 `streamExecutor.executeChat()` 统一路径；TimerManager 管 keepAliveTimer；catch 必发 error+done
-- 前端 useChat: done 处理器 cancelFrame 前同步刷新 thinkingBuffer；心跳超时 60s
-- tool_calls 配对: assistant(tool_calls) 后必紧跟 tool 消息，三层防御(pendingSystem→contextTruncate重排→aiClient 400 strip+降级)
+## 数字员工 (StaffDeck×真实引擎)
+- 前端 100% 复刻：事实来源 = `StaffDeck-main/frontend-enterprise`，经 `/staffdeck-app/` iframe 嵌入；**禁止用 MUI 重写 staff 页**。API 适配 `/api/auth|/api/enterprise|/api/chat`→`/api/staffdeck/*`；**响应层对 code===0 剥 envelope 返裸 data**。
+- 执行装配 staffChatExecutor 注入 staffMcpManager/extraSkills/httpTools，finally disconnectAll，executionMode=REACT。
+- **round-trip 铁律**：物化 def.id=`staff-${tenant}-${slug}`；`skillDefinitionToToolDef` `-`→`_`、`handleSkillToolCall` `_`→`-` 还原；slug 含横线错位报"未找到"。
+- **鉴权兜底铁律**：`build-server.mjs` 用 esbuild `define` 把 `process.env.NODE_ENV` 构建期固化为 `"production"` → `isDefaultUserAllowed()=STAFF_AUTH_ALLOW_DEFAULT==='1'`。`ServerProcessManager.swift` 与 `dev:fast` 脚本已注入 `STAFF_AUTH_ALLOW_DEFAULT=1`。改鉴权必确认此开关。
+- SSE `/api/staffdeck/chat/stream` 发射 **StaffDeck 前端原生事件名**(session_created/user_message_received/stream_delta/status/stream_end/done)，**严禁改回 StaffStreamEvent 原始名**否则聊天假死。
+- **构建陷阱（重要）**：`npm run build`(主程序 `tsc && vite build`) 的 `vite build` 默认 `emptyOutDir` 会清空整个 `dist/`，把 `dist/staffdeck-app/` 一起删 → 启动后 `/staffdeck-app/*` 命中 `server/index.ts:761` 503「数字员工前端未构建…请先运行 npm run staffdeck:build」。已修复：(1) `package.json` 新增 `staffdeck:build` 脚本 = `node scripts/build-staffdeck-app.mjs`；(2) 主 `build` 改为 `tsc && vite build && npm run staffdeck:build`，构建后自动补回 `dist/staffdeck-app`。改完 StaffDeck 源码后跑 `npm run staffdeck:build` 或 `npm run build` 即可。
+- **StaffDeck 前端路由铁律**：`StaffDeck-main/frontend-enterprise/src/App.tsx` 用 `<BrowserRouter basename="/staffdeck-app">`（无 basename 则 `navigate('/workspace/chat/:id')` 写成绝对路径 → 主程序 fallback 白屏）。`DashboardPage.tsx:302` 与 `useChatSession.ts:406` 的绝对 `window.location.href` 必须用 `` `${import.meta.env.BASE_URL}...` ``（BASE_URL=`/staffdeck-app/`）而非裸 `/workspace/...` 或 `/`。
+- **打包 app 同步**：桌面程序 `dist-app/CDFKnowClow.app/Contents/Resources/frontend_dist/staffdeck-app/` 由 `scripts/package-mac-app.sh` 在打包时从 `dist/staffdeck-app` 拷贝。改完 StaffDeck 后若只重建 `dist/` 未重打包，需手动 `cp -R dist/staffdeck-app/. dist-app/.../frontend_dist/staffdeck-app/` 让桌面 app 生效（2026-08-04 实测如此修复）。
+- 迁移脚本：`scripts/seed-staffdeck-agents.mjs`(5 员工+技能/知识/工具/绑定)、`scripts/seed-staffdeck-model-config.mjs`(插 `sd_model_configs` llama3.1)。DB_PATH 自动识别 AppSupport/chat.db，可 `STAFF_DB_PATH=` 强制。
 
-## 原生 Skill（ESM 运行时，易踩坑）
-- 服务 ESM 运行，`require` 运行时未定义 → ReferenceError。双加载路径都用 import 动态加载（真实路径 skillLoader.loadSkillFromDirectory）
-- `ctx.tools.run(name,args)` 走 `await import('./toolRegistry.js')`（禁改 require）
-- 生产验证必须走 initSkillRuntime() 启动路径（非 scanDirectory 假路径）
+## P0-2 字段级漏搬审计与修复（2026-08-03 全部完成）
+六类 Read 已补齐原版计算字段（数据均在库，仅后端序列化漏返回）：
+1. `AgentProfileRead.resources`（员工资源绑定聚合，实测 8/9/12/11/9）
+2. `SkillRead` 统计(call_count等)+分支字段（读侧聚合 `sd_agent_events`/`_skill_stats`；数据空→0，行为正确）
+3. `KnowledgeBaseRead.document_count/bucket_count/chunk_count` + `version`/`branch_*`（`getKnowledgeBaseStats` GROUP BY 三表；员工隔离走 `getAgentVisibleKnowledgeBaseIds`）
+4. `McpServerRead.connection`(嵌套 transport/url/headers/...) + `tool_count`（`mcpServers.ts:54/73`）
+5. `ToolRead.mcp_config`（=config 剔除 execution；`tools.ts` 2026-08-03 17:35 修复漏加）
+6. `ModelConfigRead.api_key_masked`（脱敏 key，绝不返明文/encrypted）
 
-## 数字员工执行集成 (StaffDeck×真实引擎)
-- 工具闭环: HTTP + 全局MCP + 员工隔离MCP(`sd_mcp_servers`) + 原生skill + 通用技能物化(`sd_general_skills`)
-- **round-trip 铁律**: 物化 def.id 必须用横线 `staff-${tenant}-${slug}`；`skillDefinitionToToolDef` 把 `-`→`_` 生成工具名，`handleSkillToolCall` 把 `_`→`-` 还原。slug 含横线时下划线错位 → 报"未找到"（e2e/api/staff-dispatch 钉死）
-- 执行装配: staffChatExecutor 注入 staffMcpManager/extraSkills/extraSkillExecutor，finally disconnectAll；executionMode=REACT
-- 前端执行链路状态单一来源: GET /api/staffdeck/execution-runtime?tenant_id= (server/routes/staff/executionRuntime.ts)
-- 后端真实登录: POST /api/staffdeck/auth/login → {code,data:{access_token,user}}；桌面端默认会话独立 (getEnterpriseAuthSession/setEnterpriseAuthSession)
+**P1 技能调用统计写侧闭环（2026-08-03 已端到端验证通过）**：注入 `onSkillExecuted` 贯穿 `staffChatExecutor→streamExecutor→reactExecutor→actionPhaseExecutor`；真实聊天 turn 执行技能分支时发 `skill_started`/`skill_resumed` 到 `sd_agent_events`（tenantId 由 staffChatExecutor 闭包捕获，不污染引擎层）。端到端验证（IPv6 地址绕过 `aiClient.ts` 本地模型跳过 tools 优化）确认：桩收到 121 工具、SSE `status phase:tool`、DB 写入 `skill_started`(to_skill_id=`staff_default_document_generation_for_proofs`)、读侧聚合 `call_count=1`。P0-2(读)+P1(写) 全闭环。
 
-## StaffDeck 资产 100% 迁移（2026-07-28 完成）
-- 图片全量拷贝: src/assets/staffdeck/(26 PNG + cot-icons/8) + src/assets/icons/(49 SVG) + 根 LOGO.svg/onboarding-*.png/public/(favicon/staffdeck-icon)
-- 中央引用索引: src/assets/staffdeck-assets.ts（staffdeckContent 29 + staffdeckIcons 57 全 import，保证进 bundle）
-- 样式全量移植: src/styles/staffdeck-source.css（v4→v3：去@import/@theme→:root/@apply→纯CSS/body→.sd-root/@layer base 解包；含 Semantic UI 段）
-- 页级接线已完成: ① employee.ts 8 角色头像(PRESET_AVATAR_IMAGES) ② LoginPage loginPreview ③ 待补: OpenPlatformPage(plaza-*)/WorkRecordTab(capability-*)/EmployeeGalleryPage(sd1-*)/TutorialPage(onboarding-*)/BrandLogo(logo-mark)/chat(CoT cot-icons)
+## 数字员工能力连接架构
+- reactExecutor.ts `tools = [...builtin, ...plugin, ...mcp, ...staffMcp, ...extraSkill, ...staffHttpTools]`
+- HTTP 工具桥 `server/staff/staffHttpToolBridge.ts`：读 sd_tools tool_type='http'→`http_tool_` 前缀→fetchWithSsrFGuard。actionPhaseExecutor 按前缀路由：mcp__→staffMcpManager、http_tool_→staffHttpToolBridge、skill_*→skillToolBridge。
+- 渠道接入 `server/routes/staff/channels.ts`(wechat/wecom/feishu)，本地 demo `activateBindingLocal` 置 active。
 
-## 数字员工前端 100% 复刻（铁律，2026-07-29 定）
-- **唯一事实来源: StaffDeck-main/frontend-enterprise 原前端(shadcn/Tailwind Teal 设计系统)**，通过 `/staffdeck-app/` iframe 嵌入主程序，不重写组件。
-- **禁止**：继续用 MUI 重写 staff 页面追求"复刻"（组件库/配色/字体本质不同，到不了 100%）。原 `src/pages/staff/*` MUI 版仅存量兜底，新需求一律走嵌入前端。
-- 嵌入架构：主程序"数字员工"导航 → `/staffdeck` 路由 → `StaffDeckEmbedPage.tsx`(全屏 iframe src=/staffdeck-app/) → `dist/staffdeck-app/`(StaffDeck 构建产物)。
-- API 适配(Express): `/api/auth|/api/enterprise|/api/chat` → `/api/staffdeck/*`（server/index.ts 重写中间件）。
-- **嵌入前端响应 envelope 剥包(2026-07-30 根治启动白屏)**: 嵌入前端(原 StaffDeck)期望**裸数据**(数组/对象)，但 staff 路由统一返回 `{code,data,message}` envelope 且无 unwrap → 列表接口直接 `_.some(envelope)`(对象非数组)崩溃白屏。已在 server/index.ts 改写中间件之后注入**响应层中间件**：仅对 `/api/staffdeck/*` 且 `code===0` 的成功响应剥包(返回 `data`)；错误响应(code!==0)保留 envelope 以留错误码。**主程序 client.ts(API_BASE=/api/staffdeck) 的 unwrapEnvelope 对裸数据透传，不受影响**。**铁律：嵌入前端相关响应不得再套 envelope、不得让嵌入前端依赖 `code` 字段**。
-- 构建: `scripts/build-staffdeck-app.mjs`（隔离 npm 装在 frontend-enterprise/node_modules，不能用 cross-wms pnpm workspace），已接入 `build-all.mjs` 的 `staffdeck:build` 任务。
-- vite.config.ts 必须用 `@tailwindcss/postcss` + `base:'/staffdeck-app/'`(绕 vite8/rolldown @layer bug)；原版备份 vite.config.ts.bak。
-- **嵌入前端登录态(2026-07-29 解决)**: 生产同源(localStorage 共享) + 嵌入模式自动跳过登录。
-  - 嵌入前端 `App.tsx` 加 `detectEmbedded()`(iframe 或 `?embedded=1`)：无本地会话时直接用 `DEFAULT_DESKTOP_SESSION`(空 token，后端无 token 回退 default-user)跳过登录页；并加 postMessage 桥(`STAFFDECK_REQUEST_AUTH`/`STAFFDECK_AUTH`)接收父窗口真实会话后 reload 应用。
-  - 父页面 `StaffDeckEmbedPage.tsx`：`ensureDefaultSession()` 写 `ultrarag_auth` + 监听请求并 `postMessage` 下发会话 + iframe `onLoad` 推送 → 真正的"主程序登录态透传"。
-  - 关键坑：`readStoredSession` 要求 `token` 为真值，空 token 的旧会话会被判 null → 嵌入模式必须显式用默认会话(不依赖主程序 localStorage 的空 token)。
-  - 嵌入前端 `.env` 设 `VITE_TENANT_ID=default`(对齐后端 DEFAULT_TENANT_ID，否则 agents/knowledge 列表查询为空)。
-- **dev 加载**: cross-wms `vite.config.ts` 加 `/staffdeck-app` 代理到 express(3001)，使 iframe 在 dev 下同源可加载(否则 5173 下 /staffdeck-app 404)。
-- SSE `/api/chat/stream` 协议：**已对齐前端契约(2026-07-29)**。后端 chatStream /stream 发射的是 **StaffDeck 前端原生事件名**，不是本仓 `StaffStreamEvent` 原始名，否则聊天假死(不流式/用户气泡不现)。映射铁律：
-  - `session.created`→`session_created{newSessionId,sessionId}`；`message.saved(user)`→`user_message_received{message_id}`；`text.delta`→`stream_delta{content}`；`tool.call`→`status{phase:'tool'}`；末 `stream_end`+`done`。
-  - 落 Trace 白名单(sd_agent_events)只存前端名；**stream_delta 不落库**(高频撑表，断流恢复走 assistant_message_created.reply)。
-  - 严禁把事件名"改回" StaffStreamEvent 原始名(如 session.created/text.delta)，会直接打挂嵌入式聊天 UI。
-- 3 个被重写但曾 404 的路由已补全(映射到 /api/staffdeck/chat/*)：POST /attachments(multipart 多文件)、GET /sessions/:id/trace(按 turn 分组 TurnTraceRead)、POST|DELETE /messages/:id/feedback(👍👎，写 sd_message_feedback，user_id 用 default)。
+## 本机沙箱限制（验证方法论）
+- `nohup`/`&` 起的后台服务会被回收（先 200 后 502）→ 验证必须在**单个 bash 调用内**完成「启动 + 轮询就绪 + curl 取数 + kill」。
+- `tsc --noEmit -p server/tsconfig.json` 给到 12GB 堆仍 exit 137 → 改用 `node build-server.mjs`(esbuild) 做构建校验。
+- e2e 命令：`npx vitest run --config=vitest.config.e2e.ts <file>`（`vitest.config.e2e.ts`，非 `vitest.e2e.config.ts`）。
 
-## 渠道接入 (Channels) 集成（2026-07-29 完成）
-- **根因(接入渠道错误)**：cross-wms 后端从未移植 StaffDeck 后端的渠道路由/表 → 嵌入前端"渠道接入"页调 `GET /api/enterprise/channels` 被重写到 `/api/staffdeck/channels` 后无人处理 → 404/报错。
-- **基础信息来源**：`StaffDeck-main/backend/app/api/channels.py` 的 `CHANNEL_META`（wechat=二维码 / wecom=凭证 bot_id+secret+corp_id / feishu=凭证 app_id+app_secret）已迁移为 `server/routes/staff/channels.ts` 的 TS 常量 `CHANNEL_META`；路由注册在 `server/routes/staff/index.ts`；3 张表 `sd_channel_bindings/sd_channel_binding_agents/sd_channel_identities` 在 `server/db-staff.ts`。
-- **全量端点**：GET /meta、GET /、POST /、POST /bind-code、GET /my-identity-bindings、DELETE /my-identity-bindings/:channel、GET /:id/agents、PUT /:id、DELETE /:id、POST /:id/wechat/qrcode、GET /:id/wechat/qrcode-status、POST /:id/wecom/credentials、POST /:id/feishu/credentials、GET /:id/deliveries(+/days)、GET /:id/conversations、GET /:id/conversations/:sid/messages。全部经 envelope 剥包输出裸数据。
-- **凭证激活 = 本地 demo 激活**：桌面端无真实渠道服务，`activateBindingLocal` 存 config 并置 `status='active', connected=1`，不发起外部长连接；微信 qrcode-status 直接返回 `confirmed`。
-- **已知 quirk(非缺陷)**：`?embedded=1` 独立调试模式下点"渠道接入"会停在 `/enterprise/models`（无父窗口 postMessage 会话）；真实用户流程是主前端 iframe 内嵌入、父窗口下发会话，该流程 ChannelsPage 正常挂载(早期 iframe 跑测 3 个 API 均 200)。
-- **dev 代理健壮性**：`vite.config.ts` 的 `/api`、`/staffdeck-app`、`/ollama-api` proxy target 由 `localhost` 改为 `127.0.0.1`，规避 localhost→::1 IPv6 歧义导致的 502。
-
-## e2e 测试
-- API: `npm run test:e2e:api` (vitest.config.e2e.ts)，staff-* 9 套件 48 用例全绿
-- 关键缝: staff-chat-execution-seam(真跑集成缝)、staff-chat-turn(SSE 协议/done 末事件)
-- 前端 Playwright: tests/staff-chat.spec.ts（本机无 Chromium 未实跑，CI 可用）
-- 详进度见 2026-07-28.md
+## 已知非阻塞告警
+- `[Memory] memory pressure critical`(RSS~267MiB vs 200MiB)：启发式告警，非崩溃，忽略。
+- `messageArchive.ts` 扫旧版 `sessions` 表（本库无）→ 已加守卫跳过。
 
 ## 详细修复历史
-- 见 `.workbuddy/memory/YYYY-MM-DD.md` 每日工作日志
+- 见 `.workbuddy/memory/YYYY-MM-DD.md` 每日日志

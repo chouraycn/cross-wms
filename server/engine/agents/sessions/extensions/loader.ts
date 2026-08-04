@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Extension loader - loads TypeScript extension modules using jiti.

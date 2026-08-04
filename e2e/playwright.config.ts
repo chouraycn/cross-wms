@@ -57,7 +57,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // 沙盒/无网络环境无法下载 Playwright Chromium 时，复用系统已装的 Google Chrome。
+        // 仅当显式设置 E2E_USE_SYSTEM_CHROME=1 生效，CI（有官方 Chromium）行为不受影响。
+        ...(process.env.E2E_USE_SYSTEM_CHROME ? { channel: 'chrome' } : {}),
+      },
     },
     // 可选：启用其他浏览器
     // {

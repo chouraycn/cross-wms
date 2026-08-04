@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Terminal/JSON/plain table renderer for model-list rows. */
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
-import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
+import { colorize, theme } from "@openclaw/terminal-core/theme";
 import { type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 import { formatTag, isRich, pad, truncate } from "./list.format.js";
 import type { ModelRow } from "./list.types.js";

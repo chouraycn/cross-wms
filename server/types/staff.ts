@@ -65,6 +65,12 @@ export interface AgentProfileRead {
   is_overall: boolean;
   status: string;
   metadata: Record<string, unknown>;
+  /**
+   * 该员工绑定的资源列表（SOP 技能 / 通用技能 / 知识库）。
+   * 对齐原版 AgentProfileRead.resources；前端 EmployeeCard 依赖它统计
+   * sopCount / skillCount / kbCount，缺失时三项恒为 0。
+   */
+  resources: AgentResourceBindingRead[];
   created_at: number;
   updated_at: number;
 }
@@ -104,6 +110,19 @@ export interface AgentResourceBindingRow extends TenantMixin, TimestampMixin {
   metadata_json: JsonField;
 }
 
+/** 对齐原版 AgentResourceBindingRead —— 员工资源绑定的对外表示。 */
+export interface AgentResourceBindingRead {
+  id: string;
+  tenant_id: string;
+  agent_id: string;
+  resource_type: string;
+  resource_id: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  created_at: number;
+  updated_at: number;
+}
+
 // ============================ Skills ============================
 
 export interface SkillRow extends TenantMixin, TimestampMixin {
@@ -117,6 +136,33 @@ export interface SkillRow extends TenantMixin, TimestampMixin {
   status: string;
 }
 
+/**
+ * 技能调用/反馈统计（对齐原版 skills.py::_empty_stats）。
+ * 当前版本维度 = `${skill_id}@${version}`，技能维度 = `skill_id`。
+ */
+export interface SkillStatsEntry {
+  call_count: number;
+  positive_feedback_count: number;
+  negative_feedback_count: number;
+  positive_rate: number;
+  negative_rate: number;
+}
+
+/** 近三个版本的聚合统计（对齐原版 _recent_skill_stats）。 */
+export interface RecentSkillStatsEntry extends SkillStatsEntry {
+  recent_versions: string[];
+}
+
+/** 员工技能分支元信息（对齐原版 row.agent_branch_meta）。 */
+export interface SkillBranchMeta {
+  agent_id?: string;
+  status?: string;
+  sync_state?: string;
+  base_version?: string;
+  head_version?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface SkillRead {
   id: string;
   tenant_id: string;
@@ -127,6 +173,32 @@ export interface SkillRead {
   description: string | null;
   content: Record<string, unknown>;
   status: string;
+  // —— 当前版本维度统计 ——
+  call_count: number;
+  positive_feedback_count: number;
+  negative_feedback_count: number;
+  positive_rate: number;
+  negative_rate: number;
+  // —— 技能全量维度统计 ——
+  total_call_count: number;
+  total_positive_feedback_count: number;
+  total_negative_feedback_count: number;
+  total_positive_rate: number;
+  total_negative_rate: number;
+  // —— 近三版本维度统计 ——
+  recent_versions: string[];
+  recent_call_count: number;
+  recent_positive_feedback_count: number;
+  recent_negative_feedback_count: number;
+  recent_positive_rate: number;
+  recent_negative_rate: number;
+  // —— 员工分支视图（仅在带 agent_id 查询时有值）——
+  agent_id?: string;
+  branch_status?: string;
+  branch_sync_state?: string;
+  branch_base_version?: string;
+  branch_head_version?: string;
+  metadata?: Record<string, unknown>;
   created_at: number;
   updated_at: number;
 }
@@ -216,6 +288,21 @@ export interface KnowledgeBaseRead {
   description: string | null;
   status: string;
   metadata: Record<string, unknown>;
+  /**
+   * 知识资产统计（对齐 StaffDeck 原版 knowledge_base_read）。
+   * 前端 KnowledgePage/DashboardPage/OpenPlatformPage 依赖这三个字段展示
+   * "N 文档 / N 目录 / N 引用"，并据此判定知识库是否为空
+   * （hasRuntimeKnowledge）。缺失会导致员工知识库显示为 0 文档。
+   */
+  document_count: number;
+  bucket_count: number;
+  chunk_count: number;
+  /** 当前生效版本号（取 sd_knowledge_base_versions 最新 active 版本）。 */
+  version?: string;
+  // —— 员工知识分支视图（仅在带 agent_id 查询时有值）——
+  branch_sync_state?: string;
+  branch_base_version?: string;
+  branch_head_version?: string;
   created_at: number;
   updated_at: number;
 }
@@ -384,6 +471,11 @@ export interface ModelConfigRead {
   key_revision: number;
   is_default: boolean;
   enabled: boolean;
+  /**
+   * 脱敏后的 API Key（如 `sk-***abcd`）。前端 ModelConfig 页面据此判断
+   * 是否已配置密钥；绝不返回明文或 api_key_encrypted。
+   */
+  api_key_masked: string;
   created_at: number;
   updated_at: number;
   // 安全字段：不暴露 api_key_encrypted
@@ -442,6 +534,12 @@ export interface ToolRead {
   headers: Record<string, unknown>;
   auth: Record<string, unknown>;
   config: Record<string, unknown>;
+  /**
+   * MCP 工具的连接配置（对齐原版 ToolRead.mcp_config）。
+   * cross-wms 复用 sd_tools.config_json 存储，tool_type==='mcp' 时等价于 config。
+   * 前端 ToolsPage/DistillPage 表单直接读写该字段。
+   */
+  mcp_config: Record<string, unknown>;
   input_schema: Record<string, unknown>;
   output_schema: Record<string, unknown>;
   allowed_skills: string[];
@@ -470,6 +568,21 @@ export interface McpServerRow extends TenantMixin, TimestampMixin {
   enabled: 0 | 1;
 }
 
+/**
+ * MCP 连接配置（对齐原版 MCPServerConnection）。
+ * 前端 ToolsPage 直接读 `row.connection.transport`，
+ * 若后端只给扁平字段会抛 TypeError 导致 MCP 列表白屏。
+ */
+export interface McpServerConnection {
+  transport: string;
+  url: string | null;
+  headers: Record<string, string>;
+  command: string | null;
+  args: string[];
+  env: Record<string, string>;
+  cwd: string | null;
+}
+
 export interface McpServerRead {
   id: string;
   tenant_id: string;
@@ -477,6 +590,8 @@ export interface McpServerRead {
   display_name: string | null;
   description: string | null;
   bucket: string;
+  /** 嵌套连接配置——前端契约要求，必须存在。 */
+  connection: McpServerConnection;
   transport: string;
   url: string | null;
   headers: Record<string, unknown>;
@@ -487,6 +602,8 @@ export interface McpServerRead {
   discovered_tools: unknown[];
   last_synced_at: number | null;
   enabled: boolean;
+  /** 该 MCP 服务器已同步到 sd_tools 的工具数（对齐原版 tools.py::tool_count） */
+  tool_count: number;
   created_at: number;
   updated_at: number;
 }

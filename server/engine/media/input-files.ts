@@ -10,7 +10,7 @@
 //     (stub accepts {buffer} only; headerMime arg dropped at call sites)
 //   - @openclaw/media-core/read-response-with-limit (readResponseWithLimit)
 //     → ./_openclaw-media-stubs.js
-//   - @openclaw/normalization-core/string-coerce (normalizeOptionalLowercaseString,
+//   - @cdf-know/normalization-core/string-coerce (normalizeOptionalLowercaseString,
 //     normalizeOptionalString) → ./string-helpers.js
 //   - ../config/types.openclaw.js (OpenClawConfig) → ./_porting-stubs.js (opaque type)
 //   - ../infra/net/fetch-guard.js (fetchWithSsrFGuard) → ./_porting-stubs.js

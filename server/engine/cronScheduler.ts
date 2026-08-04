@@ -249,6 +249,11 @@ class CronScheduler {
     console.log("[cron] Scheduler stopped");
   }
 
+  /** 返回调度器是否正在运行（供健康/就绪探针查询） */
+  isSchedulerRunning(): boolean {
+    return this.isRunning;
+  }
+
   triggerJob(jobId: string): Promise<CronExecutionResult | null> {
     const job = this.jobs.get(jobId);
     if (!job) return Promise.resolve(null);

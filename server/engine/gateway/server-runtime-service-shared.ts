@@ -1,18 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/server-runtime-service-shared.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Shared Gateway runtime service helpers.
+// Supplies minimal service handles for tests and reduced startup paths.
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 
-export type GatewayRuntimeServiceLogger = unknown;
+export type GatewayRuntimeServiceLogger = {
+  child: (name: string) => {
+    info: (message: string) => void;
+    warn: (message: string) => void;
+    error: (message: string) => void;
+  };
+  error: (message: string) => void;
+};
 
-export function createNoopHeartbeatRunner(..._args: unknown[]): unknown {
-  return undefined;
+/** Creates a heartbeat runner placeholder for minimal/test gateway service state. */
+export function createNoopHeartbeatRunner(): HeartbeatRunner {
+  return {
+    stop: () => {},
+    updateConfig: (_cfg: OpenClawConfig) => {},
+  };
 }

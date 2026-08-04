@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // Porting stubs for media/ files whose openclaw dependencies have not been
 // ported to cross-wms. Each stub declares the public types and provides a
 // simplified implementation so the ported media helpers compile and stay
@@ -30,6 +36,14 @@ import { assertSafeUrl } from "../infra/ssrf.js";
 import {
   isToolAllowedByPolicies as isToolAllowedByPoliciesFromMatch,
 } from "../agents/tool-policy-match.js";
+import {
+  createRastermill,
+  isRastermillUnavailableError,
+  RastermillError,
+  RastermillUnavailableError,
+  readImageMetadataFromHeader,
+  readImageProbeFromHeader,
+} from "rastermill";
 
 // ============================================================================
 // Opaque config type — openclaw config types are not ported.
@@ -394,9 +408,11 @@ export function logWarn(message: string): void {
 // openclaw/src/media/media-services.ts — convertHeicToJpeg
 // ============================================================================
 
-/** Converts HEIC bytes to JPEG. Cross-wms stub throws (image backend not available). */
-export async function convertHeicToJpeg(_buffer: Buffer): Promise<Buffer> {
-  throw new Error("HEIC to JPEG conversion is not available: image-ops backend not ported");
+/** Converts HEIC/HEIF-like image bytes into JPEG through the rastermill image backend. */
+export async function convertHeicToJpeg(buffer: Buffer): Promise<Buffer> {
+  const processor = createRastermill();
+  const result = await processor.encode(buffer, { format: "jpeg" });
+  return result.data;
 }
 
 // ============================================================================
@@ -429,83 +445,16 @@ export function resolveSystemBin(
 }
 
 // ============================================================================
-// rastermill (npm) — image backend types + throw stubs
+// rastermill (npm) — image backend types + real implementation
 // ============================================================================
 
-export type ImageProbe = {
-  width: number;
-  height: number;
-  hasAlpha?: boolean;
-  orientation?: number;
+export type { ImageMetadata, ImageProbe } from "rastermill";
+
+export {
+  RastermillError,
+  RastermillUnavailableError,
+  createRastermill,
+  isRastermillUnavailableError,
+  readImageMetadataFromHeader,
+  readImageProbeFromHeader,
 };
-
-export type ImageMetadata = {
-  width: number;
-  height: number;
-};
-
-export type RastermillEncodeOptions = {
-  format?: "jpeg" | "png";
-  resize?: { maxSide: number; enlarge?: boolean };
-  quality?: number;
-  compressionLevel?: number;
-  autoOrient?: boolean;
-  maxBytes?: number;
-  search?: { maxSide?: readonly number[] };
-};
-
-export type RastermillEncodeResult = {
-  data: Buffer;
-  bytes: number;
-  width: number;
-  height: number;
-  chosen?: {
-    maxSide?: number;
-    compressionLevel?: number;
-  };
-};
-
-export type RastermillProcessor = {
-  probe: (buffer: Buffer) => Promise<ImageProbe | null>;
-  encode: (buffer: Buffer, options?: RastermillEncodeOptions) => Promise<RastermillEncodeResult>;
-  transparency: (buffer: Buffer) => Promise<{ hasAlphaChannel: boolean }>;
-};
-
-export class RastermillUnavailableError extends Error {
-  readonly causes: unknown[] = [];
-  constructor(message?: string, causes: unknown[] = []) {
-    super(message ?? "Rastermill image backend is unavailable");
-    this.name = "RastermillUnavailableError";
-    this.causes = causes;
-  }
-}
-
-export class RastermillError extends Error {
-  readonly code = "RASTERMILL_UNDECODABLE";
-  constructor(message?: string) {
-    super(message ?? "Rastermill decode failed");
-    this.name = "RastermillError";
-  }
-}
-
-/** Creates a rastermill processor. Cross-wms stub throws unavailable. */
-export function createRastermill(_options?: unknown): RastermillProcessor {
-  throw new RastermillUnavailableError(
-    "rastermill npm package is not installed in cross-wms",
-  );
-}
-
-/** Detects whether an error is a rastermill unavailable error. */
-export function isRastermillUnavailableError(err: unknown): boolean {
-  return err instanceof RastermillUnavailableError;
-}
-
-/** Reads image metadata from header bytes. Cross-wms stub returns null. */
-export function readImageMetadataFromHeader(_buffer: Buffer): ImageMetadata | null {
-  return null;
-}
-
-/** Reads image probe data from header bytes. Cross-wms stub returns null. */
-export function readImageProbeFromHeader(_buffer: Buffer): ImageProbe | null {
-  return null;
-}

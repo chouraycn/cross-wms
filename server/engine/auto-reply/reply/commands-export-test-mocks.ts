@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Test mocks for export-command session path and store helpers. */
 import type { vi } from "vitest";
 

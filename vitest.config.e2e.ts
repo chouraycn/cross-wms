@@ -16,13 +16,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 const packageMap: Array<{ pkg: string; src: string; exactIndex?: string }> = [
   { pkg: 'openclaw/plugin-sdk', src: './server/engine/plugin-sdk' },
   { pkg: '@openclaw/media-core', src: './packages/media-core/src' },
-  { pkg: '@openclaw/normalization-core', src: './packages/normalization-core/src' },
-  { pkg: '@openclaw/llm-core', src: './packages/llm-core/src' },
   { pkg: '@openclaw/llm-runtime', src: './packages/llm-runtime/src' },
-  { pkg: '@openclaw/model-catalog-core', src: './packages/model-catalog-core/src' },
-  { pkg: '@openclaw/gateway-client', src: './packages/gateway-client/src' },
-  { pkg: '@openclaw/gateway-protocol', src: './packages/gateway-protocol/src' },
-  { pkg: '@openclaw/media-generation-core', src: './packages/media-generation-core/src' },
   { pkg: '@openclaw/media-understanding-common', src: './packages/media-understanding-common/src' },
   { pkg: '@openclaw/markdown-core', src: './packages/markdown-core/src' },
   { pkg: '@openclaw/acp-core', src: './packages/acp-core/src' },
@@ -32,10 +26,11 @@ const packageMap: Array<{ pkg: string; src: string; exactIndex?: string }> = [
   { pkg: '@openclaw/speech-core', src: './packages/speech-core', exactIndex: 'runtime-api.ts' },
   { pkg: '@openclaw/agent-core', src: './packages/agent-core/src' },
   { pkg: '@openclaw/tool-call-repair', src: './packages/tool-call-repair/src' },
-  { pkg: '@openclaw/sdk', src: './packages/sdk/src' },
-  { pkg: '@openclaw/memory-host-sdk', src: './packages/memory-host-sdk/src' },
+  // proxyline 是 node_modules 中已安装的 npm 包（非 extensions/ 源码），必须精确别名，
+  // 否则会被下方 @openclaw/* 通配拦截到不存在的 extensions/proxyline 导致 e2e 解析失败。
+  { pkg: '@openclaw/proxyline', src: './node_modules/@openclaw/proxyline/src' },
 
-  // @cdf-know/* 别名（与 @openclaw/* 指向相同的源码目录）
+  // @cdf-know/* 别名（已统一，替代原 @openclaw/* 重复别名）
   { pkg: '@cdf-know/llm-core', src: './packages/llm-core/src' },
   { pkg: '@cdf-know/model-catalog-core', src: './packages/model-catalog-core/src' },
   { pkg: '@cdf-know/sdk', src: './packages/sdk/src' },

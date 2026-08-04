@@ -45,10 +45,10 @@ function safeParseJson(raw: string | null): Record<string, unknown> {
 
 /** 将一条 published 通用技能行物化为 SkillDefinition（id 加租户命名空间防撞） */
 function toSkillDefinition(row: GeneralSkillRow, tenantId: string): SkillDefinition {
-  // 注意：id 必须用横线分隔（staff-${tenant}-${slug}），与执行层工具名双向转换保持一致：
-  // reactExecutor.skillDefinitionToToolDef 把 def.id 的 '-'→'_' 生成工具名；
-  // skillToolBridge.handleSkillToolCall 把工具名的 '_'→'-' 还原 skillId。
-  // 若用下划线，slug 含横线（如 refund-policy）时 round-trip 会错位导致执行找不到技能。
+  // id 形如 staff-${tenant}-${slug}（可能同时含 '-' 与 '_'）。工具名/还原不再用字符
+  // 替换，而是由 skillToolBridge.encodeSkillIdToToolName 对整段 id 做 base64url 编码
+  // （带 '_S_' 边界哨兵），还原端 decodeToolNameToSkillId 精确取回，完全可逆，不再受
+  // slug 是否含 '-'/'_' 影响。
   const id = `staff-${tenantId}-${row.slug}`;
   const markdown = row.skill_markdown || '';
   const runtimeConfig = safeParseJson(row.runtime_config_json as string);

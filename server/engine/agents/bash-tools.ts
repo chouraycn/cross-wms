@@ -1,13 +1,15 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Public Bash/process tool barrel.
+ * Implementation lives in focused exec, process, schema, and description
+ * modules to keep host policy seams local.
  */
-
+export type {
+  BashSandboxConfig,
+  ExecElevatedDefaults,
+  ExecToolDefaults,
+  ExecToolDetails,
+} from "./bash-tools.exec.js";
 export { describeExecTool, describeProcessTool } from "./bash-tools.descriptions.js";
 export { createExecTool, execTool } from "./bash-tools.exec.js";
-export { createProcessTool, processTool } from "./bash-tools.process.js";
-export type { BashSandboxConfig, ExecElevatedDefaults, ExecToolDefaults, ExecToolDetails } from "./bash-tools.exec.js";
 export type { ProcessToolDefaults } from "./bash-tools.process.js";
+export { createProcessTool, processTool } from "./bash-tools.process.js";

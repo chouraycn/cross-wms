@@ -585,3 +585,12 @@ export const commitmentStoreWriterManager = new CommitmentStoreWriterManager();
 export function getCommitmentStoreWriter(storePath?: string): CommitmentStoreWriter {
   return commitmentStoreWriterManager.getWriter(storePath);
 }
+
+export async function runExclusiveCommitmentsStoreWrite<T>(
+  storePath: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const writer = getCommitmentStoreWriter(storePath);
+  await writer.flush();
+  return await fn();
+}

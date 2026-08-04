@@ -1,5 +1,5 @@
 // 检查 gateway 端口监听器和连接状态。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-coerce 导入 normalizeLowercaseStringOrEmpty，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-coerce 导入 normalizeLowercaseStringOrEmpty，
 // 从 ../process/exec.js 导入 runCommandWithTimeout；
 // cross-wms 使用本地 string-coerce 和本地 runCommandWithTimeout 实现。
 import { spawn } from "node:child_process";

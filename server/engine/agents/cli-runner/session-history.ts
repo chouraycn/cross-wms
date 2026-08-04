@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Loads and renders persisted session history for CLI session reseeding and
  * context-engine synchronization.

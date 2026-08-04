@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Global registry for tracking active reply dispatchers.
  * Used to ensure gateway restart waits for all replies to complete.

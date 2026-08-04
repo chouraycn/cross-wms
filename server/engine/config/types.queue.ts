@@ -1,6 +1,18 @@
-// 移植自 openclaw/src/config/types.queue.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+/** Queue handling mode for inbound channel messages. */
+export type QueueMode = "steer" | "followup" | "collect" | "interrupt";
+export type QueueDropPolicy = "old" | "new" | "summarize";
 
-export type QueueMode = unknown;
-export type QueueDropPolicy = unknown;
-export type QueueModeByProvider = unknown;
+export type QueueModeByProvider = {
+  whatsapp?: QueueMode;
+  telegram?: QueueMode;
+  discord?: QueueMode;
+  irc?: QueueMode;
+  googlechat?: QueueMode;
+  slack?: QueueMode;
+  mattermost?: QueueMode;
+  signal?: QueueMode;
+  imessage?: QueueMode;
+  msteams?: QueueMode;
+  webchat?: QueueMode;
+  matrix?: QueueMode;
+};

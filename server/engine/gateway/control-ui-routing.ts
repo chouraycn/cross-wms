@@ -1,16 +1,53 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/control-ui-routing.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Control UI route classifier for base-path and root-mounted SPA serving.
+import { isReadHttpMethod } from "./control-ui-http-utils.js";
 
-export function classifyControlUiRequest(..._args: unknown[]): unknown {
-  return undefined;
+type ControlUiRequestClassification =
+  | { kind: "not-control-ui" }
+  | { kind: "not-found" }
+  | { kind: "redirect"; location: string }
+  | { kind: "serve" };
+
+const ROOT_MOUNTED_GATEWAY_PROBE_PATHS = new Set(["/health", "/healthz", "/ready", "/readyz"]);
+
+/** Classify an HTTP request as Control UI serving, redirect, 404, or non-Control-UI. */
+export function classifyControlUiRequest(params: {
+  basePath: string;
+  pathname: string;
+  search: string;
+  method: string | undefined;
+}): ControlUiRequestClassification {
+  const { basePath, pathname, search, method } = params;
+  if (!basePath) {
+    if (pathname === "/ui" || pathname.startsWith("/ui/")) {
+      return { kind: "not-found" };
+    }
+    // Keep core probe routes outside the root-mounted SPA catch-all so the
+    // gateway probe handler can answer them even when the Control UI owns `/`.
+    if (ROOT_MOUNTED_GATEWAY_PROBE_PATHS.has(pathname)) {
+      return { kind: "not-control-ui" };
+    }
+    // Keep plugin-owned HTTP routes outside the root-mounted Control UI SPA
+    // fallback so untrusted plugins cannot claim arbitrary UI paths.
+    if (pathname === "/plugins" || pathname.startsWith("/plugins/")) {
+      return { kind: "not-control-ui" };
+    }
+    if (pathname === "/api" || pathname.startsWith("/api/")) {
+      return { kind: "not-control-ui" };
+    }
+    if (!isReadHttpMethod(method)) {
+      return { kind: "not-control-ui" };
+    }
+    return { kind: "serve" };
+  }
+
+  if (!pathname.startsWith(`${basePath}/`) && pathname !== basePath) {
+    return { kind: "not-control-ui" };
+  }
+  if (!isReadHttpMethod(method)) {
+    return { kind: "not-control-ui" };
+  }
+  if (pathname === basePath) {
+    return { kind: "redirect", location: `${basePath}/${search}` };
+  }
+  return { kind: "serve" };
 }

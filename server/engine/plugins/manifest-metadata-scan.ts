@@ -4,7 +4,7 @@
  * 移植自 openclaw/src/plugins/manifest-metadata-scan.ts。
  *
  * 降级策略：原文件依赖 node:fs、node:os、node:path、
- * @openclaw/normalization-core/record-coerce、@openclaw/normalization-core/string-coerce、
+ * @cdf-know/normalization-core/record-coerce、@cdf-know/normalization-core/string-coerce、
  * ../utils/parse-json-compat.js、./bundled-dir.js、./installed-plugin-index-store.js。
  * 运行时函数降级为返回空数组。
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Builds session tool allowlists from registered and core tool names.
  */

@@ -10,7 +10,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { resolveAcpAgentPolicyError, resolveAcpDispatchPolicyError } from '@openclaw-src/acp/policy.js';
 import { AcpRuntimeError, toAcpRuntimeError } from '@openclaw-src/acp/runtime/errors.js';
 import { resolveAgentDir, resolveAgentWorkspaceDir } from '@openclaw-src/agents/agent-scope.js';

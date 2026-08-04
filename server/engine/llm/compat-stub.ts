@@ -3,7 +3,7 @@
  *
  * 本文件提供 types.models.ts 移植所需的最小 LLM compat 类型契约。
  * cross-wms 的 LLM 子系统（server/engine/llm/）是自定义实现，
- * 与 openclaw 的 @openclaw/llm-core 类型契约不同；此处仅保留
+ * 与 openclaw 的 @cdf-know/llm-core 类型契约不同；此处仅保留
  * config 类型层级所需的兼容性字段。
  *
  * 参考 openclaw/packages/llm-core/src/types.ts

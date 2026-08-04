@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Plans reply/thread references for multi-payload channel sends. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { ReplyToMode } from '@openclaw-src/config/types.js';
 
 /** Stateful planner for reply-to ids across one delivery flow. */

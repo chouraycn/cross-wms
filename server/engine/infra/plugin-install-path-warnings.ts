@@ -1,5 +1,5 @@
 // 检测并格式化插件安装路径警告。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/string-coerce 导入 normalizeOptionalString，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/string-coerce 导入 normalizeOptionalString，
 // 以及从 ../config/types.plugins.js 导入 PluginInstallRecord 类型；
 // cross-wms 使用本地 string-coerce 和本地类型定义。
 import fs from "node:fs/promises";

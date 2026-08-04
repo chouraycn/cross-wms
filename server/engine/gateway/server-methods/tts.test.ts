@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for text-to-speech gateway methods and provider error envelopes.
  */

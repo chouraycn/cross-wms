@@ -1,10 +1,25 @@
 {
   "name": "@cdf-know/media-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow MediaCore - 媒体处理核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./base64": "./src/base64.ts",
+    "./constants": "./src/constants.ts",
+    "./content-length": "./src/content-length.ts",
+    "./file-name": "./src/file-name.ts",
+    "./inbound-path-policy": "./src/inbound-path-policy.ts",
+    "./inline-image-data-url": "./src/inline-image-data-url.ts",
+    "./lazy-import": "./src/lazy-import.ts",
+    "./media-source-url": "./src/media-source-url.ts",
+    "./mime": "./src/mime.ts",
+    "./read-byte-stream-with-limit": "./src/read-byte-stream-with-limit.ts",
+    "./read-response-with-limit": "./src/read-response-with-limit.ts"
+  },
+  "files": ["dist", "src"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",

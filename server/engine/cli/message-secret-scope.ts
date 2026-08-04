@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/message-secret-scope.ts。
 //
 // 降级策略：
-//  - 原模块依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原模块依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeOptionalString`、`../routing/session-key.js` 的 `normalizeAccountId`、
 //    `../utils/message-channel.js` 的 `isDeliverableMessageChannel`/`normalizeMessageChannel`。
 //    cross-wms 已移植 `../infra/string-coerce.js`（`normalizeOptionalString`）。

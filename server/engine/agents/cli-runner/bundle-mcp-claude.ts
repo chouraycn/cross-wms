@@ -1,11 +1,10 @@
-// @ts-nocheck
 
 /**
  * Claude CLI argument helpers for OpenClaw-managed bundle MCP config.
  */
 import fs from "node:fs/promises";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 
 /** Find an existing Claude `--mcp-config` argument value. */
 export function findClaudeMcpConfigPath(args?: string[]): string | undefined {

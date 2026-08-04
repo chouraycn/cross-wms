@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../../../logger.js';
 import { getSessionFilePath, getTempFilePath } from './paths.js';
-import { isValidSessionId } from './paths.js';
+import { validateSessionId } from './paths.js';
 
 export interface RotationConfig {
   maxFileSizeBytes: number;
@@ -31,7 +31,7 @@ export function needsRotation(
   sessionId: string,
   config: RotationConfig = defaultRotationConfig
 ): boolean {
-  if (!isValidSessionId(sessionId)) return false;
+  if (!validateSessionId(sessionId)) return false;
 
   const filePath = getSessionFilePath(baseDir, sessionId);
   try {
@@ -48,7 +48,7 @@ export function rotateSessionFile(
   sessionId: string,
   config: RotationConfig = defaultRotationConfig
 ): RotationResult {
-  if (!isValidSessionId(sessionId)) {
+  if (!validateSessionId(sessionId)) {
     return { rotated: false, error: new Error('Invalid session ID') };
   }
 
@@ -152,7 +152,7 @@ export function mergeRotatedFiles(
   sessionId: string,
   outputPath?: string
 ): Promise<string | null> {
-  if (!isValidSessionId(sessionId)) return Promise.resolve(null);
+  if (!validateSessionId(sessionId)) return Promise.resolve(null);
 
   const filePath = outputPath || getSessionFilePath(baseDir, sessionId);
   const rotatedFiles = getRotatedFiles(baseDir, sessionId);
@@ -203,4 +203,16 @@ export function mergeRotatedFiles(
     logger.error('[SessionRotation] 合并轮换文件失败:', err);
     return Promise.resolve(null);
   }
+}
+
+// Stub exports for session file rotation helpers referenced by consumer modules.
+export function canonicalizeAbsoluteSessionFilePath(filePath: string): string {
+  return filePath;
+}
+export function rewriteSessionFileForNewSessionId(
+  _oldSessionId: string,
+  _newSessionId: string,
+  _opts?: unknown,
+): void {
+  return undefined;
 }

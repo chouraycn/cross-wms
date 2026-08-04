@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Collects daemon status from service files, config snapshots, ports, probes, and plugin drift.
 import fs from "node:fs/promises";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import JSON5 from "json5";
 import {
   createConfigIO,

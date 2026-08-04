@@ -1,43 +1,100 @@
 /**
- * Ported from openclaw/src/agents/fast-mode.ts
- *
  * Resolves fast-mode state from agent config and runtime defaults.
- * Cross-wms degradation: returns default fast-mode state (disabled) without
- * config/session resolution.
  */
+import type { FastMode } from "@cdf-know/normalization-core/string-coerce";
+import { normalizeFastMode } from "../auto-reply/thinking.shared.js";
+import type { SessionEntry } from "../config/sessions.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import {
+  type FastModeSource,
+  resolveFastModeModelAutoOnSeconds,
+  resolveFastModeModelParams,
+} from "../shared/fast-mode.js";
+import { resolveAgentConfig } from "./agent-scope.js";
 
-/** Fast-mode state resolved for an agent session. */
+export {
+  DEFAULT_FAST_MODE_AUTO_ON_SECONDS,
+  formatFastModeAutoLabel,
+  formatFastModeAutoProgressText,
+  formatFastModeCommandOptions,
+  formatFastModeCurrentStatus,
+  formatFastModeSourceSuffix,
+  formatFastModeStatusValue,
+  formatFastModeValue,
+  normalizeFastModeAutoOnSeconds,
+  normalizeFastModeSource,
+  resolveFastModeForElapsed,
+  resolveFastModeModelAutoOnSeconds,
+} from "../shared/fast-mode.js";
+export type { FastMode } from "@cdf-know/normalization-core/string-coerce";
+export type { FastModeAutoProgressState } from "../shared/fast-mode.js";
+
+// Resolves effective fast-mode state from session, agent, model config, then
+// default. Callers keep the source for diagnostics and prompt explanations.
 type FastModeState = {
-  mode: boolean | string;
+  mode: FastMode;
   enabled: boolean;
-  source: string;
+  source: FastModeSource;
   fastAutoOnSeconds: number;
 };
 
+function resolveConfiguredFastModeRaw(params: {
+  cfg: OpenClawConfig | undefined;
+  provider: string;
+  model: string;
+}): unknown {
+  const modelParams = resolveFastModeModelParams(params);
+  return modelParams?.fastMode ?? modelParams?.fast_mode;
+}
+
 /** Resolve the effective fast-mode setting and its source. */
 export function resolveFastModeState(params: {
-  cfg?: Record<string, unknown>;
+  cfg: OpenClawConfig | undefined;
   provider: string;
   model: string;
   agentId?: string;
-  sessionEntry?: Record<string, unknown>;
+  sessionEntry?: Pick<SessionEntry, "fastMode"> | undefined;
 }): FastModeState {
-  // Cross-wms does not have agent config resolution for fast-mode.
-  // Check session entry for a fastMode override.
-  const sessionFastMode = params.sessionEntry?.fastMode;
-  if (sessionFastMode !== undefined && sessionFastMode !== null) {
-    const enabled = sessionFastMode === true || sessionFastMode === "auto";
+  const fastAutoOnSeconds = resolveFastModeModelAutoOnSeconds(params);
+  const sessionOverride = normalizeFastMode(params.sessionEntry?.fastMode);
+  if (sessionOverride !== undefined) {
     return {
-      mode: sessionFastMode as boolean | string,
-      enabled,
+      mode: sessionOverride,
+      enabled: sessionOverride === "auto" ? true : sessionOverride,
       source: "session",
-      fastAutoOnSeconds: 0,
+      fastAutoOnSeconds,
     };
   }
+
+  const agentDefault =
+    params.agentId && params.cfg
+      ? resolveAgentConfig(params.cfg, params.agentId)?.fastModeDefault
+      : undefined;
+  const normalizedAgentDefault = normalizeFastMode(agentDefault);
+  if (normalizedAgentDefault !== undefined) {
+    return {
+      mode: normalizedAgentDefault,
+      enabled: normalizedAgentDefault === "auto" ? true : normalizedAgentDefault,
+      source: "agent",
+      fastAutoOnSeconds,
+    };
+  }
+
+  const configuredRaw = resolveConfiguredFastModeRaw(params);
+  const configured = normalizeFastMode(configuredRaw as string | boolean | null | undefined);
+  if (configured !== undefined) {
+    return {
+      mode: configured,
+      enabled: configured === "auto" ? true : configured,
+      source: "config",
+      fastAutoOnSeconds,
+    };
+  }
+
   return {
     mode: false,
     enabled: false,
     source: "default",
-    fastAutoOnSeconds: 0,
+    fastAutoOnSeconds,
   };
 }

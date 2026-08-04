@@ -221,7 +221,12 @@ function ClawHubDialog({
             onClick={onSubmit}
             sx={staffTokens.primaryButton}
           >
-            {loading ? '导入中…' : '新增'}
+            {loading ? (
+              <Box component="span" sx={{"display":'inline-flex',"alignItems":'center',"gap":'6px',"animation":'cdf-spin 1s linear infinite',"@keyframes cdf-spin":{"from":{"transform":'rotate(0deg)'},"to":{"transform":'rotate(360deg)'}}}}>
+                <RefreshCw size={14} />
+                导入中…
+              </Box>
+            ) : '新增'}
           </UIButton>
         </DialogFooter>
       </DialogContent>

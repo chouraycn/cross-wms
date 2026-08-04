@@ -1,12 +1,11 @@
-// @ts-nocheck
 // Converts a shared status overview scan into the full status scan result.
 // Memory and summary collection run in parallel after the common gateway/config scan has completed.
 
 import type { PluginCompatibilityNotice } from "@openclaw-src/plugins/status.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
-import type { StatusScanOverviewResult } from "./status.scan-overview.ts";
-import { resolveStatusSummaryFromOverview } from "./status.scan-overview.ts";
-import { buildStatusScanResult, type StatusScanResult } from "./status.scan-result.ts";
+import type { StatusScanOverviewResult } from "./status.scan-overview";
+import { resolveStatusSummaryFromOverview } from "./status.scan-overview";
+import { buildStatusScanResult, type StatusScanResult } from "./status.scan-result";
 import {
   resolveMemoryPluginStatus,
   type MemoryPluginStatus,

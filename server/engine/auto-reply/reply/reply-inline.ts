@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Resolves inline reply directives that alter a single reply turn.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { collapseInlineHorizontalWhitespace } from "./reply-inline-whitespace.js";
 
 const INLINE_SIMPLE_COMMAND_ALIASES = new Map<string, string>([

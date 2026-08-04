@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests thread-aware outbound session route helpers exposed by the SDK.
  */

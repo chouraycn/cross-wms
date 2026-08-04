@@ -1,10 +1,29 @@
 /**
- * 移植自 openclaw/src/agents/embedded-agent-messaging.types.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Shared messaging-tool metadata types captured from embedded-agent runs.
  */
+import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 
-export type MessagingToolSend = unknown;
-export type MessagingToolSourceReplyPayload = unknown;
+export type MessagingToolSend = {
+  tool: string;
+  provider: string;
+  accountId?: string;
+  to?: string;
+  threadId?: string;
+  threadImplicit?: boolean;
+  threadSuppressed?: boolean;
+  text?: string;
+  mediaUrls?: string[];
+};
+
+export type MessagingToolSourceReplyPayload = Pick<
+  ReplyPayload,
+  | "audioAsVoice"
+  | "channelData"
+  | "interactive"
+  | "mediaUrl"
+  | "mediaUrls"
+  | "presentation"
+  | "text"
+> & {
+  idempotencyKey?: string;
+};

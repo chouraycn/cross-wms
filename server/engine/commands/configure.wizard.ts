@@ -3,8 +3,8 @@
 import fsPromises from "node:fs/promises";
 import nodePath from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { describeCodexNativeWebSearch } from "@openclaw-src/agents/codex-native-web-search.shared.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { formatPortRangeHint } from "@openclaw-src/cli/error-format.js";

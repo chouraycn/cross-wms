@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Runtime gateway RPC helpers for node host and node pairing CLI commands.
 import {
   GATEWAY_CLIENT_MODES,

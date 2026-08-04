@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Resolves the thread id used when replies are routed through channel delivery helpers. */
 import { parseSessionThreadInfoFast } from '@openclaw-src/config/sessions/thread-info.js';
 import type { MsgContext } from "../templating.js";

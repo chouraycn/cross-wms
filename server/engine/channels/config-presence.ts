@@ -2,7 +2,7 @@
  * Channel configuration presence detection. — 移植自 openclaw/src/channels/config-presence.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/* → cross-wms ../infra/{string-coerce,string-normalization}.js
+ *  - @cdf-know/normalization-core/* → cross-wms ../infra/{string-coerce,string-normalization}.js
  *  - ../channels/plugins/persisted-auth-state.js → ./_openclaw-stubs.js
  *  - ../config/paths.js (resolveStateDir) → ./_openclaw-stubs.js
  *  - ../config/types.openclaw.js (OpenClawConfig) → cross-wms ../config/types/openclaw.js

@@ -1,5 +1,5 @@
 // 首次运行时引导设备身份和信任状态。
-// 降级实现：openclaw 中从 @openclaw/normalization-core/number-coercion 导入数字辅助，
+// 降级实现：openclaw 中从 @cdf-know/normalization-core/number-coercion 导入数字辅助，
 // 从 ../logging/subsystem.js 导入子系统日志器，
 // 从 ../shared/device-bootstrap-profile.js 和 ../shared/operator-scope-compat.js 导入共享辅助，
 // cross-wms 在 _runtime-stubs 和 _device-shared-stubs 中提供降级实现。

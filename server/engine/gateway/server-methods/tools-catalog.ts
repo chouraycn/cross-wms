@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Gateway RPC handler for the tool catalog shown by clients and Control UI.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -107,7 +106,7 @@ function buildPluginGroups(params: {
     NonNullable<PluginRegistry["toolMetadata"]>[number]["metadata"]
   >();
   if (catalogRegistry) {
-    for (const entry of catalogRegistry.toolMetadata ?? []) {
+    for (const entry of (catalogRegistry.toolMetadata ?? []) as any[]) {
       const metadataKey = buildPluginToolMetadataKey(entry.pluginId, entry.metadata.toolName);
       pluginToolMetadata.set(metadataKey, entry.metadata);
     }
@@ -126,16 +125,16 @@ function buildPluginGroups(params: {
         pluginId,
         tools: [],
       } as ToolCatalogGroup);
-    const ownedMetadata = meta?.pluginId
+    const ownedMetadata = (meta?.pluginId
       ? pluginToolMetadata.get(buildPluginToolMetadataKey(meta.pluginId, tool.name))
-      : undefined;
+      : undefined) as any;
     existing.tools.push({
       id: tool.name,
       label:
         normalizeOptionalString(ownedMetadata?.displayName) ??
         normalizeOptionalString(tool.label) ??
         tool.name,
-      description: summarizeToolDescriptionText({
+      description: (summarizeToolDescriptionText as any)({
         rawDescription:
           ownedMetadata?.description ??
           (typeof tool.description === "string" ? tool.description : undefined),
@@ -171,12 +170,12 @@ function buildPluginGroups(params: {
         } as ToolCatalogGroup);
       const ownedMetadata = pluginToolMetadata.get(
         buildPluginToolMetadataKey(entry.pluginId, name),
-      );
+      ) as any;
       existing.tools.push({
         id: name,
         label: normalizeOptionalString(ownedMetadata?.displayName) ?? name,
         description:
-          summarizeToolDescriptionText({
+          (summarizeToolDescriptionText as any)({
             rawDescription: ownedMetadata?.description,
           }) || `Plugin tool from ${entry.pluginName ?? entry.pluginId}`,
         source: "plugin",

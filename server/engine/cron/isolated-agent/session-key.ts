@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Canonicalizes cron session keys into agent-scoped session-store keys. */
 import { canonicalizeMainSessionAlias } from "../../config/sessions/main-session.js";
 import type { SessionScope } from "../../config/sessions/types.js";

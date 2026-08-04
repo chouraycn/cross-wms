@@ -231,3 +231,42 @@ export function resetLogger(): void {
 }
 
 export { setLoggerOverride };
+
+// Re-export logging constants and types expected by the facade (engine/logging.ts)
+export {
+  DEFAULT_LOG_DIR,
+  DEFAULT_MAX_LOG_FILE_BYTES,
+} from './config.js';
+export { DEFAULT_LOG_FILE } from './log-file-path.js';
+
+export type LoggerResolvedSettings = Required<LoggerSettings>;
+
+export type PinoLikeLogger = {
+  level: string;
+  info(msg: string, ...args: unknown[]): void;
+  warn(msg: string, ...args: unknown[]): void;
+  error(msg: string, ...args: unknown[]): void;
+  debug(msg: string, ...args: unknown[]): void;
+  fatal(msg: string, ...args: unknown[]): void;
+  child(bindings: Record<string, unknown>): PinoLikeLogger;
+};
+
+export function getResolvedLoggerSettings(): LoggerResolvedSettings {
+  return getResolvedSettings();
+}
+
+export function setLoggerConfigLoaderForTests(_loader: (() => LoggerSettings | undefined) | null): void {
+  // Test-only hook; currently a no-op since config caching is handled in config.ts
+}
+
+export function toPinoLikeLogger(logger: EngineLogger): PinoLikeLogger {
+  return {
+    level: levelToString(logger.getLevel()),
+    info: (msg, ...args) => logger.info(msg, ...args),
+    warn: (msg, ...args) => logger.warn(msg, ...args),
+    error: (msg, ...args) => logger.error(msg, ...args),
+    debug: (msg, ...args) => logger.debug(msg, ...args),
+    fatal: (msg, ...args) => logger.fatal(msg, ...args),
+    child: (bindings) => toPinoLikeLogger(logger.child(bindings)),
+  };
+}

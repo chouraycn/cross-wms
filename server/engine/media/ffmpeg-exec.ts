@@ -1,7 +1,7 @@
 // FFmpeg exec helpers run ffmpeg and ffprobe with normalized errors.
 // Ported from openclaw media. openclaw-specific dependencies are inlined as
 // local adapters:
-//   - @openclaw/normalization-core/string-coerce  → ./string-helpers.js
+//   - @cdf-know/normalization-core/string-coerce  → ./string-helpers.js
 //   - ../infra/errors.js (toErrorObject)          → toErrorObject
 //   - ../infra/resolve-system-bin.js              → resolveSystemBin (trimmed)
 import { execFile, type ExecFileOptions } from "node:child_process";

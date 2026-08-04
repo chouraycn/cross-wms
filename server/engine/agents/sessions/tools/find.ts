@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Built-in find session tool.
  *

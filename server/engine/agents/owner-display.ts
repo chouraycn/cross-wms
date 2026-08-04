@@ -5,13 +5,13 @@
  *
  * 移植自 openclaw/src/agents/owner-display.ts
  * 降级策略：
- *  - 内联 normalizeOptionalString（来自 @openclaw/normalization-core/string-coerce）
+ *  - 内联 normalizeOptionalString（来自 @cdf-know/normalization-core/string-coerce）
  *  - OpenClawConfig 降级为本地最小类型（仅包含 commands.ownerDisplay/ownerDisplaySecret 字段）
  */
 
 import crypto from "node:crypto";
 
-// 降级实现：normalizeOptionalString 来自 @openclaw/normalization-core/string-coerce
+// 降级实现：normalizeOptionalString 来自 @cdf-know/normalization-core/string-coerce
 function normalizeOptionalString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;

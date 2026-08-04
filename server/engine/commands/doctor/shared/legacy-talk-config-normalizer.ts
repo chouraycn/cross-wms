@@ -1,6 +1,6 @@
 // Legacy Talk config normalizer for provider scalar fields and realtime aliases.
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 import { normalizeTalkSection } from "@openclaw-src/config/talk.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 

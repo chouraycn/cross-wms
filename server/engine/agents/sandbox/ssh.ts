@@ -1,115 +1,94 @@
 /**
- * SSH 沙箱传输
+ * SSH sandbox transport helpers.
  *
- * 提供远程 SSH 沙箱的配置生成、命令片段校验、远程命令执行与工作区目录上传能力。
- * 临时 SSH 配置文件写入独立临时目录，权限收紧为 0600，使用完毕后可通过 dispose 清理。
+ * Materializes temporary SSH config, validates remote shell snippets, runs commands, and uploads workspace trees.
  */
-import { spawn } from 'node:child_process';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { assertPathWithinBoundary } from '../../infra/boundary-path.js';
-import { toErrorObject } from '../../infra/errors.js';
+import { spawn } from "node:child_process";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { resolveRootPath } from "../../infra/boundary-path.js";
+import { toErrorObject } from "../../infra/errors.js";
+import { parseSshTarget } from "../../infra/ssh-tunnel.js";
+import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolveUserPath } from "../../utils.js";
+import type { SandboxBackendCommandResult } from "./backend-handle.types.js";
+import { sanitizeEnvVars } from "./sanitize-env-vars.js";
 
-/** SSH 远程主机描述 */
-export type SshRemoteHost = {
-  user?: string;
-  host: string;
-  port?: number;
-};
-
-/** SSH 配置生成选项 */
-export type SshSandboxConfigOptions = {
-  /** 私钥文件路径 */
+export type SshSandboxSettings = {
+  command: string;
+  target: string;
+  strictHostKeyChecking: boolean;
+  updateHostKeys: boolean;
   identityFile?: string;
-  /** known_hosts 文件路径 */
+  certificateFile?: string;
   knownHostsFile?: string;
-  /** 是否严格校验主机密钥，默认 false */
-  strictHostKeyChecking?: boolean;
-  /** 连接超时秒数，默认 5 */
-  connectTimeout?: number;
+  identityData?: string;
+  certificateData?: string;
+  knownHostsData?: string;
 };
 
-/** 生成的 SSH 会话描述 */
+/** Temporary SSH session descriptor with an isolated config file. */
 export type SshSandboxSession = {
-  /** 临时配置文件路径 */
+  command: string;
   configPath: string;
-  /** 配置中的 Host 别名 */
-  hostAlias: string;
+  host: string;
 };
 
-/** 远程命令执行结果 */
-export type SshSandboxCommandResult = {
-  stdout: Buffer;
-  stderr: Buffer;
-  /** 退出码 */
-  code: number;
-};
-
-/** 远程命令执行选项 */
-export type SshSandboxExecOptions = {
-  /** 标准输入内容 */
+/** Parameters for one SSH sandbox command execution. */
+export type RunSshSandboxCommandParams = {
+  session: SshSandboxSession;
+  remoteCommand: string;
   stdin?: Buffer | string;
-  /** 是否允许非零退出码而不抛错 */
   allowFailure?: boolean;
-  /** 中止信号 */
   signal?: AbortSignal;
-  /** 是否分配伪终端 */
   tty?: boolean;
 };
 
-/** Shell 片段校验结果 */
-export type ShellValidationResult = {
-  valid: boolean;
-  reason?: string;
-};
-
-// === 主机解析与命令构造 ===
-
-/** 解析 user@host:port 形式的远程主机字符串 */
-export function parseRemoteHost(remoteHost: string): SshRemoteHost {
-  const trimmed = remoteHost.trim();
-  let user: string | undefined;
-  let hostPart = trimmed;
-  const atIndex = trimmed.lastIndexOf('@');
-  if (atIndex >= 0) {
-    user = trimmed.slice(0, atIndex);
-    hostPart = trimmed.slice(atIndex + 1);
-  }
-  let host = hostPart;
-  let port: number | undefined;
-  const colonIndex = hostPart.lastIndexOf(':');
-  if (colonIndex >= 0) {
-    const portPart = hostPart.slice(colonIndex + 1);
-    const parsed = Number(portPart);
-    if (portPart !== '' && Number.isInteger(parsed) && parsed > 0) {
-      port = parsed;
-      host = hostPart.slice(0, colonIndex);
-    }
-  }
-  if (!host) {
-    throw new Error(`无效的 SSH 远程主机: ${remoteHost}`);
-  }
-  return { user, host, port };
+function normalizeInlineSshMaterial(contents: string, filename: string): string {
+  const withoutBom = contents.replace(/^\uFEFF/, "");
+  const normalizedNewlines = withoutBom.replace(/\r\n?/g, "\n");
+  const normalizedEscapedNewlines = normalizedNewlines
+    .replace(/\\r\\n/g, "\\n")
+    .replace(/\\r/g, "\\n");
+  const expanded =
+    filename === "identity" || filename === "certificate.pub"
+      ? normalizedEscapedNewlines.replace(/\\n/g, "\n")
+      : normalizedEscapedNewlines;
+  return expanded.endsWith("\n") ? expanded : `${expanded}\n`;
 }
 
-/** 单引号转义，用于 POSIX shell 参数构造 */
+function buildSshFailureMessage(stderr: string, exitCode?: number): string {
+  const trimmed = stderr.trim();
+  if (
+    trimmed.includes("error in libcrypto") &&
+    (trimmed.includes('Load key "') || trimmed.includes("Permission denied (publickey)"))
+  ) {
+    return `${trimmed}\nSSH sandbox failed to load the configured identity. The private key contents may be malformed (for example CRLF or escaped newlines). Prefer identityFile when possible.`;
+  }
+  return (
+    trimmed ||
+    (exitCode !== undefined
+      ? `ssh exited with code ${exitCode}`
+      : "ssh exited with a non-zero status")
+  );
+}
+
+/** Single-quote a value for POSIX shell argv construction. */
 export function shellEscape(value: string): string {
   return `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
-/** 将 argv 构造为远程 shell 命令字符串 */
+/** Build a remote shell command from literal argv entries. */
 export function buildRemoteCommand(argv: string[]): string {
-  return argv.map((entry) => shellEscape(entry)).join(' ');
+  return argv.map((entry) => shellEscape(entry)).join(" ");
 }
 
-// === Shell 片段校验 ===
+type ExecCommandQuoteState = "plain" | "single" | "double";
 
-type ShellQuoteState = 'plain' | 'single' | 'double';
-
-type ShellFrame = {
-  kind: 'root' | 'command-substitution' | 'arithmetic' | 'backtick';
-  quote: ShellQuoteState;
+type ExecCommandFrame = {
+  kind: "root" | "command-substitution" | "arithmetic" | "backtick";
+  quote: ExecCommandQuoteState;
   escaping: boolean;
   parenDepth: number;
 };
@@ -123,32 +102,18 @@ type PendingHeredoc = HeredocMarker & {
   frameDepth: number;
 };
 
-/** 校验 shell 命令片段，返回校验结果 */
-export function validateShellCommand(command: string): ShellValidationResult {
-  try {
-    assertValidShellCommand(command);
-    return { valid: true };
-  } catch (err) {
-    return {
-      valid: false,
-      reason: err instanceof Error ? err.message : String(err),
-    };
-  }
-}
-
-/** 断言 shell 命令片段语法合法，不合法则抛出 */
-function assertValidShellCommand(command: string): void {
-  // SSH 沙箱会用 /bin/sh -c 包裹模型提供的 shell 文本，此解析器用于在引号前
-  // 捕获未闭合语法与未解析的占位符。
-  const frames: ShellFrame[] = [
-    { kind: 'root', quote: 'plain', escaping: false, parenDepth: 0 },
+function assertValidExecRemoteCommand(command: string): void {
+  // The SSH backend wraps model-provided shell text in `/bin/sh -c`. This parser
+  // catches unbalanced syntax and unresolved placeholders before quoting it.
+  const frames: ExecCommandFrame[] = [
+    { kind: "root", quote: "plain", escaping: false, parenDepth: 0 },
   ];
   const pendingHeredocs: PendingHeredoc[] = [];
 
   for (let index = 0; index < command.length; index += 1) {
     const frame = frames.at(-1);
     if (!frame) {
-      throw new Error('Shell 命令解析异常: 解析栈下溢');
+      throw new Error("Malformed SSH/OpenShell exec command: parser state underflow.");
     }
     const char = command[index];
 
@@ -157,45 +122,45 @@ function assertValidShellCommand(command: string): void {
       continue;
     }
 
-    if (frame.quote === 'single') {
+    if (frame.quote === "single") {
       if (char === "'") {
-        frame.quote = 'plain';
+        frame.quote = "plain";
       }
       continue;
     }
 
-    if (char === '\\') {
+    if (char === "\\") {
       frame.escaping = true;
       continue;
     }
 
-    if (frame.quote === 'double') {
+    if (frame.quote === "double") {
       if (char === '"') {
-        frame.quote = 'plain';
+        frame.quote = "plain";
         continue;
       }
-      if (char === '`') {
-        frames.push(createShellFrame('backtick'));
+      if (char === "`") {
+        frames.push(createExecCommandFrame("backtick"));
         continue;
       }
-      if (char === '$' && command[index + 1] === '(' && command[index + 2] === '(') {
-        frames.push(createShellFrame('arithmetic', 2));
+      if (char === "$" && command[index + 1] === "(" && command[index + 2] === "(") {
+        frames.push(createExecCommandFrame("arithmetic", 2));
         index += 2;
         continue;
       }
-      if (char === '$' && command[index + 1] === '(') {
-        frames.push(createShellFrame('command-substitution', 1));
+      if (char === "$" && command[index + 1] === "(") {
+        frames.push(createExecCommandFrame("command-substitution", 1));
         index += 1;
       }
       continue;
     }
 
-    if (frame.kind === 'arithmetic') {
-      if (char === '(') {
+    if (frame.kind === "arithmetic") {
+      if (char === "(") {
         frame.parenDepth += 1;
         continue;
       }
-      if (char === ')') {
+      if (char === ")") {
         frame.parenDepth -= 1;
         if (frame.parenDepth === 0) {
           frames.pop();
@@ -204,12 +169,13 @@ function assertValidShellCommand(command: string): void {
       continue;
     }
 
-    if (char === '\n') {
+    if (char === "\n") {
       const frameHeredocs = pendingHeredocs.filter(
         (pending) => pending.frameDepth === frames.length,
       );
       if (frameHeredocs.length > 0) {
-        // here-doc 内容为不透明 shell 载荷，跳过以仅校验可执行语法
+        // Here-doc bodies are opaque shell payloads; skip them so placeholder
+        // and quote checks only inspect executable syntax.
         index = skipHeredocBodies(command, index + 1, frameHeredocs) - 1;
         for (const pending of frameHeredocs) {
           pendingHeredocs.splice(pendingHeredocs.indexOf(pending), 1);
@@ -218,37 +184,37 @@ function assertValidShellCommand(command: string): void {
       }
     }
 
-    if (frame.kind === 'backtick' && char === '`') {
+    if (frame.kind === "backtick" && char === "`") {
       frames.pop();
       continue;
     }
     if (char === "'") {
-      frame.quote = 'single';
+      frame.quote = "single";
       continue;
     }
     if (char === '"') {
-      frame.quote = 'double';
+      frame.quote = "double";
       continue;
     }
-    if (char === '`') {
-      frames.push(createShellFrame('backtick'));
+    if (char === "`") {
+      frames.push(createExecCommandFrame("backtick"));
       continue;
     }
-    if (char === '$' && command[index + 1] === '(' && command[index + 2] === '(') {
-      frames.push(createShellFrame('arithmetic', 2));
+    if (char === "$" && command[index + 1] === "(" && command[index + 2] === "(") {
+      frames.push(createExecCommandFrame("arithmetic", 2));
       index += 2;
       continue;
     }
-    if (char === '$' && command[index + 1] === '(') {
-      frames.push(createShellFrame('command-substitution', 1));
+    if (char === "$" && command[index + 1] === "(") {
+      frames.push(createExecCommandFrame("command-substitution", 1));
       index += 1;
       continue;
     }
-    if (char === '#' && isShellCommentStart(command, index)) {
+    if (char === "#" && isShellCommentStart(command, index)) {
       index = skipShellComment(command, index) - 1;
       continue;
     }
-    if (char === '<') {
+    if (char === "<") {
       const heredoc = readHeredoc(command, index);
       if (heredoc) {
         pendingHeredocs.push({
@@ -260,15 +226,17 @@ function assertValidShellCommand(command: string): void {
       }
       const placeholder = readPlaceholderToken(command, index);
       if (placeholder) {
-        throw new Error(`Shell 命令包含未解析的占位符: ${placeholder}`);
+        throw new Error(
+          `Malformed SSH/OpenShell exec command: unresolved placeholder token ${placeholder}.`,
+        );
       }
     }
-    if (frame.kind === 'command-substitution') {
-      if (char === '(') {
+    if (frame.kind === "command-substitution") {
+      if (char === "(") {
         frame.parenDepth += 1;
         continue;
       }
-      if (char === ')') {
+      if (char === ")") {
         frame.parenDepth -= 1;
         if (frame.parenDepth === 0) {
           frames.pop();
@@ -279,35 +247,69 @@ function assertValidShellCommand(command: string): void {
 
   const openFrame = frames.at(-1);
   if (openFrame?.escaping) {
-    throw new Error('Shell 命令解析异常: 末尾存在未完成的反斜杠转义');
+    throw new Error("Malformed SSH/OpenShell exec command: trailing backslash escape.");
   }
   if (pendingHeredocs.length > 0) {
     throw new Error(
-      `Shell 命令解析异常: here-doc 未终止 ${pendingHeredocs[0].delimiter}`,
+      `Malformed SSH/OpenShell exec command: unterminated here-doc ${pendingHeredocs[0].delimiter}.`,
     );
   }
   for (let index = frames.length - 1; index >= 0; index -= 1) {
     const frame = frames[index];
-    if (frame.quote === 'single') {
-      throw new Error('Shell 命令解析异常: 单引号未闭合');
+    if (frame.quote === "single") {
+      throw new Error("Malformed SSH/OpenShell exec command: unclosed single quote.");
     }
-    if (frame.quote === 'double') {
-      throw new Error('Shell 命令解析异常: 双引号未闭合');
+    if (frame.quote === "double") {
+      throw new Error("Malformed SSH/OpenShell exec command: unclosed double quote.");
     }
-    if (frame.kind === 'backtick') {
-      throw new Error('Shell 命令解析异常: 反引号命令替换未终止');
+    if (frame.kind === "backtick") {
+      throw new Error(
+        "Malformed SSH/OpenShell exec command: unterminated backtick command substitution.",
+      );
     }
-    if (frame.kind === 'command-substitution') {
-      throw new Error('Shell 命令解析异常: 命令替换未终止');
+    if (frame.kind === "command-substitution") {
+      throw new Error("Malformed SSH/OpenShell exec command: unterminated command substitution.");
     }
-    if (frame.kind === 'arithmetic') {
-      throw new Error('Shell 命令解析异常: 算术展开未终止');
+    if (frame.kind === "arithmetic") {
+      throw new Error("Malformed SSH/OpenShell exec command: unterminated arithmetic expansion.");
     }
   }
 }
 
-function createShellFrame(kind: ShellFrame['kind'], parenDepth = 0): ShellFrame {
-  return { kind, quote: 'plain', escaping: false, parenDepth };
+/** Build the wrapped remote `/bin/sh -c` command for sandbox exec. */
+export function buildExecRemoteCommand(params: {
+  command: string;
+  workdir?: string;
+  env: Record<string, string>;
+}): string {
+  const body = params.workdir
+    ? `cd ${shellEscape(params.workdir)} && ${params.command}`
+    : params.command;
+  const argv =
+    Object.keys(params.env).length > 0
+      ? [
+          "env",
+          ...Object.entries(params.env).map(([key, value]) => `${key}=${value}`),
+          "/bin/sh",
+          "-c",
+          body,
+        ]
+      : ["/bin/sh", "-c", body];
+  return buildRemoteCommand(argv);
+}
+
+/** Validate and build a remote exec command for untrusted model input. */
+export function buildValidatedExecRemoteCommand(params: {
+  command: string;
+  workdir?: string;
+  env: Record<string, string>;
+}): string {
+  assertValidExecRemoteCommand(params.command);
+  return buildExecRemoteCommand(params);
+}
+
+function createExecCommandFrame(kind: ExecCommandFrame["kind"], parenDepth = 0): ExecCommandFrame {
+  return { kind, quote: "plain", escaping: false, parenDepth };
 }
 
 function readPlaceholderToken(command: string, index: number): string | null {
@@ -315,14 +317,17 @@ function readPlaceholderToken(command: string, index: number): string | null {
   if (!match) {
     return null;
   }
-  if (command[index - 1] === '=') {
+  if (command[index - 1] === "=") {
+    return match[0];
+  }
+  if (isLikelyGeneratedWorkflowPlaceholder(command, index)) {
     return match[0];
   }
   const next = command[index + match[0].length];
   if (next === undefined || /[\r\n;&|)]/.test(next)) {
     return match[0];
   }
-  if (next === ' ' || next === '\t') {
+  if (next === " " || next === "\t") {
     return hasRedirectionTargetAfter(command, index + match[0].length) ? null : match[0];
   }
   return null;
@@ -330,30 +335,45 @@ function readPlaceholderToken(command: string, index: number): string | null {
 
 function hasRedirectionTargetAfter(command: string, index: number): boolean {
   let cursor = index;
-  while (command[cursor] === ' ' || command[cursor] === '\t') {
+  while (command[cursor] === " " || command[cursor] === "\t") {
     cursor += 1;
   }
   return command[cursor] !== undefined && !/[;&|()<>\r\n]/.test(command[cursor]);
+}
+
+function isLikelyGeneratedWorkflowPlaceholder(command: string, index: number): boolean {
+  const prefix = command.slice(0, index);
+  const segmentStart =
+    Math.max(
+      prefix.lastIndexOf("\n"),
+      prefix.lastIndexOf(";"),
+      prefix.lastIndexOf("&"),
+      prefix.lastIndexOf("|"),
+      prefix.lastIndexOf("("),
+      prefix.lastIndexOf("`"),
+    ) + 1;
+  const currentCommand = prefix.slice(segmentStart).trim();
+  return /^workflow(?:\s+[A-Za-z0-9._/-]+)*$/.test(currentCommand);
 }
 
 function readHeredoc(
   command: string,
   index: number,
 ): { pending: HeredocMarker; endIndex: number } | null {
-  if (command[index + 1] !== '<' || command[index + 2] === '<') {
+  if (command[index + 1] !== "<" || command[index + 2] === "<") {
     return null;
   }
   let cursor = index + 2;
-  const stripLeadingTabs = command[cursor] === '-';
+  const stripLeadingTabs = command[cursor] === "-";
   if (stripLeadingTabs) {
     cursor += 1;
   }
-  while (command[cursor] === ' ' || command[cursor] === '\t') {
+  while (command[cursor] === " " || command[cursor] === "\t") {
     cursor += 1;
   }
   const delimiter = readHeredocDelimiter(command, cursor);
   if (!delimiter) {
-    throw new Error('Shell 命令解析异常: 缺少 here-doc 定界符');
+    throw new Error("Malformed SSH/OpenShell exec command: missing here-doc delimiter.");
   }
   return {
     pending: { delimiter: delimiter.value, stripLeadingTabs },
@@ -366,8 +386,8 @@ function readHeredocDelimiter(
   index: number,
 ): { value: string; endIndex: number } | null {
   let cursor = index;
-  let delimiter = '';
-  let quote: ShellQuoteState = 'plain';
+  let delimiter = "";
+  let quote: ExecCommandQuoteState = "plain";
   let escaping = false;
   while (cursor < command.length) {
     const char = command[cursor];
@@ -377,19 +397,19 @@ function readHeredocDelimiter(
       cursor += 1;
       continue;
     }
-    if (quote === 'single') {
+    if (quote === "single") {
       if (char === "'") {
-        quote = 'plain';
+        quote = "plain";
       } else {
         delimiter += char;
       }
       cursor += 1;
       continue;
     }
-    if (quote === 'double') {
+    if (quote === "double") {
       if (char === '"') {
-        quote = 'plain';
-      } else if (char === '\\') {
+        quote = "plain";
+      } else if (char === "\\") {
         escaping = true;
       } else {
         delimiter += char;
@@ -397,18 +417,18 @@ function readHeredocDelimiter(
       cursor += 1;
       continue;
     }
-    if (char === '\\') {
+    if (char === "\\") {
       escaping = true;
       cursor += 1;
       continue;
     }
     if (char === "'") {
-      quote = 'single';
+      quote = "single";
       cursor += 1;
       continue;
     }
     if (char === '"') {
-      quote = 'double';
+      quote = "double";
       cursor += 1;
       continue;
     }
@@ -418,15 +438,15 @@ function readHeredocDelimiter(
     delimiter += char;
     cursor += 1;
   }
-  if (quote !== 'plain' || escaping) {
-    throw new Error('Shell 命令解析异常: here-doc 定界符未终止');
+  if (quote !== "plain" || escaping) {
+    throw new Error("Malformed SSH/OpenShell exec command: unterminated here-doc delimiter.");
   }
   return delimiter ? { value: delimiter, endIndex: cursor } : null;
 }
 
 function isHeredocDelimiterTerminator(char: string | undefined): boolean {
   return (
-    char === undefined || /\s/.test(char) || [';', '&', '|', '(', ')', '<', '>'].includes(char)
+    char === undefined || /\s/.test(char) || [";", "&", "|", "(", ")", "<", ">"].includes(char)
   );
 }
 
@@ -439,11 +459,11 @@ function skipHeredocBodies(
   for (const pending of pendingHeredocs) {
     let found = false;
     while (cursor <= command.length) {
-      const lineEnd = command.indexOf('\n', cursor);
+      const lineEnd = command.indexOf("\n", cursor);
       const endIndex = lineEnd === -1 ? command.length : lineEnd;
       const rawLine = command.slice(cursor, endIndex);
-      const normalizedLine = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
-      const line = pending.stripLeadingTabs ? normalizedLine.replace(/^\t+/, '') : normalizedLine;
+      const normalizedLine = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+      const line = pending.stripLeadingTabs ? normalizedLine.replace(/^\t+/, "") : normalizedLine;
       cursor = lineEnd === -1 ? command.length : lineEnd + 1;
       if (line === pending.delimiter) {
         found = true;
@@ -455,7 +475,7 @@ function skipHeredocBodies(
     }
     if (!found) {
       throw new Error(
-        `Shell 命令解析异常: here-doc 未终止 ${pending.delimiter}`,
+        `Malformed SSH/OpenShell exec command: unterminated here-doc ${pending.delimiter}.`,
       );
     }
   }
@@ -468,295 +488,305 @@ function isShellCommentStart(command: string, index: number): boolean {
 }
 
 function skipShellComment(command: string, index: number): number {
-  const newlineIndex = command.indexOf('\n', index);
+  const newlineIndex = command.indexOf("\n", index);
   return newlineIndex === -1 ? command.length : newlineIndex;
 }
 
-// === SSH 沙箱传输类 ===
+/** Build the local ssh argv for a prepared sandbox session. */
+export function buildSshSandboxArgv(params: {
+  session: SshSandboxSession;
+  remoteCommand: string;
+  tty?: boolean;
+}): string[] {
+  return [
+    params.session.command,
+    "-F",
+    params.session.configPath,
+    ...(params.tty
+      ? ["-tt", "-o", "RequestTTY=force", "-o", "SetEnv=TERM=xterm-256color"]
+      : ["-T", "-o", "RequestTTY=no"]),
+    params.session.host,
+    params.remoteCommand,
+  ];
+}
 
-/**
- * SSH 沙箱传输
- *
- * 封装远程 SSH 沙箱的配置生成、命令校验、远程执行与工作区上传。
- * 传输实例会按远程主机缓存临时 SSH 会话，重复执行时复用同一份配置文件。
- */
-export class SshSandboxTransport {
-  private sessions = new Map<string, SshSandboxSession>();
+/** Create a temporary SSH session from already-rendered ssh config text. */
+export async function createSshSandboxSessionFromConfigText(params: {
+  configText: string;
+  host?: string;
+  command?: string;
+}): Promise<SshSandboxSession> {
+  const host = params.host?.trim() || parseSshConfigHost(params.configText);
+  if (!host) {
+    throw new Error("Failed to parse SSH config output.");
+  }
+  const configDir = await fs.mkdtemp(path.join(resolveSshTmpRoot(), "openclaw-sandbox-ssh-"));
+  const configPath = path.join(configDir, "config");
+  await fs.writeFile(configPath, params.configText, { encoding: "utf8", mode: 0o600 });
+  await fs.chmod(configPath, 0o600);
+  return {
+    command: params.command?.trim() || "ssh",
+    configPath,
+    host,
+  };
+}
 
-  /**
-   * 生成临时 SSH 配置文件
-   * @param remoteHost 远程主机，形如 user@host:port
-   * @param options 配置选项
-   * @returns SSH 会话描述
-   */
-  async generateSshConfig(
-    remoteHost: string,
-    options: SshSandboxConfigOptions = {},
-  ): Promise<SshSandboxSession> {
-    const parsed = parseRemoteHost(remoteHost);
-    const configDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'cross-wms-sandbox-ssh-'),
-    );
-    try {
-      const hostAlias = 'cross-wms-sandbox';
-      const configPath = path.join(configDir, 'config');
-      const strict = options.strictHostKeyChecking ?? false;
-      const lines = [
-        `Host ${hostAlias}`,
-        `  HostName ${parsed.host}`,
-        `  Port ${parsed.port ?? 22}`,
-        '  BatchMode yes',
-        `  ConnectTimeout ${options.connectTimeout ?? 5}`,
-        '  ServerAliveInterval 15',
-        '  ServerAliveCountMax 3',
-        `  StrictHostKeyChecking ${strict ? 'yes' : 'no'}`,
-      ];
-      if (parsed.user) {
-        lines.push(`  User ${parsed.user}`);
-      }
-      if (options.knownHostsFile) {
-        lines.push(`  UserKnownHostsFile ${options.knownHostsFile}`);
-      } else if (!strict) {
-        lines.push('  UserKnownHostsFile /dev/null');
-      }
-      if (options.identityFile) {
-        lines.push(`  IdentityFile ${options.identityFile}`);
-        lines.push('  IdentitiesOnly yes');
-      }
-      await fs.writeFile(configPath, `${lines.join('\n')}\n`, {
-        encoding: 'utf8',
-        mode: 0o600,
-      });
-      await fs.chmod(configPath, 0o600);
-      const session = { configPath, hostAlias };
-      this.sessions.set(remoteHost, session);
-      return session;
-    } catch (error) {
-      await fs.rm(configDir, { recursive: true, force: true });
-      throw error;
-    }
+/** Create a temporary SSH session from structured sandbox SSH settings. */
+export async function createSshSandboxSessionFromSettings(
+  settings: SshSandboxSettings,
+): Promise<SshSandboxSession> {
+  const parsed = parseSshTarget(settings.target);
+  if (!parsed) {
+    throw new Error(`Invalid sandbox SSH target: ${settings.target}`);
   }
 
-  /**
-   * 校验远程 shell 片段
-   * @param remoteHost 远程主机（用于错误上下文）
-   * @param command 待校验的 shell 命令片段
-   * @returns 校验结果
-   */
-  validateRemoteShell(remoteHost: string, command: string): ShellValidationResult {
-    const result = validateShellCommand(command);
-    if (!result.valid) {
-      return {
-        valid: false,
-        reason: `远程主机 ${remoteHost} 的 shell 片段校验失败: ${result.reason}`,
-      };
-    }
-    return { valid: true };
-  }
-
-  /**
-   * 执行远程命令
-   * @param remoteHost 远程主机
-   * @param command 远程 shell 命令
-   * @param options 执行选项
-   * @returns 命令执行结果
-   */
-  async executeRemote(
-    remoteHost: string,
-    command: string,
-    options: SshSandboxExecOptions = {},
-  ): Promise<SshSandboxCommandResult> {
-    const validation = this.validateRemoteShell(remoteHost, command);
-    if (!validation.valid) {
-      throw new Error(validation.reason);
-    }
-    const session = await this.getOrCreateSession(remoteHost);
-    const argv = this.buildSshArgv(session, command, options.tty);
-    return await new Promise<SshSandboxCommandResult>((resolve, reject) => {
-      const child = spawn(argv[0], argv.slice(1), {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        signal: options.signal,
-      });
-      const stdoutChunks: Buffer[] = [];
-      const stderrChunks: Buffer[] = [];
-      child.stdout.on('data', (chunk) => stdoutChunks.push(Buffer.from(chunk)));
-      child.stderr.on('data', (chunk) => stderrChunks.push(Buffer.from(chunk)));
-      child.on('error', reject);
-      child.on('close', (code) => {
-        const stdout = Buffer.concat(stdoutChunks);
-        const stderr = Buffer.concat(stderrChunks);
-        const exitCode = code ?? 0;
-        if (exitCode !== 0 && !options.allowFailure) {
-          reject(
-            Object.assign(
-              new Error(this.buildFailureMessage(stderr.toString('utf8'), exitCode)),
-              { code: exitCode, stdout, stderr },
-            ),
-          );
-          return;
-        }
-        resolve({ stdout, stderr, code: exitCode });
-      });
-      if (options.stdin !== undefined) {
-        child.stdin.end(options.stdin);
-        return;
-      }
-      child.stdin.end();
-    });
-  }
-
-  /**
-   * 上传工作区目录树到远程沙箱
-   * @param remoteHost 远程主机
-   * @param localPath 本地目录路径
-   * @param remotePath 远程目标目录路径
-   */
-  async uploadWorkspace(
-    remoteHost: string,
-    localPath: string,
-    remotePath: string,
-  ): Promise<void> {
-    await assertSafeUploadSymlinks(localPath);
-    const session = await this.getOrCreateSession(remoteHost);
-    const remoteCommand = buildRemoteCommand([
-      '/bin/sh',
-      '-c',
-      'mkdir -p -- "$1" && tar -xf - -C "$1"',
-      'cross-wms-sandbox-upload',
-      remotePath,
-    ]);
-    const sshArgv = this.buildSshArgv(session, remoteCommand);
-    await new Promise<void>((resolve, reject) => {
-      const tar = spawn('tar', ['-C', localPath, '-cf', '-', '.'], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      const ssh = spawn(sshArgv[0], sshArgv.slice(1), {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const tarStderr: Buffer[] = [];
-      const sshStdout: Buffer[] = [];
-      const sshStderr: Buffer[] = [];
-      let tarClosed = false;
-      let sshClosed = false;
-      let tarCode = 0;
-      let sshCode = 0;
-
-      tar.stderr.on('data', (chunk) => tarStderr.push(Buffer.from(chunk)));
-      ssh.stdout.on('data', (chunk) => sshStdout.push(Buffer.from(chunk)));
-      ssh.stderr.on('data', (chunk) => sshStderr.push(Buffer.from(chunk)));
-
-      const fail = (error: unknown) => {
-        tar.kill('SIGKILL');
-        ssh.kill('SIGKILL');
-        reject(toErrorObject(error, '上传过程中出现非 Error 异常'));
-      };
-
-      tar.on('error', fail);
-      ssh.on('error', fail);
-      tar.stdout.pipe(ssh.stdin);
-
-      tar.on('close', (code) => {
-        tarClosed = true;
-        tarCode = code ?? 0;
-        maybeResolve();
-      });
-      ssh.on('close', (code) => {
-        sshClosed = true;
-        sshCode = code ?? 0;
-        maybeResolve();
-      });
-
-      function maybeResolve() {
-        if (!tarClosed || !sshClosed) {
-          return;
-        }
-        if (tarCode !== 0) {
-          reject(
-            new Error(
-              Buffer.concat(tarStderr).toString('utf8').trim() ||
-                `tar 退出码 ${tarCode}`,
-            ),
-          );
-          return;
-        }
-        if (sshCode !== 0) {
-          reject(
-            new Error(
-              Buffer.concat(sshStderr).toString('utf8').trim() ||
-                `ssh 退出码 ${sshCode}`,
-            ),
-          );
-          return;
-        }
-        resolve();
-      }
-    });
-  }
-
-  /**
-   * 释放指定远程主机的临时会话，或全部会话
-   * @param remoteHost 指定主机则仅清理该会话，否则清理全部
-   */
-  async dispose(remoteHost?: string): Promise<void> {
-    const targets = remoteHost ? [remoteHost] : [...this.sessions.keys()];
-    for (const host of targets) {
-      const session = this.sessions.get(host);
-      if (!session) continue;
-      this.sessions.delete(host);
-      await fs.rm(path.dirname(session.configPath), {
-        recursive: true,
-        force: true,
-      });
-    }
-  }
-
-  /** 获取或创建会话 */
-  private async getOrCreateSession(remoteHost: string): Promise<SshSandboxSession> {
-    const existing = this.sessions.get(remoteHost);
-    if (existing) {
-      return existing;
-    }
-    return this.generateSshConfig(remoteHost);
-  }
-
-  /** 构造 ssh 调用参数 */
-  private buildSshArgv(
-    session: SshSandboxSession,
-    remoteCommand: string,
-    tty?: boolean,
-  ): string[] {
-    return [
-      'ssh',
-      '-F',
-      session.configPath,
-      ...(tty
-        ? ['-tt', '-o', 'RequestTTY=force', '-o', 'SetEnv=TERM=xterm-256color']
-        : ['-T', '-o', 'RequestTTY=no']),
-      session.hostAlias,
-      remoteCommand,
+  const configDir = await fs.mkdtemp(path.join(resolveSshTmpRoot(), "openclaw-sandbox-ssh-"));
+  try {
+    // Inline secret material is written into the temp config dir with strict
+    // permissions so ssh can consume it without exposing values in argv/env.
+    const materializedIdentity = settings.identityData
+      ? await writeSecretMaterial(configDir, "identity", settings.identityData)
+      : undefined;
+    const materializedCertificate = settings.certificateData
+      ? await writeSecretMaterial(configDir, "certificate.pub", settings.certificateData)
+      : undefined;
+    const materializedKnownHosts = settings.knownHostsData
+      ? await writeSecretMaterial(configDir, "known_hosts", settings.knownHostsData)
+      : undefined;
+    const identityFile = materializedIdentity ?? resolveOptionalLocalPath(settings.identityFile);
+    const certificateFile =
+      materializedCertificate ?? resolveOptionalLocalPath(settings.certificateFile);
+    const knownHostsFile =
+      materializedKnownHosts ?? resolveOptionalLocalPath(settings.knownHostsFile);
+    const hostAlias = "openclaw-sandbox";
+    const configPath = path.join(configDir, "config");
+    const lines = [
+      `Host ${hostAlias}`,
+      `  HostName ${parsed.host}`,
+      `  Port ${parsed.port}`,
+      "  BatchMode yes",
+      "  ConnectTimeout 5",
+      "  ServerAliveInterval 15",
+      "  ServerAliveCountMax 3",
+      `  StrictHostKeyChecking ${settings.strictHostKeyChecking ? "yes" : "no"}`,
+      `  UpdateHostKeys ${settings.updateHostKeys ? "yes" : "no"}`,
     ];
-  }
-
-  /** 构造 SSH 失败消息 */
-  private buildFailureMessage(stderr: string, exitCode?: number): string {
-    const trimmed = stderr.trim();
-    if (
-      trimmed.includes('error in libcrypto') &&
-      (trimmed.includes('Load key "') ||
-        trimmed.includes('Permission denied (publickey)'))
-    ) {
-      return `${trimmed}\nSSH 沙箱加载私钥失败，密钥内容可能格式异常（如包含 CRLF 或转义换行），建议优先使用 identityFile。`;
+    if (parsed.user) {
+      lines.push(`  User ${parsed.user}`);
     }
-    return (
-      trimmed ||
-      (exitCode !== undefined
-        ? `ssh 退出码 ${exitCode}`
-        : 'ssh 以非零状态退出')
-    );
+    if (knownHostsFile) {
+      lines.push(`  UserKnownHostsFile ${knownHostsFile}`);
+    } else if (!settings.strictHostKeyChecking) {
+      lines.push("  UserKnownHostsFile /dev/null");
+    }
+    if (identityFile) {
+      lines.push(`  IdentityFile ${identityFile}`);
+    }
+    if (certificateFile) {
+      lines.push(`  CertificateFile ${certificateFile}`);
+    }
+    if (identityFile || certificateFile) {
+      lines.push("  IdentitiesOnly yes");
+    }
+    await fs.writeFile(configPath, `${lines.join("\n")}\n`, {
+      encoding: "utf8",
+      mode: 0o600,
+    });
+    await fs.chmod(configPath, 0o600);
+    return {
+      command: settings.command.trim() || "ssh",
+      configPath,
+      host: hostAlias,
+    };
+  } catch (error) {
+    await fs.rm(configDir, { recursive: true, force: true });
+    throw error;
   }
 }
 
-/** 校验上传目录中的符号链接不会逃逸出工作区根目录 */
+/** Remove temporary SSH config and materialized secret files. */
+export async function disposeSshSandboxSession(session: SshSandboxSession): Promise<void> {
+  await fs.rm(path.dirname(session.configPath), { recursive: true, force: true });
+}
+
+/** Run a remote command through ssh and return buffered stdout/stderr. */
+export async function runSshSandboxCommand(
+  params: RunSshSandboxCommandParams,
+): Promise<SandboxBackendCommandResult> {
+  const argv = buildSshSandboxArgv({
+    session: params.session,
+    remoteCommand: params.remoteCommand,
+    tty: params.tty,
+  });
+  const sshEnv = sanitizeEnvVars(process.env).allowed;
+  return await new Promise<SandboxBackendCommandResult>((resolve, reject) => {
+    const child = spawn(argv[0], argv.slice(1), {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: sshEnv,
+      signal: params.signal,
+    });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+
+    child.stdout.on("data", (chunk) => stdoutChunks.push(Buffer.from(chunk)));
+    child.stderr.on("data", (chunk) => stderrChunks.push(Buffer.from(chunk)));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      const stdout = Buffer.concat(stdoutChunks);
+      const stderr = Buffer.concat(stderrChunks);
+      const exitCode = code ?? 0;
+      if (exitCode !== 0 && !params.allowFailure) {
+        reject(
+          Object.assign(new Error(buildSshFailureMessage(stderr.toString("utf8"), exitCode)), {
+            code: exitCode,
+            stdout,
+            stderr,
+          }),
+        );
+        return;
+      }
+      resolve({ stdout, stderr, code: exitCode });
+    });
+
+    if (params.stdin !== undefined) {
+      child.stdin.end(params.stdin);
+      return;
+    }
+    child.stdin.end();
+  });
+}
+
+export const ENSURE_REMOTE_REAL_DIRECTORY_SCRIPT = [
+  "set -e",
+  'target="$1"',
+  'root="${2:-$1}"',
+  'case "$target" in /*) ;; *) echo "remote directory must be absolute: $target" >&2; exit 1 ;; esac',
+  'case "$root" in /*) ;; *) echo "remote root must be absolute: $root" >&2; exit 1 ;; esac',
+  'target="${target%/}"',
+  'root="${root%/}"',
+  '[ -n "$target" ] || target="/"',
+  '[ -n "$root" ] || root="/"',
+  'case "$target/" in "$root"/*|"$root/") ;; *) echo "remote directory must stay under root: $target" >&2; exit 1 ;; esac',
+  'for path_to_check in "$target" "$root"; do',
+  '  relative="${path_to_check#/}"',
+  '  while [ -n "$relative" ]; do',
+  '    part="${relative%%/*}"',
+  '    if [ "$part" = "$relative" ]; then relative=""; else relative="${relative#*/}"; fi',
+  '    [ -n "$part" ] || continue',
+  '    case "$part" in "."|"..") echo "unsafe remote directory component: $part" >&2; exit 1 ;; esac',
+  "  done",
+  "done",
+  'if [ -L "$root" ]; then echo "unsafe remote root symlink: $root" >&2; exit 1; fi',
+  'mkdir -p -- "$root"',
+  'canonical_root="$(cd "$root" && pwd -P)"',
+  'relative="${target#"$root"}"',
+  'relative="${relative#/}"',
+  'current="$canonical_root"',
+  'while [ -n "$relative" ]; do',
+  '  part="${relative%%/*}"',
+  '  if [ "$part" = "$relative" ]; then relative=""; else relative="${relative#*/}"; fi',
+  '  [ -n "$part" ] || continue',
+  '  if [ "$current" = "/" ]; then next="/$part"; else next="$current/$part"; fi',
+  '  if [ -L "$next" ]; then echo "unsafe remote directory symlink: $next" >&2; exit 1; fi',
+  '  if [ -e "$next" ]; then',
+  '    if [ ! -d "$next" ]; then echo "unsafe remote directory component: $next" >&2; exit 1; fi',
+  "  else",
+  '    mkdir -- "$next"',
+  "  fi",
+  '  current="$next"',
+  "done",
+].join("\n");
+
+/** Stream a local directory to the remote sandbox with tar over ssh. */
+export async function uploadDirectoryToSshTarget(params: {
+  session: SshSandboxSession;
+  localDir: string;
+  remoteDir: string;
+  remoteRootDir?: string;
+  signal?: AbortSignal;
+}): Promise<void> {
+  await assertSafeUploadSymlinks(params.localDir);
+  const remoteCommand = buildRemoteCommand([
+    "/bin/sh",
+    "-c",
+    `${ENSURE_REMOTE_REAL_DIRECTORY_SCRIPT}\ntar -xf - -C "$1"`,
+    "openclaw-sandbox-upload",
+    params.remoteDir,
+    params.remoteRootDir ?? params.remoteDir,
+  ]);
+  const sshArgv = buildSshSandboxArgv({
+    session: params.session,
+    remoteCommand,
+  });
+  const sshEnv = sanitizeEnvVars(process.env).allowed;
+  await new Promise<void>((resolve, reject) => {
+    const tar = spawn("tar", ["-C", params.localDir, "-cf", "-", "."], {
+      stdio: ["ignore", "pipe", "pipe"],
+      signal: params.signal,
+    });
+    const ssh = spawn(sshArgv[0], sshArgv.slice(1), {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: sshEnv,
+      signal: params.signal,
+    });
+    const tarStderr: Buffer[] = [];
+    const sshStdout: Buffer[] = [];
+    const sshStderr: Buffer[] = [];
+    let tarClosed = false;
+    let sshClosed = false;
+    let tarCode = 0;
+    let sshCode = 0;
+
+    tar.stderr.on("data", (chunk) => tarStderr.push(Buffer.from(chunk)));
+    ssh.stdout.on("data", (chunk) => sshStdout.push(Buffer.from(chunk)));
+    ssh.stderr.on("data", (chunk) => sshStderr.push(Buffer.from(chunk)));
+
+    const fail = (error: unknown) => {
+      tar.kill("SIGKILL");
+      ssh.kill("SIGKILL");
+      reject(toErrorObject(error, "Non-Error rejection"));
+    };
+
+    tar.on("error", fail);
+    ssh.on("error", fail);
+    tar.stdout.pipe(ssh.stdin);
+
+    tar.on("close", (code) => {
+      tarClosed = true;
+      tarCode = code ?? 0;
+      maybeResolve();
+    });
+    ssh.on("close", (code) => {
+      sshClosed = true;
+      sshCode = code ?? 0;
+      maybeResolve();
+    });
+
+    function maybeResolve() {
+      if (!tarClosed || !sshClosed) {
+        return;
+      }
+      if (tarCode !== 0) {
+        reject(
+          new Error(
+            Buffer.concat(tarStderr).toString("utf8").trim() || `tar exited with code ${tarCode}`,
+          ),
+        );
+        return;
+      }
+      if (sshCode !== 0) {
+        reject(
+          new Error(
+            Buffer.concat(sshStderr).toString("utf8").trim() || `ssh exited with code ${sshCode}`,
+          ),
+        );
+        return;
+      }
+      resolve();
+    }
+  });
+}
+
 async function assertSafeUploadSymlinks(localDir: string): Promise<void> {
   const rootDir = path.resolve(localDir);
   await walkDirectory(rootDir);
@@ -766,15 +796,18 @@ async function assertSafeUploadSymlinks(localDir: string): Promise<void> {
     for (const entry of entries) {
       const entryPath = path.join(currentDir, entry.name);
       if (entry.isSymbolicLink()) {
-        // 远程 tar 解包会按链接目标字符串重建符号链接，需确保目标不逃逸工作区树
+        // The remote tar extract should not recreate links that escape the
+        // uploaded workspace tree.
         try {
-          const target = await fs.readlink(entryPath);
-          const resolvedTarget = path.resolve(path.dirname(entryPath), target);
-          assertPathWithinBoundary(resolvedTarget, rootDir);
+          await resolveRootPath({
+            absolutePath: entryPath,
+            rootPath: rootDir,
+            boundaryLabel: "SSH sandbox upload tree",
+          });
         } catch (error) {
-          const relativePath = path.relative(rootDir, entryPath).split(path.sep).join('/');
+          const relativePath = path.relative(rootDir, entryPath).split(path.sep).join("/");
           throw new Error(
-            `SSH 沙箱上传拒绝逃逸工作区的符号链接: ${relativePath}`,
+            `SSH sandbox upload refuses symlink escaping the workspace: ${relativePath}`,
             { cause: error },
           );
         }
@@ -785,4 +818,32 @@ async function assertSafeUploadSymlinks(localDir: string): Promise<void> {
       }
     }
   }
+}
+
+function parseSshConfigHost(configText: string): string | null {
+  const hostMatch = configText.match(/^\s*Host\s+(\S+)/m);
+  return hostMatch?.[1]?.trim() || null;
+}
+
+function resolveSshTmpRoot(): string {
+  return path.resolve(resolvePreferredOpenClawTmpDir() ?? os.tmpdir());
+}
+
+function resolveOptionalLocalPath(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? resolveUserPath(trimmed) : undefined;
+}
+
+async function writeSecretMaterial(
+  dir: string,
+  filename: string,
+  contents: string,
+): Promise<string> {
+  const pathname = path.join(dir, filename);
+  await fs.writeFile(pathname, normalizeInlineSshMaterial(contents, filename), {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  await fs.chmod(pathname, 0o600);
+  return pathname;
 }

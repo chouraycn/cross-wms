@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Test helpers for queued follow-up reply runs. */
 import { afterAll, beforeAll } from "vitest";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Normalizes raw agent output into sendable reply text and metadata.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { sanitizeUserFacingText } from '@openclaw-src/agents/embedded-agent-helpers/sanitize-user-facing-text.js';
 import { hasReplyPayloadContent } from '@openclaw-src/interactive/payload.js';
 import { stripHeartbeatToken } from "../heartbeat.js";

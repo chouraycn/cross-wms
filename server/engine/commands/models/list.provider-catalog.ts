@@ -1,7 +1,7 @@
 /** Provider plugin catalog loading for model-list output. */
 import { createHash } from "node:crypto";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { sortUniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { loadAuthProfileStoreWithoutExternalProfiles } from "@openclaw-src/agents/auth-profiles/store.js";
 import {
   buildAgentModelCatalogCacheKey,

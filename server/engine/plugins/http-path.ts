@@ -1,7 +1,7 @@
 /**
  * 规范化插件 manifest 与路由使用的 HTTP 路径值。
  *
- * 降级说明：原实现依赖 @openclaw/normalization-core/string-coerce 的
+ * 降级说明：原实现依赖 @cdf-know/normalization-core/string-coerce 的
  * normalizeOptionalString，cross-wms 暂未引入该包，这里以本地实现替代。
  */
 

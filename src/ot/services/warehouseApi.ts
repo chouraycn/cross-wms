@@ -40,8 +40,8 @@ class WarehouseApiService {
   async getInboundRecords(warehouseId?: string): Promise<InboundRecord[]> {
     try {
       const url = warehouseId
-        ? `${this.baseUrl}/inbound?warehouseId=${encodeURIComponent(warehouseId)}`
-        : `${this.baseUrl}/inbound`;
+        ? `${this.baseUrl}/inbound-records?warehouseId=${encodeURIComponent(warehouseId)}`
+        : `${this.baseUrl}/inbound-records`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const json: ApiResponse<any> = await resp.json();
@@ -61,8 +61,8 @@ class WarehouseApiService {
   async getOutboundRecords(warehouseId?: string): Promise<OutboundRecord[]> {
     try {
       const url = warehouseId
-        ? `${this.baseUrl}/outbound?warehouseId=${encodeURIComponent(warehouseId)}`
-        : `${this.baseUrl}/outbound`;
+        ? `${this.baseUrl}/outbound-records?warehouseId=${encodeURIComponent(warehouseId)}`
+        : `${this.baseUrl}/outbound-records`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const json: ApiResponse<any> = await resp.json();

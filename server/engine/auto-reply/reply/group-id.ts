@@ -1,10 +1,9 @@
-// @ts-nocheck
 /** Extracts group/channel ids from explicit message targets. */
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { getLoadedChannelPluginForRead } from '@openclaw-src/channels/plugins/registry-loaded-read.js';
 import type { ChannelMessagingAdapter } from '@openclaw-src/channels/plugins/types.public.js';
 import { normalizeAnyChannelId } from '@openclaw-src/channels/registry.js';

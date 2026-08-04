@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Formats OpenClaw CLI command snippets for chat-facing command responses.
 import fs from "node:fs";
 import { createRequire } from "node:module";

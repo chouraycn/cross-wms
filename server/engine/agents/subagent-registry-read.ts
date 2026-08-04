@@ -1,33 +1,137 @@
+// @ts-nocheck
 /**
- * 移植自 openclaw/src/agents/subagent-registry-read.ts
+ * Read-only subagent registry accessors.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Combines persisted snapshots with in-memory live runs for UI, announce, control, and recovery paths.
  */
+import { getAgentRunContext } from "../infra/agent-events.js";
+import { subagentRuns } from "./subagent-registry-memory.js";
+import {
+  buildSubagentRunReadIndexFromRuns,
+  countActiveDescendantRunsFromRuns,
+  getSubagentRunByChildSessionKeyFromRuns,
+  listDescendantRunsForRequesterFromRuns,
+  listRunsForControllerFromRuns,
+  type SubagentRunReadIndex,
+} from "./subagent-registry-queries.js";
+import { getSubagentRunsSnapshotForRead } from "./subagent-registry-state.js";
+import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-export { getSubagentSessionRuntimeMs, getSubagentSessionStartedAt, resolveSubagentSessionStatus } from "./subagent-session-metrics.js";
-export function buildSubagentRunReadIndex(..._args: unknown[]): unknown {
-  return undefined;
+export {
+  getSubagentSessionRuntimeMs,
+  getSubagentSessionStartedAt,
+  resolveSubagentSessionStatus,
+} from "./subagent-session-metrics.js";
+
+/** Builds a reusable read index from the current persisted and in-memory run state. */
+export function buildSubagentRunReadIndex(now = Date.now()): SubagentRunReadIndex {
+  return buildSubagentRunReadIndexFromRuns({
+    runs: getSubagentRunsSnapshotForRead(subagentRuns),
+    inMemoryRuns: subagentRuns.values(),
+    now,
+  });
 }
-export function listSubagentRunsForController(..._args: unknown[]): unknown {
-  return [];
+
+/** Lists runs controlled by a session key. */
+export function listSubagentRunsForController(controllerSessionKey: string): SubagentRunRecord[] {
+  return listRunsForControllerFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    controllerSessionKey,
+  );
 }
-export function countActiveDescendantRuns(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Counts active descendant runs for a requester/session tree. */
+export function countActiveDescendantRuns(rootSessionKey: string): number {
+  return countActiveDescendantRunsFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    rootSessionKey,
+  );
 }
-export function listDescendantRunsForRequester(..._args: unknown[]): unknown {
-  return [];
+
+/** Lists descendant runs under a requester/session tree. */
+export function listDescendantRunsForRequester(rootSessionKey: string): SubagentRunRecord[] {
+  return listDescendantRunsForRequesterFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    rootSessionKey,
+  );
 }
-export function getSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Returns the preferred run for a child session, favoring active over ended runs. */
+export function getSubagentRunByChildSessionKey(childSessionKey: string): SubagentRunRecord | null {
+  return getSubagentRunByChildSessionKeyFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    childSessionKey,
+  );
 }
-export function isSubagentRunLive(..._args: unknown[]): unknown {
-  return false;
+
+/** Returns whether a registry entry still has a live agent run context. */
+export function isSubagentRunLive(
+  entry: Pick<SubagentRunRecord, "runId" | "endedAt"> | null | undefined,
+): boolean {
+  if (!entry || typeof entry.endedAt === "number") {
+    return false;
+  }
+  return Boolean(getAgentRunContext(entry.runId));
 }
-export function getSessionDisplaySubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Returns the run to display for a child session, using live memory before snapshot state. */
+export function getSessionDisplaySubagentRunByChildSessionKey(
+  childSessionKey: string,
+): SubagentRunRecord | null {
+  const key = childSessionKey.trim();
+  if (!key) {
+    return null;
+  }
+
+  let latestInMemoryActive: SubagentRunRecord | null = null;
+  let latestInMemoryEnded: SubagentRunRecord | null = null;
+  for (const entry of subagentRuns.values()) {
+    if (entry.childSessionKey !== key) {
+      continue;
+    }
+    if (typeof entry.endedAt === "number") {
+      if (!latestInMemoryEnded || entry.createdAt > latestInMemoryEnded.createdAt) {
+        latestInMemoryEnded = entry;
+      }
+      continue;
+    }
+    if (!latestInMemoryActive || entry.createdAt > latestInMemoryActive.createdAt) {
+      latestInMemoryActive = entry;
+    }
+  }
+
+  if (latestInMemoryEnded || latestInMemoryActive) {
+    // Fresh in-memory terminal state is more accurate than an older active snapshot row.
+    if (
+      latestInMemoryEnded &&
+      (!latestInMemoryActive || latestInMemoryEnded.createdAt > latestInMemoryActive.createdAt)
+    ) {
+      return latestInMemoryEnded;
+    }
+    return latestInMemoryActive ?? latestInMemoryEnded;
+  }
+
+  return getSubagentRunByChildSessionKey(key);
 }
-export function getLatestSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
-  return undefined;
+
+/** Returns the most recently created run for a child session from readable registry state. */
+export function getLatestSubagentRunByChildSessionKey(
+  childSessionKey: string,
+): SubagentRunRecord | null {
+  const key = childSessionKey.trim();
+  if (!key) {
+    return null;
+  }
+
+  let latest: SubagentRunRecord | null = null;
+  for (const entry of getSubagentRunsSnapshotForRead(subagentRuns).values()) {
+    if (entry.childSessionKey !== key) {
+      continue;
+    }
+    if (!latest || entry.createdAt > latest.createdAt) {
+      latest = entry;
+    }
+  }
+
+  return latest;
 }

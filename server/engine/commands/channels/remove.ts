@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Implements guided and non-interactive disable/delete for channel accounts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { resolveChannelDefaultAccountId } from "@openclaw-src/channels/plugins/helpers.js";
 import { getChannelPlugin, normalizeChannelId } from "@openclaw-src/channels/plugins/index.js";
 import { listReadOnlyChannelPluginsForConfig } from "@openclaw-src/channels/plugins/read-only.js";

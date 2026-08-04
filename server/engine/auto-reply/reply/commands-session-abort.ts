@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Implements session abort commands and active-run stop targeting.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { SessionEntry } from '@openclaw-src/config/sessions.js';
 import { logVerbose } from '@openclaw-src/globals.js';
 import { createInternalHookEvent, triggerInternalHook } from '@openclaw-src/hooks/internal-hooks.js';

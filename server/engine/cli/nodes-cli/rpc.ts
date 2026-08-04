@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Gateway RPC helpers for node CLI commands, including lazy runtime loading and option parsing.
 import { randomUUID } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import type { Command } from "commander";
 import type { OperatorScope } from "../../gateway/method-scopes.js";
 import {

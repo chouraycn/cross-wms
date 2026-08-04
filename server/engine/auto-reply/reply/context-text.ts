@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Formats finalized message context into prompt-visible text.
 import type { FinalizedMsgContext } from "../templating.js";
 

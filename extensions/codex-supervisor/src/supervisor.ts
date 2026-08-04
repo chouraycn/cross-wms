@@ -117,11 +117,16 @@ function isLoadedThreadReadMiss(error: unknown): boolean {
 /** High-level supervisor facade used by OpenClaw tools and MCP tools. */
 export class CodexSupervisor {
   private readonly connections = new Map<string, Promise<CodexJsonRpcConnection>>();
+  private readonly endpoints: CodexSupervisorEndpoint[];
+  private readonly connector: EndpointConnector;
 
   constructor(
-    private readonly endpoints: CodexSupervisorEndpoint[],
-    private readonly connector: EndpointConnector = connectCodexAppServerEndpoint,
-  ) {}
+    endpoints: CodexSupervisorEndpoint[],
+    connector: EndpointConnector = connectCodexAppServerEndpoint,
+  ) {
+    this.endpoints = endpoints;
+    this.connector = connector;
+  }
 
   /** Returns configured endpoint definitions without opening connections. */
   listEndpoints(): CodexSupervisorEndpoint[] {

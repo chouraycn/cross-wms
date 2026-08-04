@@ -6,7 +6,7 @@ import type {
   MediaGenResponse,
   ModelApiType,
 } from './types.js';
-import { AIAPIError, classifyError } from '../aiClient.js';
+import { AIAPIError, classifyError } from '../aiCore.js';
 
 export const FAL_DEFAULT_BASE_URL = 'https://fal.run';
 

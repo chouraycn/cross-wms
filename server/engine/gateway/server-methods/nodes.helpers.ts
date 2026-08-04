@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Node method helpers centralize validation failures, unavailable responses,
 // safe JSON parsing, and node-invoke error mapping.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,

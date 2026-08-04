@@ -4,7 +4,7 @@ import { confirm, select } from "@clack/prompts";
 import {
   stylePromptHint,
   stylePromptMessage,
-} from "@openclaw-src/packages/terminal-core/src/prompt-style.js";
+} from "@openclaw/terminal-core/prompt-style";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import {
   resolveDoctorRepairMode,

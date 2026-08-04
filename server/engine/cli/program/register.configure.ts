@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Configure command registration: lazy-loads the interactive configuration wizard.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";

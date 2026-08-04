@@ -15,7 +15,7 @@ import type {
   AppConfig,
 } from "./types.js";
 import type { MessageSendContext, ChannelMessageSendResult } from "./message/types.js";
-import { createBuiltinChannelPlugin } from "./builtin.js";
+import { createBuiltinChannelPlugin } from "./builtin-plugin-factory.js";
 import type { ChannelPlugin } from "./plugin.js";
 
 export const MSTEAMS_CHANNEL_ID = "msteams" as ChannelId;

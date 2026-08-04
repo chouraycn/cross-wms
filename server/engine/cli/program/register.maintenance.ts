@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Maintenance command registration: doctor, dashboard, reset, and uninstall.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway RPC handlers for voice wake routing configuration.
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import {

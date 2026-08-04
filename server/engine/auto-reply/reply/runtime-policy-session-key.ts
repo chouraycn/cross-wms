@@ -1,9 +1,8 @@
-// @ts-nocheck
 /** Resolves runtime policy session keys distinct from transcript session keys. */
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import {

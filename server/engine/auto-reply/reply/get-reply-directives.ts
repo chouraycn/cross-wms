@@ -3,7 +3,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { listAgentEntries } from '@openclaw-src/agents/agent-scope.js';
 import { DEFAULT_CONTEXT_TOKENS } from '@openclaw-src/agents/defaults.js';
 import { resolveFastModeState } from '@openclaw-src/agents/fast-mode.js';

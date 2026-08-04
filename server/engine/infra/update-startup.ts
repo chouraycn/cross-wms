@@ -11,7 +11,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   asDateTimestampMs,
   resolveTimestampMsToIsoString as timestampMsToIsoString,
@@ -30,6 +30,10 @@ import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from ".
 import { CONTROL_PLANE_UPDATE_HANDOFF_STARTED_REASON } from "./update-control-plane-sentinel.js";
 import { startManagedServiceUpdateHandoff } from "./update-managed-service-handoff.js";
 import { runCommandWithTimeout } from "./update-runner.js";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // VERSION 降级为运行时解析（来自 _runtime-stubs.js 的 resolveRuntimeServiceVersion）
 const VERSION = resolveRuntimeServiceVersion();

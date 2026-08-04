@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Outbound channel bootstrap lazily loads runtime plugins for selected channels
 // when only setup-shell metadata is active.
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
@@ -22,14 +21,14 @@ export function resetOutboundChannelBootstrapStateForTests(): void {
 }
 
 function channelEntryCanSend(entry: PluginChannelRegistration | undefined): boolean {
-  return Boolean(entry?.plugin?.outbound?.sendText ?? entry?.plugin?.message?.send?.text);
+  return Boolean((entry?.plugin as any)?.outbound?.sendText ?? (entry?.plugin as any)?.message?.send?.text);
 }
 
 function findChannelEntry(
   registry: ReturnType<typeof getActivePluginRegistry>,
   channel: DeliverableMessageChannel,
 ): PluginChannelRegistration | undefined {
-  return registry?.channels?.find((entry) => entry?.plugin?.id === channel);
+  return registry?.channels?.find((entry) => (entry?.plugin as any)?.id === channel);
 }
 
 function canResolveSendCapableChannel(channel: DeliverableMessageChannel): boolean {
@@ -68,7 +67,7 @@ export function bootstrapOutboundChannelPlugin(params: {
   // so config fixes in the same process can try again.
   bootstrapAttempts.add(attemptKey);
 
-  const autoEnabled = applyPluginAutoEnable({ config: cfg });
+  const autoEnabled = applyPluginAutoEnable({ config: cfg }) as any;
   const defaultAgentId = resolveDefaultAgentId(autoEnabled.config);
   const workspaceDir = resolveAgentWorkspaceDir(autoEnabled.config, defaultAgentId);
   try {

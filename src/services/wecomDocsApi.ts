@@ -63,16 +63,18 @@ export interface WeComSmartsheetStructure {
 /**
  * 调用 pywebview API 方法并解析 JSON 结果
  * waitForApi 函数在 tencentDocsApi.ts 中定义，这里通过动态导入避免循环依赖
- * 在 pywebview 环境外（浏览器开发模式）直接报错
+ * 在 pywebview 环境外（浏览器开发模式）返回 null 并发出警告，由调用方优雅降级
  */
-async function callApi<T>(method: string, ...args: unknown[]): Promise<T> {
+async function callApi<T>(method: string, ...args: unknown[]): Promise<T | null> {
   if (!window.pywebview?.api) {
-    throw new Error('企业文档功能仅在桌面应用中可用（需要 pywebview 环境）');
+    console.warn('企业文档功能仅在桌面应用中可用（需要 pywebview 环境）');
+    return null;
   }
   const api = window.pywebview.api as unknown as Record<string, (...a: unknown[]) => Promise<string>>;
   const fn = api[method];
   if (typeof fn !== 'function') {
-    throw new Error(`API method "${method}" not available`);
+    console.warn(`API method "${method}" not available`);
+    return null;
   }
   const jsonStr = await fn(...args);
   const result = JSON.parse(jsonStr);
@@ -88,7 +90,11 @@ async function callApi<T>(method: string, ...args: unknown[]): Promise<T> {
 
 /** 检查企业微信认证状态 */
 export async function getWeComAuthStatus(): Promise<WeComAuthStatus> {
-  return callApi<WeComAuthStatus>('wecom_check_auth');
+  const result = await callApi<WeComAuthStatus>('wecom_check_auth');
+  if (result === null) {
+    return { cliInstalled: false, authorized: false, checkedAt: Math.floor(Date.now() / 1000) };
+  }
+  return result;
 }
 
 /** 读取企业文档/智能表格内容（返回 Markdown） */
@@ -96,6 +102,7 @@ export async function getWeComDocContent(docid: string, category: WeComDocCatego
   const result = await callApi<{ ok: boolean; content: string; format: string; error?: string }>(
     'wecom_doc_content', docid, category,
   );
+  if (result === null) return '';
   if (!result.ok) throw new Error(result.error || 'Failed to read doc content');
   return result.content;
 }
@@ -105,6 +112,7 @@ export async function getWeComSmartPageContent(docid: string): Promise<string> {
   const result = await callApi<{ ok: boolean; content: string; format: string; error?: string }>(
     'wecom_smartpage_content', docid,
   );
+  if (result === null) return '';
   if (!result.ok) throw new Error(result.error || 'Failed to read smartpage content');
   return result.content;
 }
@@ -117,6 +125,7 @@ export async function getWeComSmartsheetStructure(docid: string): Promise<WeComS
     fields: Record<string, WeComFieldInfo[]>;
     error?: string;
   }>('wecom_smartsheet_structure', docid);
+  if (result === null) return { sheets: [], fields: {} };
   if (!result.ok) throw new Error(result.error || 'Failed to get smartsheet structure');
   return { sheets: result.sheets, fields: result.fields };
 }
@@ -126,6 +135,7 @@ export async function getWeComSmartsheetData(docid: string, sheetId: string): Pr
   const result = await callApi<{ ok: boolean; data: WeComSheetData; error?: string }>(
     'wecom_smartsheet_data', docid, sheetId,
   );
+  if (result === null) return { errcode: 0, errmsg: '', records: [], total: 0, has_more: false };
   if (!result.ok) throw new Error(result.error || 'Failed to get smartsheet data');
   return result.data;
 }

@@ -31,7 +31,30 @@ const TENANT_ID = 'default';
 const OWNER_ID = 'default-user';
 const OWNER_NAME = 'default-user';
 
-const DB_PATH = process.env.STAFF_DB_PATH || resolve(REPO_ROOT, '.dev-data/config/chat.db');
+/**
+ * 解析目标数据库路径。
+ * 重要：cross-wms 运行时的真实数据库是 AppPaths.chatDbFile，在本机解析为
+ *   ~/Library/Application Support/CDFKnowClow/chat.db
+ * 而不是仓库内的 .dev-data/config/chat.db（那个是早期/其它配置下的遗留文件，通常无人使用）。
+ * 因此默认优先选用 AppSupport 下的库；可用 STAFF_DB_PATH 强制指定。
+ */
+function resolveDbPath() {
+  if (process.env.STAFF_DB_PATH) return process.env.STAFF_DB_PATH;
+  const candidates = [
+    resolve(process.env.HOME || process.env.USERPROFILE || '', 'Library/Application Support/CDFKnowClow/chat.db'),
+    resolve(REPO_ROOT, '.dev-data/config/chat.db'),
+  ];
+  for (const c of candidates) {
+    try {
+      if (require('node:fs').existsSync(c)) return c;
+    } catch {
+      /* ignore */
+    }
+  }
+  return candidates[0];
+}
+
+const DB_PATH = resolveDbPath();
 const FIXTURE_PATH = resolve(
   REPO_ROOT,
   'StaffDeck-main/backend/app/db/seed_fixtures/staffdeck_admin_gallery_seed.json',

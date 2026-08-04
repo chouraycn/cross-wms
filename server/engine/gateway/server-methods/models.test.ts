@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Models method tests cover slow catalog timeouts, configured/all views,
 // validation errors, and protocol response shapes.
 import { describe, expect, it, vi } from "vitest";

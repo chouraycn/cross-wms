@@ -1,5 +1,5 @@
 // Speech Core module implements tts behavior.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { resolveChannelTtsVoiceDelivery } from "openclaw/plugin-sdk/channel-targets";
 import type {
@@ -21,7 +21,6 @@ import {
 } from "openclaw/plugin-sdk/reply-payload";
 import {
   getRuntimeConfigSnapshot,
-  getRuntimeConfigSourceSnapshot,
   selectApplicableRuntimeConfig,
 } from "openclaw/plugin-sdk/runtime-config-snapshot";
 import { isVerbose, logVerbose } from "openclaw/plugin-sdk/runtime-env";
@@ -345,7 +344,7 @@ function resolveTtsRuntimeConfig(cfg: OpenClawConfig): OpenClawConfig {
     selectApplicableRuntimeConfig({
       inputConfig: cfg,
       runtimeConfig: getRuntimeConfigSnapshot(),
-      runtimeSourceConfig: getRuntimeConfigSourceSnapshot(),
+      runtimeSourceConfig: undefined,
     }) ?? cfg
   );
 }
@@ -738,7 +737,7 @@ function readPrefs(prefsPath: string): TtsUserPrefs {
 }
 
 function atomicWriteFileSync(filePath: string, content: string): void {
-  privateFileStoreSync(path.dirname(filePath)).writeText(path.basename(filePath), content);
+  privateFileStoreSync(path.dirname(filePath)).writeFileSync(path.basename(filePath), content);
 }
 
 function updatePrefs(prefsPath: string, update: (prefs: TtsUserPrefs) => void): void {
@@ -1347,7 +1346,9 @@ export async function textToSpeech(params: {
     rootDir: resolvePreferredOpenClawTmpDir(),
     prefix: "tts-",
   });
-  const audioPath = temp.write(`voice-${Date.now()}${fileExtension}`, audioBuffer);
+  const audioFileName = `voice-${Date.now()}${fileExtension}`;
+  const audioPath = temp.path(audioFileName);
+  writeFileSync(audioPath, audioBuffer);
   scheduleCleanup(temp.dir);
 
   return {

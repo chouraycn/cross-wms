@@ -2,7 +2,7 @@
 // Converts status data into reusable report sections.
 // Section builders keep table column definitions close to the rows they format.
 
-import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
+import type { RenderTableOptions, TableColumn } from "@openclaw/terminal-core/table";
 import { buildStatusChannelsTableRows, statusChannelsTableColumns } from "./channels-table.js";
 import {
   buildStatusAgentTableRows,

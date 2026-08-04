@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Session message conversion bridge from the shared agent-core harness package.
  *

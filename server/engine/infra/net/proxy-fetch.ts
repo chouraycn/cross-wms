@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Proxy fetch helpers build undici proxy-aware fetch functions with managed TLS
 // options and runtime FormData normalization.
 import { logWarn } from "../../logger.js";
@@ -54,7 +53,7 @@ function normalizeInitForUndici(
     return initWithNormalizedHeaders;
   }
   const form = new UndiciFormData();
-  for (const [key, value] of body.entries()) {
+  for (const [key, value] of (body as any).entries()) {
     appendFormDataEntry(form, key, value);
   }
   // Undici must generate the multipart boundary for its own FormData instance;

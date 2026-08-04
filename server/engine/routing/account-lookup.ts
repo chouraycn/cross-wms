@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Account lookup helpers resolve route accounts from normalized account ids.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 // Case-insensitive account lookup for config maps that may preserve user
 // casing. Exact keys win so callers can still distinguish intentional entries.

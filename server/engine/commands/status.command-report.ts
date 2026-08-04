@@ -2,7 +2,7 @@
 // Renders the standard `openclaw status` report from prebuilt section data.
 // Report data assembly stays separate so tests can validate rows without terminal formatting.
 
-import type { RenderTableOptions, TableColumn } from "@openclaw-src/packages/terminal-core/src/table.js";
+import type { RenderTableOptions, TableColumn } from "@openclaw/terminal-core/table";
 import {
   buildStatusChannelsTableSection,
   buildStatusHealthSection,

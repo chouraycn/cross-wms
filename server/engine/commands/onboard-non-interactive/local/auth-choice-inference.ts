@@ -5,7 +5,7 @@
  * This keeps setup deterministic when users provide API-key flags without also
  * passing `--auth`, including plugin-defined provider auth flags.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { resolveProviderOnboardAuthFlags } from "@openclaw-src/plugins/provider-auth-choices.js";
 import { CORE_ONBOARD_AUTH_FLAGS } from "@openclaw-src/onboard-core-auth-flags.js";

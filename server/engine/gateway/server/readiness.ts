@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway readiness checker for channel health and startup sidecar state.
 import type { ChannelAccountSnapshot } from "../../channels/plugins/types.public.js";
 import {

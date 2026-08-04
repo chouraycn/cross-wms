@@ -14,7 +14,7 @@
  * - `buildToolsMessage`：仅构建工具清单段
  */
 import type { ChatCommandDefinition } from './commands-registry.js';
-import { listCommands } from './commands-registry.js';
+import { listChatCommands } from './commands-registry.js';
 
 /** 工具来源类型，对应 openclaw 中 `EffectiveToolInventoryResult` 的 group source。 */
 export type ToolInventorySource = 'builtin' | 'plugin' | 'channel' | 'mcp';
@@ -145,12 +145,12 @@ function collectToolsMessageItems(
 export function buildCommandsMessage(
   commands?: ChatCommandDefinition[],
 ): string {
-  const list = commands ?? listCommands();
+  const list = commands ?? listChatCommands();
   if (list.length === 0) {
     return ['Available commands', '', '  (no commands registered)'].join('\n');
   }
 
-  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...list].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   const lines = ['Available commands', ''];
   for (const cmd of sorted) {
     const aliases = cmd.aliases?.length ? ` [${cmd.aliases.join(', ')}]` : '';
@@ -258,4 +258,48 @@ export function buildStatusMessage(params: StatusMessageParams = {}): string {
   sections.push(buildHelpMessage(params.helpLines));
 
   return sections.join('\n\n');
+}
+
+export function buildCommandsMessagePaginated(params: {
+  commands?: ChatCommandDefinition[];
+  page?: number;
+  pageSize?: number;
+}): { message: string; page: number; pageSize: number; totalPages: number; totalItems: number } {
+  const list = params.commands ?? listChatCommands();
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.max(1, params.pageSize ?? 20);
+  const totalItems = list.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const paged = list.slice(start, end);
+
+  if (paged.length === 0) {
+    return {
+      message: ['Available commands', '', '  (no commands on this page)'].join('\n'),
+      page,
+      pageSize,
+      totalPages,
+      totalItems,
+    };
+  }
+
+  const sorted = [...paged].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+  const lines = [
+    `Available commands (page ${page}/${totalPages}, ${totalItems} total)`,
+    '',
+  ];
+  for (const cmd of sorted) {
+    const aliases = cmd.aliases?.length ? ` [${cmd.aliases.join(', ')}]` : '';
+    lines.push(`  /${cmd.name}${aliases} — ${cmd.description}`);
+  }
+  lines.push('', 'Use /help for general guidance.');
+
+  return {
+    message: lines.join('\n'),
+    page,
+    pageSize,
+    totalPages,
+    totalItems,
+  };
 }

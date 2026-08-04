@@ -1,5 +1,5 @@
 // Normalizes queue config values from user and persisted settings.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import type { QueueDropPolicy, QueueMode } from "./types.js";
 
 /** Normalizes user-entered queue mode aliases from directives/config. */

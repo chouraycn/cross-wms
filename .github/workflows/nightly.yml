@@ -1,0 +1,133 @@
+name: Nightly Build
+
+# P2-⑮: Release Channel — Nightly 自动构建
+# 每天凌晨自动构建 DMG，发布为 Pre-release，版本号带 -nightly 后缀
+# Stable/Beta 仍通过手动 tag 触发 ci.yml
+
+on:
+  schedule:
+    # 每天 Beijing 02:00 = UTC 18:00 前一天
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        type: choice
+        options: [nightly, beta]
+        default: nightly
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nightly-build:
+    name: Nightly DMG Build
+    if: github.ref_name == 'main' || github.ref_name == 'master'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      CHANNEL: ${{ github.event.inputs.channel || 'nightly' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js + Dependencies
+        uses: ./.github/actions/setup-node-deps
+        with:
+          install-flags: '--legacy-peer-deps'
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Pre-build check (lenient)
+        run: bash scripts/pre-build-check.sh --quick --lenient || true
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0.3'
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-6.0.3-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.0.3-spm-release-
+            ${{ runner.os }}-swift-6.0.3-spm-
+
+      - name: Build macOS app + DMG (no bump, no release)
+        run: bash scripts/package-mac-dist.sh --no-bump --skip-release
+        env:
+          CI: true
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_OUTPUT
+
+      - name: Verify DMG
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
+          if [ ! -f "$DMG_FILE" ]; then
+            echo "::error::DMG not found: $DMG_FILE"
+            exit 1
+          fi
+          echo "✅ DMG verified: $DMG_FILE"
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
+          SHA256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+
+      - name: Generate nightly release notes
+        id: notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DATE=$(date -u +"%Y-%m-%d")
+          CHANNEL="${{ env.CHANNEL }}"
+
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## 🌙 CDF Know Clow ${CHANNEL} (${DATE})"
+            echo ""
+            echo "Version: v${VERSION}"
+            echo "Channel: **${CHANNEL}**"
+            echo ""
+            echo "### Recent Changes"
+            git log --oneline --since="24 hours ago" --no-merges | sed 's/^/- /' || echo "- No changes in last 24h"
+            echo ""
+            echo "### Download"
+            echo "- **macOS**: CDF Know Clow-${VERSION}.dmg"
+            echo "- **SHA256**: \`${{ steps.sha.outputs.sha256 }}\`"
+            echo ""
+            echo "---"
+            echo "> ⚠️ This is an automated ${CHANNEL} build. May be unstable."
+            echo "> For stable releases, see [latest release](https://github.com/chouraycn/CDFKnow/releases/latest)"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Create Nightly Release (pre-release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.CHANNEL }}-${{ steps.get_version.outputs.version }}
+          name: CDF Know Clow ${{ env.CHANNEL }} ${{ steps.get_version.outputs.version }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: |
+            release/CDF Know Clow-${{ steps.get_version.outputs.version }}.dmg
+            release/release.json
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

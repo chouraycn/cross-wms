@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Direct import smoke helper for plugin public artifact tests.
  */

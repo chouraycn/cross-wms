@@ -1,168 +1,225 @@
-import path from 'path';
-import fs from 'fs';
-import { z } from 'zod';
-import { logger } from '../../logger.js';
+/**
+ * IDENTITY.md parsing and writing support.
+ * The parser accepts human-authored markdown, while the writer only updates
+ * stable rich identity fields.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { DEFAULT_IDENTITY_FILENAME } from "./workspace.js";
 
-export const IdentityFileSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  role: z.string(),
-  description: z.string().default(''),
-  soul: z.string().default(''),
-  memory: z.string().default(''),
-  capabilities: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-    taskKeywords: z.array(z.string()).default([]),
-  })).default([]),
-  tools: z.array(z.string()).default([]),
-  metadata: z.record(z.string(), z.unknown()).default({}),
-  version: z.string().default('1.0.0'),
-  createdAt: z.string().datetime().default(() => new Date().toISOString()),
-  updatedAt: z.string().datetime().default(() => new Date().toISOString()),
-});
+/** Parsed rich identity values from a workspace `IDENTITY.md` file. */
+export type AgentIdentityFile = {
+  name?: string;
+  emoji?: string;
+  theme?: string;
+  creature?: string;
+  vibe?: string;
+  avatar?: string;
+};
 
-export type IdentityFile = z.infer<typeof IdentityFileSchema>;
+const WRITABLE_IDENTITY_FIELDS = [
+  ["name", "Name"],
+  ["theme", "Theme"],
+  ["emoji", "Emoji"],
+  ["avatar", "Avatar"],
+] as const satisfies ReadonlyArray<readonly [keyof AgentIdentityFile, string]>;
 
-export function loadIdentityFile(filePath: string): IdentityFile {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Identity file not found: ${filePath}`);
+const RICH_IDENTITY_LABELS = new Set(["name", "creature", "vibe", "theme", "emoji", "avatar"]);
+
+const IDENTITY_PLACEHOLDER_VALUES = new Set([
+  "pick something you like",
+  "ai? robot? familiar? ghost in the machine? something weirder?",
+  "how do you come across? sharp? warm? chaotic? calm?",
+  "your signature - pick one that feels right",
+  "workspace-relative path, http(s) url, or data uri",
+]);
+
+function normalizeIdentityValue(value: string): string {
+  // Normalize markdown decoration and punctuation so generated template
+  // placeholders do not accidentally become real identity values.
+  let normalized = value.trim();
+  normalized = normalized.replace(/^[*_`\s]+|[*_`\s]+$/g, "").trim();
+  if (normalized.startsWith("(") && normalized.endsWith(")")) {
+    normalized = normalized.slice(1, -1).trim();
   }
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const parsed = JSON.parse(content);
-  
-  const result = IdentityFileSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error(`Invalid identity file ${filePath}: ${result.error.message}`);
-  }
-
-  logger.debug(`[Agents:IdentityFile] Loaded identity: ${result.data.id}`);
-  return result.data;
+  normalized = normalized.replace(/[\u2013\u2014]/g, "-");
+  return normalizeLowercaseStringOrEmpty(normalized.replace(/\s+/g, " "));
 }
 
-export function saveIdentityFile(filePath: string, identity: IdentityFile): void {
-  const updated = {
-    ...identity,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  fs.writeFileSync(filePath, JSON.stringify(updated, null, 2), 'utf-8');
-  logger.debug(`[Agents:IdentityFile] Saved identity: ${identity.id}`);
+function normalizeIdentityLabel(label: string): string {
+  return normalizeLowercaseStringOrEmpty(label.replace(/[*_`]/g, ""));
 }
 
-export function validateIdentityFile(identity: unknown): identity is IdentityFile {
-  const result = IdentityFileSchema.safeParse(identity);
-  return result.success;
+function isIdentityPlaceholder(value: string): boolean {
+  const normalized = normalizeIdentityValue(value);
+  return IDENTITY_PLACEHOLDER_VALUES.has(normalized);
 }
 
-export function createIdentityFile(params: {
-  id: string;
-  name: string;
-  role: string;
-  description?: string;
-  soul?: string;
-  memory?: string;
-  capabilities?: IdentityFile['capabilities'];
-  tools?: string[];
-  metadata?: Record<string, unknown>;
-}): IdentityFile {
-  const now = new Date().toISOString();
-  const identity: IdentityFile = {
-    id: params.id,
-    name: params.name,
-    role: params.role,
-    description: params.description ?? '',
-    soul: params.soul ?? '',
-    memory: params.memory ?? '',
-    capabilities: params.capabilities ?? [],
-    tools: params.tools ?? [],
-    metadata: params.metadata ?? {},
-    version: '1.0.0',
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const result = IdentityFileSchema.safeParse(identity);
-  if (!result.success) {
-    throw new Error(`Invalid identity: ${result.error.message}`);
-  }
-
-  return result.data;
-}
-
-export function updateIdentityFile(
-  identity: IdentityFile,
-  updates: Partial<IdentityFile>,
-): IdentityFile {
-  const updated: IdentityFile = {
-    ...identity,
-    ...updates,
-    id: identity.id,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const result = IdentityFileSchema.safeParse(updated);
-  if (!result.success) {
-    throw new Error(`Invalid identity update: ${result.error.message}`);
-  }
-
-  return result.data;
-}
-
-export function loadSoulMarkdown(filePath: string): string {
-  if (!fs.existsSync(filePath)) return '';
-  return fs.readFileSync(filePath, 'utf-8');
-}
-
-export function loadMemoryMarkdown(filePath: string): string {
-  if (!fs.existsSync(filePath)) return '';
-  return fs.readFileSync(filePath, 'utf-8');
-}
-
-export function saveSoulMarkdown(filePath: string, content: string): void {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(filePath, content, 'utf-8');
-}
-
-export function saveMemoryMarkdown(filePath: string, content: string): void {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(filePath, content, 'utf-8');
-}
-
-export function scanIdentityDirectory(dirPath: string): IdentityFile[] {
-  const identities: IdentityFile[] = [];
-
-  if (!fs.existsSync(dirPath)) return identities;
-
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-
-    const identityPath = path.join(dirPath, entry.name, 'identity.json');
-    if (fs.existsSync(identityPath)) {
-      try {
-        const identity = loadIdentityFile(identityPath);
-        identities.push(identity);
-      } catch (err) {
-        logger.warn(`[Agents:IdentityFile] Failed to load identity from ${entry.name}:`, err);
-      }
+/** Parse rich identity fields from human-authored markdown content. */
+export function parseIdentityMarkdown(content: string): AgentIdentityFile {
+  const identity: AgentIdentityFile = {};
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const cleaned = line.trim().replace(/^\s*-\s*/, "");
+    const colonIndex = cleaned.indexOf(":");
+    if (colonIndex === -1) {
+      continue;
+    }
+    const label = normalizeIdentityLabel(cleaned.slice(0, colonIndex));
+    const value = cleaned
+      .slice(colonIndex + 1)
+      .replace(/^[*_`\s]+|[*_`\s]+$/g, "")
+      .trim();
+    if (!value) {
+      continue;
+    }
+    if (isIdentityPlaceholder(value)) {
+      continue;
+    }
+    if (label === "name") {
+      identity.name = value;
+    }
+    if (label === "emoji") {
+      identity.emoji = value;
+    }
+    if (label === "creature") {
+      identity.creature = value;
+    }
+    if (label === "vibe") {
+      identity.vibe = value;
+    }
+    if (label === "theme") {
+      identity.theme = value;
+    }
+    if (label === "avatar") {
+      identity.avatar = value;
     }
   }
-
-  return identities;
+  return identity;
 }
 
-logger.debug('[Agents:IdentityFile] Module loaded');
+/** Return true when the parsed identity has any meaningful user-supplied value. */
+export function identityHasValues(identity: AgentIdentityFile): boolean {
+  return Boolean(
+    identity.name ||
+    identity.emoji ||
+    identity.theme ||
+    identity.creature ||
+    identity.vibe ||
+    identity.avatar,
+  );
+}
+
+function buildIdentityLine(label: string, value: string): string {
+  return `- ${label}: ${value}`;
+}
+
+function matchesIdentityLabel(line: string, label: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("-")) {
+    return false;
+  }
+  const cleaned = trimmed.replace(/^\s*-\s*/, "");
+  const colonIndex = cleaned.indexOf(":");
+  if (colonIndex === -1) {
+    return false;
+  }
+  return normalizeIdentityLabel(cleaned.slice(0, colonIndex)) === normalizeIdentityLabel(label);
+}
+
+function normalizeIdentityContent(content: string | undefined): string[] {
+  if (!content) {
+    return [];
+  }
+  return content.replace(/\r\n/g, "\n").split("\n");
+}
+
+function resolveIdentityInsertIndex(lines: string[]): number {
+  // New fields stay grouped with existing rich identity fields; otherwise place
+  // them directly after the title block so legacy prose remains intact.
+  let lastIdentityIndex = -1;
+  for (const [index, line] of lines.entries()) {
+    const cleaned = line.trim().replace(/^\s*-\s*/, "");
+    const colonIndex = cleaned.indexOf(":");
+    if (colonIndex === -1) {
+      continue;
+    }
+    const label = normalizeIdentityLabel(cleaned.slice(0, colonIndex));
+    if (RICH_IDENTITY_LABELS.has(label)) {
+      lastIdentityIndex = index;
+    }
+  }
+  if (lastIdentityIndex >= 0) {
+    return lastIdentityIndex + 1;
+  }
+
+  const headingIndex = lines.findIndex((line) => line.trim().startsWith("#"));
+  if (headingIndex === -1) {
+    return 0;
+  }
+  let insertIndex = headingIndex + 1;
+  while (insertIndex < lines.length && lines[insertIndex]?.trim() === "") {
+    insertIndex += 1;
+  }
+  return insertIndex;
+}
+
+/**
+ * Merge writable identity fields into existing IDENTITY.md content, replacing
+ * duplicate labels and preserving unrelated markdown.
+ */
+export function mergeIdentityMarkdownContent(
+  content: string | undefined,
+  identity: Pick<AgentIdentityFile, "name" | "theme" | "emoji" | "avatar">,
+): string {
+  const lines = normalizeIdentityContent(content);
+  const nextLines = lines.length > 0 ? [...lines] : ["# IDENTITY.md - Agent Identity", ""];
+
+  for (const [field, label] of WRITABLE_IDENTITY_FIELDS) {
+    const value = identity[field]?.trim();
+    if (!value) {
+      continue;
+    }
+
+    const matchingIndexes = nextLines.reduce<number[]>((indexes, line, index) => {
+      if (matchesIdentityLabel(line, label)) {
+        indexes.push(index);
+      }
+      return indexes;
+    }, []);
+
+    if (matchingIndexes.length > 0) {
+      const [firstIndex, ...duplicateIndexes] = matchingIndexes;
+      nextLines[firstIndex] = buildIdentityLine(label, value);
+      for (const duplicateIndex of duplicateIndexes.toReversed()) {
+        nextLines.splice(duplicateIndex, 1);
+      }
+      continue;
+    }
+
+    const insertIndex = resolveIdentityInsertIndex(nextLines);
+    nextLines.splice(insertIndex, 0, buildIdentityLine(label, value));
+  }
+
+  return nextLines.join("\n").replace(/\n*$/, "\n");
+}
+
+function loadIdentityFromFile(identityPath: string): AgentIdentityFile | null {
+  try {
+    const content = fs.readFileSync(identityPath, "utf-8");
+    const parsed = parseIdentityMarkdown(content);
+    if (!identityHasValues(parsed)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Load the workspace identity file when it exists and contains real values. */
+export function loadAgentIdentityFromWorkspace(workspace: string): AgentIdentityFile | null {
+  const identityPath = path.join(workspace, DEFAULT_IDENTITY_FILENAME);
+  return loadIdentityFromFile(identityPath);
+}

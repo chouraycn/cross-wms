@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** E2E harness for reply directive behavior tests. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { afterEach, beforeEach, vi } from "vitest";
 import { clearRuntimeAuthProfileStoreSnapshots } from '@openclaw-src/agents/auth-profiles.js';
 import { clearSessionStoreCacheForTest } from '@openclaw-src/config/sessions.js';

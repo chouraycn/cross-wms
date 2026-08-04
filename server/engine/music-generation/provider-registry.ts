@@ -105,3 +105,20 @@ export function clearMusicProviders(): void {
   providers.clear();
   aliasMap.clear();
 }
+
+// ---------------------------------------------------------------------------
+// openclaw 兼容别名 — runtime.ts 从 openclaw 移植，使用 *Generation* 命名
+// ---------------------------------------------------------------------------
+
+/** List canonical music generation providers available for the current config. */
+export function listMusicGenerationProviders(_cfg?: unknown): MusicGenerationProvider[] {
+  return listMusicProviders();
+}
+
+/** Resolve a music generation provider by canonical id or alias. */
+export function getMusicGenerationProvider(
+  providerId: string | undefined,
+  _cfg?: unknown,
+): MusicGenerationProvider | undefined {
+  return getMusicProvider(providerId);
+}

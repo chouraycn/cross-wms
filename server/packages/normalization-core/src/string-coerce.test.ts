@@ -1,6 +1,6 @@
 // Normalization Core tests cover string coerce behavior.
 import { describe, expect, it } from "vitest";
-import { normalizeStringifiedEntries } from "@openclaw/normalization-core/string-coerce";
+import { normalizeStringifiedEntries } from "@cdf-know/normalization-core/string-coerce";
 
 describe("normalization-core/string-coerce", () => {
   it("normalizes primitive stringified entries", () => {

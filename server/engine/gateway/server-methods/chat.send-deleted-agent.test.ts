@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests that chat send rejects deleted-agent sessions before dispatch.
  */

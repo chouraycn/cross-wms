@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Dispatches subagent command actions after parsing the subcommand target.
 import type { SubagentRunRecord } from '@openclaw-src/agents/subagent-registry.types.js';
 import type { HandleCommandsParams } from "./commands-types.js";

@@ -1,14 +1,6 @@
-/**
- * Simplified port of openclaw/src/secrets/auth-profiles-scan.ts
- *
- * Scans auth-profile stores for plaintext credentials, SecretRefs, and OAuth tokens.
- *
- * Simplification: listAuthProfileSecretTargetEntries from target-registry-query.js is
- * not ported yet. The stub returns an empty array, so field-spec derivation uses the
- * hardcoded defaults only. Type safety is preserved.
- */
-import { isRecord } from "../infra/record-coerce.js";
-import { isNonEmptyString } from "./shared.js";
+/** Scans auth-profile stores for plaintext credentials, SecretRefs, and OAuth tokens. */
+import { isNonEmptyString, isRecord } from "./shared.js";
+import { listAuthProfileSecretTargetEntries } from "./target-registry-query.js";
 
 /** Auth-profile credential kinds that can carry SecretRef-backed values. */
 export type AuthProfileCredentialType = "api_key" | "token";
@@ -65,18 +57,6 @@ export type AuthProfileCredentialVisit =
 function getAuthProfileFieldName(pathPattern: string): string {
   const segments = pathPattern.split(".").filter(Boolean);
   return segments[segments.length - 1] ?? "";
-}
-
-/**
- * Stub for listAuthProfileSecretTargetEntries from target-registry-query.js (unported).
- * Returns an empty array so AUTH_PROFILE_FIELD_SPEC_BY_TYPE uses only the defaults.
- */
-function listAuthProfileSecretTargetEntries(): Array<{
-  authProfileType?: AuthProfileCredentialType;
-  pathPattern: string;
-  refPathPattern?: string;
-}> {
-  return [];
 }
 
 const AUTH_PROFILE_FIELD_SPEC_BY_TYPE = (() => {

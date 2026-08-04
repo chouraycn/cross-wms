@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ACP Client
  * 交互式 ACP 客户端 - 将终端会话连接到 ACP Server

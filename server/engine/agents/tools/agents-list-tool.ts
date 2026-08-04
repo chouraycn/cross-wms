@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * agents_list built-in tool.
  *

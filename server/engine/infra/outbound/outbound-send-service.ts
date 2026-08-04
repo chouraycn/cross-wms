@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Outbound send service chooses plugin-handled message actions or the core
 // message/poll path while preserving media policy and transcript mirrors.
 import type { AgentToolResult } from "../../agents/runtime/index.js";

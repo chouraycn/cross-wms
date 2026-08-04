@@ -24,7 +24,7 @@ import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
-import { ExecutionMode, type ExecutionStrategyOptions } from './executionStrategy.js';
+import { ExecutionMode, type ExecutionStrategyOptions } from './execution-strategy-types.js';
 import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ApiMessage } from './contextTruncate.js';

@@ -37,4 +37,5 @@ export type LoadedCronStore = {
   configJobIndexes: number[];
   configJobRuntimeEntries: CronConfigJobRuntimeEntry[];
   invalidConfigRows: QuarantinedCronConfigJob[];
+  quarantineJobs?: QuarantinedCronConfigJob[];
 };

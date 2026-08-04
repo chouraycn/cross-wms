@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared run helpers for retry limits, model reporting, and final text.
  */
@@ -246,7 +245,7 @@ export function resolveFinalAssistantVisibleText(
   if (!lastAssistant) {
     return undefined;
   }
-  const visibleText = extractAssistantVisibleText(lastAssistant).trim();
+  const visibleText = extractAssistantVisibleText((lastAssistant as any)).trim();
   return visibleText || undefined;
 }
 

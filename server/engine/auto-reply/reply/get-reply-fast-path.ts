@@ -1,10 +1,9 @@
-// @ts-nocheck
 // Runs lightweight get-reply fast-path commands before full agent setup.
 import crypto from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import { normalizeAnyChannelId } from '@openclaw-src/channels/registry.js';
 import { applyMergePatch } from '@openclaw-src/config/merge-patch.js';

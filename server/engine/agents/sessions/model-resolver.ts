@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Model resolution, scoping, and initial selection
  */

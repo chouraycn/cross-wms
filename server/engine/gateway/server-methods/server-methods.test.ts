@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared server-method tests cover helpers and cross-method behavior that spans
 // chat, exec approvals, logs, timestamps, attachments, and history projection.
 import { createHash } from "node:crypto";
@@ -7,7 +6,7 @@ import fsPromises from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@cdf-know/normalization-core/record-coerce";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GATEWAY_CLIENT_IDS } from "../../../../packages/gateway-protocol/src/client-info.js";
 import { validateExecApprovalRequestParams } from "../../../../packages/gateway-protocol/src/index.js";

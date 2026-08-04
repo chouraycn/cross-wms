@@ -2,8 +2,8 @@
 /** Doctor repairs for stale plugin registry entries, managed npm shadows, and peer links. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
+import { note } from "@openclaw/terminal-core/note";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { saveJsonFile } from "@openclaw-src/infra/json-file.js";

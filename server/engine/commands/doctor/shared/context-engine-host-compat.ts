@@ -1,6 +1,6 @@
 // Doctor checks for context engine host requirements against configured agent runtimes.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { normalizeEmbeddedAgentRuntime } from "@openclaw-src/agents/agent-runtime-id.js";
 import { resolveDefaultAgentDir } from "@openclaw-src/agents/agent-scope-config.js";
 import { resolveCliBackendConfig } from "@openclaw-src/agents/cli-backends.js";

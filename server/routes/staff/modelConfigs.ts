@@ -72,7 +72,7 @@ function modelConfigRead(row: ModelConfigRow): ModelConfigRead {
     api_protocol: row.api_protocol,
     base_url: row.base_url,
     // 安全字段：不暴露 api_key_encrypted，仅返回脱敏后的 key
-    // 注：ModelConfigRead 类型不含 api_key_masked，故通过扩展返回
+    api_key_masked: maskApiKey(decryptApiKey(row.api_key_encrypted)),
     model: row.model,
     temperature: row.temperature,
     max_output_tokens: row.max_output_tokens,
@@ -96,13 +96,12 @@ function modelConfigRead(row: ModelConfigRow): ModelConfigRead {
   };
 }
 
-/** 带 api_key_masked 的完整 Read（用于 create/update/set-default/test 响应） */
-function modelConfigReadWithMask(row: ModelConfigRow): ModelConfigRead & { api_key_masked: string } {
-  const apiKey = decryptApiKey(row.api_key_encrypted);
-  return {
-    ...modelConfigRead(row),
-    api_key_masked: maskApiKey(apiKey),
-  };
+/**
+ * 兼容别名：api_key_masked 已并入 modelConfigRead / ModelConfigRead 类型，
+ * 保留此函数名以免大范围改动调用点。
+ */
+function modelConfigReadWithMask(row: ModelConfigRow): ModelConfigRead {
+  return modelConfigRead(row);
 }
 
 // ===================== GET /protocols — 支持的协议 =====================

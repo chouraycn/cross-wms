@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests shared provider model id normalization helpers.
  */

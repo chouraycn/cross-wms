@@ -1,11 +1,46 @@
+// @ts-nocheck
 /**
- * 移植自 openclaw/src/agents/embedded-agent-subscribe.raw-stream.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Appends raw embedded-agent stream payloads for diagnostics when enabled.
  */
+import fs from "node:fs";
+import path from "node:path";
+import { resolveStateDir } from "../config/paths.js";
+import { isTruthyEnvValue } from "../infra/env.js";
+import { readRegularFile } from "../infra/fs-safe.js";
 
-export function appendRawStream(..._args: unknown[]): unknown {
-  return undefined;
+let rawStreamReady = false;
+
+function isRawStreamEnabled(): boolean {
+  return isTruthyEnvValue(process.env.OPENCLAW_RAW_STREAM);
+}
+
+function resolveRawStreamPath(): string {
+  return (
+    process.env.OPENCLAW_RAW_STREAM_PATH?.trim() ||
+    path.join(resolveStateDir(), "logs", "raw-stream.jsonl")
+  );
+}
+
+export function appendRawStream(payload: Record<string, unknown>) {
+  if (!isRawStreamEnabled()) {
+    return;
+  }
+  const rawStreamPath = resolveRawStreamPath();
+  if (!rawStreamReady) {
+    rawStreamReady = true;
+    try {
+      fs.mkdirSync(path.dirname(rawStreamPath), { recursive: true });
+    } catch {
+      // ignore raw stream mkdir failures
+    }
+  }
+  try {
+    void readRegularFile({
+      filePath: rawStreamPath,
+      content: `${JSON.stringify(payload)}\n`,
+      rejectSymlinkParents: true,
+    });
+  } catch {
+    // ignore raw stream write failures
+  }
 }

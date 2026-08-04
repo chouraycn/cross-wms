@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Provider web-search contract fields expose shared config keys for web-search-capable providers.
 import type { SearchConfigRecord } from "../agents/tools/web-search-provider-common.js";
 import {

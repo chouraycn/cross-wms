@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Runs queued follow-up agent turns and routes their delivery payloads. */
 import crypto from "node:crypto";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@cdf-know/normalization-core/string-coerce";
 import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
 import {
   clearAutoFallbackPrimaryProbeSelection,

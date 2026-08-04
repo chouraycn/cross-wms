@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/min-host-version.ts。
 //
 // 降级策略：
-//  - 原文件依赖 `@openclaw/normalization-core/string-coerce` 的
+//  - 原文件依赖 `@cdf-know/normalization-core/string-coerce` 的
 //    `normalizeOptionalString`。改用 cross-wms 的 `../infra/string-coerce.js`，
 //    该模块已提供同名导出，行为一致。
 //  - 原文件依赖 `../infra/runtime-guard.js` 的 `parseSemver` 与 `isAtLeast`。

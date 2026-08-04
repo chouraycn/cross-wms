@@ -1,9 +1,9 @@
 // @ts-nocheck
 /** Implementation of `openclaw models status`. */
 import path from "node:path";
-import { findNormalizedProviderValue } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { colorize, theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { findNormalizedProviderValue } from "@cdf-know/model-catalog-core/provider-id";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { colorize, theme } from "@openclaw/terminal-core/theme";
 import {
   resolveAgentDir,
   resolveAgentExplicitModelPrimary,
@@ -89,7 +89,7 @@ function resolveEnvAgentDirOverride(env: NodeJS.ProcessEnv = process.env): strin
   const override = env.OPENCLAW_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
   return override ? resolveUserPath(override, env) : undefined;
 }
-type TerminalTableRuntime = typeof import("@openclaw-src/packages/terminal-core/src/table.js");
+type TerminalTableRuntime = typeof import("@openclaw/terminal-core/table");
 type ListProbeRuntime = typeof import("./list.probe.js");
 
 const providerUsageRuntimeLoader = createLazyImportLoader<ProviderUsageRuntime>(
@@ -99,7 +99,7 @@ const progressRuntimeLoader = createLazyImportLoader<ProgressRuntime>(
   () => import("@openclaw-src/cli/progress.js"),
 );
 const terminalTableRuntimeLoader = createLazyImportLoader<TerminalTableRuntime>(
-  () => import("@openclaw-src/packages/terminal-core/src/table.js"),
+  () => import("@openclaw/terminal-core/table"),
 );
 const listProbeRuntimeLoader = createLazyImportLoader<ListProbeRuntime>(
   () => import("./list.probe.js"),

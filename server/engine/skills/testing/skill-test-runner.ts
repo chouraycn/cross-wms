@@ -148,7 +148,7 @@ export async function runAllTests(skillDir: string): Promise<{ total: number; pa
 }
 
 export function formatTestResult(result: TestResult): string {
-  const parts = [];
+  const parts: string[] = [];
   parts.push(result.passed ? 'PASS' : 'FAIL');
   if (result.durationMs) {
     parts.push(`(${result.durationMs}ms)`);

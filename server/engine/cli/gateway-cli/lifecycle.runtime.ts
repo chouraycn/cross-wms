@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lazy lifecycle runtime export hub used by gateway run-loop restart paths.
 export {
   abortEmbeddedAgentRun,

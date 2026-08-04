@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Shared assertions for channel account startup lifecycle behavior.
  */

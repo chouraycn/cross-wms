@@ -1,6 +1,60 @@
 import { z } from 'zod';
 import { logger } from '../../logger.js';
+import type { OpenClawConfig } from '../config/types.openclaw.js';
+import { collectCoreInsecureOrDangerousFlags } from './core-dangerous-config-flags.js';
 import type { SecurityFinding, SecurityLevel } from './types.js';
+
+// ============================================================================
+// 以下为 openclaw dangerous-config-flags-core.ts 中存在、但 cross-wms 未合并的 API。
+// 提供最小可运行 stub：返回 core dangerous flags，不支持插件契约扩展。
+// ============================================================================
+
+type DangerousFlagValue = string | number | boolean | null;
+
+type DangerousFlagContract = {
+  path: string;
+  equals: DangerousFlagValue;
+};
+
+type PluginConfigContractMetadata = {
+  configContracts: {
+    dangerousFlags?: DangerousFlagContract[];
+  };
+};
+
+type PluginConfigContractMatch = {
+  path: string;
+  value: unknown;
+};
+
+type CollectPluginConfigContractMatches = (input: {
+  pathPattern: string;
+  root: Record<string, unknown>;
+}) => Iterable<PluginConfigContractMatch>;
+
+/**
+ * Plugin config contract data used to extend core dangerous-flag detection.
+ * Tests and snapshot callers can inject prepared contracts to avoid manifest discovery.
+ */
+export type DangerousConfigFlagContractInputs = {
+  configContractsById?: ReadonlyMap<string, PluginConfigContractMetadata>;
+  collectPluginConfigContractMatches?: CollectPluginConfigContractMatches;
+};
+
+/**
+ * Stub: 返回 core dangerous flags，忽略插件契约扩展。
+ *
+ * 对应 openclaw 版本的 collectEnabledInsecureOrDangerousFlagsFromContracts：
+ * 完整实现会扫描 sandbox.docker、hooks、browser、tools.fs、agents.list 等
+ * 路径，并通过 configContractsById 收集插件契约中的 dangerous flags。
+ * 此 stub 仅委托给 collectCoreInsecureOrDangerousFlags，避免引入未合并的依赖。
+ */
+export function collectEnabledInsecureOrDangerousFlagsFromContracts(
+  cfg: OpenClawConfig,
+  _inputs: DangerousConfigFlagContractInputs = {},
+): string[] {
+  return collectCoreInsecureOrDangerousFlags(cfg);
+}
 
 export type CoreConfigFlag = {
   key: string;

@@ -1,18 +1,57 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/node-invoke-system-run-approval-match.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Node system.run approval binding matcher.
+// Verifies command approvals against argv, cwd, session, agent, and env keys.
+import type { ExecApprovalRequestPayload } from "../infra/exec-approvals.js";
+import {
+  buildSystemRunApprovalBinding,
+  missingSystemRunApprovalBinding,
+  matchSystemRunApprovalBinding,
+  type SystemRunApprovalMatchResult,
+} from "../infra/system-run-approval-binding.js";
 
-export const toSystemRunApprovalMismatchError: unknown = undefined;
+type SystemRunApprovalBinding = {
+  cwd: string | null;
+  agentId: string | null;
+  sessionKey: string | null;
+  env?: unknown;
+};
 
-export function evaluateSystemRunApprovalMatch(..._args: unknown[]): unknown {
-  return undefined;
+function requestMismatch(): SystemRunApprovalMatchResult {
+  return {
+    ok: false,
+    code: "APPROVAL_REQUEST_MISMATCH",
+    message: "approval id does not match request",
+  };
+}
+
+export { toSystemRunApprovalMismatchError } from "../infra/system-run-approval-binding.js";
+
+/** Evaluates whether a node system.run request matches the stored approval binding. */
+export function evaluateSystemRunApprovalMatch(params: {
+  argv: string[];
+  request: ExecApprovalRequestPayload;
+  binding: SystemRunApprovalBinding;
+}): SystemRunApprovalMatchResult {
+  if (params.request.host !== "node") {
+    return requestMismatch();
+  }
+
+  const actualBinding = buildSystemRunApprovalBinding({
+    argv: params.argv,
+    cwd: params.binding.cwd,
+    agentId: params.binding.agentId,
+    sessionKey: params.binding.sessionKey,
+    env: params.binding.env,
+  });
+
+  const expectedBinding = params.request.systemRunBinding;
+  if (!expectedBinding) {
+    return missingSystemRunApprovalBinding({
+      actualEnvKeys: actualBinding.envKeys,
+    });
+  }
+  return matchSystemRunApprovalBinding({
+    expected: expectedBinding,
+    actual: actualBinding.binding,
+    actualEnvKeys: actualBinding.envKeys,
+  });
 }

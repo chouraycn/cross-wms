@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/infra/ssh-tunnel.ts（降级实现）。
 //
 // 降级说明：
-//  - @openclaw/normalization-core/string-normalization 替换为本地 ./string-normalization.js
+//  - @cdf-know/normalization-core/string-normalization 替换为本地 ./string-normalization.js
 //  - ./errors.js、./parse-finite-number.js、./ports.js 均为已移植模块
 import { spawn } from "node:child_process";
 import net from "node:net";

@@ -1,9 +1,16 @@
 /**
- * 移植自 openclaw/src/agents/subagent-announce.registry.runtime.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Runtime barrel for subagent announce registry helpers. Announce delivery
+ * imports this narrow surface so tests can replace registry behavior without
+ * loading the full persistence layer.
  */
-
-export { countActiveDescendantRuns, countPendingDescendantRuns, countPendingDescendantRunsExcludingRun, getLatestSubagentRunByChildSessionKey, isSubagentSessionRunActive, listSubagentRunsForRequester, replaceSubagentRunAfterSteer, resolveRequesterForChildSession, shouldIgnorePostCompletionAnnounceForSession } from "./subagent-registry-runtime.js";
+export {
+  countActiveDescendantRuns,
+  countPendingDescendantRuns,
+  countPendingDescendantRunsExcludingRun,
+  getLatestSubagentRunByChildSessionKey,
+  isSubagentSessionRunActive,
+  listSubagentRunsForRequester,
+  replaceSubagentRunAfterSteer,
+  resolveRequesterForChildSession,
+  shouldIgnorePostCompletionAnnounceForSession,
+} from "./subagent-registry-runtime.js";

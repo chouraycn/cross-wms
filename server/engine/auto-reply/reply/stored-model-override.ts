@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Persists and resolves per-session model override choices.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { hasSessionAutoModelFallbackProvenance } from '@openclaw-src/agents/agent-scope.js';
 import {
   modelKey,

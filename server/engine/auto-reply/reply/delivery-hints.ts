@@ -1,4 +1,3 @@
-// @ts-nocheck
 export {
   MESSAGE_TOOL_DELIVERY_HINTS,
   MESSAGE_TOOL_ONLY_DELIVERY_HINT,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * video_generate built-in tool.
  *
@@ -245,7 +244,7 @@ export function resolveVideoGenerationModelConfigForTool(params: {
 }
 
 function hasExplicitVideoGenerationModelConfig(cfg?: OpenClawConfig): boolean {
-  return hasToolModelConfig(coerceToolModelConfig(cfg?.agents?.defaults?.videoGenerationModel));
+  return hasToolModelConfig(coerceToolModelConfig((cfg as any)?.agents?.defaults?.videoGenerationModel));
 }
 
 function collectVideoGenerationModelProviderIds(params: {
@@ -306,7 +305,7 @@ function shouldExposeVideoReferenceAudioParams(params: {
   const audioCandidateProviderIds = new Set<string>();
   const explicitProviderIds = collectVideoGenerationModelProviderIds({
     cfg: params.cfg,
-    modelConfig: coerceToolModelConfig(params.cfg.agents?.defaults?.videoGenerationModel),
+    modelConfig: coerceToolModelConfig((params as any).cfg.agents?.defaults?.videoGenerationModel),
     ...(params.workspaceDir !== undefined ? { workspaceDir: params.workspaceDir } : {}),
   });
 
@@ -374,9 +373,9 @@ function normalizeResolution(raw: string | undefined): VideoGenerationResolution
   }
   const uppercase = normalized.toUpperCase();
   if (/^\d+P$/.test(uppercase) || /^\d+K$/.test(uppercase)) {
-    return uppercase;
+    return uppercase as any;
   }
-  return normalized;
+  return normalized as any;
 }
 
 function normalizeAspectRatio(raw: string | undefined): string | undefined {
@@ -936,7 +935,7 @@ export function createVideoGenerateTool(options?: {
   scheduleBackgroundWork?: MediaGenerateBackgroundScheduler;
   onAsyncTaskStarted?: MediaGenerateAsyncStartCallback;
 }): AnyAgentTool | null {
-  const cfg: OpenClawConfig = options?.config ?? getRuntimeConfig();
+  const cfg: OpenClawConfig = options?.config ?? getRuntimeConfig() as any;
   if (
     !hasGenerationToolAvailability({
       cfg,

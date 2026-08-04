@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Keep the runtime class on the package specifier so built agent-core shares
-// constructor identity with @openclaw/llm-core; source types keep SDK d.ts bundled.
-import { EventStream as LlmEventStream } from "@openclaw/llm-core";
+// constructor identity with @cdf-know/llm-core; source types keep SDK d.ts bundled.
+import { EventStream as LlmEventStream } from "@cdf-know/llm-core";
 import type {
   AssistantMessage,
   AssistantMessageEvent,

@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Defines reply directive parsing constants and text-matching helpers.
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@cdf-know/normalization-core/string-coerce";
 import { escapeRegExp } from '@openclaw-src/utils.js';
 import type { NoticeLevel, ReasoningLevel, TraceLevel } from "../thinking.js";
 import {

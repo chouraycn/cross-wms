@@ -2267,15 +2267,17 @@ export class WorkboardStore {
   private readonly boardStore: WorkboardKeyedStore<PersistedWorkboardBoard>;
   private readonly subscriptionStore: WorkboardKeyedStore<PersistedWorkboardNotificationSubscription>;
   private readonly attachmentStore: WorkboardKeyedStore<PersistedWorkboardAttachment>;
+  private readonly store: WorkboardKeyedStore;
 
   constructor(
-    private readonly store: WorkboardKeyedStore,
+    store: WorkboardKeyedStore,
     stores: {
       boards?: WorkboardKeyedStore<PersistedWorkboardBoard>;
       subscriptions?: WorkboardKeyedStore<PersistedWorkboardNotificationSubscription>;
       attachments?: WorkboardKeyedStore<PersistedWorkboardAttachment>;
     } = {},
   ) {
+    this.store = store;
     this.boardStore =
       stores.boards ?? (store as unknown as WorkboardKeyedStore<PersistedWorkboardBoard>);
     this.subscriptionStore =

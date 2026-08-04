@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/gateway/http-auth-utils.ts
 //
 // 适配说明：
-//  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js（已移植）
+//  - @cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js（已移植）
 //  - ../config/io.js（getRuntimeConfig）→ 降级为返回空配置对象
 //  - ../config/types.openclaw.js（OpenClawConfig）→ 使用 Record<string, unknown> 宽松类型
 //  - ./auth.js（authorizeHttpGatewayConnect）→ cross-wms 已移植，签名更简单
@@ -29,12 +29,9 @@ import {
   CLI_DEFAULT_OPERATOR_SCOPES,
   authorizeOperatorScopesForMethod,
 } from "./method-scopes.js";
+import type { AuthRateLimiter } from "./auth-rate-limit.js";
 
-/** AuthRateLimiter 宽松类型（cross-wms auth-rate-limit 为降级占位）。 */
-export type AuthRateLimiter = {
-  check?: (...args: unknown[]) => { allowed: boolean };
-  recordFailure?: (...args: unknown[]) => void;
-};
+export type { AuthRateLimiter };
 
 /** 从 IncomingMessage headers 中按名称获取头部值。 */
 export function getHeader(req: IncomingMessage, name: string): string | undefined {

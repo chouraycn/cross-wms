@@ -1,92 +1,219 @@
-// Kysely dialect for Node's synchronous node:sqlite API。
-// 移植自 openclaw/src/infra/kysely-node-sqlite.ts（降级实现）。
-//
-// 降级说明：
-//  - kysely 包在 cross-wms 中不可用，本模块提供编译期类型占位与运行时降级。
-//  - 运行时调用会抛出 "not implemented" 错误，因为依赖的 kysely 包未安装。
-//  - 完整保留所有类型定义，供 kysely-sync.js 和其他依赖模块使用。
+// Adapts Node's sync sqlite API to Kysely.
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
+import type {
+  DatabaseConnection,
+  DatabaseIntrospector,
+  Dialect,
+  DialectAdapter,
+  Driver,
+  Kysely,
+  QueryCompiler,
+  QueryResult,
+  TransactionSettings,
+} from "kysely";
+import {
+  CompiledQuery,
+  IdentifierNode,
+  RawNode,
+  SqliteAdapter,
+  SqliteIntrospector,
+  SqliteQueryCompiler,
+  createQueryId,
+} from "kysely";
 
-// ============================================================================
-// 降级的 Kysely 类型占位（kysely 包未安装）
-// ============================================================================
+// Kysely dialect for Node's synchronous node:sqlite API. The driver serializes
+// connection use because DatabaseSync is single-connection and blocking.
+type MaybePromise<T> = T | Promise<T>;
 
-/** Kysely Driver 占位类型 */
-export interface Driver {
-  init(): Promise<void>;
-  acquireConnection(): Promise<unknown>;
-  releaseConnection(connection: unknown): Promise<void>;
-  destroy(): Promise<void>;
-}
-
-/** Kysely DatabaseConnection 占位类型 */
-export interface DatabaseConnection {
-  executeQuery<R>(query: unknown): Promise<{ rows: R[] }>;
-  streamQuery?<R>(query: unknown, chunkSize?: number): AsyncIterableIterator<{ rows: R[] }>;
-}
-
-/** Kysely QueryResult 占位类型 */
-export interface QueryResult<R> {
-  rows: R[];
-}
-
-/** Kysely Dialect 占位类型 */
-export interface Dialect {
-  createDriver(): Driver;
-  createQueryAdapter(): unknown;
-  createIntrospector(db: unknown): unknown;
-  createAdapter(): unknown;
-}
-
-// ============================================================================
-// 真实类型定义（移植自 openclaw）
-// ============================================================================
-
+/** Configuration for the node:sqlite Kysely dialect. */
 export type NodeSqliteKyselyDialectConfig = {
-  databasePath: string;
-  // 降级：node:sqlite 的 DatabaseSync 构造函数参数类型不易静态获取，
-  // 这里以 unknown 占位，运行时由降级实现抛出错误。
-  options?: unknown;
+  database: DatabaseSync | (() => MaybePromise<DatabaseSync>);
+  onCreateConnection?: (connection: DatabaseConnection) => MaybePromise<void>;
+  transactionMode?: "deferred" | "immediate" | "exclusive";
 };
 
-/**
- * Node SQLite Kysely Dialect。
- * 降级实现：kysely 包不可用，运行时调用抛出 "not implemented" 错误。
- */
+/** Kysely dialect backed by a node:sqlite DatabaseSync instance. */
 export class NodeSqliteKyselyDialect implements Dialect {
   readonly #config: NodeSqliteKyselyDialectConfig;
 
   constructor(config: NodeSqliteKyselyDialectConfig) {
-    this.#config = config;
+    this.#config = Object.freeze({ ...config });
   }
 
   createDriver(): Driver {
-    return undefined as unknown as Driver;
+    return new NodeSqliteKyselyDriver(this.#config);
   }
 
-  createQueryAdapter(): unknown {
-    return undefined;
+  createQueryCompiler(): QueryCompiler {
+    return new SqliteQueryCompiler();
   }
 
-  createIntrospector(_db: unknown): unknown {
-    return undefined;
+  createAdapter(): DialectAdapter {
+    return new SqliteAdapter();
   }
 
-  createAdapter(): unknown {
-    return undefined;
-  }
-
-  get config(): NodeSqliteKyselyDialectConfig {
-    return this.#config;
+  createIntrospector(db: Kysely<unknown>): DatabaseIntrospector {
+    return new SqliteIntrospector(db);
   }
 }
 
-// ConnectionMutex 占位类（保留导出供类型检查）
-export class ConnectionMutex {
-  async withConnection<T>(_callback: (conn: unknown) => Promise<T>): Promise<T> {
-    return undefined as T;
+class NodeSqliteKyselyDriver implements Driver {
+  readonly #config: NodeSqliteKyselyDialectConfig;
+  readonly #mutex = new ConnectionMutex();
+
+  #db?: DatabaseSync;
+  #connection?: DatabaseConnection;
+
+  constructor(config: NodeSqliteKyselyDialectConfig) {
+    this.#config = Object.freeze({ ...config });
+  }
+
+  async init(): Promise<void> {
+    this.#db =
+      typeof this.#config.database === "function"
+        ? await this.#config.database()
+        : this.#config.database;
+
+    this.#connection = new NodeSqliteKyselyConnection(this.#db);
+    await this.#config.onCreateConnection?.(this.#connection);
+  }
+
+  async acquireConnection(): Promise<DatabaseConnection> {
+    // Kysely expects async acquisition even though node:sqlite is sync; the
+    // mutex preserves transaction ordering across concurrent callers.
+    await this.#mutex.lock();
+    return this.#connection!;
+  }
+
+  async beginTransaction(
+    connection: DatabaseConnection,
+    _settings: TransactionSettings,
+  ): Promise<void> {
+    const mode = this.#config.transactionMode ?? "deferred";
+    await connection.executeQuery(CompiledQuery.raw(`begin ${mode}`));
+  }
+
+  async commitTransaction(connection: DatabaseConnection): Promise<void> {
+    await connection.executeQuery(CompiledQuery.raw("commit"));
+  }
+
+  async rollbackTransaction(connection: DatabaseConnection): Promise<void> {
+    await connection.executeQuery(CompiledQuery.raw("rollback"));
+  }
+
+  async savepoint(
+    connection: DatabaseConnection,
+    savepointName: string,
+    compileQuery: QueryCompiler["compileQuery"],
+  ): Promise<void> {
+    await connection.executeQuery(
+      compileQuery(createSavepointCommand("savepoint", savepointName), createQueryId()),
+    );
+  }
+
+  async rollbackToSavepoint(
+    connection: DatabaseConnection,
+    savepointName: string,
+    compileQuery: QueryCompiler["compileQuery"],
+  ): Promise<void> {
+    await connection.executeQuery(
+      compileQuery(createSavepointCommand("rollback to", savepointName), createQueryId()),
+    );
+  }
+
+  async releaseSavepoint(
+    connection: DatabaseConnection,
+    savepointName: string,
+    compileQuery: QueryCompiler["compileQuery"],
+  ): Promise<void> {
+    await connection.executeQuery(
+      compileQuery(createSavepointCommand("release", savepointName), createQueryId()),
+    );
+  }
+
+  async releaseConnection(): Promise<void> {
+    this.#mutex.unlock();
+  }
+
+  async destroy(): Promise<void> {
+    this.#db?.close();
+    this.#db = undefined;
+    this.#connection = undefined;
   }
 }
 
-// 导出 SQLInputValue 类型供其他模块使用
-export type { SQLInputValue };
+class NodeSqliteKyselyConnection implements DatabaseConnection {
+  readonly #db: DatabaseSync;
+
+  constructor(db: DatabaseSync) {
+    this.#db = db;
+  }
+
+  executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
+    const { sql, parameters } = compiledQuery;
+    const stmt = this.#db.prepare(sql);
+    const sqliteParameters = parameters as SQLInputValue[];
+
+    if (stmt.columns().length > 0) {
+      return Promise.resolve({ rows: stmt.all(...sqliteParameters) as O[] });
+    }
+
+    const { changes, lastInsertRowid } = stmt.run(...sqliteParameters);
+    const baseResult: QueryResult<O> = {
+      numAffectedRows: BigInt(changes),
+      rows: [],
+    };
+    if (isInsertStatement(sql) && changes > 0) {
+      return Promise.resolve({
+        ...baseResult,
+        insertId: BigInt(lastInsertRowid),
+      });
+    }
+    return Promise.resolve(baseResult);
+  }
+
+  async *streamQuery<O>(
+    compiledQuery: CompiledQuery,
+    _chunkSize?: number,
+  ): AsyncIterableIterator<QueryResult<O>> {
+    const { sql, parameters } = compiledQuery;
+    const stmt = this.#db.prepare(sql);
+
+    for (const row of stmt.iterate(...(parameters as SQLInputValue[]))) {
+      yield { rows: [row as O] };
+    }
+  }
+}
+
+function isInsertStatement(sql: string): boolean {
+  return sql.trimStart().toLowerCase().startsWith("insert");
+}
+
+function createSavepointCommand(command: string, savepointName: string): RawNode {
+  return RawNode.createWithChildren([
+    RawNode.createWithSql(`${command} `),
+    IdentifierNode.create(savepointName),
+  ]);
+}
+
+class ConnectionMutex {
+  #promise?: Promise<void>;
+  #resolve?: () => void;
+
+  async lock(): Promise<void> {
+    while (this.#promise) {
+      await this.#promise;
+    }
+
+    this.#promise = new Promise((resolve) => {
+      this.#resolve = resolve;
+    });
+  }
+
+  unlock(): void {
+    const resolve = this.#resolve;
+    this.#promise = undefined;
+    this.#resolve = undefined;
+    resolve?.();
+  }
+}

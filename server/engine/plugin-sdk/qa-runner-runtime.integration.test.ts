@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for QA runner runtime public surface loading.
  */

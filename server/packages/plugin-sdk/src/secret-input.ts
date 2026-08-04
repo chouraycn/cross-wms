@@ -1,3 +1,3 @@
 // Public package facade for secret input contracts.
 
-export * from "../../../src/plugin-sdk/secret-input.js";
+export * from "../../../engine/plugin-sdk/secret-input.js";

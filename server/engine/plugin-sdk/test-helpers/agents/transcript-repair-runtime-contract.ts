@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Transcript repair runtime contract helpers build agent transcript repair fixtures.
 import type { AgentMessage } from "../../../agents/runtime/index.js";
 

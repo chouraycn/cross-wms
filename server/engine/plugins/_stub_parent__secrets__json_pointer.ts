@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED FROM OPENCLAW SOURCE ===
 // Source: openclaw/src/secrets/json-pointer.ts
 // Status: 完整移植（encode + decode + read）

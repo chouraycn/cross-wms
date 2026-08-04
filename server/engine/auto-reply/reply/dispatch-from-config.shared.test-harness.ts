@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared harness for dispatch-from-config tests and mocked runtimes.
 import { vi } from "vitest";
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

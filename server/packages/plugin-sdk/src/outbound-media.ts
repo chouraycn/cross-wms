@@ -1,1 +1,1 @@
-export * from "../../../src/plugin-sdk/outbound-media.js";
+export * from "../../../engine/plugin-sdk/outbound-media.js";

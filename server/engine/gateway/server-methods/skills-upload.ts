@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Skills upload methods implement staged archive upload begin/chunk/commit
 // flows with feature gating, validation, and upload-store error mapping.
 import {

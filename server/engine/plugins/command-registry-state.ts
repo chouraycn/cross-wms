@@ -82,7 +82,7 @@ export function listRegisteredPluginAgentPromptGuidance(params?: {
   for (const command of pluginCommands.values()) {
     for (const entry of command.agentPromptGuidance ?? []) {
       const trimmed = resolveAgentPromptGuidanceTextForSurface(entry, {
-        surface: params?.surface ? normalizeAgentPromptSurfaceKind(params.surface) : undefined,
+        surface: params?.surface ? (normalizeAgentPromptSurfaceKind(params.surface) as any) : undefined,
         includeLegacyGlobalGuidance: params?.includeLegacyGlobalGuidance ?? true,
       });
       if (!trimmed || seen.has(trimmed)) {

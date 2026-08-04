@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * OpenClaw-owned agent session runtime.
  */

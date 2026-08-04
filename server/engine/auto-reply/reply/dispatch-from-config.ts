@@ -5,7 +5,7 @@ import { isParentOwnedBackgroundAcpSession } from "@openclaw/acp-core/session-in
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import {
   hasOutboundReplyContent,
   isFastModeAutoProgressPayload,

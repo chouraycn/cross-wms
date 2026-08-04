@@ -1,8 +1,8 @@
 // @ts-nocheck
 // Implements channel-scoped tailing of the OpenClaw log file.
 import fs from "node:fs/promises";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import { theme } from "@openclaw/terminal-core/theme";
 import { normalizeChannelId as normalizeBundledChannelId } from "@openclaw-src/channels/registry.js";
 import { parseStrictPositiveInteger } from "@openclaw-src/infra/parse-finite-number.js";
 import { getResolvedLoggerSettings } from "@openclaw-src/logging.js";

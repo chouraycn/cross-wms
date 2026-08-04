@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Installs shared runtime mocks used by get-reply test modules.
 import { vi } from "vitest";
 import "./get-reply.test-mocks.js";

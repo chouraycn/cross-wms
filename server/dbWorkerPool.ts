@@ -8,6 +8,11 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import os from 'os';
 import { logger } from './logger.js';
+import { fileURLToPath } from 'node:url';
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Worker 线程数量：默认 2 个（读写分离），最多 4 个
 const WORKER_COUNT = Math.min(Math.max(os.cpus().length > 4 ? 2 : 1, 2), 4);

@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Provider auth result helpers normalize credential checks into stable setup/status results.
-import { asDateTimestampMs } from "../../../packages/normalization-core/src/number-coercion.js";
+import { asDateTimestampMs } from "@openclaw-src/plugin-sdk/number-runtime.js";
 import { buildAuthProfileId } from "../agents/auth-profiles/identity.js";
 import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import { normalizeConfiguredProviderCatalogModelId } from "../agents/model-ref-shared.js";

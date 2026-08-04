@@ -1,6 +1,6 @@
 // 解包 shell wrapper 以便审批策略可以检查内联命令。
 // 降级实现：从 openclaw/src/infra/shell-wrapper-resolution.ts 直接移植，
-// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @openclaw/normalization-core/string-coerce
+// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @cdf-know/normalization-core/string-coerce
 // - 其余依赖（dispatch-wrapper-resolution、exec-wrapper-tokens、shell-inline-command）使用本地模块
 import { normalizeLowercaseStringOrEmpty } from "./string-coerce.js";
 import {

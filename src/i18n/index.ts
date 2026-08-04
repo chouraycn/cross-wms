@@ -25,6 +25,17 @@ export const NAMESPACES = [
   'wms',
   'skills',
   'slashCommands',
+  // P1-④: Top 10 高频页面命名空间
+  'automationPage',
+  'tasksPage',
+  'mediaLibraryPage',
+  'codeIndexPage',
+  'apiTemplatesPage',
+  'messageLifecyclePage',
+  'nodeHostPage',
+  'skillDetailPage',
+  'projectsPage',
+  'workflowPage',
 ] as const;
 
 export type I18nNamespace = typeof NAMESPACES[number];

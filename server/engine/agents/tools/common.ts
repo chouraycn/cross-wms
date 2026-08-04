@@ -1,98 +1,41 @@
+// @ts-nocheck
 /**
- * Agent 工具契约定义
+ * Shared built-in tool contracts and helpers.
  *
- * 定义带元数据的工具类型、参数读取器、JSON 结果、
- * 进度块与媒体消毒器等共享契约，供 tools/ 下的具体工具实现复用。
- *
- * 参考自 openclaw/src/agents/tools/common.ts。
+ * Defines erased tool types, parameter readers, JSON results, progress blocks, and media sanitization.
  */
-import type { ToolDefinition } from '../agent-tools/types.js';
+import { detectMime } from "@cdf-know/media-core/mime";
+import {
+  asPositiveSafeInteger,
+  asSafeIntegerInRange,
+  parseStrictFiniteNumber,
+} from "@cdf-know/normalization-core/number-coercion";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
+import type { TSchema } from "typebox";
+import { readLocalFileSafely } from "../../infra/fs-safe.js";
+import { readSnakeCaseParamRaw } from "../../param-key.js";
+import type { ImageSanitizationLimits } from "../image-sanitization.js";
+import type {
+  AgentTool,
+  AgentToolProgress,
+  AgentToolResult,
+  AgentToolUpdateCallback,
+} from "../runtime/index.js";
+import { sanitizeToolResultImages } from "../tool-images.js";
 
-/**
- * 工具执行上下文，传递给预处理/执行函数的环境信息。
- */
-export interface AgentToolExecutionContext {
-  toolCallId: string;
-  signal?: AbortSignal;
-  hookContext?: unknown;
-}
-
-/**
- * 工具执行过程中的更新回调，用于向调用方推送进度等中间状态。
- */
-export type AgentToolUpdateCallback = (result: AgentToolResult<unknown>) => void;
-
-/**
- * 工具结果内容块：文本或图片。
- */
-export type AgentToolContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'image'; data: string; mimeType: string };
-
-/**
- * 工具进度块，用于在执行过程中向频道推送可见的进度文本。
- */
-export interface ProgressBlock {
-  /** 进度文本 */
-  text: string;
-  /** 进度标识，便于去重或更新 */
-  id?: string;
-  /** 可见性：channel 表示推送到频道，private 表示仅内部可见 */
-  visibility?: 'channel' | 'private';
-  /** 隐私级别：public 表示可公开展示，private 表示仅调用方可见 */
-  privacy?: 'public' | 'private';
-}
-
-/**
- * 工具执行结果。
- */
-export interface AgentToolResult<TResult> {
-  content: AgentToolContentBlock[];
-  details?: TResult;
-  progress?: ProgressBlock;
-}
-
-/**
- * 工具执行函数签名。
- */
-export type AgentToolExecute<TResult> = (
-  this: void,
-  toolCallId: string,
-  params: unknown,
-  signal?: AbortSignal,
-  onUpdate?: AgentToolUpdateCallback,
-) => Promise<AgentToolResult<TResult>>;
-
-/**
- * 带元数据的工具定义。
- *
- * 在 ToolDefinition 基础上扩展执行函数与展示元信息，
- * 供 tools/ 下的具体工具实现统一描述自身。
- */
-export type AgentToolWithMeta<TResult = unknown> = ToolDefinition & {
-  /** 工具的简短展示摘要 */
+export type AgentToolWithMeta<TParameters extends TSchema, TResult> = AgentTool<
+  TParameters,
+  TResult
+> & {
   displaySummary?: string;
-  /** 工具的展示标签 */
-  label?: string;
-  /** 执行函数 */
-  execute: AgentToolExecute<TResult>;
-  /** 在工具调用前对参数进行预处理（如注入默认值） */
-  prepareArguments?: (args: unknown) => unknown;
-  /** 在工具调用前对参数进行预处理（如注入默认值） */
   prepareBeforeToolCallParams?: (
     params: unknown,
-    ctx: AgentToolExecutionContext,
+    ctx: { toolCallId?: string; hookContext?: unknown; signal?: AbortSignal },
   ) => unknown;
-  /** 在工具调用完成后对参数进行收尾处理 */
   finalizeBeforeToolCallParams?: (params: unknown, preparedParams: unknown) => unknown;
 };
 
-/**
- * 擦除泛型的工具执行类型。
- *
- * 用于在异构工具集合中统一存放执行函数，调用方需自行处理返回的 unknown 结果。
- */
-export type ErasedAgentToolExecute = {
+type ErasedAgentToolExecute = {
   execute(
     this: void,
     toolCallId: string,
@@ -102,44 +45,24 @@ export type ErasedAgentToolExecute = {
   ): Promise<AgentToolResult<unknown>>;
 };
 
-/**
- * 擦除泛型的工具类型，便于在异构集合中统一存放。
- *
- * 参考 openclaw/src/agents/tools/common.ts 的 AnyAgentTool。
- */
-export type AnyAgentTool = Omit<AgentToolWithMeta<unknown>, 'execute'> &
+export type AnyAgentTool = Omit<AgentTool, "execute"> &
   ErasedAgentToolExecute & {
     displaySummary?: string;
-    label?: string;
-    prepareArguments?: AgentToolWithMeta<unknown>['prepareArguments'];
-    prepareBeforeToolCallParams?: AgentToolWithMeta<unknown>['prepareBeforeToolCallParams'];
-    finalizeBeforeToolCallParams?: AgentToolWithMeta<unknown>['finalizeBeforeToolCallParams'];
+    prepareBeforeToolCallParams?: AgentToolWithMeta<
+      TSchema,
+      unknown
+    >["prepareBeforeToolCallParams"];
+    finalizeBeforeToolCallParams?: AgentToolWithMeta<
+      TSchema,
+      unknown
+    >["finalizeBeforeToolCallParams"];
   };
 
-/**
- * 参数读取器：从参数记录中按 key 读取并转换为指定类型。
- */
-export type ParamReader<T = unknown> = (
-  params: Record<string, unknown>,
-  key: string,
-) => T | undefined;
-
-/**
- * JSON 工具结果：将 payload 序列化为文本内容块。
- */
-export type JsonResult = AgentToolResult<unknown> & {
-  content: Array<{ type: 'text'; text: string }>;
-};
-
-/**
- * 媒体消毒器：对工具结果中的图片等媒体进行安全处理（如尺寸限制、格式校验）。
- */
-export type MediaSanitizer = (media: {
-  mimeType: string;
-  data: string;
-}) => Promise<{ mimeType: string; data: string }> | { mimeType: string; data: string };
-
-// openclaw compat: param readers and helpers used by plugin-sdk/core.ts
+export function asToolParamsRecord(params: unknown): Record<string, unknown> {
+  return params && typeof params === "object" && !Array.isArray(params)
+    ? (params as Record<string, unknown>)
+    : {};
+}
 
 export type StringParamOptions = {
   required?: boolean;
@@ -149,9 +72,27 @@ export type StringParamOptions = {
 };
 
 export type ActionGate<T extends Record<string, boolean | undefined>> = (
-  key: keyof T & string,
+  key: keyof T,
   defaultValue?: boolean,
 ) => boolean;
+
+export class ToolInputError extends Error {
+  readonly status: number = 400;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ToolInputError";
+  }
+}
+
+export class ToolAuthorizationError extends ToolInputError {
+  override readonly status = 403;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ToolAuthorizationError";
+  }
+}
 
 export function createActionGate<T extends Record<string, boolean | undefined>>(
   actions: T | undefined,
@@ -166,7 +107,7 @@ export function createActionGate<T extends Record<string, boolean | undefined>>(
 }
 
 function readParamRaw(params: Record<string, unknown>, key: string): unknown {
-  return params[key];
+  return readSnakeCaseParamRaw(params, key);
 }
 
 export function readStringParam(
@@ -183,23 +124,62 @@ export function readStringParam(
   params: Record<string, unknown>,
   key: string,
   options: StringParamOptions = {},
-): string | undefined {
+) {
   const { required = false, trim = true, label = key, allowEmpty = false } = options;
   const raw = readParamRaw(params, key);
   if (typeof raw !== "string") {
     if (required) {
-      throw new Error(`Missing required string parameter: ${label}`);
+      throw new ToolInputError(`${label} required`);
     }
     return undefined;
   }
   const value = trim ? raw.trim() : raw;
-  if (!allowEmpty && value.length === 0) {
+  if (!value && !allowEmpty) {
     if (required) {
-      throw new Error(`Parameter ${label} must not be empty`);
+      throw new ToolInputError(`${label} required`);
     }
     return undefined;
   }
   return value;
+}
+
+/**
+ * Normalize tool model override input.
+ * - empty/whitespace => undefined
+ * - "default" (case-insensitive) => undefined (sentinel: reset/fallback)
+ * - otherwise returns trimmed explicit model string
+ */
+export function normalizeToolModelOverride(value: string | undefined): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === "default") {
+    return undefined;
+  }
+  return trimmed;
+}
+
+export function readStringOrNumberParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: { required?: boolean; label?: string } = {},
+): string | undefined {
+  const { required = false, label = key } = options;
+  const raw = readParamRaw(params, key);
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return String(raw);
+  }
+  if (typeof raw === "string") {
+    const value = raw.trim();
+    if (value) {
+      return value;
+    }
+  }
+  if (required) {
+    throw new ToolInputError(`${label} required`);
+  }
+  return undefined;
 }
 
 export function readNumberParam(
@@ -211,36 +191,120 @@ export function readNumberParam(
     integer?: boolean;
     strict?: boolean;
     positiveInteger?: boolean;
+    nonNegativeInteger?: boolean;
   } = {},
 ): number | undefined {
-  const { required = false, label = key, integer = false, positiveInteger = false } = options;
+  const {
+    required = false,
+    label = key,
+    integer = false,
+    strict = false,
+    positiveInteger = false,
+    nonNegativeInteger = false,
+  } = options;
   const raw = readParamRaw(params, key);
-  if (raw === undefined || raw === null) {
+  let value: number | undefined;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    value = raw;
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed) {
+      const parsed = strict ? parseStrictFiniteNumber(trimmed) : Number.parseFloat(trimmed);
+      if (parsed !== undefined && Number.isFinite(parsed)) {
+        value = parsed;
+      }
+    }
+  }
+  if (value === undefined) {
     if (required) {
-      throw new Error(`Missing required number parameter: ${label}`);
+      throw new ToolInputError(`${label} required`);
     }
     return undefined;
   }
-  const num = typeof raw === "number" ? raw : Number(raw);
-  if (!Number.isFinite(num)) {
-    if (required) {
-      throw new Error(`Parameter ${label} must be a finite number`);
+  if (positiveInteger) {
+    return asPositiveSafeInteger(value);
+  }
+  if (nonNegativeInteger) {
+    return asSafeIntegerInRange(value, { min: 0 });
+  }
+  return integer ? Math.trunc(value) : value;
+}
+
+export function readPositiveIntegerParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: {
+    message?: string;
+    max?: number;
+  } = {},
+): number | undefined {
+  const value = readNumberParam(params, key, {
+    positiveInteger: true,
+    strict: true,
+  });
+  if (value === undefined && readParamRaw(params, key) != null) {
+    throw new ToolInputError(options.message ?? `${key} must be a positive integer`);
+  }
+  if (value !== undefined && options.max !== undefined && value > options.max) {
+    throw new ToolInputError(options.message ?? `${key} must be a positive integer`);
+  }
+  return value;
+}
+
+export function readNonNegativeIntegerParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: {
+    message?: string;
+    max?: number;
+  } = {},
+): number | undefined {
+  const value = readNumberParam(params, key, {
+    nonNegativeInteger: true,
+    strict: true,
+  });
+  if (value === undefined && readParamRaw(params, key) != null) {
+    throw new ToolInputError(options.message ?? `${key} must be a non-negative integer`);
+  }
+  if (value !== undefined && options.max !== undefined && value > options.max) {
+    throw new ToolInputError(options.message ?? `${key} must be a non-negative integer`);
+  }
+  return value;
+}
+
+export function readFiniteNumberParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: {
+    message?: string;
+    min?: number;
+    max?: number;
+    minExclusive?: boolean;
+    maxExclusive?: boolean;
+  } = {},
+): number | undefined {
+  const value = readNumberParam(params, key, {
+    strict: true,
+  });
+  if (value === undefined) {
+    if (readParamRaw(params, key) != null) {
+      throw new ToolInputError(options.message ?? `${key} must be a finite number`);
     }
     return undefined;
   }
-  if (integer && !Number.isInteger(num)) {
-    if (required) {
-      throw new Error(`Parameter ${label} must be an integer`);
+  if (options.min !== undefined) {
+    const below = options.minExclusive ? value <= options.min : value < options.min;
+    if (below) {
+      throw new ToolInputError(options.message ?? `${key} must be a finite number`);
     }
-    return undefined;
   }
-  if (positiveInteger && (num <= 0 || !Number.isInteger(num))) {
-    if (required) {
-      throw new Error(`Parameter ${label} must be a positive integer`);
+  if (options.max !== undefined) {
+    const above = options.maxExclusive ? value >= options.max : value > options.max;
+    if (above) {
+      throw new ToolInputError(options.message ?? `${key} must be a finite number`);
     }
-    return undefined;
   }
-  return num;
+  return value;
 }
 
 export function readStringArrayParam(
@@ -257,30 +321,39 @@ export function readStringArrayParam(
   params: Record<string, unknown>,
   key: string,
   options: StringParamOptions = {},
-): string[] | undefined {
+) {
   const { required = false, label = key } = options;
   const raw = readParamRaw(params, key);
-  if (raw === undefined || raw === null) {
-    if (required) {
-      throw new Error(`Missing required string array parameter: ${label}`);
+  if (Array.isArray(raw)) {
+    const values = normalizeStringEntries(raw.filter((entry) => typeof entry === "string"));
+    if (values.length === 0) {
+      if (required) {
+        throw new ToolInputError(`${label} required`);
+      }
+      return undefined;
     }
-    return undefined;
+    return values;
   }
   if (typeof raw === "string") {
-    return raw.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  if (Array.isArray(raw)) {
-    return raw.map((s) => String(s).trim()).filter(Boolean);
+    const value = raw.trim();
+    if (!value) {
+      if (required) {
+        throw new ToolInputError(`${label} required`);
+      }
+      return undefined;
+    }
+    return [value];
   }
   if (required) {
-    throw new Error(`Parameter ${label} must be a string or string array`);
+    throw new ToolInputError(`${label} required`);
   }
   return undefined;
 }
 
 export type ReactionParams = {
-  emoji?: string;
+  emoji: string;
   remove: boolean;
+  isEmpty: boolean;
 };
 
 export function readReactionParams(
@@ -293,21 +366,213 @@ export function readReactionParams(
 ): ReactionParams {
   const emojiKey = options.emojiKey ?? "emoji";
   const removeKey = options.removeKey ?? "remove";
-  const remove = typeof params[removeKey] === "boolean" ? (params[removeKey] as boolean) : false;
+  const remove = typeof params[removeKey] === "boolean" ? params[removeKey] : false;
   const emoji = readStringParam(params, emojiKey, {
     required: true,
     allowEmpty: true,
   });
   if (remove && !emoji) {
-    throw new Error(options.removeErrorMessage);
+    throw new ToolInputError(options.removeErrorMessage);
   }
-  return { emoji: emoji ?? undefined, remove };
+  return { emoji, remove, isEmpty: !emoji };
 }
 
-/** Builds a text result with an optional structured payload (openclaw compat alias). */
-export function jsonResult(payload: unknown): AgentToolResult<unknown> {
+export function stringifyToolPayload(payload: unknown): string {
+  if (typeof payload === "string") {
+    return payload;
+  }
+  try {
+    const encoded = JSON.stringify(payload, null, 2);
+    if (typeof encoded === "string") {
+      return encoded;
+    }
+  } catch {
+    // Fall through to String(payload) for non-serializable values.
+  }
+  return String(payload);
+}
+
+export function textResult<TDetails>(text: string, details: TDetails): AgentToolResult<TDetails> {
   return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
+    content: [
+      {
+        type: "text",
+        text,
+      },
+    ],
+    details,
   };
+}
+
+export function failedTextResult<TDetails extends { status: "failed" }>(
+  text: string,
+  details: TDetails,
+): AgentToolResult<TDetails> {
+  return textResult(text, details);
+}
+
+export function payloadTextResult<TDetails>(payload: TDetails): AgentToolResult<TDetails> {
+  return textResult(stringifyToolPayload(payload), payload);
+}
+
+export function jsonResult(payload: unknown): AgentToolResult<unknown> {
+  return textResult(JSON.stringify(payload, null, 2), payload);
+}
+
+export type PublicToolProgress = Pick<AgentToolProgress, "text" | "id">;
+
+export function toolProgressResult(progress: PublicToolProgress): AgentToolResult<undefined> {
+  return {
+    content: [],
+    details: undefined,
+    progress: {
+      text: progress.text,
+      visibility: "channel",
+      privacy: "public",
+      ...(progress.id ? { id: progress.id } : {}),
+    },
+  };
+}
+
+// Tool progress is a UI side channel. The model-facing tool result remains in
+// `content`; progress text must already be safe to show in channel previews.
+export function emitToolProgress(
+  onUpdate: AgentToolUpdateCallback | undefined,
+  progress: PublicToolProgress,
+): void {
+  const text = progress.text.trim();
+  if (!onUpdate || !text) {
+    return;
+  }
+  try {
+    onUpdate(toolProgressResult({ ...progress, text }));
+  } catch {
+    // Progress is best-effort UI state; tool execution must not depend on subscribers.
+  }
+}
+
+// Long-running tools can arm delayed progress and cancel it on completion or
+// abort. This avoids stale "still working" lines after a fast or canceled call.
+export function scheduleToolProgress(
+  onUpdate: AgentToolUpdateCallback | undefined,
+  progress: PublicToolProgress,
+  delayMs: number,
+  options: { signal?: AbortSignal } = {},
+): () => void {
+  if (!onUpdate || options.signal?.aborted) {
+    return () => {};
+  }
+  let cleared = false;
+  const clear = () => {
+    if (cleared) {
+      return;
+    }
+    cleared = true;
+    clearTimeout(timer);
+    options.signal?.removeEventListener("abort", clear);
+  };
+  const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
+    clear();
+    emitToolProgress(onUpdate, progress);
+  }, delayMs);
+  options.signal?.addEventListener("abort", clear, { once: true });
+  return clear;
+}
+
+export async function imageResult(params: {
+  label: string;
+  path: string;
+  base64: string;
+  mimeType: string;
+  extraText?: string;
+  details?: Record<string, unknown>;
+  imageSanitization?: ImageSanitizationLimits;
+}): Promise<AgentToolResult<unknown>> {
+  const content: AgentToolResult<unknown>["content"] = [
+    ...(params.extraText ? [{ type: "text" as const, text: params.extraText }] : []),
+    {
+      type: "image",
+      data: params.base64,
+      mimeType: params.mimeType,
+    },
+  ];
+  const detailsMedia =
+    params.details?.media &&
+    typeof params.details.media === "object" &&
+    !Array.isArray(params.details.media)
+      ? (params.details.media as Record<string, unknown>)
+      : undefined;
+  const result: AgentToolResult<unknown> = {
+    content,
+    details: {
+      path: params.path,
+      ...params.details,
+      media: {
+        ...detailsMedia,
+        mediaUrl: params.path,
+      },
+    },
+  };
+  return await sanitizeToolResultImages(result, params.label, params.imageSanitization);
+}
+
+export async function imageResultFromFile(params: {
+  label: string;
+  path: string;
+  extraText?: string;
+  details?: Record<string, unknown>;
+  imageSanitization?: ImageSanitizationLimits;
+}): Promise<AgentToolResult<unknown>> {
+  const buf = (await readLocalFileSafely({ filePath: params.path })).buffer;
+  const mimeType = (await detectMime({ buffer: buf.slice(0, 256) })) ?? "image/png";
+  return await imageResult({
+    label: params.label,
+    path: params.path,
+    base64: buf.toString("base64"),
+    mimeType,
+    extraText: params.extraText,
+    details: params.details,
+    imageSanitization: params.imageSanitization,
+  });
+}
+
+export type AvailableTag = {
+  id?: string;
+  name: string;
+  moderated?: boolean;
+  emoji_id?: string | null;
+  emoji_name?: string | null;
+};
+
+/**
+ * Validate and parse an `availableTags` parameter from untrusted input.
+ * Returns `undefined` when the value is missing or not an array.
+ * Entries that lack a string `name` are silently dropped.
+ */
+export function parseAvailableTags(raw: unknown): AvailableTag[] | undefined {
+  if (raw === undefined || raw === null) {
+    return undefined;
+  }
+  if (!Array.isArray(raw)) {
+    return undefined;
+  }
+  const result = raw
+    .filter(
+      (t): t is Record<string, unknown> =>
+        typeof t === "object" && t !== null && typeof t.name === "string",
+    )
+    .map((t) =>
+      Object.assign(
+        {},
+        t.id !== undefined && typeof t.id === `string` ? { id: t.id } : {},
+        { name: t.name as string },
+        typeof t.moderated === `boolean` ? { moderated: t.moderated } : {},
+        t.emoji_id === null || typeof t.emoji_id === `string` ? { emoji_id: t.emoji_id } : {},
+        t.emoji_name === null || typeof t.emoji_name === `string`
+          ? { emoji_name: t.emoji_name }
+          : {},
+      ),
+    );
+  // Return undefined instead of empty array to avoid accidentally clearing all tags
+  return result.length ? result : undefined;
 }

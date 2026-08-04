@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Facade runtime tests cover installed plugin facade loading and fallback resolution.
 import fs from "node:fs";
 import path from "node:path";

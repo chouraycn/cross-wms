@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Formats subagent status rows for the status command response.
 import type { SubagentRunRecord } from '@openclaw-src/agents/subagent-registry.types.js';
-import { formatDurationCompact } from '@openclaw-src/infra/format-time/format-duration.ts';
+import { formatDurationCompact } from '@openclaw-src/infra/format-time/format-duration.js';
 import { formatRunLabel, sortSubagentRuns } from "./subagents-utils.js";
 
 function formatActiveSubagentDetail(params: {

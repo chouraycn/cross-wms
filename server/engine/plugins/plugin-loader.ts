@@ -21,7 +21,7 @@ import {
   type PluginLoadOrderNode,
   type DependencyResolutionResult,
 } from './loader.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import { initializePluginSandbox, executeInPluginSandbox } from './plugin-sandbox.js';
 import { initializePluginPermissions } from './plugin-permissions.js';
 import { createPluginContext, destroyPluginContext } from './plugin-context.js';
@@ -157,7 +157,7 @@ export async function loadPluginEntry(
         status: 'installed',
         capabilities: manifest.capabilities ?? [],
       };
-      pluginRuntimeRegistry.register(instance);
+      PluginRegistry.register(instance);
     }
 
     // 8. 触发加载完成事件
@@ -210,7 +210,7 @@ export async function loadPluginsBatch(
   // 2. 解析依赖树
   const manifests = validated.map((v) => v.manifest);
   const available = new Map(validated.map((v) => [v.manifest.id, v.installPath]));
-  const resolution = resolveDependencyTree(manifests, available);
+  const resolution = (resolveDependencyTree as any)(manifests, available);
 
   // 3. 使用解析结果的加载顺序（保留 PluginLoadOrderNode 信息）
   const order = resolution.order;
@@ -287,7 +287,7 @@ export async function loadPluginsBatch(
 
 /** 卸载插件（清理上下文、注销注册、撤销权限） */
 export async function unloadPluginEntry(pluginId: string): Promise<boolean> {
-  const entry = pluginRuntimeRegistry.find(pluginId);
+  const entry = PluginRegistry.find(pluginId);
   if (!entry) {
     logger.warn(`[PluginLoader] 插件 ${pluginId} 未注册，无法卸载`);
     return false;
@@ -305,7 +305,7 @@ export async function unloadPluginEntry(pluginId: string): Promise<boolean> {
     destroyPluginContext(pluginId);
 
     // 注销
-    pluginRuntimeRegistry.unregister(pluginId);
+    PluginRegistry.unregister(pluginId);
 
     logger.info(`[PluginLoader] 插件 ${pluginId} 卸载成功`);
     return true;

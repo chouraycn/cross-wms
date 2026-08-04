@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Gateway connection authorization.
 // Authorizes HTTP/websocket gateway requests across shared-secret, Tailscale, and proxy modes.
 import type { IncomingMessage } from "node:http";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@cdf-know/normalization-core/string-coerce";
 import type { GatewayAuthConfig, GatewayTrustedProxyConfig } from "../config/types.gateway.js";
 import { readTailscaleWhoisIdentity, type TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
@@ -656,7 +655,7 @@ export function checkSkillAccess(
   action: string,
   userRole: string,
 ): { allowed: boolean; reason?: string } {
-  return checkSkillPermission(skillName, action, userRole);
+  return checkSkillPermission(skillName, action as any, userRole);
 }
 
 export function createSkillAccessMiddleware(params: {

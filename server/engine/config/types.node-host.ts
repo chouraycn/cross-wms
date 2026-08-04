@@ -1,5 +1,12 @@
-// 移植自 openclaw/src/config/types.node-host.ts
-// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+// Defines node-host browser proxy configuration types.
+export type NodeHostBrowserProxyConfig = {
+  /** Enable the browser proxy on the node host (default: true). */
+  enabled?: boolean;
+  /** Optional allowlist of profile names exposed via the proxy; when set, create/delete profile routes are blocked on the proxy surface. */
+  allowProfiles?: string[];
+};
 
-export type NodeHostBrowserProxyConfig = unknown;
-export type NodeHostConfig = unknown;
+export type NodeHostConfig = {
+  /** Browser proxy settings for node hosts. */
+  browserProxy?: NodeHostBrowserProxyConfig;
+};

@@ -1,7 +1,7 @@
 // Channel login/logout command helpers for local config and gateway reconciliation.
 // 移植自 openclaw/src/cli/channel-auth.ts。
 //
-// 降级策略：原模块依赖 `@openclaw/normalization-core/string-coerce`、
+// 降级策略：原模块依赖 `@cdf-know/normalization-core/string-coerce`、
 // `../../packages/terminal-core/src/ansi.js`、`../channels/plugins/*`、
 // `../commands/channel-setup/*`、`../config/*`、`../gateway/call.js`、
 // `../globals.js`、`../infra/errors.js`、`../infra/prototype-keys.js`、

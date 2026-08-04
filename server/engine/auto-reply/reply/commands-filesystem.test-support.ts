@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared filesystem fixtures for command tests that write session artifacts.
 import fs from "node:fs/promises";
 import os from "node:os";

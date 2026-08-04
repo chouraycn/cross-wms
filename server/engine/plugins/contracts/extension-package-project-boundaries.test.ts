@@ -120,7 +120,7 @@ function collectCodeFiles(relativeDir: string): string[] {
 function collectCoreReferenceFiles(relativeDir: string): string[] {
   return collectCodeFiles(relativeDir).filter((file) => {
     const source = fs.readFileSync(resolve(REPO_ROOT, file), "utf8");
-    return source.includes("../../../../src/") || source.includes("../../../src/");
+    return source.includes("../../../../engine/") || source.includes("../../../src/");
   });
 }
 
@@ -300,7 +300,7 @@ describe("opt-in extension package boundaries", () => {
     const packageJson = readJsonFile<PackageJson>("packages/memory-host-sdk/package.json");
     const packageExports = packageJson.exports as unknown as Record<string, string>;
 
-    expect(packageJson.name).toBe("@openclaw/memory-host-sdk");
+    expect(packageJson.name).toBe("@cdf-know/memory-host-sdk");
     expect(packageJson.version).toBe("0.0.0-private");
     expect(packageJson.private).toBe(true);
     expect(packageJson.type).toBe("module");

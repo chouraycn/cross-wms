@@ -11,10 +11,11 @@ import {
   mimeTypeFromFilePath,
   normalizeMimeType,
 } from "@openclaw/media-core/mime";
-import { uniqueValues } from "@openclaw/normalization-core/string-normalization";
+import { uniqueValues } from "@cdf-know/normalization-core/string-normalization";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { FsSafeError, readLocalFileSafely } from "../infra/fs-safe.js";
+import { readLocalFileSafely } from "../infra/fs-safe.js";
+import { FsSafeError } from "./store.runtime.js";
 import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../infra/local-file-access.js";
 import type { PinnedDispatcherPolicy, SsrFPolicy } from "../infra/net/ssrf.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
@@ -103,7 +104,7 @@ async function resolveHostedPluginMediaUrl(mediaUrl: string): Promise<string | n
   const registry = getActivePluginRegistry();
   for (const entry of registry?.hostedMediaResolvers ?? []) {
     try {
-      const resolved = await entry.resolver(mediaUrl);
+      const resolved = await (entry as any).resolver(mediaUrl);
       if (typeof resolved === "string" && resolved.trim()) {
         return resolved;
       }
@@ -770,8 +771,8 @@ async function optimizeImageWithFallback(params: {
     buffer: optimized.data,
     optimizedSize: optimized.bytes,
     resizeSide: optimized.chosen.maxSide ?? Math.max(optimized.width, optimized.height),
-    format: optimized.format,
-    mimeType: optimized.mimeType,
+    format: (optimized.format ?? "png") as "jpeg" | "png" | "webp",
+    mimeType: optimized.mimeType ?? "image/png",
     ...(optimized.chosen.quality === undefined ? {} : { quality: optimized.chosen.quality }),
     ...(optimized.chosen.compressionLevel === undefined
       ? {}
@@ -1001,7 +1002,7 @@ async function loadWebMediaInternal(
     mediaUrl = path.resolve(workspaceDir, mediaUrl);
   }
   try {
-    assertNoWindowsNetworkPath(mediaUrl, "Local media path");
+    assertNoWindowsNetworkPath(mediaUrl);
   } catch (err) {
     throw new LocalMediaAccessError("network-path-not-allowed", (err as Error).message, {
       cause: err,
@@ -1037,7 +1038,7 @@ async function loadWebMediaInternal(
     data = await readFileOverride(mediaUrl);
   } else {
     try {
-      data = (await readLocalFileSafely({ filePath: mediaUrl })).buffer;
+      data = ((await (readLocalFileSafely as any)({ filePath: mediaUrl })) as any).buffer;
     } catch (err) {
       if (err instanceof FsSafeError) {
         if (err.code === "not-found") {

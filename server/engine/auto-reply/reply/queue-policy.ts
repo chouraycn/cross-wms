@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves queue mode and admission policy for a reply turn.
 import type { QueueSettings } from "./queue.js";
 

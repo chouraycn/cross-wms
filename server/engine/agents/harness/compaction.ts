@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Routes compaction through selected native agent harnesses when supported.
  */

@@ -234,3 +234,12 @@ export function getCurrentSchemaVersion(baseDir: string): string {
 export function getAvailableMigrations(): Migration[] {
   return [...MIGRATIONS];
 }
+
+/**
+ * 对已加载的会话 store 对象执行就地迁移。
+ * 兼容 store-load.ts 旧调用契约：返回 boolean 表示是否发生迁移。
+ * 当前实现为 stub（无就地迁移逻辑），返回 false 保留原 store。
+ */
+export function applySessionStoreMigrations(_store: unknown): boolean {
+  return false;
+}

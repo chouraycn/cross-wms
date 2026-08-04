@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Builds overview table rows for `openclaw status` and `openclaw status --all`.
 // The row builders combine scan surfaces with health/session summaries while keeping rendering elsewhere.
 
@@ -10,7 +9,7 @@ import type { HealthSummary } from "./health.js";
 import {
   buildStatusOverviewRowsFromSurface,
   type StatusOverviewSurface,
-} from "./status-overview-surface.ts";
+} from "./status-overview-surface";
 import {
   buildStatusAllAgentsValue,
   buildStatusEventsValue,
@@ -18,7 +17,7 @@ import {
   buildStatusProbesValue,
   buildStatusSecretsValue,
   buildStatusSessionsOverviewValue,
-} from "./status-overview-values.ts";
+} from "./status-overview-values";
 import type { AgentLocalStatus } from "./status.agent-local.js";
 import {
   buildStatusAgentsValue,

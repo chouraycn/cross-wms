@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Image generation background task facade.
  *

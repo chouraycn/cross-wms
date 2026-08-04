@@ -1,4 +1,12 @@
-import type { Skill } from "../types.js";
+// Skill contract types describe loaded skill metadata, sources, and prompt surfaces.
+// Skill 类型统一在 ../types.ts 定义（含可选 sourceInfo），这里重新导出避免重复定义导致类型不兼容。
+export type { Skill } from "../types.js";
+
+export { createSyntheticSourceInfo } from "../../agents/sessions/source-info.js";
+
+// 再导出 frontmatter/source 的解析器，保持 server 旧调用方（discovery/skill-index.ts、测试）可用。
+export { resolveSkillKey } from "./frontmatter.js";
+export { resolveSkillSource, resolveSkillTelemetrySource } from "./source.js";
 
 function escapeXml(str: string): string {
   return str
@@ -9,6 +17,12 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Keep this formatter's XML layout byte-for-byte aligned with the upstream
+ * Agent Skills formatter so we can avoid importing the full session runtime
+ * package root on the cold skills path. Visibility policy is applied upstream
+ * before calling this helper.
+ */
 export function formatSkillsForPrompt(skills: Skill[]): string {
   if (skills.length === 0) {
     return "";
@@ -33,12 +47,4 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
   }
   lines.push("</available_skills>");
   return lines.join("\n");
-}
-
-export function resolveSkillKey(skill: Skill, metadata?: { skillKey?: string }): string {
-  return metadata?.skillKey ?? skill.name;
-}
-
-export function resolveSkillSource(skill: Skill): string {
-  return skill.source;
 }

@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * SQLite-backed 实现 — 为移植自 openclaw 的 tasks/ 模块提供持久化与查询能力。
  *
  * 设计说明：
@@ -60,13 +66,6 @@ import {
   updateFlowRecordByIdExpectedRevision as updateFlowRecordByIdExpectedRevisionFromRegistry,
   type TaskFlowUpdateResult,
 } from "./task-flow-registry.js";
-import {
-  listTaskFlowAuditFindings as listTaskFlowAuditFindingsFromAudit,
-  summarizeTaskFlowAuditFindings as summarizeTaskFlowAuditFindingsFromAudit,
-  type TaskFlowAuditFinding,
-  type TaskFlowAuditSummary,
-} from "./task-flow-registry.audit.js";
-
 // ============================================================================
 // 行类型与常量
 // ============================================================================
@@ -641,37 +640,6 @@ export function updateFlowRecordByIdExpectedRevision(params: {
   return updateFlowRecordByIdExpectedRevisionFromRegistry(
     params as Parameters<typeof updateFlowRecordByIdExpectedRevisionFromRegistry>[0],
   );
-}
-
-// ============================================================================
-// task-flow-registry.audit.ts — 任务流程审计（委托给 ./task-flow-registry.audit.ts）
-// ============================================================================
-// 真实实现在 ./task-flow-registry.audit.ts，此处仅做委托转发。
-// 参考 openclaw/src/tasks/task-flow-registry.audit.ts。
-
-export type {
-  TaskFlowAuditCode,
-  TaskFlowAuditFinding,
-  TaskFlowAuditSummary,
-} from "./task-flow-registry.audit.js";
-
-/** 列出流程审计发现：委托给 ./task-flow-registry.audit.ts。 */
-export function listTaskFlowAuditFindings(options?: {
-  now?: number;
-  flows?: TaskFlowRecord[];
-  staleRunningMs?: number;
-  staleWaitingMs?: number;
-  staleBlockedMs?: number;
-  cancelStuckMs?: number;
-}): TaskFlowAuditFinding[] {
-  return listTaskFlowAuditFindingsFromAudit(options);
-}
-
-/** 汇总流程审计发现：委托给 ./task-flow-registry.audit.ts。 */
-export function summarizeTaskFlowAuditFindings(
-  findings: Iterable<TaskFlowAuditFinding>,
-): TaskFlowAuditSummary {
-  return summarizeTaskFlowAuditFindingsFromAudit(findings);
 }
 
 // ============================================================================

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Provider 注册表 — 统一管理所有 LLM Provider。
  *

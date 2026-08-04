@@ -151,7 +151,7 @@ export function resolveEffectivePluginIds(params: {
   const autoEnabled = applyPluginAutoEnable({
     config: params.config,
     env: params.env,
-  });
+  }) as any;
   const effectiveConfig = autoEnabled.config as OpenClawConfig;
   const ids = new Set(collectExplicitEffectivePluginIds(effectiveConfig));
   for (const pluginId of collectSelectedContextEnginePluginIds(effectiveConfig)) {

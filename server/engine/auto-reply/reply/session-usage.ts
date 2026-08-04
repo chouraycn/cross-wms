@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Persists usage, cost, model, and CLI session metadata after reply runs. */
 import {
   clearCliSession,

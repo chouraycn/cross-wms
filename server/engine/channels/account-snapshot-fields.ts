@@ -2,7 +2,7 @@
  * Status-safe channel account projection helpers — 移植自 openclaw/src/channels/account-snapshot-fields.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/{string-coerce,string-normalization,number-coercion} →
+ *  - @cdf-know/normalization-core/{string-coerce,string-normalization,number-coercion} →
  *    cross-wms 的 ../infra/{string-coerce,string-normalization,number-coercion}.js
  *  - @openclaw/net-policy/url-userinfo (stripUrlUserInfo) → 本地降级实现于
  *    ./_openclaw-stubs.js

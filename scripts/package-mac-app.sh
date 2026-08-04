@@ -14,7 +14,7 @@ source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
 # 从 GitHub 拉取最新代码（包含 auto-version-bump 自动提升的版本号）
 echo "🔄 同步版本号..."
 cd "$ROOT_DIR"
-git pull origin main --no-rebase --quiet 2>/dev/null || true
+# git pull origin main --no-rebase --quiet 2>/dev/null || true  # TEMP-DISABLED: 保护本地未提交改动(避免覆盖)
 
 APP_ROOT="$ROOT_DIR/dist-app/CDFKnowClow.app"
 CONTENTS="$APP_ROOT/Contents"
@@ -145,6 +145,10 @@ npm run build 2>&1 || {
 }
 echo "✅ Frontend built"
 
+# vite build 会清空 dist/，必须在其后重建嵌入前端，否则生产 App 数字员工空白
+echo "📦 Rebuilding StaffDeck embed frontend (dist/staffdeck-app)..."
+node scripts/build-staffdeck-app.mjs 2>&1 | tail -5
+
 echo "📦 Copying frontend dist to .app..."
 rm -rf "$RESOURCES_DIR/frontend_dist"
 mkdir -p "$RESOURCES_DIR/frontend_dist"
@@ -171,6 +175,8 @@ cd "$ROOT_DIR"
     --format=cjs \
     --outfile="$SERVER_DIST_DIR/index.cjs" \
     --alias:@src="$ROOT_DIR/src" \
+    --alias:@openclaw-src/packages="$ROOT_DIR/packages" \
+    --alias:@openclaw-src="$ROOT_DIR/openclaw/src" \
     --alias:@cdf-know/plugin-sdk/extension-shared="$ROOT_DIR/server/engine/plugin-sdk/extension-shared.ts" \
     --external:better-sqlite3 \
     --external:onnxruntime-node \

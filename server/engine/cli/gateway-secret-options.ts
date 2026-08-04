@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/gateway-secret-options.ts。
 //
 // 降级策略：
-//  - 原模块依赖 @openclaw/normalization-core/string-coerce 的 normalizeOptionalString。
+//  - 原模块依赖 @cdf-know/normalization-core/string-coerce 的 normalizeOptionalString。
 //    降级内联实现。
 //  - 原模块依赖 ../acp/secret-file.js 的 readSecretFromFile。降级内联实现。
 //  - 原模块依赖 ../runtime.js 的 defaultRuntime。降级内联实现。

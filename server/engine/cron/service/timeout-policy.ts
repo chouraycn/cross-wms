@@ -1,36 +1,29 @@
+/** Resolves cron job wall-clock timeout policy. */
+import { finiteSecondsToTimerSafeMilliseconds } from "@cdf-know/normalization-core/number-coercion";
 import type { CronJob } from "../types.js";
 
-export interface TimeoutPolicy {
-  defaultTimeoutSeconds: number;
-  maxTimeoutSeconds: number;
-  noOutputTimeoutSeconds: number;
-}
+/**
+ * Maximum wall-clock time for a single job execution. Acts as a safety net
+ * on top of per-provider/per-agent timeouts to prevent one stuck job from
+ * wedging the entire cron lane.
+ */
+export const DEFAULT_JOB_TIMEOUT_MS = 10 * 60_000; // 10 minutes
 
-const DEFAULT_POLICY: TimeoutPolicy = {
-  defaultTimeoutSeconds: 300,
-  maxTimeoutSeconds: 3600,
-  noOutputTimeoutSeconds: 120,
-};
+/**
+ * Agent turns can legitimately run much longer than generic cron jobs.
+ * Use a larger safety ceiling when no explicit timeout is set.
+ */
+export const AGENT_TURN_SAFETY_TIMEOUT_MS = 60 * 60_000; // 60 minutes
 
-export function resolveTimeoutPolicy(job: CronJob): TimeoutPolicy {
-  if (job.payload.kind === "agentTurn") {
-    return {
-      ...DEFAULT_POLICY,
-      defaultTimeoutSeconds: job.payload.timeoutSeconds ?? DEFAULT_POLICY.defaultTimeoutSeconds,
-    };
+/** Resolves the wall-clock timeout for a cron job, including explicit detached-run overrides. */
+export function resolveCronJobTimeoutMs(job: CronJob): number | undefined {
+  const configuredTimeoutMs =
+    (job.payload.kind === "agentTurn" || job.payload.kind === "command") &&
+    typeof job.payload.timeoutSeconds === "number"
+      ? (finiteSecondsToTimerSafeMilliseconds(job.payload.timeoutSeconds) ?? 0)
+      : undefined;
+  if (configuredTimeoutMs === undefined) {
+    return job.payload.kind === "agentTurn" ? AGENT_TURN_SAFETY_TIMEOUT_MS : DEFAULT_JOB_TIMEOUT_MS;
   }
-
-  if (job.payload.kind === "command") {
-    return {
-      ...DEFAULT_POLICY,
-      defaultTimeoutSeconds: job.payload.timeoutSeconds ?? DEFAULT_POLICY.defaultTimeoutSeconds,
-      noOutputTimeoutSeconds: job.payload.noOutputTimeoutSeconds ?? DEFAULT_POLICY.noOutputTimeoutSeconds,
-    };
-  }
-
-  return DEFAULT_POLICY;
-}
-
-export function enforceTimeoutBounds(timeoutSeconds: number): number {
-  return Math.max(1, Math.min(timeoutSeconds, DEFAULT_POLICY.maxTimeoutSeconds));
+  return configuredTimeoutMs <= 0 ? undefined : configuredTimeoutMs;
 }

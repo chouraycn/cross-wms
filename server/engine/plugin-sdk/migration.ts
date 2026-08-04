@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 
 export type MigrationDetection = {
   pluginId: string;
@@ -139,9 +139,11 @@ export type MigrationConfigPatchDetails = {
 };
 
 class MigrationConfigPatchConflictError extends Error {
-  constructor(readonly reason: string) {
+  readonly reason: string;
+  constructor(reason: string) {
     super(reason);
     this.name = "MigrationConfigPatchConflictError";
+    this.reason = reason;
   }
 }
 

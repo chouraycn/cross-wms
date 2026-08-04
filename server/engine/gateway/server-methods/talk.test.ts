@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for talk gateway methods that coordinate speech and audio providers.
  */

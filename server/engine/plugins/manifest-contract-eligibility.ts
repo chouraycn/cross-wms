@@ -3,7 +3,7 @@
  *
  * 移植自 openclaw/src/plugins/manifest-contract-eligibility.ts。
  *
- * 降级策略：原文件依赖 @openclaw/normalization-core/string-normalization、
+ * 降级策略：原文件依赖 @cdf-know/normalization-core/string-normalization、
  * ../config/types.openclaw.js、./installed-plugin-index.js、./manifest-registry.js、
  * ./plugin-metadata-snapshot.js。所有运行时函数降级为返回默认值或抛出错误。
  */

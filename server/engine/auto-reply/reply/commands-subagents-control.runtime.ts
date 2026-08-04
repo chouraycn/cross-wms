@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime facade for controlling subagent runs from reply commands. */
 export {
   listControlledSubagentRuns,
@@ -6,4 +5,4 @@ export {
   killControlledSubagentRun,
   sendControlledSubagentMessage,
   steerControlledSubagentRun,
-} from '@openclaw-src/agents/subagent-control.js';
+} from "../../agents/subagent-control.js";

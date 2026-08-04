@@ -1,6 +1,11 @@
 // Bundled hook directory helpers locate packaged hook definitions.
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function resolveBundledHooksDir(): string | undefined {
   const override = process.env.OPENCLAW_BUNDLED_HOOKS_DIR?.trim();

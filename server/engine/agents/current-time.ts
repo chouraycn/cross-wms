@@ -3,7 +3,7 @@
  *
  * 移植自 openclaw/src/agents/current-time.ts。
  * 降级策略：
- *   - `resolveDateTimestampMs` 来自 @openclaw/normalization-core/number-coercion，
+ *   - `resolveDateTimestampMs` 来自 @cdf-know/normalization-core/number-coercion，
  *     本地内联最小实现（Number.isFinite 守卫）。
  *   - `TimeFormatPreference`、`formatUserTime`、`resolveUserTimeFormat`、
  *     `resolveUserTimezone` 来自 ./date-time.js（cross-wms 的 date-time.ts 未导出这些），

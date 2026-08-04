@@ -1,9 +1,21 @@
 /**
- * 移植自 openclaw/src/agents/agent-tools.before-tool-call.runtime.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Lazy runtime dependencies for before_tool_call handling.
+ * Keeps diagnostics and loop-detection imports behind a seam that tests can
+ * replace without loading the full runtime graph.
  */
+import { getDiagnosticSessionState } from "../logging/diagnostic-session-state.js";
+import { logToolLoopAction } from "../logging/diagnostic.js";
+import {
+  detectToolCallLoop,
+  recordToolCall,
+  recordToolCallOutcome,
+} from "./tool-loop-detection.js";
 
-export const beforeToolCallRuntime: unknown = undefined;
+/** Runtime seam for before_tool_call diagnostics and loop detection. */
+export const beforeToolCallRuntime = {
+  getDiagnosticSessionState,
+  logToolLoopAction,
+  detectToolCallLoop,
+  recordToolCall,
+  recordToolCallOutcome,
+};

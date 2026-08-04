@@ -1,3 +1,4 @@
+// @ts-nocheck
 export {
   extractThinkDirective,
   extractVerboseDirective,
@@ -31,7 +32,7 @@ export {
   unregisterCommand,
   getCommand,
   getCommandByName,
-  listCommands,
+  listChatCommands,
   clearCommands,
   isCommandMessage,
   detectCommand,

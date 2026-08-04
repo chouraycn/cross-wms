@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Focused public test helpers for generic fixtures shared by plugin tests.
 
 export {

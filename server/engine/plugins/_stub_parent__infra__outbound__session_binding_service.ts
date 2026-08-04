@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === RE-EXPORT — 已收敛 ===
 // Source: openclaw/src/infra/outbound/session-binding-service.ts
 // Used by: server/engine/plugins/conversation-binding.ts

@@ -1,27 +1,55 @@
-export const DEFAULT_AGENT_TIMEOUT_MS = 120_000;
-export const MAX_AGENT_TIMEOUT_MS = 300_000;
+/**
+ * Agent run timeout resolver.
+ *
+ * Converts config and per-run overrides into timer-safe millisecond deadlines.
+ */
+import {
+  clampTimerTimeoutMs,
+  MAX_TIMER_TIMEOUT_MS,
+} from "@cdf-know/normalization-core/number-coercion";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-export interface AgentTimeoutConfig {
-  defaultTimeoutMs: number;
-  maxTimeoutMs: number;
-  perAgentTimeouts?: Record<string, number>;
+const DEFAULT_AGENT_TIMEOUT_SECONDS = 48 * 60 * 60;
+
+const normalizeNumber = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : undefined;
+
+function resolveAgentTimeoutSeconds(cfg?: OpenClawConfig): number {
+  const raw = normalizeNumber(cfg?.agents?.defaults?.timeoutSeconds);
+  const seconds = raw ?? DEFAULT_AGENT_TIMEOUT_SECONDS;
+  return Math.max(seconds, 1);
 }
 
-export const DEFAULT_TIMEOUT_CONFIG: AgentTimeoutConfig = {
-  defaultTimeoutMs: DEFAULT_AGENT_TIMEOUT_MS,
-  maxTimeoutMs: MAX_AGENT_TIMEOUT_MS,
-};
-
-export function resolveAgentTimeout(agentId: string, config?: AgentTimeoutConfig): number {
-  const resolvedConfig = config ?? DEFAULT_TIMEOUT_CONFIG;
-  const perAgent = resolvedConfig.perAgentTimeouts?.[agentId];
-  if (perAgent !== undefined) {
-    return Math.min(perAgent, resolvedConfig.maxTimeoutMs);
+export function resolveAgentTimeoutMs(opts: {
+  cfg?: OpenClawConfig;
+  overrideMs?: number | null;
+  overrideSeconds?: number | null;
+  minMs?: number;
+}): number {
+  const minMs = Math.max(normalizeNumber(opts.minMs) ?? 1, 1);
+  const clampTimeoutMs = (valueMs: number) => clampTimerTimeoutMs(valueMs, minMs) ?? minMs;
+  const defaultMs = clampTimeoutMs(resolveAgentTimeoutSeconds(opts.cfg) * 1000);
+  // Use the maximum timer-safe timeout to represent "no timeout" when explicitly set to 0.
+  const NO_TIMEOUT_MS = MAX_TIMER_TIMEOUT_MS;
+  const overrideMs = normalizeNumber(opts.overrideMs);
+  if (overrideMs !== undefined) {
+    if (overrideMs === 0) {
+      return NO_TIMEOUT_MS;
+    }
+    if (overrideMs < 0) {
+      return defaultMs;
+    }
+    return clampTimeoutMs(overrideMs);
   }
-  return resolvedConfig.defaultTimeoutMs;
-}
-
-export function clampTimeout(timeoutMs: number, config?: AgentTimeoutConfig): number {
-  const max = config?.maxTimeoutMs ?? MAX_AGENT_TIMEOUT_MS;
-  return Math.min(Math.max(1000, timeoutMs), max);
+  const overrideSeconds = normalizeNumber(opts.overrideSeconds);
+  if (overrideSeconds !== undefined) {
+    if (overrideSeconds === 0) {
+      return NO_TIMEOUT_MS;
+    }
+    if (overrideSeconds < 0) {
+      return defaultMs;
+    }
+    return clampTimeoutMs(overrideSeconds * 1000);
+  }
+  return defaultMs;
 }

@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** Row builders used by `openclaw models list` source orchestration. */
-import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import type { NormalizedModelCatalogRow } from "@cdf-know/model-catalog-core/model-catalog-types";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import { DEFAULT_CONTEXT_TOKENS } from "@openclaw-src/agents/defaults.js";
 import {
   shouldSuppressBuiltInModel,
@@ -155,7 +154,7 @@ function normalizeListRowWithProviderPlugin(params: {
       workspaceDir: params.context.workspaceDir,
       provider: params.model.provider,
       modelId: params.model.id,
-      model: params.model as ProviderRuntimeModel,
+      model: params.model as unknown as ProviderRuntimeModel,
     },
   });
   if (!normalized) {
@@ -166,8 +165,8 @@ function normalizeListRowWithProviderPlugin(params: {
     id: normalized.id,
     name: normalized.name,
     provider: normalized.provider,
-    baseUrl: normalized.baseUrl,
-    input: toListRowInput(normalized.input),
+    baseUrl: (normalized as any).baseUrl,
+    input: toListRowInput((normalized as any).input),
     contextWindow: normalized.contextWindow,
     contextTokens: normalized.contextTokens,
   };

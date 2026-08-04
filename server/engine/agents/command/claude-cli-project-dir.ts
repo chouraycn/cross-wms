@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /**
  * Resolves Claude CLI project storage directories for OpenClaw workspaces.
@@ -6,7 +5,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 
 const CLAUDE_PROJECTS_DIRNAME = path.join(".claude", "projects");
 const MAX_SANITIZED_PROJECT_LENGTH = 200;

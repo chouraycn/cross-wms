@@ -99,3 +99,20 @@ export function clearVideoProviders(): void {
   providers.clear();
   aliasMap.clear();
 }
+
+// ---------------------------------------------------------------------------
+// openclaw 兼容别名 — runtime.ts 从 openclaw 移植，使用 *Generation* 命名
+// ---------------------------------------------------------------------------
+
+/** List canonical video generation providers available for the current config. */
+export function listVideoGenerationProviders(_cfg?: unknown): VideoGenerationProvider[] {
+  return listVideoProviders();
+}
+
+/** Resolve a video generation provider by canonical id or alias. */
+export function getVideoGenerationProvider(
+  providerId: string | undefined,
+  _cfg?: unknown,
+): VideoGenerationProvider | undefined {
+  return getVideoProvider(providerId);
+}

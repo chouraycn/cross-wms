@@ -116,7 +116,7 @@ export interface InboundRecord {
   volume: number;
   createdAt: string;
   operator: string;
-  status: 'pending' | 'completed';
+  status: 'pending' | 'completed' | 'cancelled';
   supplier?: string;       // v1.4.0: 冗余显示名称
   supplier_id?: string;    // v1.4.0: 外键
   batchNo?: string;        // v1.4.0: 漏缺字段补全

@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Runtime LLM helpers adapt plugin provider hooks into the core model runtime.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@cdf-know/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import { modelKey } from "../../agents/model-ref-shared.js";
 import { normalizeModelRef } from "../../agents/model-selection.js";
 import type { NormalizedUsage, UsageLike } from "../../agents/usage.js";
@@ -446,7 +445,7 @@ export function createRuntimeLlm(options: CreateRuntimeLlmOptions = {}): PluginR
         model: prepared.model,
         auth: prepared.auth,
         cfg,
-        context,
+        context: context as any,
         options: {
           maxTokens: finiteOption(params.maxTokens),
           temperature: finiteOption(params.temperature),

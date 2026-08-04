@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Lightweight reply-stage profiler for slow-turn diagnostics. */
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';
 import { isDiagnosticFlagEnabled } from '@openclaw-src/infra/diagnostic-flags.js';

@@ -1,12 +1,46 @@
 /**
- * Ported from openclaw/src/agents/responses-image-payload-sanitizer.ts
- *
- * Responses API image payload sanitizer.
- * Cross-wms degradation: returns input unchanged without sanitization.
+ * Sanitizes OpenAI Responses payloads before transport. Invalid inline images
+ * are replaced with text placeholders so the request remains valid and
+ * auditable.
  */
+import { sanitizeInlineImageDataUrl as sanitizeSharedInlineImageDataUrl } from "@cdf-know/media-core/inline-image-data-url";
+import { isRecord } from "@cdf-know/normalization-core/record-coerce";
 
-/** Sanitizes image payloads in responses API format. */
-export function sanitizeResponsesImagePayload<T>(payload: T): T {
-  // Cross-wms does not have image sanitization for responses API.
-  return payload;
+const IMAGE_OMITTED_TEXT = "omitted image payload: invalid inline image data";
+
+type JsonRecord = Record<string, unknown>;
+
+function invalidSnakeImage(): JsonRecord {
+  return { type: "input_text", text: `[${IMAGE_OMITTED_TEXT}]` };
+}
+
+function sanitizeValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sanitizeValue);
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  if (value.type === "input_image" && typeof value.image_url === "string") {
+    const imageUrl = sanitizeSharedInlineImageDataUrl(value.image_url);
+    return imageUrl ? { ...value, image_url: imageUrl } : invalidSnakeImage();
+  }
+
+  const next: JsonRecord = {};
+  for (const [key, child] of Object.entries(value)) {
+    next[key] = sanitizeValue(child);
+  }
+  return next;
+}
+
+/** Sanitize inline image fields inside a Responses API payload. */
+export function sanitizeResponsesImagePayload<T extends Record<string, unknown>>(params: T): T {
+  if (!Array.isArray(params.input)) {
+    return params;
+  }
+  return {
+    ...params,
+    input: sanitizeValue(params.input),
+  };
 }

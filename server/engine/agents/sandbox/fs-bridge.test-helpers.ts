@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared fs bridge test helpers install Docker/path-safety mocks and provide
 // seeded sandbox fixtures for boundary and shell tests.
 import fs from "node:fs/promises";

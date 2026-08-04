@@ -1,11 +1,10 @@
-// @ts-nocheck
 // Source reply mirroring records successful same-conversation message-tool
 // sends back into the owning session transcript.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeOptionalTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+} from "@cdf-know/normalization-core/string-coerce";
+import { normalizeOptionalTrimmedStringList } from "@cdf-know/normalization-core/string-normalization";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type {

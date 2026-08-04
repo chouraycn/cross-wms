@@ -2,12 +2,12 @@
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseCronRunLogEntriesFromJsonl } from "@openclaw-src/cron/run-log-jsonl.js";
+import { parseCronRunLogEntriesFromJsonl } from "../../../cron/run-log-jsonl.js";
 import {
   appendCronRunLog,
   readCronRunLogEntriesPage,
   type CronRunLogEntry,
-} from "@openclaw-src/cron/run-log.js";
+} from "../../../cron/run-log.js";
 
 const LEGACY_CRON_RUN_LOG_ARCHIVE_SUFFIX = ".migrated";
 

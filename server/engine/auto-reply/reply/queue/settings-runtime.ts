@@ -1,5 +1,5 @@
 // Resolves runtime queue settings after considering provider fallback health.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { getLoadedChannelPlugin } from "../../../channels/plugins/index.js";
 import { resolveQueueSettings as resolveQueueSettingsCore } from "./settings.js";
 import type { QueueSettings, ResolveQueueSettingsParams } from "./types.js";

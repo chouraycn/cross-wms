@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel message helper behavior and mocked runtime interactions.
  */

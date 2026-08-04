@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests plugin SDK migration runtime facades and migration helper behavior.
  */

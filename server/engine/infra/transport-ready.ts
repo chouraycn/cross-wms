@@ -1,6 +1,6 @@
 // 轮询通道传输直到它们准备好接受运行时工作。
 // 降级实现：从 openclaw/src/infra/transport-ready.ts 移植，
-// - 使用本地 _runtime-stubs.ts 的 resolveTimerTimeoutMs 替代 @openclaw/normalization-core/number-coercion
+// - 使用本地 _runtime-stubs.ts 的 resolveTimerTimeoutMs 替代 @cdf-know/normalization-core/number-coercion
 // - 使用本地 runtime-guard.ts 的 RuntimeEnv 类型替代 ../runtime.js
 // - danger 函数降级为返回原始字符串（openclaw 的 ../globals.js 中导出）
 import { resolveTimerTimeoutMs } from "./_runtime-stubs.js";

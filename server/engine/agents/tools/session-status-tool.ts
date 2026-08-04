@@ -5,8 +5,8 @@
  *
  * Reports and updates session runtime state, model overrides, visibility, task status, and delivery context.
  */
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { readStringValue } from "@cdf-know/normalization-core/string-coerce";
+import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
 import { Type } from "typebox";
 import type {
   ElevatedLevel,

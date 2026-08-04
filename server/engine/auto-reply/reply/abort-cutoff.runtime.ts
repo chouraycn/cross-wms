@@ -1,4 +1,3 @@
-// @ts-nocheck
 /** Runtime persistence helper for clearing abort-cutoff state from sessions. */
 import { patchSessionEntry } from '@openclaw-src/config/sessions/session-accessor.js';
 import type { SessionEntry } from '@openclaw-src/config/sessions/types.js';

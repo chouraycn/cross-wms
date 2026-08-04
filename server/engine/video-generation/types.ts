@@ -146,6 +146,8 @@ export type VideoGenerationModeCapabilities = VideoModeCapabilities;
 export type VideoGenerationTransformCapabilities = VideoTransformCapabilities;
 export type VideoGenerationProviderCapabilities = VideoProviderCapabilities;
 export type VideoGenerationResolution = VideoResolution;
+export type VideoGenerationRequest = VideoRequest;
+export type VideoGenerationResult = VideoResult;
 export type VideoGenerationSourceAsset = VideoSourceAsset;
 
 /** 被忽略的覆盖项（用户传入但 Provider 不支持）。 */

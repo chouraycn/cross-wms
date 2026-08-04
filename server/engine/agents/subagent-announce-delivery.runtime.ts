@@ -1,10 +1,27 @@
 /**
- * 移植自 openclaw/src/agents/subagent-announce-delivery.runtime.ts
+ * Runtime dependency barrel for subagent announcement delivery.
  *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Tests mock this module to isolate delivery logic from gateway, outbound
+ * message routing, queue settings, hooks, and embedded-run state.
  */
-
+export { getRuntimeConfig } from "../config/config.js";
+export {
+  loadSessionStore,
+  resolveAgentIdFromSessionKey,
+  resolveStorePath,
+} from "../config/sessions.js";
 export { callGateway } from "../gateway/call.js";
 export { dispatchGatewayMethodInProcess } from "../gateway/server-plugins.js";
+export { resolveQueueSettings } from "../auto-reply/reply/queue.js";
+export { resolveExternalBestEffortDeliveryTarget } from "../infra/outbound/best-effort-delivery.js";
+export { sendMessage } from "../infra/outbound/message.js";
+export { createBoundDeliveryRouter } from "../infra/outbound/bound-delivery-router.js";
+export { resolveConversationIdFromTargets } from "../infra/outbound/conversation-id.js";
+export { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
+export {
+  formatEmbeddedAgentQueueFailureSummary,
+  isEmbeddedAgentRunActive,
+  isEmbeddedRunAbandoned,
+  queueEmbeddedAgentMessageWithOutcomeAsync,
+  resolveActiveEmbeddedRunSessionId,
+} from "./embedded-agent-runner/runs.js";

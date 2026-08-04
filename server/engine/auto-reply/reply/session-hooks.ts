@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Emits session lifecycle hooks for channel plugins and agent runtimes.
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

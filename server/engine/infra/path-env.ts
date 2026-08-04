@@ -1,6 +1,6 @@
 // 为 OpenClaw 子进程构建 PATH 值。
 // 降级实现：从 openclaw/src/infra/path-env.ts 移植，
-// - normalizeStringEntries/normalizeUniqueStringEntries 使用本地 string-normalization.ts 替代 @openclaw/normalization-core/string-normalization
+// - normalizeStringEntries/normalizeUniqueStringEntries 使用本地 string-normalization.ts 替代 @cdf-know/normalization-core/string-normalization
 // - resolveBrewPathDirs 本地实现（cross-wms 的 brew.ts 未导出此函数）
 // - isTruthyEnvValue 使用本地 ./env.js
 import fs from "node:fs";

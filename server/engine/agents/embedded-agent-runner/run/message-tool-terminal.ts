@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { SourceReplyDeliveryMode } from "../../../auto-reply/get-reply-options.types.js";
 /**
  * Detects message-tool-only sends that delivered a visible source reply.

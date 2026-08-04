@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Commander registration for onboard setup flags and lazy onboard runtime execution.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";

@@ -1,7 +1,6 @@
-// @ts-nocheck
 // Target prefix helpers separate provider-owned prefixes from generic target
 // kind prefixes and validate selected-channel mismatches.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { getActivePluginChannelRegistryFromState } from "../../plugins/runtime-channel-state.js";
 import { normalizeMessageChannel } from "../../utils/message-channel-core.js";
 
@@ -66,7 +65,7 @@ function resolvePluginTargetPrefix(prefix: string): string | undefined {
   }
   const registry = getActivePluginChannelRegistryFromState();
   for (const entry of registry?.channels ?? []) {
-    const plugin = entry.plugin;
+    const plugin = entry.plugin as any;
     const channelId = normalizeOptionalLowercaseString(plugin.id);
     const candidates = plugin.messaging?.targetPrefixes ?? [];
     if (

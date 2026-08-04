@@ -1,9 +1,5 @@
-/**
- * Cron Active Jobs - 活跃任务管理
- *
- * 跟踪进程内的 cron 执行，避免调度器和唤醒路径重复运行。
- * 使用进程全局单例状态，支持模块重载场景下的状态保持。
- */
+/** Tracks in-process cron executions so schedulers and wake paths avoid duplicate runs. */
+import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 
 type CronActiveJobState = {
   activeJobs: Map<string, CronActiveJobMarker>;
@@ -13,7 +9,7 @@ type CronActiveJobState = {
   activeJobIds?: Set<string>;
 };
 
-const CRON_ACTIVE_JOB_STATE_KEY = Symbol.for("crosswms.cron.activeJobs");
+const CRON_ACTIVE_JOB_STATE_KEY = Symbol.for("openclaw.cron.activeJobs");
 
 export type CronActiveJobMarker = {
   jobId: string;
@@ -24,18 +20,15 @@ export type CronActiveJobMarker = {
 };
 
 function getCronActiveJobState(): CronActiveJobState {
-  const global = globalThis as unknown as Record<symbol, CronActiveJobState | undefined>;
-  let state = global[CRON_ACTIVE_JOB_STATE_KEY];
-  if (!state) {
-    state = {
-      activeJobs: new Map<string, CronActiveJobMarker>(),
-      generation: 0,
-      nextToken: 1,
-      emptyWaiters: new Set<() => void>(),
-      activeJobIds: new Set<string>(),
-    };
-    global[CRON_ACTIVE_JOB_STATE_KEY] = state;
-  }
+  // Cron runs can cross module reload boundaries in tests and dev watch; keep
+  // the in-flight job set process-global so duplicate-run guards share state.
+  const state = resolveGlobalSingleton<CronActiveJobState>(CRON_ACTIVE_JOB_STATE_KEY, () => ({
+    activeJobs: new Map<string, CronActiveJobMarker>(),
+    generation: 0,
+    nextToken: 1,
+    emptyWaiters: new Set<() => void>(),
+    activeJobIds: new Set<string>(),
+  }));
   state.generation ??= 0;
   state.nextToken ??= 1;
   state.activeJobs ??= new Map<string, CronActiveJobMarker>();
@@ -86,9 +79,7 @@ function notifyActiveCronJobWaitersIfEmpty(state: CronActiveJobState) {
   state.emptyWaiters.clear();
 }
 
-/**
- * 将 cron 任务 id 标记为当前正在执行，用于抑制重复运行
- */
+/** Marks a cron job id as currently executing for duplicate-run suppression. */
 export function markCronJobActive(
   jobId: string,
   opts?: { preserveAcrossGenerationAdvance?: boolean },
@@ -110,9 +101,7 @@ export function markCronJobActive(
   return marker;
 }
 
-/**
- * 当 cron 运行退出或被放弃时清除活跃标记
- */
+/** Clears the active marker when a cron run exits or is abandoned. */
 export function clearCronJobActive(jobId: string, marker?: CronActiveJobMarker) {
   if (!jobId) {
     return;
@@ -129,10 +118,8 @@ export function clearCronJobActive(jobId: string, marker?: CronActiveJobMarker) 
   notifyActiveCronJobWaitersIfEmpty(state);
 }
 
-/**
- * 返回给定的 cron 任务 id 当前是否在此进程中执行
- */
-export function isCronJobActive(jobId: string): boolean {
+/** Returns whether the given cron job id is currently executing in this process. */
+export function isCronJobActive(jobId: string) {
   if (!jobId) {
     return false;
   }
@@ -141,7 +128,7 @@ export function isCronJobActive(jobId: string): boolean {
   return marker ? isMarkerActiveInGeneration(marker, state.generation) : false;
 }
 
-export function isCronActiveJobMarkerCurrent(marker: CronActiveJobMarker | undefined): boolean {
+export function isCronActiveJobMarkerCurrent(marker: CronActiveJobMarker | undefined) {
   if (!marker) {
     return true;
   }
@@ -152,17 +139,13 @@ export function isCronActiveJobMarkerCurrent(marker: CronActiveJobMarker | undef
   );
 }
 
-/**
- * 返回此进程中是否有任何 cron 运行处于活跃状态
- */
-export function hasActiveCronJobs(): boolean {
+/** Returns whether any cron run is active in this process. */
+export function hasActiveCronJobs() {
   return getActiveCronJobCountForGeneration(getCronActiveJobState()) > 0;
 }
 
-/**
- * 返回此进程中活跃 cron 运行的数量
- */
-export function getActiveCronJobCount(): number {
+/** Returns the number of active cron runs in this process. */
+export function getActiveCronJobCount() {
   return getActiveCronJobCountForGeneration(getCronActiveJobState());
 }
 
@@ -195,10 +178,8 @@ export async function waitForActiveCronJobs(timeoutMs: number): Promise<{
   };
 }
 
-/**
- * 启动新的进程生命周期代，而不清除仍在完成的旧运行
- */
-export function advanceCronActiveJobGeneration(): void {
+/** Starts a new process-lifecycle generation without clearing still-finalizing old runs. */
+export function advanceCronActiveJobGeneration() {
   const state = getCronActiveJobState();
   state.generation += 1;
   for (const [jobId, marker] of state.activeJobs) {
@@ -213,10 +194,8 @@ export function advanceCronActiveJobGeneration(): void {
   notifyActiveCronJobWaitersIfEmpty(state);
 }
 
-/**
- * 在进程生命周期边界清除进程全局 cron 活跃任务状态
- */
-export function resetCronActiveJobs(): void {
+/** Clears process-global cron active-job state at process-lifecycle boundaries. */
+export function resetCronActiveJobs() {
   const state = getCronActiveJobState();
   state.generation += 1;
   state.activeJobs.clear();

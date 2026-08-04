@@ -1,9 +1,8 @@
-// @ts-nocheck
 /**
  * Limits embedded-agent history length from session-key policy.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { AgentMessage } from "../runtime/index.js";
 

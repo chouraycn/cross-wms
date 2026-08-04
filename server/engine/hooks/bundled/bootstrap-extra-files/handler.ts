@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Bootstrap extra files hook injects configured extra files into startup context.
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeTrimmedStringList } from "@cdf-know/normalization-core/string-normalization";
 import {
   filterBootstrapFilesForSession,
   loadExtraBootstrapFilesWithDiagnostics,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway discovery rendering helpers for Bonjour and wide-area DNS beacon output.
 import { colorize, theme } from "../../../packages/terminal-core/src/theme.js";
 import type { GatewayBonjourBeacon } from "../../infra/bonjour-discovery.js";

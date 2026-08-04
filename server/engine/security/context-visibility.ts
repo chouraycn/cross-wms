@@ -1,55 +1,74 @@
-import { logger } from '../../logger.js';
-import type { ContextVisibilityDecision, ContextVisibilityKind, ContextVisibilityMode } from './types.js';
+// Applies security visibility policy to context and account data.
 
-export type {
-  ContextVisibilityMode,
-  ContextVisibilityKind,
-  ContextVisibilityDecision,
+/** How much non-allowlisted context is visible to an agent. */
+export type ContextVisibilityMode = "all" | "allowlist" | "allowlist_quote";
+
+/** Supplemental context classes that can be hidden independently from the main message. */
+export type ContextVisibilityKind = "history" | "thread" | "quote" | "forwarded";
+
+/** Machine-readable reason for a supplemental context visibility decision. */
+export type ContextVisibilityDecisionReason =
+  /** Visibility mode includes all supplemental context. */
+  | "mode_all"
+  /** Sender allowlist includes the item source. */
+  | "sender_allowed"
+  /** Quote-only visibility mode permits quoted context even when sender is not allowed. */
+  | "quote_override"
+  /** Context was omitted by visibility mode or sender policy. */
+  | "blocked";
+
+/** Visibility decision returned to callers that need both the boolean result and audit reason. */
+export type ContextVisibilityDecision = {
+  /** Whether the supplemental context item should be included. */
+  include: boolean;
+  /** Rule that decided inclusion or omission. */
+  reason: ContextVisibilityDecisionReason;
 };
 
-type VisibilityDecisionReason =
-  | 'mode_all'
-  | 'sender_allowed'
-  | 'quote_override'
-  | 'mode_none'
-  | 'blocked';
-
+/** Evaluates one supplemental context item against mode, kind, and sender allowlist state. */
 export function evaluateSupplementalContextVisibility(params: {
+  /** Configured visibility mode for the current channel or default policy. */
   mode: ContextVisibilityMode;
+  /** Supplemental context class being evaluated. */
   kind: ContextVisibilityKind;
+  /** Whether the item source is permitted by the sender allowlist. */
   senderAllowed: boolean;
 }): ContextVisibilityDecision {
-  if (params.mode === 'all') {
-    return { include: true, reason: 'mode_all' };
+  if (params.mode === "all") {
+    return { include: true, reason: "mode_all" };
   }
-
-  if (params.mode === 'none') {
-    return { include: false, reason: 'mode_none' };
-  }
-
   if (params.senderAllowed) {
-    return { include: true, reason: 'sender_allowed' };
+    return { include: true, reason: "sender_allowed" };
   }
-
-  if (params.mode === 'allowlist_quote' && params.kind === 'quote') {
-    return { include: true, reason: 'quote_override' };
+  if (params.mode === "allowlist_quote" && params.kind === "quote") {
+    return { include: true, reason: "quote_override" };
   }
-
-  return { include: false, reason: 'blocked' };
+  // Fail closed: unknown or non-matching policy combinations must omit
+  // supplemental context rather than leaking sender history/thread data.
+  return { include: false, reason: "blocked" };
 }
 
+/** Boolean shorthand for callers that do not need the audit reason. */
 export function shouldIncludeSupplementalContext(params: {
+  /** Configured visibility mode for the current channel or default policy. */
   mode: ContextVisibilityMode;
+  /** Supplemental context class being evaluated. */
   kind: ContextVisibilityKind;
+  /** Whether the item source is permitted by the sender allowlist. */
   senderAllowed: boolean;
 }): boolean {
   return evaluateSupplementalContextVisibility(params).include;
 }
 
+/** Filters supplemental context items and reports how many were omitted by visibility policy. */
 export function filterSupplementalContextItems<T>(params: {
+  /** Candidate supplemental context items in original delivery order. */
   items: readonly T[];
+  /** Configured visibility mode for the current channel or default policy. */
   mode: ContextVisibilityMode;
+  /** Shared supplemental context class for every candidate item. */
   kind: ContextVisibilityKind;
+  /** Per-item allowlist predicate for the sender or source identity. */
   isSenderAllowed: (item: T) => boolean;
 }): { items: T[]; omitted: number } {
   const items = params.items.filter((item) =>
@@ -63,108 +82,4 @@ export function filterSupplementalContextItems<T>(params: {
     items,
     omitted: params.items.length - items.length,
   };
-}
-
-const SENSITIVE_PATTERNS = [
-  { pattern: /api[_-]?key\s*[=:]\s*[A-Za-z0-9_\-]{20,}/gi, label: 'API key' },
-  { pattern: /secret\s*[=:]\s*[A-Za-z0-9_\-]{20,}/gi, label: 'secret' },
-  { pattern: /token\s*[=:]\s*[A-Za-z0-9_\-]{20,}/gi, label: 'token' },
-  { pattern: /password\s*[=:]\s*[^\s]+/gi, label: 'password' },
-  { pattern: /-----BEGIN [A-Z ]+ PRIVATE KEY-----[\s\S]*?-----END [A-Z ]+ PRIVATE KEY-----/gi, label: 'private key' },
-  { pattern: /\b\d{16}\b/g, label: 'potential credit card number' },
-  { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: 'potential SSN' },
-  { pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: 'email address' },
-];
-
-const REDACTED = '[REDACTED]';
-
-export function redactSensitiveInfo(content: string): {
-  redacted: string;
-  foundPatterns: string[];
-  count: number;
-} {
-  let redacted = content;
-  const foundPatterns: string[] = [];
-  let count = 0;
-
-  for (const { pattern, label } of SENSITIVE_PATTERNS) {
-    const matches = redacted.match(pattern);
-    if (matches && matches.length > 0) {
-      foundPatterns.push(label);
-      count += matches.length;
-      redacted = redacted.replace(pattern, REDACTED);
-    }
-  }
-
-  if (count > 0) {
-    logger.debug(`[Security:ContextVisibility] Redacted ${count} sensitive patterns: ${foundPatterns.join(', ')}`);
-  }
-
-  return { redacted, foundPatterns, count };
-}
-
-export function sanitizeContextForRole<T extends Record<string, unknown>>(
-  context: T,
-  options: {
-    role: 'admin' | 'user' | 'guest' | 'system';
-    sensitiveFields?: string[];
-    redactValues?: boolean;
-  },
-): Partial<T> {
-  const { role, sensitiveFields = [], redactValues = true } = options;
-
-  if (role === 'admin' || role === 'system') {
-    return { ...context };
-  }
-
-  const sanitized: Partial<T> = {};
-  const defaultSensitive = ['password', 'token', 'secret', 'apiKey', 'api_key', 'privateKey', 'private_key'];
-  const allSensitive = [...defaultSensitive, ...sensitiveFields];
-
-  for (const [key, value] of Object.entries(context)) {
-    const lowerKey = key.toLowerCase();
-    const isSensitive = allSensitive.some((f) => lowerKey.includes(f.toLowerCase()));
-
-    if (isSensitive) {
-      if (role === 'user' && redactValues) {
-        (sanitized as Record<string, unknown>)[key] = REDACTED;
-      }
-    } else {
-      (sanitized as Record<string, unknown>)[key] = value;
-    }
-  }
-
-  return sanitized;
-}
-
-export function buildContextVisibilityReport(
-  totalItems: number,
-  includedItems: number,
-  mode: ContextVisibilityMode,
-): {
-  total: number;
-  included: number;
-  omitted: number;
-  mode: ContextVisibilityMode;
-  includeRate: number;
-} {
-  const omitted = totalItems - includedItems;
-  const includeRate = totalItems > 0 ? includedItems / totalItems : 1;
-
-  return {
-    total: totalItems,
-    included: includedItems,
-    omitted,
-    mode,
-    includeRate,
-  };
-}
-
-export function validateVisibilityMode(mode: string): ContextVisibilityMode {
-  const validModes: ContextVisibilityMode[] = ['all', 'allowlist', 'allowlist_quote', 'none'];
-  if (validModes.includes(mode as ContextVisibilityMode)) {
-    return mode as ContextVisibilityMode;
-  }
-  logger.warn(`[Security:ContextVisibility] Invalid visibility mode: ${mode}, defaulting to 'allowlist'`);
-  return 'allowlist';
 }

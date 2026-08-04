@@ -1,9 +1,8 @@
-// @ts-nocheck
 /**
  * Structured logging for auth profile failure state changes.
  * Log payloads keep machine-readable fields while redacting console-facing ids.
  */
-import { redactIdentifier } from "../../logging/redact-identifier.js";
+import { redactIdentifier } from "@openclaw-src/logging/redact-identifier.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { sanitizeForConsole } from "../console-sanitize.js";
 import type { AuthProfileFailureReason, ProfileUsageStats } from "./types.js";
@@ -63,3 +62,5 @@ export function logAuthProfileFailureStateChange(params: {
       `reason=${params.reason} window=${windowType} reused=${String(windowReused)}`,
   });
 }
+
+export { redactIdentifier } from "@openclaw-src/logging/redact-identifier.js";

@@ -1,376 +1,457 @@
-import fs from 'fs';
-import path from 'path';
-import { logger } from '../../../logger.js';
-import { listSessionFiles, listArchivedSessionFiles, getSessionFileInfo } from './session-file.js';
-import { rebuildRegistry, loadRegistry, saveRegistry } from './session-registry-maintenance.js';
-import type { SessionRegistry, RegistryEntry } from './session-registry-maintenance.js';
-import type { SessionStatus } from './types.js';
+// Session store maintenance prunes stale entries, caps count, and handles quota TTL state.
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeStringifiedOptionalString,
+} from "@cdf-know/normalization-core/string-coerce";
+import { parseByteSize } from "../../cli/parse-bytes.js";
+import { parseDurationMs } from "../../cli/parse-duration.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+import {
+  isAcpSessionKey,
+  isCronSessionKey,
+  isSubagentSessionKey,
+  parseAgentSessionKey,
+} from "../../sessions/session-key-utils.js";
+import type { SessionMaintenanceConfig, SessionMaintenanceMode } from "../types.base.js";
+import { parseSessionThreadInfoFast } from "./thread-info.js";
+import type { SessionEntry } from "./types.js";
 
-export interface MaintenanceStats {
-  sessionsChecked: number;
-  sessionsRepaired: number;
-  sessionsRemoved: number;
-  spaceReclaimedBytes: number;
-  errors: string[];
-}
+const log = createSubsystemLogger("sessions/store");
 
-export interface MaintenanceConfig {
-  verifyIntegrity: boolean;
-  cleanupOrphans: boolean;
-  compactFiles: boolean;
-  rebuildIndex: boolean;
-  maxRepairs: number;
-}
+const DEFAULT_SESSION_PRUNE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_SESSION_MAX_ENTRIES = 500;
+const DEFAULT_SESSION_MAINTENANCE_MODE: SessionMaintenanceMode = "enforce";
+const DEFAULT_SESSION_DISK_BUDGET_HIGH_WATER_RATIO = 0.8;
+const STRICT_ENTRY_MAINTENANCE_MAX_ENTRIES = 49;
+const MIN_BATCHED_ENTRY_MAINTENANCE_SLACK = 25;
+const BATCHED_ENTRY_MAINTENANCE_SLACK_RATIO = 0.1;
 
-export const defaultMaintenanceConfig: MaintenanceConfig = {
-  verifyIntegrity: true,
-  cleanupOrphans: true,
-  compactFiles: true,
-  rebuildIndex: true,
-  maxRepairs: 100,
+export type SessionMaintenanceWarning = {
+  activeSessionKey: string;
+  activeUpdatedAt?: number;
+  totalEntries: number;
+  pruneAfterMs: number;
+  maxEntries: number;
+  wouldPrune: boolean;
+  wouldCap: boolean;
 };
 
-export class SessionStoreMaintenance {
-  private baseDir: string;
-  private archivedDir: string;
-  private registryFile: string;
+export type ResolvedSessionMaintenanceConfig = {
+  mode: SessionMaintenanceMode;
+  pruneAfterMs: number;
+  maxEntries: number;
+  resetArchiveRetentionMs: number | null;
+  maxDiskBytes: number | null;
+  highWaterBytes: number | null;
+};
 
-  constructor(baseDir: string, archivedDir: string, registryFile: string) {
-    this.baseDir = baseDir;
-    this.archivedDir = archivedDir;
-    this.registryFile = registryFile;
+function resolvePruneAfterMs(maintenance?: SessionMaintenanceConfig): number {
+  const raw = maintenance?.pruneAfter ?? maintenance?.pruneDays;
+  const normalized = normalizeStringifiedOptionalString(raw);
+  if (!normalized) {
+    return DEFAULT_SESSION_PRUNE_AFTER_MS;
   }
+  try {
+    return parseDurationMs(normalized, { defaultUnit: "d" });
+  } catch {
+    return DEFAULT_SESSION_PRUNE_AFTER_MS;
+  }
+}
 
-  runMaintenance(config: Partial<MaintenanceConfig> = {}): MaintenanceStats {
-    const cfg = { ...defaultMaintenanceConfig, ...config };
-    const stats: MaintenanceStats = {
-      sessionsChecked: 0,
-      sessionsRepaired: 0,
-      sessionsRemoved: 0,
-      spaceReclaimedBytes: 0,
-      errors: [],
+function resolveResetArchiveRetentionMs(
+  maintenance: SessionMaintenanceConfig | undefined,
+  pruneAfterMs: number,
+): number | null {
+  const raw = maintenance?.resetArchiveRetention;
+  if (raw === false) {
+    return null;
+  }
+  const normalized = normalizeStringifiedOptionalString(raw);
+  if (!normalized) {
+    return pruneAfterMs;
+  }
+  try {
+    return parseDurationMs(normalized, { defaultUnit: "d" });
+  } catch {
+    return pruneAfterMs;
+  }
+}
+
+function resolveMaxDiskBytes(maintenance?: SessionMaintenanceConfig): number | null {
+  const raw = maintenance?.maxDiskBytes;
+  const normalized = normalizeStringifiedOptionalString(raw);
+  if (!normalized) {
+    return null;
+  }
+  try {
+    return parseByteSize(normalized, { defaultUnit: "b" });
+  } catch {
+    return null;
+  }
+}
+
+function resolveHighWaterBytes(
+  maintenance: SessionMaintenanceConfig | undefined,
+  maxDiskBytes: number | null,
+): number | null {
+  const computeDefault = () => {
+    if (maxDiskBytes == null) {
+      return null;
+    }
+    if (maxDiskBytes <= 0) {
+      return 0;
+    }
+    return Math.max(
+      1,
+      Math.min(
+        maxDiskBytes,
+        Math.floor(maxDiskBytes * DEFAULT_SESSION_DISK_BUDGET_HIGH_WATER_RATIO),
+      ),
+    );
+  };
+  if (maxDiskBytes == null) {
+    return null;
+  }
+  const raw = maintenance?.highWaterBytes;
+  const normalized = normalizeStringifiedOptionalString(raw);
+  if (!normalized) {
+    return computeDefault();
+  }
+  try {
+    const parsed = parseByteSize(normalized, { defaultUnit: "b" });
+    return Math.min(parsed, maxDiskBytes);
+  } catch {
+    return computeDefault();
+  }
+}
+
+/**
+ * Resolve maintenance settings from openclaw.json (`session.maintenance`).
+ * Falls back to built-in defaults when config is missing or unset.
+ */
+export function resolveMaintenanceConfigFromInput(
+  maintenance?: SessionMaintenanceConfig,
+): ResolvedSessionMaintenanceConfig {
+  const pruneAfterMs = resolvePruneAfterMs(maintenance);
+  const maxDiskBytes = resolveMaxDiskBytes(maintenance);
+  return {
+    mode: maintenance?.mode ?? DEFAULT_SESSION_MAINTENANCE_MODE,
+    pruneAfterMs,
+    maxEntries: maintenance?.maxEntries ?? DEFAULT_SESSION_MAX_ENTRIES,
+    resetArchiveRetentionMs: resolveResetArchiveRetentionMs(maintenance, pruneAfterMs),
+    maxDiskBytes,
+    highWaterBytes: resolveHighWaterBytes(maintenance, maxDiskBytes),
+  };
+}
+
+export function resolveSessionEntryMaintenanceHighWater(maxEntries: number): number {
+  if (!Number.isSafeInteger(maxEntries) || maxEntries <= 0) {
+    return 1;
+  }
+  if (maxEntries <= STRICT_ENTRY_MAINTENANCE_MAX_ENTRIES) {
+    // Small caps run strictly so operator-configured tiny stores do not drift far past the limit.
+    return maxEntries + 1;
+  }
+  const slack = Math.max(
+    MIN_BATCHED_ENTRY_MAINTENANCE_SLACK,
+    Math.ceil(maxEntries * BATCHED_ENTRY_MAINTENANCE_SLACK_RATIO),
+  );
+  return maxEntries + slack;
+}
+
+export function shouldRunSessionEntryMaintenance(params: {
+  entryCount: number;
+  maxEntries: number;
+  force?: boolean;
+}): boolean {
+  if (params.force) {
+    return true;
+  }
+  return params.entryCount >= resolveSessionEntryMaintenanceHighWater(params.maxEntries);
+}
+
+/**
+ * Remove entries whose `updatedAt` is older than the configured threshold.
+ * Entries without `updatedAt` are kept (cannot determine staleness).
+ * Mutates `store` in-place.
+ */
+export function pruneStaleEntries(
+  store: Record<string, SessionEntry>,
+  overrideMaxAgeMs?: number,
+  opts: {
+    log?: boolean;
+    onPruned?: (params: { key: string; entry: SessionEntry }) => void;
+    preserveKeys?: ReadonlySet<string>;
+  } = {},
+): number {
+  const maxAgeMs = overrideMaxAgeMs ?? resolveMaintenanceConfigFromInput().pruneAfterMs;
+  const cutoffMs = Date.now() - maxAgeMs;
+  let pruned = 0;
+  for (const [key, entry] of Object.entries(store)) {
+    if (shouldPreserveMaintenanceEntry({ key, entry, preserveKeys: opts.preserveKeys })) {
+      continue;
+    }
+    if (entry?.updatedAt != null && entry.updatedAt < cutoffMs) {
+      opts.onPruned?.({ key, entry });
+      delete store[key];
+      pruned++;
+    }
+  }
+  if (pruned > 0 && opts.log !== false) {
+    log.info("pruned stale session entries", { pruned, maxAgeMs });
+  }
+  return pruned;
+}
+
+export const DEFAULT_QUOTA_SUSPENSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const QUOTA_SUSPENSION_CLEANUP_FACTOR = 2; // entries beyond N*ttl are deleted outright
+
+export type QuotaSuspensionEntryMaintenanceResult = {
+  /** Patch to apply to the entry, or null when no TTL transition is due. */
+  patch: Partial<SessionEntry> | null;
+  /** Present when the entry transitioned from suspended to resuming. */
+  resumed?: { laneId?: string };
+  /** True when the quota-suspension marker should be removed. */
+  cleared: boolean;
+};
+
+/**
+ * Resolves the TTL maintenance patch for one session entry without reading or
+ * mutating the whole store. Attempt hot paths use this before entry-scoped
+ * accessor writes so unrelated sessions stay out of the request path.
+ */
+export function resolveQuotaSuspensionEntryMaintenance(params: {
+  entry: SessionEntry;
+  now: number;
+  ttlMs?: number;
+}): QuotaSuspensionEntryMaintenanceResult {
+  const suspension = params.entry.quotaSuspension;
+  if (!suspension) {
+    return { patch: null, cleared: false };
+  }
+  const ttlMs = params.ttlMs ?? DEFAULT_QUOTA_SUSPENSION_TTL_MS;
+  const cleanupAfterResumeMs = ttlMs * (QUOTA_SUSPENSION_CLEANUP_FACTOR - 1);
+  const resumeAtMs = suspension.expectedResumeBy ?? suspension.suspendedAt + ttlMs;
+  const cleanupAtMs = resumeAtMs + cleanupAfterResumeMs;
+  if (params.now >= cleanupAtMs) {
+    return { patch: { quotaSuspension: undefined }, cleared: true };
+  }
+  if (suspension.state === "suspended" && params.now >= resumeAtMs) {
+    return {
+      patch: { quotaSuspension: { ...suspension, state: "resuming" } },
+      resumed: { laneId: suspension.laneId },
+      cleared: false,
     };
+  }
+  return { patch: null, cleared: false };
+}
 
-    logger.info('[StoreMaintenance] 开始执行维护任务...');
+function getEntryUpdatedAt(entry?: SessionEntry): number {
+  return entry?.updatedAt ?? Number.NEGATIVE_INFINITY;
+}
 
-    try {
-      if (cfg.verifyIntegrity) {
-        this.verifyIntegrity(stats);
-      }
+function isSyntheticSessionMaintenanceKey(sessionKey: string): boolean {
+  const parsed = parseAgentSessionKey(sessionKey);
+  const rest = normalizeLowercaseStringOrEmpty(parsed?.rest ?? sessionKey);
+  // ACP bridge sessions use normal model dispatch, but remain synthetic and disposable.
+  return (
+    isSubagentSessionKey(sessionKey) ||
+    isAcpSessionKey(sessionKey) ||
+    isCronSessionKey(sessionKey) ||
+    rest.startsWith("acp-bridge:") ||
+    rest.startsWith("hook:") ||
+    rest.startsWith("node:") ||
+    rest === "heartbeat" ||
+    rest.endsWith(":heartbeat") ||
+    rest.includes(":heartbeat:")
+  );
+}
 
-      if (cfg.cleanupOrphans) {
-        this.cleanupOrphanedFiles(stats);
-      }
+function isTelegramTopicSessionKey(sessionKey: string): boolean {
+  const parsed = parseAgentSessionKey(sessionKey);
+  const rest = normalizeLowercaseStringOrEmpty(parsed?.rest ?? sessionKey);
+  return /^telegram:(?:group|channel|direct|dm):.+:topic:[^:]+$/.test(rest);
+}
 
-      if (cfg.compactFiles) {
-        this.compactSessionFiles(stats);
-      }
+function isExternalGroupOrChannelSessionKey(sessionKey: string): boolean {
+  const parsed = parseAgentSessionKey(sessionKey);
+  const rest = normalizeLowercaseStringOrEmpty(parsed?.rest ?? sessionKey);
+  return /^[^:]+:(?:group|channel):.+$/.test(rest);
+}
 
-      if (cfg.rebuildIndex) {
-        this.rebuildRegistry(stats);
-      }
+export function isProtectedSessionMaintenanceEntry(
+  sessionKey: string,
+  entry: SessionEntry | undefined,
+): boolean {
+  // Human conversation surfaces are protected; synthetic automation sessions are disposable.
+  if (isSyntheticSessionMaintenanceKey(sessionKey)) {
+    return false;
+  }
+  if (parseSessionThreadInfoFast(sessionKey).threadId) {
+    return true;
+  }
+  if (isTelegramTopicSessionKey(sessionKey)) {
+    return true;
+  }
+  if (isExternalGroupOrChannelSessionKey(sessionKey)) {
+    return true;
+  }
+  const chatType = normalizeLowercaseStringOrEmpty(entry?.chatType ?? entry?.origin?.chatType);
+  return chatType === "group" || chatType === "channel" || chatType === "thread";
+}
 
-      this.cleanupTempFiles(stats);
-    } catch (err) {
-      stats.errors.push(`维护失败: ${String(err)}`);
-      logger.error('[StoreMaintenance] 维护任务异常:', err);
-    }
+export function shouldPreserveMaintenanceEntry(params: {
+  key: string;
+  entry: SessionEntry | undefined;
+  preserveKeys?: ReadonlySet<string>;
+}): boolean {
+  return (
+    params.preserveKeys?.has(params.key) === true ||
+    isProtectedSessionMaintenanceEntry(params.key, params.entry)
+  );
+}
 
-    logger.info(`[StoreMaintenance] 维护完成: 检查 ${stats.sessionsChecked} 个, 修复 ${stats.sessionsRepaired} 个, 清理 ${stats.sessionsRemoved} 个`);
-    return stats;
+export function getActiveSessionMaintenanceWarning(params: {
+  store: Record<string, SessionEntry>;
+  activeSessionKey: string;
+  pruneAfterMs: number;
+  maxEntries: number;
+  nowMs?: number;
+}): SessionMaintenanceWarning | null {
+  const activeSessionKey = params.activeSessionKey.trim();
+  if (!activeSessionKey) {
+    return null;
+  }
+  const activeEntry = params.store[activeSessionKey];
+  if (!activeEntry) {
+    return null;
+  }
+  if (isProtectedSessionMaintenanceEntry(activeSessionKey, activeEntry)) {
+    return null;
+  }
+  const now = params.nowMs ?? Date.now();
+  const cutoffMs = now - params.pruneAfterMs;
+  const wouldPrune = activeEntry.updatedAt != null ? activeEntry.updatedAt < cutoffMs : false;
+  const keys = Object.keys(params.store);
+  const wouldCap = wouldCapActiveSession({
+    store: params.store,
+    keys,
+    activeEntry,
+    activeSessionKey,
+    maxEntries: params.maxEntries,
+  });
+
+  if (!wouldPrune && !wouldCap) {
+    return null;
   }
 
-  private verifyIntegrity(stats: MaintenanceStats): void {
-    logger.debug('[StoreMaintenance] 验证会话文件完整性...');
+  return {
+    activeSessionKey,
+    activeUpdatedAt: activeEntry.updatedAt,
+    totalEntries: keys.length,
+    pruneAfterMs: params.pruneAfterMs,
+    maxEntries: params.maxEntries,
+    wouldPrune,
+    wouldCap,
+  };
+}
 
-    const activeIds = listSessionFiles(this.baseDir);
-    const archivedIds = listArchivedSessionFiles(this.archivedDir);
-    const allIds = [...activeIds, ...archivedIds];
-
-    for (const sessionId of allIds) {
-      stats.sessionsChecked++;
-      const isArchived = !activeIds.includes(sessionId);
-      const dir = isArchived ? this.archivedDir : this.baseDir;
-
-      try {
-        const repaired = this.repairSessionFile(dir, sessionId, isArchived);
-        if (repaired) {
-          stats.sessionsRepaired++;
-        }
-      } catch (err) {
-        stats.errors.push(`${sessionId}: ${String(err)}`);
-      }
-    }
+function wouldCapActiveSession(params: {
+  store: Record<string, SessionEntry>;
+  keys: string[];
+  activeEntry: SessionEntry;
+  activeSessionKey: string;
+  maxEntries: number;
+}): boolean {
+  if (params.keys.length <= params.maxEntries) {
+    return false;
+  }
+  if (params.maxEntries <= 0) {
+    return true;
   }
 
-  private repairSessionFile(
-    dir: string,
-    sessionId: string,
-    _isArchived: boolean
-  ): boolean {
-    const filePath = path.join(dir, `${sessionId}.jsonl`);
+  const protectedCount = params.keys.filter(
+    (key) =>
+      key !== params.activeSessionKey && isProtectedSessionMaintenanceEntry(key, params.store[key]),
+  ).length;
+  const maxRemovableEntries = Math.max(0, params.maxEntries - protectedCount);
+  // If protected entries fill the cap, the active unprotected session would be the one removed.
+  if (maxRemovableEntries <= 0) {
+    return true;
+  }
 
-    try {
-      if (!fs.existsSync(filePath)) return false;
-
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const lines = content.split('\n').filter(l => l.trim().length > 0);
-
-      if (lines.length === 0) {
-        logger.warn('[StoreMaintenance] 空文件，删除:', sessionId);
-        fs.unlinkSync(filePath);
+  const activeUpdatedAt = getEntryUpdatedAt(params.activeEntry);
+  let newerOrTieBeforeActive = 0;
+  let seenActive = false;
+  for (const key of params.keys) {
+    if (key === params.activeSessionKey) {
+      seenActive = true;
+      continue;
+    }
+    if (isProtectedSessionMaintenanceEntry(key, params.store[key])) {
+      continue;
+    }
+    const entryUpdatedAt = getEntryUpdatedAt(params.store[key]);
+    if (entryUpdatedAt > activeUpdatedAt || (!seenActive && entryUpdatedAt === activeUpdatedAt)) {
+      newerOrTieBeforeActive++;
+      if (newerOrTieBeforeActive >= maxRemovableEntries) {
         return true;
       }
-
-      let hasValidFirstLine = false;
-      try {
-        const firstLine = JSON.parse(lines[0]);
-        hasValidFirstLine = !!(firstLine.session || firstLine.metadata);
-      } catch {
-        hasValidFirstLine = false;
-      }
-
-      if (!hasValidFirstLine) {
-        logger.warn('[StoreMaintenance] 首行无效，尝试重建首行:', sessionId);
-        const now = new Date().toISOString();
-        const reconstructedFirstLine = JSON.stringify({
-          session: {
-            id: sessionId,
-            title: '恢复的会话',
-            status: 'active',
-            createdAt: now,
-            updatedAt: now,
-            lastActiveAt: now,
-            sessionDate: now.split('T')[0],
-            messageCount: Math.max(0, lines.length - 1),
-            schemaVersion: '1.0.0',
-          },
-          messages: [],
-        });
-
-        const newContent = [reconstructedFirstLine, ...lines.slice(1)].join('\n');
-        fs.writeFileSync(filePath, newContent, 'utf-8');
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      logger.error('[StoreMaintenance] 修复会话文件失败:', sessionId, err);
-      return false;
     }
   }
 
-  private cleanupOrphanedFiles(stats: MaintenanceStats): void {
-    logger.debug('[StoreMaintenance] 清理孤立文件...');
+  return false;
+}
 
-    const tempDir = path.join(this.baseDir, '.tmp');
-    if (fs.existsSync(tempDir)) {
-      const files = fs.readdirSync(tempDir);
-      const cutoffTime = Date.now() - 24 * 60 * 60 * 1000;
+/**
+ * Cap the store to the N most recently updated entries.
+ * Entries without `updatedAt` are sorted last (removed first when over limit).
+ * Mutates `store` in-place.
+ */
+export function capEntryCount(
+  store: Record<string, SessionEntry>,
+  overrideMax?: number,
+  opts: {
+    log?: boolean;
+    onCapped?: (params: { key: string; entry: SessionEntry }) => void;
+    preserveKeys?: ReadonlySet<string>;
+  } = {},
+): number {
+  const maxEntries = overrideMax ?? resolveMaintenanceConfigFromInput().maxEntries;
+  const preservedCount = Object.entries(store).filter(([key, entry]) =>
+    shouldPreserveMaintenanceEntry({ key, entry, preserveKeys: opts.preserveKeys }),
+  ).length;
+  const maxRemovableEntries = Math.max(0, maxEntries - preservedCount);
+  // Protected entries reduce the removable budget instead of being counted as deletion targets.
+  const keys = Object.keys(store).filter(
+    (key) =>
+      !shouldPreserveMaintenanceEntry({
+        key,
+        entry: store[key],
+        preserveKeys: opts.preserveKeys,
+      }),
+  );
+  if (keys.length <= maxRemovableEntries) {
+    return 0;
+  }
 
-      for (const file of files) {
-        const filePath = path.join(tempDir, file);
-        try {
-          const stat = fs.statSync(filePath);
-          if (stat.mtimeMs < cutoffTime) {
-            const size = stat.size;
-            fs.unlinkSync(filePath);
-            stats.spaceReclaimedBytes += size;
-            stats.sessionsRemoved++;
-          }
-        } catch {
-          // ignore
-        }
-      }
+  // Sort by updatedAt descending; entries without updatedAt go to the end (removed first).
+  const sorted = keys.toSorted((a, b) => {
+    const aTime = getEntryUpdatedAt(store[a]);
+    const bTime = getEntryUpdatedAt(store[b]);
+    return bTime - aTime;
+  });
+
+  const toRemove = sorted.slice(maxRemovableEntries);
+  for (const key of toRemove) {
+    const entry = store[key];
+    if (entry) {
+      opts.onCapped?.({ key, entry });
     }
-
-    const metadataDir = path.join(this.baseDir, 'metadata');
-    if (fs.existsSync(metadataDir)) {
-      const metaFiles = fs.readdirSync(metadataDir)
-        .filter(f => f.endsWith('.json'))
-        .map(f => f.replace('.json', ''));
-
-      const activeIds = new Set(listSessionFiles(this.baseDir));
-
-      for (const metaId of metaFiles) {
-        if (!activeIds.has(metaId)) {
-          const metaPath = path.join(metadataDir, `${metaId}.json`);
-          try {
-            const size = fs.statSync(metaPath).size;
-            fs.unlinkSync(metaPath);
-            stats.spaceReclaimedBytes += size;
-          } catch {
-            // ignore
-          }
-        }
-      }
-    }
+    delete store[key];
   }
-
-  private compactSessionFiles(stats: MaintenanceStats): void {
-    logger.debug('[StoreMaintenance] 压缩会话文件...');
-
-    const activeIds = listSessionFiles(this.baseDir);
-
-    for (const sessionId of activeIds.slice(0, 50)) {
-      const filePath = path.join(this.baseDir, `${sessionId}.jsonl`);
-      try {
-        const originalSize = fs.statSync(filePath).size;
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const lines = content.split('\n').filter(l => l.trim().length > 0);
-
-        if (lines.length * 2 < content.length / 100) {
-          const compacted = lines.join('\n') + '\n';
-          fs.writeFileSync(filePath, compacted, 'utf-8');
-          const newSize = fs.statSync(filePath).size;
-          stats.spaceReclaimedBytes += Math.max(0, originalSize - newSize);
-        }
-      } catch {
-        // ignore
-      }
-    }
+  if (opts.log !== false) {
+    log.info("capped session entry count", { removed: toRemove.length, maxEntries });
   }
-
-  private rebuildRegistry(stats: MaintenanceStats): void {
-    logger.debug('[StoreMaintenance] 重建会话注册表...');
-    rebuildRegistry(this.baseDir, this.archivedDir, this.registryFile);
-  }
-
-  private cleanupTempFiles(stats: MaintenanceStats): void {
-    logger.debug('[StoreMaintenance] 清理临时文件...');
-
-    const tempDir = path.join(this.baseDir, '.tmp');
-    if (!fs.existsSync(tempDir)) return;
-
-    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000;
-
-    try {
-      const files = fs.readdirSync(tempDir);
-      for (const file of files) {
-        const filePath = path.join(tempDir, file);
-        try {
-          const stat = fs.statSync(filePath);
-          if (stat.mtimeMs < cutoffTime) {
-            stats.spaceReclaimedBytes += stat.size;
-            fs.unlinkSync(filePath);
-          }
-        } catch {
-          // ignore
-        }
-      }
-    } catch (err) {
-      logger.warn('[StoreMaintenance] 清理临时文件失败:', err);
-    }
-  }
-
-  quickCheck(): { healthy: boolean; issues: string[] } {
-    const issues: string[] = [];
-
-    try {
-      if (!fs.existsSync(this.baseDir)) {
-        issues.push('会话目录不存在');
-      }
-
-      const registry = loadRegistry(this.registryFile);
-      const activeIds = listSessionFiles(this.baseDir);
-
-      if (registry.entries.length > 0 && activeIds.length > 0) {
-        const registryIds = new Set(registry.entries.map(e => e.sessionId));
-        const fileIds = new Set(activeIds);
-
-        const missingInRegistry = activeIds.filter(id => !registryIds.has(id));
-        const missingOnDisk = registry.entries
-          .filter(e => e.status === 'active' && !fileIds.has(e.sessionId))
-          .map(e => e.sessionId);
-
-        if (missingInRegistry.length > 0) {
-          issues.push(`${missingInRegistry.length} 个会话在注册表中缺失`);
-        }
-        if (missingOnDisk.length > 0) {
-          issues.push(`${missingOnDisk.length} 个注册表条目文件不存在`);
-        }
-      }
-    } catch (err) {
-      issues.push(`检查失败: ${String(err)}`);
-    }
-
-    return {
-      healthy: issues.length === 0,
-      issues,
-    };
-  }
-
-  getDiskUsage(): { totalBytes: number; activeBytes: number; archivedBytes: number; tempBytes: number } {
-    let activeBytes = 0;
-    let archivedBytes = 0;
-    let tempBytes = 0;
-
-    try {
-      const activeIds = listSessionFiles(this.baseDir);
-      for (const id of activeIds) {
-        const info = getSessionFileInfo(this.baseDir, id, false);
-        if (info) activeBytes += info.size;
-      }
-
-      const archivedIds = listArchivedSessionFiles(this.archivedDir);
-      for (const id of archivedIds) {
-        const info = getSessionFileInfo(this.archivedDir, id, true);
-        if (info) archivedBytes += info.size;
-      }
-
-      const tempDir = path.join(this.baseDir, '.tmp');
-      if (fs.existsSync(tempDir)) {
-        const files = fs.readdirSync(tempDir);
-        for (const file of files) {
-          try {
-            tempBytes += fs.statSync(path.join(tempDir, file)).size;
-          } catch {
-            // ignore
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    return {
-      totalBytes: activeBytes + archivedBytes + tempBytes,
-      activeBytes,
-      archivedBytes,
-      tempBytes,
-    };
-  }
-
-  updateRegistryEntry(
-    sessionId: string,
-    updates: Partial<RegistryEntry>
-  ): void {
-    const registry = loadRegistry(this.registryFile);
-    const index = registry.entries.findIndex(e => e.sessionId === sessionId);
-
-    if (index >= 0) {
-      registry.entries[index] = { ...registry.entries[index], ...updates };
-    } else if (updates.status) {
-      registry.entries.push({
-        sessionId,
-        status: updates.status,
-        title: updates.title || '未命名会话',
-        createdAt: updates.createdAt || new Date().toISOString(),
-        updatedAt: updates.updatedAt || new Date().toISOString(),
-        lastActiveAt: updates.lastActiveAt || new Date().toISOString(),
-        sessionDate: updates.sessionDate || new Date().toISOString().split('T')[0],
-        size: updates.size || 0,
-        messageCount: updates.messageCount || 0,
-        tags: updates.tags || [],
-      });
-    }
-
-    saveRegistry(this.registryFile, registry);
-  }
-
-  removeRegistryEntry(sessionId: string): void {
-    const registry = loadRegistry(this.registryFile);
-    registry.entries = registry.entries.filter(e => e.sessionId !== sessionId);
-    saveRegistry(this.registryFile, registry);
-  }
+  return toRemove.length;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Session-level auth profile override rotation.
  * Keeps automatic profile choice stable within a session while still rotating

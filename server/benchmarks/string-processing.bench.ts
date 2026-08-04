@@ -3,7 +3,7 @@
  *
  * 测试字符串拼接、正则匹配、URL 解析等操作的性能。
  */
-import { BenchmarkRunner } from '@cdf-know/benchmark';
+import { BenchmarkRunner, type BenchmarkResult } from '@cdf-know/benchmark';
 
 const runner = new BenchmarkRunner({ defaultIterations: 10, defaultWarmup: 5 });
 
@@ -54,7 +54,7 @@ async function regexMatching() {
   const urlRegex = /^https?:\/\/[\w.-]+\/[\w./-]+$/;
   const phoneRegex = /^\+\d{2}-\d{3}-\d{8}$/;
 
-  const results = [];
+  const results: BenchmarkResult[] = [];
 
   const emailResult = await runner.run(
     '正则匹配 - 邮箱 1000 次',

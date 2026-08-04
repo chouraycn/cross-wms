@@ -1,9 +1,9 @@
 // @ts-nocheck
 /** Doctor diagnostics for pending, paired, and locally cached device auth state. */
 import path from "node:path";
-import { normalizeUniqueSingleOrTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
-import { sanitizeTerminalText } from "@openclaw-src/packages/terminal-core/src/safe-text.js";
+import { normalizeUniqueSingleOrTrimmedStringList } from "@cdf-know/normalization-core/string-normalization";
+import { note } from "@openclaw/terminal-core/note";
+import { sanitizeTerminalText } from "@openclaw/terminal-core/safe-text";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { quoteCliArg } from "@openclaw-src/cli/quote-cli-arg.js";
 import { resolveStateDir } from "@openclaw-src/config/paths.js";

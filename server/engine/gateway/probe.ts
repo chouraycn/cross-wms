@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Gateway reachability probe client.
 // Connects to a gateway and summarizes auth, health, status, and presence.
 import { randomUUID } from "node:crypto";
@@ -491,7 +490,7 @@ export async function probeGateway(opts: {
       });
     });
 
-    void startGatewayClientWhenEventLoopReady(client, {
+    void (startGatewayClientWhenEventLoopReady as any)(client, {
       timeoutMs: initialProbeTimeoutMs,
       signal: startAbort.signal,
     })

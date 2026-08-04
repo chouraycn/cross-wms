@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared registration assertions for optional media-generation OpenClaw tools.
 import { describe, expect, it } from "vitest";
 import { collectPresentOpenClawTools } from "./openclaw-tools.registration.js";

@@ -1,6 +1,5 @@
-// @ts-nocheck
 /** Shared parser for slash commands with action and argument tails. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 
 /** Internal parse state for slash command action extraction. */
 export type SlashCommandParseResult =

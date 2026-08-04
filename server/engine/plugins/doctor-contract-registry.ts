@@ -9,7 +9,7 @@ import type { OpenClawConfig } from './_stub_parent__config__types.js';
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "./_stub__plugin-state-store.js";
+} from "../plugin-state/plugin-state-store.types.js";
 import type { DoctorSessionRouteStateOwner } from "./doctor-session-route-state-owner-types.js";
 import type { PluginManifestRegistry } from "./manifest-registry.js";
 import {
@@ -19,6 +19,10 @@ import {
   type PluginModuleLoaderCache,
 } from "./plugin-module-loader-cache.js";
 import { loadPluginManifestRegistryForPluginRegistry } from "./plugin-registry.js";
+
+// ESM 模块下 __filename/__dirname 不可用，通过 import.meta.url 解析
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const CONTRACT_API_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] as const;
 const CURRENT_MODULE_PATH = __filename;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Shared setup wizard/types/helpers for plugin and channel setup surfaces.
 
 export type { OpenClawConfig } from "../config/config.js";

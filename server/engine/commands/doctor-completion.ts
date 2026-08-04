@@ -2,7 +2,7 @@
 /** Doctor checks and repair effects for cached shell completion setup. */
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { resolveCliName } from "@openclaw-src/cli/cli-name.js";
 import {
   completionCacheExists,

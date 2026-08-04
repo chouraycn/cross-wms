@@ -1,11 +1,10 @@
-// @ts-nocheck
 
 /**
  * Provider-specific auth doctor hints.
  * Adds local migration guidance for known legacy profiles before falling back
  * to provider plugin doctor copy.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { buildProviderAuthDoctorHintWithPlugin } from "../../plugins/provider-runtime.runtime.js";
 import type { AuthProfileStore } from "./types.js";

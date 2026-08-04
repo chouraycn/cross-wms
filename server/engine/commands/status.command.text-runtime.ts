@@ -4,7 +4,7 @@
 
 export { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 export { info } from "@openclaw-src/globals.js";
-export { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative.ts";
+export { formatTimeAgo } from "@openclaw-src/infra/format-time/format-relative";
 export { formatGitInstallLabel } from "@openclaw-src/infra/update-check.js";
 export {
   resolveMemoryCacheSummary,
@@ -15,8 +15,8 @@ export {
   formatPluginCompatibilityNotice,
   summarizePluginCompatibility,
 } from "@openclaw-src/plugins/status.js";
-export { getTerminalTableWidth, renderTable } from "@openclaw-src/packages/terminal-core/src/table.js";
-export { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+export { getTerminalTableWidth, renderTable } from "@openclaw/terminal-core/table";
+export { theme } from "@openclaw/terminal-core/theme";
 export { formatHealthChannelLines } from "./health-format.js";
 export { groupChannelIssuesByChannel } from "./status-all/channel-issues.js";
 export {

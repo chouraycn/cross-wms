@@ -1,9 +1,9 @@
 // @ts-nocheck
 /** Doctor analysis helpers for config schema cleanup and ambiguous model fallback shapes. */
 import path from "node:path";
-import { resolvePrimaryStringValue } from "@openclaw/normalization-core/string-coerce";
+import { resolvePrimaryStringValue } from "@cdf-know/normalization-core/string-coerce";
 import type { ZodIssue } from "zod";
-import { note } from "@openclaw-src/packages/terminal-core/src/note.js";
+import { note } from "@openclaw/terminal-core/note";
 import { CONFIG_PATH } from "@openclaw-src/config/config.js";
 import { resolveAgentModelFallbackValues } from "@openclaw-src/config/model-input.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Plugin HTTP path context canonicalizes request paths for route matching and protected-route auth checks.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import {
   PROTECTED_PLUGIN_ROUTE_PREFIXES,
   canonicalizePathForSecurity,

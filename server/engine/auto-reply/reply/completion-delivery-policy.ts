@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Resolves whether completed replies should send visibly or stay tool-only.
 import { normalizeChatType, type ChatType } from '@openclaw-src/channels/chat-type.js';
 import type { OpenClawConfig } from '@openclaw-src/config/types.openclaw.js';

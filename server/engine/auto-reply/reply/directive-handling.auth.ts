@@ -1,6 +1,5 @@
-// @ts-nocheck
 // Handles auth directives that choose provider auth profiles for a reply.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { formatRemainingShort } from '@openclaw-src/agents/auth-health.js';
 import {
   isConfiguredAwsSdkAuthProfileForProvider,

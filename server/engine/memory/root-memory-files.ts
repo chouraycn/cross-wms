@@ -1,65 +1,72 @@
-import { logger } from '../../logger.js';
-import { AppPaths } from '../../config/appPaths.js';
+// Locates root memory files that seed agent context.
+import fs from "node:fs/promises";
+import path from "node:path";
 
-const MEMORY_FILE_NAME = 'MEMORY.md';
-const SOUL_FILE_NAME = 'SOUL.md';
+/** Canonical root memory file name used by current workspaces. */
+export const CANONICAL_ROOT_MEMORY_FILENAME = "MEMORY.md";
+/** Legacy root memory file name kept out of auxiliary scans. */
+export const LEGACY_ROOT_MEMORY_FILENAME = "memory.md";
+const ROOT_MEMORY_REPAIR_RELATIVE_DIR = ".openclaw-repair/root-memory";
 
-export function resolveRootMemoryPath(agentId?: string): string {
-  if (agentId) {
-    return `${AppPaths.rootDir}/agents/${agentId}/${MEMORY_FILE_NAME}`;
-  }
-  return `${AppPaths.rootDir}/${MEMORY_FILE_NAME}`;
+/** Resolves the canonical root memory file path for a workspace. */
+export function resolveCanonicalRootMemoryPath(workspaceDir: string): string {
+  return path.join(workspaceDir, CANONICAL_ROOT_MEMORY_FILENAME);
 }
 
-export function resolveRootSoulPath(agentId?: string): string {
-  if (agentId) {
-    return `${AppPaths.rootDir}/agents/${agentId}/${SOUL_FILE_NAME}`;
-  }
-  return `${AppPaths.rootDir}/${SOUL_FILE_NAME}`;
+/** Resolves the legacy root memory file path for a workspace. */
+export function resolveLegacyRootMemoryPath(workspaceDir: string): string {
+  return path.join(workspaceDir, LEGACY_ROOT_MEMORY_FILENAME);
 }
 
-export async function readRootMemory(agentId?: string): Promise<string | null> {
-  const path = resolveRootMemoryPath(agentId);
+/** Resolves the repair directory used while migrating root memory files. */
+export function resolveRootMemoryRepairDir(workspaceDir: string): string {
+  return path.join(workspaceDir, ".openclaw-repair", "root-memory");
+}
+
+function normalizeWorkspaceRelativePath(value: string): string {
+  return value.trim().replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+/** Checks for an exact directory entry without case-folded path lookup. */
+export async function exactWorkspaceEntryExists(dir: string, name: string): Promise<boolean> {
   try {
-    const fs = await import('fs/promises');
-    const content = await fs.readFile(path, 'utf-8');
-    logger.debug(`[Memory:RootFiles] Read memory: ${path}`);
-    return content;
+    const entries = await fs.readdir(dir);
+    return entries.includes(name);
   } catch {
-    return null;
+    return false;
   }
 }
 
-export async function writeRootMemory(content: string, agentId?: string): Promise<void> {
-  const path = resolveRootMemoryPath(agentId);
+/** Resolves the canonical root memory file only when it is a real file, not a symlink. */
+export async function resolveCanonicalRootMemoryFile(workspaceDir: string): Promise<string | null> {
   try {
-    const fs = await import('fs/promises');
-    await fs.writeFile(path, content, 'utf-8');
-    logger.debug(`[Memory:RootFiles] Wrote memory: ${path}`);
-  } catch (err) {
-    logger.error(`[Memory:RootFiles] Failed to write memory: ${err}`);
-  }
+    const entries = await fs.readdir(workspaceDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (
+        entry.name === CANONICAL_ROOT_MEMORY_FILENAME &&
+        entry.isFile() &&
+        !entry.isSymbolicLink()
+      ) {
+        return path.join(workspaceDir, entry.name);
+      }
+    }
+  } catch {}
+  return null;
 }
 
-export async function readRootSoul(agentId?: string): Promise<string | null> {
-  const path = resolveRootSoulPath(agentId);
-  try {
-    const fs = await import('fs/promises');
-    const content = await fs.readFile(path, 'utf-8');
-    logger.debug(`[Memory:RootFiles] Read soul: ${path}`);
-    return content;
-  } catch {
-    return null;
+/** Skips legacy/repair root memory paths when scanning workspace memory files. */
+export function shouldSkipRootMemoryAuxiliaryPath(params: {
+  workspaceDir: string;
+  absPath: string;
+}): boolean {
+  const relative = path.relative(params.workspaceDir, params.absPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return false;
   }
-}
-
-export async function writeRootSoul(content: string, agentId?: string): Promise<void> {
-  const path = resolveRootSoulPath(agentId);
-  try {
-    const fs = await import('fs/promises');
-    await fs.writeFile(path, content, 'utf-8');
-    logger.debug(`[Memory:RootFiles] Wrote soul: ${path}`);
-  } catch (err) {
-    logger.error(`[Memory:RootFiles] Failed to write soul: ${err}`);
-  }
+  const normalized = normalizeWorkspaceRelativePath(relative);
+  return (
+    normalized === LEGACY_ROOT_MEMORY_FILENAME ||
+    normalized === ROOT_MEMORY_REPAIR_RELATIVE_DIR ||
+    normalized.startsWith(`${ROOT_MEMORY_REPAIR_RELATIVE_DIR}/`)
+  );
 }

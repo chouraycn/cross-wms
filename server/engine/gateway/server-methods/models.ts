@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Models gateway methods expose model catalog browse results without triggering
 // auth probes or fresh provider discovery on each request.
 import {

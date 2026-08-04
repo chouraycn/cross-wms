@@ -247,8 +247,8 @@ export { runDoctorChecks, checkCorePolicy, checkToolPolicy, checkExecApprovals }
 export type { HealthFinding, DoctorCheckScope, DoctorCheckResult, DoctorReport } from "./doctor.js";
 
 // Protocol Translation
-export { AcpTranslator, acpTranslator } from "./translator.js";
-export type { OpenAiChatCompletionRequest, OpenAiChatCompletionResponse, OpenAiChatMessage } from "./translator.js";
+// export { AcpTranslator, acpTranslator } from "./translator.js";  // removed: not exported from translator.js
+// export type { OpenAiChatCompletionRequest, OpenAiChatCompletionResponse, OpenAiChatMessage } from "./translator.js";  // removed: not exported from translator.js
 
 // Session Mapping
 export { SessionMapper, sessionMapper } from "./sessionMapper.js";

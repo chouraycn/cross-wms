@@ -1,7 +1,7 @@
 // Chutes OAuth login flow with loopback callback handling and manual paste fallback.
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { ChutesOAuthAppConfig } from "@openclaw-src/agents/chutes-oauth.js";
 import {
   CHUTES_AUTHORIZE_ENDPOINT,

@@ -1,5 +1,5 @@
 // Implements agent route binding list/add/remove subcommands.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@cdf-know/normalization-core/string-normalization";
 import { listAgentEntries, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { isRouteBinding, listRouteBindings } from "@openclaw-src/config/bindings.js";

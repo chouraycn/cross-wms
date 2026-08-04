@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Reply threading policy helpers for channel replies and status notices. */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeChatType } from '@openclaw-src/channels/chat-type.js';
 import { getChannelPlugin } from '@openclaw-src/channels/plugins/index.js';
 import type { ChannelThreadingAdapter } from '@openclaw-src/channels/plugins/types.core.js';

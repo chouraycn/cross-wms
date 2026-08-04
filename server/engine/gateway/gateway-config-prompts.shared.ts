@@ -1,22 +1,98 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-/**
- * 降级 stub — 移植自 openclaw/src/gateway/gateway-config-prompts.shared.ts
- *
- * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
- * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
- * 此文件为降级占位：
- *  - 类型导出降级为 unknown / 空 interface
- *  - 函数体抛出 "not implemented"
- *  - 常量降级为 undefined
- * 完整实现见 openclaw 源码。
- */
+// Gateway setup prompt shared constants.
+// Provides Tailscale copy and Control UI origin updates for CLI setup flows.
+import { isIpv6Address, parseCanonicalIpAddress } from "@openclaw/net-policy/ip";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { getTailnetHostname } from "../infra/tailscale.js";
 
-export async function maybeAddTailnetOriginToControlUiAllowedOrigins(..._args: unknown[]): Promise<unknown> {
-  return Promise.resolve(undefined);
+export const TAILSCALE_EXPOSURE_OPTIONS = [
+  { value: "off", label: "Off", hint: "No Tailscale exposure" },
+  {
+    value: "serve",
+    label: "Serve",
+    hint: "Private HTTPS for your tailnet (devices on Tailscale)",
+  },
+  {
+    value: "funnel",
+    label: "Funnel",
+    hint: "Public HTTPS via Tailscale Funnel (internet)",
+  },
+] as const;
+
+export const TAILSCALE_MISSING_BIN_NOTE_LINES = [
+  "Tailscale binary not found in PATH or /Applications.",
+  "Ensure Tailscale is installed from:",
+  "  https://tailscale.com/download/mac",
+  "",
+  "You can continue setup, but serve/funnel will fail at runtime.",
+] as const;
+
+export const TAILSCALE_DOCS_LINES = [
+  "Docs:",
+  "https://docs.openclaw.ai/gateway/tailscale",
+  "https://docs.openclaw.ai/web",
+] as const;
+
+function normalizeTailnetHostForUrl(rawHost: string): string | null {
+  const trimmed = rawHost.trim().replace(/\.$/, "");
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = parseCanonicalIpAddress(trimmed);
+  if (parsed && isIpv6Address(parsed)) {
+    return `[${normalizeLowercaseStringOrEmpty(parsed.toString())}]`;
+  }
+  return trimmed;
 }
 
-export const TAILSCALE_EXPOSURE_OPTIONS: unknown = undefined;
+function buildTailnetHttpsOrigin(rawHost: string): string | null {
+  const normalizedHost = normalizeTailnetHostForUrl(rawHost);
+  if (!normalizedHost) {
+    return null;
+  }
+  try {
+    return new URL(`https://${normalizedHost}`).origin;
+  } catch {
+    return null;
+  }
+}
 
-export const TAILSCALE_MISSING_BIN_NOTE_LINES: unknown = undefined;
+function appendAllowedOrigin(existing: string[] | undefined, origin: string): string[] {
+  const current = existing ?? [];
+  const normalized = normalizeLowercaseStringOrEmpty(origin);
+  if (current.some((entry) => normalizeLowercaseStringOrEmpty(entry) === normalized)) {
+    return current;
+  }
+  return [...current, origin];
+}
 
-export const TAILSCALE_DOCS_LINES: unknown = undefined;
+export async function maybeAddTailnetOriginToControlUiAllowedOrigins(params: {
+  config: OpenClawConfig;
+  tailscaleMode: string;
+  tailscaleBin?: string | null;
+}): Promise<OpenClawConfig> {
+  if (params.tailscaleMode !== "serve" && params.tailscaleMode !== "funnel") {
+    return params.config;
+  }
+  const tsOrigin = await getTailnetHostname(undefined, params.tailscaleBin ?? undefined)
+    .then((host) => buildTailnetHttpsOrigin(host))
+    .catch(() => null);
+  if (!tsOrigin) {
+    return params.config;
+  }
+
+  const existing = params.config.gateway?.controlUi?.allowedOrigins ?? [];
+  const updatedOrigins = appendAllowedOrigin(existing, tsOrigin);
+  // Preserve all unrelated gateway/controlUi config while adding the derived
+  // tailnet origin, because setup writes partial gateway config objects.
+  return {
+    ...params.config,
+    gateway: {
+      ...params.config.gateway,
+      controlUi: {
+        ...params.config.gateway?.controlUi,
+        allowedOrigins: updatedOrigins,
+      },
+    },
+  };
+}

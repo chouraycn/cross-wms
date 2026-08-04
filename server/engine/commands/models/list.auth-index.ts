@@ -1,5 +1,5 @@
 /** Auth availability index for `openclaw models list` rows. */
-import { normalizeProviderIdForAuth } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderIdForAuth } from "@cdf-know/model-catalog-core/provider-id";
 import type { AuthProfileStore } from "@openclaw-src/agents/auth-profiles/types.js";
 import type { AuthProfileCredential } from "@openclaw-src/agents/auth-profiles/types.js";
 import {

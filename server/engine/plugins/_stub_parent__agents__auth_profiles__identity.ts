@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
 // === MIGRATED FROM OPENCLAW SOURCE (simplified) ===
 // Source: openclaw/src/agents/auth-profiles/identity.ts (buildAuthProfileId 函数)
 // Status: 已移植 openclaw 同源实现（简化版，依赖 @cdf-know/normalization-core）

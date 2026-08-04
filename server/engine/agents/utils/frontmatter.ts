@@ -4,7 +4,9 @@
  * Agent docs/tools use this to split optional Markdown frontmatter from the
  * body while preserving normal content when no complete frontmatter fence exists.
  */
-import { parse } from "yaml";
+import yaml from "yaml";
+
+const { parse } = yaml;
 
 /** Parsed frontmatter metadata plus the remaining document body. */
 type ParsedFrontmatter<T extends Record<string, unknown>> = {

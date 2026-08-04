@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests runtime store singleton behavior.
  */

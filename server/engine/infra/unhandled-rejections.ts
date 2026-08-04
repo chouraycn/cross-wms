@@ -1,6 +1,6 @@
 // 安装 fatal 和瞬态 unhandled rejection/exception 处理器。
 // 降级实现：从 openclaw/src/infra/unhandled-rejections.ts 移植，
-// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @openclaw/normalization-core/string-coerce
+// - normalizeLowercaseStringOrEmpty 使用本地 string-coerce.js 替代 @cdf-know/normalization-core/string-coerce
 // - restoreTerminalState 降级为 no-op（openclaw 的 ../../packages/terminal-core/src/restore.js 未移植）
 // - collectErrorGraphCandidates 和 formatUncaughtError 本地实现（cross-wms 的 errors.ts 未导出）
 import process from "node:process";

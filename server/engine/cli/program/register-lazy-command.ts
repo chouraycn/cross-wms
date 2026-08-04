@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lazy Commander placeholder registration used to keep CLI startup imports small.
 import type { Command } from "commander";
 import { reparseProgramFromActionArgs } from "./action-reparse.js";

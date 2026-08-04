@@ -16,7 +16,7 @@
 
 import { logger } from '../../logger.js';
 import type { PluginManifest, PluginInstance, PluginContext } from './types.js';
-import { pluginRuntimeRegistry } from './registry.js';
+import { PluginRegistry } from './registry.js';
 import type { RegistryEntry } from './registry.js';
 import { createPluginContext, destroyPluginContext } from './plugin-context.js';
 import { executeInPluginSandbox } from './plugin-sandbox.js';
@@ -187,7 +187,7 @@ export class PluginRuntime {
     pluginId: string,
     fn: () => T | Promise<T>,
   ): Promise<T> {
-    const entry = pluginRuntimeRegistry.find(pluginId);
+    const entry = PluginRegistry.find(pluginId);
     if (!entry) {
       throw new PluginSdkError(
         `插件 ${pluginId} 未注册`,
@@ -232,17 +232,17 @@ export class PluginRuntime {
 
   /** 查找插件 */
   find(pluginId: string): RegistryEntry | undefined {
-    return pluginRuntimeRegistry.find(pluginId);
+    return PluginRegistry.find(pluginId);
   }
 
   /** 列出所有已注册插件 */
   list(): RegistryEntry[] {
-    return pluginRuntimeRegistry.list();
+    return PluginRegistry.list();
   }
 
   /** 列出已启用的插件 */
   listActive(): RegistryEntry[] {
-    return pluginRuntimeRegistry.list().filter((e) => isPluginActive(e.pluginId));
+    return PluginRegistry.list().filter((e) => isPluginActive(e.pluginId));
   }
 
   /** 获取插件健康状态 */
@@ -274,7 +274,7 @@ export class PluginRuntime {
 
   /** 销毁运行时（卸载所有插件） */
   async destroy(): Promise<void> {
-    const entries = pluginRuntimeRegistry.list();
+    const entries = PluginRegistry.list();
     for (const entry of entries) {
       try {
         await this.unload(entry.pluginId);
@@ -314,7 +314,7 @@ export function resetPluginRuntime(): void {
 
 // 重新导出常用 API
 export {
-  pluginRuntimeRegistry,
+  PluginRegistry,
   type RegistryEntry,
   type PluginLoadResult,
   type PluginBatchLoadResult,

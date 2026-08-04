@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Contract tests for schema normalization runtime behavior exposed to plugins.
  */

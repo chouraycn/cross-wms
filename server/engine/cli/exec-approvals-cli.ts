@@ -2,7 +2,7 @@
 // 移植自 openclaw/src/cli/exec-approvals-cli.ts。
 //
 // 降级策略：
-//  - 原模块依赖大量未移植模块：`@openclaw/normalization-core/string-coerce`、
+//  - 原模块依赖大量未移植模块：`@cdf-know/normalization-core/string-coerce`、
 //    `json5`、`../../packages/terminal-core/src/*`（ansi/links/table/theme）、
 //    `../config/config.js`、`../infra/errors.js`、
 //    `../infra/exec-approvals-effective.js`、`../infra/exec-approvals.js`、

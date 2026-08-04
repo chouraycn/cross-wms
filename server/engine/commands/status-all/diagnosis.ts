@@ -2,7 +2,7 @@
 // Appends the read-only diagnosis section for `openclaw status --all`.
 // Every line that can include logs, config, or connection details is redacted before display.
 
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
 import type { ProgressReporter } from "@openclaw-src/cli/progress.js";
 import { formatConfigIssueLine } from "@openclaw-src/config/issue-format.js";
 import {
@@ -28,8 +28,8 @@ import {
 import {
   formatUpdateRestartActionLines,
   formatUpdateRestartStatusValue,
-} from "@openclaw-src/status-update-restart.ts";
-import type { NodeOnlyGatewayInfo } from "@openclaw-src/status.node-mode.js";
+} from "@openclaw-src/commands/status-update-restart.ts";
+import type { NodeOnlyGatewayInfo } from "@openclaw-src/commands/status.node-mode.js";
 import { formatTimeAgo, redactSecrets } from "./format.js";
 import { readFileTailLines, summarizeLogTail } from "./gateway.js";
 

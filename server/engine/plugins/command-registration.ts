@@ -275,7 +275,7 @@ function normalizeAgentPromptGuidance(
     if (entry.surfaces) {
       normalized.surfaces = entry.surfaces.map((surface) =>
         normalizeAgentPromptSurfaceKind(surface.trim() as AgentPromptSurfaceKind),
-      );
+      ) as any;
     }
     return normalized;
   });

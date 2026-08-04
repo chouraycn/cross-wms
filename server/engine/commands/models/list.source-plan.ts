@@ -1,5 +1,5 @@
 /** Chooses which source family should back a model-list invocation. */
-import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
+import type { NormalizedModelCatalogRow } from "@cdf-know/model-catalog-core/model-catalog-types";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { PluginMetadataSnapshot } from "@openclaw-src/plugins/plugin-metadata-snapshot.types.js";
 import { createLazyImportLoader } from "@openclaw-src/shared/lazy-promise.js";

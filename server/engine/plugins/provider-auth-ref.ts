@@ -247,7 +247,7 @@ async function promptProviderSecretRefForSetup(params: {
   try {
     const { resolveSecretRefString } = await loadSecretResolve();
     const resolvedValue = await resolveSecretRefString(
-      ref as { source?: string; provider?: string; id?: string },
+      ref as any,
       {
         config: params.config,
         env: params.env ?? process.env,

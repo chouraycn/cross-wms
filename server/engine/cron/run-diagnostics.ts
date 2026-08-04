@@ -1,10 +1,7 @@
-/**
- * Cron Run Diagnostics - 运行诊断信息
- *
- * 为 cron 运行日志和 UI 界面构建有界的、脱敏的诊断信息。
- * 支持诊断条目的规范化、合并和摘要生成。
- */
-
+/** Builds bounded, redacted diagnostics for cron run logs and UI surfaces. */
+import { normalizeOptionalString } from "@cdf-know/normalization-core/string-coerce";
+import { getReplyPayloadMetadata } from "../auto-reply/reply-payload.js";
+import { redactSensitiveText } from "../logging/redact.js";
 import type {
   CronRunDiagnostic,
   CronRunDiagnostics,
@@ -15,6 +12,7 @@ import type {
 const MAX_ENTRIES = 10;
 const MAX_ENTRY_CHARS = 1_000;
 const MAX_SUMMARY_CHARS = 2_000;
+const EXEC_DIAGNOSTIC_TAIL_CHARS = 2_000;
 
 function normalizeSeverity(value: unknown): CronRunDiagnosticSeverity {
   return value === "info" || value === "warn" || value === "error" ? value : "error";
@@ -56,8 +54,7 @@ function normalizeToolName(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
+  return normalizeOptionalString(value);
 }
 
 function normalizeExitCode(value: unknown): number | null | undefined {
@@ -67,37 +64,42 @@ function normalizeExitCode(value: unknown): number | null | undefined {
   return value === null ? null : undefined;
 }
 
+function tailText(value: string, maxChars: number): string {
+  if (value.length <= maxChars) {
+    return value;
+  }
+  // Exec output often ends with the actionable failure; keep the tail when
+  // bounding diagnostic text for run logs and control surfaces.
+  return value.slice(value.length - maxChars);
+}
+
 function normalizeDiagnosticMessage(value: unknown): { message?: string; truncated?: boolean } {
   if (typeof value !== "string") {
     return {};
   }
-  const trimmed = value.trim();
-  if (!trimmed) {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
     return {};
   }
-  if (trimmed.length <= MAX_ENTRY_CHARS) {
-    return { message: trimmed };
+  const redacted = redactSensitiveText(normalized, { mode: "tools" });
+  if (redacted.length <= MAX_ENTRY_CHARS) {
+    return { message: redacted };
   }
-  return { message: `${trimmed.slice(0, MAX_ENTRY_CHARS - 1)}…`, truncated: true };
+  return { message: `${redacted.slice(0, MAX_ENTRY_CHARS - 1)}…`, truncated: true };
 }
 
 function trimSummary(value: string | undefined): string | undefined {
-  if (!value) {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
     return undefined;
   }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
+  if (normalized.length <= MAX_SUMMARY_CHARS) {
+    return normalized;
   }
-  if (trimmed.length <= MAX_SUMMARY_CHARS) {
-    return trimmed;
-  }
-  return `${trimmed.slice(0, MAX_SUMMARY_CHARS - 1)}…`;
+  return `${normalized.slice(0, MAX_SUMMARY_CHARS - 1)}…`;
 }
 
-/**
- * 返回持久化 cron 诊断的操作员可见摘要
- */
+/** Returns the operator-facing summary for persisted cron diagnostics. */
 export function summarizeCronRunDiagnostics(
   diagnostics: CronRunDiagnostics | undefined,
 ): string | undefined {
@@ -107,9 +109,7 @@ export function summarizeCronRunDiagnostics(
   return trimSummary(diagnostics.summary ?? diagnostics.entries[0]?.message);
 }
 
-/**
- * 将不受信任的 cron 诊断有效负载规范化为有界的条目
- */
+/** Normalizes untrusted cron diagnostic payloads into bounded, redacted entries. */
 export function normalizeCronRunDiagnostics(
   value: unknown,
   opts?: { nowMs?: () => number },
@@ -146,11 +146,15 @@ export function normalizeCronRunDiagnostics(
       ...(entry.truncated === true || normalized.truncated ? { truncated: true } : {}),
     });
     if (entries.length > MAX_ENTRIES) {
+      // Keep the latest diagnostics because late tool/exec failures usually
+      // explain the final cron result better than setup noise.
       entries.shift();
     }
   }
   const summary = trimSummary(
-    typeof record.summary === "string" ? record.summary : undefined,
+    typeof record.summary === "string"
+      ? redactSensitiveText(record.summary, { mode: "tools" })
+      : undefined,
   );
   if (entries.length === 0 && !summary) {
     return undefined;
@@ -158,9 +162,7 @@ export function normalizeCronRunDiagnostics(
   return { ...(summary ? { summary } : {}), entries };
 }
 
-/**
- * 合并 cron 诊断，同时选择严重程度最高的最新摘要
- */
+/** Merges cron diagnostics while choosing the highest-severity latest summary. */
 export function mergeCronRunDiagnostics(
   ...values: Array<CronRunDiagnostics | undefined>
 ): CronRunDiagnostics | undefined {
@@ -180,6 +182,8 @@ export function mergeCronRunDiagnostics(
       const severity =
         entryCandidate?.severity === "error" ? 2 : entryCandidate?.severity === "warn" ? 1 : 0;
       const order = entries.length + normalized.entries.length;
+      // Summary text is operator-facing; prefer severe diagnostics, then the
+      // newest diagnostic at the same severity so retries surface current cause.
       if (
         !summaryCandidate ||
         severity > summaryCandidate.severity ||
@@ -196,9 +200,7 @@ export function mergeCronRunDiagnostics(
   });
 }
 
-/**
- * 将任意抛出的 cron 错误转换为脱敏的诊断条目
- */
+/** Converts an arbitrary thrown cron error into a redacted diagnostic entry. */
 export function createCronRunDiagnosticsFromError(
   source: CronRunDiagnosticSource,
   error: unknown,
@@ -228,9 +230,7 @@ export function createCronRunDiagnosticsFromError(
   );
 }
 
-/**
- * 从工具元数据中提取失败的执行详情到 cron 诊断中
- */
+/** Extracts failed exec details from tool metadata into cron diagnostics. */
 export function createCronRunDiagnosticsFromExecDetails(
   details: unknown,
   opts?: {
@@ -248,9 +248,9 @@ export function createCronRunDiagnosticsFromExecDetails(
   if (!relevant) {
     return undefined;
   }
-  const aggregated = typeof details.aggregated === "string" ? details.aggregated : undefined;
+  const aggregated = normalizeOptionalString(details.aggregated);
   const message = aggregated
-    ? aggregated
+    ? tailText(aggregated, EXEC_DIAGNOSTIC_TAIL_CHARS)
     : typeof exitCode === "number"
       ? `exec failed with exit code ${exitCode}`
       : "exec failed";
@@ -270,4 +270,64 @@ export function createCronRunDiagnosticsFromExecDetails(
     },
     opts,
   );
+}
+
+/** Extracts tool-call failure diagnostics from an agent reply payload. */
+export function createCronRunDiagnosticsFromToolPayload(
+  payload: unknown,
+  opts?: { nowMs?: () => number; finalStatus?: "ok" | "error" | "skipped" },
+): CronRunDiagnostics | undefined {
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+  const toolName = normalizeToolName(payload.toolName) ?? normalizeToolName(payload.name);
+  const detailsDiagnostics = createCronRunDiagnosticsFromExecDetails(payload.details, {
+    nowMs: opts?.nowMs,
+    toolName,
+    finalStatus: opts?.finalStatus,
+  });
+  const isError = payload.isError === true;
+  const text = typeof payload.text === "string" ? payload.text : undefined;
+  const isNonTerminalToolWarning =
+    opts?.finalStatus === "ok" &&
+    getReplyPayloadMetadata(payload)?.nonTerminalToolErrorWarning === true;
+  const textDiagnostics =
+    isError && text
+      ? createCronRunDiagnosticsFromError("tool", text, {
+          severity: isNonTerminalToolWarning || opts?.finalStatus === "ok" ? "warn" : "error",
+          nowMs: opts?.nowMs,
+          toolName,
+        })
+      : undefined;
+  return mergeCronRunDiagnostics(detailsDiagnostics, textDiagnostics);
+}
+
+/** Extracts cron run diagnostics from agent result payloads and metadata. */
+export function createCronRunDiagnosticsFromAgentResult(
+  result: unknown,
+  opts?: { nowMs?: () => number; finalStatus?: "ok" | "error" | "skipped" },
+): CronRunDiagnostics | undefined {
+  const record = isRecord(result) ? result : {};
+  const meta =
+    record.meta && typeof record.meta === "object" ? (record.meta as Record<string, unknown>) : {};
+  const diagnostics: Array<CronRunDiagnostics | undefined> = [];
+  const payloads = Array.isArray(record.payloads) ? record.payloads : [];
+  for (const payload of payloads) {
+    diagnostics.push(createCronRunDiagnosticsFromToolPayload(payload, opts));
+  }
+  const metaError =
+    meta.error && typeof meta.error === "object"
+      ? (meta.error as { message?: unknown })
+      : undefined;
+  if (typeof metaError?.message === "string") {
+    diagnostics.push(createCronRunDiagnosticsFromError("agent-run", metaError.message, opts));
+  }
+  const failureSignal =
+    meta.failureSignal && typeof meta.failureSignal === "object"
+      ? (meta.failureSignal as { message?: unknown })
+      : undefined;
+  if (typeof failureSignal?.message === "string") {
+    diagnostics.push(createCronRunDiagnosticsFromError("tool", failureSignal.message, opts));
+  }
+  return mergeCronRunDiagnostics(...diagnostics);
 }

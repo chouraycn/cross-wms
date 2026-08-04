@@ -618,7 +618,7 @@ router.post('/:bindingId/deliver', (req: Request, res: Response) => {
     bindingId,
     content,
     title: req.body?.title ? String(req.body.title) : undefined,
-    type: req.body?.type ? String(req.body.type) : 'text',
+    type: req.body?.type ? (String(req.body.type) as 'text' | 'alert' | 'card') : 'text',
   });
   if (!result.ok) {
     fail(res, 400, result.error || '投递失败');

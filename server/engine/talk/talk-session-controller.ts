@@ -1,5 +1,5 @@
 // Talk session controller coordinates voice session state and output activity.
-// 自包含实现，内联 normalizeOptionalString，避免 @openclaw/normalization-core 依赖。
+// 自包含实现，内联 normalizeOptionalString，避免 @cdf-know/normalization-core 依赖。
 import {
   createTalkEventSequencer,
   type TalkBrain,

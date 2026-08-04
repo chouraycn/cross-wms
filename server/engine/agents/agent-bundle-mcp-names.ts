@@ -2,7 +2,7 @@
  * MCP server/tool 名称净化 — 移植自 openclaw/src/agents/agent-bundle-mcp-names.ts
  *
  * 降级策略：
- *  - 依赖 @openclaw/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
+ *  - 依赖 @cdf-know/normalization-core/string-coerce → 已在 ../infra/string-coerce.ts 中实现
  *
  * Sanitizes MCP server/tool names into stable model-facing tool ids.
  */

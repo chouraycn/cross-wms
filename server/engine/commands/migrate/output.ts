@@ -1,7 +1,7 @@
 // @ts-nocheck
 /** Formatting and validation helpers for migration previews and apply results. */
 import { log } from "@clack/prompts";
-import { theme } from "@openclaw-src/packages/terminal-core/src/theme.js";
+import { theme } from "@openclaw/terminal-core/theme";
 import { redactMigrationPlan } from "@openclaw-src/plugin-sdk/migration.js";
 import type { MigrationApplyResult, MigrationItem, MigrationPlan } from "@openclaw-src/plugins/types.js";
 import { writeRuntimeJson } from "@openclaw-src/runtime.js";

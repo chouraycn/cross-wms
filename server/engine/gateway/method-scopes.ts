@@ -2,7 +2,7 @@
 // 将静态与插件定义的 gateway 方法映射到 operator scope。
 // 移植自 openclaw/src/gateway/method-scopes.ts。
 // 依赖调整：
-//  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js
+//  - @cdf-know/normalization-core/string-coerce → ../infra/string-coerce.js
 //  - ../plugins/runtime-state.js、../shared/gateway-method-policy.js → 本地 _openclaw-stubs.ts（降级占位）
 //  - ./methods/core-descriptors.js、./operator-scopes.js（均已移植）
 import { normalizeOptionalString as normalizeSessionActionParam } from "../infra/string-coerce.js";

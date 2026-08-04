@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Skill search/detail tests cover ClawHub search and detail gateway responses,
 // including validation and external error mapping.
 import { beforeEach, describe, expect, it, vi } from "vitest";

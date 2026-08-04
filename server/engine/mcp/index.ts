@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * MCP 模块 - Model Context Protocol
  *

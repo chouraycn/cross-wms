@@ -14,6 +14,8 @@ function resolveLogDir(): string {
 
 export const DEFAULT_LOG_DIR = resolveLogDir();
 
+export const DEFAULT_LOG_FILE = path.join(DEFAULT_LOG_DIR, `${LOG_PREFIX}${LOG_SUFFIX}`);
+
 export function resolveLogFilePath(filename?: string): string {
   if (filename && path.isAbsolute(filename)) {
     return filename;

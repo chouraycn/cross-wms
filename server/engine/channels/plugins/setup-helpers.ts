@@ -1,150 +1,61 @@
-import { logger } from "../../../logger.js";
-import type { ChannelId, ChannelMeta, ChannelCapabilities, AppConfig } from "../../../channels/types.js";
-import type { ChannelPlugin } from "../../../channels/plugin.js";
-
-export interface ChannelSetupContext {
-  channelId: ChannelId;
-  config: AppConfig;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ChannelSetupResult {
-  success: boolean;
-  accountId?: string;
-  error?: string;
-  warnings?: string[];
-  nextStep?: string;
-}
-
-export interface SetupStep {
-  id: string;
-  label: string;
-  description?: string;
-  required?: boolean;
-  order: number;
-  execute: (ctx: ChannelSetupContext) => Promise<ChannelSetupResult>;
-}
-
-const setupSteps = new Map<ChannelId, SetupStep[]>();
-const setupState = new Map<string, ChannelSetupResult>();
-
-export function registerSetupSteps(channelId: ChannelId, steps: SetupStep[]): void {
-  const sorted = [...steps].sort((a, b) => a.order - b.order);
-  setupSteps.set(channelId, sorted);
-  logger.debug(`[Plugins:SetupHelpers] Registered ${sorted.length} setup steps for ${channelId}`);
-}
-
-export function getSetupSteps(channelId: ChannelId): SetupStep[] {
-  return setupSteps.get(channelId) ?? [];
-}
-
-export async function runSetup(
-  channelId: ChannelId,
-  ctx: ChannelSetupContext
-): Promise<ChannelSetupResult> {
-  const steps = getSetupSteps(channelId);
-  const warnings: string[] = [];
-
-  if (steps.length === 0) {
-    return { success: true, warnings: ["No setup steps defined"] };
-  }
-
-  for (const step of steps) {
-    logger.debug(`[Plugins:SetupHelpers] Running step ${step.id} for ${channelId}`);
-
-    try {
-      const result = await step.execute(ctx);
-
-      if (!result.success) {
-        if (step.required) {
-          return {
-            success: false,
-            error: result.error ?? `Setup step "${step.label}" failed`,
-            warnings,
-            nextStep: step.id,
-          };
-        } else {
-          warnings.push(result.error ?? `Step "${step.label}" skipped`);
-        }
-      }
-
-      if (result.warnings) {
-        warnings.push(...result.warnings);
-      }
-
-      const stateKey = `${channelId}:${step.id}`;
-      setupState.set(stateKey, result);
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      if (step.required) {
-        return { success: false, error, warnings, nextStep: step.id };
-      } else {
-        warnings.push(`Step "${step.label}" error: ${error}`);
-      }
-    }
-  }
-
-  return { success: true, warnings };
-}
-
-export function getSetupStepState(channelId: ChannelId, stepId: string): ChannelSetupResult | undefined {
-  return setupState.get(`${channelId}:${stepId}`);
-}
-
-export function resetSetup(channelId: ChannelId): void {
-  for (const key of setupState.keys()) {
-    if (key.startsWith(`${channelId}:`)) {
-      setupState.delete(key);
-    }
-  }
-  logger.debug(`[Plugins:SetupHelpers] Reset setup state for ${channelId}`);
-}
-
-export function isSetupComplete(
-  plugin: ChannelPlugin,
-  config: AppConfig,
-  accountId: string
-): boolean {
-  const account = plugin.config.resolveAccount(config, accountId);
-  if (!account) return false;
-  return plugin.config.isConfigured(account, config);
-}
-
-export function createSetupMeta(params: {
-  id: ChannelId;
-  label: string;
-  blurb?: string;
-  docsPath?: string;
-}): ChannelMeta {
-  return {
-    id: params.id,
-    label: params.label,
-    selectionLabel: params.label,
-    blurb: params.blurb,
-    docsPath: params.docsPath,
-    aliases: [],
-    markdownCapable: false,
-  };
-}
-
-export function defaultCapabilities(): ChannelCapabilities {
-  return {
-    chatTypes: ["direct", "group"],
-    media: false,
-    reactions: false,
-    threads: false,
-    polls: false,
-    mentions: false,
-    voice: false,
-    video: false,
-    typing: false,
-  };
-}
-
-// openclaw compat: account section helpers used by plugin-sdk/core.ts
+/**
+ * Channel setup config mutation helpers.
+ *
+ * Applies account names and validates setup results for channel onboarding adapters.
+ */
+import { z, type ZodType } from "zod";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
+import {
+  collectSingleAccountPromotionEntries,
+  isSetupSingleAccountPromotionKey,
+} from "./setup-promotion-keys.js";
+import type { ChannelSetupAdapter } from "./types.adapters.js";
+import type { ChannelSetupInput } from "./types.core.js";
 
-/** Applies an account display name to a channel config section. */
+type ChannelSectionBase = {
+  name?: string;
+  defaultAccount?: string;
+  accounts?: Record<string, Record<string, unknown>>;
+};
+
+const NAMED_ACCOUNT_PROMOTION_KEYS_BY_CHANNEL: Record<string, readonly string[]> = {
+  matrix: [
+    "name",
+    "homeserver",
+    "userId",
+    "accessToken",
+    "password",
+    "deviceId",
+    "deviceName",
+    "avatarUrl",
+    "initialSyncLimit",
+    "encryption",
+  ],
+  telegram: ["botToken", "tokenFile"],
+};
+
+function channelHasAccounts(cfg: OpenClawConfig, channelKey: string): boolean {
+  const channels = cfg.channels as Record<string, unknown> | undefined;
+  const base = channels?.[channelKey] as ChannelSectionBase | undefined;
+  return Boolean(base?.accounts && Object.keys(base.accounts).length > 0);
+}
+
+function shouldStoreNameInAccounts(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  alwaysUseAccounts?: boolean;
+}): boolean {
+  if (params.alwaysUseAccounts) {
+    return true;
+  }
+  if (params.accountId !== DEFAULT_ACCOUNT_ID) {
+    return true;
+  }
+  return channelHasAccounts(params.cfg, params.channelKey);
+}
+
 export function applyAccountNameToChannelSection(params: {
   cfg: OpenClawConfig;
   channelKey: string;
@@ -156,26 +67,50 @@ export function applyAccountNameToChannelSection(params: {
   if (!trimmed) {
     return params.cfg;
   }
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
-  if (!channels) {
-    return params.cfg;
+  const accountId = normalizeAccountId(params.accountId);
+  const channels = params.cfg.channels as Record<string, unknown> | undefined;
+  const baseConfig = channels?.[params.channelKey];
+  const base =
+    typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionBase) : undefined;
+  const useAccounts = shouldStoreNameInAccounts({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    accountId,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+  });
+  if (!useAccounts && accountId === DEFAULT_ACCOUNT_ID) {
+    const safeBase = base ?? {};
+    return {
+      ...params.cfg,
+      channels: {
+        ...params.cfg.channels,
+        [params.channelKey]: {
+          ...safeBase,
+          name: trimmed,
+        },
+      },
+    } as OpenClawConfig;
   }
-  const section = channels[params.channelKey] as { accounts?: Record<string, unknown> } | undefined;
-  if (!section?.accounts) {
-    return params.cfg;
-  }
-  const nextAccounts = { ...section.accounts };
-  const account = nextAccounts[params.accountId] as { name?: string } | undefined;
-  if (account) {
-    nextAccounts[params.accountId] = { ...account, name: trimmed };
-  } else {
-    nextAccounts[params.accountId] = { name: trimmed };
-  }
+  const baseAccounts: Record<string, Record<string, unknown>> = base?.accounts ?? {};
+  const existingAccount = baseAccounts[accountId] ?? {};
+  const baseWithoutName =
+    accountId === DEFAULT_ACCOUNT_ID
+      ? (({ name: _ignored, ...rest }) => rest)(base ?? {})
+      : (base ?? {});
   return {
     ...params.cfg,
     channels: {
-      ...channels,
-      [params.channelKey]: { ...section, accounts: nextAccounts },
+      ...params.cfg.channels,
+      [params.channelKey]: {
+        ...baseWithoutName,
+        accounts: {
+          ...baseAccounts,
+          [accountId]: {
+            ...existingAccount,
+            name: trimmed,
+          },
+        },
+      },
     },
   } as OpenClawConfig;
 }
@@ -189,21 +124,496 @@ export function migrateBaseNameToDefaultAccount(params: {
   if (params.alwaysUseAccounts) {
     return params.cfg;
   }
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
-  const base = channels?.[params.channelKey] as { name?: string; accounts?: Record<string, unknown> } | undefined;
+  const channels = params.cfg.channels as Record<string, unknown> | undefined;
+  const base = channels?.[params.channelKey] as ChannelSectionBase | undefined;
   const baseName = base?.name?.trim();
-  if (!baseName || base?.accounts) {
+  if (!baseName) {
     return params.cfg;
+  }
+  const accounts: Record<string, Record<string, unknown>> = {
+    ...base?.accounts,
+  };
+  const defaultAccount = accounts[DEFAULT_ACCOUNT_ID] ?? {};
+  if (!defaultAccount.name) {
+    accounts[DEFAULT_ACCOUNT_ID] = { ...defaultAccount, name: baseName };
+  }
+  const { name: _ignored, ...rest } = base ?? {};
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      [params.channelKey]: {
+        ...rest,
+        accounts,
+      },
+    },
+  } as OpenClawConfig;
+}
+
+/** Applies setup-time account naming and optional root-name migration in one step. */
+export function prepareScopedSetupConfig(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  name?: string;
+  alwaysUseAccounts?: boolean;
+  migrateBaseName?: boolean;
+}): OpenClawConfig {
+  const namedConfig = applyAccountNameToChannelSection({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    accountId: params.accountId,
+    name: params.name,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+  });
+  if (!params.migrateBaseName || normalizeAccountId(params.accountId) === DEFAULT_ACCOUNT_ID) {
+    return namedConfig;
+  }
+  return migrateBaseNameToDefaultAccount({
+    cfg: namedConfig,
+    channelKey: params.channelKey,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+  });
+}
+
+/** Applies a setup patch using account-scoped config semantics. */
+export function applySetupAccountConfigPatch(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  patch: Record<string, unknown>;
+}): OpenClawConfig {
+  return patchScopedAccountConfig({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    accountId: params.accountId,
+    patch: params.patch,
+  });
+}
+
+/** Creates a setup adapter that turns validated setup input into an account config patch. */
+export function createPatchedAccountSetupAdapter(params: {
+  channelKey: string;
+  alwaysUseAccounts?: boolean;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  validateInput?: ChannelSetupAdapter["validateInput"];
+  buildPatch: (input: ChannelSetupInput) => Record<string, unknown>;
+}): ChannelSetupAdapter {
+  return {
+    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) =>
+      prepareScopedSetupConfig({
+        cfg,
+        channelKey: params.channelKey,
+        accountId,
+        name,
+        alwaysUseAccounts: params.alwaysUseAccounts,
+      }),
+    validateInput: params.validateInput,
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const next = prepareScopedSetupConfig({
+        cfg,
+        channelKey: params.channelKey,
+        accountId,
+        name: input.name,
+        alwaysUseAccounts: params.alwaysUseAccounts,
+        migrateBaseName: !params.alwaysUseAccounts,
+      });
+      const patch = params.buildPatch(input);
+      return patchScopedAccountConfig({
+        cfg: next,
+        channelKey: params.channelKey,
+        accountId,
+        patch,
+        accountPatch: patch,
+        ensureChannelEnabled: params.ensureChannelEnabled ?? !params.alwaysUseAccounts,
+        ensureAccountEnabled: params.ensureAccountEnabled ?? true,
+        scopeDefaultToAccounts: params.alwaysUseAccounts,
+      });
+    },
+  };
+}
+
+/** Creates a Zod-backed setup input validator with an optional typed semantic check. */
+export function createZodSetupInputValidator<T extends ChannelSetupInput>(params: {
+  schema: ZodType<T>;
+  validate?: (params: { cfg: OpenClawConfig; accountId: string; input: T }) => string | null;
+}): NonNullable<ChannelSetupAdapter["validateInput"]> {
+  return (inputParams) => {
+    const parsed = params.schema.safeParse(inputParams.input);
+    if (!parsed.success) {
+      return parsed.error.issues[0]?.message ?? "invalid input";
+    }
+    return (
+      params.validate?.({
+        ...inputParams,
+        input: parsed.data,
+      }) ?? null
+    );
+  };
+}
+
+const GenericSetupInputSchema = z
+  .object({
+    useEnv: z.boolean().optional(),
+  })
+  .passthrough() as ZodType<ChannelSetupInput>;
+
+type SetupInputPresenceRequirement = {
+  someOf: string[];
+  message: string;
+};
+
+function hasPresentSetupValue(value: unknown): boolean {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return value !== undefined && value !== null;
+}
+
+export function createSetupInputPresenceValidator(params: {
+  defaultAccountOnlyEnvError?: string;
+  whenNotUseEnv?: SetupInputPresenceRequirement[];
+  validate?: (params: {
+    cfg: OpenClawConfig;
+    accountId: string;
+    input: ChannelSetupInput;
+  }) => string | null;
+}): NonNullable<ChannelSetupAdapter["validateInput"]> {
+  return createZodSetupInputValidator({
+    schema: GenericSetupInputSchema,
+    validate: (inputParams) => {
+      if (
+        params.defaultAccountOnlyEnvError &&
+        inputParams.input.useEnv &&
+        inputParams.accountId !== DEFAULT_ACCOUNT_ID
+      ) {
+        return params.defaultAccountOnlyEnvError;
+      }
+      if (!inputParams.input.useEnv) {
+        const inputRecord = inputParams.input as Record<string, unknown>;
+        for (const requirement of params.whenNotUseEnv ?? []) {
+          if (requirement.someOf.some((key) => hasPresentSetupValue(inputRecord[key]))) {
+            continue;
+          }
+          return requirement.message;
+        }
+      }
+      return params.validate?.(inputParams) ?? null;
+    },
+  });
+}
+
+/** Creates a setup adapter that supports env-backed default account auth and patched credentials. */
+export function createEnvPatchedAccountSetupAdapter(params: {
+  channelKey: string;
+  alwaysUseAccounts?: boolean;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  defaultAccountOnlyEnvError: string;
+  missingCredentialError: string;
+  hasCredentials: (input: ChannelSetupInput) => boolean;
+  validateInput?: ChannelSetupAdapter["validateInput"];
+  buildPatch: (input: ChannelSetupInput) => Record<string, unknown>;
+}): ChannelSetupAdapter {
+  return createPatchedAccountSetupAdapter({
+    channelKey: params.channelKey,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+    ensureChannelEnabled: params.ensureChannelEnabled,
+    ensureAccountEnabled: params.ensureAccountEnabled,
+    validateInput: (inputParams) => {
+      if (inputParams.input.useEnv && inputParams.accountId !== DEFAULT_ACCOUNT_ID) {
+        return params.defaultAccountOnlyEnvError;
+      }
+      if (!inputParams.input.useEnv && !params.hasCredentials(inputParams.input)) {
+        return params.missingCredentialError;
+      }
+      return params.validateInput?.(inputParams) ?? null;
+    },
+    buildPatch: params.buildPatch,
+  });
+}
+
+/** Patches channel config at root for default accounts or under `accounts.<id>` for named accounts. */
+export function patchScopedAccountConfig(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  patch: Record<string, unknown>;
+  accountPatch?: Record<string, unknown>;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  scopeDefaultToAccounts?: boolean;
+}): OpenClawConfig {
+  const accountId = normalizeAccountId(params.accountId);
+  const channels = params.cfg.channels as Record<string, unknown> | undefined;
+  const channelConfig = channels?.[params.channelKey];
+  const base =
+    typeof channelConfig === "object" && channelConfig
+      ? (channelConfig as Record<string, unknown> & {
+          accounts?: Record<string, Record<string, unknown>>;
+        })
+      : undefined;
+  const ensureChannelEnabled = params.ensureChannelEnabled ?? true;
+  const ensureAccountEnabled = params.ensureAccountEnabled ?? ensureChannelEnabled;
+  const patch = params.patch;
+  const accountPatch = params.accountPatch ?? patch;
+  if (accountId === DEFAULT_ACCOUNT_ID && !params.scopeDefaultToAccounts) {
+    // Default accounts historically live at channel root unless the channel opts into accounts.default.
+    return {
+      ...params.cfg,
+      channels: {
+        ...params.cfg.channels,
+        [params.channelKey]: {
+          ...base,
+          ...(ensureChannelEnabled ? { enabled: true } : {}),
+          ...patch,
+        },
+      },
+    } as OpenClawConfig;
+  }
+
+  const accounts = base?.accounts ?? {};
+  const existingAccount = accounts[accountId] ?? {};
+  // Preserve an explicit disabled account while enabling newly created accounts by default.
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      [params.channelKey]: {
+        ...base,
+        ...(ensureChannelEnabled ? { enabled: true } : {}),
+        accounts: {
+          ...accounts,
+          [accountId]: {
+            ...existingAccount,
+            ...(ensureAccountEnabled
+              ? {
+                  enabled:
+                    typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
+                }
+              : {}),
+            ...accountPatch,
+          },
+        },
+      },
+    },
+  } as OpenClawConfig;
+}
+
+type ChannelSectionRecord = Record<string, unknown> & {
+  accounts?: Record<string, Record<string, unknown>>;
+};
+
+function cloneIfObject<T>(value: T): T {
+  if (value && typeof value === "object") {
+    return structuredClone(value);
+  }
+  return value;
+}
+
+function moveSingleAccountKeysIntoAccount(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  channel: ChannelSectionRecord;
+  accounts: Record<string, Record<string, unknown>>;
+  keysToMove: string[];
+  targetAccountId: string;
+  baseAccount?: Record<string, unknown>;
+}): OpenClawConfig {
+  const nextAccount: Record<string, unknown> = { ...params.baseAccount };
+  for (const key of params.keysToMove) {
+    nextAccount[key] = cloneIfObject(params.channel[key]);
+  }
+  const nextChannel: ChannelSectionRecord = { ...params.channel };
+  for (const key of params.keysToMove) {
+    delete nextChannel[key];
   }
   return {
     ...params.cfg,
     channels: {
-      ...channels,
+      ...params.cfg.channels,
       [params.channelKey]: {
-        ...base,
-        name: undefined,
-        accounts: { default: { name: baseName } },
+        ...nextChannel,
+        accounts: {
+          ...params.accounts,
+          [params.targetAccountId]: nextAccount,
+        },
       },
     },
   } as OpenClawConfig;
+}
+
+function resolveExistingAccountKey(
+  accounts: Record<string, Record<string, unknown>>,
+  targetAccountId: string,
+): string {
+  for (const existingKey of Object.keys(accounts)) {
+    if (normalizeAccountId(existingKey) === targetAccountId) {
+      return existingKey;
+    }
+  }
+  return targetAccountId;
+}
+
+function resolveSingleAccountKeysToMove(params: {
+  channelKey: string;
+  channel: Record<string, unknown>;
+}): string[] {
+  const { entries, hasNamedAccounts } = collectSingleAccountPromotionEntries(params.channel);
+  const keysToMove = entries.filter(isSetupSingleAccountPromotionKey);
+  if (!hasNamedAccounts || keysToMove.length === 0) {
+    return keysToMove;
+  }
+  const namedAccountPromotionKeys = NAMED_ACCOUNT_PROMOTION_KEYS_BY_CHANNEL[params.channelKey];
+  return namedAccountPromotionKeys
+    ? keysToMove.filter((key) => namedAccountPromotionKeys.includes(key))
+    : keysToMove;
+}
+
+function resolveSingleAccountPromotionTarget(params: { channel: ChannelSectionBase }): string {
+  const accounts = params.channel.accounts ?? {};
+  const normalizedDefaultAccount =
+    typeof params.channel.defaultAccount === "string" && params.channel.defaultAccount.trim()
+      ? normalizeAccountId(params.channel.defaultAccount)
+      : undefined;
+  if (normalizedDefaultAccount) {
+    return (
+      Object.keys(accounts).find(
+        (accountId) => normalizeAccountId(accountId) === normalizedDefaultAccount,
+      ) ?? DEFAULT_ACCOUNT_ID
+    );
+  }
+  const namedAccounts = Object.keys(accounts).filter(Boolean);
+  return namedAccounts.length === 1 ? namedAccounts[0] : DEFAULT_ACCOUNT_ID;
+}
+
+/**
+ * Promotes legacy single-account channel fields into the account map for multi-account setup.
+ */
+export function moveSingleAccountChannelSectionToDefaultAccount(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+}): OpenClawConfig {
+  const channels = params.cfg.channels as Record<string, unknown> | undefined;
+  const baseConfig = channels?.[params.channelKey];
+  const base =
+    typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionRecord) : undefined;
+  if (!base) {
+    return params.cfg;
+  }
+
+  const accounts = base.accounts ?? {};
+  if (Object.keys(accounts).length > 0) {
+    const keysToMove = resolveSingleAccountKeysToMove({
+      channelKey: params.channelKey,
+      channel: base,
+    });
+    if (keysToMove.length === 0) {
+      return params.cfg;
+    }
+
+    const targetAccountId = resolveSingleAccountPromotionTarget({
+      channel: base,
+    });
+    // Reuse the existing account key spelling so configs like `accounts.Ops` keep their shape.
+    const resolvedTargetAccountKey = resolveExistingAccountKey(accounts, targetAccountId);
+    return moveSingleAccountKeysIntoAccount({
+      cfg: params.cfg,
+      channelKey: params.channelKey,
+      channel: base,
+      accounts,
+      keysToMove,
+      targetAccountId: resolvedTargetAccountKey,
+      baseAccount: accounts[resolvedTargetAccountKey],
+    });
+  }
+  const keysToMove = resolveSingleAccountKeysToMove({
+    channelKey: params.channelKey,
+    channel: base,
+  });
+  return moveSingleAccountKeysIntoAccount({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    channel: base,
+    accounts,
+    keysToMove,
+    targetAccountId: DEFAULT_ACCOUNT_ID,
+  });
+}
+
+// ============================================================================
+// WMS 兼容：plugins/index.ts barrel 期望以下导出（openclaw 没有，是 WMS 扩展）。
+// 提供最小可运行 stub：setup 步骤注册表空实现。
+// ============================================================================
+
+export type ChannelSetupContext = {
+  channelId?: string;
+  accountId?: string;
+  config?: unknown;
+  [key: string]: unknown;
+};
+
+export type ChannelSetupResult = {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+};
+
+export type SetupStep = {
+  id: string;
+  name: string;
+  description?: string;
+  run?: (ctx: ChannelSetupContext) => Promise<ChannelSetupResult> | ChannelSetupResult;
+};
+
+const registeredSetupSteps = new Map<string, SetupStep>();
+const setupStepState = new Map<string, boolean>();
+
+/** 注册 setup 步骤。 */
+export function registerSetupSteps(steps: SetupStep[]): void {
+  for (const step of steps) {
+    registeredSetupSteps.set(step.id, step);
+  }
+}
+
+/** 获取所有已注册的 setup 步骤。 */
+export function getSetupSteps(): SetupStep[] {
+  return Array.from(registeredSetupSteps.values());
+}
+
+/** 运行所有 setup 步骤。Stub: 直接返回成功。 */
+export async function runSetup(_ctx?: ChannelSetupContext): Promise<ChannelSetupResult[]> {
+  return [];
+}
+
+/** 获取 setup 步骤状态。 */
+export function getSetupStepState(stepId: string): boolean {
+  return setupStepState.get(stepId) ?? false;
+}
+
+/** 重置 setup 状态。 */
+export function resetSetup(): void {
+  registeredSetupSteps.clear();
+  setupStepState.clear();
+}
+
+/** 检查 setup 是否完成。Stub: 默认返回 true。 */
+export function isSetupComplete(): boolean {
+  return true;
+}
+
+/** 创建 setup 元数据。 */
+export function createSetupMeta(params: {
+  channelId?: string;
+  accountId?: string;
+  [key: string]: unknown;
+}): ChannelSetupContext {
+  return { ...params };
+}
+
+/** 默认能力列表。Stub: 返回空数组。 */
+export function defaultCapabilities(): string[] {
+  return [];
 }

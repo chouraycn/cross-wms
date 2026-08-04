@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Lightweight ACP runtime backend helpers for startup-loaded plugins.
 
 import { hasExplicitCommandContextText } from "../auto-reply/reply/context-text.js";

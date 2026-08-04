@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Implements task-list commands that route through the current session agent.
 import { resolveSessionAgentId } from '@openclaw-src/agents/agent-scope.js';
 import { logVerbose } from '@openclaw-src/globals.js';
-import { formatDurationCompact } from '@openclaw-src/infra/format-time/format-duration.ts';
-import { formatTimeAgo } from '@openclaw-src/infra/format-time/format-relative.ts';
+import { formatDurationCompact } from '@openclaw-src/infra/format-time/format-duration.js';
+import { formatTimeAgo } from '@openclaw-src/infra/format-time/format-relative.js';
 import type { TaskRecord } from '@openclaw-src/tasks/task-registry.types.js';
 import {
   listTasksForAgentIdForStatus,

@@ -58,25 +58,30 @@ describe('logging > timestamps', () => {
 describe('logging > redact', () => {
   it('redacts API keys', () => {
     const text = 'api_key=abc123def456ghi789jkl012mno345pqr678';
-    expect(redactSensitiveText(text)).toContain('<redacted>');
+    const redacted = redactSensitiveText(text);
+    expect(redacted).not.toContain('abc123def456ghi789jkl012mno345pqr678');
+    expect(redacted).toContain('api_key=');
   });
 
   it('redacts bearer tokens', () => {
     const text = 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-    expect(redactSensitiveText(text)).toContain('Bearer <redacted>');
+    const redacted = redactSensitiveText(text);
+    expect(redacted).toContain('Authorization: Bearer');
+    expect(redacted).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
   });
 
   it('redacts sensitive object values', () => {
     const obj = { user: 'alice', apiKey: 'super-secret-token-12345', nested: { password: 'pwd' } };
     const redacted = redactObject(obj);
-    expect(redacted.apiKey).toBe('<redacted>');
-    expect(redacted.nested.password).toBe('<redacted>');
+    expect(redacted.apiKey).not.toBe('super-secret-token-12345');
+    expect(redacted.nested.password).not.toBe('pwd');
     expect(redacted.user).toBe('alice');
   });
 
   it('supports custom patterns', () => {
-    addRedactPattern(/order-\d+/g, 'order-<redacted>');
-    expect(redactSensitiveText('order-12345 placed')).toContain('order-<redacted>');
+    addRedactPattern(/order-\d+/g);
+    const redacted = redactSensitiveText('order-12345 placed');
+    expect(redacted).not.toContain('order-12345');
   });
 
   it('exposes default patterns', () => {

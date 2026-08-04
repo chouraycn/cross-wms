@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests bundled plugin facade loader resolution and activation checks.
  */

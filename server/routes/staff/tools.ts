@@ -15,7 +15,7 @@ import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import type { ToolRow, ToolRead } from '../../types/staff.js';
 import * as toolDao from '../../dao/staff/staffToolDao.js';
-import * as mcpServerDao from '../../dao/staff/staffMcpServerDao.js';
+import * as mcpServerDao from '../../engine/mcpConfigStore.js';
 import { fetchWithSsrFGuard } from '../../infra/net/fetch-guard.js';
 import { DEFAULT_SSRF_POLICY } from '../../infra/net/ssrf.js';
 import { buildStaffMcpManager } from '../../staff/staffMcpClientManager.js';
@@ -35,6 +35,9 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
 }
 
 function toolRead(row: ToolRow): ToolRead {
+  const config = parseJson<Record<string, unknown>>(row.config_json, {});
+  // 对齐原版 tools.py:76 —— mcp_config 为 config 剔除 execution 键后的剩余部分。
+  const { execution: _execution, ...mcpConfig } = config;
   return {
     id: row.id,
     tenant_id: row.tenant_id,
@@ -48,6 +51,7 @@ function toolRead(row: ToolRow): ToolRead {
     headers: parseJson(row.headers_json, {}),
     auth: parseJson(row.auth_json, {}),
     config: parseJson(row.config_json, {}),
+    mcp_config: mcpConfig,
     input_schema: parseJson(row.input_schema, {}),
     output_schema: parseJson(row.output_schema, {}),
     allowed_skills: parseJson(row.allowed_skills_json, []),
@@ -271,7 +275,7 @@ async function runToolTest(
     }
     try {
       const fullName = makeMcpToolName(serverRow.name, row.mcp_tool_name);
-      const raw = await manager.callTool(fullName, args);
+      const raw = await manager.executeMcpTool(fullName, args);
       let parsed: unknown = raw;
       try {
         parsed = JSON.parse(raw as string);
@@ -295,8 +299,8 @@ async function runToolTest(
     return { success: false, output: null, error: { code: 'NO_URL', message: 'HTTP 工具未配置 url' } };
   }
   const method = (row.method || 'POST').toUpperCase();
-  const headers: Record<string, string> = { ...(row.headers as Record<string, string>) };
-  const auth = (row.auth as { type?: string; token?: string; apiKey?: string; header?: string }) || {};
+  const headers: Record<string, string> = { ...(((row.headers_json as string | null) ?? '{}') as unknown as Record<string, string>) };
+  const auth = (((row.auth_json as string | null) ?? '{}') as unknown as { type?: string; token?: string; apiKey?: string; header?: string });
   if (auth.type === 'bearer' && auth.token) {
     headers['Authorization'] = `Bearer ${auth.token}`;
   } else if (auth.type === 'apikey' && auth.apiKey) {

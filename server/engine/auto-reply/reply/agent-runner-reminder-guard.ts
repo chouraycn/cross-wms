@@ -1,6 +1,6 @@
 // @ts-nocheck
 /** Detects reminder commitments that were not backed by scheduled cron jobs. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
 import { loadCronJobsStore, resolveCronJobsStorePath } from '@openclaw-src/cron/store.js';
 import { copyReplyPayloadMetadata } from "../reply-payload.js";
 import type { ReplyPayload } from "../types.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests channel inbound context and dispatch helper behavior.
  */

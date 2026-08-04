@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Test fixtures for successful media-understanding decisions.
 import type { MediaUnderstandingDecision } from '@openclaw-src/media-understanding/types.js';
 

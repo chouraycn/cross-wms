@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Test helper for constructing a channel account startup context.
  */

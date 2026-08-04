@@ -1,6 +1,7 @@
 import { logger } from "../../../logger.js";
 import type { ChannelId, AccountId } from "../../../channels/types.js";
 import type { ChannelTarget } from "../targets.js";
+import type { ChannelResolveResult } from "./types.adapters.js";
 
 export type TargetType = "user" | "channel" | "group" | "thread" | "dm";
 
@@ -131,4 +132,45 @@ export function isThreadTarget(target: ChannelTarget): boolean {
 
 export function hasTargetResolver(channelId: ChannelId): boolean {
   return targetResolvers.has(channelId);
+}
+
+// ============================================================================
+// Setup/allowlist target helpers (merged from openclaw/src/channels/plugins/target-resolvers.ts)
+// ============================================================================
+
+/**
+ * Builds unresolved target results with one common note.
+ * 每个输入对应一行 unresolved 结果，便于 setup UI 展示哪些条目未能解析。
+ */
+export function buildUnresolvedTargetResults(
+  inputs: string[],
+  note: string,
+): ChannelResolveResult[] {
+  return inputs.map((input) => ({
+    input,
+    resolved: false as const,
+    note,
+  }));
+}
+
+/**
+ * Resolves targets only when a required token is available.
+ * 缺少 token 时，每个输入都对应一行 unresolved 结果；有 token 时委托给 channel-owned resolver。
+ */
+export async function resolveTargetsWithOptionalToken<TResult>(params: {
+  token?: string | null;
+  inputs: string[];
+  missingTokenNote: string;
+  resolveWithToken: (params: { token: string; inputs: string[] }) => Promise<TResult[]>;
+  mapResolved: (entry: TResult) => ChannelResolveResult;
+}): Promise<ChannelResolveResult[]> {
+  const token = params.token?.trim();
+  if (!token) {
+    return buildUnresolvedTargetResults(params.inputs, params.missingTokenNote);
+  }
+  const resolved = await params.resolveWithToken({
+    token,
+    inputs: params.inputs,
+  });
+  return resolved.map(params.mapResolved);
 }

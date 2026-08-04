@@ -3,7 +3,7 @@
  * 移植自 openclaw/src/channels/registry-normalize.ts
  *
  * 降级策略：
- *  - @openclaw/normalization-core/string-coerce (normalizeOptionalLowercaseString) →
+ *  - @cdf-know/normalization-core/string-coerce (normalizeOptionalLowercaseString) →
  *    cross-wms ../infra/string-coerce.js
  *  - ./plugins/channel-id.types.js (ChannelId) → ./_openclaw-stubs.js
  *  - ./registry-lookup.js → 本目录已移植

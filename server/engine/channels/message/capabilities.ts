@@ -1,84 +1,62 @@
-import { logger } from "../../../logger.js";
-import type { ChannelId } from "../../../channels/types.js";
-import type { MessageCapabilities } from "./types.js";
+/**
+ * Channel message capability derivation.
+ *
+ * Computes durable-final delivery requirements from a concrete outbound payload.
+ */
+import type {
+  DeriveDurableFinalDeliveryRequirementsParams,
+  DurableFinalDeliveryCapability,
+  DurableFinalDeliveryRequirementMap,
+} from "./types.js";
 
-const capabilityStore = new Map<ChannelId, MessageCapabilities>();
-
-const defaultCapabilities: Required<MessageCapabilities> = {
-  text: true,
-  markdown: false,
-  attachments: false,
-  reactions: false,
-  threading: false,
-  replies: false,
-  mentions: false,
-  typing: false,
-  editing: false,
-  deletion: false,
-  readReceipts: false,
-  deliveryReceipts: false,
-};
-
-export function setChannelCapabilities(channelId: ChannelId, caps: MessageCapabilities): void {
-  capabilityStore.set(channelId, { ...defaultCapabilities, ...caps });
-  logger.debug(`[Message:Capabilities] Set capabilities for ${channelId}`);
-}
-
-export function getChannelCapabilities(channelId: ChannelId): MessageCapabilities {
-  return capabilityStore.get(channelId) ?? { ...defaultCapabilities };
-}
-
-export function hasCapability(channelId: ChannelId, capability: keyof MessageCapabilities): boolean {
-  const caps = getChannelCapabilities(channelId);
-  return caps[capability] === true;
-}
-
-export function mergeCapabilities(
-  base: MessageCapabilities,
-  override: MessageCapabilities
-): MessageCapabilities {
-  return { ...base, ...override };
-}
-
-export function disableCapabilities(
-  caps: MessageCapabilities,
-  ...toDisable: (keyof MessageCapabilities)[]
-): MessageCapabilities {
-  const result = { ...caps };
-  for (const cap of toDisable) {
-    result[cap] = false;
+function hasMediaPayload(
+  payload: DeriveDurableFinalDeliveryRequirementsParams["payload"],
+): boolean {
+  if (payload.mediaUrl?.trim()) {
+    return true;
   }
-  return result;
+  return (
+    Array.isArray(payload.mediaUrls) &&
+    payload.mediaUrls.some((url) => typeof url === "string" && url.trim().length > 0)
+  );
 }
 
-export function enableCapabilities(
-  caps: MessageCapabilities,
-  ...toEnable: (keyof MessageCapabilities)[]
-): MessageCapabilities {
-  const result = { ...caps };
-  for (const cap of toEnable) {
-    result[cap] = true;
+function setRequired(
+  requirements: DurableFinalDeliveryRequirementMap,
+  capability: DurableFinalDeliveryCapability,
+  required: boolean | undefined,
+): void {
+  if (required === true) {
+    requirements[capability] = true;
   }
-  return result;
 }
 
-export function getSupportedFeatures(channelId: ChannelId): string[] {
-  const caps = getChannelCapabilities(channelId);
-  const supported: string[] = [];
+/** Derives the adapter capabilities core needs before it can require durable final delivery. */
+export function deriveDurableFinalDeliveryRequirements(
+  params: DeriveDurableFinalDeliveryRequirementsParams,
+): DurableFinalDeliveryRequirementMap {
+  const requirements: DurableFinalDeliveryRequirementMap = {};
+  setRequired(requirements, "text", true);
+  setRequired(requirements, "media", hasMediaPayload(params.payload));
+  setRequired(
+    requirements,
+    "replyTo",
+    params.replyToId != null || params.payload.replyToId != null,
+  );
+  setRequired(requirements, "thread", params.threadId != null);
+  setRequired(requirements, "silent", params.silent);
+  setRequired(requirements, "messageSendingHooks", params.messageSendingHooks !== false);
+  setRequired(requirements, "payload", params.payloadTransport);
+  setRequired(requirements, "batch", params.batch);
+  setRequired(requirements, "reconcileUnknownSend", params.reconcileUnknownSend);
+  setRequired(requirements, "afterSendSuccess", params.afterSendSuccess);
+  setRequired(requirements, "afterCommit", params.afterCommit);
 
-  for (const [key, value] of Object.entries(caps)) {
-    if (value === true) {
-      supported.push(key);
-    }
+  for (const [capability, required] of Object.entries(params.extraCapabilities ?? {}) as Array<
+    [DurableFinalDeliveryCapability, boolean | undefined]
+  >) {
+    setRequired(requirements, capability, required);
   }
 
-  return supported;
-}
-
-export function removeChannelCapabilities(channelId: ChannelId): boolean {
-  return capabilityStore.delete(channelId);
-}
-
-export function clearAllCapabilities(): void {
-  capabilityStore.clear();
+  return requirements;
 }

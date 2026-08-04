@@ -35,8 +35,7 @@ export * as execApprovals from './exec-approvals/index.js';
 
 export * as heartbeat from './heartbeat/index.js';
 
-export type { AgentEventMap } from './agent-events.js';
-export { AgentEventBus, agentEventBus } from './agent-events.js';
+export { onAgentEvent } from './agent-events.js';
 
 export type { BinaryInfo } from './binaries.js';
 export {
@@ -135,9 +134,6 @@ export * as commandAnalysis from './command-analysis/index.js';
 export * as commandExplainer from './command-explainer/index.js';
 
 export * as formatTime from './format-time/index.js';
-
-export type { TimelineEvent, TimelineOptions } from './diagnostics-timeline.js';
-export { DiagnosticsTimeline, diagnosticsTimeline } from './diagnostics-timeline.js';
 
 export type { DotenvParseResult, DotenvOptions } from './dotenv.js';
 export { parseDotenv, loadDotenv, loadDotenvIntoProcess, stringifyDotenv, interpolateEnv } from './dotenv.js';
@@ -716,7 +712,7 @@ export * from './exec-argv-analysis.js';
 export * from './exec-authorization-plan.js';
 export * from './exec-authorization-render.js';
 export * from './exec-auto-review.js';
-export { ShellChainOperator } from './exec-command-analysis-types.js';
+export {type ShellChainOperator} from './exec-command-analysis-types.js';
 export * from './exec-command-resolution.js';
 export * from './exec-control-command-guard.js';
 export * from './exec-policy.js';
@@ -771,10 +767,7 @@ export * from './mirror.js';
 export * from './network-discovery-display.js';
 export * from './node-pairing.js';
 export * from './node-proxy-agent.js';
-export {
-  NpmIntegrityDriftPayload,
-  resolveNpmIntegrityDrift,
-  resolveNpmIntegrityDriftWithDefaultMessage,
+export {type NpmIntegrityDriftPayload, resolveNpmIntegrityDrift, resolveNpmIntegrityDriftWithDefaultMessage, 
 } from './npm-integrity.js';
 export * from './npm-managed-root.js';
 export * from './npm-pack-install.js';
@@ -786,20 +779,7 @@ export * from './package-json.js';
 export * from './package-update-steps.js';
 export * from './package-update-utils.js';
 export * from './parse-offsetless-zoned-datetime.js';
-export {
-  NormalizedOutboundPayload,
-  OutboundPayloadPlan,
-  OutboundPayloadMirror,
-  createOutboundPayloadPlan,
-  projectOutboundPayloadPlanForDelivery,
-  projectOutboundPayloadPlanForOutbound,
-  projectOutboundPayloadPlanForJson,
-  projectOutboundPayloadPlanForMirror,
-  summarizeOutboundPayloadForTransport,
-  normalizeReplyPayloadsForDelivery,
-  normalizeOutboundPayloads,
-  normalizeOutboundPayloadsForJson,
-  formatOutboundPayloadLog,
+export {type NormalizedOutboundPayload, type OutboundPayloadPlan, type OutboundPayloadMirror, createOutboundPayloadPlan, projectOutboundPayloadPlanForDelivery, projectOutboundPayloadPlanForOutbound, projectOutboundPayloadPlanForJson, projectOutboundPayloadPlanForMirror, summarizeOutboundPayloadForTransport, normalizeReplyPayloadsForDelivery, normalizeOutboundPayloads, normalizeOutboundPayloadsForJson, formatOutboundPayloadLog, 
 } from './payloads.js';
 export * from './policy.js';
 export * from './provider-usage-plugin-runtime.test-mocks.js';
@@ -816,7 +796,7 @@ export * from './provider-usage.fetch.zai.js';
 // export * from './provider-usage.load.js';  // removed: TS2308 conflict
 // export * from './provider-usage.shared.js';  // removed: TS2308 conflict
 // export * from './provider-usage.js';  // removed: TS2308 conflict
-export { UsageSummary, UsageProviderId } from './provider-usage.types.js';
+export {type UsageSummary, type UsageProviderId} from './provider-usage.types.js';
 export * from './proxy-fetch.js';
 export * from './proxy-lifecycle.js';
 export * from './proxy-tls.js';
@@ -835,18 +815,11 @@ export * from './risks.js';
 export * from './runtime-fetch.js';
 export * from './safe-package-install.js';
 export * from './sanitize-text.js';
-export * from './scripts-modules.js';
+// export * from './scripts-modules.js';  // removed: .d.ts is not a module
 export * from './send-deps.js';
 export * from './session-binding-normalization.js';
 // export * from './session-binding-service.js';  // removed: TS2308 conflict
-export {
-  BindingTargetKind,
-  BindingStatus,
-  SessionBindingPlacement,
-  SessionBindingErrorCode,
-  SessionBindingBindInput,
-  SessionBindingUnbindInput,
-  SessionBindingCapabilities,
+export {type BindingTargetKind, type BindingStatus, type SessionBindingPlacement, type SessionBindingErrorCode, type SessionBindingBindInput, type SessionBindingUnbindInput, type SessionBindingCapabilities, 
 } from './session-binding.types.js';
 export * from './session-context.js';
 export * from './session-cost-usage.js';

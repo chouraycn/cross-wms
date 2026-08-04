@@ -1,9 +1,44 @@
 /**
- * 移植自 openclaw/src/agents/bash-tools.exec-host-node.types.ts
- *
- * 降级策略：cross-wms 未完整移植 openclaw agents 子系统，
- * 本文件为降级 stub，仅保留导出签名，函数体抛出 "not implemented" 错误。
- * 类型降级为 unknown 占位，常量降级为 undefined。
+ * Node-host exec command parameter contracts.
+ * Centralizes the full host/runtime boundary so node exec callers and handlers
+ * cannot drift on approval, routing, env, or timeout fields.
  */
+import type { ExecAsk, ExecSecurity } from "../infra/exec-approvals.js";
+import type { ExecAutoReviewer } from "../infra/exec-auto-review.js";
+import type { ExecElevatedDefaults } from "./bash-tools.exec-types.js";
 
-export type ExecuteNodeHostCommandParams = unknown;
+/** Full parameter bundle for Node-hosted exec command execution. */
+export type ExecuteNodeHostCommandParams = {
+  command: string;
+  workdir: string | undefined;
+  env: Record<string, string>;
+  requestedEnv?: Record<string, string>;
+  requestedNode?: string;
+  boundNode?: string;
+  sessionKey?: string;
+  /** Session UUID active when the approval was requested; pins the followup. */
+  sessionId?: string;
+  /** Session-store template, so the direct/denied followup can detect a rebind. */
+  sessionStore?: string;
+  bashElevated?: ExecElevatedDefaults;
+  approvalReviewerDeviceId?: string;
+  turnSourceChannel?: string;
+  turnSourceTo?: string;
+  turnSourceAccountId?: string;
+  turnSourceThreadId?: string | number;
+  trigger?: string;
+  agentId?: string;
+  security: ExecSecurity;
+  ask: ExecAsk;
+  autoReview?: boolean;
+  autoReviewer?: ExecAutoReviewer;
+  strictInlineEval?: boolean;
+  commandHighlighting?: boolean;
+  timeoutSec?: number;
+  defaultTimeoutSec: number;
+  approvalRunningNoticeMs: number;
+  warnings: string[];
+  notifySessionKey?: string;
+  notifyOnExit?: boolean;
+  trustedSafeBinDirs?: ReadonlySet<string>;
+};

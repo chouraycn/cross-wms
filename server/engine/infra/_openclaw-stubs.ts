@@ -1,4 +1,10 @@
 /**
+ * @deprecated This file uses legacy stub naming.
+ * Future refactoring should rename to *.stub.ts convention.
+ * See P3-23 in optimization plan.
+ */
+
+/**
  * 本地 stub 与降级实现 — 为移植自 openclaw 的工具模块提供 @openclaw/* 包外部依赖的占位实现。
  *
  * 设计原则：
@@ -17,7 +23,7 @@ import path from "node:path";
 import { normalizeOptionalString } from "./string-coerce.js";
 
 // ============================================================================
-// @openclaw/normalization-core/string-coerce —— 补充 cross-wms 缺失的导出
+// @cdf-know/normalization-core/string-coerce —— 补充 cross-wms 缺失的导出
 // ============================================================================
 
 /**

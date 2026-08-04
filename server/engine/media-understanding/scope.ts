@@ -3,7 +3,7 @@
 // Ported from openclaw/src/media-understanding/scope.ts.
 //
 // Dependency adjustments:
-//   - @openclaw/normalization-core/string-coerce normalizeOptionalLowercaseString
+//   - @cdf-know/normalization-core/string-coerce normalizeOptionalLowercaseString
 //     → ../infra/string-coerce.js (cross-wms port of normalization-core helpers)
 //   - ../channels/chat-type.js normalizeChatType
 //     → available in cross-wms at the same relative path

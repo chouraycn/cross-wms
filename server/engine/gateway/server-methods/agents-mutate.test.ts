@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Agent mutation tests cover create/update/delete handlers, safe workspace file
 // access, config preconditions, trash cleanup, and attestation handling.
 import { describe, expect, it, vi, beforeEach } from "vitest";

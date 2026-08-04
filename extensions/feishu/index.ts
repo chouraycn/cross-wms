@@ -7,7 +7,7 @@ import type { ChannelMessageSendResult, MessageSendContext } from "../../server/
 import { getGlobalChannelRegistry } from "../../server/channels/registry.js";
 import { createFeishuClient, clearClientCache } from "./src/client.js";
 import { probeFeishu, type ProbeFeishuOptions } from "./src/probe.js";
-import { sendMessageFeishu, sendMarkdownCardFeishu, sendStructuredCardFeishu, sendMediaFeishu, editMessageFeishu, buildMarkdownCard, buildStructuredCard } from "./src/send.js";
+import { sendMessageFeishu, sendMarkdownCardFeishu, sendStructuredCardFeishu, editMessageFeishu, buildMarkdownCard, buildStructuredCard } from "./src/send.js";
 import { addTypingIndicator, removeTypingIndicator, type TypingIndicatorState, isFeishuBackoffError, FeishuBackoffError } from "./src/typing.js";
 import { parsePostContent } from "./src/post.js";
 import { createPinFeishu, removePinFeishu, listPinsFeishu } from "./src/pins.js";
@@ -19,7 +19,7 @@ import { saveMessageResourceFeishu, uploadImageFeishu, uploadFileFeishu, sendIma
 import { resolveFeishuDmIngressAccess, resolveFeishuGroupConversationIngressAccess, resolveFeishuGroupSenderActivationIngressAccess, resolveFeishuGroupConfig, hasExplicitFeishuGroupConfig, resolveFeishuGroupToolPolicy, resolveFeishuReplyPolicy, normalizeFeishuAllowEntry } from "./src/policy.js";
 import { probeFeishu as probeFeishuHealth } from "./src/probe.js";
 import { runFeishuDoctorSequence, inspectFeishuDoctorState, feishuDoctor, type FeishuDoctorInspection, type FeishuDoctorRepairReport } from "./src/doctor.js";
-import { claimUnprocessedFeishuMessage, finalizeFeishuMessageProcessing, recordProcessedFeishuMessage, forgetProcessedFeishuMessage, hasProcessedFeishuMessage, tryRecordMessagePersistent, warmupDedupFromPluginState, testing as dedupTesting } from "./src/dedup.js";
+import { claimUnprocessedFeishuMessage, finalizeFeishuMessageProcessing, recordProcessedFeishuMessage, forgetProcessedFeishuMessage, hasProcessedFeishuMessage, tryRecordMessagePersistent, warmupDedupFromPluginState, dedupTesting } from "./src/dedup.js";
 import { registerFeishuDocTools } from "./src/docx.js";
 import { registerFeishuChatTools } from "./src/chat.js";
 import { registerFeishuWikiTools } from "./src/wiki.js";
@@ -331,7 +331,7 @@ export {
   uploadFileFeishu,
   sendImageFeishu,
   sendFileFeishu,
-  sendMediaFeishu,
+  sendMediaFeishuFull,
   detectFileType,
   sanitizeFileNameForUpload,
   shouldSuppressFeishuTextForVoiceMedia,

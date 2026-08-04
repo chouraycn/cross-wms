@@ -3,7 +3,7 @@
 // 移植自 openclaw/src/plugins/manifest-command-aliases.ts。
 //
 // 降级策略：
-//  - 原文件依赖 @openclaw/normalization-core/string-coerce 的
+//  - 原文件依赖 @cdf-know/normalization-core/string-coerce 的
 //    normalizeOptionalLowercaseString 与 normalizeOptionalString。
 //    改用 cross-wms 的 ../infra/string-coerce.js，行为一致。
 //  - 原文件依赖 ../utils.js 的 isRecord。改用 cross-wms 的

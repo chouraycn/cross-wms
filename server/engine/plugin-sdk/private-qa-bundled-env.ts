@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Runtime helper for private QA CLI source-checkout bundled plugin resolution.
  */

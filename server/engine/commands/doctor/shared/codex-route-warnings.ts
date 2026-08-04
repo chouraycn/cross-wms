@@ -1,9 +1,9 @@
 // Doctor warnings and repairs for legacy OpenAI Codex model/provider routing.
 import fs from "node:fs";
-import { AGENT_MODEL_CONFIG_KEYS } from "@openclaw/model-catalog-core/configured-model-refs";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asOptionalRecord as asMutableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { AGENT_MODEL_CONFIG_KEYS } from "@cdf-know/model-catalog-core/configured-model-refs";
+import { normalizeProviderId } from "@cdf-know/model-catalog-core/provider-id";
+import { asOptionalRecord as asMutableRecord } from "@cdf-know/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString as normalizeString } from "@cdf-know/normalization-core/string-coerce";
 import { normalizeOptionalAgentRuntimeId } from "@openclaw-src/agents/agent-runtime-id.js";
 import { resolveConfiguredProviderFallback } from "@openclaw-src/agents/configured-provider-fallback.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@openclaw-src/agents/defaults.js";

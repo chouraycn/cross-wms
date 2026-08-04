@@ -1,195 +1,250 @@
-import Database from "better-sqlite3";
-import type { CronRunLogEntry, GetCronRunHistoryOptions, CronRunHistoryPage } from "./index.js";
-import { encodeCronRunLogEntry, decodeCronRunLogEntry } from "./entry-codec.js";
+// @ts-nocheck
+/** SQLite-backed cron run-log storage helpers. */
+import type { DatabaseSync } from "node:sqlite";
+import type { Insertable, Selectable, SelectQueryBuilder } from "kysely";
+import {
+  executeSqliteQuerySync,
+  executeSqliteQueryTakeFirstSync,
+  getNodeSqliteKysely,
+} from "../../infra/kysely-sync.js";
+import { normalizeSqliteNumber } from "../../infra/sqlite-number.js";
+import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { CronRunLogEntry } from "../run-log-types.js";
+import type { CronDeliveryStatus, CronRunStatus } from "../types.js";
+import { parseCronRunLogEntryObject } from "./entry-codec.js";
 
-interface SqliteCronRunLogStoreOptions {
-  dbPath?: string;
-  maxEntriesPerJob?: number;
-  maxTotalEntries?: number;
+type CronRunLogsTable = OpenClawStateKyselyDatabase["cron_run_logs"];
+type CronRunLogDatabase = Pick<OpenClawStateKyselyDatabase, "cron_run_logs">;
+type CronRunLogRow = Selectable<CronRunLogsTable>;
+type CronRunLogInsert = Insertable<CronRunLogsTable>;
+type CronRunLogFilterParams = {
+  storeKey: string;
+  jobId?: string;
+  statuses: CronRunStatus[] | null;
+  deliveryStatuses: CronDeliveryStatus[] | null;
+  runId?: string;
+};
+
+function getCronRunLogKysely(db: DatabaseSync) {
+  return getNodeSqliteKysely<CronRunLogDatabase>(db);
 }
 
-const DEFAULT_MAX_ENTRIES_PER_JOB = 2000;
-const DEFAULT_MAX_TOTAL_ENTRIES = 50000;
+function booleanToInteger(value: boolean | undefined): number | null {
+  return typeof value === "boolean" ? (value ? 1 : 0) : null;
+}
 
-export class SqliteCronRunLogStore {
-  private readonly db: Database.Database;
-  private readonly maxEntriesPerJob: number;
-  private readonly maxTotalEntries: number;
+function integerToBoolean(value: number | bigint | null): boolean | undefined {
+  const normalized = normalizeSqliteNumber(value);
+  return normalized == null ? undefined : normalized !== 0;
+}
 
-  constructor(options: SqliteCronRunLogStoreOptions = {}) {
-    this.db = new Database(options.dbPath ?? ":memory:");
-    this.maxEntriesPerJob = options.maxEntriesPerJob ?? DEFAULT_MAX_ENTRIES_PER_JOB;
-    this.maxTotalEntries = options.maxTotalEntries ?? DEFAULT_MAX_TOTAL_ENTRIES;
+function bindCronRunLogRow(params: {
+  storeKey: string;
+  seq: number;
+  entry: CronRunLogEntry;
+}): CronRunLogInsert {
+  const entry = params.entry;
+  // Store indexed columns for filtering and the original JSON payload for
+  // forward-compatible fields that are not yet indexed.
+  return {
+    store_key: params.storeKey,
+    job_id: entry.jobId,
+    seq: params.seq,
+    ts: entry.ts,
+    status: entry.status ?? null,
+    error: entry.error ?? null,
+    summary: entry.summary ?? null,
+    diagnostics_summary: entry.diagnostics?.summary ?? null,
+    delivery_status: entry.deliveryStatus ?? null,
+    delivery_error: entry.deliveryError ?? null,
+    delivered: booleanToInteger(entry.delivered),
+    session_id: entry.sessionId ?? null,
+    session_key: entry.sessionKey ?? null,
+    run_id: entry.runId ?? null,
+    run_at_ms: entry.runAtMs ?? null,
+    duration_ms: entry.durationMs ?? null,
+    next_run_at_ms: entry.nextRunAtMs ?? null,
+    model: entry.model ?? null,
+    provider: entry.provider ?? null,
+    total_tokens: entry.usage?.total_tokens ?? null,
+    entry_json: JSON.stringify(entry),
+    created_at: Date.now(),
+  };
+}
 
-    this.init();
+/** Rehydrates a cron run-log row, preferring indexed SQLite columns over JSON payload values. */
+export function parseStoredRunLogEntry(row: CronRunLogRow): CronRunLogEntry | null {
+  let rawEntry: unknown;
+  try {
+    rawEntry = JSON.parse(row.entry_json);
+  } catch {
+    return null;
   }
-
-  private init(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS cron_run_log (
-        runId TEXT PRIMARY KEY,
-        jobId TEXT NOT NULL,
-        jobName TEXT,
-        startTime INTEGER NOT NULL,
-        endTime INTEGER,
-        durationMs INTEGER,
-        status TEXT NOT NULL,
-        error TEXT,
-        errorReason TEXT,
-        summary TEXT,
-        deliveryStatus TEXT
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_cron_run_log_jobId ON cron_run_log(jobId);
-      CREATE INDEX IF NOT EXISTS idx_cron_run_log_startTime ON cron_run_log(startTime);
-      CREATE INDEX IF NOT EXISTS idx_cron_run_log_status ON cron_run_log(status);
-    `);
+  const parsed = parseCronRunLogEntryObject(rawEntry, { jobId: row.job_id });
+  if (!parsed) {
+    return null;
   }
+  return {
+    ...parsed,
+    ts: normalizeSqliteNumber(row.ts) ?? parsed.ts,
+    jobId: row.job_id,
+    status: (row.status as CronRunStatus | null) ?? parsed.status,
+    error: row.error ?? parsed.error,
+    summary: row.summary ?? parsed.summary,
+    delivered: integerToBoolean(row.delivered) ?? parsed.delivered,
+    deliveryStatus: (row.delivery_status as CronDeliveryStatus | null) ?? parsed.deliveryStatus,
+    deliveryError: row.delivery_error ?? parsed.deliveryError,
+    sessionId: row.session_id ?? parsed.sessionId,
+    sessionKey: row.session_key ?? parsed.sessionKey,
+    runId: row.run_id ?? parsed.runId,
+    runAtMs: normalizeSqliteNumber(row.run_at_ms) ?? parsed.runAtMs,
+    durationMs: normalizeSqliteNumber(row.duration_ms) ?? parsed.durationMs,
+    nextRunAtMs: normalizeSqliteNumber(row.next_run_at_ms) ?? parsed.nextRunAtMs,
+    model: row.model ?? parsed.model,
+    provider: row.provider ?? parsed.provider,
+  };
+}
 
-  record(entry: CronRunLogEntry): CronRunLogEntry {
-    const encoded = encodeCronRunLogEntry(entry);
-
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO cron_run_log (
-        runId, jobId, jobName, startTime, endTime, durationMs,
-        status, error, errorReason, summary, deliveryStatus
-      ) VALUES (
-        @runId, @jobId, @jobName, @startTime, @endTime, @durationMs,
-        @status, @error, @errorReason, @summary, @deliveryStatus
-      )
-    `);
-
-    stmt.run(encoded);
-
-    this.trim();
-
-    return entry;
+/** Reads run-log rows for one store, optionally scoped to one job, in chronological order. */
+export function readCronRunLogRows(
+  db: DatabaseSync,
+  storeKey: string,
+  jobId?: string,
+): CronRunLogRow[] {
+  let query = getCronRunLogKysely(db)
+    .selectFrom("cron_run_logs")
+    .selectAll()
+    .where("store_key", "=", storeKey);
+  if (jobId) {
+    query = query.where("job_id", "=", jobId);
   }
+  return executeSqliteQuerySync(db, query.orderBy("ts", "asc").orderBy("seq", "asc")).rows;
+}
 
-  private trim(): void {
-    this.trimPerJob();
-    this.trimGlobal();
+function applyRunLogFilters<Output>(
+  query: SelectQueryBuilder<CronRunLogDatabase, "cron_run_logs", Output>,
+  params: CronRunLogFilterParams,
+): SelectQueryBuilder<CronRunLogDatabase, "cron_run_logs", Output> {
+  let next = query.where("store_key", "=", params.storeKey);
+  if (params.jobId) {
+    next = next.where("job_id", "=", params.jobId);
   }
-
-  private trimPerJob(): void {
-    const stmt = this.db.prepare(`
-      DELETE FROM cron_run_log
-      WHERE runId IN (
-        SELECT runId FROM cron_run_log
-        WHERE jobId = ?
-        ORDER BY startTime DESC
-        LIMIT -1 OFFSET ?
-      )
-    `);
-
-    const jobIds = this.db.prepare("SELECT DISTINCT jobId FROM cron_run_log").all() as { jobId: string }[];
-
-    for (const { jobId } of jobIds) {
-      stmt.run(jobId, this.maxEntriesPerJob);
-    }
+  if (params.statuses?.length) {
+    next = next.where("status", "in", params.statuses);
   }
-
-  private trimGlobal(): void {
-    const stmt = this.db.prepare(`
-      DELETE FROM cron_run_log
-      WHERE runId IN (
-        SELECT runId FROM cron_run_log
-        ORDER BY startTime DESC
-        LIMIT -1 OFFSET ?
-      )
-    `);
-
-    stmt.run(this.maxTotalEntries);
+  if (params.deliveryStatuses?.length) {
+    next = next.where((eb) =>
+      eb.or(
+        params.deliveryStatuses!.map((status) =>
+          // Older rows stored an omitted delivery status as SQL NULL; keep
+          // not-requested filters compatible with both representations.
+          status === "not-requested"
+            ? eb.or([eb("delivery_status", "is", null), eb("delivery_status", "=", status)])
+            : eb("delivery_status", "=", status),
+        ),
+      ),
+    );
   }
-
-  getHistory(options: GetCronRunHistoryOptions = {}): CronRunLogEntry[] {
-    const page = this.getHistoryPage(options);
-    return page.entries;
+  const runId = params.runId?.trim();
+  if (runId) {
+    next = next.where("run_id", "=", runId);
   }
+  return next;
+}
 
-  getHistoryPage(options: GetCronRunHistoryOptions = {}): CronRunHistoryPage {
-    const limit = Math.max(1, Math.min(200, Math.floor(options.limit ?? 50)));
-    const offset = Math.max(0, Math.floor(options.offset ?? 0));
-    const sortDir = options.sortDir === "asc" ? "ASC" : "DESC";
+/** Counts run-log rows after applying the same filters used by paged reads. */
+export function countCronRunLogRows(params: {
+  db: DatabaseSync;
+  storeKey: string;
+  jobId?: string;
+  statuses: CronRunStatus[] | null;
+  deliveryStatuses: CronDeliveryStatus[] | null;
+  runId?: string;
+}): number {
+  const row = executeSqliteQueryTakeFirstSync(
+    params.db,
+    applyRunLogFilters(
+      getCronRunLogKysely(params.db)
+        .selectFrom("cron_run_logs")
+        .select((eb) => eb.fn.countAll<number | bigint>().as("count")),
+      params,
+    ),
+  );
+  return normalizeSqliteNumber(row?.count ?? null) ?? 0;
+}
 
-    let whereClause = "";
-    const params: unknown[] = [];
-
-    if (options.jobId) {
-      whereClause += ` AND jobId = ?`;
-      params.push(options.jobId);
-    }
-
-    if (options.runId) {
-      whereClause += ` AND runId = ?`;
-      params.push(options.runId);
-    }
-
-    if (options.status && options.status !== "all") {
-      whereClause += ` AND status = ?`;
-      params.push(options.status);
-    }
-
-    if (options.statuses && options.statuses.length > 0) {
-      const placeholders = options.statuses.map(() => "?").join(",");
-      whereClause += ` AND status IN (${placeholders})`;
-      params.push(...options.statuses);
-    }
-
-    if (options.query) {
-      const query = `%${options.query.toLowerCase()}%`;
-      whereClause += ` AND (LOWER(summary) LIKE ? OR LOWER(error) LIKE ? OR LOWER(jobName) LIKE ? OR LOWER(jobId) LIKE ?)`;
-      params.push(query, query, query, query);
-    }
-
-    const baseQuery = `SELECT * FROM cron_run_log WHERE 1=1${whereClause}`;
-
-    const countStmt = this.db.prepare(`SELECT COUNT(*) as total FROM cron_run_log WHERE 1=1${whereClause}`);
-    const countResult = countStmt.get(...params) as { total: number };
-    const total = countResult.total;
-
-    const queryStmt = this.db.prepare(`${baseQuery} ORDER BY startTime ${sortDir} LIMIT ? OFFSET ?`);
-    params.push(limit, offset);
-
-    const rows = queryStmt.all(...params) as Record<string, unknown>[];
-    const entries = rows.map((row) => decodeCronRunLogEntry(row)).filter((e): e is CronRunLogEntry => e !== null);
-
-    const boundedOffset = Math.min(total, offset);
-    const nextOffset = boundedOffset + entries.length;
-
-    return {
-      entries,
-      total,
-      offset: boundedOffset,
-      limit,
-      hasMore: nextOffset < total,
-      nextOffset: nextOffset < total ? nextOffset : null,
-    };
+/** Reads a sorted, filtered page of cron run-log rows. */
+export function readCronRunLogRowsPage(params: {
+  db: DatabaseSync;
+  storeKey: string;
+  jobId?: string;
+  statuses: CronRunStatus[] | null;
+  deliveryStatuses: CronDeliveryStatus[] | null;
+  runId?: string;
+  sortDir: "asc" | "desc";
+  offset?: number;
+  limit?: number;
+}): CronRunLogRow[] {
+  let query = applyRunLogFilters(
+    getCronRunLogKysely(params.db).selectFrom("cron_run_logs").selectAll(),
+    params,
+  )
+    .orderBy("ts", params.sortDir)
+    .orderBy("seq", params.sortDir);
+  if (params.limit !== undefined && params.offset !== undefined) {
+    query = query.limit(params.limit).offset(params.offset);
   }
+  return executeSqliteQuerySync(params.db, query).rows;
+}
 
-  getEntry(runId: string): CronRunLogEntry | undefined {
-    const stmt = this.db.prepare("SELECT * FROM cron_run_log WHERE runId = ?");
-    const row = stmt.get(runId) as Record<string, unknown> | undefined;
+function nextCronRunLogSeq(db: DatabaseSync, storeKey: string, jobId: string): number {
+  const row = executeSqliteQueryTakeFirstSync(
+    db,
+    getCronRunLogKysely(db)
+      .selectFrom("cron_run_logs")
+      .select((eb) => eb.fn.max<number | bigint>("seq").as("seq"))
+      .where("store_key", "=", storeKey)
+      .where("job_id", "=", jobId),
+  );
+  return (normalizeSqliteNumber(row?.seq ?? null) ?? 0) + 1;
+}
 
-    if (!row) {
-      return undefined;
-    }
+/** Appends a cron run-log entry with a per-job monotonic sequence number. */
+export function insertCronRunLogEntry(
+  db: DatabaseSync,
+  storeKey: string,
+  entry: CronRunLogEntry,
+): void {
+  const seq = nextCronRunLogSeq(db, storeKey, entry.jobId);
+  executeSqliteQuerySync(
+    db,
+    getCronRunLogKysely(db)
+      .insertInto("cron_run_logs")
+      .values(bindCronRunLogRow({ storeKey, seq, entry })),
+  );
+}
 
-    const decoded = decodeCronRunLogEntry(row);
-    return decoded ?? undefined;
-  }
-
-  getSize(): number {
-    const stmt = this.db.prepare("SELECT COUNT(*) as count FROM cron_run_log");
-    const result = stmt.get() as { count: number };
-    return result.count;
-  }
-
-  clear(): void {
-    this.db.exec("DELETE FROM cron_run_log");
-  }
-
-  close(): void {
-    this.db.close();
-  }
+/** Prunes old cron run-log rows for one job, retaining the newest keepLines rows. */
+export function pruneCronRunLogRows(
+  db: DatabaseSync,
+  storeKey: string,
+  jobId: string,
+  keepLines: number,
+): void {
+  const keep = Math.max(1, Math.floor(keepLines));
+  const keepSeqs = getCronRunLogKysely(db)
+    .selectFrom("cron_run_logs")
+    .select("seq")
+    .where("store_key", "=", storeKey)
+    .where("job_id", "=", jobId)
+    .orderBy("seq", "desc")
+    .limit(keep);
+  executeSqliteQuerySync(
+    db,
+    getCronRunLogKysely(db)
+      .deleteFrom("cron_run_logs")
+      .where("store_key", "=", storeKey)
+      .where("job_id", "=", jobId)
+      .where("seq", "not in", keepSeqs),
+  );
 }

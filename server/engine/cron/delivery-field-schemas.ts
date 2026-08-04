@@ -1,45 +1,59 @@
-import { z } from "zod";
+/** Parses user-provided cron delivery fields into narrow runtime values. */
+import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
+import { z, type ZodType } from "zod";
 
-export const deliveryModeSchema = z.enum(["none", "announce", "webhook"]);
+const trimStringPreprocess = (value: unknown) => (typeof value === "string" ? value.trim() : value);
 
-export const deliveryChannelSchema = z.string().trim().optional();
+const trimLowercaseStringPreprocess = (value: unknown) =>
+  normalizeOptionalLowercaseString(value) ?? value;
 
-export const deliveryToSchema = z.string().trim().optional();
+const DeliveryModeFieldSchema = z
+  .preprocess(trimLowercaseStringPreprocess, z.enum(["deliver", "announce", "none", "webhook"]))
+  // "deliver" is the historical CLI spelling; runtime delivery uses announce.
+  .transform((value) => (value === "deliver" ? "announce" : value));
 
-export const deliveryAccountIdSchema = z.string().trim().optional();
+/** Accepts non-empty string fields after trimming and lowercasing user-provided delivery input. */
+export const LowercaseNonEmptyStringFieldSchema = z.preprocess(
+  trimLowercaseStringPreprocess,
+  z.string().min(1),
+);
 
-export const deliveryThreadIdSchema = z.union([z.string(), z.number()]).optional();
+/** Accepts non-empty string fields after trimming delivery input without changing case. */
+export const TrimmedNonEmptyStringFieldSchema = z.preprocess(
+  trimStringPreprocess,
+  z.string().min(1),
+);
 
-export const deliveryBestEffortSchema = z.boolean().optional();
+/** Accepts delivery thread identifiers as either trimmed strings or finite numeric ids. */
+export const DeliveryThreadIdFieldSchema = z.union([
+  TrimmedNonEmptyStringFieldSchema,
+  z.number().finite(),
+]);
 
-export const deliverySchema = z.object({
-  mode: deliveryModeSchema,
-  channel: deliveryChannelSchema,
-  to: deliveryToSchema,
-  accountId: deliveryAccountIdSchema,
-  threadId: deliveryThreadIdSchema,
-  bestEffort: deliveryBestEffortSchema,
-});
+/** Accepts non-negative finite timeout seconds from cron delivery payloads. */
+export const TimeoutSecondsFieldSchema = z.number().finite().nonnegative();
 
-export const failureDestinationSchema = z.object({
-  channel: deliveryChannelSchema,
-  to: deliveryToSchema,
-  accountId: deliveryAccountIdSchema,
-  mode: z.enum(["announce", "webhook"]).optional(),
-});
+type ParsedDeliveryInput = {
+  mode?: "announce" | "none" | "webhook";
+  channel?: string;
+  to?: string;
+  threadId?: string | number;
+  accountId?: string;
+};
 
-export const completionDestinationSchema = z.object({
-  mode: z.literal("webhook"),
-  to: deliveryToSchema,
-});
+/** Parses optional cron delivery fields while dropping invalid values instead of throwing. */
+export function parseDeliveryInput(input: Record<string, unknown>): ParsedDeliveryInput {
+  return {
+    mode: parseOptionalField(DeliveryModeFieldSchema, input.mode),
+    channel: parseOptionalField(LowercaseNonEmptyStringFieldSchema, input.channel),
+    to: parseOptionalField(TrimmedNonEmptyStringFieldSchema, input.to),
+    threadId: parseOptionalField(DeliveryThreadIdFieldSchema, input.threadId),
+    accountId: parseOptionalField(TrimmedNonEmptyStringFieldSchema, input.accountId),
+  };
+}
 
-export const deliveryPatchSchema = z.object({
-  mode: deliveryModeSchema.optional(),
-  channel: z.union([deliveryChannelSchema, z.literal(null)]).optional(),
-  to: z.union([deliveryToSchema, z.literal(null)]).optional(),
-  threadId: z.union([deliveryThreadIdSchema, z.literal(null)]).optional(),
-  accountId: z.union([deliveryAccountIdSchema, z.literal(null)]).optional(),
-  bestEffort: deliveryBestEffortSchema,
-  completionDestination: z.union([completionDestinationSchema, z.literal(null)]).optional(),
-  failureDestination: z.union([failureDestinationSchema, z.literal(null)]).optional(),
-});
+/** Returns a parsed field value only when the supplied schema accepts it. */
+export function parseOptionalField<T>(schema: ZodType<T>, value: unknown): T | undefined {
+  const parsed = schema.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+}
