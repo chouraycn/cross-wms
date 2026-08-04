@@ -1,6 +1,7 @@
 {
-  "version": "1.7.171",
-  "pubDate": "2026-07-30",
-  "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v1.7.171/CDF%20Know%20Clow-1.7.171.dmg",
+  "version": "1.7.182",
+  "channel": "stable",
+  "pubDate": "2026-08-04",
+  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.7.182/CDF%20Know%20Clow-1.7.182.dmg",
   "minVersion": "1.0.0"
 }

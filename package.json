@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.172",
+  "version": "1.7.182",
   "type": "module",
   "bin": {
     "cdf-cli": "bin/cdf-cli.mjs"
@@ -12,12 +12,16 @@
   "scripts": {
     "dev:server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx watch --tsconfig server/tsconfig.json server/index.ts",
     "server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx --tsconfig server/tsconfig.json server/index.ts",
+    "build:server": "node build-server.mjs",
+    "dev:fast": "node build-server.mjs && NODE_TLS_REJECT_UNAUTHORIZED=0 STAFF_AUTH_ALLOW_DEFAULT=1 node server_dist/index.cjs",
     "dev": "concurrently \"npm run dev:server\" \"vite\"",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run staffdeck:build",
+    "staffdeck:build": "node scripts/build-staffdeck-app.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
     "typecheck:web": "tsc --noEmit",
     "typecheck:server": "tsc --noEmit -p server/tsconfig.json",
+    "typecheck:tsgo": "tsgo --noEmit -p server/tsconfig.json",
     "bump": "node scripts/bump-version.cjs",
     "bump:patch": "node scripts/bump-version.cjs patch",
     "bump:minor": "node scripts/bump-version.cjs minor",
@@ -37,6 +41,7 @@
     "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
     "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
     "test:e2e:api": "vitest run --config=vitest.config.e2e.ts",
+    "test:contracts": "vitest run tests/contracts/ --config vitest.config.e2e.ts",
     "test:e2e:report": "playwright show-report e2e-report",
     "tui": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts",
     "tui:embedded": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts --http --url http://127.0.0.1:3001",
@@ -45,6 +50,8 @@
     "cli": "tsx --tsconfig server/tsconfig.json server/cli/index.ts",
     "lint": "eslint src/ server/ --ext .ts,.tsx",
     "lint:fix": "eslint src/ server/ --ext .ts,.tsx --fix",
+    "lint:ox": "oxlint server/ src/ --tsconfig=tsconfig.json",
+    "lint:ox:fix": "oxlint server/ src/ --tsconfig=tsconfig.json --fix",
     "prepare": "husky",
     "build:packages": "npm run build --workspaces --if-present",
     "build:plugin-sdk": "npm run build -w @cdf-know/plugin-sdk",
@@ -56,7 +63,13 @@
     "publish:packages": "bash scripts/publish-packages.sh",
     "publish:packages:dry": "bash scripts/publish-packages.sh --dry-run",
     "deadcode": "knip --config knip.json",
-    "deadcode:fix": "knip --config knip.json --fix"
+    "deadcode:fix": "knip --config knip.json --fix",
+    "doctor": "bash scripts/ci-quick-check.sh",
+    "fix": "npm run lint:fix && npm run deadcode:fix",
+    "test:flaky": "vitest run --retry=2 --reporter=verbose",
+    "deps:check": "npm ls --depth=0 2>&1 | head -50",
+    "deps:audit": "npm audit --audit-level=high",
+    "deps:shrinkwrap:check": "test -f npm-shrinkwrap.json || echo 'No shrinkwrap found'"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.22.1",
@@ -117,7 +130,7 @@
     "pdf-parse": "^1.1.1",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
-    "playwright": "^1.60.0",
+    "playwright": "^1.61.1",
     "proper-lockfile": "^4.1.2",
     "qrcode": "^1.5.4",
     "quickjs-wasi": "^3.0.0",
@@ -173,6 +186,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",
+    "@typescript/native-preview": "^7.0.0-dev",
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/coverage-v8": "^3.2.6",
     "autoprefixer": "^10.5.2",
@@ -183,9 +197,11 @@
     "husky": "^9.1.7",
     "jsdom": "^24.1.3",
     "knip": "^6.26.0",
+    "kysely-codegen": "^0.18.5",
     "lint-staged": "^17.0.8",
     "markdown-it": "^14.3.0",
     "msw": "^2.14.6",
+    "oxlint": "^1.67.0",
     "postcss": "^8.4.38",
     "supertest": "^7.2.2",
     "tailwindcss": "^3.4.19",
@@ -212,5 +228,6 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
-  }
+  },
+  "packageManager": "pnpm@9.15.0"
 }
