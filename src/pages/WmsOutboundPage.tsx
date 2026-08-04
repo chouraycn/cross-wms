@@ -82,7 +82,7 @@ const WmsOutboundPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound`);
+      const res = await fetch(`${BASE_URL}/api/wms/outbound-review`);
       const json = await res.json();
       if (json.code === 0 || json.success) {
         setData(json.data || []);
@@ -130,7 +130,7 @@ const WmsOutboundPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (deletingId === null) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound/${deletingId}`, { method: 'DELETE' });
+      const res = await fetch(`${BASE_URL}/api/wms/outbound-review/${deletingId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast(t('删除成功'), 'success');
@@ -151,7 +151,7 @@ const WmsOutboundPage: React.FC = () => {
     if (id === undefined) return;
     setScanningId(id);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound/${id}/scan`, { method: 'POST' });
+      const res = await fetch(`${BASE_URL}/api/wms/outbound-review/${id}/scan`, { method: 'POST' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast(t('扫描成功'), 'success');
