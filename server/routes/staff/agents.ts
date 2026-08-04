@@ -37,9 +37,12 @@ function tenantOf(req: Request): string {
 router.get('/', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const rows = agentDao.listAgents(tenantId);
+  // 一次查出全租户资源绑定后分组复用，避免 N+1；
+  // 也不能写成 rows.map(agentDao.toAgentRead)，否则 index 会被当作 resources 传入。
+  const read = agentDao.buildAgentReader(tenantId);
   res.json({
     code: 0,
-    data: rows.map(agentDao.toAgentRead),
+    data: rows.map((row) => read(row)),
     message: 'ok',
   });
 });
@@ -52,7 +55,7 @@ router.get('/overall', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'overall agent 不存在' });
     return;
   }
-  res.json({ code: 0, data: agentDao.toAgentRead(row), message: 'ok' });
+  res.json({ code: 0, data: agentDao.buildAgentReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== POST / — 创建 Agent =====================
@@ -94,7 +97,7 @@ router.get('/:agentId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'Agent 不存在' });
     return;
   }
-  res.json({ code: 0, data: agentDao.toAgentRead(row), message: 'ok' });
+  res.json({ code: 0, data: agentDao.buildAgentReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== PUT /:agentId — 更新 =====================
@@ -112,7 +115,7 @@ router.put('/:agentId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'Agent 不存在' });
     return;
   }
-  res.json({ code: 0, data: agentDao.toAgentRead(row), message: 'ok' });
+  res.json({ code: 0, data: agentDao.buildAgentReader(tenantId)(row), message: 'ok' });
 });
 
 // ===================== DELETE /:agentId — 删除 =====================
@@ -222,7 +225,8 @@ router.post('/:agentId/skills/:skillId/promote-to-overall', (req: Request, res: 
     res.status(404).json({ code: 404, data: null, message: '分支不存在' });
     return;
   }
-  res.json({ code: 0, data: skillDao.toSkillRead(row), message: 'ok' });
+  const read = skillDao.buildSkillReader(tenantId, req.params.agentId);
+  res.json({ code: 0, data: read(row), message: 'ok' });
 });
 
 // ===================== POST /:agentId/skills/:skillId/rollback =====================
@@ -254,7 +258,10 @@ router.get('/:agentId/skills/:skillId/versions', (req: Request, res: Response) =
 router.get('/:agentId/skills', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const rows = skillDao.listSkills({ tenantId });
-  res.json({ code: 0, data: rows.map(skillDao.toSkillRead), message: 'ok' });
+  // 带 agentId 构造 reader，可同时注入该员工的技能分支元信息（branch_status/sync_state 等）。
+  // 不能写成 rows.map(skillDao.toSkillRead)，否则数组 index 会被当作 ctx 传入。
+  const read = skillDao.buildSkillReader(tenantId, req.params.agentId);
+  res.json({ code: 0, data: rows.map((row) => read(row)), message: 'ok' });
 });
 
 // ===================== GET /:agentId/knowledge-branches =====================

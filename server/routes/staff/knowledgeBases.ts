@@ -29,15 +29,55 @@ function tenantOf(req: Request): string {
   return (req.query.tenant_id as string) || (req.body?.tenant_id as string) || DEFAULT_TENANT_ID;
 }
 
+/**
+ * 单条知识库序列化：补齐 document_count / bucket_count / chunk_count 统计，
+ * 以及 version / branch_sync_state / branch_base_version / branch_head_version。
+ */
+function readWithStats(
+  tenantId: string,
+  row: Parameters<typeof kbDao.toKnowledgeBaseRead>[0],
+  agentId?: string,
+) {
+  const stats = kbDao.getKnowledgeBaseStats(tenantId).get(row.id);
+  const versionRow = kbDao.getEffectiveKnowledgeBaseVersions(tenantId, agentId).get(row.id);
+  const branchMeta = agentId
+    ? kbDao.getAgentKnowledgeBranchMeta(tenantId, agentId).get(row.id)
+    : undefined;
+  return kbDao.toKnowledgeBaseRead(row, stats, { versionRow, branchMeta });
+}
+
 // ===================== GET / — 列出 =====================
 router.get('/', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
   const filter: kbDao.KnowledgeBaseListFilter = {
-    tenantId: tenantOf(req),
+    tenantId,
     status: req.query.status as string | undefined,
     search: req.query.search as string | undefined,
   };
-  const rows = kbDao.listKnowledgeBases(filter);
-  res.json({ code: 0, data: rows.map(kbDao.toKnowledgeBaseRead), message: 'ok' });
+  let rows = kbDao.listKnowledgeBases(filter);
+
+  // 传 agent_id 时只返回该员工挂载的知识库分支（对齐原版员工隔离语义）
+  const agentId = req.query.agent_id as string | undefined;
+  if (agentId) {
+    const visible = new Set(kbDao.getAgentVisibleKnowledgeBaseIds(tenantId, agentId));
+    rows = rows.filter((row) => visible.has(row.id));
+  }
+
+  // 批量聚合文档/目录/引用数量，前端依赖这三个字段展示知识资产规模
+  const stats = kbDao.getKnowledgeBaseStats(tenantId);
+  // 版本与分支元信息一次性解析，供 version / branch_* 字段使用
+  const versions = kbDao.getEffectiveKnowledgeBaseVersions(tenantId, agentId);
+  const branches = agentId ? kbDao.getAgentKnowledgeBranchMeta(tenantId, agentId) : undefined;
+  res.json({
+    code: 0,
+    data: rows.map((row) =>
+      kbDao.toKnowledgeBaseRead(row, stats.get(row.id), {
+        versionRow: versions.get(row.id),
+        branchMeta: branches?.get(row.id),
+      }),
+    ),
+    message: 'ok',
+  });
 });
 
 // ===================== POST / — 创建 =====================
@@ -62,7 +102,7 @@ router.post('/', (req: Request, res: Response) => {
       status: status ?? 'active',
       metadata: metadata ?? {},
     });
-    res.status(201).json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
+    res.status(201).json({ code: 0, data: readWithStats(tenantId, row), message: 'ok' });
   } catch (e) {
     res.status(400).json({ code: 400, data: null, message: (e as Error).message });
   }
@@ -76,7 +116,7 @@ router.get('/:kbId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '知识库不存在' });
     return;
   }
-  res.json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
+  res.json({ code: 0, data: readWithStats(tenantId, row), message: 'ok' });
 });
 
 // ===================== PUT /:kbId — 更新 =====================
@@ -92,7 +132,7 @@ router.put('/:kbId', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '知识库不存在' });
     return;
   }
-  res.json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
+  res.json({ code: 0, data: readWithStats(tenantId, row), message: 'ok' });
 });
 
 // ===================== DELETE /:kbId — 删除 =====================
@@ -211,7 +251,7 @@ router.post('/:kbId/promote-to-overall', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '分支不存在' });
     return;
   }
-  res.json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
+  res.json({ code: 0, data: readWithStats(tenantId, row), message: 'ok' });
 });
 
 // ===================== POST /:kbId/rollback — 回滚 =====================
@@ -227,7 +267,7 @@ router.post('/:kbId/rollback', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '版本不存在' });
     return;
   }
-  res.json({ code: 0, data: kbDao.toKnowledgeBaseRead(row), message: 'ok' });
+  res.json({ code: 0, data: readWithStats(tenantId, row), message: 'ok' });
 });
 
 export default router;

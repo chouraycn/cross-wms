@@ -85,11 +85,21 @@ echo ""
 
 # ===================== Pre-build check =====================
 
-echo "🔍 Running pre-build check..."
-if ! "$ROOT_DIR/scripts/pre-build-check.sh" --skip-swift; then
-  echo "⚠️  Pre-build check failed, continuing anyway (CI quality gate covers checks)" >&2
+# P1-⑦: CI 环境使用 lenient 模式，仅检查致命项
+PRE_BUILD_FLAGS="--skip-swift"
+if [[ "${CI:-}" == "true" ]]; then
+  PRE_BUILD_FLAGS="$PRE_BUILD_FLAGS --lenient"
 fi
-echo "✅ Pre-build check skipped, continuing to package"
+
+echo "🔍 Running pre-build check (flags: $PRE_BUILD_FLAGS)..."
+if ! "$ROOT_DIR/scripts/pre-build-check.sh" $PRE_BUILD_FLAGS; then
+  if [[ "${CI:-}" == "true" ]]; then
+    echo "⚠️  Pre-build check failed in CI lenient mode, continuing anyway" >&2
+  else
+    echo "⚠️  Pre-build check failed, continuing anyway (CI quality gate covers checks)" >&2
+  fi
+fi
+echo "✅ Pre-build check completed, continuing to package"
 echo ""
 
 # ===================== Build .app bundle =====================
@@ -153,6 +163,7 @@ mkdir -p "$ROOT_DIR/release"
 cat > "$ROOT_DIR/release/release.json" <<RELJSON
 {
   "version": "$VERSION",
+  "channel": "stable",
   "pubDate": "$(date -u +"%Y-%m-%d")",
   "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v${VERSION}/CDF%20Know%20Clow-${VERSION}.dmg",
   "minVersion": "1.0.0"

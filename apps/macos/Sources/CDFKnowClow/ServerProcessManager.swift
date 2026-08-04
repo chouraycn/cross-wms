@@ -187,6 +187,11 @@ actor ServerProcessManager {
         var env = ProcessInfo.processInfo.environment
         env["NODE_TLS_REJECT_UNAUTHORIZED"] = ProcessInfo.processInfo.environment["NODE_TLS_REJECT_UNAUTHORIZED"] ?? "1"
         env["NODE_ENV"] = isAppBundle ? "production" : "development"
+        // 桌面应用场景（app bundle）：数字员工模块随应用启动即以内置 default-user(admin) 身份运行，
+        // 无独立登录体系。打包后的 server 将 NODE_ENV 在构建期固化为 "production"，
+        // 因此 isDefaultUserAllowed() 实际只取决于 STAFF_AUTH_ALLOW_DEFAULT 这一个开关。
+        // 此处为 app bundle 显式开启，确保无 token 请求回退 default-user，避免数字员工报 "Not authenticated"。
+        env["STAFF_AUTH_ALLOW_DEFAULT"] = isAppBundle ? "1" : "0"
         env["PORT"] = String(port)
         env["CDF_DATA_DIR"] = AppPaths.dataDirectory.path
         env["FRONTEND_DIR"] = "\(resourcesDir)/frontend_dist"

@@ -15,15 +15,19 @@ import * as memoryDao from '../../dao/staff/staffMemoryDao.js';
 
 const router = Router();
 
-// ===================== Stub 当前用户上下文 =====================
-// TODO: 接入 StaffDeck auth 后，从 res.locals.staffContext 获取 userId
+// ===================== 当前用户上下文 =====================
+// StaffDeck auth 中间件注入 res.locals.staffContext = { tenantId, userId, username, role }
 const STUB_USER_ID = 'user_default';
 
 function getCurrentUserId(req: Request): string {
+  const ctx = req.res?.locals?.staffContext as { userId?: string } | undefined;
+  if (ctx?.userId) return ctx.userId;
   return (req.query.user_id as string) || STUB_USER_ID;
 }
 
 function getCurrentUsername(req: Request): string | null {
+  const ctx = req.res?.locals?.staffContext as { username?: string } | undefined;
+  if (ctx?.username) return ctx.username;
   return (req.query.username as string) || null;
 }
 

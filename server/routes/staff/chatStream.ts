@@ -34,6 +34,7 @@ import {
 } from '../../dao/staff/staffFeedbackDao.js';
 import { parseMultipartFiles, ensureUploadsDir, UPLOADS_DIR } from '../../routes/upload.js';
 import { runStaffChatTurn, abortStaffChat } from '../../staff/staffChatExecutor.js';
+import { recordSkillTransition } from '../../staff/skillEvents.js';
 import type { StaffStreamEvent } from '../../types/staff.js';
 import { logger } from '../../logger.js';
 
@@ -328,6 +329,7 @@ router.get('/sessions', (req: Request, res: Response) => {
   res.json({ code: 0, data: rows.map(chatDao.toSessionRead), message: 'ok' });
 });
 
+
 // ===================== PUT /sessions/:sessionId — 更新会话 =====================
 router.put('/sessions/:sessionId', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
@@ -341,11 +343,29 @@ router.put('/sessions/:sessionId', (req: Request, res: Response) => {
   if (req.body.summary !== undefined) patch.summary = req.body.summary;
   if (typeof req.body.status === 'string') patch.status = req.body.status;
   if (req.body.agent_id !== undefined) patch.agent_id = req.body.agent_id;
+
+  // 变更前快照，用于判定技能切换方向
+  const beforeRow = chatDao.getSessionById(tenantId, req.params.sessionId);
+
   const row = chatDao.updateSession(tenantId, req.params.sessionId, patch);
   if (!row) {
     res.status(404).json({ code: 404, data: null, message: '会话不存在' });
     return;
   }
+
+  if (beforeRow) {
+    recordSkillTransition(
+      tenantId,
+      req.params.sessionId,
+      {
+        skillId: beforeRow.active_skill_id,
+        stepId: beforeRow.active_step_id,
+        stack: chatDao.toSessionRead(beforeRow).skill_stack ?? [],
+      },
+      { skillId: row.active_skill_id, stepId: row.active_step_id },
+    );
+  }
+
   res.json({ code: 0, data: chatDao.toSessionRead(row), message: 'ok' });
 });
 
@@ -563,7 +583,7 @@ function buildTurnTraces(
   };
 
   for (const ev of events) {
-    const p = (ev.payload ?? {}) as Record<string, unknown>;
+    const p = (((ev.payload_json as string | null) ?? '{}') as unknown as Record<string, unknown>);
     if (ev.event_type === 'user_message_received') {
       startTurn(typeof p.message_id === 'string' ? p.message_id : null, ev.created_at);
       continue;
@@ -660,7 +680,7 @@ router.post('/agents/:agentId/use', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'Agent 不存在' });
     return;
   }
-  res.json({ code: 0, data: agentDao.toAgentRead(agent), message: 'ok' });
+  res.json({ code: 0, data: agentDao.buildAgentReader(tenantId)(agent), message: 'ok' });
 });
 
 export default router;

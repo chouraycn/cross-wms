@@ -1,232 +1,222 @@
 #!/usr/bin/env bash
-# sync-openclaw.sh — OpenClaw submodule drift detector for CDFKnowClow
+# sync-openclaw.sh — openclaw 子模块版本同步与差异检测
 #
-# 比对 submodule 的 OpenClaw（默认 openclaw/）与一份上游参考
-# （ref，默认 ../cdfknow），报告 新增 / 缺失 / 修改 / 搬迁 文件，并把每个
-# “修改”文件归类为 SAFE（纯上游源码，可直接刷新）或 REVIEW（manifest /
-# config / 入口 / 脚本，可能含产品定制，需逐文件确认）。
+# 用法：
+#   ./scripts/sync-openclaw.sh check     # 检查当前版本与上次同步的差异
+#   ./scripts/sync-openclaw.sh sync      # 同步指定模块到 server/engine/
+#   ./scripts/sync-openclaw.sh version   # 显示当前版本信息
 #
-# 兼容 bash 3.2+ 与 zsh。每棵树仅计算一次 md5，后续用 join/comm/awk 比对。
-#
-# 用法:
-#   ./scripts/sync-openclaw.sh [--ref REF_DIR] [--vendor VENDOR_DIR] \
-#                              [--json] [--fail-on-drift] [--check-only] \
-#                              [--dry-run]
-# 环境变量: OPENCLAW_REF  上游参考目录（默认 ../cdfknow）
-# 退出码: 0 正常 / dry-run; 1 --fail-on-drift 且存在漂移; 2 参数/路径错误
-#
+# 配置：scripts/.openclaw-sync.json 记录已同步的 commit 和模块列表
+
 set -euo pipefail
 
-REF="${OPENCLAW_REF:-../cdfknow}"
-VENDOR="openclaw"
-JSON=0
-FAIL_ON_DRIFT=0
-CHECK_ONLY=0
-DRY_RUN=0
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+OPENCLAW_DIR="$ROOT_DIR/openclaw"
+SYNC_FILE="$ROOT_DIR/scripts/.openclaw-sync.json"
+SERVER_ENGINE="$ROOT_DIR/server/engine"
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --ref)           REF="$2"; shift 2;;
-    --vendor)        VENDOR="$2"; shift 2;;
-    --json)          JSON=1; shift;;
-    --fail-on-drift) FAIL_ON_DRIFT=1; shift;;
-    --check-only)    CHECK_ONLY=1; shift;;
-    --dry-run)       DRY_RUN=1; shift;;
-    -h|--help)       sed -n '2,17p' "$0"; exit 0;;
-    *) echo "unknown arg: $1" >&2; exit 2;;
-  esac
-done
+# 颜色
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VENDOR_DIR="$ROOT/$VENDOR"
-[[ "$REF" = /* ]] && REF_DIR="$REF" || REF_DIR="$ROOT/$REF"
+log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-[[ -d "$VENDOR_DIR" ]] || { echo "vendor dir not found: $VENDOR_DIR" >&2; exit 2; }
-[[ -d "$REF_DIR" ]]    || { echo "ref dir not found: $REF_DIR" >&2;    exit 2; }
-
-SELF_EXCLUDES="openclaw-vendor-pin.json|scripts/sync-openclaw.sh|FORK_BOUNDARY.md"
-
-md5of() {
-  if command -v md5sum >/dev/null 2>&1; then md5sum "$1" | awk '{print $1}'
-  else md5 -q "$1"; fi
+# 获取当前 openclaw 版本信息
+get_version() {
+  local commit version
+  commit=$(cd "$OPENCLAW_DIR" && git rev-parse HEAD 2>/dev/null || echo "unknown")
+  version=$(cd "$OPENCLAW_DIR" && grep '"version"' package.json 2>/dev/null | head -1 | sed 's/.*"version": *"//;s/".*//' || echo "unknown")
+  echo "{\"commit\": \"$commit\", \"version\": \"$version\", \"syncedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 }
 
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
-VMD5="$TMP/v.md5"; RMD5="$TMP/r.md5"
-VPATHS="$TMP/v.paths"; RPATHS="$TMP/r.paths"
-COMMON="$TMP/common"; ONLYV="$TMP/onlyv"; ONLYR="$TMP/onlyr"
-MODF="$TMP/modified"; JOINED="$TMP/joined"; RBIDX="$TMP/rbidx"
-RELF="$TMP/relocated"
-
-build_map() {
-  local root="$1" out="$2"
-  ( cd "$root" && find . -type f \
-      -not -path '*/node_modules/*' -not -path '*/.git/*' \
-      -not -path '*/dist/*' -not -path '*/dist-runtime/*' \
-      -not -path '*/coverage/*' -not -path '*/.turbo/*' \
-      -not -path '*/.next/*' -not -path '*/build/*' \
-      -not -path '*/.cache/*' -not -path '*/.tmp/*' ) \
-    | sed 's#^\./##' | grep -vE "^($SELF_EXCLUDES)$" \
-    | while IFS= read -r f; do printf '%s\t%s\n' "$(md5of "$root/$f")" "$f"; done \
-    | sort -t$'\t' -k2 > "$out"
+# 初始化同步记录文件
+init_sync_file() {
+  if [ ! -f "$SYNC_FILE" ]; then
+    local version_info
+    version_info=$(get_version)
+    cat > "$SYNC_FILE" << EOF
+{
+  "lastSyncedCommit": "$version_info" | python3 -c "import sys,json; print(json.load(sys.stdin)['commit'])"",
+  "lastSyncedVersion": "$version_info" | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])"",
+  "lastSyncedAt": "$version_info" | python3 -c "import sys,json; print(json.load(sys.stdin)['syncedAt'])"",
+  "syncedModules": []
 }
-build_map "$VENDOR_DIR" "$VMD5"
-build_map "$REF_DIR"    "$RMD5"
-
-cut -f2- "$VMD5" > "$VPATHS"
-cut -f2- "$RMD5" > "$RPATHS"
-
-comm -12 "$VPATHS" "$RPATHS" > "$COMMON"
-comm -23 "$VPATHS" "$RPATHS" > "$ONLYV"
-comm -13 "$VPATHS" "$RPATHS" > "$ONLYR"
-
-join -t$'\t' -1 2 -2 2 -o 1.1,0,2.1 "$VMD5" "$RMD5" 2>/dev/null \
-  | awk -F$'\t' '$1!=$3 {print $2}' > "$MODF"
-
-awk -F$'\t' '{
-  md5=$1; path=$2; n=split(path,p,"/"); b=p[n];
-  print b"\t"md5"\t"path
-}' "$RMD5" > "$RBIDX"
-
-while IFS= read -r f; do
-  vmd5="$(awk -F$'\t' -v p="$f" '$2==p{print $1; exit}' "$VMD5")"
-  b="${f##*/}"
-  match="$(awk -F$'\t' -v b="$b" -v m="$vmd5" '$1==b && $2==m{print $3; exit}' "$RBIDX")"
-  [[ -n "$match" ]] && echo "$f -> $match" >> "$RELF"
-done < "$ONLYV"
-
-is_review() {
-  local f="$1" base; base="$(basename "$f")"
-  [[ "$base" == "package.json" ]] && return 0
-  [[ "$base" == tsconfig*.json ]] && return 0
-  [[ "$base" == *.config.* ]] && return 0
-  [[ "$base" == vitest.*.mjs ]] && return 0
-  [[ "$f" == scripts/lib/*.mjs ]] && return 0
-  [[ "$f" == scripts/*.mjs ]] && return 0
-  return 1
+EOF
+    log_info "已创建同步记录文件: $SYNC_FILE"
+  fi
 }
 
-NV=$(wc -l < "$VPATHS" | tr -d ' ')
-NR=$(wc -l < "$RPATHS" | tr -d ' ')
-NM=$(wc -l < "$MODF"  | tr -d ' ')
-NAV=$(wc -l < "$ONLYV" | tr -d ' ')
-NAR=$(wc -l < "$ONLYR" | tr -d ' ')
-NREL=$(wc -l < "$RELF" | tr -d ' ')
+# 显示版本信息
+cmd_version() {
+  local current last
+  current=$(get_version)
+  echo "=== openclaw 当前版本 ==="
+  echo "$current" | python3 -m json.tool 2>/dev/null || echo "$current"
 
-if [[ "$JSON" -eq 1 ]]; then
-  json_arr() {
-    local first=1
-    printf '['
-    local n=0
-    while IFS= read -r line; do
-      [[ -n "$2" && $n -ge "$2" ]] && break
-      esc="${line//\"/\\\"}"
-      [[ $first -eq 1 ]] && first=0 || printf ','
-      printf '"%s"' "$esc"
-      n=$((n+1))
-    done < "$1"
-    printf ']'
-  }
-  echo "{"
-  echo "  \"dryRun\": $DRY_RUN,"
-  echo "  \"vendor\": \"$VENDOR_DIR\","
-  echo "  \"ref\": \"$REF_DIR\","
-  echo "  \"counts\": {\"vendorFiles\": $NV, \"refFiles\": $NR, \"modified\": $NM, \"addedInRef\": $NAR, \"addedInVendor\": $NAV, \"relocated\": $NREL},"
-  echo -n "  \"modified\": ["
-  first=1
-  while IFS= read -r f; do
-    cls="SAFE"; is_review "$f" && cls="REVIEW"
-    [[ $first -eq 1 ]] && first=0 || printf ','
-    printf '{"path":"%s","class":"%s"}' "$f" "$cls"
-  done < "$MODF"
-  echo "],"
-  echo -n "  \"addedInRef\": "; json_arr "$ONLYR" 200; echo ","
-  echo -n "  \"addedInVendor\": "; json_arr "$ONLYV" 200; echo ","
-  echo -n "  \"relocated\": ["
-  first=1
-  while IFS=' -> ' read -r a b; do
-    [[ $first -eq 1 ]] && first=0 || printf ','
-    printf '{"from":"%s","to":"%s"}' "$a" "$b"
-  done < "$RELF"
-  echo "]"
-  echo "}"
-else
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    echo "=================================================================="
-    echo " OpenClaw Submodule Drift Report  [DRY-RUN — no failure will occur]"
-    echo " vendor : $VENDOR_DIR"
-    echo " ref    : $REF_DIR"
-    echo "------------------------------------------------------------------"
+  if [ -f "$SYNC_FILE" ]; then
+    echo ""
+    echo "=== 上次同步记录 ==="
+    cat "$SYNC_FILE" | python3 -m json.tool 2>/dev/null || cat "$SYNC_FILE"
   else
-    echo "=================================================================="
-    echo " OpenClaw Submodule Drift Report"
-    echo " vendor : $VENDOR_DIR"
-    echo " ref    : $REF_DIR"
-    echo "------------------------------------------------------------------"
+    echo ""
+    log_warn "尚未进行过同步（同步记录文件不存在）"
   fi
-  echo " vendor files : $NV"
-  echo " ref files    : $NR"
-  echo " modified     : $NM"
-  echo " added(ref)   : $NAR"
-  echo " added(vendor): $NAV"
-  echo " relocated    : $NREL"
-  echo "=================================================================="
-  if [[ $NM -gt 0 ]]; then
-    echo ""; echo "## MODIFIED (common path, different content)"
-    while IFS= read -r f; do
-      if is_review "$f"; then echo "  [REVIEW] $f"; else echo "  [SAFE]   $f"; fi
-    done < "$MODF"
-  fi
-  if [[ $NAR -gt 0 ]]; then
-    echo ""; echo "## ONLY IN REF (ref has, vendor lacks) — $NAR"
-    while IFS= read -r f; do echo "  $f"; done < "$ONLYR"
-  fi
-  if [[ $NAV -gt 0 ]]; then
-    echo ""; echo "## ONLY IN VENDOR (vendor has, ref lacks) — $NAV"
-    while IFS= read -r f; do echo "  $f"; done < "$ONLYV"
-  fi
-  if [[ $NREL -gt 0 ]]; then
-    echo ""; echo "## RELOCATED (same content, different path)"
-    while IFS= read -r line; do echo "  $line"; done < "$RELF"
-  fi
-  echo ""
-  echo "Legend: [SAFE] 纯上游源码可刷新; [REVIEW] manifest/config/入口/脚本，需逐文件确认是否含产品定制。"
-  echo ""
+}
 
-  # Sync summary
-  echo "------------------------------------------------------------------"
-  echo " Sync Summary"
-  echo "------------------------------------------------------------------"
-  echo "  vendor (submodule)  : $VENDOR_DIR"
-  echo "  upstream reference  : $REF_DIR"
-  echo "  drift status        : $(if [[ $NM -gt 0 || $NAR -gt 0 || $NAV -gt 0 ]]; then echo "DRIFT DETECTED"; else echo "clean"; fi)"
-  echo "  safe-to-refresh     : $(grep -cv '^$' "$MODF" 2>/dev/null | awk -v total="$NM" 'END{print total}') files (modified)"
-  if [[ $NAR -gt 0 ]]; then
-    echo "  new-in-upstream     : $NAR files (review for port)"
-  fi
-  if [[ $NAV -gt 0 ]]; then
-    echo "  new-in-vendor       : $NAV files (likely product customizations)"
-  fi
-  echo ""
+# 检查差异
+cmd_check() {
+  init_sync_file
 
-  echo "Submodule Workflow:"
-  echo "  1. 更新上游: cd openclaw && git pull origin main && cd .."
-  echo "  2. 运行本脚本检测 drift"
-  echo "  3. 将 SAFE 类文件同步进 @cdf-know/* 对应面"
-  echo "  4. 更新 openclaw-vendor-pin.json 的 pinnedCommit"
-  echo "  5. git add openclaw .gitmodules openclaw-vendor-pin.json"
-fi
+  local current_commit last_commit
+  current_commit=$(cd "$OPENCLAW_DIR" && git rev-parse HEAD)
+  last_commit=$(python3 -c "import json; print(json.load(open('$SYNC_FILE'))['lastSyncedCommit'])" 2>/dev/null || echo "")
 
-# Dry-run never fails — useful for safe previews / CI status checks
-if [[ "$DRY_RUN" -eq 1 ]]; then
-  echo "DRY-RUN: drift detected but not failing the build." >&2
-  exit 0
-fi
-
-if [[ "$FAIL_ON_DRIFT" -eq 1 ]]; then
-  if [[ $NM -gt 0 || $NAR -gt 0 || $NAV -gt 0 ]]; then
-    echo "FAIL_ON_DRIFT: drift detected." >&2; exit 1
+  if [ "$current_commit" = "$last_commit" ]; then
+    log_info "openclaw 无更新（commit 未变: ${current_commit:0:12}）"
+    return 0
   fi
-fi
-exit 0
+
+  log_info "openclaw 有更新:"
+  echo "  上次同步: ${last_commit:0:12}"
+  echo "  当前版本: ${current_commit:0:12}"
+
+  if [ -n "$last_commit" ] && [ "$last_commit" != "unknown" ]; then
+    echo ""
+    log_info "变更文件列表（openclaw/src/）:"
+    (cd "$OPENCLAW_DIR" && git diff --name-only "$last_commit" HEAD -- src/ 2>/dev/null | head -50) || true
+
+    local changed_count
+    changed_count=$(cd "$OPENCLAW_DIR" && git diff --name-only "$last_commit" HEAD -- src/ 2>/dev/null | wc -l | tr -d ' ')
+    echo ""
+    echo "  共 $changed_count 个文件变更"
+
+    # 检查变更文件在 server/engine/ 中是否有对应
+    echo ""
+    log_info "变更文件在 server/engine/ 中的覆盖情况:"
+    (cd "$OPENCLAW_DIR" && git diff --name-only "$last_commit" HEAD -- src/ 2>/dev/null) | while read -r f; do
+      local basename dir_name srv_path
+      basename=$(basename "$f")
+      dir_name=$(dirname "$f" | sed 's|^src/||')
+      srv_path="$SERVER_ENGINE/$dir_name/$basename"
+      if [ -f "$srv_path" ]; then
+        echo "  ✓ $f → $srv_path"
+      else
+        echo "  ✗ $f (无对应)"
+      fi
+    done | head -30
+  fi
+}
+
+# 同步模块
+cmd_sync() {
+  if [ $# -eq 0 ]; then
+    log_error "请指定要同步的模块名（如 cron, secrets, llm）"
+    echo "用法: ./scripts/sync-openclaw.sh sync <module1> [module2 ...]"
+    return 1
+  fi
+
+  local modules=("$@")
+  local synced_list=()
+
+  for module in "${modules[@]}"; do
+    local src_dir="$OPENCLAW_DIR/src/$module"
+    local dst_dir="$SERVER_ENGINE/$module"
+
+    if [ ! -d "$src_dir" ]; then
+      log_error "openclaw/src/$module 不存在，跳过"
+      continue
+    fi
+
+    if [ ! -d "$dst_dir" ]; then
+      log_warn "server/engine/$module 不存在，将创建"
+      mkdir -p "$dst_dir"
+    fi
+
+    log_info "同步模块: $module"
+
+    # 复制 .ts 文件（不含测试）
+    local count=0
+    while IFS= read -r -d '' f; do
+      local rel_path dst_file
+      rel_path="${f#$src_dir/}"
+      dst_file="$dst_dir/$rel_path"
+      mkdir -p "$(dirname "$dst_file")"
+      cp "$f" "$dst_file"
+
+      # 调整 import 路径：../../../src/ → ../../../engine/
+      if grep -q 'from.*["\x27].*/src/' "$dst_file" 2>/dev/null; then
+        sed -i '' 's|/src/|/engine/|g' "$dst_file" 2>/dev/null || \
+          sed -i 's|/src/|/engine/|g' "$dst_file"
+      fi
+
+      count=$((count + 1))
+    done < <(find "$src_dir" -name "*.ts" -not -name "*.test.ts" -print0)
+
+    log_info "  已复制 $count 个文件"
+    synced_list+=("\"$module\"")
+  done
+
+  # 更新同步记录
+  local current_commit current_version
+  current_commit=$(cd "$OPENCLAW_DIR" && git rev-parse HEAD)
+  current_version=$(cd "$OPENCLAW_DIR" && grep '"version"' package.json | head -1 | sed 's/.*"version": *"//;s/".*//')
+
+  # 读取已有的同步模块列表
+  local existing_modules
+  existing_modules=$(python3 -c "
+import json
+try:
+    data = json.load(open('$SYNC_FILE'))
+    print(json.dumps(data.get('syncedModules', [])))
+except:
+    print('[]')
+" 2>/dev/null || echo "[]")
+
+  # 合并模块列表
+  local merged_modules
+  merged_modules=$(python3 -c "
+import json
+existing = set(json.loads('$existing_modules'))
+new = set(${synced_list[@]})
+merged = sorted(existing | new)
+print(json.dumps(merged))
+" 2>/dev/null || echo "[]")
+
+  cat > "$SYNC_FILE" << EOF
+{
+  "lastSyncedCommit": "$current_commit",
+  "lastSyncedVersion": "$current_version",
+  "lastSyncedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "syncedModules": $merged_modules
+}
+EOF
+
+  log_info "同步完成。记录已更新: $SYNC_FILE"
+  log_warn "请运行编译检查: NODE_OPTIONS='--max-old-space-size=8192' npx tsc --noEmit -p server/tsconfig.json"
+}
+
+# 主入口
+case "${1:-help}" in
+  check)
+    cmd_check
+    ;;
+  sync)
+    shift
+    cmd_sync "$@"
+    ;;
+  version)
+    cmd_version
+    ;;
+  *)
+    echo "用法: $0 {check|sync|version}"
+    echo ""
+    echo "命令:"
+    echo "  check     检查 openclaw 更新与 server/engine 的差异"
+    echo "  sync      同步指定模块（如: sync cron secrets llm）"
+    echo "  version   显示版本信息"
+    ;;
+esac

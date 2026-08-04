@@ -19,6 +19,7 @@ import { ProcessStatusProvider, ProcessStatusPanel } from './contexts/ProcessSta
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { I18nProvider } from './components/staff/i18n/index.js';
+import StaffDeckPortal from './components/staff/StaffDeckPortal';
 import { automationEngine } from './services/automation';
 import { isWKWebView, isMacOSApp } from './utils/env';
 import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
@@ -50,6 +51,7 @@ const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 const WmsQualityPage = React.lazy(() => import('./pages/WmsQualityPage'));
 const WmsInventoryPage = React.lazy(() => import('./pages/WmsInventoryPage'));
 const WmsOutboundPage = React.lazy(() => import('./pages/WmsOutboundPage'));
+const WmsInboundPage = React.lazy(() => import('./pages/WmsInboundPage'));
 const WmsAlertPage = React.lazy(() => import('./pages/WmsAlertPage'));
 const WmsReportPage = React.lazy(() => import('./pages/WmsReportPage'));
 const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPage'));
@@ -145,7 +147,6 @@ const StaffEmployeeChatPage = React.lazy(() => import('./pages/staff/EmployeeCha
 const StaffChatPage = React.lazy(() => import('./pages/staff/chat/ChatPage'));
 const StaffChatGalleryPage = React.lazy(() => import('./pages/staff/chat/ChatGalleryPage'));
 const StaffLoginPage = React.lazy(() => import('./pages/staff/LoginPage'));
-const StaffDeckEmbedPage = React.lazy(() => import('./pages/staff/StaffDeckEmbedPage'));
 const StaffScheduledTaskEditorPage = React.lazy(() =>
   import('./pages/staff/scheduled-tasks/ScheduledTaskEditorPage').then(m => ({ default: wrapStaffAuth(m.ScheduledTaskNewPage) })),
 );
@@ -975,6 +976,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/quality" element={<WmsQualityPage />} />
                     <Route path="/wms/inventory" element={<WmsInventoryPage />} />
                     <Route path="/wms/outbound" element={<WmsOutboundPage />} />
+                    <Route path="/wms/inbound" element={<WmsInboundPage />} />
                     <Route path="/wms/alerts" element={<WmsAlertPage />} />
                     <Route path="/wms/reports" element={<WmsReportPage />} />
                     <Route path="/wms/replenishment" element={<WmsReplenishmentPage />} />
@@ -1080,9 +1082,9 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/dashboard" element={<Navigate to="/enterprise/dashboard" replace />} />
 
                     {/* ===================== 数字员工 100% 复刻入口 =====================
-                        iframe 加载已构建的 StaffDeck-main 原前端(/staffdeck-app/)，
-                        视觉与 StaffDeck-main 完全一致。后端经 Express 适配层转发。 */}
-                    <Route path="/staffdeck" element={<StaffDeckEmbedPage />} />
+                        实际 iframe 由 App 层的 StaffDeckPortal 常驻挂载并控制显隐，
+                        此处仅占位避免匹配到 NotFound，杜绝双 iframe 重复加载。 */}
+                    <Route path="/staffdeck" element={null} />
                     <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
 
                     {/* 数字员工对话大厅（缺失页面补齐） */}
@@ -1154,9 +1156,11 @@ const App: React.FC = () => {
               <ChatProvider defaultModel="auto">
                 <ThemedApp>
                   <HashRouter>
-                    <PerformanceProfiler id="MainLayout">
-                      <MainLayout />
-                    </PerformanceProfiler>
+                      <PerformanceProfiler id="MainLayout">
+                        <MainLayout />
+                        {/* 数字员工 iframe 常驻预热：路由匹配 /staffdeck 时仅显隐，零二次加载 */}
+                        <StaffDeckPortal />
+                      </PerformanceProfiler>
                   </HashRouter>
                 </ThemedApp>
               </ChatProvider>

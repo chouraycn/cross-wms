@@ -30,7 +30,7 @@ import { sanitizeServerName, makeMcpToolName } from '../../server/engine/mcpType
 import { buildStaffMcpManager } from '../../server/staff/staffMcpClientManager.js';
 import { materializeGeneralSkills } from '../../server/staff/staffGeneralSkillMaterializer.js';
 import { buildExecutionRuntimeData } from '../../server/routes/staff/executionRuntime.js';
-import * as mcpServerDao from '../../server/dao/staff/staffMcpServerDao.js';
+import * as mcpServerDao from '../../server/engine/mcpConfigStore.js';
 import * as generalSkillDao from '../../server/dao/staff/staffGeneralSkillDao.js';
 import { STAFF_E2E_TMP_DIR } from './utils/staff-e2e-env.js';
 import express from 'express';

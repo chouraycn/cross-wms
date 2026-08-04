@@ -14,7 +14,7 @@
  *   Skills：sd_skills, sd_skill_versions, sd_agent_skill_branches, sd_agent_skill_branch_versions, sd_general_skills
  *   知识库：sd_knowledge_bases, sd_knowledge_base_versions, sd_agent_knowledge_branches
  *   知识文档：sd_knowledge_documents, sd_knowledge_buckets, sd_knowledge_chunks, sd_knowledge_concepts, sd_knowledge_discovery_suggestions, sd_knowledge_ingest_jobs
- *   模型与工具：sd_model_configs, sd_tools, sd_mcp_servers
+ *   模型与工具：sd_model_configs, sd_tools（MCP server 已并入核心 mcp_servers 表，按 tenant_id 隔离）
  *   定时任务：sd_scheduled_tasks, sd_scheduled_task_runs
  *   会话与消息：sd_sessions, sd_messages, sd_human_handoff_requests, sd_message_feedback, sd_skill_feedback
  *   记忆与事件：sd_memories, sd_agent_events
@@ -540,35 +540,6 @@ export function initStaffTables(db: Database.Database): void {
     logger.info('[StaffDB] sd_tools.mcp_tool_name 列已补充（MCP 工具映射支持）');
   }
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sd_mcp_servers (
-      id TEXT PRIMARY KEY,
-      tenant_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      display_name TEXT,
-      description TEXT,
-      bucket TEXT NOT NULL DEFAULT 'MCP 工具',
-      transport TEXT NOT NULL DEFAULT 'streamable_http',
-      url TEXT,
-      headers_json TEXT NOT NULL DEFAULT '{}',
-      command TEXT,
-      args_json TEXT NOT NULL DEFAULT '[]',
-      env_json TEXT NOT NULL DEFAULT '{}',
-      cwd TEXT,
-      discovered_tools_json TEXT NOT NULL DEFAULT '[]',
-      last_synced_at INTEGER,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-      updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-      UNIQUE(tenant_id, name)
-    );
-    CREATE INDEX IF NOT EXISTS idx_sd_mcp_servers_tenant ON sd_mcp_servers(tenant_id);
-    CREATE INDEX IF NOT EXISTS idx_sd_mcp_servers_name ON sd_mcp_servers(name);
-    CREATE INDEX IF NOT EXISTS idx_sd_mcp_servers_bucket ON sd_mcp_servers(bucket);
-    CREATE INDEX IF NOT EXISTS idx_sd_mcp_servers_transport ON sd_mcp_servers(transport);
-    CREATE INDEX IF NOT EXISTS idx_sd_mcp_servers_enabled ON sd_mcp_servers(enabled);
-  `);
-
   // ============================ 定时任务 ============================
 
   db.exec(`
@@ -956,6 +927,93 @@ export function initStaffTables(db: Database.Database): void {
   }
 
   logger.info('[StaffDB] StaffDeck 表结构初始化完成');
+
+  // 合并遗留 sd_mcp_servers 数据到核心 mcp_servers（一次性迁移，完成后删表）
+  migrateSdMcpServersToCore(db);
+}
+
+/**
+ * 一次性迁移：将历史 sd_mcp_servers 记录并入核心 mcp_servers 表（按 tenant_id 隔离）。
+ * 迁移后删除 sd_mcp_servers 表，避免重复存储。对全新库（无 sd_mcp_servers）为 no-op。
+ */
+function migrateSdMcpServersToCore(db: Database.Database): void {
+  try {
+    const hasSd = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sd_mcp_servers'")
+      .get();
+    if (!hasSd) return;
+
+    // 确保核心 mcp_servers 表与列存在（与 mcpConfigStore.initSchema 互补，保证迁移时序无关）
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS mcp_servers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        command TEXT NOT NULL DEFAULT '',
+        args TEXT,
+        env TEXT,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        transport_type TEXT NOT NULL DEFAULT 'stdio',
+        url TEXT,
+        headers TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        tenant_id TEXT,
+        display_name TEXT,
+        description TEXT,
+        bucket TEXT,
+        cwd TEXT,
+        discovered_tools TEXT,
+        last_synced_at INTEGER
+      )
+    `);
+    const cols = (db.pragma('table_info(mcp_servers)') as Array<{ name: string }>).map((c) => c.name);
+    const extraCols: Array<[string, string]> = [
+      ['tenant_id', 'TEXT'],
+      ['display_name', 'TEXT'],
+      ['description', 'TEXT'],
+      ['bucket', 'TEXT'],
+      ['cwd', 'TEXT'],
+      ['discovered_tools', 'TEXT'],
+      ['last_synced_at', 'INTEGER'],
+    ];
+    for (const [col, typ] of extraCols) {
+      if (!cols.includes(col)) db.exec(`ALTER TABLE mcp_servers ADD COLUMN ${col} ${typ}`);
+    }
+
+    const rows = db.prepare('SELECT * FROM sd_mcp_servers').all() as Record<string, unknown>[];
+    const insert = db.prepare(
+      `INSERT OR IGNORE INTO mcp_servers (
+        id, tenant_id, name, command, args, env, enabled, transport_type, url, headers,
+        created_at, updated_at, display_name, description, bucket, cwd, discovered_tools, last_synced_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    for (const r of rows) {
+      insert.run(
+        r.id,
+        r.tenant_id ?? DEFAULT_TENANT_ID,
+        r.name,
+        r.command ?? '',
+        r.args_json ?? '[]',
+        r.env_json ?? '{}',
+        r.enabled ?? 1,
+        r.transport ?? 'streamable_http',
+        r.url ?? null,
+        r.headers_json ?? '{}',
+        (Number(r.created_at) || 0) * 1000,
+        (Number(r.updated_at) || 0) * 1000,
+        r.display_name ?? null,
+        r.description ?? null,
+        r.bucket ?? 'MCP 工具',
+        r.cwd ?? null,
+        r.discovered_tools_json ?? '[]',
+        r.last_synced_at ?? null,
+      );
+    }
+    db.exec('DROP TABLE IF EXISTS sd_mcp_servers');
+    logger.info(`[StaffDB] 已将 ${rows.length} 条 sd_mcp_servers 记录合并进核心 mcp_servers 表`);
+  } catch (e) {
+    logger.warn('[StaffDB] sd_mcp_servers 合并迁移跳过:', e);
+  }
 }
 
 /**

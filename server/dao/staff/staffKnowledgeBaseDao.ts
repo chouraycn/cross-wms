@@ -26,17 +26,166 @@ function safeJsonObj(raw: string | null | undefined): Record<string, unknown> {
   }
 }
 
-export function toKnowledgeBaseRead(row: KnowledgeBaseRow): KnowledgeBaseRead {
+/** 单个知识库的资产统计 */
+export interface KnowledgeBaseStats {
+  document_count: number;
+  bucket_count: number;
+  chunk_count: number;
+}
+
+const EMPTY_STATS: KnowledgeBaseStats = { document_count: 0, bucket_count: 0, chunk_count: 0 };
+
+/**
+ * 批量聚合租户下各知识库的文档/目录/引用数量。
+ *
+ * 搬移自 StaffDeck 原版 `_knowledge_base_stats`（backend/app/api/knowledge_bases.py）。
+ * 一次性 GROUP BY 聚合三张表，避免 N+1 查询。
+ *
+ * @param tenantId 租户 ID
+ * @param versionIds 可选，限定只统计这些知识库版本下的资产（用于员工分支视图）
+ */
+export function getKnowledgeBaseStats(
+  tenantId: string,
+  versionIds?: string[],
+): Map<string, KnowledgeBaseStats> {
+  const db = initDb();
+  const stats = new Map<string, KnowledgeBaseStats>();
+
+  // versionIds 为空数组表示"无可见版本" → 全部统计为 0
+  if (versionIds && versionIds.length === 0) return stats;
+
+  const versionFilter = versionIds
+    ? ` AND knowledge_base_version_id IN (${versionIds.map(() => '?').join(',')})`
+    : '';
+  const params: unknown[] = versionIds ? [tenantId, ...versionIds] : [tenantId];
+
+  const ensure = (kbId: string): KnowledgeBaseStats => {
+    let entry = stats.get(kbId);
+    if (!entry) {
+      entry = { ...EMPTY_STATS };
+      stats.set(kbId, entry);
+    }
+    return entry;
+  };
+
+  const sources: Array<{ table: string; field: keyof KnowledgeBaseStats }> = [
+    { table: 'sd_knowledge_documents', field: 'document_count' },
+    { table: 'sd_knowledge_buckets', field: 'bucket_count' },
+    { table: 'sd_knowledge_chunks', field: 'chunk_count' },
+  ];
+
+  for (const { table, field } of sources) {
+    const rows = db
+      .prepare(
+        `SELECT knowledge_base_id AS kbId, COUNT(id) AS cnt FROM ${table}
+         WHERE tenant_id = ?${versionFilter} GROUP BY knowledge_base_id`,
+      )
+      .all(...params) as Array<{ kbId: string; cnt: number }>;
+    for (const row of rows) {
+      if (!row.kbId) continue;
+      ensure(row.kbId)[field] = Number(row.cnt) || 0;
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * 知识库序列化上下文。对齐原版 `knowledge_base_read(row, stats, version_row, branch_meta)`。
+ * 两者缺省时行为与旧版一致（version 为 null、status 取 row.status）。
+ */
+export interface KnowledgeBaseReadContext {
+  /** 生效的版本行；存在时 name/description/metadata 以版本为准 */
+  versionRow?: KnowledgeBaseVersionRow;
+  /** 员工分支元信息；存在时覆盖 status 并填充 branch_* 字段 */
+  branchMeta?: AgentKnowledgeBranchRow;
+}
+
+export function toKnowledgeBaseRead(
+  row: KnowledgeBaseRow,
+  stats?: KnowledgeBaseStats,
+  ctx: KnowledgeBaseReadContext = {},
+): KnowledgeBaseRead {
+  const { versionRow, branchMeta } = ctx;
+
+  // 原版语义：分支状态覆盖知识库状态（inactive → archived）
+  let effectiveStatus = row.status;
+  if (branchMeta?.status === 'inactive') effectiveStatus = 'archived';
+  else if (branchMeta?.status) effectiveStatus = branchMeta.status;
+
   return {
     id: row.id,
     tenant_id: row.tenant_id,
-    name: row.name,
-    description: row.description,
-    status: row.status,
-    metadata: safeJsonObj(row.metadata_json),
+    name: versionRow?.name ?? row.name,
+    description: versionRow ? versionRow.description : row.description,
+    status: effectiveStatus,
+    version: versionRow?.version,
+    branch_sync_state: branchMeta?.sync_state,
+    branch_base_version: branchMeta?.base_version,
+    branch_head_version: branchMeta?.head_version,
+    metadata: safeJsonObj(versionRow ? versionRow.metadata_json : row.metadata_json),
+    document_count: stats?.document_count ?? 0,
+    bucket_count: stats?.bucket_count ?? 0,
+    chunk_count: stats?.chunk_count ?? 0,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+/** 读取某员工全部知识库分支元信息，key 为 knowledge_base_id。 */
+export function getAgentKnowledgeBranchMeta(
+  tenantId: string,
+  agentId: string,
+): Map<string, AgentKnowledgeBranchRow> {
+  const map = new Map<string, AgentKnowledgeBranchRow>();
+  for (const branch of listAgentKnowledgeBranches(tenantId, agentId)) {
+    if (!map.has(branch.knowledge_base_id)) map.set(branch.knowledge_base_id, branch);
+  }
+  return map;
+}
+
+/**
+ * 解析各知识库"当前生效版本"，key 为 knowledge_base_id。
+ *
+ * - 传 agentId：按该员工分支的 head_version 取版本（员工看到的是自己的分支视图）
+ * - 不传：取基线版本（排除 `-branch.` 后缀的分支版本），对齐原版
+ *   `_management_knowledge_base_versions`
+ */
+export function getEffectiveKnowledgeBaseVersions(
+  tenantId: string = DEFAULT_TENANT_ID,
+  agentId?: string,
+): Map<string, KnowledgeBaseVersionRow> {
+  const db = initDb();
+  const rows = db
+    .prepare(
+      `SELECT * FROM sd_knowledge_base_versions WHERE tenant_id = ? ORDER BY created_at DESC`,
+    )
+    .all(tenantId) as KnowledgeBaseVersionRow[];
+
+  const result = new Map<string, KnowledgeBaseVersionRow>();
+  if (agentId) {
+    const branches = getAgentKnowledgeBranchMeta(tenantId, agentId);
+    for (const row of rows) {
+      const branch = branches.get(row.knowledge_base_id);
+      if (branch && row.version === branch.head_version) result.set(row.knowledge_base_id, row);
+    }
+    // 分支 head 未落库时退化到基线版本，避免 version 为空
+    for (const [kbId, branch] of branches) {
+      if (result.has(kbId)) continue;
+      const fallback = rows.find(
+        (r) => r.knowledge_base_id === kbId && !r.version.includes('-branch.'),
+      );
+      if (fallback) result.set(kbId, fallback);
+      else void branch;
+    }
+    return result;
+  }
+
+  for (const row of rows) {
+    if (row.version.includes('-branch.')) continue;
+    if (!result.has(row.knowledge_base_id)) result.set(row.knowledge_base_id, row);
+  }
+  return result;
 }
 
 // ===================== Knowledge Bases =====================
@@ -417,6 +566,19 @@ export function listAgentKnowledgeBranches(
        ORDER BY updated_at DESC`,
     )
     .all(tenantId, agentId) as AgentKnowledgeBranchRow[];
+}
+
+/**
+ * 解析某个员工可见的知识库 ID 集合。
+ *
+ * 对齐 StaffDeck 原版 `visible_knowledge_base_versions`：员工通过
+ * sd_agent_knowledge_branches 挂载知识库分支，只有 active 分支对该员工可见。
+ * 未挂载任何分支时返回空数组（调用方据此返回空列表，而非退化为"全部可见"）。
+ */
+export function getAgentVisibleKnowledgeBaseIds(tenantId: string, agentId: string): string[] {
+  return listAgentKnowledgeBranches(tenantId, agentId)
+    .filter((branch) => branch.status !== 'inactive')
+    .map((branch) => branch.knowledge_base_id);
 }
 
 export function getAgentKnowledgeBranch(

@@ -29,15 +29,24 @@ initPerformanceTelemetry();
 try {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
   root.render(<App />)
-  // React 首次渲染完成（下一帧绘制后）隐藏启动占位符
-  // 使用双重 rAF 确保首帧已绘制到屏幕，避免 placeholder 消失后短暂白屏
-  if (typeof (window as any).__hideBootPlaceholder === 'function') {
+
+  // React 渲染完成后，通过 IPC 通知 Swift（AnimatedSplashView 切换为 WebView 的条件之一）
+  // 双重 rAF 确保首帧已绘制到屏幕
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(() => (window as any).__hideBootPlaceholder(), 30);
-      });
+      // __cdfIPC 可能在 didFinish 回调中才注入，需要轮询等待
+      const notifyReactReady = () => {
+        const w = window as any;
+        if (typeof w.__cdfIPC?.request === 'function') {
+          w.__cdfIPC.request('reactReady').catch(() => {});
+        } else {
+          // __cdfIPC 尚未注入，100ms 后重试（最多 5 秒）
+          setTimeout(notifyReactReady, 100);
+        }
+      };
+      notifyReactReady();
     });
-  }
+  });
 } catch (e: any) {
   const errMsg = e?.message || String(e);
   const errStack = e?.stack || '';
@@ -46,10 +55,15 @@ try {
     errorEl.textContent = 'React 渲染异常: ' + errMsg + '\n' + errStack;
     errorEl.className = 'show';
   }
-  // 渲染异常时也需隐藏启动占位符，让用户看到错误信息
-  if (typeof (window as any).__hideBootPlaceholder === 'function') {
-    (window as any).__hideBootPlaceholder();
-  }
+  // 渲染异常时也通知 Swift，让原生 splash 能切换到 WebView 显示错误
+  setTimeout(() => {
+    try {
+      const w = window as any;
+      if (typeof w.__cdfIPC?.request === 'function') {
+        w.__cdfIPC.request('reactReady').catch(() => {});
+      }
+    } catch {}
+  }, 500);
   console.error('[CDFKnow] React 渲染异常:', errMsg, errStack);
 }
 

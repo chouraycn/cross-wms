@@ -11,19 +11,207 @@ import type {
   SkillVersionRow,
   AgentSkillBranchRow,
   AgentSkillBranchVersionRow,
+  SkillStatsEntry,
+  RecentSkillStatsEntry,
+  SkillBranchMeta,
 } from '../../types/staff.js';
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
+// ===================== 技能统计聚合 =====================
+// 对齐 StaffDeck 原版 backend/app/api/skills.py::_skill_stats / _recent_skill_stats。
+// 统计口径：
+//   · call_count      ← sd_agent_events 中 skill_started / skill_resumed 事件的 payload.to_skill_id
+//   · positive/negative ← sd_skill_feedback，按 (skill_id, version, session, user) 去重成一次"流"，
+//                         同一流内出现 down 记负，否则出现 up 记正（原版 down 优先）
+//   · rate            ← feedback / call_count，保留 4 位小数；call_count 为 0 时记 0
+
+const STATS_CALL_EVENT_TYPES = ['skill_started', 'skill_resumed'] as const;
+
+function emptyStats(): SkillStatsEntry {
+  return {
+    call_count: 0,
+    positive_feedback_count: 0,
+    negative_feedback_count: 0,
+    positive_rate: 0,
+    negative_rate: 0,
+  };
+}
+
+function statsKey(skillId: string, version: string): string {
+  return `${skillId}@${version}`;
+}
+
+/** 技能统计表：key 为 skill_id（全量维度）或 `skill_id@version`（版本维度）。 */
+export type SkillStatsMap = Map<string, SkillStatsEntry>;
+
+function ensureEntry(stats: SkillStatsMap, key: string): SkillStatsEntry {
+  let entry = stats.get(key);
+  if (!entry) {
+    entry = emptyStats();
+    stats.set(key, entry);
+  }
+  return entry;
+}
+
+/**
+ * 聚合租户下所有技能的调用与反馈统计（一次性两表扫描，避免 N+1）。
+ * 对齐原版 _skill_stats。
+ */
+export function getSkillStats(tenantId: string = DEFAULT_TENANT_ID): SkillStatsMap {
+  const db = initDb();
+  const stats: SkillStatsMap = new Map();
+
+  // —— 1. 调用次数 ——
+  const placeholders = STATS_CALL_EVENT_TYPES.map(() => '?').join(',');
+  const eventRows = db
+    .prepare(
+      `SELECT payload_json FROM sd_agent_events
+       WHERE tenant_id = ? AND event_type IN (${placeholders})`,
+    )
+    .all(tenantId, ...STATS_CALL_EVENT_TYPES) as Array<{ payload_json: string | null }>;
+
+  for (const row of eventRows) {
+    let payload: Record<string, unknown> = {};
+    try {
+      payload = row.payload_json ? (JSON.parse(row.payload_json) as Record<string, unknown>) : {};
+    } catch {
+      continue;
+    }
+    const skillId = String(payload.to_skill_id ?? '');
+    if (!skillId) continue;
+    const version = String(payload.to_skill_version ?? payload.skill_version ?? '') || null;
+
+    ensureEntry(stats, skillId).call_count += 1;
+    if (version) ensureEntry(stats, statsKey(skillId, version)).call_count += 1;
+  }
+
+  // —— 2. 反馈：先按 (skill_id, version, session, user) 归并成"流" ——
+  const feedbackRows = db
+    .prepare(
+      `SELECT skill_id, skill_version, session_id, user_id, rating
+       FROM sd_skill_feedback WHERE tenant_id = ?`,
+    )
+    .all(tenantId) as Array<{
+    skill_id: string;
+    skill_version: string | null;
+    session_id: string;
+    user_id: string;
+    rating: string;
+  }>;
+
+  const flows = new Map<string, { skillId: string; version: string | null; ratings: Set<string> }>();
+  for (const fb of feedbackRows) {
+    const key = `${fb.skill_id}\u0000${fb.skill_version ?? ''}\u0000${fb.session_id}\u0000${fb.user_id}`;
+    let flow = flows.get(key);
+    if (!flow) {
+      flow = { skillId: fb.skill_id, version: fb.skill_version || null, ratings: new Set() };
+      flows.set(key, flow);
+    }
+    flow.ratings.add(fb.rating);
+  }
+
+  for (const flow of flows.values()) {
+    const targets: SkillStatsEntry[] = [ensureEntry(stats, flow.skillId)];
+    if (flow.version) targets.push(ensureEntry(stats, statsKey(flow.skillId, flow.version)));
+    // 原版语义：同一流内只要出现过 down 就整体记负，否则出现 up 记正
+    const isNegative = flow.ratings.has('down');
+    const isPositive = !isNegative && flow.ratings.has('up');
+    for (const entry of targets) {
+      if (isNegative) entry.negative_feedback_count += 1;
+      else if (isPositive) entry.positive_feedback_count += 1;
+    }
+  }
+
+  // —— 3. 比率 ——
+  for (const entry of stats.values()) {
+    entry.positive_rate = entry.call_count
+      ? Math.round((entry.positive_feedback_count / entry.call_count) * 10000) / 10000
+      : 0;
+    entry.negative_rate = entry.call_count
+      ? Math.round((entry.negative_feedback_count / entry.call_count) * 10000) / 10000
+      : 0;
+  }
+
+  return stats;
+}
+
+/**
+ * 按技能聚合"最近 3 个版本"的统计。对齐原版 _recent_skill_stats。
+ */
+export function getRecentSkillStats(
+  tenantId: string = DEFAULT_TENANT_ID,
+  stats?: SkillStatsMap,
+): Map<string, RecentSkillStatsEntry> {
+  const db = initDb();
+  const base = stats ?? getSkillStats(tenantId);
+
+  const recentVersions = new Map<string, string[]>();
+  const versionRows = db
+    .prepare(
+      `SELECT skill_id, version FROM sd_skill_versions
+       WHERE tenant_id = ?
+       ORDER BY skill_id ASC, created_at DESC, version DESC`,
+    )
+    .all(tenantId) as Array<{ skill_id: string; version: string }>;
+  for (const row of versionRows) {
+    const list = recentVersions.get(row.skill_id) ?? [];
+    if (list.length < 3) list.push(row.version);
+    recentVersions.set(row.skill_id, list);
+  }
+
+  // 没有版本记录的技能，退化为自身当前版本
+  const skillRows = db
+    .prepare(`SELECT skill_id, version FROM sd_skills WHERE tenant_id = ?`)
+    .all(tenantId) as Array<{ skill_id: string; version: string }>;
+  for (const row of skillRows) {
+    if (!recentVersions.has(row.skill_id)) recentVersions.set(row.skill_id, [row.version]);
+  }
+
+  const result = new Map<string, RecentSkillStatsEntry>();
+  for (const [skillId, versions] of recentVersions) {
+    const entry: RecentSkillStatsEntry = { ...emptyStats(), recent_versions: versions };
+    for (const version of versions) {
+      const vs = base.get(statsKey(skillId, version));
+      if (!vs) continue;
+      entry.call_count += vs.call_count;
+      entry.positive_feedback_count += vs.positive_feedback_count;
+      entry.negative_feedback_count += vs.negative_feedback_count;
+    }
+    entry.positive_rate = entry.call_count
+      ? Math.round((entry.positive_feedback_count / entry.call_count) * 10000) / 10000
+      : 0;
+    entry.negative_rate = entry.call_count
+      ? Math.round((entry.negative_feedback_count / entry.call_count) * 10000) / 10000
+      : 0;
+    result.set(skillId, entry);
+  }
+  return result;
+}
+
+/** 序列化上下文——不传时统计字段全部回落为 0，保证旧调用点行为不变。 */
+export interface SkillReadContext {
+  stats?: SkillStatsMap;
+  recentStats?: Map<string, RecentSkillStatsEntry>;
+  /** 员工分支元信息，key 为 skill_id。 */
+  branchMeta?: Map<string, SkillBranchMeta>;
+}
+
 // ===================== Skills =====================
 
-export function toSkillRead(row: SkillRow): SkillRead {
+export function toSkillRead(row: SkillRow, ctx: SkillReadContext = {}): SkillRead {
   let content: Record<string, unknown> = {};
   try {
     content = row.content_json ? JSON.parse(row.content_json) : {};
   } catch {
     content = {};
   }
+
+  const versionStats = ctx.stats?.get(statsKey(row.skill_id, row.version)) ?? emptyStats();
+  const totalStats = ctx.stats?.get(row.skill_id) ?? emptyStats();
+  const recent = ctx.recentStats?.get(row.skill_id);
+  const branch = ctx.branchMeta?.get(row.skill_id);
+
   return {
     id: row.id,
     tenant_id: row.tenant_id,
@@ -34,9 +222,89 @@ export function toSkillRead(row: SkillRow): SkillRead {
     description: row.description,
     content,
     status: row.status,
+    call_count: versionStats.call_count,
+    positive_feedback_count: versionStats.positive_feedback_count,
+    negative_feedback_count: versionStats.negative_feedback_count,
+    positive_rate: versionStats.positive_rate,
+    negative_rate: versionStats.negative_rate,
+    total_call_count: totalStats.call_count,
+    total_positive_feedback_count: totalStats.positive_feedback_count,
+    total_negative_feedback_count: totalStats.negative_feedback_count,
+    total_positive_rate: totalStats.positive_rate,
+    total_negative_rate: totalStats.negative_rate,
+    recent_versions: recent?.recent_versions ?? [row.version],
+    recent_call_count: recent?.call_count ?? 0,
+    recent_positive_feedback_count: recent?.positive_feedback_count ?? 0,
+    recent_negative_feedback_count: recent?.negative_feedback_count ?? 0,
+    recent_positive_rate: recent?.positive_rate ?? 0,
+    recent_negative_rate: recent?.negative_rate ?? 0,
+    agent_id: branch?.agent_id,
+    branch_status: branch?.status,
+    branch_sync_state: branch?.sync_state,
+    branch_base_version: branch?.base_version,
+    branch_head_version: branch?.head_version,
+    metadata: branch?.metadata ?? {},
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+/**
+ * 构造一个带完整统计上下文的序列化器（一次聚合、多行复用）。
+ * 路由层用法：`const read = buildSkillReader(tenantId, agentId); rows.map(read)`
+ */
+export function buildSkillReader(
+  tenantId: string = DEFAULT_TENANT_ID,
+  agentId?: string,
+): (row: SkillRow) => SkillRead {
+  const stats = getSkillStats(tenantId);
+  const recentStats = getRecentSkillStats(tenantId, stats);
+  const branchMeta = agentId ? getAgentSkillBranchMeta(tenantId, agentId) : undefined;
+  return (row: SkillRow) => toSkillRead(row, { stats, recentStats, branchMeta });
+}
+
+/** 读取某员工全部技能分支的元信息，key 为 skill_id。 */
+export function getAgentSkillBranchMeta(
+  tenantId: string,
+  agentId: string,
+): Map<string, SkillBranchMeta> {
+  const db = initDb();
+  const rows = db
+    .prepare(
+      `SELECT skill_id, source_skill_id, status, sync_state, base_version, head_version, metadata_json
+       FROM sd_agent_skill_branches WHERE tenant_id = ? AND agent_id = ?`,
+    )
+    .all(tenantId, agentId) as Array<{
+    skill_id: string;
+    source_skill_id: string;
+    status: string;
+    sync_state: string;
+    base_version: string;
+    head_version: string;
+    metadata_json: string | null;
+  }>;
+
+  const result = new Map<string, SkillBranchMeta>();
+  for (const row of rows) {
+    let metadata: Record<string, unknown> = {};
+    try {
+      metadata = row.metadata_json ? (JSON.parse(row.metadata_json) as Record<string, unknown>) : {};
+    } catch {
+      metadata = {};
+    }
+    const meta: SkillBranchMeta = {
+      agent_id: agentId,
+      status: row.status,
+      sync_state: row.sync_state,
+      base_version: row.base_version,
+      head_version: row.head_version,
+      metadata,
+    };
+    // 分支自身 skill_id 与来源 skill_id 都建索引，便于两种视角命中
+    result.set(row.skill_id, meta);
+    if (row.source_skill_id) result.set(row.source_skill_id, meta);
+  }
+  return result;
 }
 
 export interface SkillListFilter {
