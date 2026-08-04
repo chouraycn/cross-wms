@@ -171,7 +171,7 @@ function buildSystemPrompt(
   kbContext: string,
 ): string {
   const lines: string[] = [];
-  lines.push(`你是企业数字员工「${agent.name}」，由 CrossWMS 调度。`);
+  lines.push(`你是企业数字员工「${agent.name}」，由 CDFKnow 调度。`);
   if (agent.description) lines.push(agent.description);
   lines.push('');
   if (agent.persona_prompt && agent.persona_prompt.trim()) {

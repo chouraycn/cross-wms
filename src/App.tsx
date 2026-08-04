@@ -47,7 +47,6 @@ const TencentDocsPage = React.lazy(() => import('./pages/TencentDocsPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 // /settings 已改为侧边栏弹窗重定向，不再需要全页面 SettingsPage
 const AutomationPage = React.lazy(() => import('./pages/AutomationPage'));
-const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 const WmsQualityPage = React.lazy(() => import('./pages/WmsQualityPage'));
 const WmsInventoryPage = React.lazy(() => import('./pages/WmsInventoryPage'));
 const WmsOutboundPage = React.lazy(() => import('./pages/WmsOutboundPage'));
@@ -56,7 +55,6 @@ const WmsAlertPage = React.lazy(() => import('./pages/WmsAlertPage'));
 const WmsReportPage = React.lazy(() => import('./pages/WmsReportPage'));
 const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPage'));
 const TransferPage = React.lazy(() => import('./pages/TransferPage'));
-const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 const _AISettingsDialog = React.lazy(() => import('./components/Layout/AISettingsDialog'));
@@ -981,8 +979,6 @@ const MainLayout: React.FC = () => {
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
                     <Route path="/" element={<Navigate to="/chat" replace />} />
-                    <Route path="/projects" element={<ProjectsPage />} />
-                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/skills" element={<SkillsPage />} />
                     <Route path="/skills/:skillId" element={<SkillDetailPage />} />
@@ -1116,10 +1112,12 @@ const MainLayout: React.FC = () => {
                     <Route path="/staff/scheduled-tasks/new" element={<Navigate to="/enterprise/scheduled-tasks/new" replace />} />
                     <Route path="/staff/dashboard" element={<Navigate to="/enterprise/dashboard" replace />} />
 
-                    {/* ===================== 数字员工 100% 复刻入口 =====================
+                    {/* ===================== 员工 100% 复刻入口 =====================
                         实际 iframe 由 App 层的 StaffDeckPortal 常驻挂载并控制显隐，
-                        此处仅占位避免匹配到 NotFound，杜绝双 iframe 重复加载。 */}
+                        此处仅占位避免匹配到 NotFound，杜绝双 iframe 重复加载。
+                        /warehouse-staff 复用同一 iframe 容器，但通过 hash 进入工作区聊天。 */}
                     <Route path="/staffdeck" element={null} />
+                    <Route path="/warehouse-staff" element={null} />
                     <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
 
                     {/* 数字员工对话大厅（iframe 版 /workspace/chat 已覆盖，默认收敛） */}

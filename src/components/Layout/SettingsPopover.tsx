@@ -39,7 +39,6 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import TranslateIcon from '@mui/icons-material/Translate';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
@@ -48,7 +47,8 @@ import SettingsGeneral from './SettingsGeneral';
 import SettingsAbout from './SettingsAbout';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, type SupportedLanguage } from '../../i18n';
+// StaffDeck 程序化图标（currentColor 主题化，与设置面板文字色联动）
+import StaffdeckIcon from '../staff/StaffdeckIcon';
 
 const SIDEBAR_WIDTH_EXPANDED = 360;
 
@@ -79,7 +79,6 @@ export interface MenuEntry {
 
 export const SETTINGS_MENU: MenuEntry[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
-  { key: 'language', label: '语言', icon: <TranslateIcon sx={{ fontSize: 20 }} />, description: '界面语言切换' },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
   { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
   { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置', aiTab: { main: 'comms', sub: 'talk' } },
@@ -142,7 +141,7 @@ export const SETTINGS_MENU: MenuEntry[] = [
       { key: 'reports', label: '报表', icon: <AssessmentOutlinedIcon sx={{ fontSize: 18 }} />, description: '数据报表 & 报表中心', path: '/reports' },
     ],
   },
-  { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本', tab: 'about' },
+  { key: 'about', label: '关于', icon: <StaffdeckIcon name="info" sx={{ fontSize: 20 }} />, description: '系统信息与版本', tab: 'about' },
 ];
 
 // 详情视图标题查找表（含子项）
@@ -166,7 +165,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(getCurrentLanguage());
 
   const handleSave = () => {
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
@@ -187,17 +185,16 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
 
   const renderLeaf = (entry: MenuEntry, indent = false) => {
     const isAppearance = entry.appearanceInline === true;
-    const isLanguage = entry.key === 'language';
     return (
       <Box
         key={entry.key}
-        onClick={() => { if (!isAppearance && !isLanguage) handleLeafClick(entry); }}
+        onClick={() => { if (!isAppearance) handleLeafClick(entry); }}
         sx={{
           display: 'flex', alignItems: 'center', gap: 1.5,
           px: indent ? 3 : 2, py: 1.5,
-          cursor: (isAppearance || isLanguage) ? 'default' : 'pointer',
+          cursor: isAppearance ? 'default' : 'pointer',
           borderRadius: '8px',
-          '&:hover': { backgroundColor: (isAppearance || isLanguage) ? 'transparent' : gs.bgHover },
+          '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
         }}
       >
         <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 20 }}>
@@ -246,36 +243,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
             </Box>
           </Box>
         )}
-        {/* 语言项：胶囊按钮切换语言 */}
-        {isLanguage && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }} onClick={e => e.stopPropagation()}>
-            {SUPPORTED_LANGUAGES.map((lang, index) => {
-              const isActive = currentLang === lang.code;
-              return (
-                <Box
-                  key={lang.code}
-                  onClick={() => {
-                    setCurrentLang(lang.code);
-                    changeLanguage(lang.code);
-                    showToast(`语言已切换为${lang.nativeName}`, 'success');
-                  }}
-                  sx={{
-                    px: 1.5, py: 0.4, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
-                    borderRadius: index === 0 ? '12px 0 0 12px' : '0 12px 12px 0',
-                    backgroundColor: isActive ? gs.bgPanel : gs.bgHover,
-                    color: isActive ? gs.textPrimary : gs.textDisabled,
-                    border: `1px solid ${gs.border}`,
-                    borderLeft: index === 0 ? undefined : 'none',
-                    boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {lang.nativeName}
-                </Box>
-              );
-            })}
-          </Box>
-        )}
       </Box>
     );
   };
@@ -319,9 +286,11 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                           <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
                         </Box>
                       </Box>
-                      <ExpandMoreIcon
+                      <StaffdeckIcon
+                        name="arrow"
                         onClick={() => setExpandedGroup(expanded ? null : entry.key)}
-                        sx={{ fontSize: 18, color: gs.textMuted, transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', cursor: 'pointer' }}
+                        sx={{ fontSize: 18 }}
+                        style={{ color: gs.textMuted, transform: expanded ? 'rotate(90deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', cursor: 'pointer' }}
                       />
                     </Box>
                     {expanded && entry.children.map((child) => renderLeaf(child, true))}
@@ -339,9 +308,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   return (
     <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
-        <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><ArrowBackIcon sx={{ fontSize: 18 }} /></IconButton>
+        <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><StaffdeckIcon name="arrow" sx={{ fontSize: 18 }} rotate={180} /></IconButton>
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{currentLabel}</Typography>
-        <IconButton size="small" onClick={() => onClose?.()} sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}><CloseIcon sx={{ fontSize: 18 }} /></IconButton>
+        <IconButton size="small" onClick={() => onClose?.()} sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}><StaffdeckIcon name="close" sx={{ fontSize: 18 }} /></IconButton>
       </Box>
       <Divider sx={{ mb: 1 }} />
       <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
@@ -352,8 +321,8 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
           <>
             <Divider sx={{ mt: 2, mb: 1.5 }} />
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-              <Button variant="outlined" size="small" startIcon={<RestartAltIcon />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
-              <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
+              <Button variant="outlined" size="small" startIcon={<StaffdeckIcon name="refresh" />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
+              <Button variant="contained" size="small" startIcon={<StaffdeckIcon name="save" />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
             </Box>
           </>
         )}

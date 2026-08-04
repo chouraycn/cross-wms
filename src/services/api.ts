@@ -8,7 +8,6 @@ import type { Skill, UsageStats, ConflictResult } from '../types/skill';
 import type { AppSettings } from '../contexts/AppSettingsContext';
 import type { ModelConfig } from '../types/models';
 import type { Task } from '../types/task';
-import type { Project } from '../types/project';
 import type { Session } from '../types/chat';
 import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import type {
@@ -797,28 +796,6 @@ export async function migrateTasks(payload: {
   }>;
 }): Promise<{ imported: number; skipped: number }> {
   return request<{ imported: number; skipped: number }>('POST', '/api/tasks/migrate', payload);
-}
-
-// ===================== Projects API =====================
-
-/** 获取所有项目 */
-export async function getProjects(): Promise<Project[]> {
-  return request<Project[]>('GET', '/api/projects');
-}
-
-/** 创建项目 */
-export async function createProject(data: Partial<Project> & { name: string }): Promise<Project> {
-  return request<Project>('POST', '/api/projects', data);
-}
-
-/** 更新项目 */
-export async function updateProject(id: string, data: Partial<Project> & { name?: string }): Promise<Project> {
-  return request<Project>('PUT', `/api/projects/${encodeURIComponent(id)}`, data);
-}
-
-/** 删除项目 */
-export async function deleteProject(id: string): Promise<void> {
-  await request<void>('DELETE', `/api/projects/${encodeURIComponent(id)}`);
 }
 
 // ===================== Models (models.json) =====================

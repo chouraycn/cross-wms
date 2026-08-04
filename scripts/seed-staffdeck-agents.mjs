@@ -254,6 +254,61 @@ function main() {
   }
   total += migrateKnowledgeBranches(db, data);
 
+  // 幂等注入仓库专员（不依赖 fixture JSON，直接写入主库）
+  const warehouseAgentId = 'seed-agent-warehouse-specialist';
+  const existingWarehouse = db.prepare('SELECT id FROM sd_agent_profiles WHERE id = ?').get(warehouseAgentId);
+  if (!existingWarehouse) {
+    const warehouseMetadata = normalizeMetadata({
+      role_key: 'warehouse-specialist',
+      role_name: '仓库专员',
+      avatar_text: '仓',
+      avatar_tone: 'amber',
+      avatar_kind: 'preset',
+      avatar_preset: 'warehouse-grid',
+      onboarded_at: new Date().toISOString().slice(0, 10),
+      work_styles: ['数据准确', '流程规范', '异常预警'],
+      expertise_tags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
+      work_modes: ['收货上架', '拣货发运', '盘点核对'],
+      published_to_gallery: true,
+      gallery_published_by: 'admin',
+      seed_source: 'cross-wms-warehouse-specialist',
+      managed_by_seed: true,
+    });
+    const warehousePersona = [
+      '你是「仓库专员」，由 CDFKnow 调度的企业数字员工，专注于仓储运营管理。',
+      '',
+      '核心职责：',
+      '- 入库管理：收货验收、上架归位、入库单据核对',
+      '- 出库管理：拣货发运、出库复核、物流跟踪',
+      '- 库存盘点：库存核对、差异分析、账实相符',
+      '- 补货计划：安全库存监控、补货建议、呆滞料预警',
+      '',
+      '工作风格：数据准确、流程规范、异常预警。',
+      '',
+      '回答要求：',
+      '1. 涉及库存数据时优先核对，给出准确数字与单位',
+      '2. 涉及流程时按 WMS 标准作业流程（SOP）分步骤说明',
+      '3. 发现异常（库存差异、缺料、超期等）主动预警并给出建议',
+      '4. 补货建议需结合安全库存、周转率、前置时间综合判断',
+    ].join('\n');
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_agent_profiles (
+        id, tenant_id, name, description, persona_prompt, is_overall, status, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      warehouseAgentId,
+      TENANT_ID,
+      '仓库专员',
+      '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
+      warehousePersona,
+      0,
+      'active',
+      JSON.stringify(warehouseMetadata),
+    );
+    total += 1;
+    console.log('  仓库专员注入完成（seed-agent-warehouse-specialist）');
+  }
+
   // 校验
   const agentCount = db.prepare('SELECT COUNT(*) c FROM sd_agent_profiles').get().c;
   const skillCount = db.prepare('SELECT COUNT(*) c FROM sd_skills').get().c;
@@ -268,8 +323,8 @@ function main() {
   console.log(
     `当前库：数字员工 ${agentCount} / 技能 ${skillCount} / 知识库 ${kbCount} / 资源绑定 ${bindCount} / 知识分支 ${akbCount} / 知识桶 ${bucketCount}`,
   );
-  if (agentCount !== 5) {
-    console.warn(`⚠️  数字员工数量异常（预期 5，实际 ${agentCount}），请检查 fixture 与表结构`);
+  if (agentCount !== 6) {
+    console.warn(`⚠️  数字员工数量异常（预期 6，实际 ${agentCount}），请检查 fixture 与表结构`);
     process.exitCode = 2;
   }
 }

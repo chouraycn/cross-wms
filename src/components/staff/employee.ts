@@ -54,6 +54,7 @@ export const EMPLOYEE_AVATAR_PRESETS: EmployeeAvatarPreset[] = [
   { key: 'commerce-compass', label: '财务员工', text: '财', tone: 'blue' },
   { key: 'ops-grid', label: '人事员工', text: '人', tone: 'ink' },
   { key: 'quality-star', label: '法务员工', text: '法', tone: 'gold' },
+  { key: 'warehouse-grid', label: '仓库专员', text: '仓', tone: 'amber' },
 ]
 
 export const DEFAULT_AVATAR_PRESET = 'service-orbit'
@@ -67,6 +68,7 @@ const PRESET_AVATAR_IMAGES: Record<string, string> = {
   'commerce-compass': staffdeckContent.staffdeckAvatarCommerce,
   'ops-grid': staffdeckContent.staffdeckAvatarOps,
   'quality-star': staffdeckContent.staffdeckAvatarQuality,
+  'warehouse-grid': staffdeckContent.staffdeckAvatarWarehouse,
   overall: staffdeckContent.staffdeckAvatarOverall,
 }
 
@@ -126,6 +128,17 @@ export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
     workStyles: ['证据优先', '口径统一', '风险克制'],
     expertiseTags: ['报销核对', '预算口径', '数据复盘'],
     workModes: ['查规则', '核凭证', '给结论'],
+  },
+  {
+    key: 'warehouse-specialist',
+    roleName: '仓库专员',
+    avatarText: '仓',
+    avatarTone: 'amber',
+    avatarPreset: 'warehouse-grid',
+    description: '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
+    workStyles: ['数据准确', '流程规范', '异常预警'],
+    expertiseTags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
+    workModes: ['收货上架', '拣货发运', '盘点核对'],
   },
 ]
 

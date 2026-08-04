@@ -25,6 +25,138 @@ import { logger } from '../logger.js';
 
 import type { Message } from '../db-chat.js';
 
+// ===================== 文件夹上下文扫描 =====================
+
+// 支持文本读取的扩展名白名单（与 fileExtractor 保持一致）
+const FOLDER_TEXT_EXTS = new Set([
+  'txt', 'csv', 'json', 'md', 'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs',
+  'cpp', 'c', 'h', 'hpp', 'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm',
+  'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf', 'sql', 'sh', 'bat', 'ps1',
+  'css', 'scss', 'less', 'vue', 'svelte', 'dart', 'lua', 'pl', 'pm', 'log', 'tsv',
+  'html', 'htm',
+]);
+
+const FOLDER_MAX_FILE_SIZE = 100_000; // 单文件 100KB
+const FOLDER_MAX_TOTAL_SIZE = 800_000; // 总内容 800KB
+const FOLDER_MAX_FILES = 200; // 最多读取 200 个文件
+const FOLDER_MAX_DEPTH = 5; // 递归最大深度
+
+/**
+ * 扫描指定文件夹下的文本文件并读取内容，组装为 AI 上下文字符串
+ */
+async function scanFolderContent(folderPath: string): Promise<string | null> {
+  try {
+    const stats = await fsp.stat(folderPath);
+    if (!stats.isDirectory()) {
+      return null;
+    }
+
+    const parts: string[] = [];
+    let totalSize = 0;
+    let readCount = 0;
+    let skippedCount = 0;
+    const folderName = path.basename(folderPath);
+
+    async function walkDir(dir: string, depth: number): Promise<void> {
+      if (depth > FOLDER_MAX_DEPTH) return;
+      if (readCount >= FOLDER_MAX_FILES || totalSize >= FOLDER_MAX_TOTAL_SIZE) return;
+
+      let entries: import('fs').Dirent[];
+      try {
+        entries = await fsp.readdir(dir, { withFileTypes: true });
+      } catch (err) {
+        logger.warn(`[FolderContext] 无法读取目录 ${dir}:`, err);
+        return;
+      }
+
+      // 按名称排序保证可重复性
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const entry of entries) {
+        if (readCount >= FOLDER_MAX_FILES || totalSize >= FOLDER_MAX_TOTAL_SIZE) return;
+
+        // 跳过常见忽略目录
+        if (entry.isDirectory()) {
+          if (['node_modules', '.git', 'dist', 'build', '.next', '__pycache__', '.cache', '.idea', '.vscode'].includes(entry.name)) {
+            continue;
+          }
+          await walkDir(path.join(dir, entry.name), depth + 1);
+          continue;
+        }
+
+        if (!entry.isFile()) continue;
+        const ext = entry.name.slice(entry.name.lastIndexOf('.') + 1).toLowerCase();
+        if (!FOLDER_TEXT_EXTS.has(ext)) continue;
+
+        const fullPath = path.join(dir, entry.name);
+        const relPath = path.relative(folderPath, fullPath);
+
+        try {
+          const fileStat = await fsp.stat(fullPath);
+          if (fileStat.size > FOLDER_MAX_FILE_SIZE) {
+            parts.push(`\n--- ${relPath} (文件过大: ${(fileStat.size / 1024).toFixed(1)}KB，已跳过) ---`);
+            skippedCount++;
+            continue;
+          }
+
+          const content = await fsp.readFile(fullPath, 'utf-8');
+          parts.push(`\n--- ${relPath} ---\n\`\`\`${ext}\n${content}\n\`\`\``);
+          totalSize += content.length;
+          readCount++;
+        } catch (err) {
+          parts.push(`\n--- ${relPath} (读取失败) ---`);
+          skippedCount++;
+        }
+      }
+    }
+
+    await walkDir(folderPath, 0);
+
+    if (readCount === 0) {
+      return `<folder_context path="${folderPath}">\n未发现可读取的文本文件\n</folder_context>`;
+    }
+
+    const summary = `【文件夹】${folderName}（路径: ${folderPath}）— 读取 ${readCount} 个文本文件${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}`;
+    const tailNote = (readCount >= FOLDER_MAX_FILES || totalSize >= FOLDER_MAX_TOTAL_SIZE)
+      ? `\n\n（已达到读取上限，部分文件未读取）`
+      : '';
+
+    return `<folder_context path="${folderPath}">\n${summary}\n${parts.join('\n')}${tailNote}\n</folder_context>`;
+  } catch (err) {
+    logger.warn(`[FolderContext] 扫描文件夹失败 ${folderPath}:`, err);
+    return null;
+  }
+}
+
+/**
+ * 解析 folderContext 字符串：
+ * - 若以 FOLDER_CONTENT_INLINE 开头：直接返回后续内容（Web 场景前端已读取）
+ * - 否则当作文件夹绝对路径，扫描读取
+ */
+async function resolveFolderContext(folderContext: string): Promise<string | null> {
+  if (!folderContext || typeof folderContext !== 'string') return null;
+
+  // Web 场景：前端已读取并标记前缀
+  if (folderContext.startsWith('FOLDER_CONTENT_INLINE\n')) {
+    const content = folderContext.slice('FOLDER_CONTENT_INLINE\n'.length);
+    return `<folder_context>\n${content}\n</folder_context>`;
+  }
+
+  // 原生场景：当作绝对路径处理
+  // 简单校验：必须存在且为目录
+  try {
+    const stats = await fsp.stat(folderContext);
+    if (stats.isDirectory()) {
+      return await scanFolderContent(folderContext);
+    }
+    logger.warn(`[FolderContext] 路径不是目录: ${folderContext}`);
+    return null;
+  } catch (err) {
+    logger.warn(`[FolderContext] 路径无法访问: ${folderContext}`, err);
+    return null;
+  }
+}
+
 // 以下两个函数从 chatService.ts 提取，保持原样
 
 interface ParsedAttachment {
@@ -183,6 +315,8 @@ export interface BuildApiMessagesParams {
   attachments?: unknown[];
   referencedSessionIds?: string[];
   hasImage: boolean;
+  /** 选中的文件夹上下文：原生场景为绝对路径（后端扫描读取）；Web 回退场景为 FOLDER_CONTENT_INLINE 前缀的内容字符串 */
+  folderContext?: string;
 }
 
 export interface BuildApiMessagesResult {
@@ -218,7 +352,20 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
     apiMessages.push({ role: 'system', content: params.skillContext.trim() });
   }
 
-  // 5. 引用会话
+  // 5. 文件夹上下文（用户选择的文件夹）
+  // 原生场景下传入绝对路径，后端扫描读取文件夹内所有文本文件内容
+  // Web 回退场景下传入已读取的内容字符串（带 FOLDER_CONTENT_INLINE 前缀）
+  if (params.folderContext && typeof params.folderContext === 'string' && params.folderContext.trim()) {
+    const folderSystemContent = await resolveFolderContext(params.folderContext);
+    if (folderSystemContent) {
+      apiMessages.push({
+        role: 'system',
+        content: `用户已选择一个文件夹作为本次对话的上下文。文件夹内的文本文件内容已为你读取并附在下方 <folder_context> 标签中。\n\n请将文件夹内的内容视为本次对话的核心参考资料：\n1. 优先基于文件夹内文件的实际内容回答用户问题\n2. 引用具体文件时，请使用相对路径标注（如 \`path/to/file.ts\`）\n3. 如果用户的请求涉及分析、总结、修改或扩展这些文件，请直接基于实际内容执行，而非假设\n4. 如文件夹内未覆盖用户问题的相关信息，请明确指出并给出建议\n\n${folderSystemContent}`,
+      });
+    }
+  }
+
+  // 6. 引用会话
   if (Array.isArray(params.referencedSessionIds) && params.referencedSessionIds.length > 0) {
     let sessionContext = '';
     for (const refId of params.referencedSessionIds) {

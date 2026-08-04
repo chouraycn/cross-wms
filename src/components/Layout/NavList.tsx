@@ -37,12 +37,14 @@ import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined';
 import OutboxOutlinedIcon from '@mui/icons-material/OutboxOutlined';
+import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
+// StaffDeck 程序化图标（currentColor 主题化，与 NavList 文字色联动）
+import StaffdeckIcon from '../staff/StaffdeckIcon';
 
 // ===================== Helpers =====================
 
@@ -139,10 +141,9 @@ function VirtualList<T>({ items, itemHeight, height, renderItem, overscan = 5 }:
 // ===================== Nav Items Config =====================
 
 const navItems: NavItem[] = [
-  { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
-  { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
-  { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
-  { label: '数字员工', path: '/staffdeck', icon: <GroupsOutlinedIcon />, desc: 'StaffDeck 企业智能体平台' },
+  { label: 'AI 对话', path: '/chat', icon: <StaffdeckIcon name="chat" size={18} />, desc: '智能助手' },
+  { label: '技能', path: '/skills', icon: <StaffdeckIcon name="spark" size={18} />, desc: '能力管理' },
+  { label: '员工', path: '/staffdeck', icon: <StaffdeckIcon name="user" size={18} />, desc: '企业智能体平台' },
   {
     // 2026-08-04 补齐：7 条 /wms/* 路由此前全部有效但无任何导航入口，
     // 用户只能手敲 URL 进入，等同于功能不存在。
@@ -157,12 +158,13 @@ const navItems: NavItem[] = [
       { label: '质检管理', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质量检验' },
       { label: '库存预警', path: '/wms/alerts', icon: <WarningAmberOutlinedIcon />, desc: '异常提醒' },
       { label: '仓储报表', path: '/wms/reports', icon: <AssessmentOutlinedIcon />, desc: '数据分析' },
+      { label: '仓库员工', path: '/warehouse-staff', icon: <GroupsOutlinedIcon />, desc: '仓库专属数字员工' },
     ],
   },
-  { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
+  { label: '自动化', path: '/automation', icon: <StaffdeckIcon name="clock" size={18} />, desc: '任务 & 调度' },
   {
     label: '创作',
-    icon: <ImageIcon />,
+    icon: <StaffdeckIcon name="image" size={18} />,
     desc: '图像 · 音乐 · 视频',
     children: [
       { label: '图像生成', path: '/image-generation', icon: <ImageIcon />, desc: 'AI 绘图' },
@@ -820,8 +822,8 @@ const NavList: React.FC<NavListProps> = ({
 
       {/* ====== 历史对话 ====== */}
       {!collapsed && sortedSessions.length > 0 && (
-        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, mb: 0.5, flexShrink: 0 }}>
+        <Box ref={historyListRef} sx={{ mt: 0.5, pt: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, mb: 0.25, flexShrink: 0 }}>
             <Typography
               sx={{
                 fontSize: '0.6875rem',

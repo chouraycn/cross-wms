@@ -864,6 +864,20 @@ server.listen(PORT, () => {
 
     startMemoryMonitor(60_000);
 
+    // 数字员工 seed：把 StaffDeck-main 的 fixture（精选 5 个员工 + 仓库专员）迁移进主库。
+    // 必须在定时任务调度器 / 流式任务 hydrate 之前执行，保证 sd_agent_profiles 有数据。
+    import('./staff/seedStaffDeck.js')
+      .then(({ seedStaffDeckOnBoot }) => {
+        try {
+          seedStaffDeckOnBoot();
+        } catch (err) {
+          logger.warn('[Server] 数字员工 seed 失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
+      })
+      .catch((err) => {
+        logger.warn('[Server] 数字员工 seed 模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      });
+
     // 数字员工定时任务调度器（croner 真调度，从 DB 恢复 active 任务）
     import('./staff/scheduledTaskService.js')
       .then(({ initScheduledTaskScheduler }) => {

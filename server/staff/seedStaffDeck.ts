@@ -2,7 +2,7 @@
  * seedStaffDeck.ts
  *
  * 把 `scripts/seed-staffdeck-agents.mjs` 的 seed 能力移植进服务器运行时，
- * 使数字员工（精选 5 个：财务/法务/人事/IT/行政）及其完整资源图在软件服务器
+ * 使数字员工（精选 5 个：财务/法务/人事/IT/行政 + 仓库专员）及其完整资源图在软件服务器
  * 启动时自动写入主库 —— 不再需要手动跑脚本。
  *
  * 设计要点：
@@ -301,6 +301,70 @@ function ensureSampleScheduledTask(db: Database.Database): number {
 }
 
 /**
+ * 幂等注入「仓库专员」数字员工（不依赖 fixture JSON，直接写入主库）。
+ *
+ * 背景：fixture（staffdeck_admin_gallery_seed.json）仅含 5 个精选员工（财务/法务/人事/IT/行政），
+ * 仓储能力需要第 6 个「仓库专员」员工。为避免修改 3.9MB 单行 JSON fixture，此处通过固定 id
+ * 的 INSERT OR IGNORE 直接注入，与 fixture 迁移幂等共存。
+ */
+function ensureWarehouseSpecialistAgent(db: Database.Database): number {
+  const agentId = 'seed-agent-warehouse-specialist';
+  const existing = db.prepare('SELECT id FROM sd_agent_profiles WHERE id = ?').get(agentId);
+  if (existing) return 0;
+
+  const metadata = normalizeMetadata({
+    role_key: 'warehouse-specialist',
+    role_name: '仓库专员',
+    avatar_text: '仓',
+    avatar_tone: 'amber',
+    avatar_kind: 'preset',
+    avatar_preset: 'warehouse-grid',
+    onboarded_at: new Date().toISOString().slice(0, 10),
+    work_styles: ['数据准确', '流程规范', '异常预警'],
+    expertise_tags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
+    work_modes: ['收货上架', '拣货发运', '盘点核对'],
+    published_to_gallery: true,
+    gallery_published_by: 'admin',
+    seed_source: 'cross-wms-warehouse-specialist',
+    managed_by_seed: true,
+  });
+
+  const personaPrompt = [
+    '你是「仓库专员」，由 CDFKnow 调度的企业数字员工，专注于仓储运营管理。',
+    '',
+    '核心职责：',
+    '- 入库管理：收货验收、上架归位、入库单据核对',
+    '- 出库管理：拣货发运、出库复核、物流跟踪',
+    '- 库存盘点：库存核对、差异分析、账实相符',
+    '- 补货计划：安全库存监控、补货建议、呆滞料预警',
+    '',
+    '工作风格：数据准确、流程规范、异常预警。',
+    '',
+    '回答要求：',
+    '1. 涉及库存数据时优先核对，给出准确数字与单位',
+    '2. 涉及流程时按 WMS 标准作业流程（SOP）分步骤说明',
+    '3. 发现异常（库存差异、缺料、超期等）主动预警并给出建议',
+    '4. 补货建议需结合安全库存、周转率、前置时间综合判断',
+  ].join('\n');
+
+  db.prepare(
+    `INSERT OR IGNORE INTO sd_agent_profiles (
+      id, tenant_id, name, description, persona_prompt, is_overall, status, metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    agentId,
+    TENANT_ID,
+    '仓库专员',
+    '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
+    personaPrompt,
+    0,
+    'active',
+    JSON.stringify(metadata),
+  );
+  return 1;
+}
+
+/**
  * 在服务器启动时调用：自动 seed 数字员工并把默认员工置为 active。
  * 非阻塞友好：任何异常都抛出，由调用方 try/catch 吞掉。
  */
@@ -332,13 +396,14 @@ export function seedStaffDeckOnBoot(): void {
     }
     total += migrateKnowledgeBranches(db, data);
 
+    const warehouseAgent = ensureWarehouseSpecialistAgent(db);
     const activated = ensureDefaultAgentsActive(db);
     const sampleTask = ensureSampleScheduledTask(db);
     const modelConfig = ensureDefaultModelConfig(db);
 
     const agentCount = (db.prepare('SELECT COUNT(*) c FROM sd_agent_profiles').get() as { c: number }).c;
     logger.info(
-      `[SeedStaffDeck] 自动 seed 完成：本次新写入 ${total} 行，默认员工置 active ${activated} 个，示例定时任务 ${sampleTask} 条，默认模型配置 ${modelConfig} 条，当前库数字员工 ${agentCount} 个`,
+      `[SeedStaffDeck] 自动 seed 完成：本次新写入 ${total} 行，仓库专员注入 ${warehouseAgent} 条，默认员工置 active ${activated} 个，示例定时任务 ${sampleTask} 条，默认模型配置 ${modelConfig} 条，当前库数字员工 ${agentCount} 个`,
     );
   } catch (err) {
     logger.error('[SeedStaffDeck] seed 执行失败:', err instanceof Error ? err.message : String(err));

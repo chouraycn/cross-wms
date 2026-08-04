@@ -100,6 +100,7 @@ export async function handleAgentChat(req: Request, res: Response) {
   const preset = req.body.preset;
   const skillContext = req.body.skillContext;
   const skillId = req.body.skillId;
+  const folderContext = req.body.folderContext;
   const attachments = req.body.attachments;
   const conversationHistory = req.body.conversationHistory;
   const executionMode = req.body.executionMode;
@@ -169,6 +170,7 @@ export async function handleAgentChat(req: Request, res: Response) {
         preset,
         skillContext,
         skillId,
+        folderContext,
         attachments,
         conversationHistory,
         executionMode,

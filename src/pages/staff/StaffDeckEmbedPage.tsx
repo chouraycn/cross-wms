@@ -7,7 +7,7 @@ import {
 } from '../../components/staff/auth.js';
 
 /**
- * StaffDeckEmbedPage — 数字员工栏目 100% 复刻入口。
+ * StaffDeckEmbedPage — 员工栏目 100% 复刻入口。
  *
  * 设计：用全屏 iframe 加载已构建的 StaffDeck-main 原前端产物（/staffdeck-app/）。
  * 该产物是独立的 shadcn/Tailwind 构建，自带 Teal 设计系统，iframe 天然隔离主程序
@@ -18,11 +18,14 @@ import {
  * - 若主程序已登录(本地有真实会话)，本页通过 postMessage 把会话下发给 iframe，iframe 接收后
  *   写入其 localStorage 并刷新以应用真实身份 —— 实现真正的「主程序登录态透传」。
  * - 生产环境父子同源(localStorage 共享)，本页 ensureDefaultSession 写入的会话 iframe 也能直接读到。
+ *
+ * warehouseMode：仓库员工场景下 iframe 直接打开 /staffdeck-app/#/workspace/chat，
+ * 让用户进入工作区聊天界面选择仓库相关 agent；默认场景下打开 /staffdeck-app/ 入口。
  */
 const STAFFDECK_MSG_REQUEST_AUTH = 'STAFFDECK_REQUEST_AUTH';
 const STAFFDECK_MSG_AUTH = 'STAFFDECK_AUTH';
 
-export default function StaffDeckEmbedPage() {
+export default function StaffDeckEmbedPage({ warehouseMode = false }: { warehouseMode?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // 向 iframe 推送当前(或默认的)会话
@@ -50,6 +53,9 @@ export default function StaffDeckEmbedPage() {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
+  // 仓库员工场景：直接进入工作区聊天；默认场景：进入员工平台入口
+  const iframeSrc = warehouseMode ? '/staffdeck-app/#/workspace/chat' : '/staffdeck-app/';
+
   return (
     <Box
       sx={{
@@ -63,8 +69,8 @@ export default function StaffDeckEmbedPage() {
     >
       <iframe
         ref={iframeRef}
-        src="/staffdeck-app/"
-        title="数字员工 StaffDeck"
+        src={iframeSrc}
+        title={warehouseMode ? '仓库员工 StaffDeck' : '员工 StaffDeck'}
         onLoad={pushSessionToIframe}
         style={{
           width: '100%',

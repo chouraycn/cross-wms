@@ -457,6 +457,14 @@ body.skill-distill-fixed .content {
     linear-gradient(145deg, #0f766e, #263238);
 }
 
+.employee-avatar.tone-amber {
+  --avatar-shirt: #ffe8c4;
+  --avatar-shirt-edge: #b45309;
+  background:
+    radial-gradient(circle at 70% 22%, rgba(255, 255, 255, 0.3), transparent 24%),
+    linear-gradient(145deg, #d97706, #b45309 54%, #92400e);
+}
+
 .employee-avatar.avatar-preset-service-orbit .employee-avatar-hair {
   top: -11%;
   left: -12%;
@@ -504,6 +512,14 @@ body.skill-distill-fixed .content {
   width: 110%;
   height: 48%;
   border-radius: 42% 58% 30% 38%;
+}
+
+.employee-avatar.avatar-preset-warehouse-grid .employee-avatar-hair {
+  top: -6%;
+  left: 2%;
+  width: 96%;
+  height: 40%;
+  border-radius: 50% 50% 26% 26%;
 }
 
 .employee-hero {

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEventHandler } from 'react';
 
 export type StaffdeckIconName =
   | 'arrow'
@@ -49,11 +49,23 @@ export type StaffdeckIconName =
   | 'user'
   | 'warning';
 
+/** 兼容 MUI sx prop 的轻量类型 —— 仅消费 fontSize，其余忽略 */
+type SxLike = {
+  fontSize?: string | number;
+  [k: string]: unknown;
+};
+
 type StaffdeckIconProps = {
   name: StaffdeckIconName;
   className?: string;
   size?: number;
   style?: CSSProperties;
+  /** MUI 兼容入口：从 sx.fontSize 提取像素值覆盖 size（兼容 NavList 的 cloneElement 注入） */
+  sx?: SxLike;
+  /** 旋转角度（度数），常用于 arrow 变向左（180）或向下（90） */
+  rotate?: number;
+  /** 点击事件（用于折叠箭头等场景） */
+  onClick?: MouseEventHandler<SVGSVGElement>;
 };
 
 const iconPaths: Record<StaffdeckIconName, string[]> = {
@@ -106,12 +118,25 @@ const iconPaths: Record<StaffdeckIconName, string[]> = {
   warning: ['M12 4 21 20H3L12 4Z', 'M12 9v5', 'M12 17h.1'],
 };
 
-export default function StaffdeckIcon({ name, className = '', size = 18, style }: StaffdeckIconProps) {
+export default function StaffdeckIcon({ name, className = '', size = 18, style, sx, rotate, onClick }: StaffdeckIconProps) {
+  // MUI 兼容：从 sx.fontSize 提取像素值（'18px' | 18 → 18）
+  let effectiveSize = size;
+  if (sx?.fontSize != null) {
+    if (typeof sx.fontSize === 'number') {
+      effectiveSize = sx.fontSize;
+    } else {
+      const parsed = parseInt(String(sx.fontSize).replace(/px$/, ''), 10);
+      if (!Number.isNaN(parsed)) effectiveSize = parsed;
+    }
+  }
+  const mergedStyle: CSSProperties | undefined = rotate
+    ? { ...(style as CSSProperties), transform: `rotate(${rotate}deg)` }
+    : style;
   return (
     <svg
       className={`sd1-icon sd1-icon-${name} ${className}`.trim()}
-      width={size}
-      height={size}
+      width={effectiveSize}
+      height={effectiveSize}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -120,7 +145,8 @@ export default function StaffdeckIcon({ name, className = '', size = 18, style }
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
-      style={style}
+      style={mergedStyle}
+      onClick={onClick}
     >
       {iconPaths[name].map((path) => (
         <path key={path} d={path} />

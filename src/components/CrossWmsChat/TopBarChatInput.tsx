@@ -18,7 +18,6 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
 import type { IntentCategory } from '../../types/skill';
@@ -132,7 +131,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [expandedIntent, setExpandedIntent] = useState<IntentCategory | null>(null);
 
   // 选择文件夹状态
+  // selectedFolder: 用于 UI 显示（路径或"文件夹名（N 个文件）"）
+  // folderContext: 用于传递给后端的上下文（原生=绝对路径；Web=拼接好的内容字符串）
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [folderContext, setFolderContext] = useState<string | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   // 语音输入状态
@@ -330,7 +332,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       try {
         const folderPath = await native.pickFolder();
         if (folderPath) {
+          // 原生场景：直接传路径给后端，由后端扫描文件夹内容
           setSelectedFolder(folderPath);
+          setFolderContext(folderPath);
         }
       } catch {
         // 原生调用失败，回退到 input
@@ -343,19 +347,68 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, []);
 
   // input[webkitdirectory] change 事件处理（Web 回退方案）
-  const handleFolderInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Web 环境下浏览器无法访问真实文件系统路径，所以前端直接读取所有文本文件内容
+  // 并组装成 folderContext 字符串，后端识别为内容直接注入（非路径）
+  const handleFolderInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      // webkitdirectory 会返回文件夹下所有文件，第一个文件的 relativePath 包含文件夹名
-      // @ts-ignore - webkitRelativePath 是非标准属性
-      const relPath: string = files[0].webkitRelativePath || '';
-      const folderName = relPath.split('/')[0];
-      if (folderName) {
-        // 任务 7: 完善文件夹选择能力 — 显示完整路径和文件统计
-        const fileCount = files.length;
-        setSelectedFolder(t('{folder}（{count} 个文件）', { folder: folderName, count: fileCount }));
+    if (!files || files.length === 0) {
+      e.target.value = '';
+      return;
+    }
+
+    // @ts-ignore - webkitRelativePath 是非标准属性
+    const relPath: string = files[0].webkitRelativePath || '';
+    const folderName = relPath.split('/')[0] || 'folder';
+    const fileCount = files.length;
+
+    // 支持文本读取的扩展名白名单
+    const TEXT_EXTS = new Set([
+      'txt', 'csv', 'json', 'md', 'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs',
+      'cpp', 'c', 'h', 'hpp', 'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm',
+      'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf', 'sql', 'sh', 'bat', 'ps1',
+      'css', 'scss', 'less', 'vue', 'svelte', 'dart', 'lua', 'pl', 'pm', 'log', 'tsv',
+      'html', 'htm',
+    ]);
+    const MAX_FILE_SIZE = 100_000; // 单文件 100KB 上限
+    const MAX_TOTAL_SIZE = 800_000; // 总内容 800KB 上限
+    const MAX_FILES_TO_READ = 100; // 最多读取 100 个文件
+
+    const parts: string[] = [`【文件夹】${folderName}（共 ${fileCount} 个文件）`];
+    let totalSize = 0;
+    let readCount = 0;
+
+    for (let i = 0; i < files.length && readCount < MAX_FILES_TO_READ && totalSize < MAX_TOTAL_SIZE; i++) {
+      const file = files[i];
+      // @ts-ignore
+      const relativePath: string = file.webkitRelativePath || file.name;
+      const ext = (relativePath.split('.').pop() || '').toLowerCase();
+      if (!TEXT_EXTS.has(ext)) continue;
+      if (file.size > MAX_FILE_SIZE) {
+        parts.push(`\n--- ${relativePath} (文件过大: ${(file.size / 1024).toFixed(1)}KB，已跳过) ---`);
+        continue;
+      }
+      try {
+        const content = await file.text();
+        parts.push(`\n--- ${relativePath} ---\n\`\`\`${ext}\n${content}\n\`\`\``);
+        totalSize += content.length;
+        readCount++;
+      } catch {
+        parts.push(`\n--- ${relativePath} (读取失败) ---`);
       }
     }
+
+    if (readCount === 0) {
+      parts.push('\n（未发现可读取的文本文件）');
+    } else if (readCount < fileCount) {
+      parts.push(`\n（已读取 ${readCount} / ${fileCount} 个文本文件，其余被跳过）`);
+    }
+
+    // Web 场景下 folderContext 直接是内容字符串，后端会识别并直接注入
+    // 通过特殊前缀标记这是内容字符串而非路径
+    const contextStr = `FOLDER_CONTENT_INLINE\n${parts.join('\n')}`;
+    setSelectedFolder(`${folderName}（${fileCount} 个文件）`);
+    setFolderContext(contextStr);
+
     // 重置 input value 以便重复选择同一文件夹
     e.target.value = '';
   }, []);
@@ -363,6 +416,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 清除选中的文件夹
   const handleClearFolder = useCallback(() => {
     setSelectedFolder(null);
+    setFolderContext(null);
   }, []);
 
   const handleInputChangeRef = useRef<() => void>(() => {});
@@ -832,6 +886,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
       queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
       thinkingLevel: thinkingLevel !== 'off' ? thinkingLevel : undefined,
+      folderContext: folderContext || undefined,
     });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -1455,18 +1510,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 cursor: selectedFolder ? 'default' : 'pointer',
                 color: selectedFolder ? '#6366f1' : gs.textMuted,
                 fontSize: 13,
-                bgcolor: selectedFolder
-                  ? (isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)')
-                  : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'),
-                border: `1px solid ${selectedFolder ? 'rgba(99,102,241,0.3)' : gs.border}`,
+                bgcolor: 'transparent',
+                border: 'none',
                 maxWidth: 320,
                 transition: 'all 0.2s ease',
-                boxShadow: selectedFolder ? '0 1px 3px rgba(99,102,241,0.1)' : 'none',
                 '&:hover': selectedFolder
-                  ? { borderColor: 'rgba(99,102,241,0.5)' }
+                  ? {}
                   : {
-                      bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+                      bgcolor: 'transparent',
                     },
               }}
             >
@@ -1541,29 +1592,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                       transition: 'transform 0.2s ease',
                     }}
                   />
-                  <Tooltip title={t('选择项目文件夹后，AI 将自动读取文件夹内的代码文件作为上下文，支持 .ts/.tsx/.js/.jsx/.py/.go/.rs/.java/.md 等格式')} placement="top">
-                    <Box
-                      component="span"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        ml: 0.25,
-                        width: 18,
-                        height: 18,
-                        borderRadius: '4px',
-                        color: gs.textDisabled,
-                        cursor: 'help',
-                        transition: 'all 0.15s ease',
-                        '&:hover': {
-                          color: gs.textMuted,
-                          bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                        },
-                      }}
-                    >
-                      <InfoOutlinedIcon sx={{ fontSize: 13 }} />
-                    </Box>
-                  </Tooltip>
                 </>
               )}
             </Box>

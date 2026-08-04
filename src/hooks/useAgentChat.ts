@@ -123,6 +123,8 @@ export interface SendAgentMessageOptions {
   queueMode?: 'collect' | 'steer' | 'followup';
   agentId?: string;
   thinkingLevel?: string;
+  /** 选中的文件夹路径（原生）或文件夹内容摘要（Web 回退），后端会读取并注入为 AI 上下文 */
+  folderContext?: string;
 }
 
 export interface UseAgentChatResult {
@@ -1630,6 +1632,7 @@ export function useAgentChat(
           compaction: aiEngine.compaction,
           conversationHistory,
           thinkingLevel: options.thinkingLevel,
+          folderContext: options.folderContext,
         });
 
         const handleChunk = (chunk: string) => {

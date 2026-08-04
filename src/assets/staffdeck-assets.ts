@@ -31,6 +31,7 @@ import staffdeckAvatarOps from './staffdeck/staffdeck-avatar-ops.png';
 import staffdeckAvatarOverall from './staffdeck/staffdeck-avatar-overall.png';
 import staffdeckAvatarQuality from './staffdeck/staffdeck-avatar-quality.png';
 import staffdeckAvatarService from './staffdeck/staffdeck-avatar-service.png';
+import staffdeckAvatarWarehouse from './staffdeck/staffdeck-avatar-warehouse.png';
 import staffdeckLogoMark from './staffdeck/staffdeck-logo-mark.png';
 import reference from './staffdeck/cot-icons/reference.png';
 import onboardingGallery from './onboarding-gallery.png';
@@ -121,6 +122,7 @@ export const staffdeckContent = {
   staffdeckAvatarOverall,
   staffdeckAvatarQuality,
   staffdeckAvatarService,
+  staffdeckAvatarWarehouse,
   staffdeckLogoMark,
   reference,
   onboardingGallery,

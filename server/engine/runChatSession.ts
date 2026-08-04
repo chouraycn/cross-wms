@@ -174,6 +174,8 @@ export interface RunChatSessionInput {
   userId?: string;
   /** 思考级别（off/low/medium/high 等），控制模型推理深度 */
   thinkingLevel?: string;
+  /** 选中的文件夹上下文：原生场景为绝对路径（后端扫描读取）；Web 回退场景为 FOLDER_CONTENT_INLINE 前缀的内容字符串 */
+  folderContext?: string;
 }
 
 export interface RunChatSessionCallbacks {
@@ -542,6 +544,7 @@ export async function runChatSession(
     attachments: input.attachments,
     referencedSessionIds: input.referencedSessionIds,
     hasImage: hasImageAttachment(input.attachments),
+    folderContext: input.folderContext,
   });
 
   const timerManager = new TimerManager();
