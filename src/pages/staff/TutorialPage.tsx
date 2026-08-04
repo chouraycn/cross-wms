@@ -219,7 +219,7 @@ export default function TutorialPage() {
           <Box component="h2" sx={{ m: 0, fontSize: '24px', fontWeight: 600, color: '#18181a' }}>安装说明</Box>
           <Box component="p" sx={{ mt: '12px', fontSize: '14px', lineHeight: '22px', color: '#464c5e' }}>
             前端基于 React + Vite，后端提供 <Box component="code" sx={{ borderRadius: '4px', bgcolor: '#f2f3f7', px: '4px', py: '2px', fontSize: '12px' }}>/api/staffdeck</Box> 接口，
-            作为 CrossWMS 桌面应用的子模块随主程序启动。
+            作为 CDF Know Claw 桌面应用的子模块随主程序启动。
           </Box>
           <Box component="p" sx={{ mt: '12px', fontSize: '14px', lineHeight: '22px', color: '#464c5e' }}>
             模块采用与主应用一致的「无登录门」模式：进入「数字员工」即自动获得默认桌面身份，
@@ -297,7 +297,7 @@ export default function TutorialPage() {
         <Box component="section" id="architecture" sx={{ mb: '40px', scrollMarginTop: '40px' }}>
           <Box component="h2" sx={{ m: 0, fontSize: '24px', fontWeight: 600, color: '#18181a' }}>架构概览</Box>
           <Box component="p" sx={{ mt: '12px', fontSize: '14px', lineHeight: '22px', color: '#464c5e' }}>
-            数字员工模块沿用了 CrossWMS 的整体架构：
+            数字员工模块沿用了 CDF Know Claw 的整体架构：
           </Box>
           <Box component="ul" sx={{ mt: '12px', listStyle: 'disc', pl: '20px', fontSize: '14px', lineHeight: '22px', color: '#464c5e', '& > * + *': { mt: '8px' } }}>
             <li><strong>前端</strong>：React + Vite 单页应用，数字员工相关页面挂载在 <Box component="code" sx={{ borderRadius: '4px', bgcolor: '#f2f3f7', px: '4px', py: '2px', fontSize: '12px' }}>/enterprise/*</Box> 与 <Box component="code" sx={{ borderRadius: '4px', bgcolor: '#f2f3f7', px: '4px', py: '2px', fontSize: '12px' }}>/workspace/*</Box> 下。</li>

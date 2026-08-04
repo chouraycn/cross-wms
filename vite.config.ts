@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { existsSync, rmSync } from 'node:fs'
+import path from 'node:path'
 import { version } from './package.json'
 import type { Plugin } from 'vite'
 
@@ -35,10 +37,45 @@ function removeCrossorigin(): Plugin {
   }
 }
 
+/**
+ * 定向清理陈旧构建产物
+ *
+ * 背景：build.emptyOutDir 被设为 false（防止 vite 清掉 dist/staffdeck-app/ 导致数字员工
+ * iframe 白屏），副作用是 dist/assets/ 只增不减 —— 每次构建的 hash 产物全部堆积。
+ * 2026-08-04 实测 762 个 JS chunk 去重后仅 174 个（78% 是历史死产物），其中 sourcemap
+ * 占 58MB，且被 package-mac-app.sh 的 `cp -R dist/*` 原样拷进 DMG。
+ *
+ * 方案：不翻转 emptyOutDir（翻转后单跑 `npm run build` 之外的 `vite build` 仍会误删
+ * staffdeck-app），改为在 buildStart 精确删除本次构建必定重新生成的目录。
+ * 白名单外的内容（staffdeck-app/、public 拷贝物）一律保留。
+ */
+function cleanStaleAssets(): Plugin {
+  let root = process.cwd()
+  let outDir = 'dist'
+  return {
+    name: 'clean-stale-assets',
+    apply: 'build',
+    configResolved(config) {
+      root = config.root
+      outDir = config.build.outDir
+    },
+    buildStart() {
+      // 仅清理 vite 自身完全重新生成的目录。index.html 等同名文件由 vite 覆盖写入，
+      // 不会堆积；staffdeck-app/ 由独立构建产出，绝不能删。
+      const assetsDir = path.resolve(root, outDir, 'assets')
+      if (existsSync(assetsDir)) {
+        rmSync(assetsDir, { recursive: true, force: true })
+        console.log('[clean-stale-assets] 已清理 dist/assets/（保留 staffdeck-app/）')
+      }
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
+    cleanStaleAssets(),
     removeCrossorigin(),
   ],
   base: './', // 相对路径，file:// 协议下可正确解析

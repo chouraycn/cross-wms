@@ -5,9 +5,10 @@
  * 直接对接已接通真实引擎的后端 /api/staffdeck/chat/stream：
  *   - 后端把 agent 的 persona + 绑定 SOP + 检索到的知识库上下文 注入 system prompt
  *   - 无 API Key 时后端走 mock 兜底（离线可验证）
- * SSE 采用规范格式 event:<type>\ndata:<json>，本页自行解析。
+ * SSE 采用规范格式 event:<type>\ndata:<json>，解析统一走 utils/sse/readSseResponse。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fetchSseStream } from '../../utils/sse/readSseResponse';
 import { useNavigate, useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import AppHeader from '../../components/staff/AppHeader.js';
@@ -32,53 +33,36 @@ interface SseEvent {
   data: Record<string, unknown>;
 }
 
-/** 解析后端 SSE 流（规范 event:/data: 双行格式） */
+/**
+ * 解析后端 SSE 流（规范 event:/data: 双行格式）
+ *
+ * 2026-08-04：此前本文件手写了一份 getReader 循环 + parseSseBlock，与
+ * components/staff/api/client.ts 逐字重复，且流结束时漏了 `decoder.decode()`
+ * 尾部 flush —— 多字节 UTF-8 字符跨 chunk 且落在流末尾时会丢字符。
+ * 现统一走 utils/sse/readSseResponse，该缺陷一并修复。
+ */
 async function readStaffStream(
   body: Record<string, unknown>,
   signal: AbortSignal,
   onEvent: (ev: SseEvent) => void,
 ): Promise<void> {
-  const response = await fetch('/api/staffdeck/chat/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `HTTP ${response.status}`);
-  }
-  if (!response.body) throw new Error('当前浏览器不支持流式响应');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const blocks = buffer.split('\n\n');
-    buffer = blocks.pop() || '';
-    for (const block of blocks) {
-      const ev = parseSseBlock(block);
-      if (ev) onEvent(ev);
-    }
-  }
-  const tail = parseSseBlock(buffer);
-  if (tail) onEvent(tail);
-}
-
-function parseSseBlock(block: string): SseEvent | null {
-  const lines = block.split('\n').map((l) => l.trimEnd());
-  const eventLine = lines.find((l) => l.startsWith('event:'));
-  const dataLines = lines.filter((l) => l.startsWith('data:'));
-  if (!eventLine || dataLines.length === 0) return null;
-  const type = eventLine.replace(/^event:\s*/, '').trim();
-  const raw = dataLines.map((l) => l.replace(/^data:\s*/, '')).join('\n');
-  try {
-    return { type, data: JSON.parse(raw) as Record<string, unknown> };
-  } catch {
-    return { type, data: { raw } };
-  }
+  await fetchSseStream(
+    '/api/staffdeck/chat/stream',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    },
+    (ev) => {
+      if (!ev.event) return;
+      const data =
+        ev.data && typeof ev.data === 'object'
+          ? (ev.data as Record<string, unknown>)
+          : { raw: ev.data };
+      onEvent({ type: ev.event, data });
+    },
+  );
 }
 
 function uid(): string {

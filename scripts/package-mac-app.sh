@@ -145,7 +145,9 @@ npm run build 2>&1 || {
 }
 echo "✅ Frontend built"
 
-# vite build 会清空 dist/，必须在其后重建嵌入前端，否则生产 App 数字员工空白
+# 兜底重建嵌入前端。vite.config.ts 的 clean-stale-assets 插件只清 dist/assets/，
+# staffdeck-app/ 不会被误删；但上面 fallback 分支的 `npx vite build` 之后不含
+# staffdeck:build，且首次构建时该目录可能不存在，故这里始终重建一次。
 echo "📦 Rebuilding StaffDeck embed frontend (dist/staffdeck-app)..."
 node scripts/build-staffdeck-app.mjs 2>&1 | tail -5
 
@@ -154,8 +156,11 @@ rm -rf "$RESOURCES_DIR/frontend_dist"
 mkdir -p "$RESOURCES_DIR/frontend_dist"
 # Remove mock service worker (not needed in production)
 rm -f "$ROOT_DIR/dist/mockServiceWorker.js" 2>/dev/null || true
-cp -R "$ROOT_DIR/dist/"* "$RESOURCES_DIR/frontend_dist/"
-echo "✅ Frontend dist copied"
+# 排除 sourcemap：build.sourcemap='hidden' 会为每个 chunk 生成 .map，
+# 2026-08-04 实测占 dist 的 58MB/81MB。hidden 模式不写 sourceMappingURL 注释，
+# 运行时根本不会加载，装进 DMG 纯属浪费体积。
+rsync -a --exclude='*.map' "$ROOT_DIR/dist/" "$RESOURCES_DIR/frontend_dist/"
+echo "✅ Frontend dist copied ($(du -sh "$RESOURCES_DIR/frontend_dist" | cut -f1), sourcemap excluded)"
 
 # ===================== 4. Build Node.js server (esbuild) =====================
 

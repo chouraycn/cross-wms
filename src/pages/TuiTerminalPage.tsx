@@ -189,7 +189,7 @@ const TuiTerminalPage: React.FC = () => {
   // 欢迎消息
   useEffect(() => {
     if (lines.length === 0) {
-      addLine('system', 'Cross-WMS Terminal');
+      addLine('system', 'CDF Know Claw Terminal');
       addLine('system', '输入消息开始对话，或输入 /help 查看命令');
       addLine('system', `工具 Profile: ${aiEngine.toolProfile} | 压缩: ${aiEngine.compaction.enabled ? aiEngine.compaction.strategy : '关闭'}`);
     }
@@ -442,7 +442,7 @@ const TuiTerminalPage: React.FC = () => {
           fontSize: '0.8rem',
           color: isDark ? '#8b949e' : '#64748b',
         }}>
-          Cross-WMS Terminal
+          CDF Know Claw Terminal
         </Box>
         <Box sx={{ flex: 1 }} />
         {isLoading && (

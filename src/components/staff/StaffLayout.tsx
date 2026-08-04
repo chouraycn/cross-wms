@@ -223,7 +223,7 @@ export type StaffLayoutProps = {
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  // CrossWMS 桌面应用：数字员工随主应用启动即获得默认身份，无需 admin 登录门
+  // CDF Know Claw 桌面应用：数字员工随主应用启动即获得默认身份，无需 admin 登录门
   const [session, setSession] = useState<EnterpriseAuthSession | null>(() =>
     ensureDefaultSession(),
   );

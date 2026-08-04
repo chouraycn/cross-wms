@@ -1,4 +1,5 @@
 import { getEnterpriseAuthSession } from '../auth.js'
+import { readSseResponse } from '../../../utils/sse/readSseResponse'
 
 /**
  * StaffDeck API client. All requests are prefixed with `/api/staffdeck`.
@@ -139,29 +140,7 @@ export async function streamPost(
     const text = await response.text()
     throw new ApiError(response.status, text, response.statusText)
   }
-  if (!response.body) {
-    throw new Error('当前浏览器不支持流式响应')
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8')
-  let buffer = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const blocks = buffer.split('\n\n')
-    buffer = blocks.pop() || ''
-    blocks.forEach((block) => {
-      const parsed = parseSseBlock(block)
-      if (parsed) onEvent(parsed)
-    })
-  }
-
-  buffer += decoder.decode()
-  const parsed = parseSseBlock(buffer)
-  if (parsed) onEvent(parsed)
+  await pipeSseEvents(response, onEvent)
 }
 
 export async function streamGet(
@@ -174,43 +153,30 @@ export async function streamGet(
     const text = await response.text()
     throw new ApiError(response.status, text, response.statusText)
   }
-  if (!response.body) {
-    throw new Error('当前浏览器不支持流式响应')
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8')
-  let buffer = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const blocks = buffer.split('\n\n')
-    buffer = blocks.pop() || ''
-    blocks.forEach((block) => {
-      const parsed = parseSseBlock(block)
-      if (parsed) onEvent(parsed)
-    })
-  }
-
-  buffer += decoder.decode()
-  const parsed = parseSseBlock(buffer)
-  if (parsed) onEvent(parsed)
+  await pipeSseEvents(response, onEvent)
 }
 
-function parseSseBlock(block: string): StreamEvent | null {
-  const lines = block.split('\n').map((line) => line.trimEnd())
-  const eventLine = lines.find((line) => line.startsWith('event:'))
-  const dataLines = lines.filter((line) => line.startsWith('data:'))
-  if (!eventLine || dataLines.length === 0) return null
-  const event = eventLine.replace(/^event:\s*/, '')
-  const rawData = dataLines.map((line) => line.replace(/^data:\s*/, '')).join('\n')
-  try {
-    return { event, data: JSON.parse(rawData) as Record<string, unknown> }
-  } catch {
-    return { event, data: { raw: rawData } }
-  }
+/**
+ * 把公共解析器的 SSEEvent 适配成本模块的 StreamEvent 契约
+ *
+ * 2026-08-04：streamPost / streamGet 此前各自手写 getReader 循环 + 一份
+ * parseSseBlock，现统一走 utils/sse/readSseResponse。差异仅在于本模块要求
+ * event 名必填、data 恒为对象，故在此做一层归一化：
+ * - 无 event 名的事件（纯 data 行）丢弃，与旧 parseSseBlock 行为一致
+ * - data 非对象时包成 { raw }，避免下游 `data.xxx` 取值崩溃
+ */
+async function pipeSseEvents(
+  response: Response,
+  onEvent: (item: StreamEvent) => void,
+): Promise<void> {
+  await readSseResponse(response, (ev) => {
+    if (!ev.event) return
+    const data =
+      ev.data && typeof ev.data === 'object'
+        ? (ev.data as Record<string, unknown>)
+        : { raw: ev.data }
+    onEvent({ event: ev.event, data })
+  })
 }
 
 function parseErrorMessage(text: string): string {

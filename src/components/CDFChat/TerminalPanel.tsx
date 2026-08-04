@@ -206,7 +206,7 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
   // 欢迎消息
   useEffect(() => {
     if (lines.length === 0) {
-      addLine('system', 'Cross-WMS Terminal');
+      addLine('system', 'CDF Know Claw Terminal');
       addLine('system', '输入消息开始对话，或输入 /help 查看命令');
       addLine('system', `Profile: ${aiEngine.toolProfile}`);
     }

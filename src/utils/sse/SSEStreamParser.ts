@@ -59,6 +59,14 @@ export class SSEStreamParser {
       return null;
     }
 
+    // SSE 规范允许字段名后不带空格（`event:foo`）。此前只识别带空格的形式，
+    // 会把无空格事件整行丢弃 —— 手写实现（client.ts / EmployeeChatPage）用的
+    // 正则 /^event:\s*/ 两种都吃，收敛到本解析器前必须先补齐，否则是功能倒退。
+    if (line.startsWith('event:')) {
+      this.currentEvent.event = line.slice(6);
+      return null;
+    }
+
     if (line.startsWith('data: ')) {
       this.currentEvent.data.push(line.slice(6));
       return null;
@@ -70,6 +78,28 @@ export class SSEStreamParser {
     }
 
     return null;
+  }
+
+  /**
+   * 冲刷缓冲区残留
+   *
+   * 后端若在最后一个事件后没有补空行就关闭连接（或末行缺 \n），该事件会一直
+   * 卡在 buffer/currentEvent 里丢失。流结束时必须调用一次。
+   */
+  flush(): SSEEvent[] {
+    const events: SSEEvent[] = [];
+    // 处理最后一行没有换行符的情况
+    if (this.buffer) {
+      const line = this.buffer;
+      this.buffer = '';
+      const result = this.processLine(line);
+      if (result) events.push(result);
+    }
+    if (this.currentEvent.data.length > 0 || this.currentEvent.event) {
+      events.push(this.buildEvent());
+      this.currentEvent = { data: [] };
+    }
+    return events;
   }
 
   private buildEvent(): SSEEvent {

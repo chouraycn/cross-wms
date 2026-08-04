@@ -34,6 +34,13 @@ import PhonelinkIcon from '@mui/icons-material/Phonelink';
 import DnsIcon from '@mui/icons-material/Dns';
 import HubIcon from '@mui/icons-material/Hub';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
+import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined';
+import OutboxOutlinedIcon from '@mui/icons-material/OutboxOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -136,6 +143,22 @@ const navItems: NavItem[] = [
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '数字员工', path: '/staffdeck', icon: <GroupsOutlinedIcon />, desc: 'StaffDeck 企业智能体平台' },
+  {
+    // 2026-08-04 补齐：7 条 /wms/* 路由此前全部有效但无任何导航入口，
+    // 用户只能手敲 URL 进入，等同于功能不存在。
+    label: '仓储',
+    icon: <WarehouseOutlinedIcon />,
+    desc: '入库 · 出库 · 库存',
+    children: [
+      { label: '入库管理', path: '/wms/inbound', icon: <MoveToInboxOutlinedIcon />, desc: '收货 & 上架' },
+      { label: '出库管理', path: '/wms/outbound', icon: <OutboxOutlinedIcon />, desc: '拣货 & 发运' },
+      { label: '库存管理', path: '/wms/inventory', icon: <Inventory2OutlinedIcon />, desc: '库存台账' },
+      { label: '补货计划', path: '/wms/replenishment', icon: <AutorenewOutlinedIcon />, desc: '补货建议' },
+      { label: '质检管理', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质量检验' },
+      { label: '库存预警', path: '/wms/alerts', icon: <WarningAmberOutlinedIcon />, desc: '异常提醒' },
+      { label: '仓储报表', path: '/wms/reports', icon: <AssessmentOutlinedIcon />, desc: '数据分析' },
+    ],
+  },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
   {
     label: '创作',

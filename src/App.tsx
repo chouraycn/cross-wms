@@ -610,6 +610,36 @@ function getPageRefreshKey(pathname: string): string {
   return '';
 }
 
+/* ===================== 存量 MUI 版数字员工 UI 开关 =====================
+ *
+ * 背景：数字员工的唯一复刻实现是 iframe 嵌入的原 StaffDeck 前端（/staffdeck，
+ * shadcn/Tailwind Teal 设计系统）。src/pages/staff/* 的 MUI 版本（79 文件 / 3.2 万行）
+ * 是早期重写的存量兜底，与 iframe 版功能高度重叠但视觉体系完全不同 —— 两者同时
+ * 可达时，用户从不同入口会看到两个长相迥异的数字员工，是整合后最刺眼的产品割裂。
+ *
+ * 2026-08-04 处置：默认把「已被 iframe 版覆盖」的路由收敛到 /staffdeck，代码保留不删。
+ * 这不违反「iframe 是唯一复刻实现」的铁律 —— 铁律约束的是实现方式，并未要求 MUI 版
+ * 继续挂在路由上对用户可达。
+ *
+ * 例外：iframe 版尚未覆盖的 3 个运维页（/enterprise/traces、/enterprise/debug、
+ * /enterprise/tutorial）不受开关影响，始终可达，否则会丢功能。
+ *
+ * 应急回退：控制台执行
+ *   localStorage.setItem('cdfknow.legacyStaffUI', '1')
+ * 后刷新，即可恢复全部存量路由，用于 iframe 版故障时兜底。
+ */
+const LEGACY_STAFF_UI_ENABLED: boolean = (() => {
+  try {
+    return localStorage.getItem('cdfknow.legacyStaffUI') === '1';
+  } catch {
+    return false;
+  }
+})();
+
+/** 包裹「已被 iframe 版覆盖」的存量路由：默认收敛到 /staffdeck，开关打开时回落原页面 */
+const LegacyStaffRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+  LEGACY_STAFF_UI_ENABLED ? <>{children}</> : <Navigate to="/staffdeck" replace />;
+
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
 /**
  * 路由级会话同步组件 — 从非聊天页切回 /chat 时自动创建新会话
@@ -1040,31 +1070,36 @@ const MainLayout: React.FC = () => {
                     <Route path="/node-host" element={<NodeHostPage />} />
                     <Route path="/media-tools" element={<MediaToolsPage />} />
 
-                    {/* ===================== StaffDeck 模块路由 =====================
+                    {/* ===================== StaffDeck 模块路由（存量 MUI 版）=====================
                        StaffDeck 页面内部使用 /staff/* 与 /enterprise/* 两种路径，
                        均挂载在 StaffLayout 下，享受统一的 auth 上下文 + 侧边栏。
-                       注意：所有路径需保持与 src/components/staff/enums/routes.ts 中 EnterpriseRoute 一致。 */}
+                       注意：所有路径需保持与 src/components/staff/enums/routes.ts 中 EnterpriseRoute 一致。
+
+                       2026-08-04：已被 iframe 版覆盖的路由统一包 <LegacyStaffRoute>，
+                       默认收敛到 /staffdeck，消除「两套数字员工同时可达」的产品割裂。
+                       详见文件上方 LEGACY_STAFF_UI_ENABLED 的说明。 */}
                     <Route path="/staff" element={<Navigate to="/enterprise/dashboard" replace />} />
                     <Route path="/enterprise" element={<Navigate to="/enterprise/dashboard" replace />} />
-                    <Route path="/enterprise/platform" element={<StaffLayout><StaffOpenPlatformPage /></StaffLayout>} />
-                    <Route path="/enterprise/agents" element={<StaffLayout><StaffAgentsPage /></StaffLayout>} />
-                    <Route path="/enterprise/agents/:agentId/chat" element={<StaffLayout><StaffEmployeeChatPage /></StaffLayout>} />
-                    <Route path="/enterprise/dashboard" element={<StaffLayout><StaffDashboardPage /></StaffLayout>} />
-                    <Route path="/enterprise/scheduled-tasks" element={<StaffLayout><StaffDashboardPage profileTab="scheduled" /></StaffLayout>} />
-                    <Route path="/enterprise/scheduled-tasks/new" element={<StaffLayout><StaffScheduledTaskEditorPage /></StaffLayout>} />
-                    <Route path="/enterprise/memories" element={<StaffLayout><StaffDashboardPage profileTab="memories" /></StaffLayout>} />
-                    <Route path="/enterprise/feedback" element={<StaffLayout><StaffDashboardPage profileTab="logs" /></StaffLayout>} />
-                    <Route path="/enterprise/knowledge" element={<StaffLayout><StaffKnowledgePage /></StaffLayout>} />
-                    <Route path="/enterprise/general-skills" element={<StaffLayout><StaffGeneralSkillsPage /></StaffLayout>} />
-                    <Route path="/enterprise/general-skills/new" element={<StaffLayout><StaffGeneralSkillNewPage /></StaffLayout>} />
-                    <Route path="/enterprise/general-skills/:slug" element={<StaffLayout><StaffGeneralSkillEditPage /></StaffLayout>} />
-                    <Route path="/enterprise/skills" element={<StaffLayout><StaffSkillsPage /></StaffLayout>} />
-                    <Route path="/enterprise/skills/new/distill" element={<StaffLayout><StaffDistillPage /></StaffLayout>} />
-                    <Route path="/enterprise/tools" element={<StaffLayout><StaffToolsPage /></StaffLayout>} />
-                    <Route path="/enterprise/tools/:toolId/test" element={<StaffLayout><StaffToolsPage /></StaffLayout>} />
-                    <Route path="/enterprise/accounts" element={<StaffLayout><StaffAccountsPage /></StaffLayout>} />
-                    <Route path="/enterprise/models" element={<StaffLayout><StaffModelsPage /></StaffLayout>} />
-                    <Route path="/enterprise/persona" element={<StaffLayout><StaffPersonaPage /></StaffLayout>} />
+                    <Route path="/enterprise/platform" element={<LegacyStaffRoute><StaffLayout><StaffOpenPlatformPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/agents" element={<LegacyStaffRoute><StaffLayout><StaffAgentsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/agents/:agentId/chat" element={<LegacyStaffRoute><StaffLayout><StaffEmployeeChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/dashboard" element={<LegacyStaffRoute><StaffLayout><StaffDashboardPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/scheduled-tasks" element={<LegacyStaffRoute><StaffLayout><StaffDashboardPage profileTab="scheduled" /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/scheduled-tasks/new" element={<LegacyStaffRoute><StaffLayout><StaffScheduledTaskEditorPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/memories" element={<LegacyStaffRoute><StaffLayout><StaffDashboardPage profileTab="memories" /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/feedback" element={<LegacyStaffRoute><StaffLayout><StaffDashboardPage profileTab="logs" /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/knowledge" element={<LegacyStaffRoute><StaffLayout><StaffKnowledgePage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/general-skills" element={<LegacyStaffRoute><StaffLayout><StaffGeneralSkillsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/general-skills/new" element={<LegacyStaffRoute><StaffLayout><StaffGeneralSkillNewPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/general-skills/:slug" element={<LegacyStaffRoute><StaffLayout><StaffGeneralSkillEditPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/skills" element={<LegacyStaffRoute><StaffLayout><StaffSkillsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/skills/new/distill" element={<LegacyStaffRoute><StaffLayout><StaffDistillPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/tools" element={<LegacyStaffRoute><StaffLayout><StaffToolsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/tools/:toolId/test" element={<LegacyStaffRoute><StaffLayout><StaffToolsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/accounts" element={<LegacyStaffRoute><StaffLayout><StaffAccountsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/models" element={<LegacyStaffRoute><StaffLayout><StaffModelsPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/persona" element={<LegacyStaffRoute><StaffLayout><StaffPersonaPage /></StaffLayout></LegacyStaffRoute>} />
+                    {/* ↓ 以下 3 条 iframe 版尚未覆盖（运维/调试用），不收敛，始终可达 */}
                     <Route path="/enterprise/traces" element={<StaffLayout><StaffTracesPage /></StaffLayout>} />
                     <Route path="/enterprise/debug" element={<StaffLayout><StaffDebugPage /></StaffLayout>} />
                     <Route path="/enterprise/tutorial" element={<StaffLayout><StaffTutorialPage /></StaffLayout>} />
@@ -1087,22 +1122,22 @@ const MainLayout: React.FC = () => {
                     <Route path="/staffdeck" element={null} />
                     <Route path="/staff/gallery" element={<Navigate to="/enterprise/agents" replace />} />
 
-                    {/* 数字员工对话大厅（缺失页面补齐） */}
-                    <Route path="/staff/chat" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    <Route path="/staff/chat/:sessionId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    <Route path="/staff/chat/draft/:agentId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    {/* 工作区对话画廊（复刻 StaffDeck ChatGalleryPage：会话侧栏 + 员工画廊） */}
-                    <Route path="/staff/chat-gallery" element={<StaffLayout><StaffChatGalleryPage /></StaffLayout>} />
-                    <Route path="/enterprise/gallery" element={<StaffLayout><StaffChatGalleryPage /></StaffLayout>} />
-                    {/* 登录页（复刻 StaffDeck LoginPage，可路由的独立登录入口） */}
+                    {/* 数字员工对话大厅（iframe 版 /workspace/chat 已覆盖，默认收敛） */}
+                    <Route path="/staff/chat" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/staff/chat/:sessionId" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/staff/chat/draft/:agentId" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    {/* 工作区对话画廊（iframe 版 /workspace/gallery 已覆盖，默认收敛） */}
+                    <Route path="/staff/chat-gallery" element={<LegacyStaffRoute><StaffLayout><StaffChatGalleryPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/enterprise/gallery" element={<LegacyStaffRoute><StaffLayout><StaffChatGalleryPage /></StaffLayout></LegacyStaffRoute>} />
+                    {/* 登录页（独立入口，不收敛：iframe 版嵌入模式跳过登录，此处是唯一可路由的登录页） */}
                     <Route path="/staff/login" element={<StaffLoginPage />} />
 
-                    {/* /workspace/* 路径 — StaffDeck chat 与 gallery */}
+                    {/* /workspace/* 路径 — StaffDeck chat 与 gallery（iframe 版已覆盖，默认收敛） */}
                     <Route path="/workspace" element={<Navigate to="/enterprise/dashboard" replace />} />
-                    <Route path="/workspace/chat" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    <Route path="/workspace/chat/:sessionId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    <Route path="/workspace/chat/draft/:agentId" element={<StaffLayout><StaffChatPage /></StaffLayout>} />
-                    <Route path="/workspace/gallery" element={<StaffLayout><StaffEmployeeGalleryPage /></StaffLayout>} />
+                    <Route path="/workspace/chat" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/workspace/chat/:sessionId" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/workspace/chat/draft/:agentId" element={<LegacyStaffRoute><StaffLayout><StaffChatPage /></StaffLayout></LegacyStaffRoute>} />
+                    <Route path="/workspace/gallery" element={<LegacyStaffRoute><StaffLayout><StaffEmployeeGalleryPage /></StaffLayout></LegacyStaffRoute>} />
 
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
