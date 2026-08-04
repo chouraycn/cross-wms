@@ -5,6 +5,24 @@
 - 执行策略: Legacy / Observer / Planner / ReAct(v9.0 统一 streamExecutor)
 - 工具: builtin + plugin + MCP (`mcp__{server}__{tool}`); 权限 auto/confirm/high-risk 三级
 
+## 分支拓扑（2026-08-04 工作树收口后，三支均已 push origin）
+- `backup/wip-2026-08-04`(f8c6611fc)：全量安全网快照（2,754 modified + 395 untracked + openclaw/StaffDeck-main 子模块）。**任何丢文件先来这里 `git cat-file -p f8c6611fc:<path>` 找回。**
+- `sync/openclaw-2026-08-04`(f8c6611fc)：openclaw 上游同步隔离分支（401 个 server/engine 新文件，tts/video-generation/gateway/tasks/tui/types/test-helpers），待独立审阅合入。
+- `refactor/staff-dedup-mcp`：干净的数字员工整合提交（MCP 去重 + 引擎注入 + 字段级修复 + basename/SSE/鉴权）+ P1.1 HTTP 执行层收敛 + server_dist 忽略 + README 重写 + P2.3 报告。BUILD_SUCCESS 已验，待真机 e2e 后合 main。
+- 收口手法：`git checkout -b backup/...` 全量 add → `git branch sync/... <backup-sha>` → 从干净 HEAD 重开特性分支并 `git checkout <backup-sha> -- <文件列表>` 精挑。注意 `git checkout -f` 会删掉 untracked 文件（如 `build-server.mjs`），须从备份 commit 找回。
+- 本地分支**无 upstream tracking**（`git push` 裸跑会失败），推送须显式 `git push -u origin <branch>`。
+
+## HTTP 工具执行层（2026-08-04 P1.1 收敛后，勿再退回）
+- 统一原语 `server/infra/net/httpToolRequest.ts` → `executeGuardedHttpRequest()`：SSRF 守卫 + DNS 钉扎 + 超时 + text/JSON 解析 + 50K 截断 + 错误归一化。
+- 两个调用方**保留各自功能层，只共享执行层**：核心 `server/engine/webTools.ts` 的 `web_api_call`（15s / `allowPrivateNetwork:false`，此前是裸 fetch，本次顺带补上 SSRF 守卫）；数字员工 `server/staff/staffHttpToolBridge.ts`（30s / `allowPrivateNetwork:true`，企业内网 API 必需）。
+- **禁止「删掉 staffHttpToolBridge 让 LLM 直接用 web_api_call」**（08-03 旧计划的方向，已论证为三重倒退）：① 鉴权 header 需服务端预置，交给 LLM 拼 = token 泄露进对话上下文；② 语义化工具名 + inputSchema 是防幻觉的关键；③ 核心工具禁私网，内网 API 直接不可达。
+
+## server/engine 体量（2026-08-04 P2.3 实测）
+- 11,537 个 .ts / **272.9 万行**（占 server 约 90%）；其中 4,137 个 `*.test.*` / 156.2 万行（占 engine 57%，是 src 的 7 倍）。
+- 185 文件抽样：12% 与上游一致 / 55% 已改 / 33% 本仓独有 → **不宜回退成 submodule**。
+- 真正负担是上游测试被 `vitest.config.ts:62-73` 的 include 纳入默认 `npm test`。拆分需先定覆盖率门禁基线。
+- **行数统计陷阱**：上万文件跑 `wc -l` 会分批输出多个 `total`，`tail -1` 只取最后一批（曾误报 35.6 万）。必须 `awk '$2=="total"{s+=$1} END{print s}'` 累加。
+
 ## 关键约定（铁律）
 - TS 严格模式，提交前 `NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`（默认小堆 OOM exit137）；vite build 须绿
 - **提交解锁（pre-commit 钩子）**：本仓 OpenClaw 硬分叉的 husky 钩子在新环境会连失败——① 缺 `eslint.config.*`（ESLint v10），需补 `eslint.config.mjs`（最小解析配置，仅 @typescript-eslint parser + 空 rules）；② 钩子内 `tsc` 默认小堆 OOM，提交必须 `export NODE_OPTIONS=--max-old-space-size=8192` 再 `git commit`；③ `server/tsconfig.json` 的 `tsc` 门会报 OpenClaw fork 既有源码/测试类型错误（acp/gateway/media 等），`**/*.test.*` 与 `*.test-helpers.ts` 已移出生产类型检查；仍报未改过的源码错误时，用 `git commit --no-verify` 落地（代码本身 tsc 全项目已绿）。
