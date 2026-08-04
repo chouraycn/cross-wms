@@ -98,6 +98,10 @@ export default defineConfig(({ mode }) => ({
     __APP_VERSION__: JSON.stringify(version),
   },
   build: {
+    // 禁止 vite 清空 dist/ —— 默认 emptyOutDir:true 会一并删除 dist/staffdeck-app/，
+    // 若后续未运行 staffdeck:build，数字员工 iframe 加载 /staffdeck-app/ 时白屏。
+    // 设为 false 后，vite 仅覆盖自身产物(index.html/assets/)，staffdeck-app 得以保留。
+    emptyOutDir: false,
     // 拆分大型依赖为独立 chunk
     // 路由组件通过 React.lazy() + import() 自动拆分为独立 chunk（Vite 内置代码分割）
     // manualChunks 仅处理第三方依赖拆分，应用代码由动态导入自动分割
@@ -111,7 +115,7 @@ export default defineConfig(({ mode }) => ({
       strictRequires: 'auto', // 强制转换所有 require() 调用（含动态拼接）
     },
     cssCodeSplit: true,
-    sourcemap: false,
+    sourcemap: 'hidden',
     reportCompressedSize: false,
     rollupOptions: {
       input: {
