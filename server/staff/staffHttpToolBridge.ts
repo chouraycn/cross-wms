@@ -4,16 +4,21 @@
  *
  * 设计：
  * - getStaffHttpToolDefinitions(tenantId) 读取 sd_tools 并缓存到模块级 registry
- * - executeStaffHttpTool(name, args) 从 registry 查找配置后用 fetchWithSsrFGuard 发起请求
+ * - executeStaffHttpTool(name, args) 从 registry 查找配置后经统一原语发起请求
  * - 工具名前缀 http_tool_ 用于分发路由
  *
- * 复用软件既有能力：fetchWithSsrFGuard（SSRF 防护 + DNS 钉扎 + 响应体限制）
+ * 【为什么不直接删掉本文件、让 LLM 用核心 web_api_call】（2026-08-04 P1.1 结论）
+ * 本桥接层与 web_api_call 的重复只在**执行层**，已收敛到 infra/net/httpToolRequest.ts。
+ * 剩余部分是不可替代的功能，删掉会造成三重倒退：
+ *   1. 鉴权预置：token/apiKey 存服务端注入，删掉后需由 LLM 自行拼 Authorization → 密钥泄露给模型
+ *   2. 语义化工具名 + inputSchema：LLM 直接看到「查询库存」而非自己猜 URL，显著降低幻觉
+ *   3. 内网可达：核心 web_api_call 走域名白名单且禁内网，企业内部 API 场景直接不通
+ * 复用软件既有能力：executeGuardedHttpRequest（SSRF 防护 + DNS 钉扎 + 响应体限制 + 统一错误包装）
  */
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
 import type { ToolRow } from '../types/staff.js';
 import * as toolDao from '../dao/staff/staffToolDao.js';
-import { fetchWithSsrFGuard } from '../infra/net/fetch-guard.js';
-import { DEFAULT_SSRF_POLICY } from '../infra/net/ssrf.js';
+import { executeGuardedHttpRequest } from '../infra/net/httpToolRequest.js';
 import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
@@ -199,7 +204,7 @@ export async function executeStaffHttpTool(
   const method = entry.method;
   const headers: Record<string, string> = { ...entry.headers };
 
-  // 注入鉴权
+  // 注入鉴权（服务端预置，密钥不暴露给 LLM —— 这是本桥接层保留存在的核心理由）
   if (entry.auth.type === 'bearer' && entry.auth.token) {
     headers['Authorization'] = `Bearer ${entry.auth.token}`;
   } else if (entry.auth.type === 'apikey' && entry.auth.apiKey) {
@@ -207,37 +212,33 @@ export async function executeStaffHttpTool(
   }
 
   const hasBody = !['GET', 'HEAD', 'DELETE'].includes(method);
-  const options: RequestInit = { method, headers };
-  if (hasBody) {
-    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-    options.body = typeof args === 'string' ? args : JSON.stringify(args);
-  }
 
-  try {
-    const guarded = {
-      url: entry.url,
-      options,
-      policy: { ...DEFAULT_SSRF_POLICY, dangerouslyAllowPrivateNetwork: true },
-      timeoutMs: 30_000,
-    };
-    const result = await fetchWithSsrFGuard(guarded);
-    const resp = result.response;
-    const respText = await resp.text();
-    const ok = resp.status >= 200 && resp.status < 300;
+  // 2026-08-04 P1.1 去重：执行层收敛到 executeGuardedHttpRequest，
+  // 与核心 web_api_call 共用同一份「SSRF 守卫 + 超时 + 截断 + 错误包装」实现。
+  // allowPrivateNetwork=true —— 数字员工的 HTTP 工具主要面向企业内网 API。
+  const result = await executeGuardedHttpRequest({
+    url: entry.url,
+    method,
+    headers,
+    body: hasBody ? (typeof args === 'string' ? args : JSON.stringify(args)) : undefined,
+    timeoutMs: 30_000,
+    allowPrivateNetwork: true,
+  });
 
-    return JSON.stringify({
-      success: ok,
-      status: resp.status,
-      contentType: resp.headers.get('content-type'),
-      body: respText,
-      ...(ok ? {} : { error: `HTTP ${resp.status}: ${respText.slice(0, 500)}` }),
-    });
-  } catch (err) {
+  if (result.transportError) {
     return JSON.stringify({
       success: false,
-      error: `HTTP 请求失败: ${err instanceof Error ? err.message : String(err)}`,
+      error: `HTTP 请求失败: ${result.transportError}`,
     });
   }
+
+  return JSON.stringify({
+    success: result.ok,
+    status: result.status,
+    contentType: result.contentType,
+    body: result.text,
+    ...(result.ok ? {} : { error: `HTTP ${result.status}: ${result.text.slice(0, 500)}` }),
+  });
 }
 
 // ===================== 便捷方法：从 ToolCall 执行 =====================

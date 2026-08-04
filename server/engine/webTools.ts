@@ -15,6 +15,8 @@
 // v3.0: 域名白名单改为 DB 加载 + 30s 内存缓存 + fallback 硬编码
 // 具体实现在 server/dao/apiDomainWhitelist.ts
 import { isDomainAllowed } from '../dao/apiDomainWhitelist.js';
+// v?.?/2026-08-04: HTTP 执行层统一原语（与数字员工 http 工具共用，含 SSRF 守卫）
+import { executeGuardedHttpRequest } from '../infra/net/httpToolRequest.js';
 
 // ===================== HTML → Markdown 轻量转换 =====================
 
@@ -408,86 +410,59 @@ export async function handleWebApiCall(args: Record<string, unknown>): Promise<s
   const body = args.body ? String(args.body) : undefined;
   const renderJs = args.renderJs === true;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+  // 2026-08-04 P1.1 去重：执行层收敛到 executeGuardedHttpRequest。
+  // 相比原裸 fetch，额外获得 SSRF 守卫 + DNS 钉扎 + 响应体上限（安全升级）。
+  // allowPrivateNetwork 保持 false —— 核心工具仍是「外网 + 域名白名单」信任模型。
+  const result = await executeGuardedHttpRequest({
+    url: urlStr,
+    method,
+    headers,
+    body: body && ['POST', 'PUT', 'PATCH'].includes(method) ? body : undefined,
+    timeoutMs: 15_000,
+    allowPrivateNetwork: false,
+    userAgent: 'CrossWMS-AI/1.0',
+  });
 
-    const requestInit: RequestInit = {
-      method,
-      headers: {
-        ...headers,
-        'User-Agent': 'CrossWMS-AI/1.0',
-      },
-      signal: controller.signal,
-    };
-
-    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      requestInit.body = body;
-    }
-
-    const response = await fetch(urlStr, requestInit);
-    clearTimeout(timeoutId);
-
-    const resContentType = response.headers.get('content-type') || '';
-    const resText = await response.text();
-
-    // ---- JS 渲染模式：响应是 HTML 时用 Playwright 渲染 ----
-    if (renderJs && resContentType.includes('text/html')) {
-      const rendered = await tryRenderContent(urlStr);
-      if (rendered) {
-        const markdown = htmlToMarkdown(rendered.html);
-        let truncated = false;
-        let finalMd = markdown;
-        if (finalMd.length > 50000) {
-          finalMd = finalMd.substring(0, 50000) + '\n\n> ⚠️ 响应过长，已截断至 50KB';
-          truncated = true;
-        }
-
-        return JSON.stringify({
-          success: response.ok,
-          status: response.status,
-          statusText: response.statusText,
-          contentType: resContentType,
-          rendered: true,
-          data: finalMd,
-          truncated,
-        });
-      }
-      // Playwright 不可用 → 降级到普通处理
-    }
-
-    // 处理响应 body
-    let data: unknown;
-    if (resContentType.includes('application/json')) {
-      try {
-        data = JSON.parse(resText);
-      } catch {
-        data = resText.substring(0, 50000);
-      }
-    } else {
-      data = resText.substring(0, 50000);
-    }
-
-    // 如果 data 是字符串且过长，截断
-    if (typeof data === 'string' && data.length > 50000) {
-      data = data.substring(0, 50000) + '\n\n> ⚠️ 响应过长，已截断至 50KB';
-    }
-
-    return JSON.stringify({
-      success: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      contentType: resContentType,
-      rendered: false,
-      data,
-    });
-  } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') {
-      return JSON.stringify({ success: false, error: 'API 调用超时（15秒）' });
-    }
+  if (result.transportError) {
     return JSON.stringify({
       success: false,
-      error: `API 调用失败: ${e instanceof Error ? e.message : String(e)}`,
+      error: result.transportError === '请求超时'
+        ? 'API 调用超时（15秒）'
+        : `API 调用失败: ${result.transportError}`,
     });
   }
+
+  // ---- JS 渲染模式：响应是 HTML 时用 Playwright 渲染 ----
+  if (renderJs && (result.contentType || '').includes('text/html')) {
+    const rendered = await tryRenderContent(urlStr);
+    if (rendered) {
+      const markdown = htmlToMarkdown(rendered.html);
+      let truncated = false;
+      let finalMd = markdown;
+      if (finalMd.length > 50000) {
+        finalMd = finalMd.substring(0, 50000) + '\n\n> ⚠️ 响应过长，已截断至 50KB';
+        truncated = true;
+      }
+
+      return JSON.stringify({
+        success: result.ok,
+        status: result.status,
+        statusText: result.statusText,
+        contentType: result.contentType,
+        rendered: true,
+        data: finalMd,
+        truncated,
+      });
+    }
+    // Playwright 不可用 → 降级到普通处理
+  }
+
+  return JSON.stringify({
+    success: result.ok,
+    status: result.status,
+    statusText: result.statusText,
+    contentType: result.contentType,
+    rendered: false,
+    data: result.data,
+  });
 }
