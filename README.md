@@ -72,8 +72,8 @@ cross-wms/
 │   ├── components/ pages/ stores/ services/ hooks/ contexts/
 │   ├── skills/ capabilities/ # 技能与能力面板
 │   └── i18n/ ot/ events/
-├── server/                   # 后端（约 12,900 文件 / 67 万行）
-│   ├── engine/               # 执行引擎，OpenClaw 硬分叉（占 server 90% 文件数，详见下方说明）
+├── server/                   # 后端（12,887 文件 / 302 万行）
+│   ├── engine/               # 执行引擎，OpenClaw 硬分叉（占 server 90% 文件数与行数，详见下方）
 │   ├── routes/               # 143 个路由，其中 routes/staff/ 20 个为数字员工
 │   ├── dao/                  # 数据访问；dao/staff/ 对应 40 张 sd_* 表
 │   ├── staff/                # 数字员工装配层（staffChatExecutor / HTTP 工具桥 / 技能桥）
@@ -103,8 +103,8 @@ node scripts/seed-staffdeck-model-config.mjs  # 播种模型配置
 
 ## 关于 `server/engine` 的体量
 
-`server/engine` 有 **11,537 个 .ts 文件、35.6 万行**，占 `server/` 文件总数的 90%。
-它是 OpenClaw 的硬分叉副本，与 `openclaw/` submodule 的关系（185 文件抽样）：
+`server/engine` 有 **11,537 个 .ts 文件、272.9 万行**，占 `server/` 的 90% 文件数与 90% 行数。
+它是 OpenClaw 的硬分叉副本，与 `openclaw/` submodule 的关系（185 个非测试文件抽样）：
 
 | 类别 | 占比 |
 |---|---|
@@ -112,9 +112,13 @@ node scripts/seed-staffdeck-model-config.mjs  # 播种模型配置
 | 同路径但已本地改动 | 55% |
 | CrossWMS 本地独有 | 33% |
 
-**结论：不宜回退为 submodule 依赖。** 88% 的文件已分叉或本地独有，替换成本远高于收益。
-其中 4,137 个是 `.test.` / `.spec.` 文件，且被 `vitest.config.ts` 的
-`server/engine/**/*.test.{ts,tsx}` 纳入 `npm test`，是测试耗时与 tsc 内存压力的主要来源。
+**结论 1：不宜回退为 submodule 依赖。** 88% 的文件已分叉或本地独有，替换成本远高于收益。
+
+**结论 2：测试是主要负担。** engine 里 **4,137 个 `.test.` 文件、156.2 万行**（占 engine 行数 57%），
+比整个主前端 `src/`（21.6 万行）大 7 倍，且被 `vitest.config.ts` 的
+`server/engine/**/*.test.{ts,tsx}` 纳入 `npm test`。这是测试耗时、IDE 索引卡顿与
+`tsc` OOM（exit 137）的共同根因。若需提速，优先考虑把上游测试从默认 `npm test` 拆出单跑，
+而不是动 engine 源码本身。
 
 ## 开发约定（重要）
 
