@@ -14,7 +14,7 @@ source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
 # 从 GitHub 拉取最新代码（包含 auto-version-bump 自动提升的版本号）
 echo "🔄 同步版本号..."
 cd "$ROOT_DIR"
-# git pull origin main --no-rebase --quiet 2>/dev/null || true  # TEMP-DISABLED: 保护本地未提交改动(避免覆盖)
+git pull origin main --no-rebase --quiet 2>/dev/null || true
 
 APP_ROOT="$ROOT_DIR/dist-app/CDFKnowClow.app"
 CONTENTS="$APP_ROOT/Contents"
