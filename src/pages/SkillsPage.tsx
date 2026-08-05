@@ -56,7 +56,7 @@ import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, r
 import type { PluginInfo } from '../services/plugins/api';
 import WorkshopPanel from '../components/Skills/WorkshopPanel';
 import SkillHotReloadPanel from '../components/Skills/SkillHotReloadPanel';
-import skillBannerImg from '../assets/skill-banner.jpg';
+import skillBannerImg from '../assets/skill-banner.png';
 
 // ===================== 技能页面 =====================
 
@@ -813,9 +813,10 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   return (
     <Box className={fadeCls} sx={{
       px: 1,
-      // 内容宽度缩小 20%，居中显示
-      maxWidth: '80%',
+      // 内容居中，避免宽屏下太散；窄屏自动填满
+      maxWidth: 1100,
       mx: 'auto',
+      width: '100%',
       // v1.7.87: DMG 下侧边栏收起时顶部避让红黄绿按钮，展开时保持正常间距
       pt: nativeApp && leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 4px)' : '8px',
     }}>
@@ -1046,23 +1047,18 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           borderRadius: '12px',
           backgroundImage: `url(${skillBannerImg})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: '85% 60%',
           backgroundRepeat: 'no-repeat',
+          backgroundColor: '#FFFFFF',
           position: 'relative',
           overflow: 'hidden',
-          minHeight: 160,
+          minHeight: 200,
         }}>
-          <Box sx={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 35%, rgba(255,255,255,0.3) 65%, transparent 85%)',
-            zIndex: 0,
-          }} />
-          <Box sx={{ position: 'relative', zIndex: 1, maxWidth: '42%' }}>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#1E3A8A', mb: 0.5 }}>
+          <Box sx={{ position: 'relative', zIndex: 1, width: 'auto', maxWidth: '45%' }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#1E3A8A', mb: 0.5, whiteSpace: 'nowrap' }}>
               为你精选的职场技能
             </Typography>
-            <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563', lineHeight: 1.5 }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563', lineHeight: 1.5, whiteSpace: 'normal' }}>
               涵盖写作、效率、设计、数据分析等多种场景，一键安装。
             </Typography>
           </Box>
