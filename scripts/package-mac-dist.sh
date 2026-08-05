@@ -145,7 +145,19 @@ if [[ "$SKIP_DMG" != "true" ]]; then
     fi
     if [ -n "$DMG_SIGN_IDENTITY" ]; then
       echo "🔏 Signing DMG: $DMG"
-      /usr/bin/codesign --force --sign "$DMG_SIGN_IDENTITY" --timestamp "$DMG" 2>/dev/null || true
+      # v9.1（2026-08-05）：签名失败不再静默吞错，明确报警便于 CI 发现证书问题
+      if /usr/bin/codesign --force --sign "$DMG_SIGN_IDENTITY" --timestamp "$DMG" 2>&1; then
+        # 签名后验证
+        if /usr/bin/codesign --verify --verbose=2 "$DMG" 2>&1; then
+          echo "✅ DMG 签名验证通过"
+        else
+          echo "⚠️ DMG 签名完成但验证失败（可能仍可分发，但建议检查证书）" >&2
+        fi
+      else
+        echo "⚠️ DMG 签名失败（本地开发无证书可忽略，CI 环境需检查 SIGN_IDENTITY）" >&2
+      fi
+    else
+      echo "ℹ️ 未找到 codesigning 证书，跳过 DMG 签名（本地开发正常，发布需配置证书）"
     fi
   else
     echo "❌ DMG not found at expected path: $DMG" >&2
@@ -171,6 +183,33 @@ cat > "$ROOT_DIR/release/release.json" <<RELJSON
 RELJSON
 
 echo "✅ release.json generated"
+echo ""
+
+# ===================== Sparkle Feed (appcast.xml) =====================
+# v9.1（2026-08-05）：若提供了 SPARKLE_PRIVATE_KEY_FILE，自动生成 appcast.xml 供 Sparkle 自动更新。
+# 这是可选步骤：本地开发无 key 时跳过，CI 发布时设置 secret 即可自动生成。
+if [[ -n "${SPARKLE_PRIVATE_KEY_FILE:-}" && -f "${SPARKLE_PRIVATE_KEY_FILE:-}" ]]; then
+  echo "📝 Generating Sparkle appcast.xml..."
+  # Sparkle 需要 zip 包（DMG 不支持增量更新），这里用已签名的 app 打 zip
+  SPARKLE_ZIP="$ROOT_DIR/release/CDFKnowClow-${VERSION}.zip"
+  if [[ ! -f "$SPARKLE_ZIP" ]]; then
+    APP_ROOT="$ROOT_DIR/apps/macos/.build/Build/Products/Release/CDF Know Clow.app"
+    if [[ -d "$APP_ROOT" ]]; then
+      (cd "$(dirname "$APP_ROOT")" && ditto -c -k --keepParent "$APP_ROOT" "$SPARKLE_ZIP")
+    else
+      echo "⚠️ App bundle not found, skip Sparkle zip: $APP_ROOT" >&2
+    fi
+  fi
+  if [[ -f "$SPARKLE_ZIP" ]]; then
+    if SPARKLE_RELEASE_VERSION="$VERSION" "$ROOT_DIR/scripts/make_appcast.sh" "$SPARKLE_ZIP" 2>&1; then
+      echo "✅ appcast.xml generated"
+    else
+      echo "⚠️ appcast.xml 生成失败（不影响 DMG 发布，仅影响自动更新）" >&2
+    fi
+  fi
+else
+  echo "ℹ️ 跳过 Sparkle feed 生成（未设置 SPARKLE_PRIVATE_KEY_FILE，自动更新功能不可用）"
+fi
 echo ""
 
 # ===================== GitHub Release =====================

@@ -68,7 +68,7 @@ const PRESET_AVATAR_IMAGES: Record<string, string> = {
   'commerce-compass': staffdeckContent.staffdeckAvatarCommerce,
   'ops-grid': staffdeckContent.staffdeckAvatarOps,
   'quality-star': staffdeckContent.staffdeckAvatarQuality,
-  'warehouse-grid': staffdeckContent.staffdeckAvatarWarehouse,
+  'warehouse-grid': staffdeckContent.appLogo,
   overall: staffdeckContent.staffdeckAvatarOverall,
 }
 

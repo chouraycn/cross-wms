@@ -581,6 +581,8 @@ function parseSkillMdLightweight(content: string): {
 const DB_PATH = AppPaths.chatDbFile;
 const DB_BACKUP_PATH = AppPaths.chatDbFile + '.bak';
 const DB_FIRST_RUN_MARKER = AppPaths.chatDbFile + '.initialized';
+// v9.1: 正常关闭标志，6 小时内有效，用于跳过 quick_check 加速冷启动
+const DB_CLEAN_SHUTDOWN_MARKER = AppPaths.chatDbFile + '.clean-shutdown';
 
 let db: Database.Database | null = null;
 let walMaintenance: SqliteWalMaintenance | null = null;
@@ -770,9 +772,25 @@ export function initDb(): Database.Database {
   // - 首次启动：执行完整 integrity_check
   // - 后续启动：仅快速检查 WAL 残留 + quick_check
   // - 异常场景（WAL 残留、崩溃恢复）：完整检查
+  // v9.1（2026-08-05）：新增 "上次正常关闭" 标志，正常退出后下次启动若 6 小时内且无 WAL
+  //   残留，跳过 quick_check 直接进入表初始化，进一步缩短冷启动。
+  //   风险评估：quick_check 主要用于检测异常崩溃导致的页损坏，正常关闭场景已由 SQLite
+  //   自身的 WAL 提交保证一致性，跳过安全。WAL 残留/超时/首次启动仍走完整检查。
   const hasWalResidue = fs.existsSync(DB_PATH + '-wal');
   const isFirst = isFirstRun();
   const shouldFullCheck = isFirst || hasWalResidue || !fs.existsSync(DB_PATH);
+
+  // 检查上次正常关闭标志（6 小时内有效）
+  let canSkipQuickCheck = false;
+  try {
+    if (!shouldFullCheck && fs.existsSync(DB_CLEAN_SHUTDOWN_MARKER)) {
+      const stat = fs.statSync(DB_CLEAN_SHUTDOWN_MARKER);
+      const ageMs = Date.now() - stat.mtimeMs;
+      if (ageMs > 0 && ageMs < 6 * 60 * 60 * 1000) {
+        canSkipQuickCheck = true;
+      }
+    }
+  } catch { /* ignore */ }
 
   if (shouldFullCheck) {
     logger.info('[DB] 执行完整 integrity_check（首次启动或异常恢复）');
@@ -816,6 +834,8 @@ export function initDb(): Database.Database {
     } catch (e) {
       logger.warn('[DB] integrity_check 异常:', e);
     }
+  } else if (canSkipQuickCheck) {
+    logger.info('[DB] 跳过完整性检查（6 小时内正常关闭，无 WAL 残留）');
   } else {
     // 后续正常启动：快速检查
     logger.info('[DB] 快速启动检查（非首次启动，无 WAL 残留）');
@@ -917,6 +937,11 @@ export function closeDb(): void {
     try { db.close(); } catch { /* ignore */ }
     db = null;
   }
+
+  // v9.1: 写入正常关闭标志，下次启动若 6h 内可跳过 quick_check 加速冷启动
+  try {
+    fs.writeFileSync(DB_CLEAN_SHUTDOWN_MARKER, new Date().toISOString());
+  } catch { /* ignore */ }
 
 }
 

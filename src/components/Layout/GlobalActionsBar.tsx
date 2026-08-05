@@ -20,7 +20,7 @@ export interface GlobalActionsBarProps {
   collapsedWidth: number;
 }
 
-const BUTTON_SIZE = 25.92;
+const BUTTON_SIZE = 25.66;
 const BUTTON_GAP = 4;
 const BUTTONS_TOTAL_WIDTH = BUTTON_SIZE * 2 + BUTTON_GAP;
 
@@ -54,11 +54,11 @@ const GlobalActionsBar = React.memo<GlobalActionsBarProps>(function GlobalAction
 
   // v1.7.87: 展开侧边栏时按钮右对齐在侧边栏内；收起时避让红黄绿按钮（+5px）
   const leftPosition = collapsed
-    ? (nativeApp && !isFullscreen ? 87 : collapsedWidth + 15)
-    : expandedWidth - BUTTONS_TOTAL_WIDTH - 8;
+    ? (nativeApp && !isFullscreen ? 90 : collapsedWidth + 18)
+    : expandedWidth - BUTTONS_TOTAL_WIDTH - 5;
 
   // v1.7.87: DMG 下按钮整体上移 3px，与红黄绿按钮间距更协调
-  const topPosition = nativeApp ? '16px' : '10px';
+  const topPosition = nativeApp ? '21px' : '15px';
 
   return (
     <div
@@ -67,7 +67,7 @@ const GlobalActionsBar = React.memo<GlobalActionsBarProps>(function GlobalAction
         top: topPosition,
         left: `${leftPosition}px`,
         right: 'auto',
-        zIndex: 1400,
+        zIndex: 1500,
         display: 'flex',
         alignItems: 'center',
         gap: 4,
@@ -84,6 +84,7 @@ const GlobalActionsBar = React.memo<GlobalActionsBarProps>(function GlobalAction
           p: 0.45,
           width: BUTTON_SIZE,
           height: BUTTON_SIZE,
+          marginTop: '-3px',
           backgroundColor: 'transparent',
           border: 'none',
           '&:hover': {

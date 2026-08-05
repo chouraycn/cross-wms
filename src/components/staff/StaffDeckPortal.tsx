@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import LoadingFallback from '../../components/Common/LoadingFallback';
@@ -14,8 +14,15 @@ import LoadingFallback from '../../components/Common/LoadingFallback';
  * 路由匹配 /staffdeck 时仅切换 display（block/none），iframe 文档始终保留在内存中，
  * 再次进入无需重新加载，点击员工瞬时显示，彻底消除二次加载。
  *
+ * 性能优化（2026-08-05）：
+ * - 组件挂载后通过 requestIdleCallback 在浏览器空闲时预加载 StaffDeckEmbedPage chunk，
+ *   避免首次进入 /staffdeck 时才触发 dynamic import 造成延迟。
+ * - 即使从未进入 /staffdeck，iframe 也会在空闲时挂载并预热 /staffdeck-app/ 整包，
+ *   用户首次点击即可瞬时显示。
+ *
  * 注意：iframe 始终挂载（display:none 期间浏览器仍发起资源加载并保留文档），
- * 显示态 zIndex 高于常规布局，全屏覆盖员工栏目。
+ * 显示态 zIndex 高于常规布局，覆盖主内容区但不遮挡侧边栏，确保用户可随时通过
+ * 侧边栏导航返回首页。
  *
  * /warehouse-staff 路径同样激活本容器，并通过 iframe src 切换到工作区聊天界面，
  * 让用户直接进入仓库员工相关 agent 选择。
@@ -23,26 +30,73 @@ import LoadingFallback from '../../components/Common/LoadingFallback';
 const StaffDeckEmbedPage = lazy(() => import('../../pages/staff/StaffDeckEmbedPage'));
 
 const ACTIVE_PATHS = ['/staffdeck', '/warehouse-staff'];
+const SIDEBAR_WIDTH_EXPANDED = 260;
 
 export default function StaffDeckPortal() {
   const location = useLocation();
   const active = ACTIVE_PATHS.includes(location.pathname);
   // 仓库员工场景：iframe 直接进入工作区聊天，用户可挑选仓库相关 agent
   const warehouseMode = location.pathname === '/warehouse-staff';
+
+  // 跟踪侧边栏折叠状态，据此偏移 iframe 左边界，确保侧边栏不被遮挡
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
+      if (saved !== null) return saved === 'true';
+    } catch { /* ignore */ }
+    return false;
+  });
+
+  // 预加载标志：组件挂载后空闲时预加载 iframe，避免首屏争抢资源
+  const [iframePreloaded, setIframePreloaded] = useState(false);
+
+  useEffect(() => {
+    const onSidebarState = (e: Event) => {
+      setSidebarCollapsed((e as CustomEvent).detail?.collapsed ?? false);
+    };
+    window.addEventListener('cdf-sidebar-state', onSidebarState);
+    return () => window.removeEventListener('cdf-sidebar-state', onSidebarState);
+  }, []);
+
+  // 空闲时预加载 iframe 组件 chunk + 实际挂载 iframe
+  useEffect(() => {
+    if (iframePreloaded) return;
+    const schedule = () => setIframePreloaded(true);
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(schedule, { timeout: 2000 });
+      return () => {
+        const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+        if (typeof cic === 'function') cic(id);
+      };
+    } else {
+      const t = setTimeout(schedule, 1500);
+      return () => clearTimeout(t);
+    }
+  }, [iframePreloaded]);
+
+  const leftOffset = sidebarCollapsed ? 0 : SIDEBAR_WIDTH_EXPANDED;
+
   return (
     <Box
       sx={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: leftOffset,
+        right: 0,
+        bottom: 0,
         zIndex: active ? 1400 : -1,
-        display: active ? 'block' : 'none',
+        // 预加载完成前不渲染 iframe，避免拖慢首屏
+        display: active && iframePreloaded ? 'block' : 'none',
         bgcolor: '#f7f5ef',
         overflow: 'hidden',
       }}
     >
-      <Suspense fallback={null}>
-        <StaffDeckEmbedPage warehouseMode={warehouseMode} />
-      </Suspense>
+      {iframePreloaded && (
+        <Suspense fallback={null}>
+          <StaffDeckEmbedPage warehouseMode={warehouseMode} />
+        </Suspense>
+      )}
     </Box>
   );
 }

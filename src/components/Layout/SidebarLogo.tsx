@@ -25,7 +25,7 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
         px: collapsed ? 0.5 : 1, // v1.7.15: 往右移动10px
         pl: collapsed ? 0.5 : 1.625, // v1.7.18: logo再往右移5px
         height: 28,
-        mt: '28px',
+        mt: '21px', // v1.7.186: 上移7px
         mb: 2,
         display: 'flex',
         alignItems: 'center',

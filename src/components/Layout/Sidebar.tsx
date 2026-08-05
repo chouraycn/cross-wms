@@ -135,15 +135,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         setChatInputValue(e.detail.value);
       }
     }) as EventListener;
+    // 监听 NavList 发来的打开 AI 设置弹窗事件（员工模块模型配置避免 iframe 弹窗遮挡）
+    const onOpenAISettingsDialog = ((e: CustomEvent) => {
+      const detail = e.detail as { mainTab?: string; subTab?: string } | undefined;
+      setSettingsOpen(false);
+      setAiDialogInitialTab(detail?.mainTab && detail?.subTab ? { main: detail.mainTab, sub: detail.subTab } : undefined);
+      setAiDialogOpen(true);
+    }) as EventListener;
     window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     window.addEventListener('cdf-know-clow-clear-session', onClearSession);
     window.addEventListener('cdf-chat-input-blur', onChatInputBlur);
+    window.addEventListener('cdf-open-ai-settings-dialog', onOpenAISettingsDialog);
     const onOpenSearch = () => setSearchOpen(true);
     window.addEventListener('cdf-open-search', onOpenSearch);
     return () => {
       window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
       window.removeEventListener('cdf-know-clow-clear-session', onClearSession);
       window.removeEventListener('cdf-chat-input-blur', onChatInputBlur);
+      window.removeEventListener('cdf-open-ai-settings-dialog', onOpenAISettingsDialog);
       window.removeEventListener('cdf-open-search', onOpenSearch);
     };
   }, []);

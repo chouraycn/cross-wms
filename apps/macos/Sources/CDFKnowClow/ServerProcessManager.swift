@@ -327,7 +327,9 @@ actor ServerProcessManager {
             }
             
             do {
-                try await Task.sleep(nanoseconds: 500_000_000)
+                // v9.1（2026-08-05）：轮询间隔 500ms → 200ms，缩短服务器就绪检测延迟。
+                // 健康检查本身是 localhost HTTP 请求，开销极低，缩短间隔不会增加负担。
+                try await Task.sleep(nanoseconds: 200_000_000)
             } catch {
                 serverLogger.error("Wait interrupted: \(error.localizedDescription)")
                 return false

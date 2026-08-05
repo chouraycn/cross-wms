@@ -9,6 +9,7 @@ import {
   Tooltip,
   Collapse,
   IconButton,
+  TextField,
   useTheme,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -17,7 +18,6 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import WebIcon from '@mui/icons-material/Web';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import MemoryIcon from '@mui/icons-material/Memory';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -31,9 +31,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import PhonelinkIcon from '@mui/icons-material/Phonelink';
-import DnsIcon from '@mui/icons-material/Dns';
 import HubIcon from '@mui/icons-material/Hub';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined';
 import OutboxOutlinedIcon from '@mui/icons-material/OutboxOutlined';
@@ -41,6 +39,17 @@ import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
+import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 // StaffDeck 程序化图标（currentColor 主题化，与 NavList 文字色联动）
@@ -73,6 +82,10 @@ interface NavItemLeaf {
   path: string;
   icon: React.ReactNode;
   desc?: string;
+  /** StaffDeck iframe 内部路由（如 /enterprise/agents），点击后通过 postMessage 导航 iframe */
+  staffdeckRoute?: string;
+  /** 打开主程序设置弹窗（不使用 iframe 导航，避免弹窗被裁剪），传入初始 tab */
+  openSettingsDialog?: { mainTab?: 'basic' | 'ai' | 'tools' | 'system' | 'comms'; subTab?: 'model' | 'chat' | 'agents' | 'soul' | 'goals' | 'mcp' | 'lsp' | 'image' | 'secrets' | 'git' | 'auth' | 'context' | 'talk' | 'channels' };
 }
 
 interface NavItemGroup {
@@ -80,6 +93,10 @@ interface NavItemGroup {
   icon: React.ReactNode;
   desc?: string;
   children: NavItemLeaf[];
+  /** 分组自身的跳转路径（点击分组标题时导航到此路径） */
+  path?: string;
+  /** StaffDeck iframe 内部路由（分组标题点击后通过 postMessage 导航 iframe） */
+  staffdeckRoute?: string;
 }
 
 type NavItem = NavItemLeaf | NavItemGroup;
@@ -143,13 +160,35 @@ function VirtualList<T>({ items, itemHeight, height, renderItem, overscan = 5 }:
 const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <StaffdeckIcon name="chat" size={18} />, desc: '智能助手' },
   { label: '技能', path: '/skills', icon: <StaffdeckIcon name="spark" size={18} />, desc: '能力管理' },
-  { label: '员工', path: '/staffdeck', icon: <StaffdeckIcon name="user" size={18} />, desc: '企业智能体平台' },
   {
-    // 2026-08-04 补齐：7 条 /wms/* 路由此前全部有效但无任何导航入口，
-    // 用户只能手敲 URL 进入，等同于功能不存在。
-    label: '仓储',
+    label: '员工',
+    icon: <StaffdeckIcon name="user" size={18} />,
+    desc: '数字员工',
+    children: [
+      { label: '数字员工广场', path: '/staffdeck', icon: <PublicOutlinedIcon />, desc: '广场', staffdeckRoute: '/workspace/gallery' },
+      { label: '我的员工', path: '/staffdeck', icon: <PeopleOutlineIcon />, desc: '管理', staffdeckRoute: '/enterprise/agents' },
+      { label: '员工档案', path: '/staffdeck', icon: <AccountCircleOutlinedIcon />, desc: '档案', staffdeckRoute: '/enterprise/dashboard' },
+      { label: '对话', path: '/staffdeck', icon: <ForumOutlinedIcon />, desc: '会话', staffdeckRoute: '/workspace/chat' },
+      { label: '知识库', path: '/staffdeck', icon: <FolderSharedOutlinedIcon />, desc: '知识', staffdeckRoute: '/enterprise/knowledge' },
+      { label: '技能', path: '/staffdeck', icon: <AutoAwesomeOutlinedIcon />, desc: '技能', staffdeckRoute: '/enterprise/general-skills' },
+      { label: 'SOP', path: '/staffdeck', icon: <AssignmentOutlinedIcon />, desc: 'SOP', staffdeckRoute: '/enterprise/skills' },
+      { label: '工具', path: '/staffdeck', icon: <BuildOutlinedIcon />, desc: '工具', staffdeckRoute: '/enterprise/tools' },
+      { label: '定时任务', path: '/staffdeck', icon: <ScheduleOutlinedIcon />, desc: '调度', staffdeckRoute: '/enterprise/scheduled-tasks' },
+      { label: '记忆', path: '/staffdeck', icon: <HistoryOutlinedIcon />, desc: '记忆', staffdeckRoute: '/enterprise/memories' },
+      { label: '对话日志', path: '/staffdeck', icon: <ForumOutlinedIcon />, desc: '日志', staffdeckRoute: '/enterprise/feedback' },
+      { label: '渠道接入', path: '/staffdeck', icon: <PublicOutlinedIcon />, desc: '渠道', staffdeckRoute: '/enterprise/channels' },
+      { label: '账号管理', path: '/staffdeck', icon: <AccountCircleOutlinedIcon />, desc: '账号', staffdeckRoute: '/enterprise/accounts' },
+      { label: '模型配置', path: '/staffdeck', icon: <TuneOutlinedIcon />, desc: '模型', openSettingsDialog: { mainTab: 'basic', subTab: 'model' } },
+    ],
+  },
+  {
+    // 仓库员工 = 仓库专属数字员工(AI 对话) + 7 大 WMS 管理能力，
+    // 整合为统一入口：点击分组标题进入仓库员工 AI 对话，
+    // 展开后可访问入库/出库/库存/补货/质检/预警/报表。
+    label: '仓库员工',
     icon: <WarehouseOutlinedIcon />,
-    desc: '入库 · 出库 · 库存',
+    desc: 'AI · 仓储',
+    path: '/warehouse-staff',
     children: [
       { label: '入库管理', path: '/wms/inbound', icon: <MoveToInboxOutlinedIcon />, desc: '收货 & 上架' },
       { label: '出库管理', path: '/wms/outbound', icon: <OutboxOutlinedIcon />, desc: '拣货 & 发运' },
@@ -158,7 +197,6 @@ const navItems: NavItem[] = [
       { label: '质检管理', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质量检验' },
       { label: '库存预警', path: '/wms/alerts', icon: <WarningAmberOutlinedIcon />, desc: '异常提醒' },
       { label: '仓储报表', path: '/wms/reports', icon: <AssessmentOutlinedIcon />, desc: '数据分析' },
-      { label: '仓库员工', path: '/warehouse-staff', icon: <GroupsOutlinedIcon />, desc: '仓库专属数字员工' },
     ],
   },
   { label: '自动化', path: '/automation', icon: <StaffdeckIcon name="clock" size={18} />, desc: '任务 & 调度' },
@@ -177,13 +215,12 @@ const navItems: NavItem[] = [
   {
     label: '系统',
     icon: <SettingsOutlinedIcon />,
-    desc: '设置 · 进程 · 节点',
+    desc: '设置 · 监控',
     children: [
       { label: '语音合成', path: '/tts', icon: <RecordVoiceOverIcon />, desc: 'TTS 设置' },
       { label: '设备配对', path: '/pairing', icon: <PhonelinkIcon />, desc: 'Pairing' },
-      { label: '进程管理', path: '/process', icon: <MemoryIcon />, desc: 'Process Monitor' },
-      { label: '节点主机', path: '/node-host', icon: <DnsIcon />, desc: 'Node Host' },
-      { label: '集成监控', path: '/integration', icon: <HubIcon />, desc: 'Integration Dashboard' },
+      // 2026-08-05：进程/节点/集成三页整合为「监控中心」统一入口
+      { label: '监控中心', path: '/monitoring', icon: <HubIcon />, desc: '进程 · 节点 · 集成' },
     ],
   },
 ];
@@ -223,9 +260,10 @@ const NavList: React.FC<NavListProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const item of navItems) {
-      if (isGroup(item) && item.children.some((c) => activePath.startsWith(c.path))) {
-        initial[item.label] = true;
-      }
+      if (!isGroup(item)) continue;
+      const selfActive = item.path && activePath.startsWith(item.path);
+      const childActive = item.children.some((c) => activePath.startsWith(c.path));
+      if (selfActive || childActive) initial[item.label] = true;
     }
     return initial;
   });
@@ -235,9 +273,10 @@ const NavList: React.FC<NavListProps> = ({
     setExpandedGroups((prev) => {
       const next = { ...prev };
       for (const item of navItems) {
-        if (isGroup(item) && item.children.some((c) => activePath.startsWith(c.path))) {
-          next[item.label] = true;
-        }
+        if (!isGroup(item)) continue;
+        const selfActive = item.path && activePath.startsWith(item.path);
+        const childActive = item.children.some((c) => activePath.startsWith(c.path));
+        if (selfActive || childActive) next[item.label] = true;
       }
       return next;
     });
@@ -324,6 +363,144 @@ const NavList: React.FC<NavListProps> = ({
     onNavigate(path);
   }, [onNavigate]);
 
+  // StaffDeck 子导航：通过 postMessage 驱动 iframe 内部路由
+  const handleStaffdeckNav = useCallback((route: string) => {
+    setJustClickedSessionId(null);
+    // 确保主路由停留在 /staffdeck（iframe 可见）
+    if (activePath !== '/staffdeck') {
+      onNavigate('/staffdeck');
+    }
+    // 延迟发送，确保 iframe 已可见
+    setTimeout(() => {
+      window.postMessage({ type: 'STAFFDECK_NAVIGATE', route }, '*');
+    }, activePath !== '/staffdeck' ? 200 : 0);
+  }, [activePath, onNavigate]);
+
+  // 跟踪 iframe 当前 StaffDeck 路由（用于高亮子项）
+  const [activeStaffdeckRoute, setActiveStaffdeckRoute] = useState<string>('');
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'STAFFDECK_ROUTE_CHANGE' && e.data?.route) {
+        setActiveStaffdeckRoute(e.data.route);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // ====== StaffDeck 数字员工对话历史 ======
+  interface StaffSession {
+    id: string;
+    title: string | null;
+    agent_id: string | null;
+    status: string;
+    updated_at: string;
+  }
+  const [staffSessions, setStaffSessions] = useState<StaffSession[]>([]);
+  const [staffSessionsExpanded, setStaffSessionsExpanded] = useState(true);
+  const [staffSearch, setStaffSearch] = useState('');
+  // 置顶集合（持久化到 localStorage）
+  const [staffPinned, setStaffPinned] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('cdfknow-staff-pinned');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  // iframe 当前激活的员工会话 ID（双向高亮）
+  const [activeStaffSessionId, setActiveStaffSessionId] = useState<string>('');
+
+  // 持久化置顶集合
+  useEffect(() => {
+    try {
+      localStorage.setItem('cdfknow-staff-pinned', JSON.stringify(Array.from(staffPinned)));
+    } catch { /* ignore */ }
+  }, [staffPinned]);
+
+  // 删除员工会话
+  const handleDeleteStaffSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/api/staffdeck/chat/sessions/${sessionId}?tenant_id=default`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setStaffSessions(prev => prev.filter(s => s.id !== sessionId));
+        setStaffPinned(prev => {
+          const next = new Set(prev);
+          next.delete(sessionId);
+          return next;
+        });
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // 切换置顶
+  const toggleStaffPin = useCallback((sessionId: string) => {
+    setStaffPinned(prev => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStaffSessions = async () => {
+      try {
+        const res = await fetch('/api/staffdeck/chat/sessions?tenant_id=default');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json?.code === 0 && Array.isArray(json.data)) {
+          setStaffSessions(json.data.slice(0, 50));
+        }
+      } catch { /* ignore */ }
+    };
+    fetchStaffSessions();
+    // 每 30 秒刷新一次
+    const timer = setInterval(fetchStaffSessions, 30000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  // 监听 iframe 路由变化,提取 /workspace/chat/:sessionId 实现「iframe→侧边栏」高亮
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type !== 'STAFFDECK_ROUTE_CHANGE') return;
+      const route: string = e.data?.route || '';
+      const m = route.match(/^\/workspace\/chat\/(.+)$/);
+      setActiveStaffSessionId(m ? m[1] : '');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // 员工会话排序：置顶优先 + 最近更新
+  const sortedStaffSessions = useMemo(() => {
+    return [...staffSessions].sort((a, b) => {
+      const pa = staffPinned.has(a.id) ? 1 : 0;
+      const pb = staffPinned.has(b.id) ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+  }, [staffSessions, staffPinned]);
+
+  // 搜索过滤
+  const filteredStaffSessions = useMemo(() => {
+    const q = staffSearch.trim().toLowerCase();
+    if (!q) return sortedStaffSessions;
+    return sortedStaffSessions.filter(s => (s.title || '新对话').toLowerCase().includes(q));
+  }, [sortedStaffSessions, staffSearch]);
+
+  // 跳转到员工会话
+  const navigateToStaffSession = useCallback((sessionId: string) => {
+    if (activePath !== '/staffdeck') {
+      onNavigate('/staffdeck');
+    }
+    setTimeout(() => {
+      window.postMessage({ type: 'STAFFDECK_NAVIGATE', route: `/workspace/chat/${sessionId}` }, '*');
+    }, activePath !== '/staffdeck' ? 200 : 0);
+  }, [activePath, onNavigate]);
+
   // 有历史会话选中且历史列表不为空时，"AI 对话"不显示激活态（白条让给历史对话项）
   const activeSessionHasMessages = useMemo(
     () => chatSessions.some((s) => s.id === activeSessionId),
@@ -348,9 +525,15 @@ const NavList: React.FC<NavListProps> = ({
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  // 检查分组内是否有活跃项
-  const isGroupActive = (group: NavItemGroup) =>
-    group.children.some((child) => isActive(child.path));
+  // 检查分组内是否有活跃项（含分组自身路径）
+  const isGroupActive = (group: NavItemGroup) => {
+    if (group.path && isActive(group.path)) return true;
+    return group.children.some((child) =>
+      child.staffdeckRoute
+        ? activePath === '/staffdeck'
+        : isActive(child.path)
+    );
+  };
 
   // 统一灰阶（从 theme.ts 获取）
   const bgActive = gs.bgActive;
@@ -580,12 +763,23 @@ const NavList: React.FC<NavListProps> = ({
           const groupActive = isGroupActive(item);
 
           if (collapsed) {
-            // 收起模式：显示分组图标，点击展开第一个子项
+            // 收起模式：显示分组图标，点击导航到分组自身路径或第一个子项
+            const navTarget = item.path
+              ? { path: item.path, staffdeckRoute: item.staffdeckRoute, openSettingsDialog: undefined }
+              : { path: item.children[0].path, staffdeckRoute: item.children[0].staffdeckRoute, openSettingsDialog: item.children[0].openSettingsDialog };
             return (
               <Tooltip key={item.label} title={item.label} placement="right" arrow>
                 <ListItem disablePadding sx={{ display: 'block', mb: 0.5 }}>
                   <ListItemButton
-                    onClick={() => handleNavClick(item.children[0].path)}
+                    onClick={() => {
+                      if (navTarget.openSettingsDialog) {
+                        window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: navTarget.openSettingsDialog }));
+                      } else if (navTarget.staffdeckRoute) {
+                        handleStaffdeckNav(navTarget.staffdeckRoute);
+                      } else {
+                        handleNavClick(navTarget.path);
+                      }
+                    }}
                     sx={{
                       minHeight: 40,
                       justifyContent: 'center',
@@ -605,12 +799,21 @@ const NavList: React.FC<NavListProps> = ({
             );
           }
 
-          // 展开模式：可折叠分组
+          // 展开模式：可折叠分组（若分组有 path，点击标题同时导航）
           return (
             <Box key={item.label} sx={{ mb: 0.5 }}>
               <ListItem disablePadding>
                 <ListItemButton
-                  onClick={() => toggleGroup(item.label)}
+                  onClick={() => {
+                    toggleGroup(item.label);
+                    if (item.path || item.staffdeckRoute) {
+                      if (item.staffdeckRoute) {
+                        handleStaffdeckNav(item.staffdeckRoute);
+                      } else if (item.path) {
+                        handleNavClick(item.path);
+                      }
+                    }
+                  }}
                   sx={{
                     minHeight: 36,
                     px: 1.5,
@@ -658,11 +861,23 @@ const NavList: React.FC<NavListProps> = ({
               <Collapse in={expanded} timeout="auto">
                 <List sx={{ py: 0, pl: 2.5 }}>
                   {item.children.map((child) => {
-                    const childActive = isActive(child.path);
+                    const childActive = child.openSettingsDialog
+                      ? false
+                      : child.staffdeckRoute
+                        ? activeStaffdeckRoute === child.staffdeckRoute
+                        : isActive(child.path);
                     return (
-                      <ListItem key={child.path} disablePadding sx={{ display: 'block' }}>
+                      <ListItem key={child.label} disablePadding sx={{ display: 'block' }}>
                         <ListItemButton
-                          onClick={() => handleNavClick(child.path)}
+                          onClick={() => {
+                            if (child.openSettingsDialog) {
+                              window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: child.openSettingsDialog }));
+                            } else if (child.staffdeckRoute) {
+                              handleStaffdeckNav(child.staffdeckRoute);
+                            } else {
+                              handleNavClick(child.path);
+                            }
+                          }}
                         sx={{
                           minHeight: 32,
                           px: 1,
@@ -858,6 +1073,172 @@ const NavList: React.FC<NavListProps> = ({
               />
             )}
           </Box>
+        </Box>
+      )}
+
+      {/* ====== 员工对话历史 ====== */}
+      {!collapsed && staffSessions.length > 0 && (
+        <Box sx={{ mt: 0.5, pt: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
+          <ListItemButton
+            onClick={() => setStaffSessionsExpanded(prev => !prev)}
+            sx={{
+              minHeight: 28,
+              px: 1.5,
+              py: 0,
+              borderRadius: '4px',
+              '&:hover': { backgroundColor: bgHover },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                color: gs.textMuted,
+                letterSpacing: '0.02em',
+                flex: 1,
+              }}
+            >
+              员工对话
+              <Box component="span" sx={{ ml: 0.75, fontSize: '0.625rem', fontWeight: 500, color: gs.textDisabled }}>
+                {staffSessions.length}
+              </Box>
+            </Typography>
+            {staffSessionsExpanded
+              ? <ExpandLessIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
+              : <ExpandMoreIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
+            }
+          </ListItemButton>
+          <Collapse in={staffSessionsExpanded} timeout="auto">
+            <Box sx={{ maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {/* 搜索框 */}
+              {staffSessions.length > 5 && (
+                <Box sx={{ px: 1.5, py: 0.5, flexShrink: 0 }}>
+                  <TextField
+                    size="small"
+                    value={staffSearch}
+                    onChange={(e) => setStaffSearch(e.target.value)}
+                    placeholder="搜索员工对话"
+                    sx={{
+                      width: '100%',
+                      '& .MuiOutlinedInput-root': {
+                        height: 26,
+                        fontSize: '0.7rem',
+                        backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5',
+                        '& fieldset': { border: 'none' },
+                      },
+                      '& input': { py: 0, px: 1 },
+                    }}
+                  />
+                </Box>
+              )}
+              <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+                {filteredStaffSessions.map((s) => {
+                  const title = s.title || '新对话';
+                  const relativeTime = getRelativeTime(s.updated_at);
+                  const isPinned = staffPinned.has(s.id);
+                  const isActiveStaff = s.id === activeStaffSessionId;
+                  return (
+                    <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
+                      <ListItemButton
+                        onClick={() => navigateToStaffSession(s.id)}
+                        sx={{
+                          minHeight: 32,
+                          px: 1.5,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          backgroundColor: isActiveStaff ? bgActive : 'transparent',
+                          '&:hover': {
+                            backgroundColor: isActiveStaff ? bgActiveHover : bgHover,
+                            '& .staff-actions': { opacity: 1 },
+                            '& .staff-time': { opacity: 0 },
+                          },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: isActiveStaff ? 500 : 400,
+                            color: isActiveStaff ? textActive : textSecondary,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                            minWidth: 0,
+                            lineHeight: '28px',
+                          }}
+                        >
+                          {title}
+                        </Typography>
+                        {/* 右侧：时间 / hover 操作 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto', flexShrink: 0, position: 'relative' }}>
+                          {relativeTime && (
+                            <Typography
+                              className="staff-time"
+                              sx={{
+                                fontSize: '0.6rem',
+                                color: textMuted,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                lineHeight: '28px',
+                                transition: 'opacity 0.15s',
+                              }}
+                            >
+                              {relativeTime}
+                            </Typography>
+                          )}
+                          <Box
+                            className="staff-actions"
+                            sx={{
+                              position: 'absolute',
+                              right: 0,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              opacity: 0,
+                              transition: 'opacity 0.15s',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Tooltip title={isPinned ? '取消置顶' : '置顶'} placement="top" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => { e.stopPropagation(); toggleStaffPin(s.id); }}
+                                sx={{
+                                  p: 0.25,
+                                  color: isPinned ? '#F59E0B' : gs.textMuted,
+                                  '&:hover': { color: isPinned ? '#D97706' : gs.textPrimary },
+                                }}
+                              >
+                                <PushPinOutlinedIcon sx={{ fontSize: 12 }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="删除" placement="top" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleDeleteStaffSession(e, s.id)}
+                                sx={{
+                                  p: 0.25,
+                                  color: gs.textMuted,
+                                  '&:hover': { color: '#EF4444' },
+                                }}
+                              >
+                                <DeleteOutlineIcon sx={{ fontSize: 12 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
+                {filteredStaffSessions.length === 0 && (
+                  <Typography sx={{ fontSize: '0.65rem', color: textMuted, px: 2, py: 1 }}>
+                    无匹配会话
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Collapse>
         </Box>
       )}
 

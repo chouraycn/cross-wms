@@ -204,6 +204,30 @@ mkdir -p "$DMG_SOURCE"
 cp -R "$APP_PATH" "$DMG_SOURCE/"
 ln -s /Applications "$DMG_SOURCE/Applications"
 
+# 检测是否有背景图：有背景图时走完整 UDRW + Finder 样式流程，
+# 无背景图或沙箱环境走 srcfolder 快速模式
+HAS_BACKGROUND=0
+if [[ -f "$DMG_BACKGROUND_SMALL" || -f "$DMG_BACKGROUND_PATH" ]]; then
+  HAS_BACKGROUND=1
+fi
+
+# 无背景图或显式跳过样式时，走 srcfolder 快速模式
+if [[ "$HAS_BACKGROUND" == "0" || "${SKIP_DMG_STYLE:-0}" == "1" ]]; then
+  echo "INFO: 无背景图或跳过样式，走 srcfolder 快速模式"
+  if hdiutil create \
+    -volname "$DMG_VOLUME_NAME" \
+    -srcfolder "$DMG_SOURCE" \
+    -ov \
+    -format ULMO \
+    "$OUT_PATH" 2>/dev/null; then
+    hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（快速模式，无 Finder 样式）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+    rm -rf "$DMG_SOURCE"
+    exit 0
+  fi
+fi
+
+echo "INFO: 走标准 UDRW + Finder 样式流程（含背景图、窗口大小、图标布局）..."
+
 APP_SIZE_MB=$(du -sm "$APP_PATH" | awk '{print $1}')
 DMG_SIZE_MB=$((APP_SIZE_MB + 80))
 

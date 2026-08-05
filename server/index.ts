@@ -426,6 +426,8 @@ app.use('/api/folders', foldersRouter);
 app.use('/api', eventsRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/health', healthEnhancedRouter);
+// API 文档（Swagger UI + OpenAPI 3.0 规范）
+app.use('/api/docs', lazyRouter(() => import('./routes/apiDocs.js'), undefined, 'apiDocs'));
 app.use('/api/agents', agentsRouter);
 app.use('/api/i18n', lazyRouter(() => import('./routes/i18n.js'), undefined, 'i18n'));
 

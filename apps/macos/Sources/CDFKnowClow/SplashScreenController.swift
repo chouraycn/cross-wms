@@ -98,8 +98,10 @@ final class SplashScreenController {
             self.tryTransitionToWebView()
         }
 
-        // 立即启动 WebView 后台加载（不挂载到 contentView）
-        webViewManager.loadMainAppDirect()
+        // v1.7.183: 不在启动时立即 loadMainAppDirect() —— 服务器尚未就绪，localhost 请求必然失败，
+        // 失败后 handleLoadError 的重试策略（3s/6s 延时重试）会造成"服务器就绪后仍卡很久才跳转"。
+        // 改为：在服务器状态变为 running 之后再触发 WebView 加载（见 startServerAndMonitor），
+        // 保证第一次请求即命中可用端口，避免重试延时。
 
         // 超时兜底：8 秒后强制切换
         forceSwitchTask = Task { [weak self] in
@@ -125,8 +127,8 @@ final class SplashScreenController {
               serverReady,
               webViewLoaded,
               reactReady,
-              let webViewManager = webViewManager,
-              let splashWindow = splashWindow else {
+              webViewManager != nil,
+              splashWindow != nil else {
             return
         }
         transitionToWebView()
@@ -193,9 +195,14 @@ final class SplashScreenController {
             case .running:
                 isReady = true
                 splashLogger.info("Server is ready")
-                animatedSplashView?.updateStatus("服务器已就绪")
+                animatedSplashView?.updateStatus("服务器已就绪，正在加载界面...")
                 animatedSplashView?.stopProgress()
                 serverReady = true
+                // v1.7.183: 服务器就绪后再加载 WebView 主页面，确保第一次请求即命中可用端口，
+                // 避开 handleLoadError 中 3s/6s 的重试延时造成的卡顿感。
+                if !webViewLoaded {
+                    webViewManager?.loadMainAppDirect()
+                }
                 tryTransitionToWebView()
             case .failed(let message):
                 splashLogger.error("Server failed: \(message)")
@@ -222,8 +229,11 @@ final class SplashScreenController {
             splashLogger.warning("Server startup timeout after 90s, proceeding anyway")
             animatedSplashView?.showError("服务器启动超时，正在尝试加载...")
             try? await Task.sleep(nanoseconds: 2_000_000_000)
-            // 超时也标记 serverReady，让切换能继续
+            // 超时也标记 serverReady，让切换能继续，并确保 WebView 触发加载
             serverReady = true
+            if !webViewLoaded {
+                webViewManager?.loadMainAppDirect()
+            }
             tryTransitionToWebView()
         }
 

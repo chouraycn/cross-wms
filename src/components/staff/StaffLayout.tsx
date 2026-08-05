@@ -15,8 +15,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { getGrayScale } from '../../constants/theme';
 import {
   Activity,
   Bell,
@@ -125,6 +126,9 @@ function StaffSidebar({
 }) {
   const primaryItems = isAdmin ? [...PRIMARY_NAV, ...SYSTEM_NAV] : PRIMARY_NAV;
 
+  const theme = useTheme();
+  const gs = getGrayScale(theme.palette.mode === 'dark');
+
   const renderNavButton = (item: NavItem) => {
     const active = selected === item.route;
     return (
@@ -139,16 +143,16 @@ function StaffSidebar({
             width: '100%',
             alignItems: 'center',
             gap: '10px',
-            borderRadius: '10px',
+            borderRadius: '6px',
             px: '14px',
             py: '8px',
             textAlign: 'left',
-            fontSize: '13px',
+            fontSize: '0.8125rem',
             transition: 'background-color 0.2s',
           },
           active
-            ? { bgcolor: '#eef1fb', color: '#3a4fbf', fontWeight: 500 }
-            : { color: '#464c5e', '&:hover': { bgcolor: '#f6f6f6' } },
+            ? { bgcolor: gs.bgActive, color: gs.textPrimary, fontWeight: 500 }
+            : { color: gs.textSecondary, '&:hover': { bgcolor: gs.bgHover } },
         ] as SxProps<Theme>}
       >
         <item.Icon style={{ width: '16px', height: '16px', flexShrink: 0 }} />
@@ -165,12 +169,11 @@ function StaffSidebar({
       sx={{
         display: 'flex',
         height: '100%',
-        width: '220px',
+        width: '240px',
         flexShrink: 0,
         flexDirection: 'column',
-        borderRight: '1px solid',
-        borderColor: '#e3e7f1',
-        bgcolor: '#fbfbf9',
+        borderRight: 'none',
+        bgcolor: gs.bgSidebar,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: '16px', py: '20px' }}>

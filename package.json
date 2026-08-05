@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.182",
+  "version": "1.7.184",
   "type": "module",
   "bin": {
     "cdf-cli": "bin/cdf-cli.mjs"
@@ -18,10 +18,12 @@
     "build": "tsc && vite build && npm run staffdeck:build",
     "staffdeck:build": "node scripts/build-staffdeck-app.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
+    "typecheck": "npm run typecheck:web && npm run typecheck:server",
     "typecheck:web": "tsc --noEmit",
-    "typecheck:server": "tsc --noEmit -p server/tsconfig.json",
+    "typecheck:server": "tsgo --noEmit -p server/tsconfig.json",
+    "typecheck:server:tsc": "tsc --noEmit -p server/tsconfig.json",
     "typecheck:tsgo": "tsgo --noEmit -p server/tsconfig.json",
+    "typecheck:fast": "tsgo --noEmit -p server/tsconfig.json && tsgo --noEmit -p tsconfig.json",
     "bump": "node scripts/bump-version.cjs",
     "bump:patch": "node scripts/bump-version.cjs patch",
     "bump:minor": "node scripts/bump-version.cjs minor",

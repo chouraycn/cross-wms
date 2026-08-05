@@ -127,6 +127,7 @@ export const staffdeckContent = {
   reference,
   onboardingGallery,
   onboardingProfile,
+  appLogo: logo,
 } as const;
 
 export const staffdeckIcons = {
