@@ -9,32 +9,30 @@ import {
   updateInventoryItem as dbUpdate,
   deleteInventoryItem as dbDelete,
 } from '../dao/warehouse.js';
+import { ok, fail, notFound } from './_shared/respond.js';
 
 const router = Router();
 
 // GET /api/inventory?warehouseId=xxx
-router.get('/', (req: Request, res: Response) => {
-  const data = dbGetAll(req.query.warehouseId as string | undefined);
-  res.json({ code: 0, data, message: 'ok' });
+router.get('/', (_req: Request, res: Response) => {
+  ok(res, dbGetAll(_req.query.warehouseId as string | undefined));
 });
 
 // GET /api/inventory/:id
 router.get('/:id', (req: Request, res: Response) => {
   const data = dbGetById(req.params.id);
-  if (!data) {
-    res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
-    return;
-  }
-  res.json({ code: 0, data, message: 'ok' });
+  if (!data) return notFound(res, 'Inventory item not found');
+  ok(res, data);
 });
 
 // POST /api/inventory
 router.post('/', (req: Request, res: Response) => {
   try {
     const data = dbCreate(req.body);
-    res.status(201).json({ code: 0, data, message: 'ok' });
+    res.status(201);
+    return ok(res, data);
   } catch (e) {
-    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
+    return fail(res, 400, (e as Error).message);
   }
 });
 
@@ -42,24 +40,17 @@ router.post('/', (req: Request, res: Response) => {
 router.put('/:id', (req: Request, res: Response) => {
   try {
     const data = dbUpdate(req.params.id, req.body);
-    if (!data) {
-      res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
-      return;
-    }
-    res.json({ code: 0, data, message: 'ok' });
+    if (!data) return notFound(res, 'Inventory item not found');
+    ok(res, data);
   } catch (e) {
-    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
+    return fail(res, 400, (e as Error).message);
   }
 });
 
 // DELETE /api/inventory/:id
 router.delete('/:id', (req: Request, res: Response) => {
-  const ok = dbDelete(req.params.id);
-  if (!ok) {
-    res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
-    return;
-  }
-  res.json({ code: 0, data: null, message: 'ok' });
+  if (!dbDelete(req.params.id)) return notFound(res, 'Inventory item not found');
+  ok(res, null);
 });
 
 export default router;
