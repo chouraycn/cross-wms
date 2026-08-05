@@ -20,7 +20,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
-import type { IntentCategory } from '../../types/skill';
+import type { IntentCategory, SkillChain } from '../../types/skill';
 import type { Attachment } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
@@ -31,7 +31,7 @@ import ChatToolbar, { type ModelOption } from './ChatToolbar';
 const AISettingsDialog = React.lazy(() => import('../Layout/AISettingsDialog'));
 import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
-import { uploadFile } from '../../services/api';
+import { uploadFile, executeSkillChain } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 import { SLASH_COMMANDS, SlashCommand } from '../../hooks/useSlashCommands';
@@ -747,6 +747,19 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     }
   };
 
+  // 选择技能链后立即触发执行
+  const handleChainSelect = useCallback((chain: SkillChain) => {
+    showToast(t('正在执行技能链: {name}', { name: chain.name }), 'info', 2000);
+    executeSkillChain(chain.id)
+      .then((result) => {
+        const execId = (result as { executionId?: string })?.executionId;
+        showToast(t('技能链已启动：{name}（执行 ID: {execId}）', { name: chain.name, execId: execId || '-' }), 'success', 3000);
+      })
+      .catch((err: Error) => {
+        showToast(t('执行技能链失败：{error}', { error: err.message }), 'error', 3000);
+      });
+  }, [showToast, t]);
+
   // 选择斜杠命令
   const handleSlashCommandSelect = useCallback((cmd: SlashCommand) => {
     setShowSlashCommands(false);
@@ -1452,6 +1465,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           onSend={handleSend}
           onStop={stopGeneration}
           onSkillSelect={handleSkillSelect}
+          onChainSelect={handleChainSelect}
           modelOptions={MODEL_OPTIONS}
           onOpenAISettings={() => setShowAISettings(true)}
           modelsLoading={modelsLoading}

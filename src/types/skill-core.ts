@@ -216,12 +216,27 @@ export interface Skill {
 
 /** 可供用户选择的图标名称列表（用于"添加技能"表单） */
 export const AVAILABLE_ICON_NAMES: string[] = [
+  // 核心仓储
   'Dashboard', 'Warehouse', 'LocalShipping', 'Inventory',
-  'Description', 'BarChart', 'Assessment', 'Analytics',
-  'Bolt', 'AutoMode', 'Chat', 'Tune', 'KeyboardCommandKey',
-  'Input', 'Output', 'SmartToy', 'AutoFixHigh', 'Extension',
-  'Functions', 'Code', 'Build', 'QueryStats', 'ManageSearch',
-  'SettingsSuggest',
+  'Input', 'Output', 'Factory', 'PrecisionManufacturing',
+  'Checklist', 'FactCheck', 'QrCode', 'Route',
+  // 数据与报表
+  'Description', 'Article', 'BarChart', 'Assessment', 'Analytics',
+  'QueryStats', 'ManageSearch', 'TrendingUp', 'ReceiptLong',
+  // 自动化与调度
+  'Bolt', 'AutoMode', 'Schedule', 'Sync', 'NotificationsActive',
+  // 工具与配置
+  'Chat', 'Forum', 'Tune', 'SettingsSuggest', 'KeyboardCommandKey',
+  'SmartToy', 'Psychology', 'AutoFixHigh', 'Extension',
+  'Build', 'Functions', 'Code', 'Terminal', 'Memory', 'Hub', 'Webhook',
+  // 通讯
+  'Email', 'Phone',
+  // 安全与审计
+  'WarningAmber', 'Security', 'BugReport',
+  // 财务
+  'Calculate', 'Savings', 'AccountBalance', 'RequestQuote', 'Percent', 'LocalOffer',
+  // 设计与媒体
+  'Palette', 'Image', 'MusicNote', 'VideoCamera',
 ];
 
 // ===================== 内置技能数据 =====================
@@ -244,6 +259,12 @@ export type FailStrategy = 'stop' | 'skip' | 'retry';
 /** 数据传递模式 */
 export type DataPassMode = 'full' | 'fields' | 'custom';
 
+/** 节点类型 */
+export type ChainNodeType = 'skill' | 'condition' | 'parallel';
+
+/** 条件操作符 */
+export type ConditionOperator = 'eq' | 'ne' | 'contains' | 'gt' | 'lt' | 'exists';
+
 /** 安全等级 */
 export type AuditLevel = 'safe' | 'suspicious' | 'malicious';
 
@@ -256,9 +277,25 @@ export type ExecutionStatus = 'running' | 'success' | 'failed' | 'aborted';
 /** 步骤状态 */
 export type StepStatus = 'pending' | 'running' | 'success' | 'failed' | 'skipped';
 
+/** 条件分支配置 */
+export interface ConditionConfig {
+  /** 字段路径（如 "previousOutput.status"） */
+  field: string;
+  /** 操作符 */
+  operator: ConditionOperator;
+  /** 比较值 */
+  value: string;
+  /** 条件为真时跳转到的节点 order（-1 表示继续下一节点） */
+  trueNextOrder: number;
+  /** 条件为假时跳转到的节点 order（-1 表示继续下一节点） */
+  falseNextOrder: number;
+}
+
 /** 技能链节点 */
 export interface SkillChainNode {
   id: string;
+  /** 节点类型：skill（技能执行）、condition（条件分支）、parallel（并行执行） */
+  nodeType: ChainNodeType;
   skillId: string;
   skillName: string;
   skillIcon: string;
@@ -268,6 +305,10 @@ export interface SkillChainNode {
   timeout: number;
   retryCount: number;
   order: number;
+  /** 条件分支配置（nodeType='condition' 时使用） */
+  condition?: ConditionConfig;
+  /** 并行子节点 order 列表（nodeType='parallel' 时使用） */
+  parallelOrders?: number[];
 }
 
 /** 技能链 */

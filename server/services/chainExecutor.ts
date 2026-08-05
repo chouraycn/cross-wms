@@ -173,16 +173,100 @@ function buildNodeInput(
 // ===================== Node Execution =====================
 
 /**
+ * 从嵌套对象中按路径取值（如 "previousOutput.status"）
+ */
+function getValueByPath(obj: unknown, path: string): unknown {
+  if (!obj || typeof obj !== 'object') return undefined;
+  const parts = path.split('.');
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+/**
+ * 评估条件表达式
+ */
+function evaluateCondition(
+  context: Record<string, unknown>,
+  condition: { field: string; operator: string; value: string }
+): boolean {
+  const fieldValue = getValueByPath(context, condition.field);
+  const targetValue = condition.value;
+
+  switch (condition.operator) {
+    case 'eq':
+      return String(fieldValue) === targetValue;
+    case 'ne':
+      return String(fieldValue) !== targetValue;
+    case 'contains':
+      return fieldValue != null && String(fieldValue).includes(targetValue);
+    case 'gt':
+      return Number(fieldValue) > Number(targetValue);
+    case 'lt':
+      return Number(fieldValue) < Number(targetValue);
+    case 'exists':
+      return fieldValue !== undefined && fieldValue !== null;
+    default:
+      return false;
+  }
+}
+
+/**
  * Execute a single node with timeout support.
  * v2: Direct AI model API call.
  *     Reads promptTemplate from user_skills, invokes callAIModel(),
  *     and returns the response content.
+ *
+ * v4: 支持 condition 和 parallel 节点类型
  */
 async function executeNodeWithTimeout(
   node: SkillChainNodeRow,
   input: Record<string, unknown>,
   hooks?: ChainExecutorHooks
 ): Promise<{ success: boolean; output?: unknown; error?: string }> {
+  const nodeType = node.node_type || 'skill';
+
+  // ===================== 条件分支节点 =====================
+  if (nodeType === 'condition') {
+    let condition: { field: string; operator: string; value: string; trueNextOrder: number; falseNextOrder: number };
+    try {
+      condition = JSON.parse(node.condition_config || '{}');
+    } catch {
+      return { success: false, error: '条件配置解析失败' };
+    }
+
+    const result = evaluateCondition(input, condition);
+    return {
+      success: true,
+      output: {
+        nodeType: 'condition',
+        conditionResult: result,
+        nextOrder: result ? condition.trueNextOrder : condition.falseNextOrder,
+        evaluatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  // ===================== 并行节点 =====================
+  if (nodeType === 'parallel') {
+    // parallel 节点本身不执行 AI 调用，仅标记需要并行执行子节点
+    // 子节点的实际执行在 executeChain 主循环中处理
+    return {
+      success: true,
+      output: {
+        nodeType: 'parallel',
+        message: '并行节点标记，子节点在主循环中并行执行',
+      },
+    };
+  }
+
+  // ===================== 技能节点（原有逻辑） =====================
   const timeoutMs = node.timeout || 60000;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -339,14 +423,21 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
   // 5. Initialize execution context
   const context: Record<string, unknown> = {};
 
-  // 6. Execute nodes sequentially
+  // 6. Execute nodes with condition/parallel support
   const steps: Array<Record<string, unknown>> = [];
   const nodeResults: Array<Record<string, unknown>> = [];
   let chainFailed = false;
   let chainAborted = false;
   let previousOutput: unknown = null;
 
-  for (let i = 0; i < nodes.length; i++) {
+  // 构建节点 order → 索引映射，支持条件跳转
+  const orderToIndex = new Map<number, number>();
+  for (let idx = 0; idx < nodes.length; idx++) {
+    orderToIndex.set(nodes[idx].node_order, idx);
+  }
+
+  let i = 0;
+  while (i < nodes.length) {
     const node = nodes[i];
 
     // Check abort signal before each node
@@ -381,6 +472,104 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
       break;
     }
 
+    // ===================== 并行节点处理 =====================
+    const nodeType = node.node_type || 'skill';
+    if (nodeType === 'parallel') {
+      let parallelOrders: number[] = [];
+      try {
+        parallelOrders = JSON.parse(node.parallel_orders || '[]');
+      } catch {
+        parallelOrders = [];
+      }
+
+      if (parallelOrders.length === 0) {
+        // 无子节点，跳过
+        i++;
+        continue;
+      }
+
+      // 收集并行子节点
+      const parallelNodes: SkillChainNodeRow[] = [];
+      for (const order of parallelOrders) {
+        const idx = orderToIndex.get(order);
+        if (idx !== undefined && idx < nodes.length) {
+          parallelNodes.push(nodes[idx]);
+        }
+      }
+
+      broadcast(executionId, {
+        type: 'node-started',
+        executionId,
+        nodeId: node.id,
+        nodeType: 'parallel',
+        childCount: parallelNodes.length,
+        nodeOrder: i,
+        timestamp: new Date().toISOString(),
+      });
+
+      const parallelStartTime = Date.now();
+
+      // 并行执行所有子节点
+      const parallelResults = await Promise.allSettled(
+        parallelNodes.map((childNode) => {
+          const childInput = buildNodeInput(context, childNode, previousOutput);
+          return executeNodeWithTimeout(childNode, childInput, hooks);
+        })
+      );
+
+      const parallelOutputs: unknown[] = [];
+      let allSuccess = true;
+
+      for (let p = 0; p < parallelResults.length; p++) {
+        const result = parallelResults[p];
+        const childNode = parallelNodes[p];
+        if (result.status === 'fulfilled' && result.value.success) {
+          parallelOutputs.push(result.value.output);
+          context[`node_${childNode.skill_id}_output`] = result.value.output;
+          steps.push({
+            nodeId: childNode.id,
+            skillId: childNode.skill_id,
+            skillName: childNode.skill_name,
+            nodeOrder: orderToIndex.get(childNode.node_order) ?? -1,
+            status: 'success',
+            output: result.value.output,
+            parallel: true,
+          });
+        } else {
+          allSuccess = false;
+          const errorMsg = result.status === 'fulfilled' ? result.value.error : (result.reason as Error).message;
+          steps.push({
+            nodeId: childNode.id,
+            skillId: childNode.skill_id,
+            skillName: childNode.skill_name,
+            nodeOrder: orderToIndex.get(childNode.node_order) ?? -1,
+            status: 'failed',
+            error: errorMsg,
+            parallel: true,
+          });
+        }
+      }
+
+      previousOutput = { parallelOutputs };
+      context[`node_${i}_output`] = { parallelOutputs };
+
+      broadcast(executionId, {
+        type: 'node-completed',
+        executionId,
+        nodeId: node.id,
+        nodeType: 'parallel',
+        nodeOrder: i,
+        allSuccess,
+        childCount: parallelNodes.length,
+        duration: Date.now() - parallelStartTime,
+        timestamp: new Date().toISOString(),
+      });
+
+      i++;
+      continue;
+    }
+
+    // ===================== 技能/条件节点处理 =====================
     // Build node input context
     const nodeInput = buildNodeInput(context, node, previousOutput);
 
@@ -500,6 +689,30 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
         output: nodeResult.output,
         timestamp: new Date().toISOString(),
       });
+
+      // ===================== 条件分支跳转 =====================
+      if (nodeType === 'condition') {
+        const conditionOutput = nodeResult.output as { nextOrder?: number };
+        const nextOrder = conditionOutput?.nextOrder;
+        if (nextOrder !== undefined && nextOrder >= 0) {
+          const nextIdx = orderToIndex.get(nextOrder);
+          if (nextIdx !== undefined && nextIdx < nodes.length) {
+            i = nextIdx;
+            broadcast(executionId, {
+              type: 'condition-branch',
+              executionId,
+              nodeId: node.id,
+              nextOrder,
+              nextNodeIndex: nextIdx,
+              timestamp: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+        // nextOrder 为 -1 或未找到目标节点，继续下一节点
+        i++;
+        continue;
+      }
     } else {
       // Node failed
       steps.push({
@@ -595,6 +808,9 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
 
       // failStrategy='skip': continue to next node
     }
+
+    // 继续下一节点
+    i++;
   }
 
   // 7. Determine final status

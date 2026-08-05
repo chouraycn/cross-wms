@@ -64,6 +64,7 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({
         timeout: 30000,
         retryCount: 0,
         order: chain.nodes.length,
+        nodeType: 'skill',
       };
       onChange({ ...chain, nodes: [...chain.nodes, newNode] });
     },

@@ -156,10 +156,12 @@ final class AnimatedSplashView: NSView {
     private func setupProgressBar() {
         progressBar = NSProgressIndicator()
         progressBar.style = .bar
-        progressBar.isIndeterminate = true
+        progressBar.isIndeterminate = false
         progressBar.controlSize = .regular
         progressBar.wantsLayer = true
-        progressBar.startAnimation(nil)
+        progressBar.minValue = 0
+        progressBar.maxValue = 100
+        progressBar.doubleValue = 0
 
         progressBar.layer?.cornerRadius = 1.5
         progressBar.layer?.backgroundColor = NSColor(calibratedWhite: 0.88, alpha: 1.0).cgColor
@@ -179,15 +181,22 @@ final class AnimatedSplashView: NSView {
         statusLabel.stringValue = text
     }
 
+    /// 设置进度条到指定百分比（0-100），带平滑动画
+    func setProgress(_ value: Double) {
+        let clamped = max(0, min(100, value))
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            progressBar.animator().doubleValue = clamped
+        })
+    }
+
     func stopProgress() {
-        progressBar.stopAnimation(nil)
-        progressBar.isIndeterminate = false
-        progressBar.doubleValue = 100
+        setProgress(100)
     }
 
     func showError(_ message: String) {
         statusLabel.stringValue = message
         statusLabel.textColor = NSColor.systemRed
-        progressBar.stopAnimation(nil)
     }
 }

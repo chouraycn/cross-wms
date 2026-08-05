@@ -70,6 +70,8 @@ function isValidSkillId(id: string): boolean {
  * 如果 SKILL.md 中声明了 adapter 字段，可使用内置适配器：
  * - 'http': 将 instruction 作为 HTTP 请求模板执行
  * - 'exec': 将 instruction 作为 shell 命令执行
+ * - 'js': 将 instruction 作为 JS 函数体执行（沙箱隔离，仅允许 lodash/date-fns）
+ * - 'python': 将 instruction 作为 Python 脚本执行（参数通过环境变量传递）
  */
 function createDeclarativeHandler(
   definition: SkillDefinition,
@@ -171,6 +173,132 @@ function createDeclarativeHandler(
           data,
           metadata: { durationMs: Date.now() - startTime, sandboxChecks: 1 },
         };
+      }
+
+      if (adapter === 'js') {
+        // js 适配器：将 instruction 作为 JS 函数体在沙箱中执行
+        // 函数签名: async (params, ctx) => { ... return result; }
+        const code = instructions.join('\n');
+        const functionCode = `async (params, ctx) => {\n${code}\n}`;
+
+        const vm = await import('vm');
+        const sandbox: Record<string, unknown> = {
+          params,
+          ctx,
+          console: {
+            log: (...args: unknown[]) => logger.info('[skill:js]', ...args),
+            warn: (...args: unknown[]) => logger.warn('[skill:js]', ...args),
+            error: (...args: unknown[]) => logger.error('[skill:js]', ...args),
+            info: (...args: unknown[]) => logger.info('[skill:js]', ...args),
+            debug: (...args: unknown[]) => logger.debug('[skill:js]', ...args),
+          },
+          JSON,
+          Math,
+          Date,
+          Array,
+          Object,
+          String,
+          Number,
+          Boolean,
+          RegExp,
+          Map,
+          Set,
+          Promise,
+          require: (mod: string) => {
+            const allowed = ['lodash', 'date-fns'];
+            if (allowed.includes(mod)) {
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              return require(mod);
+            }
+            throw new Error(`不允许导入模块: ${mod}（仅允许: ${allowed.join(', ')}）`);
+          },
+        };
+
+        try {
+          const context = vm.createContext(sandbox);
+          const func = vm.runInContext(functionCode, context, {
+            timeout: 30_000,
+            filename: `skill-${definition.id}.js`,
+          }) as (p: Record<string, unknown>, c: SkillContext) => Promise<unknown>;
+
+          if (typeof func !== 'function') {
+            return {
+              success: false,
+              error: "JS 适配器执行失败: instruction 必须返回一个 async 函数（确保末尾有 return 语句）",
+              metadata: { durationMs: Date.now() - startTime },
+            };
+          }
+
+          const result = await func(params, ctx);
+          return {
+            success: true,
+            data: result,
+            metadata: { durationMs: Date.now() - startTime },
+          };
+        } catch (e) {
+          return {
+            success: false,
+            error: `JS 执行失败: ${e instanceof Error ? e.message : String(e)}`,
+            metadata: { durationMs: Date.now() - startTime },
+          };
+        }
+      }
+
+      if (adapter === 'python') {
+        // python 适配器：将 instruction 作为 Python 脚本执行
+        // 参数通过环境变量 SKILL_PARAM_<KEY> 传递（大写），输出 stdout 优先解析为 JSON
+        const script = instructions.join('\n');
+        const tempFile = path.join(os.tmpdir(), `skill-${definition.id}-${uuidv4()}.py`);
+        await fs.promises.writeFile(tempFile, script, 'utf-8');
+
+        // 构建环境变量（合并 process.env + 参数）
+        const env: NodeJS.ProcessEnv = { ...process.env };
+        for (const [key, value] of Object.entries(params)) {
+          env[`SKILL_PARAM_${key.toUpperCase()}`] = String(value);
+        }
+
+        try {
+          const { exec } = await import('child_process');
+          const { promisify } = await import('util');
+          const execAsync = promisify(exec);
+
+          const { stdout, stderr } = await execAsync(`python3 ${tempFile}`, {
+            timeout: 60_000,
+            maxBuffer: 10 * 1024 * 1024, // 10MB
+            env,
+          });
+
+          let data: unknown;
+          const trimmed = stdout.trim();
+          if (trimmed) {
+            try {
+              data = JSON.parse(trimmed);
+            } catch {
+              data = trimmed;
+            }
+          } else {
+            data = null;
+          }
+
+          return {
+            success: true,
+            data: { stdout: data, stderr: stderr.trim() },
+            metadata: { durationMs: Date.now() - startTime },
+          };
+        } catch (e) {
+          const err = e as { stdout?: string; stderr?: string; message?: string };
+          return {
+            success: false,
+            error: `Python 执行失败: ${err.message || String(e)}${err.stderr ? `\nstderr: ${err.stderr}` : ''}`,
+            metadata: { durationMs: Date.now() - startTime },
+          };
+        } finally {
+          try {
+            await fs.promises.unlink(tempFile);
+          } catch {
+            // 忽略清理失败
+          }
+        }
       }
 
       // 默认：返回 prompt 模板内容（由上层 Agent 框架消费）

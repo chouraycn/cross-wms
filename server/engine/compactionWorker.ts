@@ -236,7 +236,7 @@ export class CompactionWorkerPool {
           }
           if (msg.ok) {
             pooled.resolveTask(msg.result);
-          } else {
+          } else if (pooled.rejectTask) {
             pooled.rejectTask(new Error(msg.error));
           }
           pooled.resolveTask = undefined;

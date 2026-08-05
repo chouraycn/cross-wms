@@ -40,7 +40,7 @@ import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 import { FileStorage } from '../storage/FileStorage.js';
 import * as yaml from 'js-yaml';
-import { dependencyChecker, DependencyCheckResult } from '../../src/utils/dependencyChecker.js';
+import { dependencyChecker, DependencyCheckResult } from '../services/openclaw/dependencyChecker.js';
 import { SkillIndex, SkillLifecycle, auditAllSkills, checkSkillDependencies, getRequiresFromSkillMd, getInstallStepsFromSkillMd, generateInstallCommands } from '../services/openclaw/index.js';
 import { auditDocQuality, batchAuditDocQuality } from '../services/docQualityChecker.js';
 import { generateRecommendations } from '../services/skillRecommender.js';
@@ -807,8 +807,12 @@ router.post('/skills/dependency-check', async (req: Request, res: Response) => {
       );
     } catch {
       results[skillId] = {
+        allSatisfied: false,
         allFound: false,
         checks: [],
+        bins: [],
+        anyBins: [],
+        env: [],
         missingBins: [],
         missingEnv: [],
         missingConfig: [],

@@ -599,4 +599,114 @@ const StaffModelManager: React.FC = () => {
               onChange={(e) => setForm({ ...form, api_protocol: e.target.value })}
               fullWidth
               InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
-              inputProps={{ style: { fontSize: '0.85rem
+              inputProps={{ style: { fontSize: '0.85rem' } }}
+            >
+              {PROTOCOLS.map(p => (
+                <MenuItem key={p.value} value={p.value} sx={{ fontSize: '0.8rem' }}>{p.label}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <TextField
+            size="small"
+            label="Base URL"
+            value={form.base_url}
+            onChange={(e) => setForm({ ...form, base_url: e.target.value })}
+            placeholder="https://api.openai.com/v1"
+            fullWidth
+            InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
+            inputProps={{ style: { fontSize: '0.85rem', fontFamily: 'monospace' } }}
+          />
+
+          <TextField
+            size="small"
+            label={`API Key${editingId ? '（留空则不修改）' : ''}`}
+            type="password"
+            value={form.api_key}
+            onChange={(e) => setForm({ ...form, api_key: e.target.value })}
+            placeholder="sk-..."
+            fullWidth
+            required={!editingId}
+            InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
+            inputProps={{ style: { fontSize: '0.85rem', fontFamily: 'monospace' } }}
+          />
+
+          <TextField
+            size="small"
+            label="模型名称 (Model ID)"
+            value={form.model}
+            onChange={(e) => setForm({ ...form, model: e.target.value })}
+            placeholder="gpt-4o-mini / claude-3-haiku / ..."
+            required
+            fullWidth
+            InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
+            inputProps={{ style: { fontSize: '0.85rem', fontFamily: 'monospace' } }}
+          />
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <TextField
+              size="small"
+              type="number"
+              label="Temperature"
+              value={form.temperature}
+              onChange={(e) => setForm({ ...form, temperature: parseFloat(e.target.value) || 0 })}
+              inputProps={{ min: 0, max: 2, step: 0.1, style: { fontSize: '0.85rem' } }}
+              fullWidth
+              InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
+            />
+            <TextField
+              size="small"
+              type="number"
+              label="最大输出 Token"
+              value={form.max_output_tokens}
+              onChange={(e) => setForm({ ...form, max_output_tokens: parseInt(e.target.value, 10) || 1024 })}
+              inputProps={{ min: 1, step: 1, style: { fontSize: '0.85rem' } }}
+              fullWidth
+              InputLabelProps={{ sx: { fontSize: '0.8rem' } }}
+            />
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={form.enabled}
+                onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+                size="small"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' },
+                }}
+              />
+            }
+            label={<Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary }}>立即启用</Typography>}
+            sx={{ alignSelf: 'flex-start', m: 0 }}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button size="small" onClick={closeDialog} disabled={saving} sx={{ textTransform: 'none', fontSize: '0.8rem' }}>
+            取消
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={onSubmit}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={14} thickness={3} /> : null}
+            sx={{
+              backgroundColor: '#10b981',
+              '&:hover': { backgroundColor: '#059669' },
+              textTransform: 'none',
+              fontSize: '0.8rem',
+              minWidth: 80,
+            }}
+          >
+            {saving ? '保存中' : '保存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default StaffModelManager;

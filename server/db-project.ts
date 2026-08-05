@@ -42,6 +42,12 @@ export interface SkillChainNodeRow {
   timeout: number;
   retry_count: number;
   node_order: number;
+  /** 节点类型：skill | condition | parallel */
+  node_type: string;
+  /** 条件配置 JSON（nodeType='condition' 时使用） */
+  condition_config: string;
+  /** 并行子节点 order 列表 JSON（nodeType='parallel' 时使用） */
+  parallel_orders: string;
 }
 
 export interface SkillChainRow {

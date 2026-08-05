@@ -21,6 +21,7 @@ import type {
   RegisteredSkill,
   SkillContext,
 } from '../types/skill-runtime.js';
+import { getDb } from '../db-core.js';
 
 // ===================== 类型定义 =====================
 
@@ -404,13 +405,46 @@ export class SkillSecurityScanner {
   /** 批量扫描并发限制器 */
   private concurrencyLimiter = new ConcurrencyLimiter(MAX_SCAN_CONCURRENCY);
 
-  /** 审计记录（内存存储，后续可扩展到数据库） */
+  /** 审计记录（内存缓存，持久化到 SQLite） */
   private auditLogs: AuditRecord[] = [];
 
-  /** 最大审计记录数 */
+  /** 最大审计记录数（内存缓存上限） */
   private maxAuditLogs = 1000;
 
+  /** 审计表是否已初始化 */
+  private auditTableInitialized = false;
+
   constructor() {}
+
+  /** 惰性初始化审计表 */
+  private ensureAuditTable(): void {
+    if (this.auditTableInitialized) return;
+    try {
+      getDb().exec(`
+        CREATE TABLE IF NOT EXISTS skill_audit_records (
+          id TEXT PRIMARY KEY,
+          skill_id TEXT NOT NULL,
+          session_id TEXT DEFAULT '',
+          agent_id TEXT DEFAULT '',
+          user_id TEXT DEFAULT '',
+          params TEXT DEFAULT '{}',
+          result TEXT NOT NULL,
+          error_message TEXT DEFAULT '',
+          duration_ms INTEGER DEFAULT 0,
+          timestamp INTEGER NOT NULL,
+          risk_level TEXT DEFAULT 'none',
+          security_checks TEXT DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_skill_audit_skill_id ON skill_audit_records(skill_id);
+        CREATE INDEX IF NOT EXISTS idx_skill_audit_session_id ON skill_audit_records(session_id);
+        CREATE INDEX IF NOT EXISTS idx_skill_audit_timestamp ON skill_audit_records(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_skill_audit_result ON skill_audit_records(result);
+      `);
+      this.auditTableInitialized = true;
+    } catch (e) {
+      logger.warn('[SkillSecurityScanner] 审计表初始化失败（数据库可能不可用）:', e instanceof Error ? e.message : String(e));
+    }
+  }
 
   // ===================== 1. 静态扫描 =====================
 
@@ -699,10 +733,10 @@ export class SkillSecurityScanner {
     return 'none';
   }
 
-  // ===================== 3. 审计日志 =====================
+  // ===================== 3. 审计日志（持久化到 SQLite + 内存缓存） =====================
 
   /**
-   * 记录审计日志
+   * 记录审计日志（同时写入 SQLite 和内存缓存）
    *
    * @param record - 审计记录
    */
@@ -713,11 +747,35 @@ export class SkillSecurityScanner {
       timestamp: Date.now(),
     };
 
+    // 写入内存缓存
     this.auditLogs.unshift(auditRecord);
-
-    // 限制日志数量
     if (this.auditLogs.length > this.maxAuditLogs) {
       this.auditLogs.length = this.maxAuditLogs;
+    }
+
+    // 持久化到 SQLite
+    this.ensureAuditTable();
+    try {
+      getDb().prepare(`
+        INSERT INTO skill_audit_records
+          (id, skill_id, session_id, agent_id, user_id, params, result, error_message, duration_ms, timestamp, risk_level, security_checks)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        auditRecord.id,
+        auditRecord.skillId,
+        auditRecord.sessionId || '',
+        auditRecord.agentId || '',
+        auditRecord.userId || '',
+        JSON.stringify(auditRecord.params),
+        auditRecord.result,
+        auditRecord.errorMessage || '',
+        auditRecord.durationMs,
+        auditRecord.timestamp,
+        auditRecord.riskLevel,
+        auditRecord.securityChecks ? JSON.stringify(auditRecord.securityChecks) : '',
+      );
+    } catch (e) {
+      logger.warn('[SkillSecurityScanner] 审计记录持久化失败:', e instanceof Error ? e.message : String(e));
     }
 
     logger.debug(`[SkillSecurityScanner] Audit recorded: ${record.skillId} (${record.result})`);
@@ -726,10 +784,13 @@ export class SkillSecurityScanner {
   /**
    * 查询审计日志
    *
+   * 优先从内存缓存查询；若内存未命中且指定了时间范围/skillId，回退到 SQLite
+   *
    * @param options - 查询选项
    * @returns 审计记录列表
    */
   queryAudit(options: AuditQueryOptions = {}): AuditRecord[] {
+    // 先尝试内存缓存
     let results = [...this.auditLogs];
 
     if (options.skillId) {
@@ -752,11 +813,67 @@ export class SkillSecurityScanner {
       results = results.filter((r) => r.result === options.result);
     }
 
-    if (options.limit) {
-      results = results.slice(0, options.limit);
+    // 内存缓存中有足够数据时直接返回
+    if (results.length > 0 || !options.skillId) {
+      if (options.limit) {
+        results = results.slice(0, options.limit);
+      }
+      return results;
     }
 
-    return results;
+    // 内存缓存为空，回退到 SQLite 查询
+    this.ensureAuditTable();
+    try {
+      const conditions: string[] = [];
+      const params: unknown[] = [];
+
+      if (options.skillId) {
+        conditions.push('skill_id = ?');
+        params.push(options.skillId);
+      }
+      if (options.sessionId) {
+        conditions.push('session_id = ?');
+        params.push(options.sessionId);
+      }
+      if (options.startTime) {
+        conditions.push('timestamp >= ?');
+        params.push(options.startTime);
+      }
+      if (options.endTime) {
+        conditions.push('timestamp <= ?');
+        params.push(options.endTime);
+      }
+      if (options.result) {
+        conditions.push('result = ?');
+        params.push(options.result);
+      }
+
+      const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+      const limitClause = options.limit ? ` LIMIT ${Math.min(options.limit, 10000)}` : ' LIMIT 1000';
+
+      const rows = getDb().prepare(`
+        SELECT * FROM skill_audit_records${whereClause}
+        ORDER BY timestamp DESC${limitClause}
+      `).all(...params) as any[];
+
+      return rows.map((row) => ({
+        id: row.id,
+        skillId: row.skill_id,
+        sessionId: row.session_id,
+        agentId: row.agent_id || undefined,
+        userId: row.user_id || undefined,
+        params: JSON.parse(row.params || '{}'),
+        result: row.result,
+        errorMessage: row.error_message || undefined,
+        durationMs: row.duration_ms,
+        timestamp: row.timestamp,
+        riskLevel: row.risk_level,
+        securityChecks: row.security_checks ? JSON.parse(row.security_checks) : undefined,
+      }));
+    } catch (e) {
+      logger.warn('[SkillSecurityScanner] 审计记录查询失败:', e instanceof Error ? e.message : String(e));
+      return results;
+    }
   }
 
   /**

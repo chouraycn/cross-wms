@@ -56,6 +56,7 @@ import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, r
 import type { PluginInfo } from '../services/plugins/api';
 import WorkshopPanel from '../components/Skills/WorkshopPanel';
 import SkillHotReloadPanel from '../components/Skills/SkillHotReloadPanel';
+import skillBannerImg from '../assets/skill-banner.jpg';
 
 // ===================== 技能页面 =====================
 
@@ -64,7 +65,6 @@ const COLORS = {
   darkBg: '#1F2937',
   white: '#FFFFFF',
   purple: '#7C3AED',
-  gradientBg: 'linear-gradient(135deg, #EEF2FF 0%, #E0EBFF 100%)',
 };
 
 // 检测是否为原生 App / pywebview 桌面模式
@@ -813,6 +813,9 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   return (
     <Box className={fadeCls} sx={{
       px: 1,
+      // 内容宽度缩小 20%，居中显示
+      maxWidth: '80%',
+      mx: 'auto',
       // v1.7.87: DMG 下侧边栏收起时顶部避让红黄绿按钮，展开时保持正常间距
       pt: nativeApp && leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 4px)' : '8px',
     }}>
@@ -1041,11 +1044,21 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           px: 4,
           py: 3,
           borderRadius: '12px',
-          background: COLORS.gradientBg,
+          backgroundImage: `url(${skillBannerImg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           position: 'relative',
           overflow: 'hidden',
+          minHeight: 160,
         }}>
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 35%, rgba(255,255,255,0.3) 65%, transparent 85%)',
+            zIndex: 0,
+          }} />
+          <Box sx={{ position: 'relative', zIndex: 1, maxWidth: '42%' }}>
             <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#1E3A8A', mb: 0.5 }}>
               为你精选的职场技能
             </Typography>
@@ -1053,15 +1066,6 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               涵盖写作、效率、设计、数据分析等多种场景，一键安装。
             </Typography>
           </Box>
-          <Box sx={{
-            position: 'absolute',
-            right: -20,
-            top: -20,
-            width: 140,
-            height: 140,
-            background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
-            borderRadius: '50%',
-          }} />
         </Box>
       )}
 

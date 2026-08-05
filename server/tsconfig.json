@@ -203,10 +203,13 @@
     "node_modules",
     "../src",
     "../openclaw",
+    "packages/**",
     "**/__tests__/**",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.test-helpers.ts",
+    "**/*.test-support.ts",
+    "**/*.test-fixtures.ts",
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "tui/**"

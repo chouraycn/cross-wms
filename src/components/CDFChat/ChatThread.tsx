@@ -57,6 +57,7 @@ import type { SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
 import { type SystemEvent } from '../../types/openclaw-events.js';
 import { useAgentChat } from '../../hooks/useAgentChat.js';
 import { formatHelpText } from '../../hooks/useSlashCommands.js';
+import * as api from '../../services/api.js';
 import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from './ApprovalDialog.js';
 const ApprovalDialog = React.lazy(() => import('./ApprovalDialog.js').then(m => ({ default: m.ApprovalDialog })));
 import { SkillCreateDialog } from '../CrossWmsChat/SkillCreateDialog.js';
@@ -495,6 +496,66 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       }
       case 'skill': {
         showToast(t('技能选择器已打开'), 'info', 1500);
+        return true;
+      }
+      case 'chain': {
+        // /chain [name] — 若指定名称则按名称匹配并执行，否则提示用户从工具栏选择
+        const name = args.trim();
+        if (!name) {
+          showToast(t('请在工具栏点击“技能链”按钮选择，或使用 /chain <技能链名称>'), 'info', 3000);
+          return true;
+        }
+        showToast(t('正在执行技能链: {name}', { name }), 'info', 2000);
+        api.fetchSkillChains().then((chains) => {
+          const matched = chains.find(c => c.name === name || c.id === name);
+          if (!matched) {
+            showToast(t('未找到技能链: {name}', { name }), 'error', 2500);
+            return;
+          }
+          api.executeSkillChain(matched.id).then((result) => {
+            const execId = (result as { executionId?: string })?.executionId;
+            const execMsg: Message = {
+              id: `msg_${Date.now()}`,
+              role: 'assistant',
+              content: t('**已触发技能链：{name}**\n\n执行 ID: `{execId}`', { name: matched.name, execId: execId || '-' }),
+              model: currentSession?.model || '',
+              timestamp: new Date(),
+              thinking: '',
+              thinkingDone: false,
+            };
+            handleSessionUpdate({
+              ...currentSession,
+              messages: [...currentSession.messages, execMsg],
+            });
+          }).catch((err: Error) => {
+            showToast(t('执行技能链失败：{error}', { error: err.message }), 'error', 3000);
+          });
+        }).catch((err: Error) => {
+          showToast(t('加载技能链失败：{error}', { error: err.message }), 'error', 3000);
+        });
+        return true;
+      }
+      case 'chains': {
+        api.fetchSkillChains().then((chains) => {
+          const list = chains.length > 0
+            ? chains.map(c => `- **${c.name}**${c.description ? ` — ${c.description}` : ''}（节点数: ${c.nodes?.length ?? 0}）`).join('\n')
+            : t('暂无可用技能链');
+          const listMsg: Message = {
+            id: `msg_${Date.now()}`,
+            role: 'assistant',
+            content: `**${t('可用技能链：')}**\n\n${list}`,
+            model: currentSession?.model || '',
+            timestamp: new Date(),
+            thinking: '',
+            thinkingDone: false,
+          };
+          handleSessionUpdate({
+            ...currentSession,
+            messages: [...currentSession.messages, listMsg],
+          });
+        }).catch((err: Error) => {
+          showToast(t('加载技能链失败：{error}', { error: err.message }), 'error', 3000);
+        });
         return true;
       }
       case 'skill-create': {

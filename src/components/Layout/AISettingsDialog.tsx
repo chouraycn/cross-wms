@@ -194,35 +194,48 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
 
           <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
             {activeSubTab === 'model' && (
-              <>
-                {isLoading && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
-                    <CircularProgress size={20} />
-                    <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {/* ===== 主程序通用模型 ===== */}
+                <Box>
+                  <Box sx={{ mb: 2, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: gs.textPrimary }}>
+                        通用模型配置
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.72rem', color: gs.textSecondary, mt: 0.25 }}>
+                        AI 对话、技能、创作、自动化等通用模块使用的模型
+                      </Typography>
+                    </Box>
                   </Box>
-                )}
-                {error && (
-                  <Alert
-                    severity="error"
-                    sx={{ mb: 2, borderRadius: 1.5 }}
-                    action={
-                      <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
-                        重试
-                      </Button>
-                    }
-                  >
-                    加载模型配置失败：{error}
-                  </Alert>
-                )}
-                {!isLoading && !error && (
-                  <ModelManager
-                    models={modelList}
-                    defaultModelId={defaultModelId}
-                    variant="table"
-                    onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
-                  />
-                )}
-              </>
+                  {isLoading && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
+                      <CircularProgress size={20} />
+                      <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
+                    </Box>
+                  )}
+                  {error && (
+                    <Alert
+                      severity="error"
+                      sx={{ mb: 2, borderRadius: 1.5 }}
+                      action={
+                        <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
+                          重试
+                        </Button>
+                      }
+                    >
+                      加载模型配置失败：{error}
+                    </Alert>
+                  )}
+                  {!isLoading && !error && (
+                    <ModelManager
+                      models={modelList}
+                      defaultModelId={defaultModelId}
+                      variant="table"
+                      onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
+                    />
+                  )}
+                </Box>
+              </Box>
             )}
 
             {activeSubTab === 'chat' && (
@@ -262,6 +275,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
         maxWidth="md"
         fullWidth
         sx={{
+          zIndex: 1600,
           '& .MuiDialog-paper': {
             height: '80vh',
             borderRadius: 2,

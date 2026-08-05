@@ -37,6 +37,7 @@ export type GatewayClientStartable = {
  */
 export type GatewayClientStartReadinessOptions = EventLoopReadyOptions & {
   readyTimeoutMs?: number;
+  pollIntervalMs?: number;
 };
 
 /**
@@ -52,8 +53,8 @@ async function startGatewayClientWithReadinessWait(
   options: GatewayClientStartReadinessOptions = {},
 ): Promise<EventLoopReadyResult> {
   const result = await readinessProbe({
-    timeoutMs: options.readyTimeoutMs ?? options.timeoutMs,
-    pollIntervalMs: options.pollIntervalMs,
+    maxWaitMs: options.readyTimeoutMs ?? options.maxWaitMs,
+    intervalMs: options.pollIntervalMs ?? options.intervalMs,
   });
   await client.start();
   return result;

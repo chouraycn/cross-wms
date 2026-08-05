@@ -176,9 +176,9 @@ const navItems: NavItem[] = [
       { label: '定时任务', path: '/staffdeck', icon: <ScheduleOutlinedIcon />, desc: '调度', staffdeckRoute: '/enterprise/scheduled-tasks' },
       { label: '记忆', path: '/staffdeck', icon: <HistoryOutlinedIcon />, desc: '记忆', staffdeckRoute: '/enterprise/memories' },
       { label: '对话日志', path: '/staffdeck', icon: <ForumOutlinedIcon />, desc: '日志', staffdeckRoute: '/enterprise/feedback' },
-      { label: '渠道接入', path: '/staffdeck', icon: <PublicOutlinedIcon />, desc: '渠道', staffdeckRoute: '/enterprise/channels' },
+      { label: '渠道接入', path: '/staffdeck', icon: <PublicOutlinedIcon />, desc: '渠道', openSettingsDialog: { mainTab: 'comms', subTab: 'channels' } },
       { label: '账号管理', path: '/staffdeck', icon: <AccountCircleOutlinedIcon />, desc: '账号', staffdeckRoute: '/enterprise/accounts' },
-      { label: '模型配置', path: '/staffdeck', icon: <TuneOutlinedIcon />, desc: '模型', openSettingsDialog: { mainTab: 'basic', subTab: 'model' } },
+      { label: '模型配置', path: '/staffdeck', icon: <TuneOutlinedIcon />, desc: '模型', staffdeckRoute: '/enterprise/models' },
     ],
   },
   {

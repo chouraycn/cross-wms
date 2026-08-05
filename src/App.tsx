@@ -444,6 +444,8 @@ function buildTheme(appearance: AppearanceConfig) {
         styleOverrides: {
           root: {
             backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
           },
         },
       },
@@ -917,7 +919,9 @@ const MainLayout: React.FC = () => {
             <Box
               sx={{
                 px: 3, // 与 logo 对齐，增加左右 padding
-                pt: 0.375, // 顶部间距：约3px
+                // 侧边栏收起时，非聊天页顶部避让 GlobalActionsBar 按钮组（toggle + 新建对话）
+                // 按钮位于 top:21px、高度约 26px，内容区需约 40px 额外顶部间距
+                pt: sidebarCollapsed && location.pathname !== '/chat' ? '40px' : 0.375,
                 pb: 3,
                 '& .full-width-page': {
                   mx: -3, // 抵消 px: 3，让全宽组件保持全宽

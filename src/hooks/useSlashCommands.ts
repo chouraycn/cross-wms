@@ -183,6 +183,25 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     },
   },
   {
+    name: 'chain',
+    description: '打开技能链选择器并执行',
+    usage: '/chain [技能链名称]',
+    category: 'utility',
+    descriptionLocalizations: {
+      en: 'Open the skill chain selector and execute',
+      zh: '打开技能链选择器并执行',
+    },
+  },
+  {
+    name: 'chains',
+    description: '列出所有可用技能链',
+    category: 'utility',
+    descriptionLocalizations: {
+      en: 'List all available skill chains',
+      zh: '列出所有可用技能链',
+    },
+  },
+  {
     name: 'context',
     description: '查看上下文使用情况',
     category: 'utility',

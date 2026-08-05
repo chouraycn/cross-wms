@@ -94,7 +94,7 @@ export default function StaffDeckPortal() {
     >
       {iframePreloaded && (
         <Suspense fallback={null}>
-          <StaffDeckEmbedPage warehouseMode={warehouseMode} />
+          <StaffDeckEmbedPage warehouseMode={warehouseMode} sidebarCollapsed={sidebarCollapsed} />
         </Suspense>
       )}
     </Box>

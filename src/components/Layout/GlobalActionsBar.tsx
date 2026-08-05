@@ -68,76 +68,82 @@ const GlobalActionsBar = React.memo<GlobalActionsBarProps>(function GlobalAction
         left: `${leftPosition}px`,
         right: 'auto',
         zIndex: 1500,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
         WebkitAppRegion: 'no-drag',
       } as React.CSSProperties}
     >
-      {/* 侧边栏展开/收起按钮 */}
-      <IconButton
-        onClick={onToggle}
-        size="small"
-        sx={{
-          color: gs.textPrimary,
-          borderRadius: '6.48px',
-          p: 0.45,
-          width: BUTTON_SIZE,
-          height: BUTTON_SIZE,
-          marginTop: '-3px',
-          backgroundColor: 'transparent',
-          border: 'none',
-          '&:hover': {
-            backgroundColor: gs.bgHover,
-          },
-          '&:focus': { outline: 'none' },
+      {/* 按钮组：侧边栏展开/收起按钮 + 新建对话/搜索按钮 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: BUTTON_GAP,
         }}
       >
-        {collapsed ? <ExpandIcon /> : <CollapseIcon />}
-      </IconButton>
+        {/* 侧边栏展开/收起按钮 */}
+        <IconButton
+          onClick={onToggle}
+          size="small"
+          sx={{
+            color: gs.textPrimary,
+            borderRadius: '6.48px',
+            p: 0.45,
+            width: BUTTON_SIZE,
+            height: BUTTON_SIZE,
+            marginTop: '-3px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            '&:hover': {
+              backgroundColor: gs.bgHover,
+            },
+            '&:focus': { outline: 'none' },
+          }}
+        >
+          {collapsed ? <ExpandIcon /> : <CollapseIcon />}
+        </IconButton>
 
-      {/* v1.7.87: 展开侧边栏时显示搜索按钮，收起时显示新建对话按钮 */}
-      {collapsed ? (
-        <IconButton
-          onClick={handleNewChat}
-          size="small"
-          sx={{
-            color: gs.textPrimary,
-            borderRadius: '6.48px',
-            p: 0.45,
-            width: BUTTON_SIZE,
-            height: BUTTON_SIZE,
-            backgroundColor: 'transparent',
-            border: 'none',
-            '&:hover': {
-              backgroundColor: gs.bgHover,
-            },
-            '&:focus': { outline: 'none' },
-          }}
-        >
-          <ChatBubbleOutlineIcon sx={{ fontSize: '14.58px' }} />
-        </IconButton>
-      ) : (
-        <IconButton
-          onClick={handleSearch}
-          size="small"
-          sx={{
-            color: gs.textPrimary,
-            borderRadius: '6.48px',
-            p: 0.45,
-            width: BUTTON_SIZE,
-            height: BUTTON_SIZE,
-            backgroundColor: 'transparent',
-            border: 'none',
-            '&:hover': {
-              backgroundColor: gs.bgHover,
-            },
-            '&:focus': { outline: 'none' },
-          }}
-        >
-          <SearchIcon sx={{ fontSize: '18px' }} />
-        </IconButton>
-      )}
+        {/* v1.7.87: 展开侧边栏时显示搜索按钮，收起时显示新建对话按钮 */}
+        {collapsed ? (
+          <IconButton
+            onClick={handleNewChat}
+            size="small"
+            sx={{
+              color: gs.textPrimary,
+              borderRadius: '6.48px',
+              p: 0.45,
+              width: BUTTON_SIZE,
+              height: BUTTON_SIZE,
+              backgroundColor: 'transparent',
+              border: 'none',
+              '&:hover': {
+                backgroundColor: gs.bgHover,
+              },
+              '&:focus': { outline: 'none' },
+            }}
+          >
+            <ChatBubbleOutlineIcon sx={{ fontSize: '14.58px' }} />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={handleSearch}
+            size="small"
+            sx={{
+              color: gs.textPrimary,
+              borderRadius: '6.48px',
+              p: 0.45,
+              width: BUTTON_SIZE,
+              height: BUTTON_SIZE,
+              backgroundColor: 'transparent',
+              border: 'none',
+              '&:hover': {
+                backgroundColor: gs.bgHover,
+              },
+              '&:focus': { outline: 'none' },
+            }}
+          >
+            <SearchIcon sx={{ fontSize: '18px' }} />
+          </IconButton>
+        )}
+      </div>
     </div>
   );
 });

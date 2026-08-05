@@ -71,7 +71,7 @@ const ROUTE_TRACKER_JS = `
 })();
 `;
 
-export default function StaffDeckEmbedPage({ warehouseMode = false }: { warehouseMode?: boolean }) {
+export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarCollapsed = false }: { warehouseMode?: boolean; sidebarCollapsed?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // 向 iframe 推送当前(或默认的)会话
@@ -141,13 +141,20 @@ export default function StaffDeckEmbedPage({ warehouseMode = false }: { warehous
   // 仓库员工场景：直接进入工作区聊天；默认场景：进入员工平台入口
   const iframeSrc = warehouseMode ? '/staffdeck-app/#/workspace/chat' : '/staffdeck-app/';
 
+  // 侧边栏收起时，顶部避让 GlobalActionsBar 按钮组（toggle + 新建对话）
+  // 按钮位于 top:21px、高度约 26px，需约 50px 的顶部偏移
+  const topOffset = sidebarCollapsed ? '50px' : 0;
+
   return (
     <Box
       sx={{
         position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
+        top: topOffset,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: 'auto',
+        height: 'auto',
         bgcolor: '#f7f5ef',
         overflow: 'hidden',
       }}

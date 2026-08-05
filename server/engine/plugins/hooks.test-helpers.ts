@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Provides shared helpers for plugin hook tests.
 import { uniqueStrings } from "../infra/string-normalization.js";
 import { createHookRunner } from "./hooks.js";

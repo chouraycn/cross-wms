@@ -116,7 +116,7 @@ export async function gatewayRpcHandler(req: Request, res: Response): Promise<vo
  */
 async function resolveModelCallConfig(
   modelId: string,
-): Promise<{ config: ModelCallConfig; keyIndex: number } | { error: { message: string; type: string; code?: string } }> {
+): Promise<{ config: ModelCallConfig; keyIndex: number } | { error: { message: string; type: string; code?: string; param?: string } }> {
   let modelsFile;
   try {
     modelsFile = await loadModelsConfig();

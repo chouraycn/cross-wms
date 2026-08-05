@@ -82,11 +82,16 @@ final class SplashScreenController {
         reactReady = false
         transitionedToWebView = false
 
+        // 初始进度
+        animatedSplashView?.setProgress(5)
+
         // 设置 WebView 加载回调
         webViewManager.onFirstLoadFinished = { [weak self] in
             guard let self else { return }
             self.webViewLoaded = true
             splashLogger.info("WebView loaded, checking transition conditions")
+            self.animatedSplashView?.setProgress(75)
+            self.animatedSplashView?.updateStatus("界面已加载，正在初始化...")
             self.tryTransitionToWebView()
         }
 
@@ -95,6 +100,8 @@ final class SplashScreenController {
             guard let self else { return }
             self.reactReady = true
             splashLogger.info("React ready signal received, checking transition conditions")
+            self.animatedSplashView?.setProgress(95)
+            self.animatedSplashView?.updateStatus("即将就绪...")
             self.tryTransitionToWebView()
         }
 
@@ -151,6 +158,9 @@ final class SplashScreenController {
         transitionedToWebView = true
         forceSwitchTask?.cancel()
 
+        // 进度条填满 100%，与界面切换同步
+        animatedSplashView?.setProgress(100)
+
         let containerView = WindowContainerView(webView: webViewManager.getWebView())
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = .clear
@@ -179,6 +189,7 @@ final class SplashScreenController {
 
         splashLogger.info("Starting server (port=\(config.serverPort))...")
         animatedSplashView?.updateStatus("正在启动服务器...")
+        animatedSplashView?.setProgress(10)
         await serverManager.start()
         splashLogger.info("ServerManager.start() returned")
 
@@ -196,11 +207,12 @@ final class SplashScreenController {
                 isReady = true
                 splashLogger.info("Server is ready")
                 animatedSplashView?.updateStatus("服务器已就绪，正在加载界面...")
-                animatedSplashView?.stopProgress()
+                animatedSplashView?.setProgress(40)
                 serverReady = true
                 // v1.7.183: 服务器就绪后再加载 WebView 主页面，确保第一次请求即命中可用端口，
                 // 避开 handleLoadError 中 3s/6s 的重试延时造成的卡顿感。
                 if !webViewLoaded {
+                    animatedSplashView?.setProgress(50)
                     webViewManager?.loadMainAppDirect()
                 }
                 tryTransitionToWebView()
@@ -213,6 +225,9 @@ final class SplashScreenController {
                 errorMessage = "服务器启动超时"
                 animatedSplashView?.showError("服务器启动超时")
             case .starting:
+                // 健康检查轮询期间进度缓慢增长（10→35），体现"正在检测服务状态"
+                let pollingProgress = min(35, 10 + Double(checkCount) * 3)
+                animatedSplashView?.setProgress(pollingProgress)
                 animatedSplashView?.updateStatus("正在启动服务器... (#\(checkCount))")
             case .stopped:
                 animatedSplashView?.updateStatus("正在连接...")

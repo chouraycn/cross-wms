@@ -270,7 +270,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
       {/* Bottom: Settings button */}
       <Box
-        sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
+        sx={{ px: collapsed ? 0.5 : 1, pb: '22px', flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         <ListItemButton

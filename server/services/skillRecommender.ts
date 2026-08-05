@@ -13,6 +13,7 @@ import path from 'path';
 import { FileStorage } from '../storage/FileStorage.js';
 import { scanWorkbuddySkills } from '../routes/skills.js';
 import { logger } from '../logger.js';
+import { loadUsageEvents as loadUsageEventsUnified, invalidateUsageStatsCache } from './usageStatsService.js';
 
 // ===================== 类型定义 =====================
 
@@ -29,6 +30,11 @@ export interface RecommendationResult {
   recommendations: SkillRecommendation[];
   generatedAt: string;
 }
+
+// ===================== 推荐结果缓存 =====================
+
+const RECOMMENDATION_CACHE_TTL = 5 * 60 * 1000; // 5 分钟
+const recommendationCache = new Map<string, { result: RecommendationResult; at: number }>();
 
 // ===================== 工具函数 =====================
 
@@ -77,43 +83,14 @@ interface SkillUsageEvent {
   userId?: string;
 }
 
+/**
+ * 加载使用事件 — 委托给统一服务 usageStatsService
+ *
+ * 原先此处独立扫描会话文件，现统一到 usageStatsService.loadUsageEvents，
+ * 共享 60s 事件缓存，避免重复扫描
+ */
 function loadUsageEvents(days: number = 30): SkillUsageEvent[] {
-  const events: SkillUsageEvent[] = [];
-  const sinceMs = Date.now() - days * 86400000;
-
-  try {
-    const sessionIds = FileStorage.listSessionFiles();
-    for (const sid of sessionIds) {
-      try {
-        const lines = FileStorage.readSessionLines(sid);
-        const first = lines[0] as any;
-        const messages: any[] = Array.isArray(first?.messages) ? first.messages : [];
-        for (let i = 1; i < lines.length; i++) {
-          const l = lines[i] as any;
-          if (l && l.message) messages.push(l.message);
-        }
-
-        for (const msg of messages) {
-          if (!msg.skillId) continue;
-          const ts = msg.timestamp;
-          const tsMs = ts ? new Date(ts).getTime() : 0;
-          if (tsMs < sinceMs) continue;
-          events.push({
-            skillId: msg.skillId,
-            timestamp: ts,
-            sessionId: sid,
-            userId: msg.userId || msg.sessionId || sid,
-          });
-        }
-      } catch {
-        // ignore per-session errors
-      }
-    }
-  } catch (e) {
-    logger.error('[Recommender] loadUsageEvents failed:', e);
-  }
-
-  return events;
+  return loadUsageEventsUnified(days);
 }
 
 // ===================== 推荐算法 =====================
@@ -357,12 +334,27 @@ function collaborativeRecommendations(
 
 // ===================== 主入口 =====================
 
+/** 清除推荐缓存（技能执行或安装时调用） */
+export function invalidateRecommendationCache(): void {
+  recommendationCache.clear();
+  invalidateUsageStatsCache();
+  logger.debug('[Recommender] Recommendation cache cleared');
+}
+
 export function generateRecommendations(
   targetSkillId?: string,
   options?: { topN?: number; days?: number }
 ): RecommendationResult {
   const topN = options?.topN ?? 10;
   const days = options?.days ?? 30;
+
+  // 缓存命中检查
+  const cacheKey = `${targetSkillId ?? '_all'}:${topN}:${days}`;
+  const cached = recommendationCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < RECOMMENDATION_CACHE_TTL) {
+    logger.debug(`[Recommender] Cache hit for key: ${cacheKey}`);
+    return cached.result;
+  }
 
   const events = loadUsageEvents(days);
   const scanned = scanWorkbuddySkills();
@@ -458,9 +450,15 @@ export function generateRecommendations(
   // 最终排序并截断
   recommendations.sort((a, b) => b.score - a.score);
 
-  return {
+  const result: RecommendationResult = {
     targetSkillId,
     recommendations: recommendations.slice(0, topN),
     generatedAt: new Date().toISOString(),
   };
+
+  // 写入缓存
+  recommendationCache.set(cacheKey, { result, at: Date.now() });
+  logger.debug(`[Recommender] Cache miss, computed and cached for key: ${cacheKey}`);
+
+  return result;
 }

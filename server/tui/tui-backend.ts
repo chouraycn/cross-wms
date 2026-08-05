@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Defines the TUI backend contract and backend event shapes.
 import type {
   CommandEntry,

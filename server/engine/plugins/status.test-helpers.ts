@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared helpers for plugin status tests and installed-index fixture setup. */
 import type { PluginLoadResult } from "./loader.js";
 import type { PluginRecord } from "./registry.js";

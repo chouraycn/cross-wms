@@ -435,3 +435,21 @@ export async function saveAuditReport(report: SecretsAuditReport): Promise<void>
     historySize: history.length,
   });
 }
+
+/**
+ * 根据审计报告解析退出码（降级实现）。
+ *
+ * @param report - 审计报告
+ * @param checkMode - 是否为检查模式（仅检查不修复）
+ * @returns 退出码：0=成功，1=有错误，2=有警告
+ */
+export function resolveSecretsAuditExitCode(
+  report: SecretsAuditReport,
+  _checkMode?: boolean,
+): number {
+  const errors = report.summary.bySeverity?.error ?? 0;
+  const warns = report.summary.bySeverity?.warn ?? 0;
+  if (errors > 0) return 1;
+  if (warns > 0) return 2;
+  return 0;
+}

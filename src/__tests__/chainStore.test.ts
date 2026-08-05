@@ -37,6 +37,7 @@ const mockChain: SkillChain = {
       timeout: 30000,
       retryCount: 1,
       order: 1,
+      nodeType: 'skill',
     },
   ],
   failStrategy: 'stop',

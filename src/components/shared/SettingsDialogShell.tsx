@@ -101,6 +101,14 @@ const SettingsDialogShell: React.FC<SettingsDialogShellProps> = ({
       open={open}
       onClose={onClose}
       maxWidth={false}
+      sx={{
+        zIndex: 1500,
+        '& .MuiBackdrop-root': {
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+        },
+      }}
       PaperProps={{
         sx: {
           borderRadius: 2.5,

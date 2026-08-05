@@ -538,56 +538,15 @@ export function moveSessionToFolder(sessionId: string, folderId: string | null):
   }
 }
 
-// ===================== Skill Usage Statistics DAO (JSONL-based) =====================
+// ===================== Skill Usage Statistics DAO (delegates to unified service) =====================
 
-/** 获取单个技能的使用统计 */
-export function getSkillUsageStats(skillId: string): { totalUses: number; lastUsedAt: string | null } {
-  const sessionIds = FileStorage.listSessionFiles();
-  let count = 0;
-  let lastUsed: string | null = null;
-
-  for (const id of sessionIds) {
-    const { messages } = parseSessionFile(id);
-    for (const msg of messages) {
-      if ((msg as any).skillId === skillId) {
-        count++;
-        if (!lastUsed || msg.timestamp > lastUsed) {
-          lastUsed = msg.timestamp;
-        }
-      }
-    }
-  }
-
-  return { totalUses: count, lastUsedAt: lastUsed };
-}
-
-/** 批量获取多个技能的使用统计 */
-export function getBatchSkillUsageStats(skillIds: string[]): Map<string, { totalUses: number; lastUsedAt: string | null }> {
-  const statsMap = new Map<string, { totalUses: number; lastUsedAt: string | null }>();
-
-  // 初始化所有技能 ID 为 0
-  for (const id of skillIds) {
-    statsMap.set(id, { totalUses: 0, lastUsedAt: null });
-  }
-
-  if (skillIds.length === 0) return statsMap;
-
-  const skillSet = new Set(skillIds);
-  const sessionIds = FileStorage.listSessionFiles();
-
-  for (const sid of sessionIds) {
-    const { messages } = parseSessionFile(sid);
-    for (const msg of messages) {
-      const sId = (msg as any).skillId;
-      if (sId && skillSet.has(sId)) {
-        const current = statsMap.get(sId)!;
-        current.totalUses++;
-        if (!current.lastUsedAt || msg.timestamp > current.lastUsedAt) {
-          current.lastUsedAt = msg.timestamp;
-        }
-      }
-    }
-  }
-
-  return statsMap;
-}
+/**
+ * 技能使用统计 — 委托给统一服务 usageStatsService
+ *
+ * 原先此处和 skillRecommender.ts 各自独立扫描会话文件，存在：
+ * 1. 性能问题：每次 API 调用都全量扫描
+ * 2. 数据源不一致：两处扫描逻辑略有差异
+ *
+ * 现统一委托给 usageStatsService，共享 60s 缓存
+ */
+export { getSkillUsageStats, getBatchSkillUsageStats } from '../services/usageStatsService.js';
