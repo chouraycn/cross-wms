@@ -107,7 +107,7 @@ describe('Channels & Talk API E2E', () => {
       // 1. 查询支持的通道类型
       const types = await request(app).get('/api/channels/types');
       expect(types.status).toBe(200);
-      expect(types.body.types.length).toBeGreaterThan(0);
+      expect(types.body.data.types.length).toBeGreaterThan(0);
 
       // 2. 创建通道
       const created = await request(app)
@@ -124,12 +124,12 @@ describe('Channels & Talk API E2E', () => {
       // 3. 查询列表
       const list = await request(app).get('/api/channels');
       expect(list.status).toBe(200);
-      expect(list.body.channels.some((c: any) => c.name === 'e2e-test-channel')).toBe(true);
+      expect(list.body.data.channels.some((c: any) => c.name === 'e2e-test-channel')).toBe(true);
 
       // 4. 查询详情
       const detail = await request(app).get('/api/channels/e2e-test-channel');
       expect(detail.status).toBe(200);
-      expect(detail.body.name).toBe('e2e-test-channel');
+      expect(detail.body.data.name).toBe('e2e-test-channel');
 
       // 5. 禁用通道
       const disabled = await request(app).post('/api/channels/e2e-test-channel/disable');
@@ -144,7 +144,7 @@ describe('Channels & Talk API E2E', () => {
         .post('/api/channels/e2e-test-channel/send')
         .send({ content: 'E2E test message', contentType: 'text' });
       expect(sent.status).toBe(200);
-      expect(sent.body.ok).toBe(true);
+      expect(sent.body.data.ok).toBe(true);
 
       // 8. 删除通道
       const deleted = await request(app).delete('/api/channels/e2e-test-channel');
@@ -152,7 +152,7 @@ describe('Channels & Talk API E2E', () => {
 
       // 9. 验证已删除
       const listAfter = await request(app).get('/api/channels');
-      expect(listAfter.body.channels.some((c: any) => c.name === 'e2e-test-channel')).toBe(false);
+      expect(listAfter.body.data.channels.some((c: any) => c.name === 'e2e-test-channel')).toBe(false);
     });
 
     it('应能创建多种类型的通道', async () => {
@@ -172,7 +172,7 @@ describe('Channels & Talk API E2E', () => {
       }
 
       const list = await request(app).get('/api/channels');
-      expect(list.body.channels.length).toBe(5);
+      expect(list.body.data.channels.length).toBe(5);
     });
 
     it('重复创建同名通道应返回 409', async () => {

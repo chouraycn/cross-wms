@@ -166,10 +166,10 @@ describe('Failover API E2E — 路由契约', () => {
         '/failover/decisions',
       );
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('decisions');
-      expect(res.body).toHaveProperty('count');
-      expect(Array.isArray(res.body.decisions)).toBe(true);
-      expect(typeof res.body.count).toBe('number');
+      expect(res.body.data).toHaveProperty('decisions');
+      expect(res.body.data).toHaveProperty('count');
+      expect(Array.isArray(res.body.data.decisions)).toBe(true);
+      expect(typeof res.body.data.count).toBe('number');
     });
 
     it('触发故障转移后返回决策日志', async () => {
@@ -228,7 +228,7 @@ describe('Failover API E2E — 路由契约', () => {
       );
       expect(res.status).toBe(200);
       expect(res.body.data.success).toBe(true);
-      expect(res.body.modelId).toBe('model-a');
+      expect(res.body.data.modelId).toBe('model-a');
 
       // model-a 重置，model-b 保留
       expect(manager.getModelHealth('model-a')?.consecutiveFailures).toBe(0);
