@@ -1012,7 +1012,7 @@ router.post('/openclaw/skills/install', async (req: Request, res: Response) => {
     refreshSkillIndex();
     return ok(res, result);
   } else {
-    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
+    return fail(res, BizCode.BAD_REQUEST, result.error ?? '操作失败', 400);
   }
 });
 
@@ -1024,7 +1024,7 @@ router.delete('/openclaw/skills/uninstall/:id', (req: Request, res: Response) =>
     refreshSkillIndex();
     return ok(res, result);
   } else {
-    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
+    return fail(res, BizCode.BAD_REQUEST, result.error ?? '操作失败', 400);
   }
 });
 
@@ -1040,7 +1040,7 @@ router.post('/openclaw/skills/update/:id', async (req: Request, res: Response) =
     refreshSkillIndex();
     return ok(res, result);
   } else {
-    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
+    return fail(res, BizCode.BAD_REQUEST, result.error ?? '操作失败', 400);
   }
 });
 
@@ -1177,7 +1177,7 @@ router.get('/skills/dependency-graph', (_req: Request, res: Response) => {
       const node: SkillDepNode = {
         id: s.dirName,
         name: s.name,
-        status: (dbStatusMap.get(s.dirName) as any) || 'unknown',
+        status: (dbStatusMap.get(s.dirName) as unknown) || 'unknown',
       };
       nodes.push(node);
       nodeMap.set(s.dirName, node);
@@ -1422,11 +1422,11 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
       try {
         const lines = FileStorage.readSessionLines(sid);
         if (lines.length === 0) return [];
-        const first = lines[0] as any;
+        const first = lines[0] as unknown;
         const initial: Array<Record<string, unknown>> = Array.isArray(first?.messages) ? first.messages : [];
         const rest: Array<Record<string, unknown>> = [];
         for (let i = 1; i < lines.length; i++) {
-          const l = lines[i] as any;
+          const l = lines[i] as unknown;
           if (l && l.message) rest.push(l.message);
         }
         return [...initial, ...rest];
@@ -1451,7 +1451,7 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
     for (const sid of sessionIds) {
       const messages = parseSession(sid);
       for (const msg of messages) {
-        const m = msg as any;
+        const m = msg as unknown;
         if (!m.skillId) continue;
         const ts = m.timestamp;
         const tsMs = ts ? new Date(ts).getTime() : 0;
@@ -1504,7 +1504,7 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
       const messages = parseSession(sid);
       const ids: string[] = [];
       for (const msg of messages) {
-        const m = msg as any;
+        const m = msg as unknown;
         if (m.skillId) {
           const ts = m.timestamp;
           const tsMs = ts ? new Date(ts).getTime() : 0;

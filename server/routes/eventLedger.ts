@@ -17,9 +17,9 @@ const router = Router();
  * - 含敏感字段（api_key / token / secret / password 等）的 payload 将被脱敏。
  * 该函数为「死」模块 eventPolicy 接入实时事件查询路径，不改变既有查询语义。
  */
-function applyEventPolicy(events: any[]): any[] {
+function applyEventPolicy(events: unknown[]): unknown[] {
   const policy = getEventPolicy();
-  const out: any[] = [];
+  const out: unknown[] = [];
   for (const ev of events) {
     const type: string = ev?.type ?? ev?.eventType ?? '';
     const payload: Record<string, unknown> = ev?.payload ?? ev?.data ?? {};
@@ -43,7 +43,7 @@ router.get('/sessions/:sessionId/events', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
     const reverse = req.query.reverse === 'true';
     const eventTypes = req.query.types
-      ? (req.query.types as string).split(',') as any[]
+      ? (req.query.types as string).split(',') as unknown[]
       : undefined;
 
     const events = await getEventLedger().getSessionEvents(sessionId, {
@@ -133,10 +133,10 @@ router.get('/sessions', async (req, res) => {
     const sortBy = (req.query.sortBy as string) || 'updated_at';
 
     const sessions = await getEventLedger().listSessions({
-      status: status as any,
+      status: status as unknown,
       limit,
       offset,
-      sortBy: sortBy as any,
+      sortBy: sortBy as unknown,
     });
 
     res.json({
@@ -264,7 +264,7 @@ router.post('/sessions/:sessionId/events', async (req, res) => {
       ? policy.redactPayload((payload as Record<string, unknown>) || {})
       : (payload as Record<string, unknown>) || {};
 
-    const event = await getEventLedger().recordEvent(sessionId, type as any, safePayload, {
+    const event = await getEventLedger().recordEvent(sessionId, type as unknown, safePayload, {
       runId,
       actor,
     });

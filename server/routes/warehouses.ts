@@ -9,6 +9,7 @@ import {
   updateWarehouse as dbUpdate,
   deleteWarehouse as dbDelete,
 } from '../dao/warehouse.js';
+import { ok, created, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -16,26 +17,25 @@ const router = Router();
 router.get('/', (req: Request, res: Response) => {
   const warehouseType = req.query.type as string | undefined;
   const data = dbGetAll(warehouseType);
-  res.json({ data });
+  return ok(res, data);
 });
 
 // GET /api/warehouses/:id
 router.get('/:id', (req: Request, res: Response) => {
   const data = dbGetById(req.params.id);
   if (!data) {
-    res.status(404).json({ error: 'Warehouse not found' });
-    return;
+    return notFound(res, 'Warehouse not found');
   }
-  res.json({ data });
+  return ok(res, data);
 });
 
 // POST /api/warehouses
 router.post('/', (req: Request, res: Response) => {
   try {
     const data = dbCreate(req.body);
-    res.status(201).json({ data });
+    return created(res, data);
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 
@@ -44,23 +44,21 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const data = dbUpdate(req.params.id, req.body);
     if (!data) {
-      res.status(404).json({ error: 'Warehouse not found' });
-      return;
+      return notFound(res, 'Warehouse not found');
     }
-    res.json({ data });
+    return ok(res, data);
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 
 // DELETE /api/warehouses/:id
 router.delete('/:id', (req: Request, res: Response) => {
-  const ok = dbDelete(req.params.id);
-  if (!ok) {
-    res.status(404).json({ error: 'Warehouse not found' });
-    return;
+  const deleted = dbDelete(req.params.id);
+  if (!deleted) {
+    return notFound(res, 'Warehouse not found');
   }
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 export default router;

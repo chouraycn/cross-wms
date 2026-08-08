@@ -38,7 +38,7 @@ function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   }
 
   // zod v4 使用 _zod.def 存储类型定义
-  const def = (schema as any)._zod?.def ?? (schema as any)._def;
+  const def = (schema as unknown)._zod?.def ?? (schema as unknown)._def;
   const type = def?.type;
 
   switch (type) {
@@ -97,9 +97,9 @@ function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
       return { type: 'integer' };
     default:
       // 兜底：若 schema 自带 toJSONSchema（zod v4 原生方法），优先使用
-      if (typeof (schema as any).toJSONSchema === 'function') {
+      if (typeof (schema as unknown).toJSONSchema === 'function') {
         try {
-          return (schema as any).toJSONSchema() as Record<string, unknown>;
+          return (schema as unknown).toJSONSchema() as Record<string, unknown>;
         } catch {
           // fallthrough
         }
@@ -108,7 +108,7 @@ function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   }
 }
 
-function convertStringSchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertStringSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const json: Record<string, unknown> = { type: 'string' };
   const checks = def.checks ?? [];
   for (const check of checks) {
@@ -132,7 +132,7 @@ function convertStringSchema(_schema: z.ZodTypeAny, def: any): Record<string, un
   return json;
 }
 
-function convertNumberSchema(def: any): Record<string, unknown> {
+function convertNumberSchema(def: unknown): Record<string, unknown> {
   // zod v4: z.int() 的 def 为 { type: 'number', check: 'number_format', format: 'safeint' }
   if (def.check === 'number_format' && def.format === 'safeint') {
     return { type: 'integer' };
@@ -147,7 +147,7 @@ function convertNumberSchema(def: any): Record<string, unknown> {
   return { type: 'number' };
 }
 
-function convertArraySchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertArraySchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const element = def.element ?? (def.innerType as z.ZodTypeAny);
   const json: Record<string, unknown> = {
     type: 'array',
@@ -168,8 +168,8 @@ function convertArraySchema(_schema: z.ZodTypeAny, def: any): Record<string, unk
   return json;
 }
 
-function convertObjectSchema(schema: z.ZodTypeAny, def: any): Record<string, unknown> {
-  const shape = def.shape ?? (schema as any).shape;
+function convertObjectSchema(schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+  const shape = def.shape ?? (schema as unknown).shape;
   if (!shape || typeof shape !== 'object') {
     return { type: 'object' };
   }
@@ -195,7 +195,7 @@ function convertObjectSchema(schema: z.ZodTypeAny, def: any): Record<string, unk
   // catchall / additionalProperties
   const catchall = def.catchall;
   if (catchall) {
-    const catchType = (catchall as any)._zod?.def?.type ?? (catchall as any)._def?.type;
+    const catchType = (catchall as unknown)._zod?.def?.type ?? (catchall as unknown)._def?.type;
     if (catchType === 'never') {
       json.additionalProperties = false;
     } else if (catchType !== 'undefined') {
@@ -206,7 +206,7 @@ function convertObjectSchema(schema: z.ZodTypeAny, def: any): Record<string, unk
   return json;
 }
 
-function convertEnumSchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertEnumSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const entries = def.entries;
   if (entries && typeof entries === 'object') {
     const values = Object.values(entries);
@@ -217,13 +217,13 @@ function convertEnumSchema(_schema: z.ZodTypeAny, def: any): Record<string, unkn
   return { type: 'string', enum: options };
 }
 
-function convertUnionSchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertUnionSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const options = def.options ?? [];
   const anyOf = (options as z.ZodTypeAny[]).map((opt: z.ZodTypeAny) => convertSchema(opt));
   return { anyOf };
 }
 
-function convertRecordSchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertRecordSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const valueSchema = def.valueType;
   return {
     type: 'object',
@@ -231,7 +231,7 @@ function convertRecordSchema(_schema: z.ZodTypeAny, def: any): Record<string, un
   };
 }
 
-function convertTupleSchema(_schema: z.ZodTypeAny, def: any): Record<string, unknown> {
+function convertTupleSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
   const items = def.items ?? [];
   return {
     type: 'array',
@@ -242,7 +242,7 @@ function convertTupleSchema(_schema: z.ZodTypeAny, def: any): Record<string, unk
 }
 
 function isOptionalField(field: z.ZodTypeAny): boolean {
-  const def = (field as any)._zod?.def ?? (field as any)._def;
+  const def = (field as unknown)._zod?.def ?? (field as unknown)._def;
   const type = def?.type;
   if (type === 'optional' || type === 'exactOptional' || type === 'default' || type === 'catch') {
     return true;
@@ -272,7 +272,7 @@ function isZodSchema(value: unknown): value is z.ZodTypeAny {
   return (
     typeof value === 'object' &&
     value !== null &&
-    ('_zod' in value || '_def' in value || typeof (value as any).safeParse === 'function')
+    ('_zod' in value || '_def' in value || typeof (value as unknown).safeParse === 'function')
   );
 }
 

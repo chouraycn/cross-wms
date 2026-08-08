@@ -48,14 +48,14 @@ function setPaired(pairedByNodeId: Record<string, unknown>): void {
   memoryStore.set(pairedPath, JSON.parse(JSON.stringify(pairedByNodeId)));
 }
 
-function getPending(): Record<string, any> {
+function getPending(): Record<string, unknown> {
   const value = memoryStore.get(pendingPath);
-  return (value as Record<string, any>) ?? {};
+  return (value as Record<string, unknown>) ?? {};
 }
 
-function getPaired(): Record<string, any> {
+function getPaired(): Record<string, unknown> {
   const value = memoryStore.get(pairedPath);
-  return (value as Record<string, any>) ?? {};
+  return (value as Record<string, unknown>) ?? {};
 }
 
 describe("node-pairing 模块单元测试", () => {

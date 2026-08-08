@@ -405,7 +405,7 @@ describe('SecurityFilter - 配置管理', () => {
   it('updateConfig 更新启用检查项', () => {
     const filter = new SecurityFilter();
     filter.updateConfig({
-      enabledChecks: new Set(['pii'] as any),
+      enabledChecks: new Set(['pii'] as unknown),
     });
     const config = filter.getConfig();
     expect(config.enabledChecks.has('pii')).toBe(true);

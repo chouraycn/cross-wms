@@ -47,7 +47,7 @@ interface TableRowData {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';

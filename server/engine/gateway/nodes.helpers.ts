@@ -1,6 +1,6 @@
 // 移植自 openclaw/src/gateway/server-methods/nodes.helpers.ts
 
-export const safeParseJson: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const safeParseJson: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
 
 export function respondInvalidParams(...args: unknown[]): unknown {
   return undefined;

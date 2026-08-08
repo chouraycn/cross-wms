@@ -183,32 +183,32 @@ describe('ReActExecutor', () => {
       const executor = new ReActExecutor();
       expect(executor).toBeInstanceOf(ReActExecutor);
       // 验证内部 _observer 和 _planner 未初始化（懒加载）
-      expect((executor as any)._observer).toBeUndefined();
-      expect((executor as any)._planner).toBeUndefined();
-      expect((executor as any)._budgetConfig).toBeUndefined();
+      expect((executor as unknown)._observer).toBeUndefined();
+      expect((executor as unknown)._planner).toBeUndefined();
+      expect((executor as unknown)._budgetConfig).toBeUndefined();
     });
 
     it('should accept observer in constructor', () => {
       const observer = new Observer();
       const executor = new ReActExecutor(observer);
-      expect((executor as any)._observer).toBe(observer);
-      expect((executor as any)._planner).toBeUndefined();
+      expect((executor as unknown)._observer).toBe(observer);
+      expect((executor as unknown)._planner).toBeUndefined();
     });
 
     it('should accept observer and planner in constructor', () => {
       const observer = new Observer();
       const planner = new Planner();
       const executor = new ReActExecutor(observer, planner);
-      expect((executor as any)._observer).toBe(observer);
-      expect((executor as any)._planner).toBe(planner);
+      expect((executor as unknown)._observer).toBe(observer);
+      expect((executor as unknown)._planner).toBe(planner);
     });
 
     it('should accept budgetConfig in constructor', () => {
       const budgetConfig = { maxTurns: 5, maxTokens: 10000 };
       const executor = new ReActExecutor(undefined, undefined, budgetConfig);
-      expect((executor as any)._budgetConfig).toEqual(budgetConfig);
+      expect((executor as unknown)._budgetConfig).toEqual(budgetConfig);
       // 验证 _budgetManager 保持未初始化（懒加载）
-      expect((executor as any)._budgetManager).toBeUndefined();
+      expect((executor as unknown)._budgetManager).toBeUndefined();
     });
 
     it('should accept all three constructor parameters', () => {
@@ -216,14 +216,14 @@ describe('ReActExecutor', () => {
       const planner = new Planner();
       const budgetConfig = { maxTurns: 3 };
       const executor = new ReActExecutor(observer, planner, budgetConfig);
-      expect((executor as any)._observer).toBe(observer);
-      expect((executor as any)._planner).toBe(planner);
-      expect((executor as any)._budgetConfig).toEqual(budgetConfig);
+      expect((executor as unknown)._observer).toBe(observer);
+      expect((executor as unknown)._planner).toBe(planner);
+      expect((executor as unknown)._budgetConfig).toEqual(budgetConfig);
     });
 
     it('should initialize _state via createInitialState in constructor', () => {
       const executor = new ReActExecutor();
-      const state = (executor as any)._state;
+      const state = (executor as unknown)._state;
       expect(state).toBeDefined();
       expect(state.phase).toBe('reasoning');
       expect(state.turn).toBe(0);
@@ -240,12 +240,12 @@ describe('ReActExecutor', () => {
     it('should lazily initialize state on first access via getter', () => {
       const executor = new ReActExecutor(undefined, undefined);
       // 清除构造函数中创建的 _state
-      (executor as any)._state = undefined;
-      const state = (executor as any).state;
+      (executor as unknown)._state = undefined;
+      const state = (executor as unknown).state;
       expect(state).toBeDefined();
       expect(state.phase).toBe('reasoning');
       // 验证缓存
-      expect((executor as any)._state).toBe(state);
+      expect((executor as unknown)._state).toBe(state);
     });
 
     it('should allow setting state via setter', () => {
@@ -260,15 +260,15 @@ describe('ReActExecutor', () => {
         lastConfidenceScore: 8,
         earlyTermination: false,
       };
-      (executor as any).state = newState;
-      expect((executor as any)._state).toEqual(newState);
+      (executor as unknown).state = newState;
+      expect((executor as unknown)._state).toEqual(newState);
       // 再通过 getter 读出
-      expect((executor as any).state).toEqual(newState);
+      expect((executor as unknown).state).toEqual(newState);
     });
 
     it('should correctly manage phase transitions', () => {
       const executor = new ReActExecutor();
-      const state = (executor as any).state;
+      const state = (executor as unknown).state;
 
       // 初始 = reasoning
       expect(state.phase).toBe('reasoning');
@@ -291,7 +291,7 @@ describe('ReActExecutor', () => {
       const executor = new ReActExecutor();
 
       // 预设旧状态
-      (executor as any)._state = {
+      (executor as unknown)._state = {
         phase: 'done',
         turn: 10,
         shouldTerminate: true,
@@ -311,7 +311,7 @@ describe('ReActExecutor', () => {
           estimatedSteps: 1,
           intents: ['query'],
         }),
-      })) as any);
+      })) as unknown);
       vi.mocked(BudgetManager).mockImplementation((() => ({
         incrementTurn: vi.fn(),
         checkBudget: vi.fn().mockReturnValue({ exceeded: false }),
@@ -321,7 +321,7 @@ describe('ReActExecutor', () => {
         getMaxTokens: vi.fn().mockReturnValue(50000),
         getCurrentTurn: vi.fn().mockReturnValue(1),
         getConsumedTokens: vi.fn().mockReturnValue(0),
-      })) as any);
+      })) as unknown);
       vi.mocked(WorkingMemory).mockImplementation((() => ({
         getContextMessages: vi.fn().mockReturnValue([]),
         addTurn: vi.fn(),
@@ -332,29 +332,29 @@ describe('ReActExecutor', () => {
         removeCompressedTurns: vi.fn(),
         getTurnCount: vi.fn().mockReturnValue(0),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
       vi.mocked(LoopDetector).mockImplementation((() => ({
         detectLoop: vi.fn().mockReturnValue({ isLoop: false }),
         getEscalationStrategy: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
       vi.mocked(OutputValidator).mockImplementation((() => ({
         validate: vi.fn().mockReturnValue({ isValid: true, wasRepaired: false }),
         canRetry: vi.fn().mockReturnValue(false),
         recordRetry: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
       vi.mocked(CircuitBreaker).mockImplementation((() => ({
         recordSuccess: vi.fn(),
         recordFailure: vi.fn().mockReturnValue('closed'),
         getAlternativeSuggestion: vi.fn().mockReturnValue(null),
         getRecord: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn(),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
       vi.mocked(SemanticCompressor).mockImplementation((() => ({
         compress: vi.fn().mockResolvedValue({
           compressed: 'summary',
@@ -362,7 +362,7 @@ describe('ReActExecutor', () => {
           strategy: 'semantic',
           preservedEntities: [],
         }),
-      })) as any);
+      })) as unknown);
       vi.mocked(Observer).mockImplementation((() => ({
         observe: vi.fn().mockReturnValue({
           toolCall: { name: 'test', arguments: {} },
@@ -376,7 +376,7 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
       vi.mocked(needsCompression).mockReturnValue(false);
       vi.mocked(ObservationCompressor).mockImplementation((() => ({
         compress: vi.fn().mockReturnValue({
@@ -385,14 +385,14 @@ describe('ReActExecutor', () => {
           wasCompressed: false,
           original: '',
         }),
-      })) as any);
+      })) as unknown);
 
       const result = await executor.execute(createMinimalOptions());
 
       // 状态应重置为新的执行过程
       expect(result.totalTurns).toBe(1);
       expect(result.earlyTermination).toBe(false);
-      const finalState = (executor as any)._state;
+      const finalState = (executor as unknown)._state;
       expect(finalState.phase).toBe('done');
     });
   });
@@ -417,9 +417,9 @@ describe('ReActExecutor', () => {
         { role: 'user', content: 'first message' },
         { role: 'assistant', content: 'ok' },
         { role: 'user', content: 'last message' },
-      ] as any;
+      ] as unknown;
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBe('last message');
     });
 
@@ -429,9 +429,9 @@ describe('ReActExecutor', () => {
         { role: 'system', content: 'be helpful' },
         { role: 'assistant', content: 'hello' },
         { role: 'tool', content: 'result', tool_call_id: '1' },
-      ] as any;
+      ] as unknown;
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBeNull();
     });
 
@@ -443,13 +443,13 @@ describe('ReActExecutor', () => {
       ];
       const messages = [{ role: 'user', content: contentArray }];
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBe(JSON.stringify(contentArray));
     });
 
     it('should return null when there are no messages', () => {
       const executor = new ReActExecutor();
-      const result = (executor as any).extractUserMessage([]);
+      const result = (executor as unknown).extractUserMessage([]);
       expect(result).toBeNull();
     });
 
@@ -460,7 +460,7 @@ describe('ReActExecutor', () => {
         { role: 'assistant', content: 'world' },
       ];
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBeNull();
     });
 
@@ -468,7 +468,7 @@ describe('ReActExecutor', () => {
       const executor = new ReActExecutor();
       const messages = [{ role: 'user', content: 'single message' }];
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBe('single message');
     });
 
@@ -479,9 +479,9 @@ describe('ReActExecutor', () => {
         { role: 'user', content: 'target user message' },
         { role: 'assistant', content: 'response' },
         { role: 'tool', content: 'data', tool_call_id: 'tc_1' },
-      ] as any;
+      ] as unknown;
 
-      const result = (executor as any).extractUserMessage(messages);
+      const result = (executor as unknown).extractUserMessage(messages);
       expect(result).toBe('target user message');
     });
   });
@@ -498,7 +498,7 @@ describe('ReActExecutor', () => {
           estimatedSteps: 1,
           intents: ['query'],
         }),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: BudgetManager
       vi.mocked(BudgetManager).mockImplementation((() => ({
@@ -510,7 +510,7 @@ describe('ReActExecutor', () => {
         getMaxTokens: vi.fn().mockReturnValue(50000),
         getCurrentTurn: vi.fn().mockReturnValue(1),
         getConsumedTokens: vi.fn().mockReturnValue(0),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: WorkingMemory
       vi.mocked(WorkingMemory).mockImplementation((() => ({
@@ -523,14 +523,14 @@ describe('ReActExecutor', () => {
         removeCompressedTurns: vi.fn(),
         getTurnCount: vi.fn().mockReturnValue(0),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: LoopDetector
       vi.mocked(LoopDetector).mockImplementation((() => ({
         detectLoop: vi.fn().mockReturnValue({ isLoop: false }),
         getEscalationStrategy: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: OutputValidator
       vi.mocked(OutputValidator).mockImplementation((() => ({
@@ -538,7 +538,7 @@ describe('ReActExecutor', () => {
         canRetry: vi.fn().mockReturnValue(false),
         recordRetry: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: CircuitBreaker
       vi.mocked(CircuitBreaker).mockImplementation((() => ({
@@ -547,13 +547,13 @@ describe('ReActExecutor', () => {
         getAlternativeSuggestion: vi.fn().mockReturnValue(null),
         getRecord: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: ActionPhaseExecutor
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn().mockResolvedValue(new Map()),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: ObservationCompressor
       vi.mocked(ObservationCompressor).mockImplementation((() => ({
@@ -563,7 +563,7 @@ describe('ReActExecutor', () => {
           wasCompressed: true,
           original: '',
         }),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: SemanticCompressor
       vi.mocked(SemanticCompressor).mockImplementation((() => ({
@@ -573,7 +573,7 @@ describe('ReActExecutor', () => {
           strategy: 'semantic',
           preservedEntities: [],
         }),
-      })) as any);
+      })) as unknown);
 
       // 通用 mock: Observer （懒加载 fallback）
       vi.mocked(Observer).mockImplementation((() => ({
@@ -589,7 +589,7 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
     });
 
     it('should complete simple task without tool calls directly', async () => {
@@ -620,7 +620,7 @@ describe('ReActExecutor', () => {
           new Map([[makeToolCall('web_search', '{"q":"test"}', 'call_1'), 'search result']])
         ),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       const executor = new ReActExecutor();
       const result = await executor.execute(createMinimalOptions());
@@ -645,7 +645,7 @@ describe('ReActExecutor', () => {
           new Map([[makeToolCall('db_query', '{"sql":"SELECT 1"}', 'call_1'), '1']])
         ),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       const executor = new ReActExecutor();
       const result = await executor.execute(createMinimalOptions());
@@ -675,14 +675,14 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn().mockResolvedValue(
           new Map([[makeToolCall('web_search', '{"q":"handoff"}', 'call_1'), 'error result']])
         ),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       const executor = new ReActExecutor();
       const result = await executor.execute(createMinimalOptions());
@@ -713,14 +713,14 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn().mockResolvedValue(
           new Map([[makeToolCall('some_tool', '{}', 'call_1'), 'error result']])
         ),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       const executor = new ReActExecutor();
 
@@ -744,7 +744,7 @@ describe('ReActExecutor', () => {
         getMaxTokens: vi.fn().mockReturnValue(50000),
         getCurrentTurn: vi.fn().mockReturnValue(10),
         getConsumedTokens: vi.fn().mockReturnValue(1000),
-      })) as any);
+      })) as unknown);
 
       // 设置 Observer 返回 error → low confidence → handoff → 进主循环触发 budget check
       vi.mocked(Observer).mockImplementation((() => ({
@@ -760,7 +760,7 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(callAIModelStream).mockResolvedValue(makeAIResponse({
         content: '',
@@ -772,14 +772,14 @@ describe('ReActExecutor', () => {
           new Map([[makeToolCall('some_tool', '{}', 'call_1'), 'error result']])
         ),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       const executor = new ReActExecutor();
       const result = await executor.execute(createMinimalOptions());
 
       expect(result).toBeDefined();
       expect(result.earlyTermination).toBe(true);
-      expect((executor as any)._state.terminateReason).toBe('budget_exceeded');
+      expect((executor as unknown)._state.terminateReason).toBe('budget_exceeded');
     });
   });
 
@@ -794,7 +794,7 @@ describe('ReActExecutor', () => {
           estimatedSteps: 1,
           intents: ['query'],
         }),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(BudgetManager).mockImplementation((() => ({
         incrementTurn: vi.fn(),
@@ -805,7 +805,7 @@ describe('ReActExecutor', () => {
         getMaxTokens: vi.fn().mockReturnValue(50000),
         getCurrentTurn: vi.fn().mockReturnValue(1),
         getConsumedTokens: vi.fn().mockReturnValue(0),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(WorkingMemory).mockImplementation((() => ({
         getContextMessages: vi.fn().mockReturnValue([]),
@@ -817,20 +817,20 @@ describe('ReActExecutor', () => {
         removeCompressedTurns: vi.fn(),
         getTurnCount: vi.fn().mockReturnValue(0),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(LoopDetector).mockImplementation((() => ({
         detectLoop: vi.fn().mockReturnValue({ isLoop: false }),
         getEscalationStrategy: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(OutputValidator).mockImplementation((() => ({
         validate: vi.fn().mockReturnValue({ isValid: true, wasRepaired: false }),
         canRetry: vi.fn().mockReturnValue(false),
         recordRetry: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(CircuitBreaker).mockImplementation((() => ({
         recordSuccess: vi.fn(),
@@ -838,17 +838,17 @@ describe('ReActExecutor', () => {
         getAlternativeSuggestion: vi.fn().mockReturnValue(null),
         getRecord: vi.fn(),
         reset: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn().mockResolvedValue(new Map()),
         executeToolWithPermission: vi.fn(),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(Observer).mockImplementation((() => ({
         observe: vi.fn(),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
     });
 
     it('should tolerate Observer errors in observationPhase', () => {
@@ -857,14 +857,14 @@ describe('ReActExecutor', () => {
       vi.mocked(Observer).mockImplementation((() => ({
         observe: vi.fn().mockImplementation(() => { throw new Error('observer crashed'); }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       const actionResults = new Map<ToolCall, string>([
         [makeToolCall('api_call', '{}', 'call_1'), 'some result data'],
         [makeToolCall('db_query', '{"sql":"SELECT 1"}', 'call_2'), '1'],
       ]);
 
-      const observations = (executor as any).observationPhase(actionResults);
+      const observations = (executor as unknown).observationPhase(actionResults);
 
       // Observer 异常容忍：返回 success 级别的观察结果
       expect(observations).toHaveLength(2);
@@ -876,7 +876,7 @@ describe('ReActExecutor', () => {
 
     it('should handle observationPhase with empty actionResults', () => {
       const executor = new ReActExecutor();
-      const observations = (executor as any).observationPhase(new Map());
+      const observations = (executor as unknown).observationPhase(new Map());
       expect(observations).toEqual([]);
     });
 
@@ -896,13 +896,13 @@ describe('ReActExecutor', () => {
           },
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       // 无效 JSON 参数 → 会被 try-catch 捕获，不抛异常
       const toolCall = makeToolCall('foo', '{malformed json', 'call_1');
       const actionResults = new Map<ToolCall, string>([[toolCall, 'result']]);
 
-      const observations = (executor as any).observationPhase(actionResults);
+      const observations = (executor as unknown).observationPhase(actionResults);
       expect(observations).toHaveLength(1);
       expect(observations[0].assessment.level).toBe('success');
     });
@@ -921,7 +921,7 @@ describe('ReActExecutor', () => {
           estimatedSteps: 6,
           intents: ['complex_query'],
         }),
-      })) as any);
+      })) as unknown);
 
       // Planner 抛出异常
       const mockPlanner = {
@@ -930,7 +930,7 @@ describe('ReActExecutor', () => {
         adjustPlan: vi.fn(),
       };
 
-      const executor = new ReActExecutor(undefined, mockPlanner as any);
+      const executor = new ReActExecutor(undefined, mockPlanner as unknown);
       const result = await executor.execute(createMinimalOptions());
 
       // 不应抛出，规划失败被静默捕获
@@ -945,7 +945,7 @@ describe('ReActExecutor', () => {
 
       const executor = new ReActExecutor();
       const result = await executor.execute(
-        createMinimalOptions({ messages: [] as any })
+        createMinimalOptions({ messages: [] as unknown })
       );
 
       expect(result).toBeDefined();
@@ -965,7 +965,7 @@ describe('ReActExecutor', () => {
           wasCompressed: true,
           compressionRatio: 0.1,
         }),
-      })) as any);
+      })) as unknown);
 
       vi.mocked(Observer).mockImplementation((() => ({
         observe: vi.fn().mockReturnValue({
@@ -981,12 +981,12 @@ describe('ReActExecutor', () => {
           metadata: {},
         }),
         shouldRetry: vi.fn().mockReturnValue(false),
-      })) as any);
+      })) as unknown);
 
       const toolCall = makeToolCall('big_data', '{}', 'call_1');
       const actionResults = new Map<ToolCall, string>([[toolCall, longResult]]);
 
-      const observations = (executor as any).observationPhase(actionResults);
+      const observations = (executor as unknown).observationPhase(actionResults);
       expect(observations).toHaveLength(1);
       expect(observations[0].result.length).toBeLessThan(longResult.length);
       expect(observations[0].metadata).toBeDefined();

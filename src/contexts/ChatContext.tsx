@@ -227,7 +227,7 @@ async function fetchSessionsFromAPI(retries = CHAT_INIT_MAX_RETRIES): Promise<Se
         return data.sessions.map((s: Record<string, unknown>) => ({
           ...s,
           messages: [], // 列表不加载消息，按需懒加载
-          messageCount: (s as any).messageCount, // 后端返回值（undefined 表示未提供）
+          messageCount: (s as unknown).messageCount, // 后端返回值（undefined 表示未提供）
           createdAt: s.createdAt as string,       // 保持 string 类型，不做 Date 转换
           updatedAt: s.updatedAt as string,       // 保持 string 类型，不做 Date 转换
         })) as Session[];
@@ -254,7 +254,7 @@ async function fetchArchivedSessionsPaged(offset: number, limit: number = 10): P
     const sessions = (data.sessions || []).map((s: Record<string, unknown>) => ({
       ...s,
       messages: [],
-      messageCount: (s as any).messageCount,
+      messageCount: (s as unknown).messageCount,
       createdAt: s.createdAt as string,
       updatedAt: s.updatedAt as string,
     })) as Session[];

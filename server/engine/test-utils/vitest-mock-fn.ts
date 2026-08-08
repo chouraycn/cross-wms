@@ -3,5 +3,5 @@
 // Vitest's Mock generic is any-based; using unknown/never breaks assignability
 // for logger and harness callbacks with concrete parameter lists.
 // oxlint-disable-next-line typescript/no-explicit-any
-export type MockFn<T extends (...args: any[]) => any = (...args: any[]) => any> =
+export type MockFn<T extends (...args: any[]) => unknown = (...args: any[]) => unknown> =
   import("vitest").Mock<T>;

@@ -13,7 +13,6 @@ import type { OpenClawConfig } from "./_runtime-stubs.js";
 // ============================================================================
 
 /** Session 作用域（降级为宽松字符串字面量联合） */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type SessionScope = "global" | "agent" | "channel" | "group" | (string & {});
 
 /** 迁移日志器 */

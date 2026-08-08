@@ -13,7 +13,7 @@ interface TransitTimeChartProps {
   timeRange?: TimeRange;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   // 从 Context 获取数据
   const { warehouses, transitOrders, loading, error } = useWarehouseCapability({ includeDashboard: true });

@@ -573,7 +573,7 @@ describe("SessionManager.open", () => {
         name: "bigint_to_json",
         createValue: (rewriteTranscript) => {
           const originalBigIntToJson = Object.getOwnPropertyDescriptor(BigInt.prototype, "toJSON");
-          // eslint-disable-next-line no-extend-native -- JSON.stringify invokes BigInt.prototype.toJSON when present.
+           
           Object.defineProperty(BigInt.prototype, "toJSON", {
             configurable: true,
             value() {
@@ -585,7 +585,7 @@ describe("SessionManager.open", () => {
             value: 1n,
             cleanup: () => {
               if (originalBigIntToJson) {
-                // eslint-disable-next-line no-extend-native -- Restore the serializer installed for this case.
+                 
                 Object.defineProperty(BigInt.prototype, "toJSON", originalBigIntToJson);
               } else {
                 delete (BigInt.prototype as { toJSON?: unknown }).toJSON;

@@ -78,7 +78,7 @@ export class AllowlistManager {
 
     // Load DM allowlist from config
     // Config format expected: { channels: { [channelId]: { allowlist: { dm: [...], group: [...] } } } }
-    const channelConfig = (config.channels as Record<string, any> | undefined)?.[channelId];
+    const channelConfig = (config.channels as Record<string, unknown> | undefined)?.[channelId];
     if (channelConfig?.allowlist) {
       const allowlistConfig = channelConfig.allowlist;
 

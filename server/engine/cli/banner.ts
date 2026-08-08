@@ -33,7 +33,7 @@ const theme = {
 // ===== 内联 visibleWidth / decorativeEmoji / decorativePrefix stubs =====
 function visibleWidth(value: string): number {
   // 降级：仅按字符长度计算，不处理 ANSI/宽字符。
-  // eslint-disable-next-line no-control-regex -- 移除 ANSI 转义序列以估算可见宽度。
+   
   return value.replace(/\u001b\[[0-9;]*m/gu, "").length;
 }
 

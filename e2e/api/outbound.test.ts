@@ -46,7 +46,7 @@ describe('Outbound Records API E2E 测试', () => {
         .set('Content-Type', 'application/json');
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('code', 400);
+      expect(response.body).toHaveProperty('code', 40001);
       expect(String(response.body.message)).toContain('不存在');
     });
   });

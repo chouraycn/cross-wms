@@ -1,12 +1,12 @@
 declare module 'jsdom' {
   export class JSDOM {
-    constructor(html: string, options?: any);
+    constructor(html: string, options?: unknown);
     window: {
       document: Document;
-      [key: string]: any;
+      [key: string]: unknown;
     };
-    static fromURL(url: string, options?: any): Promise<JSDOM>;
-    static fromFile(path: string, options?: any): Promise<JSDOM>;
+    static fromURL(url: string, options?: unknown): Promise<JSDOM>;
+    static fromFile(path: string, options?: unknown): Promise<JSDOM>;
   }
 }
 

@@ -21,7 +21,7 @@ export class HttpBackend {
     try {
       yield { type: 'error', error: 'Connection failed', message: `Cannot connect to ${this.baseUrl}` };
       yield { type: 'assistant_end' };
-    } catch (e: any) {
+    } catch (e: unknown) {
       yield { type: 'error', error: e?.message || 'Unknown error' };
       yield { type: 'assistant_end' };
     }

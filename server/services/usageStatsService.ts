@@ -72,10 +72,10 @@ export function loadAllUsageEvents(): SkillUsageEvent[] {
     for (const sid of sessionIds) {
       try {
         const lines = FileStorage.readSessionLines(sid);
-        const first = lines[0] as any;
-        const messages: any[] = Array.isArray(first?.messages) ? first.messages : [];
+        const first = lines[0] as unknown;
+        const messages: unknown[] = Array.isArray(first?.messages) ? first.messages : [];
         for (let i = 1; i < lines.length; i++) {
-          const l = lines[i] as any;
+          const l = lines[i] as unknown;
           if (l && l.message) messages.push(l.message);
         }
 

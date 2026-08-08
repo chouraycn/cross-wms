@@ -613,7 +613,7 @@ ${stepsText}`;
         }
         
         // v9.2: 如果 autoCompressor 判断需要压缩，先获取压缩计划
-        let compressionPlan: any = null;
+        let compressionPlan: unknown = null;
         if (this.autoCompressor.shouldCompress()) {
           try {
             compressionPlan = this.autoCompressor.getCompressionPlan(currentMessages);

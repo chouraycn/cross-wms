@@ -55,7 +55,7 @@ describe('AgentSandbox', () => {
       const sandbox = new AgentSandbox({ agentId: 'test' });
       await expect(
         sandbox.runInSandbox(() => {
-          // eslint-disable-next-line no-eval
+           
           eval('1+1');
           return 0;
         }),

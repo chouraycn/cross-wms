@@ -64,7 +64,7 @@ describe('auth-profiles-registry', () => {
 
     it('应拒绝无效的 type', () => {
       expect(() =>
-        registerAuthProfile(makeProfileInput({ id: 'bad', type: 'invalid' as any })),
+        registerAuthProfile(makeProfileInput({ id: 'bad', type: 'invalid' as unknown })),
       ).toThrow();
     });
 
@@ -75,7 +75,7 @@ describe('auth-profiles-registry', () => {
           provider: 'openai',
           type: 'api_key',
           credentials: { key: 'sk-test' },
-        } as any),
+        } as unknown),
       ).toThrow();
     });
   });
@@ -96,7 +96,7 @@ describe('auth-profiles-registry', () => {
     it('应拒绝无效的更新值', () => {
       registerAuthProfile(makeProfileInput({ id: 'u2' }));
       expect(() =>
-        updateAuthProfile('u2', { type: 'invalid' as any }),
+        updateAuthProfile('u2', { type: 'invalid' as unknown }),
       ).toThrow();
     });
   });

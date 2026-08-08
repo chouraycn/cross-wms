@@ -61,7 +61,7 @@ function handleSystemMessageFallback(
       const newContent = [...firstUser.content];
       const firstTextIdx = newContent.findIndex(c => c.type === 'text');
       if (firstTextIdx !== -1) {
-        newContent[firstTextIdx] = { ...newContent[firstTextIdx], text: systemContent + '\n\n' + (newContent[firstTextIdx] as any).text };
+        newContent[firstTextIdx] = { ...newContent[firstTextIdx], text: systemContent + '\n\n' + (newContent[firstTextIdx] as unknown).text };
       } else {
         newContent.unshift({ type: 'text', text: systemContent });
       }

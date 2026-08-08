@@ -531,17 +531,17 @@ function extractFirstTextBlock(payload: unknown): string | undefined {
   return typeof firstText === "string" ? firstText : undefined;
 }
 
-function getMessage(payload: unknown): Record<string, any> | undefined {
+function getMessage(payload: unknown): Record<string, unknown> | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
   const message = (payload as { message?: unknown }).message;
-  return message && typeof message === "object" ? (message as Record<string, any>) : undefined;
+  return message && typeof message === "object" ? (message as Record<string, unknown>) : undefined;
 }
 
-function getMessageContent(payload: unknown): Array<Record<string, any>> {
+function getMessageContent(payload: unknown): Array<Record<string, unknown>> {
   const content = getMessage(payload)?.content;
-  return Array.isArray(content) ? (content as Array<Record<string, any>>) : [];
+  return Array.isArray(content) ? (content as Array<Record<string, unknown>>) : [];
 }
 
 function mockCallAt(
@@ -555,7 +555,7 @@ function mockCallAt(
 
 function lastRespondCall(respond: ReturnType<typeof vi.fn>) {
   return mockCallAt(respond, -1) as
-    | [boolean, Record<string, any> | undefined, Record<string, any> | undefined]
+    | [boolean, Record<string, unknown> | undefined, Record<string, unknown> | undefined]
     | undefined;
 }
 
@@ -573,25 +573,25 @@ function responseErrorMessage(error: unknown): string {
   return String(error);
 }
 
-function lastBroadcastPayload(context: ChatContext): Record<string, any> | undefined {
+function lastBroadcastPayload(context: ChatContext): Record<string, unknown> | undefined {
   const chatCall = mockCallAt(context.broadcast as unknown as ReturnType<typeof vi.fn>, -1);
   expect(chatCall?.[0]).toBe("chat");
-  return chatCall?.[1] as Record<string, any> | undefined;
+  return chatCall?.[1] as Record<string, unknown> | undefined;
 }
 
 function lastNodeSendCall(context: ChatContext) {
   return mockCallAt(context.nodeSendToSession as unknown as ReturnType<typeof vi.fn>, -1) as
-    | [string, string, Record<string, any>]
+    | [string, string, Record<string, unknown>]
     | undefined;
 }
 
-function findAssistantUpdateWithBlock(predicate: (block: Record<string, any>) => boolean) {
+function findAssistantUpdateWithBlock(predicate: (block: Record<string, unknown>) => boolean) {
   return mockState.emittedTranscriptUpdates.find((update) => {
     const message = update.message as { role?: unknown; content?: unknown } | undefined;
     return (
       message?.role === "assistant" &&
       Array.isArray(message.content) &&
-      (message.content as Array<Record<string, any>>).some(predicate)
+      (message.content as Array<Record<string, unknown>>).some(predicate)
     );
   });
 }
@@ -605,9 +605,9 @@ function findUserUpdate() {
 
 function userUpdateMessage(
   update: { message?: unknown } | undefined,
-): Record<string, any> | undefined {
+): Record<string, unknown> | undefined {
   return update?.message && typeof update.message === "object"
-    ? (update.message as Record<string, any>)
+    ? (update.message as Record<string, unknown>)
     : undefined;
 }
 
@@ -749,7 +749,7 @@ async function runNonStreamingChatSend(params: {
   waitForCompletion?: boolean;
   waitForDedupe?: boolean;
   waitFor?: NonStreamingChatSendWaitFor;
-}): Promise<Record<string, any> | undefined> {
+}): Promise<Record<string, unknown> | undefined> {
   const sendParams: {
     sessionKey: string;
     message: string;
@@ -802,7 +802,7 @@ async function runNonStreamingChatSend(params: {
 
   const chatCall = mockCallAt(params.context.broadcast as unknown as ReturnType<typeof vi.fn>, 0);
   expect(chatCall?.[0]).toBe("chat");
-  return chatCall?.[1] as Record<string, any> | undefined;
+  return chatCall?.[1] as Record<string, unknown> | undefined;
 }
 
 describe("chat directive tag stripping for non-streaming final payloads", () => {
@@ -1252,9 +1252,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     await waitForAssertion(() => {
       const assistantUpdate = findAssistantUpdateWithBlock((block) => block.type === "attachment");
-      const message = assistantUpdate?.message as Record<string, any> | undefined;
+      const message = assistantUpdate?.message as Record<string, unknown> | undefined;
       const content = Array.isArray(message?.content)
-        ? (message.content as Array<Record<string, any>>)
+        ? (message.content as Array<Record<string, unknown>>)
         : [];
       expect(message?.role).toBe("assistant");
       expect(message?.idempotencyKey).toBe("idem-agent-audio:assistant-media");
@@ -1315,9 +1315,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         (update.message as { role?: unknown }).role === "assistant",
     );
     expect(assistantUpdates).toHaveLength(1);
-    const message = assistantUpdates[0]?.message as Record<string, any> | undefined;
+    const message = assistantUpdates[0]?.message as Record<string, unknown> | undefined;
     const content = Array.isArray(message?.content)
-      ? (message.content as Array<Record<string, any>>)
+      ? (message.content as Array<Record<string, unknown>>)
       : [];
     expect(message?.role).toBe("assistant");
     expect(message?.idempotencyKey).toBe("idem-agent-tts:assistant-media");
@@ -4827,7 +4827,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         ) ??
           false),
     );
-    const transcriptMessage = transcriptUpdate?.message as Record<string, any> | undefined;
+    const transcriptMessage = transcriptUpdate?.message as Record<string, unknown> | undefined;
     expect(transcriptMessage?.role).toBe("assistant");
     expect(transcriptMessage?.content?.[0]).toEqual({
       type: "text",
@@ -4865,7 +4865,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         update.message !== null &&
         (update.message as { role?: unknown }).role === "assistant",
     );
-    const transcriptMessage = transcriptUpdate?.message as Record<string, any> | undefined;
+    const transcriptMessage = transcriptUpdate?.message as Record<string, unknown> | undefined;
     expect(transcriptMessage?.role).toBe("assistant");
     expect(transcriptMessage?.content?.[0]).toEqual({
       type: "text",

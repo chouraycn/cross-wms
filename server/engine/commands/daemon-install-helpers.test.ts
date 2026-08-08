@@ -93,7 +93,7 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<string, any> {
+function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<string, unknown> {
   const call = mockFn.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} call`);
@@ -102,7 +102,7 @@ function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<s
   if (!arg || typeof arg !== "object") {
     throw new Error(`Expected ${label} first argument`);
   }
-  return arg as Record<string, any>;
+  return arg as Record<string, unknown>;
 }
 
 function writeSecurePluginEntrypoint(pathname: string): void {

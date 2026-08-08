@@ -99,7 +99,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   // 技能列表（响应式，随 skillStore 变更刷新）
   const [skillVersion, setSkillVersion] = useState(0);
   const skills = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const _v = skillVersion;
     return getAllSkills();
   }, [skillVersion]);
@@ -184,7 +184,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage' | 'openclaw'>(initialTab as any || 'market');
+  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage' | 'openclaw'>(initialTab as unknown || 'market');
   const [manageSubTab, setManageSubTab] = useState<'plugins' | 'chains' | 'workshop' | 'hotreload'>('plugins');
   const [sortBy, setSortBy] = useState<'popular' | 'latest'>('popular');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -232,7 +232,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   // 插件管理状态
   const [pluginVersion, setPluginVersion] = useState(0);
   const plugins = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const _v = pluginVersion;
     return getPlugins();
   }, [pluginVersion]);
@@ -1077,7 +1077,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           ].map((tab) => (
             <Box
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
+              onClick={() => setActiveTab(tab.key as unknown)}
               sx={{
                 py: 1.5,
                 fontSize: '0.9375rem',
@@ -1428,7 +1428,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             ].map((tab) => (
               <Box
                 key={tab.key}
-                onClick={() => setManageSubTab(tab.key as any)}
+                onClick={() => setManageSubTab(tab.key as unknown)}
                 sx={{
                   py: 1.25,
                   fontSize: '0.875rem',

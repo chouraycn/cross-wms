@@ -150,7 +150,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
   // when only content changed (not theme/copy state)
   const markdownComponents = useMemo(() => ({
     // 代码块：有语言标注 → 语法高亮；否则 → 纯文本
-    code({ className, children, node, ...props }: any) {
+    code({ className, children, node, ...props }: unknown) {
       const match = /language-(\w+)/.exec(className || '');
       const codeString = String(children).replace(/\n$/, '');
 
@@ -262,7 +262,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 表格
-    table({ children }: any) {
+    table({ children }: unknown) {
       return (
         <div style={{ overflowX: 'auto', margin: '8px 0' }}>
           <table
@@ -277,7 +277,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         </div>
       );
     },
-    th({ children }: any) {
+    th({ children }: unknown) {
       return (
         <th
           style={{
@@ -292,7 +292,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         </th>
       );
     },
-    td({ children }: any) {
+    td({ children }: unknown) {
       return (
         <td
           style={{
@@ -305,7 +305,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 链接
-    a({ children, href }: any) {
+    a({ children, href }: unknown) {
       return (
         <a
           href={href}
@@ -321,7 +321,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 图片 — 统一显示为文件附件样式，不直接渲染图片
-    img({ src, alt }: any) {
+    img({ src, alt }: unknown) {
       const fileName = alt || (src ? src.split('/').pop()?.split('?')[0] || 'image' : 'image');
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
       const isImageExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'avif'].includes(ext);
@@ -352,7 +352,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 引用
-    blockquote({ children }: any) {
+    blockquote({ children }: unknown) {
       return (
         <blockquote
           style={{

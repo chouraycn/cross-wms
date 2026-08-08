@@ -58,11 +58,11 @@ export const ExpertSelector: React.FC<ExpertSelectorProps> = ({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       // 后端返回 { data: AgentProfile[] }，映射为 ExpertOption
-      const list: ExpertOption[] = (json.data || []).map((a: any) => ({
+      const list: ExpertOption[] = (json.data || []).map((a: unknown) => ({
         id: a.id,
         name: a.name,
         role: a.role,
-        description: a.description || a.capabilities?.map((c: any) => c.description).join('、') || '智能助手',
+        description: a.description || a.capabilities?.map((c: unknown) => c.description).join('、') || '智能助手',
         status: a.status === 'idle' ? 'idle' : a.status === 'busy' ? 'busy' : 'offline',
         isDefault: a.id === 'orchestrator',
       }));

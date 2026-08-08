@@ -196,7 +196,7 @@ export function resetRateLimiter(): void {
 }
 
 /** 限流装饰器函数 - 用于包装 translator 请求 */
-export function withRateLimit<T extends (...args: any[]) => any>(
+export function withRateLimit<T extends (...args: any[]) => unknown>(
   fn: T,
   options: {
     limiter?: RateLimiter;

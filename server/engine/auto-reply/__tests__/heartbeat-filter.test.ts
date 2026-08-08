@@ -83,7 +83,7 @@ describe('heartbeat-filter', () => {
           role: 'assistant',
           content: HEARTBEAT_TOKEN,
           tool_calls: [{ id: '1', type: 'function', function: { name: 'foo', arguments: '{}' } }],
-        } as any),
+        } as unknown),
       ).toBe(false);
     });
 

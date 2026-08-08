@@ -82,7 +82,7 @@ describe('AllowlistManager 模块单元测试', () => {
         },
       };
 
-      manager.loadFromConfig(config as any, 'test-channel');
+      manager.loadFromConfig(config as unknown, 'test-channel');
 
       expect(manager.isAllowed({ kind: 'username', value: 'user1' }, 'dm')).toBe(true);
       expect(manager.isAllowed({ kind: 'username', value: 'user2' }, 'dm')).toBe(true);
@@ -101,7 +101,7 @@ describe('AllowlistManager 模块单元测试', () => {
         },
       };
 
-      manager.loadFromConfig(config as any, 'test-channel');
+      manager.loadFromConfig(config as unknown, 'test-channel');
 
       expect(manager.isAllowed(identifier, 'dm')).toBe(false);
     });

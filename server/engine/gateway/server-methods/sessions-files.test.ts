@@ -63,16 +63,16 @@ async function invokeSessionFilesHandler(
   return responder.calls;
 }
 
-function expectOkPayload(calls: ReturnType<typeof createResponder>["calls"]): Record<string, any> {
+function expectOkPayload(calls: ReturnType<typeof createResponder>["calls"]): Record<string, unknown> {
   expect(calls).toHaveLength(1);
   expect(calls[0]?.ok).toBe(true);
-  return calls[0]?.payload as Record<string, any>;
+  return calls[0]?.payload as Record<string, unknown>;
 }
 
-function expectError(calls: ReturnType<typeof createResponder>["calls"]): Record<string, any> {
+function expectError(calls: ReturnType<typeof createResponder>["calls"]): Record<string, unknown> {
   expect(calls).toHaveLength(1);
   expect(calls[0]?.ok).toBe(false);
-  return calls[0]?.error as Record<string, any>;
+  return calls[0]?.error as Record<string, unknown>;
 }
 
 function assistantToolCall(name: string, args: Record<string, unknown>) {

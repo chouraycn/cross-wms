@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { configureGatewayAuth, addApiKey, removeApiKey } from '../gateway/gatewayAuth.js';
 import crypto from 'node:crypto';
+import { ok, created, fail, notFound, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -49,9 +50,9 @@ router.get('/', (_req, res) => {
       metadata: record.metadata,
     }));
 
-    res.json({ data: keys });
+    return ok(res, keys);
   } catch (e) {
-    res.status(500).json({ error: `获取 API Key 列表失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `获取 API Key 列表失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -61,7 +62,7 @@ router.post('/', (req, res) => {
     const { name, rateLimitPerMinute = 60, metadata } = req.body || {};
 
     if (!name || typeof name !== 'string') {
-      return res.status(400).json({ error: '缺少 name 参数' });
+      return fail(res, BizCode.BAD_REQUEST, '缺少 name 参数', 400);
     }
 
     const key = generateApiKey();
@@ -82,7 +83,7 @@ router.post('/', (req, res) => {
     addApiKey(key);
 
     // 仅创建时返回完整 key
-    res.status(201).json({
+    return created(res, {
       data: {
         id: record.id,
         name: record.name,
@@ -95,7 +96,7 @@ router.post('/', (req, res) => {
       warning: '请妥善保存此 API Key，之后无法再次查看完整内容。',
     });
   } catch (e) {
-    res.status(500).json({ error: `创建 API Key 失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `创建 API Key 失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -104,15 +105,15 @@ router.post('/:id/enable', (req, res) => {
   try {
     const record = apiKeys.get(req.params.id);
     if (!record) {
-      return res.status(404).json({ error: 'API Key 不存在' });
+      return notFound(res, 'API Key 不存在');
     }
 
     record.enabled = true;
     addApiKey(record.key);
 
-    res.json({ data: { id: record.id, enabled: record.enabled } });
+    return ok(res, { id: record.id, enabled: record.enabled });
   } catch (e) {
-    res.status(500).json({ error: `启用 API Key 失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `启用 API Key 失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -121,15 +122,15 @@ router.post('/:id/disable', (req, res) => {
   try {
     const record = apiKeys.get(req.params.id);
     if (!record) {
-      return res.status(404).json({ error: 'API Key 不存在' });
+      return notFound(res, 'API Key 不存在');
     }
 
     record.enabled = false;
     removeApiKey(record.key);
 
-    res.json({ data: { id: record.id, enabled: record.enabled } });
+    return ok(res, { id: record.id, enabled: record.enabled });
   } catch (e) {
-    res.status(500).json({ error: `禁用 API Key 失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `禁用 API Key 失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -138,15 +139,15 @@ router.delete('/:id', (req, res) => {
   try {
     const record = apiKeys.get(req.params.id);
     if (!record) {
-      return res.status(404).json({ error: 'API Key 不存在' });
+      return notFound(res, 'API Key 不存在');
     }
 
     removeApiKey(record.key);
     apiKeys.delete(req.params.id);
 
-    res.json({ data: { success: true, message: 'API Key 已删除' } });
+    return ok(res, { success: true, message: 'API Key 已删除' });
   } catch (e) {
-    res.status(500).json({ error: `删除 API Key 失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `删除 API Key 失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -156,15 +157,13 @@ router.get('/stats', (_req, res) => {
     const total = apiKeys.size;
     const enabled = Array.from(apiKeys.values()).filter((k) => k.enabled).length;
 
-    res.json({
-      data: {
-        total,
-        enabled,
-        disabled: total - enabled,
-      },
+    return ok(res, {
+      total,
+      enabled,
+      disabled: total - enabled,
     });
   } catch (e) {
-    res.status(500).json({ error: `获取 API Key 统计失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `获取 API Key 统计失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -179,9 +178,9 @@ router.post('/config', (req, res) => {
 
     configureGatewayAuth(config);
 
-    res.json({ data: { success: true, config } });
+    return ok(res, { success: true, config });
   } catch (e) {
-    res.status(500).json({ error: `更新认证配置失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `更新认证配置失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 

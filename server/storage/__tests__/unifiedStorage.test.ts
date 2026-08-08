@@ -243,7 +243,7 @@ describe('UnifiedStorage — getBackend', () => {
 
   it('respects collectionBackends config', () => {
     const doc = new MemoryDocumentStorage();
-    const mockSql: any = {
+    const mockSql: unknown = {
       isConnected: () => true,
       all: () => [],
       get: () => undefined,
@@ -287,7 +287,7 @@ describe('createUnifiedStorage factory', () => {
 
   it('creates hybrid storage when both backends provided', () => {
     const doc = new MemoryDocumentStorage();
-    const mockSql: any = {
+    const mockSql: unknown = {
       connect: () => Promise.resolve(),
       disconnect: () => Promise.resolve(),
       isConnected: () => true,

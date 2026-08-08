@@ -205,7 +205,7 @@ const WmsReportScheduler: React.FC = () => {
           <InputLabel>报表类型</InputLabel>
           <Select
             value={config.reportType}
-            onChange={handleReportTypeChange as any}
+            onChange={handleReportTypeChange as unknown}
             label="报表类型"
           >
             <MenuItem value="inventory">库存报表</MenuItem>
@@ -221,7 +221,7 @@ const WmsReportScheduler: React.FC = () => {
           <InputLabel>选择仓库</InputLabel>
           <Select
             value={config.warehouseId}
-            onChange={handleWarehouseChange as any}
+            onChange={handleWarehouseChange as unknown}
             label="选择仓库"
           >
             <MenuItem value="">全部仓库</MenuItem>

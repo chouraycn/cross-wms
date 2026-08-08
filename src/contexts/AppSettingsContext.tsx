@@ -441,15 +441,15 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
         visibility: { ...DEFAULT_SETTINGS.dashboard.visibility, ...(parsed.dashboard?.visibility ?? {}) },
         heatmap: { ...DEFAULT_SETTINGS.dashboard.heatmap, ...(parsed.dashboard?.heatmap ?? {}) },
         // 处理数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         dataSourceMode: parsed.dashboard?.dataSourceMode
           ?? (parsed.dashboard as any)?.dataSource?.mode
           ?? DEFAULT_SETTINGS.dashboard.dataSourceMode,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         dataSourceApiBaseUrl: parsed.dashboard?.dataSourceApiBaseUrl
           ?? (parsed.dashboard as any)?.dataSource?.apiBaseUrl
           ?? DEFAULT_SETTINGS.dashboard.dataSourceApiBaseUrl,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         dataSourceDocMappings: parsed.dashboard?.dataSourceDocMappings
           ?? (parsed.dashboard as any)?.dataSource?.docMappings
           ?? DEFAULT_SETTINGS.dashboard.dataSourceDocMappings,
@@ -558,15 +558,15 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           visibility: { ...prevDashboard.visibility, ...(partialDashboard.visibility ?? {}) },
           heatmap: { ...prevDashboard.heatmap, ...(partialDashboard.heatmap ?? {}) },
           // 数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           dataSourceMode: partialDashboard.dataSourceMode
             ?? (partialDashboard as any)?.dataSource?.mode
             ?? prevDashboard.dataSourceMode,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           dataSourceApiBaseUrl: partialDashboard.dataSourceApiBaseUrl
             ?? (partialDashboard as any)?.dataSource?.apiBaseUrl
             ?? prevDashboard.dataSourceApiBaseUrl,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           dataSourceDocMappings: partialDashboard.dataSourceDocMappings
             ?? (partialDashboard as any)?.dataSource?.docMappings
             ?? prevDashboard.dataSourceDocMappings,

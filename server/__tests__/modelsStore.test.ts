@@ -99,7 +99,7 @@ describe('loadModelsConfig — skipKeyInjection 行为', () => {
 
     // injectApiKeys 模拟：给模型注入 apiKey（模拟 Keychain execSync 调用）
     mocks.injectApiKeys.mockImplementation(<T>(models: T[]): T[] => {
-      return models.map((m: any) => ({
+      return models.map((m: unknown) => ({
         ...m,
         apiKey: 'injected-secret-key',
       }));
@@ -162,7 +162,7 @@ describe('loadModelsConfig — skipKeyInjection 行为', () => {
 
     const cachedModel = fullConfig.models.find(m => m.id === 'test-model-1');
     expect(cachedModel).toBeDefined();
-    expect((cachedModel as any).apiKey).toBe('injected-secret-key');
+    expect((cachedModel as unknown).apiKey).toBe('injected-secret-key');
 
     const sanitizedConfig = await loadModelsConfig({ skipKeyInjection: true });
 
@@ -190,7 +190,7 @@ describe('loadModelsConfig — skipKeyInjection 行为', () => {
 
     const model1 = config.models.find(m => m.id === 'test-model-1');
     expect(model1).toBeDefined();
-    expect((model1 as any).apiKey).toBe('injected-secret-key');
+    expect((model1 as unknown).apiKey).toBe('injected-secret-key');
   });
 
   // ====================================================================
@@ -207,7 +207,7 @@ describe('loadModelsConfig — skipKeyInjection 行为', () => {
     expect(mocks.injectApiKeys).toHaveBeenCalledTimes(1);
 
     const model = config.models.find(m => m.id === 'test-model-1');
-    expect((model as any).apiKey).toBe('injected-secret-key');
+    expect((model as unknown).apiKey).toBe('injected-secret-key');
   });
 
   // ====================================================================
@@ -245,6 +245,6 @@ describe('loadModelsConfig — skipKeyInjection 行为', () => {
 
     const cached = await loadModelsConfig();
     const cachedModel = cached.models.find(m => m.id === 'test-model-1');
-    expect((cachedModel as any).apiKey).toBe('injected-secret-key');
+    expect((cachedModel as unknown).apiKey).toBe('injected-secret-key');
   });
 });

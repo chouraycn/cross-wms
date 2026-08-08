@@ -49,7 +49,7 @@ function createMockSkill(
       id,
       name,
       description: `${name} 的完整描述`,
-      group: group as any,
+      group: group as unknown,
       source: 'builtin',
       userInvocable: true,
       tags: [],
@@ -161,9 +161,9 @@ describe('Skill 系统集成测试', () => {
       const reader = new SkillContentReader();
       const tools = reader.getToolDefinitions();
       expect(tools.length).toBe(3); // skill_list, skill_read, skill_search
-      expect(tools.map((t: any) => t.function.name)).toContain('skill_list');
-      expect(tools.map((t: any) => t.function.name)).toContain('skill_read');
-      expect(tools.map((t: any) => t.function.name)).toContain('skill_search');
+      expect(tools.map((t: unknown) => t.function.name)).toContain('skill_list');
+      expect(tools.map((t: unknown) => t.function.name)).toContain('skill_read');
+      expect(tools.map((t: unknown) => t.function.name)).toContain('skill_search');
     });
   });
 

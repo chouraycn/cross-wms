@@ -75,7 +75,7 @@ type DoctorContributionHealthCheck =
       readonly kind?: "core";
       readonly source?: string;
     })
-  | (Omit<any, "id" | "kind" | "source"> & {
+  | (Omit<unknown, "id" | "kind" | "source"> & {
       readonly id?: string;
       readonly kind?: "core";
       readonly source?: string;
@@ -193,8 +193,8 @@ function normalizeContributionHealthCheck(params: {
   return {
     ...params.check,
     id,
-    kind: (params.check as any).kind ?? "core",
-    source: (params.check as any).source ?? "doctor",
+    kind: (params.check as unknown).kind ?? "core",
+    source: (params.check as unknown).source ?? "doctor",
   } as HealthCheckInput;
 }
 

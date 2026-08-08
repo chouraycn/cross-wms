@@ -801,7 +801,7 @@ const MainLayout: React.FC = () => {
   const scrollRef = useAutoHideScrollbar(!isPy);
 
   const actions = useMemo(() => getToolbarActions(location.pathname), [location.pathname]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const pageKey = useMemo(() => getPageRefreshKey(location.pathname), [location.pathname]);
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);

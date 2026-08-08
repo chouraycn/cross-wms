@@ -210,7 +210,7 @@ class AutomationEngine implements AutomationEngineAPI {
   start(): void {
     if (this.running) return;
     this.running = true;
-    // eslint-disable-next-line no-console
+     
     // console.log('[AutomationEngine] 引擎已启动');
 
     // 请求通知权限
@@ -234,7 +234,7 @@ class AutomationEngine implements AutomationEngineAPI {
       this.timerId = null;
     }
     this.running = false;
-    // eslint-disable-next-line no-console
+     
     // console.log('[AutomationEngine] 引擎已停止');
   }
 
@@ -426,7 +426,7 @@ class AutomationEngine implements AutomationEngineAPI {
       exec.result = result;
       exec.steps = steps;
 
-      // eslint-disable-next-line no-console
+       
       // console.log(`[AutomationEngine] 任务 ${auto.name}(${auto.id}) 执行成功, 耗时 ${duration}ms`);
     } catch (err) {
       const duration = Date.now() - startTime;
@@ -441,7 +441,7 @@ class AutomationEngine implements AutomationEngineAPI {
 
       // 🔑 自动重试 1 次（仅非重试的首次失败）
       if (!isRetry) {
-        // eslint-disable-next-line no-console
+         
         // console.log(`[AutomationEngine] 任务 ${auto.name} 自动重试 1 次...`);
         try {
           const retryResult = await executeByTypeWithSteps(auto.taskType, auto.taskConfig);
@@ -452,7 +452,7 @@ class AutomationEngine implements AutomationEngineAPI {
           exec.result = `${exec.result || '首次失败'} → 重试成功: ${retryResult.result}`;
           exec.steps = [...(exec.steps || []), ...retryResult.steps];
           exec.isRetry = true;
-          // eslint-disable-next-line no-console
+           
           // console.log(`[AutomationEngine] 任务 ${auto.name} 重试成功`);
         } catch (retryErr) {
           const retryDuration = Date.now() - startTime;

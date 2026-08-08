@@ -673,7 +673,7 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
       } else {
         setPreviewDialog(prev => ({ ...prev, loading: false, error: '无法预览该文件' }));
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setPreviewDialog(prev => ({ ...prev, loading: false, error: e.message || '预览失败' }));
     }
   }, []);

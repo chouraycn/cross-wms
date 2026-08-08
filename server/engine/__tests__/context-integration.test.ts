@@ -56,7 +56,7 @@ describe('上下文系统集成测试', () => {
       expect(userCount).toBeLessThanOrEqual(10);
 
       // 第 2 步：token 截断（大窗口不应再截断）
-      const truncated = truncateContextForModel(sanitized as any, 32000, 2000, 0);
+      const truncated = truncateContextForModel(sanitized as unknown, 32000, 2000, 0);
 
       expect(truncated.messages.length).toBeGreaterThan(0);
       expect(typeof truncated.truncated).toBe('boolean');
@@ -88,8 +88,8 @@ describe('上下文系统集成测试', () => {
         manyMsgs.push(makeAssistantMessage(`回复 ${i}，内容也很长很长很长很长很长`));
       }
 
-      const fewTokens = estimateMessagesTokens(fewMsgs as any);
-      const manyTokens = estimateMessagesTokens(manyMsgs as any);
+      const fewTokens = estimateMessagesTokens(fewMsgs as unknown);
+      const manyTokens = estimateMessagesTokens(manyMsgs as unknown);
 
       expect(manyTokens).toBeGreaterThan(fewTokens);
       expect(manyTokens).toBeGreaterThan(100);
@@ -165,7 +165,7 @@ describe('上下文系统集成测试', () => {
 
       const assistant = result.find(m => m.role === 'assistant');
       expect(assistant).toBeDefined();
-      expect((assistant as any).reasoning_content).toBeUndefined();
+      expect((assistant as unknown).reasoning_content).toBeUndefined();
     });
 
     it('reasoning 内容处理：推理模型应保留', () => {
@@ -184,7 +184,7 @@ describe('上下文系统集成测试', () => {
 
       const assistant = result.find(m => m.role === 'assistant');
       expect(assistant).toBeDefined();
-      expect((assistant as any).reasoning_content).toBeDefined();
+      expect((assistant as unknown).reasoning_content).toBeDefined();
     });
 
     it('tool call 规范化：清理名称空格和校验 ID', () => {
@@ -213,7 +213,7 @@ describe('上下文系统集成测试', () => {
         validateToolPairs: false,
       });
 
-      const assistant = result.find(m => m.role === 'assistant') as any;
+      const assistant = result.find(m => m.role === 'assistant') as unknown;
       expect(assistant).toBeDefined();
       expect(assistant.tool_calls).toBeDefined();
       expect(assistant.tool_calls[0].function.name).toBe('my_tool');
@@ -311,7 +311,7 @@ describe('上下文系统集成测试', () => {
         makeAssistantMessage('你好！有什么可以帮你的？'),
       ];
 
-      const result = truncateContextForModel(messages as any, 32000, 2000, 0);
+      const result = truncateContextForModel(messages as unknown, 32000, 2000, 0);
 
       expect(result.messages.length).toBe(2);
       expect(result.truncated).toBe(false);
@@ -323,7 +323,7 @@ describe('上下文系统集成测试', () => {
         makeAssistantMessage('你好！'),
       ];
 
-      const result = truncateContextForModel(messages as any, 600, 100, 0);
+      const result = truncateContextForModel(messages as unknown, 600, 100, 0);
 
       expect(result.messages.length).toBe(2);
       expect(result.truncated).toBe(false);

@@ -366,7 +366,7 @@ const TuiTerminalPage: React.FC = () => {
       const options: SendAgentMessageOptions = {
         model: session.model || 'auto',
         agentId: 'general',
-        executionMode: aiEngine.defaultExecutionMode as any,
+        executionMode: aiEngine.defaultExecutionMode as unknown,
       };
       await sendMessage(text, options);
     } catch (err) {

@@ -6,7 +6,6 @@
  */
 
 /** 密钥存储范围（与现有 provider 字段对应） */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type SecretScope = 'env' | 'file' | 'encrypted' | 'keychain' | (string & {});
 
 /** 密钥元数据（对应原 services/api.ts 中的 SecretItemMetadata） */

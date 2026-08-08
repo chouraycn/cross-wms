@@ -187,7 +187,7 @@ describe("Persistent Bindings - Resolve", () => {
         status: "active",
         boundAt: 0,
       };
-      (record as any).targetKind = "channel";
+      (record as unknown).targetKind = "channel";
       expect(resolveConfiguredAcpBindingSpecFromRecord(record)).toBeNull();
     });
   });

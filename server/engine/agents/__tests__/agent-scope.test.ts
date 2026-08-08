@@ -69,7 +69,7 @@ describe('agent-scope', () => {
 
     it('应拒绝无效的 type', () => {
       expect(() =>
-        createScope({ id: 'bad', name: 'bad', type: 'invalid' as any }),
+        createScope({ id: 'bad', name: 'bad', type: 'invalid' as unknown }),
       ).toThrow();
     });
 

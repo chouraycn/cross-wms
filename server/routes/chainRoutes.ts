@@ -106,7 +106,7 @@ router.post('/', (req, res) => {
     const now = new Date().toISOString();
 
     const nodeList = Array.isArray(nodes)
-      ? nodes.map((node: any, i: number) => ({
+      ? nodes.map((node: unknown, i: number) => ({
           id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           chainId: chainId,
           skillId: node.skillId || '',
@@ -148,7 +148,7 @@ router.put('/:id', (req, res) => {
     const now = new Date().toISOString();
 
     const nodeList = Array.isArray(nodes)
-      ? nodes.map((node: any, i: number) => ({
+      ? nodes.map((node: unknown, i: number) => ({
           id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           chainId: req.params.id,
           skillId: node.skillId || '',

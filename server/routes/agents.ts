@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { agentRegistry, agentIdentityManager, agentScenarioMatcher } from '../engine/agents/index.js';
 import { laneManager } from '../engine/executionLanes.js';
 import { logger } from '../logger.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -25,10 +26,10 @@ router.get('/', (_req, res) => {
       })),
       status: a.status,
     }));
-    res.json({ data: agents });
+    return ok(res, agents);
   } catch (e) {
     logger.error('[Agents API] 获取 Agent 列表失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -36,10 +37,10 @@ router.get('/', (_req, res) => {
 router.get('/identities', (_req, res) => {
   try {
     const identities = agentIdentityManager.listAgents();
-    res.json({ data: identities });
+    return ok(res, identities);
   } catch (e) {
     logger.error('[Agents API] 获取 Agent 身份列表失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -48,13 +49,12 @@ router.get('/identities/:id', (req, res) => {
   try {
     const identity = agentIdentityManager.getAgent(req.params.id);
     if (!identity) {
-      res.status(404).json({ error: 'Agent not found' });
-      return;
+    return notFound(res, 'Agent not found');
     }
-    res.json({ data: identity });
+    return ok(res, identity);
   } catch (e) {
     logger.error('[Agents API] 获取 Agent 身份失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -63,14 +63,13 @@ router.post('/identities', (req, res) => {
   try {
     const config = req.body;
     if (!config.id || !config.name || !config.role) {
-      res.status(400).json({ error: 'Missing required fields: id, name, role' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Missing required fields: id, name, role', 400);
     }
     agentIdentityManager.registerAgent(config);
-    res.json({ data: agentIdentityManager.getAgent(config.id), message: 'Agent registered successfully' });
+    return ok(res, agentIdentityManager.getAgent(config.id), 'Agent registered successfully');
   } catch (e) {
     logger.error('[Agents API] 创建 Agent 身份失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -78,10 +77,10 @@ router.post('/identities', (req, res) => {
 router.put('/identities/:id', (req, res) => {
   try {
     agentIdentityManager.updateAgent(req.params.id, req.body);
-    res.json({ data: agentIdentityManager.getAgent(req.params.id), message: 'Agent updated successfully' });
+    return ok(res, agentIdentityManager.getAgent(req.params.id), 'Agent updated successfully');
   } catch (e) {
     logger.error('[Agents API] 更新 Agent 身份失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -89,10 +88,10 @@ router.put('/identities/:id', (req, res) => {
 router.delete('/identities/:id', (req, res) => {
   try {
     agentIdentityManager.unregisterAgent(req.params.id);
-    res.json({ message: 'Agent unregistered successfully' });
+    return ok(res, null, 'Agent unregistered successfully');
   } catch (e) {
     logger.error('[Agents API] 删除 Agent 身份失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -100,10 +99,10 @@ router.delete('/identities/:id', (req, res) => {
 router.get('/scenarios', (_req, res) => {
   try {
     const scenarios = agentIdentityManager.listScenarios();
-    res.json({ data: scenarios });
+    return ok(res, scenarios);
   } catch (e) {
     logger.error('[Agents API] 获取场景列表失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -112,14 +111,13 @@ router.post('/match-scenario', (req, res) => {
   try {
     const { message } = req.body;
     if (!message) {
-      res.status(400).json({ error: 'Missing message' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Missing message', 400);
     }
     const result = agentScenarioMatcher.matchScenario(message);
-    res.json({ data: result });
+    return ok(res, result);
   } catch (e) {
     logger.error('[Agents API] 场景匹配失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -127,10 +125,10 @@ router.post('/match-scenario', (req, res) => {
 router.get('/recommended', (_req, res) => {
   try {
     const recommendations = agentScenarioMatcher.getRecommendedScenarios();
-    res.json({ data: recommendations });
+    return ok(res, recommendations);
   } catch (e) {
     logger.error('[Agents API] 获取推荐场景失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -140,21 +138,21 @@ router.get('/recommended', (_req, res) => {
 router.get('/lanes', (_req, res) => {
   try {
     const status = laneManager.getAllLaneStatus();
-    res.json({ data: status });
+    return ok(res, status);
   } catch (e) {
     logger.error('[Agents API] 获取车道状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
 // GET /api/agents/lanes/:lane — 获取指定车道状态
 router.get('/lanes/:lane', (req, res) => {
   try {
-    const status = laneManager.getLaneStatus(req.params.lane as any);
-    res.json({ data: status });
+    const status = laneManager.getLaneStatus(req.params.lane as unknown);
+    return ok(res, status);
   } catch (e) {
     logger.error('[Agents API] 获取车道状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -163,13 +161,12 @@ router.get('/tasks/:taskId', (req, res) => {
   try {
     const task = laneManager.getTask(req.params.taskId);
     if (!task) {
-      res.status(404).json({ error: 'Task not found' });
-      return;
+    return notFound(res, 'Task not found');
     }
-    res.json({ data: task });
+    return ok(res, task);
   } catch (e) {
     logger.error('[Agents API] 获取任务详情失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -177,10 +174,10 @@ router.get('/tasks/:taskId', (req, res) => {
 router.post('/tasks/:taskId/cancel', (req, res) => {
   try {
     laneManager.cancelTask(req.params.taskId);
-    res.json({ message: 'Task cancelled successfully' });
+    return ok(res, null, 'Task cancelled successfully');
   } catch (e) {
     logger.error('[Agents API] 取消任务失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 

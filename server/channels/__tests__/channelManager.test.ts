@@ -245,8 +245,8 @@ describe("ChannelManager 模块单元测试", () => {
 
     it("没有 start/stop 方法的频道应该被跳过", async () => {
       const ch1 = createMockChannel("ch-1");
-      delete (ch1 as any).start;
-      delete (ch1 as any).stop;
+      delete (ch1 as unknown).start;
+      delete (ch1 as unknown).stop;
       manager.register(ch1);
 
       await manager.startAll();

@@ -157,7 +157,7 @@ describe('Cache REST API', () => {
       cache.set('b', 'value-b');
 
       // 模拟过期
-      for (const entry of (cache as any).cache.values()) {
+      for (const entry of (cache as unknown).cache.values()) {
         entry.expiresAt = Date.now() - 1;
       }
 

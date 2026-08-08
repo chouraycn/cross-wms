@@ -77,8 +77,8 @@ insightsRouter.get('/audit-trail', (req: Request, res: Response) => {
   try {
     const result = agentAuditTrail.query({
       agentId: req.query.agentId as string | undefined,
-      category: req.query.category as any,
-      level: req.query.level as any,
+      category: req.query.category as unknown,
+      level: req.query.level as unknown,
       type: req.query.type as string | undefined,
       sessionId: req.query.sessionId as string | undefined,
       parentAgentId: req.query.parentAgentId as string | undefined,

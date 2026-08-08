@@ -60,11 +60,11 @@ vi.mock('../onnxEmbedding.js', () => ({
 vi.mock('../../storage/databaseManager.js', () => {
   // 内存 mock 数据
   const mockState = {
-    entries: [] as Array<any>,
-    versions: [] as Array<any>,
-    links: [] as Array<any>,
-    tagDefs: [] as Array<any>, // 标签定义表 wiki_tags: {id, name, category, description, created_at}
-    entryTags: [] as Array<any>, // 条目-标签关联 wiki_entry_tags: {entry_id, tag_id, created_at}
+    entries: [] as Array<unknown>,
+    versions: [] as Array<unknown>,
+    links: [] as Array<unknown>,
+    tagDefs: [] as Array<unknown>, // 标签定义表 wiki_tags: {id, name, category, description, created_at}
+    entryTags: [] as Array<unknown>, // 条目-标签关联 wiki_entry_tags: {entry_id, tag_id, created_at}
     nextEntryId: 1,
     nextVersionId: 1,
     nextLinkId: 1,
@@ -72,7 +72,7 @@ vi.mock('../../storage/databaseManager.js', () => {
   };
 
   const ok = { changes: 0, lastInsertRowid: 0 };
-  const stmt = (extra: Record<string, any>) => ({
+  const stmt = (extra: Record<string, unknown>) => ({
     run: vi.fn(() => ({ changes: 0, lastInsertRowid: 0 })),
     get: vi.fn(() => undefined),
     all: vi.fn(() => []),
@@ -419,7 +419,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           if (sql.includes('wiki_fts MATCH')) {
             return stmt({
               all: vi.fn(() =>
-                mockState.entries.map((e: any) => ({ ...e, rank: 0.5 })),
+                mockState.entries.map((e: unknown) => ({ ...e, rank: 0.5 })),
               ),
             });
           }
@@ -427,7 +427,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           if (sql.includes('SELECT e.id, e.title, e.content')) {
             return stmt({
               all: vi.fn(() =>
-                mockState.entries.map((e: any) => ({ ...e, distance: 0.2 })),
+                mockState.entries.map((e: unknown) => ({ ...e, distance: 0.2 })),
               ),
             });
           }
@@ -629,8 +629,8 @@ describe('Wiki Store - CRUD 操作', () => {
 // ===================== Wiki Store 链接测试 =====================
 
 describe('Wiki Store - 链接管理', () => {
-  let sourceEntry: any;
-  let targetEntry: any;
+  let sourceEntry: unknown;
+  let targetEntry: unknown;
 
   beforeAll(async () => {
     clearAllWiki();

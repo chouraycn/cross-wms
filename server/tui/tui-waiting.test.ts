@@ -6,7 +6,7 @@ const theme = {
   dim: (s: string) => `<d>${s}</d>`,
   bold: (s: string) => `<b>${s}</b>`,
   accentSoft: (s: string) => `<a>${s}</a>`,
-} as any;
+} as unknown;
 
 describe("tui-waiting", () => {
   it("pickWaitingPhrase rotates every 10 ticks", () => {

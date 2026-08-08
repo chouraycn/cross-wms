@@ -189,7 +189,7 @@ const CELL_GAP = 3;           // 格子间距 3px
 const WEEKDAY_LABEL_WIDTH = 36; // 左侧星期标签宽 36px
 const MONTH_LABEL_HEIGHT = 20;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';

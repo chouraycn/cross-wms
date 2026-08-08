@@ -40,7 +40,7 @@ function isToolOutputDominant(assistantMessage: string): boolean {
 export async function readMemoryMd(): Promise<string> {
   try {
     return await fsp.readFile(MEMORY_MD_PATH, 'utf-8');
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e.code !== 'ENOENT') {
       logger.error('[Memory] 读取失败:', e);
     }

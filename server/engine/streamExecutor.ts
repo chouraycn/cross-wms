@@ -169,7 +169,7 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'> &
         id: toolCall.id,
         name: toolCall.function.name,
         arguments: JSON.parse(toolCall.function.arguments || '{}'),
-      } as any, partial: {} as AssistantMessage });
+      } as unknown, partial: {} as AssistantMessage });
     },
     onSSEEvent: (event: Record<string, unknown>) => {
       const eventType = event.type as string;

@@ -93,7 +93,7 @@ function normalizeMetadata(meta: unknown): Record<string, unknown> {
   return m;
 }
 
-function buildRow(dbCols: string[], row: Record<string, any>, tableName: string): Array<[string, unknown]> {
+function buildRow(dbCols: string[], row: Record<string, unknown>, tableName: string): Array<[string, unknown]> {
   const entries: Array<[string, unknown]> = [];
   for (const col of dbCols) {
     if (col === 'created_at' || col === 'updated_at') {
@@ -125,8 +125,8 @@ function buildRow(dbCols: string[], row: Record<string, any>, tableName: string)
   return entries;
 }
 
-function migrateTable(db: Database.Database, fixtureKey: string, tableName: string, rows: any[]): number {
-  const cols = db.prepare(`PRAGMA table_info(${tableName})`).all().map((c: any) => c.name);
+function migrateTable(db: Database.Database, fixtureKey: string, tableName: string, rows: unknown[]): number {
+  const cols = db.prepare(`PRAGMA table_info(${tableName})`).all().map((c: unknown) => c.name);
   if (cols.length === 0) {
     logger.warn(`[SeedStaffDeck] 表 ${tableName} 不存在，跳过 ${fixtureKey}`);
     return 0;
@@ -150,9 +150,9 @@ function migrateTable(db: Database.Database, fixtureKey: string, tableName: stri
   return inserted;
 }
 
-function migrateKnowledgeBranches(db: Database.Database, data: any): number {
+function migrateKnowledgeBranches(db: Database.Database, data: unknown): number {
   const bindRows = data.agent_resource_bindings || [];
-  const kbVersions = new Map<string, any[]>();
+  const kbVersions = new Map<string, unknown[]>();
   for (const v of data.knowledge_base_versions || []) {
     const kbId = String(v.knowledge_base_id || '');
     if (!kbVersions.has(kbId)) kbVersions.set(kbId, []);
@@ -162,7 +162,7 @@ function migrateKnowledgeBranches(db: Database.Database, data: any): number {
     const versions = kbVersions.get(kbId) || [];
     for (const v of versions) {
       const meta = v.metadata_json;
-      const owner = typeof meta === 'object' && meta ? (meta as any).owner_agent_id : undefined;
+      const owner = typeof meta === 'object' && meta ? (meta as unknown).owner_agent_id : undefined;
       if (owner === agentId) return String(v.version || '1.0.0');
     }
     for (const v of versions) {
@@ -173,7 +173,7 @@ function migrateKnowledgeBranches(db: Database.Database, data: any): number {
     return '1.0.0';
   };
 
-  const cols = db.prepare('PRAGMA table_info(sd_agent_knowledge_branches)').all().map((c: any) => c.name);
+  const cols = db.prepare('PRAGMA table_info(sd_agent_knowledge_branches)').all().map((c: unknown) => c.name);
   let inserted = 0;
   const tx = db.transaction(() => {
     for (const b of bindRows) {
@@ -380,7 +380,7 @@ export function seedStaffDeckOnBoot(): void {
   }
 
   const db = getDb();
-  let data: any;
+  let data: unknown;
   try {
     data = JSON.parse(readFileSync(fixturePath, 'utf-8'));
   } catch (err) {

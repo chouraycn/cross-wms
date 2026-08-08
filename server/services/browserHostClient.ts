@@ -34,7 +34,7 @@ const RESTART_BASE_DELAY = 1000; // 1s, 2s, 4s
 export interface BrowserHostResponse {
   id: string;
   ok: boolean;
-  output?: any;
+  output?: unknown;
   error?: string;
 }
 

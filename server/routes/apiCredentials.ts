@@ -17,6 +17,7 @@ import {
   updateCredential,
   deleteCredential,
 } from '../dao/apiCredentials.js';
+import { ok, created, fail, notFound, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -25,9 +26,9 @@ router.get('/', (req, res) => {
   try {
     const domain = req.query.domain as string | undefined;
     const result = listCredentials(domain);
-    res.json({ data: result });
+    return ok(res, result);
   } catch (e) {
-    res.status(500).json({ error: `获取凭证列表失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `获取凭证列表失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -36,11 +37,11 @@ router.get('/:id', (req, res) => {
   try {
     const credential = getCredential(req.params.id);
     if (!credential) {
-      return res.status(404).json({ error: `凭证不存在: ${req.params.id}` });
+      return notFound(res, `凭证不存在: ${req.params.id}`);
     }
-    res.json({ data: credential });
+    return ok(res, credential);
   } catch (e) {
-    res.status(500).json({ error: `获取凭证失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `获取凭证失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -51,13 +52,13 @@ router.post('/', (req, res) => {
 
     // 必填字段验证
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      return res.status(400).json({ error: 'name 不能为空' });
+      return fail(res, BizCode.BAD_REQUEST, 'name 不能为空', 400);
     }
     if (!value || typeof value !== 'string' || value.trim() === '') {
-      return res.status(400).json({ error: 'value 不能为空' });
+      return fail(res, BizCode.BAD_REQUEST, 'value 不能为空', 400);
     }
     if (!domain || typeof domain !== 'string' || domain.trim() === '') {
-      return res.status(400).json({ error: 'domain 不能为空' });
+      return fail(res, BizCode.BAD_REQUEST, 'domain 不能为空', 400);
     }
 
     const credential = createCredential({
@@ -68,9 +69,9 @@ router.post('/', (req, res) => {
       headerName: headerName || 'Authorization',
     });
 
-    res.status(201).json({ data: credential });
+    return created(res, credential);
   } catch (e) {
-    res.status(500).json({ error: `创建凭证失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `创建凭证失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -88,12 +89,12 @@ router.put('/:id', (req, res) => {
     });
 
     if (!updated) {
-      return res.status(404).json({ error: `凭证不存在: ${req.params.id}` });
+      return notFound(res, `凭证不存在: ${req.params.id}`);
     }
 
-    res.json({ data: updated });
+    return ok(res, updated);
   } catch (e) {
-    res.status(500).json({ error: `更新凭证失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `更新凭证失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 
@@ -102,11 +103,11 @@ router.delete('/:id', (req, res) => {
   try {
     const success = deleteCredential(req.params.id);
     if (!success) {
-      return res.status(404).json({ error: `凭证不存在: ${req.params.id}` });
+      return notFound(res, `凭证不存在: ${req.params.id}`);
     }
-    res.json({ data: { success: true } });
+    return ok(res, { success: true });
   } catch (e) {
-    res.status(500).json({ error: `删除凭证失败: ${e instanceof Error ? e.message : String(e)}` });
+    return serverError(res, `删除凭证失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 });
 

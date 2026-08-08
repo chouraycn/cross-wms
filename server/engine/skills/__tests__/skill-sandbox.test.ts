@@ -157,7 +157,7 @@ describe('SkillSandbox', () => {
       const skill = makeSkillEntry({});
       // 函数字符串中包含 "eval" 关键字
       const result = await sandbox.execute(skill, () => {
-        // eslint-disable-next-line no-eval
+         
         const placeholder = 'eval'; // 仅用于触发检查
         return placeholder;
       });

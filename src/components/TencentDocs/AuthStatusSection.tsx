@@ -67,12 +67,12 @@ interface AuthStatusSectionProps {
   onWecomRefresh: () => void;
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
   authStatus, wecomAuthStatus, refreshing, wecomRefreshing, lastSync,
   docCount, wecomDocCount, onRefresh, onWecomRefresh,
 }) => {
-/* eslint-enable @typescript-eslint/no-unused-vars */
+ 
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';

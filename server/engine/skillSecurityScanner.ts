@@ -854,7 +854,7 @@ export class SkillSecurityScanner {
       const rows = getDb().prepare(`
         SELECT * FROM skill_audit_records${whereClause}
         ORDER BY timestamp DESC${limitClause}
-      `).all(...params) as any[];
+      `).all(...params) as unknown[];
 
       return rows.map((row) => ({
         id: row.id,

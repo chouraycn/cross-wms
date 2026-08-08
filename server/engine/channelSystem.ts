@@ -498,7 +498,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
 // ============================================================================
 
 /** 入站消息处理管线步骤 */
-export interface InboundPipelineStep<T = any> {
+export interface InboundPipelineStep<T = unknown> {
   name: string;
   execute(message: ChannelMessage): Promise<ChannelMessage | null>;
 }

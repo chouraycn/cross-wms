@@ -60,7 +60,7 @@ const SkillAuditPage: React.FC = () => {
       // 同步到全局缓存，确保返回技能列表页时审计状态已更新
       setAuditStatus(skillId, a);
       showToast('重新审查完成', 'success');
-    } catch (e: any) {
+    } catch (e: unknown) {
       // console.error('重新审查失败', e);
       showToast(`重新审查失败: ${e?.message || e}`, 'error');
     } finally {
@@ -81,7 +81,7 @@ const SkillAuditPage: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
       showToast('导出成功', 'success');
-    } catch (e: any) {
+    } catch (e: unknown) {
       // console.error('导出失败', e);
       showToast(`导出失败: ${e?.message || e}`, 'error');
     }
@@ -106,7 +106,7 @@ const SkillAuditPage: React.FC = () => {
     );
   }
 
-  let report: any = {};
+  let report: unknown = {};
   try { report = JSON.parse(audit.reportJson); } catch (e) { console.debug("[compat-swallowed]", e); }
 
   const allFindings: AuditFinding[] = [
@@ -215,7 +215,7 @@ const SkillAuditPage: React.FC = () => {
               {(report.details?.commandExecutionHits || []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">未发现危险关键词</Typography>
               ) : (
-                (report.details?.commandExecutionHits || []).map((h: any, i: number) => (
+                (report.details?.commandExecutionHits || []).map((h: unknown, i: number) => (
                   <Typography key={i} variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5 }}>
                     {h.type}: {h.pattern}
                   </Typography>
@@ -231,7 +231,7 @@ const SkillAuditPage: React.FC = () => {
               {(report.details?.fileOperationHits || []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">未发现异常文件操作</Typography>
               ) : (
-                (report.details?.fileOperationHits || []).map((h: any, i: number) => (
+                (report.details?.fileOperationHits || []).map((h: unknown, i: number) => (
                   <Typography key={i} variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5 }}>
                     {h.type}: {h.pattern}
                   </Typography>
@@ -247,7 +247,7 @@ const SkillAuditPage: React.FC = () => {
               {(report.details?.networkRequestHits || []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">未发现可疑网络请求</Typography>
               ) : (
-                (report.details?.networkRequestHits || []).map((h: any, i: number) => (
+                (report.details?.networkRequestHits || []).map((h: unknown, i: number) => (
                   <Typography key={i} variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5 }}>
                     {h.url || h.type}
                   </Typography>
@@ -263,7 +263,7 @@ const SkillAuditPage: React.FC = () => {
               {(report.details?.dependencyHits || []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">未发现依赖风险</Typography>
               ) : (
-                (report.details?.dependencyHits || []).map((h: any, i: number) => (
+                (report.details?.dependencyHits || []).map((h: unknown, i: number) => (
                   <Typography key={i} variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5 }}>
                     {h.package || h.type}
                   </Typography>

@@ -12,8 +12,7 @@ export type AgentPromptSurfaceKind =
   | "openclaw_subagent"
   | "openclaw_compaction"
   | "openclaw_planner"
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  | (string & {});
+    | (string & {});
 
 /** 将旧版 prompt surface 名规范化为当前 OpenClaw surface 名。 */
 export function normalizeAgentPromptSurfaceKind(

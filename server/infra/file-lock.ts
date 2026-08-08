@@ -150,7 +150,7 @@ export async function acquireFileLock(
   let released = false;
 
   // 首次尝试，后续按需轮询
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     // 尝试创建锁文件
     if (await tryCreateLockFile(lockPath)) {

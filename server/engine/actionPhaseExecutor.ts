@@ -386,7 +386,7 @@ export class ActionPhaseExecutor {
     result = middlewareResult.content;
 
     // P1-2 修复：传入实际消息数组，使上下文累积保护生效
-      result = guardToolResultContext(result, context.currentMessages as any[], 128000);
+      result = guardToolResultContext(result, context.currentMessages as unknown[], 128000);
 
     // 统计记录（使用 effectiveToolName，让健康分跟踪实际执行的工具）
     toolExecutionStats.record({

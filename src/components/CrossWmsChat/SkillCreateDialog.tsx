@@ -95,7 +95,7 @@ export const SkillCreateDialog: React.FC<SkillCreateDialogProps> = ({
       setProgress(100);
 
       setStep('preview');
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err.name === 'AbortError') return;
       setError(err.message || '生成失败');
       setStep('config');
@@ -182,7 +182,7 @@ ${desc}
       showToast(`技能「${skillName}」创建成功`, 'success', 3000);
 
       onCreated?.(skillName.trim());
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || '应用失败');
       setStep('preview');
     }

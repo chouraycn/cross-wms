@@ -33,7 +33,7 @@ export function unchangedPendingPluginInstallRecordIds(
   config: OpenClawConfig,
   baseConfig: OpenClawConfig,
 ): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- isDeepStrictEqual 在 ESM 中通过 node:util 导入更佳，但为避免循环依赖与运行时副作用，这里使用 require。
+   
   const { isDeepStrictEqual } = require("node:util") as typeof import("node:util");
   const pendingInstalls = ((config.plugins ?? {}) as { installs?: Record<string, unknown> }).installs ?? {};
   const baseInstalls = ((baseConfig.plugins ?? {}) as { installs?: Record<string, unknown> }).installs ?? {};

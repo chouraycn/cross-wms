@@ -33,7 +33,7 @@ function runAllowlistWarningStep(params: {
   const warnings: string[] = [];
   const tools = [{ name: "exec" }] as unknown as DummyTool[];
   applyToolPolicyPipeline({
-    tools: tools as any,
+    tools: tools as unknown,
     toolMeta: () => undefined,
     warn: (msg) => warnings.push(msg),
     steps: [
@@ -61,8 +61,8 @@ describe("tool-policy-pipeline", () => {
   test("preserves plugin-only allowlists instead of silently stripping them", () => {
     const tools = [{ name: "exec" }, { name: "plugin_tool" }] as unknown as DummyTool[];
     const filtered = applyToolPolicyPipeline({
-      tools: tools as any,
-      toolMeta: (t: any) => (t.name === "plugin_tool" ? { pluginId: "foo" } : undefined),
+      tools: tools as unknown,
+      toolMeta: (t: unknown) => (t.name === "plugin_tool" ? { pluginId: "foo" } : undefined),
       warn: () => {},
       steps: [
         {
@@ -80,7 +80,7 @@ describe("tool-policy-pipeline", () => {
     const warnings: string[] = [];
     const tools = [{ name: "exec" }] as unknown as DummyTool[];
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       steps: [
@@ -142,7 +142,7 @@ describe("tool-policy-pipeline", () => {
     const warnings: string[] = [];
     const profilePolicy = resolveToolProfilePolicy("coding");
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       steps: buildDefaultToolPolicyPipelineSteps({
@@ -158,7 +158,7 @@ describe("tool-policy-pipeline", () => {
   test("does not warn for declared plugin tools that are not materialized yet", () => {
     const warnings: string[] = [];
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: { pluginToolNames: ["llm-task"] },
@@ -177,7 +177,7 @@ describe("tool-policy-pipeline", () => {
   test("does not warn for declared MCP server namespace globs", () => {
     const warnings: string[] = [];
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: { mcpServerNames: ["paperless", "Home Assistant"] },
@@ -196,7 +196,7 @@ describe("tool-policy-pipeline", () => {
   test("still warns for undeclared MCP namespace globs", () => {
     const warnings: string[] = [];
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: { mcpServerNames: ["paperless"] },
@@ -260,7 +260,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -289,7 +289,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -318,7 +318,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -347,7 +347,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -376,7 +376,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -403,7 +403,7 @@ describe("tool-policy-pipeline", () => {
     });
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -439,7 +439,7 @@ describe("tool-policy-pipeline", () => {
     expect(Array.from(declared?.mcpServerNames ?? [])).toEqual(["vigil-harbor"]);
 
     applyToolPolicyPipeline({
-      tools: [{ name: "exec" }] as any,
+      tools: [{ name: "exec" }] as unknown,
       toolMeta: () => undefined,
       warn: (msg) => warnings.push(msg),
       declaredToolAllowlist: declared,
@@ -461,7 +461,7 @@ describe("tool-policy-pipeline", () => {
     const warnings: string[] = [];
     const tools = [{ name: "exec" }] as unknown as DummyTool[];
     const params = {
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: (msg: string) => warnings.push(msg),
       steps: [
@@ -487,7 +487,7 @@ describe("tool-policy-pipeline", () => {
 
     for (let i = 0; i < 257; i += 1) {
       applyToolPolicyPipeline({
-        tools: tools as any,
+        tools: tools as unknown,
         toolMeta: () => undefined,
         warn: (msg: string) => warnings.push(msg),
         steps: [
@@ -501,7 +501,7 @@ describe("tool-policy-pipeline", () => {
     }
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: (msg: string) => warnings.push(msg),
       steps: [
@@ -522,7 +522,7 @@ describe("tool-policy-pipeline", () => {
 
     for (let i = 0; i < 256; i += 1) {
       applyToolPolicyPipeline({
-        tools: tools as any,
+        tools: tools as unknown,
         toolMeta: () => undefined,
         warn: (msg: string) => warnings.push(msg),
         steps: [
@@ -538,7 +538,7 @@ describe("tool-policy-pipeline", () => {
     warnings.length = 0;
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: (msg: string) => warnings.push(msg),
       steps: [
@@ -550,7 +550,7 @@ describe("tool-policy-pipeline", () => {
       ],
     });
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: (msg: string) => warnings.push(msg),
       steps: [
@@ -567,7 +567,7 @@ describe("tool-policy-pipeline", () => {
   test("applies allowlist filtering when core tools are explicitly listed", () => {
     const tools = [{ name: "exec" }, { name: "process" }] as unknown as DummyTool[];
     const filtered = applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -584,7 +584,7 @@ describe("tool-policy-pipeline", () => {
   test("applies deny filtering after allow filtering", () => {
     const tools = [{ name: "exec" }, { name: "process" }] as unknown as DummyTool[];
     const filtered = applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -607,7 +607,7 @@ describe("tool-policy-pipeline", () => {
     ] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -635,7 +635,7 @@ describe("tool-policy-pipeline", () => {
     const tools = [{ name: "exec" }, { name: "browser" }] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       auditLogLevel: "debug",
@@ -664,7 +664,7 @@ describe("tool-policy-pipeline", () => {
     const tools = [{ name: "exec" }, { name: "browser" }] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -697,7 +697,7 @@ describe("tool-policy-pipeline", () => {
     ] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -736,7 +736,7 @@ describe("tool-policy-pipeline", () => {
     const tools = [{ name: "exec" }] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [
@@ -755,7 +755,7 @@ describe("tool-policy-pipeline", () => {
     const tools = [{ name: "exec\nbad" }] as unknown as DummyTool[];
 
     applyToolPolicyPipeline({
-      tools: tools as any,
+      tools: tools as unknown,
       toolMeta: () => undefined,
       warn: () => {},
       steps: [

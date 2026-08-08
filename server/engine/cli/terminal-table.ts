@@ -60,7 +60,7 @@ function padRight(text: string, width: number): string {
   return text + " ".repeat(width - plainLen);
 }
 
-/* eslint-disable no-control-regex */
+ 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
@@ -68,4 +68,4 @@ function stripAnsi(text: string): string {
 export function sanitizeTerminalText(text: string): string {
   return text.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
 }
-/* eslint-enable no-control-regex */
+ 

@@ -115,7 +115,7 @@ export async function installSkill(source: string, onProgress?: (progress: Insta
 
             if (progress.type === 'result') {
               finalResult = {
-                installId: (progress.result as any)?.installId || '',
+                installId: (progress.result as unknown)?.installId || '',
                 success: true,
                 skillName: progress.skillName,
                 version: progress.version,

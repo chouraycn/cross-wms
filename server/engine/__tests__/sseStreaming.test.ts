@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ===================== Mock 模块 =====================
 
 // Express Response mock
-function createMockResponse(): any {
+function createMockResponse(): unknown {
   const mock = {
     writableEnded: false,
     write: vi.fn(),

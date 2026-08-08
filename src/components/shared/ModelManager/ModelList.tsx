@@ -562,7 +562,7 @@ const ModelList: React.FC<ModelListProps> = (props) => {
     // 按能力标签过滤
     if (props.selectedCapabilities && props.selectedCapabilities.length > 0) {
       result = result.filter(m =>
-        props.selectedCapabilities!.some(cap => m.capabilities?.includes(cap as any))
+        props.selectedCapabilities!.some(cap => m.capabilities?.includes(cap as unknown))
       );
     }
     return result;

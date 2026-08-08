@@ -38,7 +38,7 @@ const ReflectMeta = Reflect as unknown as {
     metadataKey: symbol,
     target: unknown,
     propertyKey?: string | symbol,
-  ): any;
+  ): unknown;
 };
 
 const PLUGIN_METADATA_KEY = Symbol('plugin-sdk:plugin');

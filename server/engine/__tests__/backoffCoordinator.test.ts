@@ -62,7 +62,7 @@ const multiKeyModelConfig = {
     { key: 'k0', enabled: true },
     { key: 'k1', enabled: true },
   ],
-} as any;
+} as unknown;
 
 /** 两把 Key 的状态（index 0 失败，index 1 可作为轮换目标） */
 const twoKeysStatus = [
@@ -194,7 +194,7 @@ describe('BackoffCoordinator — 错误分类与降级策略', () => {
       modelConfig: multiKeyModelConfig,
       keyIndex: 0,
       error: { message: 'network connection refused' },
-      requiredCapabilities: caps as any,
+      requiredCapabilities: caps as unknown,
     });
     expect(d.action).toBe('switch-model');
     expect(d.reason).toContain('network');
@@ -310,7 +310,7 @@ describe('BackoffCoordinator — 异常兜底与配置同步', () => {
       modelConfig: multiKeyModelConfig,
       keyIndex: -1,
       error: { status: 401 }, // auth → give-up，但 setModels 应在分类前调用
-      modelsConfig: { models: [multiKeyModelConfig] } as any,
+      modelsConfig: { models: [multiKeyModelConfig] } as unknown,
     });
 
     expect(failover.setModels).toHaveBeenCalledWith([multiKeyModelConfig]);
@@ -393,7 +393,7 @@ describe('BackoffCoordinator — 补充边缘用例', () => {
       modelConfig: multiKeyModelConfig,
       keyIndex: 0,
       error: { status: 401 },
-      modelsConfig: { models: [multiKeyModelConfig] } as any,
+      modelsConfig: { models: [multiKeyModelConfig] } as unknown,
     });
     expect(failover.setModels).toHaveBeenCalledWith([multiKeyModelConfig]);
     expect(d.action).toBe('give-up');

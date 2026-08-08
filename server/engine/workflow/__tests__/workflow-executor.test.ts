@@ -347,8 +347,8 @@ describe('WorkflowExecutor', () => {
         },
       ]);
 
-      const originalExecuteNodeByType = (executor as any).executeNodeByType?.bind(executor);
-      (executor as any).executeNodeByType = function(workflow: any, node: any, context: any, variableCtx: any) {
+      const originalExecuteNodeByType = (executor as unknown).executeNodeByType?.bind(executor);
+      (executor as unknown).executeNodeByType = function(workflow: unknown, node: unknown, context: unknown, variableCtx: unknown) {
         if (node.id === 'script-1') {
           nodeCallCount++;
           if (nodeCallCount < 3) {

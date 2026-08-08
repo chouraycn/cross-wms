@@ -46,12 +46,12 @@ function assertSafeCommandDescriptorName(name: string): string {
  */
 export function sanitizeCommandDescriptorDescription(description: string): string {
   // 去除 ANSI 转义序列（CSI、OSC 等）
-  // eslint-disable-next-line no-control-regex
+   
   const ansiStripped = description.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
-  // eslint-disable-next-line no-control-regex
+   
   const oscStripped = ansiStripped.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
   // 去除其他控制字符（保留换行与制表符）
-  // eslint-disable-next-line no-control-regex
+   
   return oscStripped.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "").trim();
 }
 

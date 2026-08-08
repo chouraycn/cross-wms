@@ -104,7 +104,7 @@ describe('脱敏模块', () => {
         b: { c: 'my-secret-value-1234567890' },
         d: ['my-secret-value-1234567890', 'safe'],
       };
-      const result = redactor.redactObject(obj) as any;
+      const result = redactor.redactObject(obj) as unknown;
       expect(result.a).toBe('***REDACTED***');
       expect(result.b.c).toBe('***REDACTED***');
       expect(result.d[0]).toBe('***REDACTED***');

@@ -390,7 +390,7 @@ describe('E2E: 技能系统', () => {
     });
 
     it('应能注册并通知监听器', () => {
-      const events: any[] = [];
+      const events: unknown[] = [];
       const unregister = snapshot.registerListener((e) => {
         events.push(e);
       });

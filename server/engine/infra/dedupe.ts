@@ -82,7 +82,7 @@ export function createDedupeFilter<T>(
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveGlobalDedupeCache: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const resolveGlobalDedupeCache: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
 
 // openclaw compat: bounded in-memory dedupe cache with optional TTL expiry
 export interface DedupeCacheOptions {

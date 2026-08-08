@@ -34,7 +34,7 @@ class PluginRegistry {
   private static instance: PluginRegistry;
 
   /** 已加载的插件模块（pluginId → module exports） */
-  private loadedModules: Map<string, any> = new Map();
+  private loadedModules: Map<string, unknown> = new Map();
 
   /** 插件错误记录 */
   private errors: PluginError[] = [];

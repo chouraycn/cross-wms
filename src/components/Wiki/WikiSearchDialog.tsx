@@ -139,7 +139,7 @@ const WikiSearchDialog: React.FC<WikiSearchDialogProps> = ({
     try {
       await onSearch(options.query, {
         tags: options.selectedTags.length > 0 ? options.selectedTags : undefined,
-        source: options.source !== 'all' ? options.source as any : undefined,
+        source: options.source !== 'all' ? options.source as unknown : undefined,
         useVectorSearch: options.useVectorSearch,
         useFtsSearch: options.useFtsSearch,
       });
@@ -302,7 +302,7 @@ const WikiSearchDialog: React.FC<WikiSearchDialogProps> = ({
               <Select
                 value={options.source}
                 label="来源"
-                onChange={(e) => setOptions(prev => ({ ...prev, source: e.target.value as any }))}
+                onChange={(e) => setOptions(prev => ({ ...prev, source: e.target.value as unknown }))}
               >
                 <MenuItem value="all">{SOURCE_LABELS.all}</MenuItem>
                 <MenuItem value="manual">{SOURCE_LABELS.manual}</MenuItem>

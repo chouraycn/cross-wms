@@ -3,5 +3,5 @@
 // This augmentation restores Promise<any> for convenience in test assertions.
 
 interface Response {
-  json(): Promise<any>;
+  json(): Promise<unknown>;
 }

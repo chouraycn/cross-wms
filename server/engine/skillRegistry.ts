@@ -207,7 +207,7 @@ function createDeclarativeHandler(
           require: (mod: string) => {
             const allowed = ['lodash', 'date-fns'];
             if (allowed.includes(mod)) {
-              // eslint-disable-next-line @typescript-eslint/no-require-imports
+               
               return require(mod);
             }
             throw new Error(`不允许导入模块: ${mod}（仅允许: ${allowed.join(', ')}）`);

@@ -304,7 +304,7 @@ export function listBundledChannelIds(
 ): readonly string[] {
   try {
     // 延迟导入以避免循环依赖
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { listChannelCatalogEntries } = require("../plugins/channel-catalog-registry.js") as {
       listChannelCatalogEntries: (params: {
         origin?: string;
@@ -977,7 +977,7 @@ export async function expandAllowFromWithAccessGroups(params: {
   resolveMembership?: AccessGroupMembershipResolver;
 }): Promise<string[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { expandAllowFromWithAccessGroups: expandImpl } = require("../plugin-sdk/access-groups.js") as {
       expandAllowFromWithAccessGroups: (params: {
         cfg?: unknown;
@@ -1322,7 +1322,7 @@ export function getActivePluginChannelRegistrySnapshotFromState(): {
  */
 export function resolveEnvelopeFormatOptions(cfg: unknown): Record<string, unknown> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { resolveEnvelopeFormatOptions: resolveImpl } = require("../auto-reply/envelope.js") as {
       resolveEnvelopeFormatOptions: (cfg?: {
         envelopeTimezone?: string;
@@ -1350,7 +1350,7 @@ export function readSessionUpdatedAt(params: {
     return undefined;
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const fs = require("node:fs") as typeof import("node:fs");
     if (!fs.existsSync(params.storePath)) {
       return undefined;
@@ -1471,7 +1471,7 @@ export function isControlCommandMessage(
   options?: CommandNormalizeOptions,
 ): boolean {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { isControlCommandMessage: detectImpl } = require("../auto-reply/command-detection.js") as {
       isControlCommandMessage: (
         text?: string,
@@ -1512,7 +1512,7 @@ export function resolveAccountEntry(
     return undefined;
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { resolveAccountEntry: lookupImpl } = require("../routing/account-lookup.js") as {
       resolveAccountEntry: <T>(
         accounts: Record<string, T> | undefined,
@@ -1565,7 +1565,7 @@ export function resolveSharedThreadBindingLifecycle(params: {
   defaultMaxAgeMs?: number;
 }): { expiresAt?: number; reason?: "idle-expired" | "max-age-expired" } {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { resolveThreadBindingLifecycle: resolveImpl } = require("../shared/thread-binding-lifecycle.js") as {
       resolveThreadBindingLifecycle: (params: {
         record: {
@@ -1645,7 +1645,7 @@ export function isInsideCode(offset: number, regions: CodeRegion[]): boolean {
  */
 export function formatReasoningMessage(text: string): string {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const { formatReasoningMessage: formatImpl } = require("../agents/embedded-agent-utils.js") as {
       formatReasoningMessage: (text: string) => string;
     };
@@ -1734,7 +1734,7 @@ export function stripInlineDirectiveTagsForDelivery(text: string): {
 /** 同步读取 JSON（降级：失败返回 null）。 */
 export function tryReadJsonSync<T>(filePath: string): T | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const fs = require("node:fs") as typeof import("node:fs");
     const content = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(content) as T;
@@ -1758,7 +1758,7 @@ const packageRootCache = new Map<string, string | null>();
 
 function readPackageNameSync(dir: string): string | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const fs = require("node:fs") as typeof import("node:fs");
     const path = require("node:path") as typeof import("node:path");
     const packageJsonPath = path.join(path.resolve(dir), "package.json");
@@ -1774,7 +1774,7 @@ function readPackageNameSync(dir: string): string | null {
 }
 
 function findPackageRootSync(startDir: string, maxDepth = 12): string | null {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+   
   const path = require("node:path") as typeof import("node:path");
   let current = path.resolve(startDir);
   for (let i = 0; i < maxDepth; i += 1) {
@@ -1796,12 +1796,12 @@ export function resolveOpenClawPackageRootSync(params?: {
   moduleUrl?: string;
   argv1?: string;
 }): string | null {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+   
   const path = require("node:path") as typeof import("node:path");
   const candidates: string[] = [];
   if (params?.moduleUrl) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+       
       const { fileURLToPath } = require("node:url") as typeof import("node:url");
       candidates.push(path.dirname(fileURLToPath(params.moduleUrl)));
     } catch {
@@ -1848,7 +1848,7 @@ const bundledPluginsDirCache = new Map<string, string | null>();
 
 function hasUsableBundledPluginTree(pluginsDir: string): boolean {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+     
     const fs = require("node:fs") as typeof import("node:fs");
     if (!fs.existsSync(pluginsDir)) {
       return false;
@@ -1859,7 +1859,7 @@ function hasUsableBundledPluginTree(pluginsDir: string): boolean {
         if (!entry.isDirectory()) {
           return false;
         }
-        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+         
         const path = require("node:path") as typeof import("node:path");
         const pluginDir = path.join(pluginsDir, entry.name);
         return (
@@ -1882,7 +1882,7 @@ function resolveBundledPluginsDirUncached(env: NodeJS.ProcessEnv): string | null
   const override = env.OPENCLAW_BUNDLED_PLUGINS_DIR?.trim();
   if (override) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+       
       const fs = require("node:fs") as typeof import("node:fs");
       const resolvedOverride = override.replace(/^~/, env.HOME ?? "");
       if (fs.existsSync(resolvedOverride)) {
@@ -1893,7 +1893,7 @@ function resolveBundledPluginsDirUncached(env: NodeJS.ProcessEnv): string | null
     }
   }
   // 从包根查找
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+   
   const path = require("node:path") as typeof import("node:path");
   const packageRoot = resolveOpenClawPackageRootSync({ argv1: process.argv[1] });
   const roots = [packageRoot, resolveOpenClawPackageRootSync({})].filter(
@@ -1956,7 +1956,7 @@ export function resolveStateDir(
   env: NodeJS.ProcessEnv,
   homeDir: string,
 ): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+   
   const path = require("node:path") as typeof import("node:path");
   const override = env.OPENCLAW_STATE_DIR?.trim();
   if (override) {

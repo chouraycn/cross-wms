@@ -463,7 +463,7 @@ const PluginsPage: React.FC = () => {
     }
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const _ = version; // 触发 re-render
 
   return (

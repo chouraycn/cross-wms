@@ -30,7 +30,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // ===================== 类型定义 =====================
 
 /** 设备类型 */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type DeviceType = 'mobile' | 'desktop' | 'tablet' | 'unknown' | (string & {});
 
 /** 配对状态 */

@@ -152,7 +152,7 @@ describe('Harness Registry — 线束注册表', () => {
 
       expect(h1.reset).toHaveBeenCalledTimes(1);
       expect(h2.reset).toHaveBeenCalledTimes(1);
-      expect((h1.reset as any).mock.calls[0][0].sessionId).toBe('session-1');
+      expect((h1.reset as unknown).mock.calls[0][0].sessionId).toBe('session-1');
     });
 
     // 11

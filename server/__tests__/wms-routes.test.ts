@@ -281,7 +281,7 @@ vi.mock('../dao/wmsSkillDao.js', () => {
 });
 
 import * as daoOriginal from '../dao/wmsSkillDao.js';
-const dao = vi.mocked(daoOriginal) as any;
+const dao = vi.mocked(daoOriginal) as unknown;
 
 // ===================== Test Server Helper =====================
 

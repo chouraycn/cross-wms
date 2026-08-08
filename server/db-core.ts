@@ -167,7 +167,7 @@ function migrateBuiltinSkillsIntoUserSkills(db: Database.Database): void {
   let skillsRoot: string;
   try {
     // 动态 require 避免循环依赖
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { AppPaths } = require('./config/appPaths.js') as { AppPaths: { skillsDir: string } };
     skillsRoot = AppPaths.skillsDir;
   } catch {
@@ -317,7 +317,7 @@ function migrateOpenclawSkillsIntoUserSkills(db: Database.Database): void {
   // 目标：AppPaths.skillsDir/<id>/SKILL.md
   let skillsRoot: string;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { AppPaths } = require('./config/appPaths.js') as { AppPaths: { skillsDir: string } };
     skillsRoot = AppPaths.skillsDir;
   } catch {

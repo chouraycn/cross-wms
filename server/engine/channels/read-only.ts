@@ -6,7 +6,7 @@ export function listPluginLoaderModuleCandidateUrls(..._args: unknown[]): unknow
 
 export type ReadOnlyChannelPluginLoadFailure = unknown;
 
-export const resolveReadOnlyChannelCommandDefaults: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const resolveReadOnlyChannelCommandDefaults: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
 
 export function listReadOnlyChannelPluginsForConfig(..._args: unknown[]): unknown {
   return [];

@@ -33,7 +33,7 @@ const SkillRecommendationsPanel: React.FC<SkillRecommendationsPanelProps> = ({ s
       .then((res) => {
         if (!cancelled) setRecommendations(res.recommendations);
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         if (!cancelled) showToast(`推荐加载失败: ${e?.message || e}`, 'error');
       })
       .finally(() => {

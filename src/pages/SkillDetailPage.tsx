@@ -104,7 +104,7 @@ const SkillDetailPage: React.FC = () => {
   // 技能数据（响应式）
   const [skillVersion, setSkillVersion] = useState(0);
   const allSkills = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const _v = skillVersion;
     return getAllSkills();
   }, [skillVersion]);

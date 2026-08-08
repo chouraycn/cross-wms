@@ -11,6 +11,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { logger } from '../logger.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 import {
   loadModelsConfig,
   saveModelsConfig,
@@ -92,12 +93,10 @@ router.get('/', async (_req: Request, res: Response) => {
       models: sanitizedModels,
       providers: sanitizedProviders,
     };
-    res.json({
-      data: sanitized,
-      providerRegistry: getUnifiedProviderRegistry().getStats(),
-    });
+    // 保持 body.data = ModelsConfig（前端 request() 解包 json.data），providerRegistry 此前为顶层兄弟字段、无任何 request 调用方消费，故不再下发。
+    return ok(res, sanitized);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -113,8 +112,7 @@ router.put('/', async (req: Request, res: Response) => {
       providers?: ProviderConfig[];
     };
     if (!Array.isArray(models)) {
-      res.status(400).json({ error: 'models 必须是数组' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'models 必须是数组', 400);
     }
 
     // 读取当前已有配置（含 apiKeyRef/apiKeyRefs）
@@ -190,12 +188,10 @@ router.put('/', async (req: Request, res: Response) => {
         return rest;
       }),
     };
-    res.json({
-      data: sanitized,
-      providerRegistry: getUnifiedProviderRegistry().getStats(),
-    });
+    // 保持 body.data = ModelsConfig（前端 request() 解包 json.data），providerRegistry 此前为顶层兄弟字段、无任何 request 调用方消费，故不再下发。
+    return ok(res, sanitized);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -204,9 +200,9 @@ router.post('/reset', async (_req: Request, res: Response) => {
   try {
     const builtin = getBuiltinModels();
     const config = await saveModelsConfig(builtin, process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4o');
-    res.json({ data: config });
+    return ok(res, config);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -240,7 +236,7 @@ router.post('/health-check', async (req: Request, res: Response) => {
     }
 
     if (modelsToCheck.length === 0) {
-      res.json({ data: [] });
+      return ok(res, []);
       return;
     }
 
@@ -351,9 +347,9 @@ router.post('/health-check', async (req: Request, res: Response) => {
     // 按 modelId 排序
     results.sort((a, b) => a.modelId.localeCompare(b.modelId));
 
-    res.json({ data: results });
+    return ok(res, results);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -402,7 +398,7 @@ function getHostIp(): string {
 
 // GET /api/models/host-ip — 动态检测宿主机 IP（VM 网关地址）
 router.get('/host-ip', (_req: Request, res: Response) => {
-  res.json({ hostIp: getHostIp() });
+  return ok(res, { hostIp: getHostIp() });
 });
 
 router.post('/discover-local', async (req: Request, res: Response) => {
@@ -494,9 +490,9 @@ router.post('/discover-local', async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ data: unique });
+    return ok(res, unique);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -510,8 +506,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
     };
 
     if (!apiEndpoint) {
-      res.status(400).json({ success: false, message: 'API 端点不能为空' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'API 端点不能为空', 400);
     }
 
     const controller = new AbortController();
@@ -546,10 +541,10 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           const txt = await resp.text().catch(() => '');
           // 检查是否是模型不存在错误
           if (resp.status === 404 || txt.toLowerCase().includes('model') || txt.toLowerCase().includes('not_found')) {
-            res.json({ success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
+            return ok(res, { success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
             return;
           }
-          res.json({ success: false, message: `Anthropic API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
+          return ok(res, { success: false, message: `Anthropic API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
           return;
         }
       }
@@ -596,13 +591,13 @@ router.post('/test-connection', async (req: Request, res: Response) => {
             const txt = await testResp.text().catch(() => '');
             // 400 可能是缺 model 参数，也可能是模型不存在
             if (txt.toLowerCase().includes('model') && (txt.toLowerCase().includes('not found') || txt.toLowerCase().includes('does not exist') || txt.toLowerCase().includes('invalid'))) {
-              res.json({ success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
+              return ok(res, { success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
               return;
             }
             message = '连接成功（端点可达，但未返回模型列表）';
           } else {
             const txt = await testResp.text().catch(() => '');
-            res.json({ success: false, message: `API 错误 ${testResp.status}: ${txt.slice(0, 200)}` });
+            return ok(res, { success: false, message: `API 错误 ${testResp.status}: ${txt.slice(0, 200)}` });
             return;
           }
         } else {
@@ -613,10 +608,10 @@ router.post('/test-connection', async (req: Request, res: Response) => {
             const msg = isInvalidKey
               ? `API Key 无效或已过期。请检查：\n1. Key 是否正确（从服务商控制台复制）\n2. Key 是否已过期或被撤销\n3. 是否使用了正确的服务商端点\n\n原始错误：${txt.slice(0, 200)}`
               : `认证失败（401）。请检查 API Key 是否正确配置。\n\n原始错误：${txt.slice(0, 200)}`;
-            res.json({ success: false, message: msg });
+            return ok(res, { success: false, message: msg });
             return;
           }
-          res.json({ success: false, message: `API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
+          return ok(res, { success: false, message: `API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
           return;
         }
       }
@@ -625,7 +620,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
       if (modelId && !modelValid && models.length > 0) {
         const similar = models.filter(m => m.toLowerCase().includes(modelId.toLowerCase().split('-')[0])).slice(0, 5);
         const hint = similar.length > 0 ? `。您是否想使用：${similar.join(', ')}` : '';
-        res.json({
+        return ok(res, {
           success: true,
           message: `连接成功，但模型 "${modelId}" 不在该账户的可用列表中${hint}`,
           modelValid: false,
@@ -634,19 +629,19 @@ router.post('/test-connection', async (req: Request, res: Response) => {
         return;
       }
 
-      res.json({ success: true, message, modelValid, models });
+      return ok(res, { success: true, message, modelValid, models });
     } catch (fetchError: unknown) {
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        res.json({ success: false, message: '连接超时（8秒）' });
+        return ok(res, { success: false, message: '连接超时（8秒）' });
       } else {
         const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
-        res.json({ success: false, message: `连接失败: ${msg}` });
+        return ok(res, { success: false, message: `连接失败: ${msg}` });
       }
     } finally {
       clearTimeout(timeout);
     }
   } catch (e) {
-    res.status(500).json({ success: false, message: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -658,9 +653,9 @@ router.get('/recommended', async (_req: Request, res: Response) => {
       const { apiKey, apiKeys, ...rest } = m;
       return rest;
     });
-    res.json({ data: sanitized });
+    return ok(res, sanitized);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -668,9 +663,9 @@ router.get('/recommended', async (_req: Request, res: Response) => {
 router.get('/is-first-launch', async (_req: Request, res: Response) => {
   try {
     const firstLaunch = await isFirstLaunch();
-    res.json({ data: { isFirstLaunch: firstLaunch } });
+    return ok(res, { isFirstLaunch: firstLaunch });
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -680,16 +675,14 @@ router.post('/recommended/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     const recommendedModel = getRecommendedModelById(id);
     if (!recommendedModel) {
-      res.status(404).json({ error: `推荐模型 "${id}" 不存在` });
-      return;
+    return notFound(res, `推荐模型 "${id}" 不存在`);
     }
 
     const currentConfig = await loadModelsConfig();
     const existingIds = new Set(currentConfig.models.map((m) => m.id));
 
     if (existingIds.has(id)) {
-      res.status(409).json({ error: `模型 "${id}" 已存在` });
-      return;
+    return fail(res, BizCode.CONFLICT, `模型 "${id}" 已存在`, 409);
     }
 
     const newModel = { ...recommendedModel };
@@ -704,9 +697,9 @@ router.post('/recommended/:id', async (req: Request, res: Response) => {
         return rest;
       }),
     };
-    res.json({ data: sanitized });
+    return ok(res, sanitized);
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -726,7 +719,7 @@ router.post('/add-recommended', async (_req: Request, res: Response) => {
           return rest;
         }),
       };
-      res.json({ data: sanitized, added: 0, message: '所有推荐模型已存在' });
+      return ok(res, { sanitized, added: 0, message: '所有推荐模型已存在' });
       return;
     }
 
@@ -741,9 +734,9 @@ router.post('/add-recommended', async (_req: Request, res: Response) => {
         return rest;
       }),
     };
-    res.json({ data: sanitized, added: modelsToAdd.length, message: `成功添加 ${modelsToAdd.length} 个推荐模型` });
+    return ok(res, { sanitized, added: modelsToAdd.length, message: `成功添加 ${modelsToAdd.length} 个推荐模型` });
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -763,10 +756,10 @@ router.get('/failover/health', (_req: Request, res: Response) => {
   try {
     const manager = getModelFailoverManager();
     const health = manager.getAllHealthStatus();
-    res.json({ models: health });
+    return ok(res, { models: health });
   } catch (e) {
     logger.error('[Models] 获取 failover 健康状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -777,13 +770,12 @@ router.get('/failover/health/:modelId', (req: Request, res: Response) => {
     const manager = getModelFailoverManager();
     const health = manager.getModelHealth(modelId);
     if (!health) {
-      res.status(404).json({ error: `模型 ${modelId} 无健康状态记录` });
-      return;
+    return notFound(res, `模型 ${modelId} 无健康状态记录`);
     }
-    res.json({ modelId, ...health });
+    return ok(res, { modelId, ...health });
   } catch (e) {
     logger.error('[Models] 获取模型 failover 健康状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -792,10 +784,10 @@ router.get('/failover/decisions', (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt(String(req.query.limit), 10) || 50, 200);
     const decisions = getFailoverDecisionLog(limit);
-    res.json({ decisions, count: decisions.length });
+    return ok(res, { decisions, count: decisions.length });
   } catch (e) {
     logger.error('[Models] 获取 failover 决策日志失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -805,10 +797,10 @@ router.post('/failover/reset', (_req: Request, res: Response) => {
     const manager = getModelFailoverManager();
     manager.resetAllHealth();
     logger.info('[Models] 已通过 API 重置所有模型 failover 健康状态');
-    res.json({ success: true, message: '已重置所有模型健康状态' });
+    return ok(res, { success: true, message: '已重置所有模型健康状态' });
   } catch (e) {
     logger.error('[Models] 重置 failover 健康状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -819,10 +811,10 @@ router.post('/failover/reset/:modelId', (req: Request, res: Response) => {
     const manager = getModelFailoverManager();
     manager.resetModelHealth(modelId);
     logger.info(`[Models] 已通过 API 重置模型 ${modelId} 的 failover 健康状态`);
-    res.json({ success: true, modelId, message: `已重置模型 ${modelId} 健康状态` });
+    return ok(res, { success: true, modelId, message: `已重置模型 ${modelId} 健康状态` });
   } catch (e) {
     logger.error('[Models] 重置模型 failover 健康状态失败:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 

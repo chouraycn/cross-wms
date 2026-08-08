@@ -22,13 +22,13 @@ export type RenderedMessagePartKind =
 export interface RenderedMessagePart {
   kind: RenderedMessagePartKind;
   content: unknown;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /** Rendered payload batch for outbound message sending. */
 export interface RenderedMessageBatch<TPayload = unknown> {
   parts: RenderedMessagePart[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   payloads?: TPayload[];
 }
 

@@ -51,7 +51,7 @@ function appendToolCallAndResult(sm: ReturnType<typeof SessionManager.inMemory>)
     isError: false,
     content: [{ type: "text", text: "ok" }],
     details: { big: "x".repeat(10_000) },
-  } as any);
+  } as unknown);
 }
 
 function getPersistedToolResult(sm: ReturnType<typeof SessionManager.inMemory>) {
@@ -60,7 +60,7 @@ function getPersistedToolResult(sm: ReturnType<typeof SessionManager.inMemory>) 
     .filter((e) => e.type === "message")
     .map((e) => (e as { message: AgentMessage }).message);
 
-  return messages.find((m) => (m as any).role === "toolResult") as any;
+  return messages.find((m) => (m as unknown).role === "toolResult") as unknown;
 }
 
 function requirePersistedToolResult(sm: ReturnType<typeof SessionManager.inMemory>) {
@@ -164,7 +164,7 @@ describe("tool_result_persist hook", () => {
         error: null,
         payload: "x".repeat(10_000),
       },
-    } as any);
+    } as unknown);
 
     const details = requirePersistedToolResult(sm).details;
     expect(details.persistedDetailsTruncated).toBe(true);
@@ -209,7 +209,7 @@ describe("tool_result_persist hook", () => {
           items: [`curl --token ${tokenValue} https://example.test`],
         },
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -248,7 +248,7 @@ describe("tool_result_persist hook", () => {
       details: {
         diagnostic: customSecret,
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult);
@@ -282,7 +282,7 @@ describe("tool_result_persist hook", () => {
       details: {
         token: { value: "shortsecret" },
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -314,7 +314,7 @@ describe("tool_result_persist hook", () => {
         [`https://example.test/callback?token=${tokenValue}`]: "ok",
         deepDetails,
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -354,7 +354,7 @@ describe("tool_result_persist hook", () => {
           },
         ],
       },
-    } as any);
+    } as unknown);
 
     const toolResult = getPersistedToolResult(sm);
     expect(toolResult.content[0]?.text).toBe("visible output stays small");
@@ -398,7 +398,7 @@ describe("tool_result_persist hook", () => {
           },
         ],
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -443,7 +443,7 @@ describe("tool_result_persist hook", () => {
           command: `node script-${i}.js ${"x".repeat(6_000)}`,
         })),
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const details = toolResult.details;
@@ -482,7 +482,7 @@ describe("tool_result_persist hook", () => {
         aggregated: "x".repeat(120_000),
         tail,
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -512,7 +512,7 @@ describe("tool_result_persist hook", () => {
         status: "completed",
         tail: `${"x".repeat(1_000)}{"token":"${longSecret}${"z".repeat(1_000)}`,
       },
-    } as any);
+    } as unknown);
 
     const toolResult = requirePersistedToolResult(sm);
     const serialized = JSON.stringify(toolResult.details);
@@ -557,7 +557,7 @@ describe("tool_result_persist hook", () => {
         isError: false,
         content: [{ type: "text", text: "visible output stays small" }],
         details: oversizedDetails,
-      } as any);
+      } as unknown);
     } finally {
       stringifySpy.mockRestore();
     }
@@ -607,7 +607,7 @@ describe("tool_result_persist hook", () => {
         isError: false,
         content: [{ type: "text", text: "visible output stays small" }],
         details: wideDetails,
-      } as any);
+      } as unknown);
     } finally {
       entriesSpy.mockRestore();
       keysSpy.mockRestore();
@@ -657,7 +657,7 @@ describe("tool_result_persist hook", () => {
           tail: "z".repeat(10_000),
         })),
       },
-    } as any);
+    } as unknown);
 
     const toolResult = getPersistedToolResult(sm);
     const details = toolResult.details as Record<string, unknown>;

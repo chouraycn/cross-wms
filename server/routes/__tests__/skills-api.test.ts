@@ -100,7 +100,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toEqual(mockSkills);
     });
 
@@ -111,8 +111,8 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills');
       expect(res.status).toBe(500);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toContain('Database error');
+      expect(res.body.code).not.toBe(0);
+      expect(res.body.message).toContain('Database error');
     });
   });
 
@@ -123,7 +123,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/skill-1');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toEqual(mockSkill);
     });
 
@@ -132,8 +132,8 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/nonexistent');
       expect(res.status).toBe(404);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toBe('技能不存在');
+      expect(res.body.code).not.toBe(0);
+      expect(res.body.message).toBe('技能不存在');
     });
   });
 
@@ -151,7 +151,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能创建成功');
       expect(mockFns.createUserSkill).toHaveBeenCalledWith({
         name: 'New Skill',
@@ -174,8 +174,8 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toBe('技能名称不能为空');
+      expect(res.body.code).not.toBe(0);
+      expect(res.body.message).toBe('技能名称不能为空');
     });
   });
 
@@ -191,7 +191,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能更新成功');
     });
 
@@ -203,7 +203,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(404);
-      expect(res.body.success).toBe(false);
+      expect(res.body.code).not.toBe(0);
     });
   });
 
@@ -215,7 +215,7 @@ describe('Skills API', () => {
 
       const res = await request(app).delete('/api/skills/skill-1');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能删除成功');
     });
 
@@ -237,7 +237,7 @@ describe('Skills API', () => {
 
       const res = await request(app).post('/api/skills/skill-1/enable');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能启用成功');
     });
 
@@ -259,7 +259,7 @@ describe('Skills API', () => {
 
       const res = await request(app).post('/api/skills/skill-1/disable');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能禁用成功');
     });
 
@@ -280,7 +280,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/skill-1/versions');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toEqual({
         current: '1.0.0',
         history: [],
@@ -300,7 +300,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能已升级到 2.0.0');
     });
 
@@ -309,7 +309,7 @@ describe('Skills API', () => {
 
       const res = await request(app).post('/api/skills/skill-1/upgrade').send({});
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('目标版本不能为空');
+      expect(res.body.message).toBe('目标版本不能为空');
     });
   });
 
@@ -325,7 +325,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能已回滚到 0.9.0');
     });
   });
@@ -337,7 +337,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/skill-1/dependencies');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toEqual({
         bins: [],
         env: [],
@@ -356,7 +356,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.message).toBe('技能安装成功');
     });
 
@@ -366,7 +366,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('无效的安装源类型');
+      expect(res.body.message).toContain('无效的安装源类型');
     });
   });
 
@@ -377,14 +377,14 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/search?q=Test');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toHaveLength(1);
     });
 
     it('缺少搜索关键词返回 400', async () => {
       const res = await request(app).get('/api/skills/search');
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('搜索关键词不能为空');
+      expect(res.body.message).toBe('搜索关键词不能为空');
     });
   });
 
@@ -395,7 +395,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/audit');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toHaveLength(1);
     });
   });
@@ -408,7 +408,7 @@ describe('Skills API', () => {
 
       const res = await request(app).get('/api/skills/metrics');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data.totalCount).toBe(1);
       expect(res.body.data.activeCount).toBe(1);
     });
@@ -419,7 +419,7 @@ describe('Skills API', () => {
     it('返回模板列表', async () => {
       const res = await request(app).get('/api/skills/templates');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
       expect(res.body.data).toHaveLength(4);
     });
   });
@@ -436,7 +436,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.code).toBe(0);
     });
 
     it('模板不存在时返回 404', async () => {
@@ -445,7 +445,7 @@ describe('Skills API', () => {
       });
 
       expect(res.status).toBe(404);
-      expect(res.body.error).toBe('模板不存在');
+      expect(res.body.message).toBe('模板不存在');
     });
   });
 });

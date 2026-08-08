@@ -40,7 +40,7 @@ export interface AppConfig {
 }
 
 /** Adapter for resolving and validating channel account configuration. */
-export interface ChannelConfigAdapter<TAccount = any> {
+export interface ChannelConfigAdapter<TAccount = unknown> {
   listAccountIds(config: AppConfig): AccountId[];
   resolveAccount(config: AppConfig, accountId: AccountId): TAccount | null;
   isEnabled(account: TAccount, config: AppConfig): boolean;

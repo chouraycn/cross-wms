@@ -103,5 +103,5 @@ export async function runTuiCli(argv: string[] = process.argv.slice(2)): Promise
     console.log('CrossWMS TUI v1.0.0');
     return;
   }
-  await runTui({ themeMode: (args.theme as any) || 'auto' });
+  await runTui({ themeMode: (args.theme as unknown) || 'auto' });
 }

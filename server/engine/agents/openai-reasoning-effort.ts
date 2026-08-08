@@ -43,7 +43,6 @@ function normalizeStringEntries(values: readonly unknown[]): string[] {
 
 export type OpenAIReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
-// eslint-disable-next-line @typescript-eslint/ban-types -- (string & {}) 是 TS 中"字面量联合 + 任意字符串"的惯用模式，保留以匹配 openclaw 原始实现
 export type OpenAIApiReasoningEffort = OpenAIReasoningEffort | (string & {});
 
 type OpenAIReasoningModel = {

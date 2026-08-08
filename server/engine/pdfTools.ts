@@ -490,7 +490,7 @@ const handlePdfSummarize: ToolHandler = async (
     const summarizeResult = await provider.summarize(
       {
         text: fullText,
-        summaryType: summaryType as any,
+        summaryType: summaryType as unknown,
         customPrompt,
         metadata: extractResult.metadata,
       },

@@ -100,7 +100,7 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
 
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = new (window.AudioContext || (window as unknown).webkitAudioContext)();
       }
 
       const ctx = audioContextRef.current;

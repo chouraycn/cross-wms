@@ -215,7 +215,7 @@ function tryCreateLockFile(lockPath: string, payload: LockFilePayload): boolean 
       fs.closeSync(fd);
     }
     return true;
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e.code === 'EEXIST') return false;
     throw e;
   }

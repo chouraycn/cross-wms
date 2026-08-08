@@ -36,7 +36,7 @@ try {
     requestAnimationFrame(() => {
       // __cdfIPC 可能在 didFinish 回调中才注入，需要轮询等待
       const notifyReactReady = () => {
-        const w = window as any;
+        const w = window as unknown;
         if (typeof w.__cdfIPC?.request === 'function') {
           w.__cdfIPC.request('reactReady').catch(() => {});
         } else {
@@ -47,7 +47,7 @@ try {
       notifyReactReady();
     });
   });
-} catch (e: any) {
+} catch (e: unknown) {
   const errMsg = e?.message || String(e);
   const errStack = e?.stack || '';
   const errorEl = document.getElementById('root-error');
@@ -58,7 +58,7 @@ try {
   // 渲染异常时也通知 Swift，让原生 splash 能切换到 WebView 显示错误
   setTimeout(() => {
     try {
-      const w = window as any;
+      const w = window as unknown;
       if (typeof w.__cdfIPC?.request === 'function') {
         w.__cdfIPC.request('reactReady').catch(() => {});
       }
@@ -120,8 +120,8 @@ bootstrap();
 
 // ===================== 内存压力响应（WKWebView 原生回调） =====================
 // Swift 端在 didReceiveMemoryWarning 时调用 window.cdfApp.onMemoryPressure()
-(window as any).cdfApp = (window as any).cdfApp || {};
-(window as any).cdfApp.onMemoryPressure = () => {
+(window as unknown).cdfApp = (window as unknown).cdfApp || {};
+(window as unknown).cdfApp.onMemoryPressure = () => {
   console.log('[CDFKnow] Memory pressure received, cleaning up...');
   // 1. 清理 sessionStorage 中非必要数据
   try {

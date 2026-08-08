@@ -53,6 +53,6 @@ Object.defineProperty(global, 'localStorage', {
 if (typeof globalThis.AbortController === 'undefined') {
   globalThis.AbortController = class AbortController {
     signal = { aborted: false, reason: undefined, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false };
-    abort() { (this.signal as any).aborted = true; }
-  } as any;
+    abort() { (this.signal as unknown).aborted = true; }
+  } as unknown;
 }

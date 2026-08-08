@@ -27,14 +27,14 @@ describe('Channels API E2E 测试', () => {
     it('应该返回支持的通道类型列表', async () => {
       const res = await client.get('/types');
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('types');
-      expect(Array.isArray(res.body.types)).toBe(true);
-      expect(res.body.types.length).toBeGreaterThan(0);
+      expect(res.body.data).toHaveProperty('types');
+      expect(Array.isArray(res.body.data.types)).toBe(true);
+      expect(res.body.data.types.length).toBeGreaterThan(0);
     });
 
     it('每个通道类型应该包含基本字段', async () => {
       const res = await client.get('/types');
-      const types = res.body.types;
+      const types = res.body.data.types;
       if (types.length > 0) {
         const t = types[0];
         expect(t).toHaveProperty('type');
@@ -49,8 +49,8 @@ describe('Channels API E2E 测试', () => {
     it('应该返回通道列表', async () => {
       const res = await client.get('/');
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('channels');
-      expect(Array.isArray(res.body.channels)).toBe(true);
+      expect(res.body.data).toHaveProperty('channels');
+      expect(Array.isArray(res.body.data.channels)).toBe(true);
     });
   });
 
@@ -58,7 +58,7 @@ describe('Channels API E2E 测试', () => {
     it('应该返回 400 当缺少必填字段', async () => {
       const res = await client.post('/', { name: 'test' });
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('应该返回 400 当通道类型不支持', async () => {
@@ -67,7 +67,7 @@ describe('Channels API E2E 测试', () => {
         type: 'invalid-type-xyz',
       });
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('应该注册（创建）新通道', async () => {
@@ -80,9 +80,9 @@ describe('Channels API E2E 测试', () => {
         },
       });
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('channel');
-      expect(res.body.channel).toHaveProperty('name', testChannelName);
-      expect(res.body).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('channel');
+      expect(res.body.data.channel).toHaveProperty('name', testChannelName);
+      expect(res.body.data).toHaveProperty('status');
     });
 
     it('应该返回 409 当通道已存在', async () => {
@@ -91,7 +91,7 @@ describe('Channels API E2E 测试', () => {
         type: 'webhook',
       });
       expect(res.status).toBe(409);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
   });
 
@@ -99,14 +99,14 @@ describe('Channels API E2E 测试', () => {
     it('应该返回通道详情', async () => {
       const res = await client.get(`/${testChannelName}`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('name', testChannelName);
-      expect(res.body).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('name', testChannelName);
+      expect(res.body.data).toHaveProperty('status');
     });
 
     it('应该返回 404 当通道不存在', async () => {
       const res = await client.get('/nonexistent-channel-xyz');
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
   });
 
@@ -116,7 +116,7 @@ describe('Channels API E2E 测试', () => {
         enabled: false,
       });
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('channel');
+      expect(res.body.data).toHaveProperty('channel');
     });
 
     it('应该返回 404 当更新不存在的通道', async () => {
@@ -124,7 +124,7 @@ describe('Channels API E2E 测试', () => {
         enabled: false,
       });
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
   });
 
@@ -132,7 +132,7 @@ describe('Channels API E2E 测试', () => {
     it('应该返回 400 当缺少 content 字段', async () => {
       const res = await client.post(`/${testChannelName}/send`, {});
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('应该广播消息到通道', async () => {
@@ -141,7 +141,7 @@ describe('Channels API E2E 测试', () => {
         contentType: 'text',
       });
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('channelName', testChannelName);
+      expect(res.body.data).toHaveProperty('channelName', testChannelName);
     });
   });
 
@@ -149,14 +149,14 @@ describe('Channels API E2E 测试', () => {
     it('应该启用通道', async () => {
       const res = await client.post(`/${testChannelName}/enable`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('ok', true);
-      expect(res.body).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('ok', true);
+      expect(res.body.data).toHaveProperty('status');
     });
 
     it('应该返回 404 当启用不存在的通道', async () => {
       const res = await client.post('/nonexistent-channel-xyz/enable');
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
   });
 
@@ -164,14 +164,14 @@ describe('Channels API E2E 测试', () => {
     it('应该禁用通道', async () => {
       const res = await client.post(`/${testChannelName}/disable`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('ok', true);
-      expect(res.body).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('ok', true);
+      expect(res.body.data).toHaveProperty('status');
     });
 
     it('应该返回 404 当禁用不存在的通道', async () => {
       const res = await client.post('/nonexistent-channel-xyz/disable');
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
   });
 
@@ -179,8 +179,8 @@ describe('Channels API E2E 测试', () => {
     it('应该返回通道状态', async () => {
       const res = await client.get(`/${testChannelName}/status`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('name', testChannelName);
-      expect(res.body).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('name', testChannelName);
+      expect(res.body.data).toHaveProperty('status');
     });
   });
 
@@ -188,13 +188,13 @@ describe('Channels API E2E 测试', () => {
     it('应该取消注册（删除）通道', async () => {
       const res = await client.delete(`/${testChannelName}`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('ok', true);
+      expect(res.body.data).toHaveProperty('ok', true);
     });
 
     it('应该返回 404 当删除不存在的通道', async () => {
       const res = await client.delete('/nonexistent-channel-xyz');
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('删除后应该查询不到', async () => {

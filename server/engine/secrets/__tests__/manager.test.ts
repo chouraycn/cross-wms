@@ -184,8 +184,8 @@ describe('管理器模块', () => {
       const exported = manager.exportSecrets();
       expect(exported.length).toBeGreaterThanOrEqual(1);
       for (const item of exported) {
-        expect((item as any).value).toBeUndefined();
-        expect((item as any).valueEncrypted).toBeUndefined();
+        expect((item as unknown).value).toBeUndefined();
+        expect((item as unknown).valueEncrypted).toBeUndefined();
       }
     });
   });

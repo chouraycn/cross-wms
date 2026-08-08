@@ -139,7 +139,7 @@ describe('partnerDao - listPartners', () => {
 
     expect(result.items).toHaveLength(3);
     expect(result.total).toBe(3);
-    expect(result.items.every((p: any) => p.type === 'supplier')).toBe(true);
+    expect(result.items.every((p: unknown) => p.type === 'supplier')).toBe(true);
   });
 
   it('should filter by type=customer', () => {
@@ -147,7 +147,7 @@ describe('partnerDao - listPartners', () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.total).toBe(2);
-    expect(result.items.every((p: any) => p.type === 'customer')).toBe(true);
+    expect(result.items.every((p: unknown) => p.type === 'customer')).toBe(true);
   });
 
   it('should search by name (fuzzy match)', () => {
@@ -219,14 +219,14 @@ describe('partnerDao - getAllPartnersByType', () => {
     const result = getAllPartnersByType('supplier');
 
     expect(result).toHaveLength(3);
-    expect(result.every((p: any) => p.type === 'supplier')).toBe(true);
+    expect(result.every((p: unknown) => p.type === 'supplier')).toBe(true);
   });
 
   it('should filter by type=customer', () => {
     const result = getAllPartnersByType('customer');
 
     expect(result).toHaveLength(2);
-    expect(result.every((p: any) => p.type === 'customer')).toBe(true);
+    expect(result.every((p: unknown) => p.type === 'customer')).toBe(true);
   });
 
   it('should return empty array when no partners exist', () => {

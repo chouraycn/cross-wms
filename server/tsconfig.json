@@ -12,14 +12,14 @@
     ],
     "outDir": "../dist-server",
     "rootDir": "..",
-    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "jsx": "preserve",
     "paths": {
+      "*": ["./*"],
       "@src/*": [
         "../src/*"
       ],

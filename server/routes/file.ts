@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
+import { ok, fail, notFound, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -123,14 +124,14 @@ function securityCheck(req: Request, res: Response, next: NextFunction): void {
   const targetPath = (req.query.path as string) || (req.body?.path as string) || (req.body?.oldPath as string);
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
   // 检查敏感路径
   if (isSensitivePath(targetPath)) {
     logger.warn(`[File API] 拒绝访问敏感路径: ${targetPath}`);
-    res.status(403).json({ ok: false, error: '禁止访问敏感路径' });
+    fail(res, BizCode.FORBIDDEN, '禁止访问敏感路径', 403);
     return;
   }
 
@@ -140,7 +141,7 @@ function securityCheck(req: Request, res: Response, next: NextFunction): void {
   // 检查是否在允许范围内
   if (!isAllowedPath(targetPath, projectRoot)) {
     logger.warn(`[File API] 拒绝访问非授权路径: ${targetPath}`);
-    res.status(403).json({ ok: false, error: '禁止访问该路径' });
+    fail(res, BizCode.FORBIDDEN, '禁止访问该路径', 403);
     return;
   }
 
@@ -159,7 +160,7 @@ router.get('/list', securityCheck, async (req: Request, res: Response) => {
   const recursive = req.query.recursive === 'true';
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
@@ -168,14 +169,14 @@ router.get('/list', securityCheck, async (req: Request, res: Response) => {
 
     // 检查路径是否存在
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '路径不存在' });
+      return notFound(res, '路径不存在');
       return;
     }
 
     // 检查是否为目录
     const stats = fs.statSync(resolvedPath);
     if (!stats.isDirectory()) {
-      res.status(400).json({ ok: false, error: '路径不是目录' });
+      return fail(res, BizCode.BAD_REQUEST, '路径不是目录', 400);
       return;
     }
 
@@ -220,11 +221,11 @@ router.get('/list', securityCheck, async (req: Request, res: Response) => {
 
     await readDir(resolvedPath, resolvedPath);
 
-    res.json({ ok: true, entries });
+    return ok(res, { ok: true, entries });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 列出目录失败:', error);
-    res.status(500).json({ ok: false, error: `列出目录失败: ${error.message}` });
+    return serverError(res, `列出目录失败: ${error.message}`);
   }
 });
 
@@ -238,7 +239,7 @@ router.get('/read', securityCheck, async (req: Request, res: Response) => {
   const encoding = (req.query.encoding as string) || 'utf-8';
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
@@ -247,28 +248,28 @@ router.get('/read', securityCheck, async (req: Request, res: Response) => {
 
     // 检查文件是否存在
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '文件不存在' });
+      return notFound(res, '文件不存在');
       return;
     }
 
     // 检查是否为文件
     const stats = fs.statSync(resolvedPath);
     if (!stats.isFile()) {
-      res.status(400).json({ ok: false, error: '路径不是文件' });
+      return fail(res, BizCode.BAD_REQUEST, '路径不是文件', 400);
       return;
     }
 
     // 检查文件大小（限制为 10MB）
     const maxSize = 10 * 1024 * 1024;
     if (stats.size > maxSize) {
-      res.status(413).json({ ok: false, error: '文件过大（最大 10MB）' });
+      return fail(res, BizCode.BAD_REQUEST, '文件过大（最大 10MB）', 413);
       return;
     }
 
     // 读取文件内容
     const content = await fs.promises.readFile(resolvedPath, encoding as BufferEncoding);
 
-    res.json({
+    return ok(res, {
       ok: true,
       content,
       size: stats.size,
@@ -276,7 +277,7 @@ router.get('/read', securityCheck, async (req: Request, res: Response) => {
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 读取文件失败:', error);
-    res.status(500).json({ ok: false, error: `读取文件失败: ${error.message}` });
+    return serverError(res, `读取文件失败: ${error.message}`);
   }
 });
 
@@ -289,12 +290,12 @@ router.post('/write', securityCheck, async (req: Request, res: Response) => {
   const { path: targetPath, content, encoding = 'utf-8' } = req.body;
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
   if (content === undefined || content === null) {
-    res.status(400).json({ ok: false, error: '内容参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '内容参数缺失', 400);
     return;
   }
 
@@ -305,7 +306,7 @@ router.post('/write', securityCheck, async (req: Request, res: Response) => {
     const contentStr = String(content);
     const maxSize = 1024 * 1024;
     if (contentStr.length > maxSize) {
-      res.status(413).json({ ok: false, error: '内容过大（最大 1MB）' });
+      return fail(res, BizCode.BAD_REQUEST, '内容过大（最大 1MB）', 413);
       return;
     }
 
@@ -316,11 +317,11 @@ router.post('/write', securityCheck, async (req: Request, res: Response) => {
     // 写入文件
     await fs.promises.writeFile(resolvedPath, contentStr, encoding as BufferEncoding);
 
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 写入文件失败:', error);
-    res.status(500).json({ ok: false, error: `写入文件失败: ${error.message}` });
+    return serverError(res, `写入文件失败: ${error.message}`);
   }
 });
 
@@ -334,7 +335,7 @@ router.delete('/delete', securityCheck, async (req: Request, res: Response) => {
   const recursive = req.query.recursive === 'true';
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
@@ -343,7 +344,7 @@ router.delete('/delete', securityCheck, async (req: Request, res: Response) => {
 
     // 检查路径是否存在
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '路径不存在' });
+      return notFound(res, '路径不存在');
       return;
     }
 
@@ -362,11 +363,11 @@ router.delete('/delete', securityCheck, async (req: Request, res: Response) => {
       await fs.promises.unlink(resolvedPath);
     }
 
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 删除失败:', error);
-    res.status(500).json({ ok: false, error: `删除失败: ${error.message}` });
+    return serverError(res, `删除失败: ${error.message}`);
   }
 });
 
@@ -379,21 +380,21 @@ router.post('/rename', async (req: Request, res: Response) => {
   const { oldPath, newPath } = req.body;
 
   if (!oldPath || !newPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
   // 对两个路径都进行安全检查
   if (isSensitivePath(oldPath) || isSensitivePath(newPath)) {
     logger.warn(`[File API] 拒绝重命名敏感路径: ${oldPath} -> ${newPath}`);
-    res.status(403).json({ ok: false, error: '禁止访问敏感路径' });
+    return fail(res, BizCode.FORBIDDEN, '禁止访问敏感路径', 403);
     return;
   }
 
   const projectRoot = process.cwd();
   if (!isAllowedPath(oldPath, projectRoot) || !isAllowedPath(newPath, projectRoot)) {
     logger.warn(`[File API] 拒绝重命名非授权路径: ${oldPath} -> ${newPath}`);
-    res.status(403).json({ ok: false, error: '禁止访问该路径' });
+    return fail(res, BizCode.FORBIDDEN, '禁止访问该路径', 403);
     return;
   }
 
@@ -403,13 +404,13 @@ router.post('/rename', async (req: Request, res: Response) => {
 
     // 检查源路径是否存在
     if (!fs.existsSync(resolvedOldPath)) {
-      res.status(404).json({ ok: false, error: '源路径不存在' });
+      return notFound(res, '源路径不存在');
       return;
     }
 
     // 检查目标路径是否已存在
     if (fs.existsSync(resolvedNewPath)) {
-      res.status(409).json({ ok: false, error: '目标路径已存在' });
+      return fail(res, BizCode.CONFLICT, '目标路径已存在', 409);
       return;
     }
 
@@ -420,11 +421,11 @@ router.post('/rename', async (req: Request, res: Response) => {
     // 重命名
     await fs.promises.rename(resolvedOldPath, resolvedNewPath);
 
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 重命名失败:', error);
-    res.status(500).json({ ok: false, error: `重命名失败: ${error.message}` });
+    return serverError(res, `重命名失败: ${error.message}`);
   }
 });
 
@@ -437,12 +438,12 @@ router.post('/create', securityCheck, async (req: Request, res: Response) => {
   const { path: targetPath, type, content } = req.body;
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
   if (!type || (type !== 'file' && type !== 'directory')) {
-    res.status(400).json({ ok: false, error: '类型参数必须为 file 或 directory' });
+    return fail(res, BizCode.BAD_REQUEST, '类型参数必须为 file 或 directory', 400);
     return;
   }
 
@@ -451,7 +452,7 @@ router.post('/create', securityCheck, async (req: Request, res: Response) => {
 
     // 检查路径是否已存在
     if (fs.existsSync(resolvedPath)) {
-      res.status(409).json({ ok: false, error: '路径已存在' });
+      return fail(res, BizCode.CONFLICT, '路径已存在', 409);
       return;
     }
 
@@ -468,11 +469,11 @@ router.post('/create', securityCheck, async (req: Request, res: Response) => {
       await fs.promises.writeFile(resolvedPath, contentStr, 'utf-8');
     }
 
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 创建失败:', error);
-    res.status(500).json({ ok: false, error: `创建失败: ${error.message}` });
+    return serverError(res, `创建失败: ${error.message}`);
   }
 });
 
@@ -487,12 +488,12 @@ router.get('/search', securityCheck, async (req: Request, res: Response) => {
   const maxDepth = parseInt(req.query.maxDepth as string) || 10;
 
   if (!rootPath) {
-    res.status(400).json({ ok: false, error: '根路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '根路径参数缺失', 400);
     return;
   }
 
   if (!pattern) {
-    res.status(400).json({ ok: false, error: '搜索模式参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '搜索模式参数缺失', 400);
     return;
   }
 
@@ -501,14 +502,14 @@ router.get('/search', securityCheck, async (req: Request, res: Response) => {
 
     // 检查根路径是否存在
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '根路径不存在' });
+      return notFound(res, '根路径不存在');
       return;
     }
 
     // 检查是否为目录
     const stats = fs.statSync(resolvedPath);
     if (!stats.isDirectory()) {
-      res.status(400).json({ ok: false, error: '根路径不是目录' });
+      return fail(res, BizCode.BAD_REQUEST, '根路径不是目录', 400);
       return;
     }
 
@@ -553,11 +554,11 @@ router.get('/search', securityCheck, async (req: Request, res: Response) => {
 
     await searchDir(resolvedPath, 0);
 
-    res.json({ ok: true, results });
+    return ok(res, { ok: true, results });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 搜索失败:', error);
-    res.status(500).json({ ok: false, error: `搜索失败: ${error.message}` });
+    return serverError(res, `搜索失败: ${error.message}`);
   }
 });
 
@@ -570,7 +571,7 @@ router.get('/stats', securityCheck, async (req: Request, res: Response) => {
   const targetPath = req.query.path as string;
 
   if (!targetPath) {
-    res.status(400).json({ ok: false, error: '路径参数缺失' });
+    return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
     return;
   }
 
@@ -579,7 +580,7 @@ router.get('/stats', securityCheck, async (req: Request, res: Response) => {
 
     // 检查路径是否存在
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '路径不存在' });
+      return notFound(res, '路径不存在');
       return;
     }
 
@@ -595,11 +596,11 @@ router.get('/stats', securityCheck, async (req: Request, res: Response) => {
       permissions: stats.mode.toString(8).slice(-3),
     };
 
-    res.json({ ok: true, stats: fileStats });
+    return ok(res, { ok: true, stats: fileStats });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 获取统计信息失败:', error);
-    res.status(500).json({ ok: false, error: `获取统计信息失败: ${error.message}` });
+    return serverError(res, `获取统计信息失败: ${error.message}`);
   }
 });
 
@@ -617,11 +618,11 @@ router.get('/generated/:sessionId/:fileName', async (req: Request, res: Response
 
     // 安全检查：防止路径遍历
     if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
-      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return fail(res, BizCode.BAD_REQUEST, '无效的会话 ID', 400);
       return;
     }
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-      res.status(400).json({ ok: false, error: '无效的文件名' });
+      return fail(res, BizCode.BAD_REQUEST, '无效的文件名', 400);
       return;
     }
 
@@ -629,13 +630,13 @@ router.get('/generated/:sessionId/:fileName', async (req: Request, res: Response
 
     // 检查文件是否存在
     if (!fs.existsSync(filePath)) {
-      res.status(404).json({ ok: false, error: '文件不存在' });
+      return notFound(res, '文件不存在');
       return;
     }
 
     const stats = await fs.promises.stat(filePath);
     if (!stats.isFile()) {
-      res.status(400).json({ ok: false, error: '路径不是文件' });
+      return fail(res, BizCode.BAD_REQUEST, '路径不是文件', 400);
       return;
     }
 
@@ -681,13 +682,13 @@ router.get('/generated/:sessionId/:fileName', async (req: Request, res: Response
     fileStream.on('error', (err) => {
       logger.error('[File API] 读取生成文件失败:', err);
       if (!res.headersSent) {
-        res.status(500).json({ ok: false, error: '读取文件失败' });
+        return serverError(res, '读取文件失败');
       }
     });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 获取生成文件失败:', error);
-    res.status(500).json({ ok: false, error: `获取文件失败: ${error.message}` });
+    return serverError(res, `获取文件失败: ${error.message}`);
   }
 });
 
@@ -700,20 +701,20 @@ router.get('/fs', securityCheck, async (req: Request, res: Response) => {
   try {
     const targetPath = req.query.path as string;
     if (!targetPath) {
-      res.status(400).json({ ok: false, error: '路径参数缺失' });
+      return fail(res, BizCode.BAD_REQUEST, '路径参数缺失', 400);
       return;
     }
 
     const resolvedPath = path.resolve(targetPath);
 
     if (!fs.existsSync(resolvedPath)) {
-      res.status(404).json({ ok: false, error: '文件不存在' });
+      return notFound(res, '文件不存在');
       return;
     }
 
     const stats = await fs.promises.stat(resolvedPath);
     if (!stats.isFile()) {
-      res.status(400).json({ ok: false, error: '路径不是文件' });
+      return fail(res, BizCode.BAD_REQUEST, '路径不是文件', 400);
       return;
     }
 
@@ -749,14 +750,14 @@ router.get('/fs', securityCheck, async (req: Request, res: Response) => {
     fileStream.on('error', (err) => {
       logger.error('[File API] 读取文件失败:', err);
       if (!res.headersSent) {
-        res.status(500).json({ ok: false, error: '读取文件失败' });
+        return serverError(res, '读取文件失败');
       }
     });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 读取文件失败:', error);
     if (!res.headersSent) {
-      res.status(500).json({ ok: false, error: `读取文件失败: ${error.message}` });
+      return serverError(res, `读取文件失败: ${error.message}`);
     }
   }
 });
@@ -771,14 +772,14 @@ router.get('/generated/:sessionId', async (req: Request, res: Response) => {
 
     // 安全检查：防止路径遍历
     if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
-      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return fail(res, BizCode.BAD_REQUEST, '无效的会话 ID', 400);
       return;
     }
 
     const sessionDir = path.join(AppPaths.generatedFilesDir, sessionId);
 
     if (!fs.existsSync(sessionDir)) {
-      res.json({ ok: true, files: [] });
+      return ok(res, { ok: true, files: [] });
       return;
     }
 
@@ -803,11 +804,11 @@ router.get('/generated/:sessionId', async (req: Request, res: Response) => {
     // 按修改时间倒序
     files.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-    res.json({ ok: true, files });
+    return ok(res, { ok: true, files });
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 列出生成文件失败:', error);
-    res.status(500).json({ ok: false, error: `列出文件失败: ${error.message}` });
+    return serverError(res, `列出文件失败: ${error.message}`);
   }
 });
 
@@ -821,14 +822,14 @@ router.get('/generated/:sessionId/download-all', async (req: Request, res: Respo
 
     // 安全检查：防止路径遍历
     if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
-      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return fail(res, BizCode.BAD_REQUEST, '无效的会话 ID', 400);
       return;
     }
 
     const sessionDir = path.join(AppPaths.generatedFilesDir, sessionId);
 
     if (!fs.existsSync(sessionDir)) {
-      res.status(404).json({ ok: false, error: '会话目录不存在' });
+      return notFound(res, '会话目录不存在');
       return;
     }
 
@@ -836,7 +837,7 @@ router.get('/generated/:sessionId/download-all', async (req: Request, res: Respo
     const files = entries.filter(entry => entry.isFile());
 
     if (files.length === 0) {
-      res.status(404).json({ ok: false, error: '没有可下载的文件' });
+      return notFound(res, '没有可下载的文件');
       return;
     }
 
@@ -860,7 +861,7 @@ router.get('/generated/:sessionId/download-all', async (req: Request, res: Respo
   } catch (e) {
     const error = e as Error;
     logger.error('[File API] 批量下载生成文件失败:', error);
-    res.status(500).json({ ok: false, error: `打包下载失败: ${error.message}` });
+    return serverError(res, `打包下载失败: ${error.message}`);
   }
 });
 

@@ -230,11 +230,11 @@ describe('ContextEngineRegistry', () => {
 
       const engine = await registry.createEngine('session-1', { engineId: 'test-engine' });
       expect(engine).toBeDefined();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+       
       expect((engine as MockEngine).getSessionState?.() ?? null).toBeNull();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+       
       await (engine as MockEngine).bootstrap({ sessionId: 'session-1' });
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+       
       expect((engine as MockEngine).getSessionState?.()?.sessionId ?? null).toBe('session-1');
     });
 

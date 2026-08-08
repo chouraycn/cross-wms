@@ -92,7 +92,7 @@ export async function stopGatewayServer(): Promise<void> {
 async function publishEvent(event: string, data: Record<string, unknown>): Promise<void> {
   try {
     const { publishEvent: pub } = await import('../events.js');
-    await pub(event as any, data);
+    await pub(event as unknown, data);
   } catch { /* events not available */ }
 }
 

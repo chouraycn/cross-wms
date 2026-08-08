@@ -38,11 +38,11 @@ describe("RuntimeRegistry", () => {
     });
 
     it("should throw error for missing id", () => {
-      expect(() => registerAcpRuntimeBackend({ ...testBackend, id: "" } as any)).toThrow();
+      expect(() => registerAcpRuntimeBackend({ ...testBackend, id: "" } as unknown)).toThrow();
     });
 
     it("should throw error for missing runtime", () => {
-      expect(() => registerAcpRuntimeBackend({ id: "test", runtime: undefined as any })).toThrow();
+      expect(() => registerAcpRuntimeBackend({ id: "test", runtime: undefined as unknown })).toThrow();
     });
   });
 

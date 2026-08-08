@@ -46,7 +46,7 @@ export class SqliteSessionStore implements SessionStore {
     const stmt = this.db.prepare(
       "SELECT * FROM channel_sessions WHERE session_id = ?"
     );
-    const row = stmt.get(sessionId) as any;
+    const row = stmt.get(sessionId) as unknown;
     if (!row) return undefined;
     return this.rowToSession(row);
   }

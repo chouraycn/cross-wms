@@ -349,7 +349,7 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
       const options: SendAgentMessageOptions = {
         model: session.model || 'auto',
         agentId: 'general',
-        executionMode: aiEngine.defaultExecutionMode as any,
+        executionMode: aiEngine.defaultExecutionMode as unknown,
       };
       await sendMessage(text, options);
     } catch (err) {

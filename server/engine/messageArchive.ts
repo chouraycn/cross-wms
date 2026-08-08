@@ -198,7 +198,7 @@ function generateSummary(
  * 启动定时归档任务
  */
 export function startArchiveScheduler(
-  getDb: () => any,
+  getDb: () => unknown,
   config: ArchiveConfig = DEFAULT_ARCHIVE_CONFIG,
 ): NodeJS.Timeout {
   // 首次延迟 5 分钟执行（等服务器完全启动）

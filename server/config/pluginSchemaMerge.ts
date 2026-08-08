@@ -14,9 +14,9 @@ import { z } from 'zod';
  * - 若类型不兼容，以后一个插件 schema 为准（覆盖）
  */
 export function mergePluginSchema(
-  baseSchema: z.ZodObject<any>,
-  pluginSchemas: z.ZodObject<any>[],
-): z.ZodObject<any> {
+  baseSchema: z.ZodObject<unknown>,
+  pluginSchemas: z.ZodObject<unknown>[],
+): z.ZodObject<unknown> {
   if (pluginSchemas.length === 0) {
     return baseSchema;
   }
@@ -29,9 +29,9 @@ export function mergePluginSchema(
 }
 
 function mergeTwoObjectSchemas(
-  a: z.ZodObject<any>,
-  b: z.ZodObject<any>,
-): z.ZodObject<any> {
+  a: z.ZodObject<unknown>,
+  b: z.ZodObject<unknown>,
+): z.ZodObject<unknown> {
   const aShape = getShape(a);
   const bShape = getShape(b);
 
@@ -52,8 +52,8 @@ function mergeTwoObjectSchemas(
   }
 
   // 保持 a 的 strict / passthrough / catchall 行为（若 b 未显式覆盖）
-  const aDef = (a as any)._zod?.def ?? (a as any)._def;
-  const bDef = (b as any)._zod?.def ?? (b as any)._def;
+  const aDef = (a as unknown)._zod?.def ?? (a as unknown)._def;
+  const bDef = (b as unknown)._zod?.def ?? (b as unknown)._def;
 
   let result = z.object(combinedShape);
 
@@ -75,20 +75,20 @@ function mergeTwoObjectSchemas(
   return result;
 }
 
-function getShape(schema: z.ZodObject<any>): Record<string, z.ZodTypeAny> {
-  const def = (schema as any)._zod?.def ?? (schema as any)._def;
-  return def?.shape ?? (schema as any).shape ?? {};
+function getShape(schema: z.ZodObject<unknown>): Record<string, z.ZodTypeAny> {
+  const def = (schema as unknown)._zod?.def ?? (schema as unknown)._def;
+  return def?.shape ?? (schema as unknown).shape ?? {};
 }
 
-function isZodObject(schema: unknown): schema is z.ZodObject<any> {
+function isZodObject(schema: unknown): schema is z.ZodObject<unknown> {
   if (!schema || typeof schema !== 'object') return false;
-  const def = (schema as any)._zod?.def ?? (schema as any)._def;
+  const def = (schema as unknown)._zod?.def ?? (schema as unknown)._def;
   return def?.type === 'object';
 }
 
 function isNeverSchema(schema: unknown): boolean {
   if (!schema || typeof schema !== 'object') return false;
-  const def = (schema as any)._zod?.def ?? (schema as any)._def;
+  const def = (schema as unknown)._zod?.def ?? (schema as unknown)._def;
   return def?.type === 'never';
 }
 
@@ -118,8 +118,8 @@ export function validatePluginConfig(
   }
 
   // zod v4 的 error 结构兼容：result.error.issues
-  const issues = (result.error as any).issues ?? [];
-  const errors: string[] = issues.map((issue: any) => {
+  const issues = (result.error as unknown).issues ?? [];
+  const errors: string[] = issues.map((issue: unknown) => {
     const path = issue.path?.join('.') ?? 'root';
     const message = issue.message ?? '未知错误';
     return `[${pluginId}] ${path}: ${message}`;

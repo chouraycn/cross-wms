@@ -129,7 +129,7 @@ class WebSocketHub {
     this.httpServer = httpServer;
 
     try {
-      const wsModule = await import("ws" as string) as any;
+      const wsModule = await import("ws" as string) as unknown;
       const WebSocketServer = wsModule.WebSocketServer;
       this.wss = new WebSocketServer({
         server: httpServer,

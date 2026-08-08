@@ -2,7 +2,7 @@ declare module 'react-syntax-highlighter' {
   export const PrismLight: React.ComponentType<{
     language?: string;
     style?: unknown;
-    PreTag?: React.ComponentType<any>;
+    PreTag?: React.ComponentType<unknown>;
     customStyle?: React.CSSProperties;
     children?: React.ReactNode;
     [key: string]: unknown;

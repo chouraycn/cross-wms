@@ -133,13 +133,13 @@ const toolPluginEntryModuleLoaders = createPluginModuleLoaderCache();
 void unwrapDefaultModuleExport;
 
 function readJsonFile(filePath: string): JsonObject {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 读取 JSON 与 node fs 一致。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as JsonObject;
 }
 
 function writeJsonFile(filePath: string, value: unknown): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 写入 JSON 与 node fs 一致。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -149,7 +149,7 @@ function jsStringLiteral(value: string): string {
 }
 
 function normalizeRelativePath(rootDir: string, targetPath: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node path。
+   
   const path = require("node:path") as typeof import("node:path");
   const relative = path
     .relative(rootDir, path.resolve(rootDir, targetPath))
@@ -161,15 +161,15 @@ function normalizeRelativePath(rootDir: string, targetPath: string): string {
 }
 
 function resolveRootDir(input: string | undefined): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node path。
+   
   const path = require("node:path") as typeof import("node:path");
   return path.resolve(input ?? process.cwd());
 }
 
 function resolveEntryPath(rootDir: string, entry: string | undefined): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const path = require("node:path") as typeof import("node:path");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   if (entry) {
     return path.resolve(rootDir, entry);
@@ -185,9 +185,9 @@ function resolveEntryPath(rootDir: string, entry: string | undefined): string {
 }
 
 function readPackageManifest(rootDir: string): JsonObject {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const path = require("node:path") as typeof import("node:path");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   const packagePath = path.join(rootDir, "package.json");
   if (!fs.existsSync(packagePath)) {
@@ -218,7 +218,7 @@ export async function loadToolPlugin(params: {
   rootDir: string;
   entryPath: string;
 }): Promise<LoadedToolPlugin> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   if (!fs.existsSync(params.entryPath)) {
     throw new Error(
@@ -346,7 +346,7 @@ export function validateToolPluginProject(params: {
 }
 
 export async function runPluginsBuildCommand(opts: PluginsBuildOptions): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const path = require("node:path") as typeof import("node:path");
   const rootDir = resolveRootDir(opts.root);
   const entryPath = resolveEntryPath(rootDir, opts.entry);
@@ -360,7 +360,7 @@ export async function runPluginsBuildCommand(opts: PluginsBuildOptions): Promise
     return defaultRuntime.exit(1);
   }
   const manifestPath = path.join(rootDir, PLUGIN_MANIFEST_FILENAME);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   const currentManifest = fs.existsSync(manifestPath) ? readJsonFile(manifestPath) : undefined;
   void currentManifest;
@@ -398,7 +398,7 @@ export async function runPluginsBuildCommand(opts: PluginsBuildOptions): Promise
 }
 
 export async function runPluginsValidateCommand(opts: PluginsValidateOptions): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const path = require("node:path") as typeof import("node:path");
   const rootDir = resolveRootDir(opts.root);
   const entryPath = resolveEntryPath(rootDir, opts.entry);
@@ -427,7 +427,7 @@ export async function runPluginsValidateCommand(opts: PluginsValidateOptions): P
 }
 
 function assertCanCreate(filePath: string, force: boolean): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   if (!force && fs.existsSync(filePath)) {
     throw new Error(`Refusing to overwrite existing path: ${filePath}`);
@@ -443,9 +443,9 @@ function titleFromId(id: string): string {
 }
 
 export async function runPluginsInitCommand(id: string, opts: PluginsInitOptions): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const path = require("node:path") as typeof import("node:path");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- stub 通过 require 使用 node fs/path。
+   
   const fs = require("node:fs") as typeof import("node:fs");
   const rootDir = path.resolve(opts.directory ?? id);
   const force = opts.force === true;

@@ -785,7 +785,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any)).toEqual(input);
+    expect(downgradeOpenAIReasoningBlocks(input as unknown)).toEqual(input);
   });
 
   it("drops replayable reasoning when requested even with following content", () => {
@@ -803,7 +803,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any, { dropReplayableReasoning: true })).toEqual(
+    expect(downgradeOpenAIReasoningBlocks(input as unknown, { dropReplayableReasoning: true })).toEqual(
       [{ role: "assistant", content: [{ type: "text", text: "answer" }] }],
     );
   });
@@ -827,7 +827,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any, { dropReplayableReasoning: true })).toEqual(
+    expect(downgradeOpenAIReasoningBlocks(input as unknown, { dropReplayableReasoning: true })).toEqual(
       [{ role: "assistant", content: [{ type: "text", text: "answer" }] }],
     );
   });
@@ -851,7 +851,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any)).toEqual(input);
+    expect(downgradeOpenAIReasoningBlocks(input as unknown)).toEqual(input);
   });
 
   it("drops paired message ids across every text block when reasoning is dropped", () => {
@@ -877,7 +877,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any, { dropReplayableReasoning: true })).toEqual(
+    expect(downgradeOpenAIReasoningBlocks(input as unknown, { dropReplayableReasoning: true })).toEqual(
       [
         {
           role: "assistant",
@@ -912,7 +912,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       { role: "user", content: "next" },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any)).toEqual([
+    expect(downgradeOpenAIReasoningBlocks(input as unknown)).toEqual([
       { role: "user", content: "next" },
     ]);
   });
@@ -930,7 +930,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any)).toStrictEqual([]);
+    expect(downgradeOpenAIReasoningBlocks(input as unknown)).toStrictEqual([]);
   });
 
   it("keeps non-reasoning thinking signatures", () => {
@@ -947,7 +947,7 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       },
     ];
 
-    expect(downgradeOpenAIReasoningBlocks(input as any)).toEqual(input);
+    expect(downgradeOpenAIReasoningBlocks(input as unknown)).toEqual(input);
   });
 
   it("is idempotent for orphaned reasoning cleanup", () => {
@@ -964,8 +964,8 @@ describe("downgradeOpenAIReasoningBlocks", () => {
       { role: "user", content: "next" },
     ];
 
-    const once = downgradeOpenAIReasoningBlocks(input as any);
-    const twice = downgradeOpenAIReasoningBlocks(once as any);
+    const once = downgradeOpenAIReasoningBlocks(input as unknown);
+    const twice = downgradeOpenAIReasoningBlocks(once as unknown);
     expect(twice).toEqual(once);
   });
 });
@@ -1009,7 +1009,7 @@ describe("downgradeOpenAIFunctionCallReasoningPairs", () => {
       makeToolResult(callIdWithReasoning, "ok"),
     ];
 
-    expect(downgradeOpenAIFunctionCallReasoningPairs(input as any)).toEqual([
+    expect(downgradeOpenAIFunctionCallReasoningPairs(input as unknown)).toEqual([
       makePlainAssistantTurn(callIdWithoutReasoning),
       makeToolResult(callIdWithoutReasoning, "ok"),
     ]);
@@ -1021,7 +1021,7 @@ describe("downgradeOpenAIFunctionCallReasoningPairs", () => {
       makeToolResult(callIdWithReasoning, "ok"),
     ];
 
-    expect(downgradeOpenAIFunctionCallReasoningPairs(input as any)).toEqual(input);
+    expect(downgradeOpenAIFunctionCallReasoningPairs(input as unknown)).toEqual(input);
   });
 
   it("only rewrites tool results paired to the downgraded assistant turn", () => {
@@ -1032,7 +1032,7 @@ describe("downgradeOpenAIFunctionCallReasoningPairs", () => {
       makeToolResult(callIdWithReasoning, "turn2"),
     ];
 
-    expect(downgradeOpenAIFunctionCallReasoningPairs(input as any)).toEqual([
+    expect(downgradeOpenAIFunctionCallReasoningPairs(input as unknown)).toEqual([
       makePlainAssistantTurn(callIdWithoutReasoning),
       makeToolResult(callIdWithoutReasoning, "turn1"),
       makeReasoningAssistantTurn(callIdWithReasoning),

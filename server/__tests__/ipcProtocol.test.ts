@@ -43,8 +43,8 @@ class MockSocket extends EventEmitter {
 // ===================== 工具函数 =====================
 
 async function createTestClient(): Promise<{
-  getClass: () => any;
-  newInstance: (path?: string) => any;
+  getClass: () => unknown;
+  newInstance: (path?: string) => unknown;
 }> {
   // 导入 ipcClient 单例，通过 prototype.constructor 获取类
   const instanceModule = await import('../ipcClient.js');
@@ -58,8 +58,8 @@ async function createTestClient(): Promise<{
 // ===================== Test Suite =====================
 
 describe('CDFKnowIPCClient', () => {
-  let CDFKnowIPCClient: any;
-  let client: any;
+  let CDFKnowIPCClient: unknown;
+  let client: unknown;
   let mockSocket: MockSocket;
 
   beforeEach(async () => {

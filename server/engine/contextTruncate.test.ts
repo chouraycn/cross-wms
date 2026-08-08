@@ -146,7 +146,7 @@ describe('contextTruncate', () => {
     });
 
     it('null 输入原样返回', () => {
-      expect(sanitizeToolMessages(null as any)).toBe(null);
+      expect(sanitizeToolMessages(null as unknown)).toBe(null);
     });
 
     it('普通 user/assistant 消息原样通过', () => {
@@ -234,7 +234,7 @@ describe('contextTruncate', () => {
     it('tool 消息 content 为 null 时替换为 (no result)', () => {
       const msgs: ApiMessage[] = [
         { role: 'assistant', content: '', tool_calls: [{ id: 'tc1', type: 'function', function: { name: 'fn', arguments: '{}' } }] },
-        { role: 'tool', content: null as any, tool_call_id: 'tc1' },
+        { role: 'tool', content: null as unknown, tool_call_id: 'tc1' },
       ];
       const result = sanitizeToolMessages(msgs);
       const tool = result.find(m => m.role === 'tool');
@@ -255,7 +255,7 @@ describe('contextTruncate', () => {
     it('tool 消息 content 为对象时 JSON 序列化', () => {
       const msgs: ApiMessage[] = [
         { role: 'assistant', content: '', tool_calls: [{ id: 'tc1', type: 'function', function: { name: 'fn', arguments: '{}' } }] },
-        { role: 'tool', content: { key: 'val' } as any, tool_call_id: 'tc1' },
+        { role: 'tool', content: { key: 'val' } as unknown, tool_call_id: 'tc1' },
       ];
       const result = sanitizeToolMessages(msgs);
       const tool = result.find(m => m.role === 'tool');
@@ -264,7 +264,7 @@ describe('contextTruncate', () => {
 
     it('assistant 消息 content 为 null 时替换为空字符串', () => {
       const msgs: ApiMessage[] = [
-        { role: 'assistant', content: null as any },
+        { role: 'assistant', content: null as unknown },
       ];
       const result = sanitizeToolMessages(msgs);
       expect(result[0].content).toBe('');

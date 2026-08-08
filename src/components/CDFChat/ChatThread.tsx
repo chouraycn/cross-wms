@@ -240,7 +240,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
     // v1.7.85: 轮询检测全屏状态（每秒检查一次）
     const checkFullscreen = () => {
-      const fs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      const fs = !!(document.fullscreenElement || (document as unknown).webkitFullscreenElement);
       setIsFullscreen(fs);
     };
     const interval = setInterval(checkFullscreen, 1000);
@@ -428,7 +428,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         return true;
       }
       case 'models': {
-        const modelList = ((options as any)?.models as Array<{ id: string; name: string }> || [])
+        const modelList = ((options as unknown)?.models as Array<{ id: string; name: string }> || [])
           .map((m) => `- \`${m.id}\` — ${m.name}`)
           .join('\n');
         const modelsMsg: Message = {
@@ -1427,7 +1427,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 updateSessionModel={updateSessionModel}
                 initialSkill={initialSkill}
                 isLoading={isLoading}
-                sendMessage={handleSendMessage as any}
+                sendMessage={handleSendMessage as unknown}
                 stopGeneration={stopGeneration}
                 variant="card"
               />
@@ -1695,7 +1695,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             isEmpty={chatMessages.length === 0}
             updateSessionModel={updateSessionModel}
             isLoading={isLoading}
-            sendMessage={handleSendMessage as any}
+            sendMessage={handleSendMessage as unknown}
             stopGeneration={stopGeneration}
           />
         </Box>

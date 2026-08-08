@@ -70,7 +70,7 @@ export class Transcript {
 
     switch (format) {
       case 'jsonl':
-        return writeTranscriptJSONL(this.baseDir, sessionId, messages, options.header as any);
+        return writeTranscriptJSONL(this.baseDir, sessionId, messages, options.header as unknown);
       default:
         logger.warn('[Transcript] 不支持的写入格式:', format);
         return false;

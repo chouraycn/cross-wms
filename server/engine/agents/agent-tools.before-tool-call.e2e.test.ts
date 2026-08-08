@@ -103,7 +103,7 @@ describe("before_tool_call loop detection behavior", () => {
       hasHooks: vi.fn(),
       runBeforeToolCall: vi.fn(),
     };
-    mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
+    mockGetGlobalHookRunner.mockReturnValue(hookRunner as unknown);
     hookRunner.hasHooks.mockReturnValue(false);
   });
 
@@ -343,7 +343,7 @@ describe("before_tool_call loop detection behavior", () => {
       content: [{ type: "text", text: "(no new output)\n\nProcess still running." }],
       details: { status: "running", aggregated: "steady" },
     });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "process", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "process", execute } as unknown, {
       ...disabledLoopDetectionContext,
     });
     const params = { action: "poll", sessionId: "sess-off" };
@@ -393,11 +393,11 @@ describe("before_tool_call loop detection behavior", () => {
       details: { ok: true },
     });
     const params = { path: "/tmp/file" };
-    const firstRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const firstRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       ...enabledLoopDetectionContext,
       runId: "heartbeat-1",
     });
-    const secondRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const secondRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       ...enabledLoopDetectionContext,
       runId: "heartbeat-2",
     });
@@ -522,7 +522,7 @@ describe("before_tool_call loop detection behavior", () => {
     const execute = vi.fn().mockResolvedValue({
       content: [{ type: "text", text: "ok" }],
     });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -604,7 +604,7 @@ describe("before_tool_call loop detection behavior", () => {
     const skillBaseDir = path.join(workspaceDir, ".agents", "skills", "demo-skill");
     const skillFilePath = path.join(skillBaseDir, "SKILL.md");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "skill" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -661,7 +661,7 @@ describe("before_tool_call loop detection behavior", () => {
     const skillBaseDir = path.join(os.homedir(), ".openclaw", "skills", "home-skill");
     const skillFilePath = path.join(skillBaseDir, "SKILL.md");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "skill" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       workspaceDir: "/tmp/openclaw-workspace",
@@ -705,7 +705,7 @@ describe("before_tool_call loop detection behavior", () => {
     const workspaceDir = path.join("/tmp", "openclaw-skill-unused-param");
     const skillBaseDir = path.join(workspaceDir, ".agents", "skills", "demo-skill");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "readme" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       workspaceDir,
@@ -746,7 +746,7 @@ describe("before_tool_call loop detection behavior", () => {
 
   it("emits skill usage diagnostics for command-dispatched skill tools", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "sent" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "message", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "message", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -789,7 +789,7 @@ describe("before_tool_call loop detection behavior", () => {
     const execute = vi
       .fn()
       .mockRejectedValue(new Error("failed with key sk-1234567890abcdef1234567890abcdef"));
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -823,7 +823,7 @@ describe("before_tool_call loop detection behavior", () => {
       blockReason: "blocked by policy",
     });
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "nope" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -860,7 +860,7 @@ describe("before_tool_call loop detection behavior", () => {
       blockReason: "blocked by policy",
     });
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "nope" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -919,7 +919,7 @@ describe("before_tool_call loop detection behavior", () => {
       },
     );
     const execute = vi.fn().mockRejectedValue(hostileError);
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -951,7 +951,7 @@ describe("before_tool_call loop detection behavior", () => {
       status: 429,
     });
     const execute = vi.fn().mockRejectedValue(error);
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -973,7 +973,7 @@ describe("before_tool_call loop detection behavior", () => {
 
   it("summarizes hostile object params without enumerating keys", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -1049,7 +1049,7 @@ describe("before_tool_call requireApproval handling", () => {
       hasHooks: vi.fn((hookName: string) => hookName === "before_tool_call"),
       runBeforeToolCall: vi.fn(),
     };
-    mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
+    mockGetGlobalHookRunner.mockReturnValue(hookRunner as unknown);
     // Keep the global singleton aligned as a fallback in case another setup path
     // preloads hook-runner-global before this test's module reset/mocks take effect.
     setGlobalHookRunnerForTest(hookRunner);
@@ -1999,7 +1999,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("attaches tool input/output to private data when opted in", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "file body" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2024,7 +2024,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("omits tool content from private data when capture is not configured", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2044,7 +2044,7 @@ describe("before_tool_call tool content private-data capture", () => {
   it("captures only opted-in fields and clones away from live params", async () => {
     const liveParams = { path: "/etc/secret" };
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "out" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2066,7 +2066,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("attaches tool input but not output on execution errors", async () => {
     const execute = vi.fn().mockRejectedValue(new Error("boom"));
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",

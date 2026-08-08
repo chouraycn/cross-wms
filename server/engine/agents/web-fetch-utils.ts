@@ -94,7 +94,7 @@ export function truncateText(
 
 /** Strips invisible Unicode characters from text. */
 function stripInvisibleUnicode(value: string): string {
-  // eslint-disable-next-line no-control-regex
+   
   return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, "");
 }
 

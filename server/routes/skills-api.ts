@@ -36,22 +36,19 @@ import {
 } from '../dao/chat.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import { logger } from '../logger.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
-interface ApiResponse {
-  success: boolean;
-  data: unknown;
-  error?: string;
-  message?: string;
+function successResponse(res: Response, data: unknown, message?: string): Response {
+  return ok(res, data, message);
 }
 
-function successResponse(res: Response, data: unknown, message?: string): void {
-  res.json({ success: true, data, message } as ApiResponse);
-}
-
-function errorResponse(res: Response, error: string, status = 500): void {
-  res.status(status).json({ success: false, data: null, error } as ApiResponse);
+function errorResponse(res: Response, error: string, status = 500): Response {
+  if (status === 404) return notFound(res, error);
+  if (status === 403) return fail(res, BizCode.FORBIDDEN, error, 403);
+  if (status === 400) return fail(res, BizCode.BAD_REQUEST, error, 400);
+  return serverError(res, error);
 }
 
 // ===================== 静态路由（必须在 /:id 之前）=====================

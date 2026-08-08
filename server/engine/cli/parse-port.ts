@@ -4,4 +4,4 @@ export function parsePort(..._args: unknown[]): unknown {
 }
 
 export const MAX_TCP_PORT: unknown = undefined as unknown;
-export const parseTcpPort: (...args: unknown[]) => any = undefined as unknown as (...args: unknown[]) => any;
+export const parseTcpPort: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;

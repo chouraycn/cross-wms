@@ -90,8 +90,8 @@ router.put('/:id', (req, res) => {
 /** DELETE /api/tasks/:id — 删除任务 */
 router.delete('/:id', (req, res) => {
   try {
-    const ok = daoDeleteTask(req.params.id);
-    if (!ok) return notFound(res, '任务不存在');
+    const deleted = daoDeleteTask(req.params.id);
+    if (!deleted) return notFound(res, '任务不存在');
     return ok(res, { success: true });
   } catch (err) {
     return serverError(res, (err as Error).message);

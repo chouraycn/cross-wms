@@ -28,7 +28,7 @@ vi.mock('./compaction-planning.js', () => ({
   buildSummaryChunks: vi.fn(),
   buildOversizedFallbackPlan: vi.fn(() => ({ smallMessages: [], oversizedNotes: [] })),
   buildStageSplitPlan: vi.fn(() => ({ mode: 'single' })),
-  chunkMessagesByMaxTokens: vi.fn((msgs: any[]) => [msgs]),
+  chunkMessagesByMaxTokens: vi.fn((msgs: unknown[]) => [msgs]),
   splitMessagesByTokenShare: vi.fn(),
   estimateMessageTokens: vi.fn(() => 10),
   computeAdaptiveChunkRatio: vi.fn(() => 0.2),
@@ -37,7 +37,7 @@ vi.mock('./compaction-planning.js', () => ({
 
 vi.mock('./compaction-identifier.js', () => ({
   IDENTIFIER_PRESERVATION_INSTRUCTIONS: 'KEEP-IDS',
-  resolveIdentifierPreservationInstructions: vi.fn((opts: any) => {
+  resolveIdentifierPreservationInstructions: vi.fn((opts: unknown) => {
     // policy 'none' 或显式 customInstructions 为空时返回 undefined
     if (opts?.policy === 'none') return undefined;
     if (opts?.customInstructions) return opts.customInstructions;
@@ -58,15 +58,15 @@ import {
 import { callAIModel } from '../aiClient.js';
 import { resolveIdentifierPreservationInstructions } from './compaction-identifier.js';
 
-const modelConfig = { model: 'test-model' } as any;
+const modelConfig = { model: 'test-model' } as unknown;
 
 describe('contextCompress', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // 默认实现
-    (estimateMessagesTokens as any).mockImplementation(() => 100);
-    (sanitizeToolMessages as any).mockImplementation((m: unknown) => m);
-    (callAIModel as any).mockResolvedValue('LLM SUMMARY');
+    (estimateMessagesTokens as unknown).mockImplementation(() => 100);
+    (sanitizeToolMessages as unknown).mockImplementation((m: unknown) => m);
+    (callAIModel as unknown).mockResolvedValue('LLM SUMMARY');
   });
 
   /**
@@ -76,7 +76,7 @@ describe('contextCompress', () => {
    */
   function makeStatefulTokens(afterVal = 100) {
     let firstMulti = true;
-    return (m: any[]) => {
+    return (m: unknown[]) => {
       if (m.length === 1) {
         return String(m[0].content).includes('big') ? 10000 : 10;
       }
@@ -90,29 +90,29 @@ describe('contextCompress', () => {
 
   describe('buildCompactionSummarizationInstructions', () => {
     it('无自定义指令且无标识符策略时返回 undefined', () => {
-      (resolveIdentifierPreservationInstructions as any).mockReturnValueOnce(undefined);
+      (resolveIdentifierPreservationInstructions as unknown).mockReturnValueOnce(undefined);
       expect(buildCompactionSummarizationInstructions(undefined)).toBeUndefined();
     });
 
     it('仅有标识符策略时返回标识符策略文本', () => {
-      (resolveIdentifierPreservationInstructions as any).mockReturnValueOnce('IDENTIFIER-POLICY');
+      (resolveIdentifierPreservationInstructions as unknown).mockReturnValueOnce('IDENTIFIER-POLICY');
       expect(buildCompactionSummarizationInstructions(undefined)).toBe('IDENTIFIER-POLICY');
     });
 
     it('仅有自定义指令时返回 Additional focus 前缀', () => {
-      (resolveIdentifierPreservationInstructions as any).mockReturnValueOnce(undefined);
+      (resolveIdentifierPreservationInstructions as unknown).mockReturnValueOnce(undefined);
       expect(buildCompactionSummarizationInstructions('focus on inventory')).toBe(
         'Additional focus:\nfocus on inventory',
       );
     });
 
     it('自定义指令为空白时不当作有效指令', () => {
-      (resolveIdentifierPreservationInstructions as any).mockReturnValueOnce(undefined);
+      (resolveIdentifierPreservationInstructions as unknown).mockReturnValueOnce(undefined);
       expect(buildCompactionSummarizationInstructions('   ')).toBeUndefined();
     });
 
     it('同时存在标识符策略和自定义指令时拼接', () => {
-      (resolveIdentifierPreservationInstructions as any).mockReturnValueOnce('IDENTIFIER-POLICY');
+      (resolveIdentifierPreservationInstructions as unknown).mockReturnValueOnce('IDENTIFIER-POLICY');
       expect(buildCompactionSummarizationInstructions('extra')).toBe(
         'IDENTIFIER-POLICY\n\nAdditional focus:\nextra',
       );
@@ -124,8 +124,8 @@ describe('contextCompress', () => {
       const msgs = [
         { role: 'user', content: 'hello' },
         { role: 'assistant', content: 'hi' },
-      ] as any;
-      (estimateMessagesTokens as any).mockReturnValue(100); // 远小于 maxInputTokens
+      ] as unknown;
+      (estimateMessagesTokens as unknown).mockReturnValue(100); // 远小于 maxInputTokens
 
       const result = await compressContextWithSummary(msgs, 100000, 4000, 0, modelConfig);
 
@@ -135,7 +135,7 @@ describe('contextCompress', () => {
     });
 
     it('maxInputTokens <= 0 时原样返回', async () => {
-      const msgs = [{ role: 'user', content: 'x' }] as any;
+      const msgs = [{ role: 'user', content: 'x' }] as unknown;
       // contextWindow - maxOutput - tools*150 - 2000 <= 0
       const result = await compressContextWithSummary(msgs, 1000, 4000, 0, modelConfig);
       expect(result.compressed).toBe(false);
@@ -149,9 +149,9 @@ describe('contextCompress', () => {
         { role: 'user', content: 'small' },
         { role: 'user', content: 'big' },
         { role: 'assistant', content: 'reply' },
-      ] as any;
+      ] as unknown;
 
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100));
 
       const cb = vi.fn(async () => 'SUMMARY');
 
@@ -179,9 +179,9 @@ describe('contextCompress', () => {
         { role: 'user', content: 'small' },
         { role: 'user', content: 'big' },
         { role: 'assistant', content: 'reply' },
-      ] as any;
+      ] as unknown;
 
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100));
 
       const cb = vi.fn(async () => {
         throw new Error('compress failed');
@@ -198,10 +198,10 @@ describe('contextCompress', () => {
         { role: 'user', content: 'small' },
         { role: 'user', content: 'big' },
         { role: 'assistant', content: 'reply' },
-      ] as any;
+      ] as unknown;
 
       // 压缩后 token 仍然很大 → 触发降级（afterVal 也很大）
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100000));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100000));
 
       const cb = vi.fn(async () => 'SUMMARY');
 
@@ -216,9 +216,9 @@ describe('contextCompress', () => {
       const msgs = [
         { role: 'user', content: 'big' },
         { role: 'assistant', content: 'reply' },
-      ] as any;
+      ] as unknown;
       // 第一条就超限 → compressStartIdx=0
-      (estimateMessagesTokens as any).mockImplementation((m: any[]) => {
+      (estimateMessagesTokens as unknown).mockImplementation((m: unknown[]) => {
         if (m.length === 1) return 10000;
         return 100000;
       });
@@ -233,9 +233,9 @@ describe('contextCompress', () => {
       const msgs = [
         { role: 'user', content: 'small' },
         { role: 'tool', content: 'big', tool_call_id: 'tc1' },
-      ] as any;
+      ] as unknown;
 
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100));
 
       const result = await compressContextWithSummary(msgs, 10000, 1000, 0, modelConfig, vi.fn());
 
@@ -247,9 +247,9 @@ describe('contextCompress', () => {
       const msgs = [
         { role: 'user', content: ['array-content'] }, // 非 string，被过滤
         { role: 'user', content: 'big' },
-      ] as any;
+      ] as unknown;
 
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100));
 
       const result = await compressContextWithSummary(msgs, 10000, 1000, 0, modelConfig, vi.fn());
 
@@ -258,10 +258,10 @@ describe('contextCompress', () => {
     });
 
     it('workingMemoryMessages 会被前置到消息列表', async () => {
-      const msgs = [{ role: 'user', content: 'big' }] as any;
-      const wm = [{ role: 'system', content: 'working memory' }] as any;
+      const msgs = [{ role: 'user', content: 'big' }] as unknown;
+      const wm = [{ role: 'system', content: 'working memory' }] as unknown;
 
-      (estimateMessagesTokens as any).mockReturnValue(50); // 未超限
+      (estimateMessagesTokens as unknown).mockReturnValue(50); // 未超限
 
       const result = await compressContextWithSummary(
         msgs,
@@ -285,9 +285,9 @@ describe('contextCompress', () => {
         { role: 'user', content: 'small' },
         { role: 'user', content: 'big' },
         { role: 'assistant', content: 'reply' },
-      ] as any;
+      ] as unknown;
 
-      (estimateMessagesTokens as any).mockImplementation(makeStatefulTokens(100));
+      (estimateMessagesTokens as unknown).mockImplementation(makeStatefulTokens(100));
 
       const result = await compressContextWithSummary(msgs, 10000, 1000, 0, modelConfig);
 

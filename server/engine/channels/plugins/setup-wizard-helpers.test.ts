@@ -187,7 +187,7 @@ async function runPromptResolvedAllowFromWithToken(params: {
   resolveEntries: AllowFromResolver;
 }) {
   return await promptResolvedAllowFrom({
-    prompter: params.prompter as any,
+    prompter: params.prompter as unknown,
     existing: [],
     token: "xoxb-test",
     message: "msg",
@@ -244,7 +244,7 @@ async function runPromptSingleChannelSecretInput(params: {
 }) {
   return await promptSingleChannelSecretInput({
     cfg: {},
-    prompter: params.prompter as any,
+    prompter: params.prompter as unknown,
     providerHint: params.providerHint,
     credentialLabel: params.credentialLabel,
     accountConfigured: params.accountConfigured,
@@ -306,7 +306,7 @@ async function runPromptLegacyAllowFrom(params: {
   return await promptLegacyChannelAllowFrom({
     cfg: params.cfg ?? {},
     channel: params.channel,
-    prompter: params.prompter as any,
+    prompter: params.prompter as unknown,
     existing: params.existing,
     token: params.token,
     noteTitle: params.noteTitle,
@@ -325,7 +325,7 @@ describe("promptResolvedAllowFrom", () => {
     const resolveEntries = vi.fn();
 
     const result = await promptResolvedAllowFrom({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       existing: ["111"],
       token: "",
       message: "msg",
@@ -334,7 +334,7 @@ describe("promptResolvedAllowFrom", () => {
       parseInputs: parseCsvInputs,
       parseId: (value) => (/^\d+$/.test(value.trim()) ? value.trim() : null),
       invalidWithoutTokenNote: "ids only",
-      resolveEntries: resolveEntries as any,
+      resolveEntries: resolveEntries as unknown,
     });
 
     expect(result).toEqual(["111", "123"]);
@@ -438,7 +438,7 @@ describe("promptLegacyChannelAllowFromForAccount", () => {
         },
       } as OpenClawConfig,
       channel: "slack",
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       defaultAccountId: DEFAULT_ACCOUNT_ID,
       resolveAccount: () => ({
         botToken: "xoxb-token",
@@ -830,7 +830,7 @@ describe("createPromptParsedAllowFromForAccount", () => {
           },
         },
       },
-      prompter: prompter as any,
+      prompter: prompter as unknown,
     });
 
     expect(
@@ -859,7 +859,7 @@ describe("parsed allowFrom prompt builders", () => {
     const prompter = createPrompter(["npub1"]);
     const next = await promptAllowFrom({
       cfg: {},
-      prompter: prompter as any,
+      prompter: prompter as unknown,
     });
 
     expect(next.channels?.nostr?.allowFrom).toEqual(["npub1"]);
@@ -879,7 +879,7 @@ describe("parsed allowFrom prompt builders", () => {
 
     const next = await promptAllowFrom({
       cfg: {},
-      prompter: createPrompter(["users/123"]) as any,
+      prompter: createPrompter(["users/123"]) as unknown,
     });
 
     expect(next.channels?.googlechat?.enabled).toBe(true);
@@ -2080,7 +2080,7 @@ describe("resolveAccountIdForConfigure", () => {
   it("uses normalized override without prompting", async () => {
     const accountId = await resolveAccountIdForConfigure({
       cfg: {},
-      prompter: {} as any,
+      prompter: {} as unknown,
       label: "Signal",
       accountOverride: " Team Primary ",
       shouldPromptAccountIds: true,
@@ -2093,7 +2093,7 @@ describe("resolveAccountIdForConfigure", () => {
   it("uses default account when override is missing and prompting disabled", async () => {
     const accountId = await resolveAccountIdForConfigure({
       cfg: {},
-      prompter: {} as any,
+      prompter: {} as unknown,
       label: "Signal",
       shouldPromptAccountIds: false,
       listAccountIds: () => ["default"],
@@ -2111,7 +2111,7 @@ describe("resolveAccountIdForConfigure", () => {
 
     const accountId = await resolveAccountIdForConfigure({
       cfg: {},
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Signal",
       shouldPromptAccountIds: true,
       listAccountIds: () => ["default", "prompted-id"],

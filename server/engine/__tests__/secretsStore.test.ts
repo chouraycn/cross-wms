@@ -295,7 +295,7 @@ describe('engine/secretsStore — listSecrets', () => {
     const list = listSecrets();
     expect(list.length).toBe(3);
     // Should not include valueEncrypted
-    expect((list[0] as any).valueEncrypted).toBeUndefined();
+    expect((list[0] as unknown).valueEncrypted).toBeUndefined();
   });
 
   it('filters by provider', () => {

@@ -7,7 +7,7 @@ export class GrpcTransport implements ChannelTransport {
   config: TransportConfig;
   status: TransportStatus = "disconnected";
 
-  private client: any = null;
+  private client: unknown = null;
   private stats: TransportStats = {
     messagesSent: 0,
     messagesReceived: 0,

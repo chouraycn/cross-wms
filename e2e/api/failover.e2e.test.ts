@@ -110,8 +110,8 @@ describe('Failover API E2E — 路由契约', () => {
     it('初始状态返回空数组或仅含零计数模型', async () => {
       const res = await client.get<{ models: FailoverHealth[] }>('/failover/health');
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('models');
-      expect(Array.isArray(res.body.models)).toBe(true);
+      expect(res.body.data).toHaveProperty('models');
+      expect(Array.isArray(res.body.data.models)).toBe(true);
     });
 
     it('记录失败后返回包含失败计数和冷却状态', async () => {
@@ -119,7 +119,7 @@ describe('Failover API E2E — 路由契约', () => {
 
       const res = await client.get<{ models: FailoverHealth[] }>('/failover/health');
       expect(res.status).toBe(200);
-      const modelA = res.body.models.find((m) => m.modelId === 'model-a');
+      const modelA = res.body.data.models.find((m) => m.modelId === 'model-a');
       expect(modelA).toBeDefined();
       expect(modelA?.consecutiveFailures).toBe(1);
       expect(modelA?.isHealthy).toBe(true); // 1 次失败未触发冷却
@@ -133,7 +133,7 @@ describe('Failover API E2E — 路由契约', () => {
 
       const res = await client.get<{ models: FailoverHealth[] }>('/failover/health');
       expect(res.status).toBe(200);
-      const modelA = res.body.models.find((m) => m.modelId === 'model-a');
+      const modelA = res.body.data.models.find((m) => m.modelId === 'model-a');
       expect(modelA?.isInCooldown).toBe(true);
       expect(modelA?.isHealthy).toBe(false);
     });
@@ -143,7 +143,7 @@ describe('Failover API E2E — 路由契约', () => {
     it('未知 modelId 返回 404', async () => {
       const res = await client.get('/failover/health/nonexistent-model');
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('已知 modelId 返回详细健康状态', async () => {
@@ -153,8 +153,8 @@ describe('Failover API E2E — 路由契约', () => {
         '/failover/health/model-a',
       );
       expect(res.status).toBe(200);
-      expect(res.body.modelId).toBe('model-a');
-      expect(res.body.consecutiveFailures).toBe(1);
+      expect(res.body.data.modelId).toBe('model-a');
+      expect(res.body.data.consecutiveFailures).toBe(1);
     });
   });
 
@@ -180,9 +180,9 @@ describe('Failover API E2E — 路由契约', () => {
         '/failover/decisions',
       );
       expect(res.status).toBe(200);
-      expect(res.body.count).toBeGreaterThanOrEqual(1);
+      expect(res.body.data.count).toBeGreaterThanOrEqual(1);
       // 最新一条应该是本次 failure
-      const first = res.body.decisions[0];
+      const first = res.body.data.decisions[0];
       expect(first.type).toBe('failure');
       expect(first.modelId).toBe('model-a');
     });
@@ -197,7 +197,7 @@ describe('Failover API E2E — 路由契约', () => {
         '/failover/decisions?limit=2',
       );
       expect(res.status).toBe(200);
-      expect(res.body.decisions.length).toBeLessThanOrEqual(2);
+      expect(res.body.data.decisions.length).toBeLessThanOrEqual(2);
     });
   });
 
@@ -210,7 +210,7 @@ describe('Failover API E2E — 路由契约', () => {
 
       const res = await client.post<{ success: boolean; message: string }>('/failover/reset');
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.data.success).toBe(true);
 
       // 重置后失败计数清零
       const healthA = manager.getModelHealth('model-a');
@@ -227,7 +227,7 @@ describe('Failover API E2E — 路由契约', () => {
         '/failover/reset/model-a',
       );
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.body.data.success).toBe(true);
       expect(res.body.modelId).toBe('model-a');
 
       // model-a 重置，model-b 保留

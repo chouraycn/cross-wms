@@ -118,7 +118,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (data && Array.isArray(data.models)) {
             // 过滤无效模型
             const validModels = data.models.filter(
-              (m: any) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
+              (m: unknown) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
             );
             setModels(validModels);
             const dmid = data.defaultModelId || validModels[0]?.id || '';

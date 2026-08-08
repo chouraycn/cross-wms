@@ -189,7 +189,7 @@ const TEST_MODELS = {
     { id: 'm1', name: 'M1', enabled: true, provider: 'openai', apiKey: 'k', capabilities: ['general'] },
     { id: 'm2', name: 'M2', enabled: true, provider: 'openai', apiKey: 'k', capabilities: ['reasoning'] },
   ],
-} as any;
+} as unknown;
 
 describe('autoSelectModelAsync — 异步入口（端到端）', () => {
   it('复杂消息：语义分注入选型并回挂 semanticIntent，intentMethod=semantic-blend', async () => {

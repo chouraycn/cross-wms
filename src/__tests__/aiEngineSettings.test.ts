@@ -35,7 +35,7 @@ describe('AI 引擎配置 - 工具 Profile 和上下文压缩', () => {
         },
       };
 
-      const merged = mergeWithDefaults(oldConfig as any);
+      const merged = mergeWithDefaults(oldConfig as unknown);
 
       expect(merged.aiEngine.toolProfile).toBe('full');
       expect(merged.aiEngine.compaction.enabled).toBe(true);
@@ -55,7 +55,7 @@ describe('AI 引擎配置 - 工具 Profile 和上下文压缩', () => {
         },
       };
 
-      const merged = mergeWithDefaults(partialConfig as any);
+      const merged = mergeWithDefaults(partialConfig as unknown);
 
       expect(merged.aiEngine.toolProfile).toBe('coding');
       expect(merged.aiEngine.compaction.enabled).toBe(true);
@@ -77,7 +77,7 @@ describe('AI 引擎配置 - 工具 Profile 和上下文压缩', () => {
         },
       };
 
-      const merged = mergeWithDefaults(fullConfig as any);
+      const merged = mergeWithDefaults(fullConfig as unknown);
 
       expect(merged.aiEngine.toolProfile).toBe('minimal');
       expect(merged.aiEngine.compaction.enabled).toBe(false);

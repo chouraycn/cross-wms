@@ -95,7 +95,7 @@ describe('LRUCache', () => {
       expect(cache.get('a')).toBe('value-a');
 
       // 手动修改过期时间模拟过期
-      const entry = (cache as any).cache.get('a');
+      const entry = (cache as unknown).cache.get('a');
       if (entry) entry.expiresAt = Date.now() - 1;
 
       expect(cache.get('a')).toBeUndefined();
@@ -103,7 +103,7 @@ describe('LRUCache', () => {
 
     it('默认 TTL 到期后条目被清理', () => {
       cache.set('a', 'value-a');
-      const entry = (cache as any).cache.get('a');
+      const entry = (cache as unknown).cache.get('a');
       if (entry) entry.expiresAt = Date.now() - 1;
 
       expect(cache.has('a')).toBe(false);
@@ -111,7 +111,7 @@ describe('LRUCache', () => {
 
     it('getWithMetadata 过期返回 undefined', () => {
       cache.set('a', 'value-a');
-      const entry = (cache as any).cache.get('a');
+      const entry = (cache as unknown).cache.get('a');
       if (entry) entry.expiresAt = Date.now() - 1;
 
       expect(cache.getWithMetadata('a')).toBeUndefined();
@@ -122,7 +122,7 @@ describe('LRUCache', () => {
       cache.set('b', 'value-b');
 
       // 模拟过期
-      for (const entry of (cache as any).cache.values()) {
+      for (const entry of (cache as unknown).cache.values()) {
         entry.expiresAt = Date.now() - 1;
       }
 

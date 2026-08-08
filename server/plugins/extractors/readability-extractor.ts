@@ -19,9 +19,9 @@ import type {
 import { registerWebContentExtractor } from "../web-content-extractors.js";
 
 // @mozilla/readability 为可选依赖，延迟加载避免缺失时启动崩溃
-let ReadabilityCtor: any = null;
+let ReadabilityCtor: unknown = null;
 let _readabilityChecked = false;
-function getReadability(): any {
+function getReadability(): unknown {
   if (_readabilityChecked) return ReadabilityCtor;
   _readabilityChecked = true;
   try {
@@ -36,7 +36,7 @@ function getReadability(): any {
 
 // 用 JSDOM 模拟浏览器环境，避免 turndown 依赖 domino
 function setupDomGlobals() {
-  const g = globalThis as any;
+  const g = globalThis as unknown;
   if (typeof g.DOMParser === "undefined") {
     const dom = new JSDOM("");
     g.window = dom.window;
@@ -153,7 +153,7 @@ function parseWithReadability(
 // ==================== Turndown Markdown 转换 ====================
 
 type TurndownServiceType = {
-  turndown(input: string | any): string;
+  turndown(input: string | unknown): string;
 };
 
 let turndownService: TurndownServiceType | null = null;
@@ -162,7 +162,7 @@ async function getTurndownService(): Promise<TurndownServiceType> {
   if (!turndownService) {
     setupDomGlobals();
     const mod = await import("turndown");
-    const TurndownService = (mod as any).default || mod;
+    const TurndownService = (mod as unknown).default || mod;
     turndownService = new TurndownService({
       headingStyle: "atx",
       codeBlockStyle: "fenced",

@@ -151,7 +151,7 @@ const mockBatchGenerateEmbeddings = vi.fn(() => ({
 }));
 
 vi.mock('../services/embeddingService.js', () => ({
-  semanticSearch: (...args: any[]) => (mockSemanticSearch as any)(...args),
+  semanticSearch: (...args: any[]) => (mockSemanticSearch as unknown)(...args),
   generateEmbedding: vi.fn(() => ({
     skillId: 'test',
     embedding: new Float32Array(384),
@@ -162,7 +162,7 @@ vi.mock('../services/embeddingService.js', () => ({
     updated: false,
   })),
   invalidateCache: vi.fn(),
-  batchGenerateEmbeddings: (...args: any[]) => (mockBatchGenerateEmbeddings as any)(...args),
+  batchGenerateEmbeddings: (...args: any[]) => (mockBatchGenerateEmbeddings as unknown)(...args),
 }));
 
 const mockCreateMatchFeedback = vi.fn(() => 1);
@@ -184,13 +184,13 @@ const mockGetAverageFeedbackScore = vi.fn(() => 0.5);
 const mockGetMatchFeedback = vi.fn(() => []);
 
 vi.mock('../dao/matchingDao.js', () => ({
-  createMatchFeedback: (...args: any[]) => (mockCreateMatchFeedback as any)(...args),
-  getMatchEngineConfigValue: (...args: any[]) => (mockGetMatchEngineConfigValue as any)(...args),
+  createMatchFeedback: (...args: any[]) => (mockCreateMatchFeedback as unknown)(...args),
+  getMatchEngineConfigValue: (...args: any[]) => (mockGetMatchEngineConfigValue as unknown)(...args),
   setMatchEngineConfigValue: vi.fn(),
-  getAverageFeedbackScore: (...args: any[]) => (mockGetAverageFeedbackScore as any)(...args),
-  batchUpdateMatchEngineConfig: (...args: any[]) => (mockBatchUpdateMatchEngineConfig as any)(...args),
-  resetMatchEngineConfig: (...args: any[]) => (mockResetMatchEngineConfig as any)(...args),
-  getMatchFeedback: (...args: any[]) => (mockGetMatchFeedback as any)(...args),
+  getAverageFeedbackScore: (...args: any[]) => (mockGetAverageFeedbackScore as unknown)(...args),
+  batchUpdateMatchEngineConfig: (...args: any[]) => (mockBatchUpdateMatchEngineConfig as unknown)(...args),
+  resetMatchEngineConfig: (...args: any[]) => (mockResetMatchEngineConfig as unknown)(...args),
+  getMatchFeedback: (...args: any[]) => (mockGetMatchFeedback as unknown)(...args),
 }));
 
 // ===================== 导入被测模块 =====================
@@ -429,7 +429,7 @@ describe('Matching Service', () => {
       );
 
       expect(mockSemanticSearch).toHaveBeenCalled();
-      const callArgs: any[] = (mockSemanticSearch.mock.calls[0] || []) as any[];
+      const callArgs: unknown[] = (mockSemanticSearch.mock.calls[0] || []) as unknown[];
       expect(callArgs[0]).toContain('之前讨论了库存');
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].matchMode).toBe('context');
@@ -464,7 +464,7 @@ describe('Matching Service', () => {
 
       const results = await match({
         query: '库存',
-        matchMode: 'unknown' as any,
+        matchMode: 'unknown' as unknown,
         topK: 5,
         threshold: 0,
       });

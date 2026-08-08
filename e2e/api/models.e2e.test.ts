@@ -41,7 +41,7 @@ describe('Models API E2E 测试', () => {
     it('应该返回 400 当 models 不是数组', async () => {
       const res = await client.put('/', { models: 'not-an-array' });
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
+      expect(res.body).toHaveProperty('message');
     });
 
     it('应该更新模型配置并返回脱敏数据', async () => {

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+ 
 /**
  * 降级 stub — 移植自 openclaw/src/gateway/control-ui-csp.ts
  *

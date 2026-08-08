@@ -180,7 +180,7 @@ export async function testTemplate(
   id: string,
   variables?: Record<string, string>,
   extraHeaders?: Record<string, string>,
-): Promise<any> {
+): Promise<unknown> {
   const res = await fetchWithTimeout(`${BASE}/${id}/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

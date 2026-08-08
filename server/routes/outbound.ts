@@ -13,6 +13,7 @@ import {
   deleteOutboundRecord as dbDelete,
 } from '../dao/warehouse.js';
 import * as InventoryService from '../services/inventoryService.js';
+import { ok, created, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -22,31 +23,29 @@ router.get('/', (req: Request, res: Response) => {
   const startDate = req.query.startDate as string | undefined;
   const endDate = req.query.endDate as string | undefined;
   const data = dbGetAll(warehouseId, startDate, endDate);
-  res.json({ code: 0, data, message: 'ok' });
+  return ok(res, data);
 });
 
 // GET /api/outbound-records/:id
 router.get('/:id', (req: Request, res: Response) => {
   const data = dbGetById(req.params.id);
   if (!data) {
-    res.status(404).json({ code: 404, data: null, message: 'Outbound record not found' });
-    return;
+    return notFound(res, 'Outbound record not found');
   }
-  res.json({ code: 0, data, message: 'ok' });
+  return ok(res, data);
 });
 
 // POST /api/outbound-records — Transactional outbound with inventory deduction
 router.post('/', (req: Request, res: Response) => {
   try {
     const result = InventoryService.createOutbound(req.body);
-    res.status(201).json({ code: 0, data: result, message: 'ok' });
+    return created(res, result);
   } catch (e) {
     const message = (e as Error).message;
     if (message === '库存不足') {
-      res.status(400).json({ code: 400, message: '库存不足' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, '库存不足', 400);
     }
-    res.status(400).json({ code: 400, data: null, message });
+    return fail(res, BizCode.BAD_REQUEST, message, 400);
   }
 });
 
@@ -55,23 +54,21 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const data = dbUpdate(req.params.id, req.body);
     if (!data) {
-      res.status(404).json({ code: 404, data: null, message: 'Outbound record not found' });
-      return;
+      return notFound(res, 'Outbound record not found');
     }
-    res.json({ code: 0, data, message: 'ok' });
+    return ok(res, data);
   } catch (e) {
-    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 
 // DELETE /api/outbound-records/:id
 router.delete('/:id', (req: Request, res: Response) => {
-  const ok = dbDelete(req.params.id);
-  if (!ok) {
-    res.status(404).json({ code: 404, data: null, message: 'Outbound record not found' });
-    return;
+  const deleted = dbDelete(req.params.id);
+  if (!deleted) {
+    return notFound(res, 'Outbound record not found');
   }
-  res.json({ code: 0, data: null, message: 'ok' });
+  return ok(res, null);
 });
 
 export default router;

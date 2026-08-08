@@ -272,7 +272,7 @@ export class ExecutionEngine extends EventEmitter {
     const context = this.activeExecutions.get(executionId);
     if (!context) return false;
     if (context.abortSignal) {
-      (context as any).abortController?.abort?.();
+      (context as unknown).abortController?.abort?.();
     }
     return true;
   }

@@ -89,7 +89,7 @@ export function initWebhookTables(db: Database.Database): void {
  */
 export function getAllWebhooks(): WebhookConfig[] {
   const db = getDb();
-  const rows = db.prepare('SELECT * FROM webhooks ORDER BY created_at DESC').all() as any[];
+  const rows = db.prepare('SELECT * FROM webhooks ORDER BY created_at DESC').all() as unknown[];
 
   return rows.map(row => ({
     id: row.id,
@@ -108,7 +108,7 @@ export function getAllWebhooks(): WebhookConfig[] {
  */
 export function getWebhookById(id: string): WebhookConfig | null {
   const db = getDb();
-  const row = db.prepare('SELECT * FROM webhooks WHERE id = ?').get(id) as any;
+  const row = db.prepare('SELECT * FROM webhooks WHERE id = ?').get(id) as unknown;
 
   if (!row) return null;
 
@@ -184,7 +184,7 @@ export function updateWebhook(
   if (!existing) return null;
 
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   if (data.name !== undefined) {
     updates.push('name = ?');
@@ -243,7 +243,7 @@ export function getWebhookLogs(
   // 获取总数
   const countRow = db
     .prepare('SELECT COUNT(*) as count FROM webhook_logs WHERE webhook_id = ?')
-    .get(webhookId) as any;
+    .get(webhookId) as unknown;
   const total = countRow.count;
 
   // 获取日志列表
@@ -251,7 +251,7 @@ export function getWebhookLogs(
     .prepare(
       'SELECT * FROM webhook_logs WHERE webhook_id = ? ORDER BY triggered_at DESC LIMIT ? OFFSET ?'
     )
-    .all(webhookId, limit, offset) as any[];
+    .all(webhookId, limit, offset) as unknown[];
 
   const logs: WebhookLog[] = rows.map(row => ({
     id: row.id,
@@ -317,7 +317,7 @@ export function updateWebhookLog(
 ): void {
   const db = getDb();
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   if (data.status !== undefined) {
     updates.push('status = ?');
@@ -360,11 +360,11 @@ export function getWebhookStats(): WebhookStats {
   const db = getDb();
 
   // 总数
-  const totalRow = db.prepare('SELECT COUNT(*) as count FROM webhooks').get() as any;
+  const totalRow = db.prepare('SELECT COUNT(*) as count FROM webhooks').get() as unknown;
   const total = totalRow.count;
 
   // 启用数量
-  const activeRow = db.prepare('SELECT COUNT(*) as count FROM webhooks WHERE enabled = 1').get() as any;
+  const activeRow = db.prepare('SELECT COUNT(*) as count FROM webhooks WHERE enabled = 1').get() as unknown;
   const active = activeRow.count;
 
   // 成功率
@@ -372,10 +372,10 @@ export function getWebhookStats(): WebhookStats {
     .prepare(
       "SELECT COUNT(*) as count FROM webhook_logs WHERE status = 'success'"
     )
-    .get() as any;
+    .get() as unknown;
   const successCount = successRow.count;
 
-  const totalLogsRow = db.prepare('SELECT COUNT(*) as count FROM webhook_logs').get() as any;
+  const totalLogsRow = db.prepare('SELECT COUNT(*) as count FROM webhook_logs').get() as unknown;
   const totalLogs = totalLogsRow.count;
 
   const successRate = totalLogs > 0 ? (successCount / totalLogs) * 100 : 0;

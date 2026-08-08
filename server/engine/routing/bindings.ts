@@ -74,7 +74,7 @@ export function listBoundAccountIds(cfg: OpenClawConfig | string, channelId?: st
   }
   const ids = new Set<string>();
   for (const binding of bindings) {
-    const resolved = resolveNormalizedRouteBindingMatch(binding as any);
+    const resolved = resolveNormalizedRouteBindingMatch(binding as unknown);
     if (!resolved || resolved.channelId !== targetChannel) {
       continue;
     }
@@ -110,7 +110,7 @@ export function buildChannelAccountBindings(cfg?: OpenClawConfig): Map<string, M
   const map = new Map<string, Map<string, string[]>>();
   const bindings = cfg ? listRouteBindings(cfg) : Array.from(inMemoryBindings.values());
   for (const binding of bindings) {
-    const resolved = resolveNormalizedRouteBindingMatch(binding as any);
+    const resolved = resolveNormalizedRouteBindingMatch(binding as unknown);
     if (!resolved) {
       continue;
     }

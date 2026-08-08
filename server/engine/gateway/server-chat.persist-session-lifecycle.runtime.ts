@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+ 
 /**
  * Runtime barrel stub — 移植自 openclaw/src/gateway/server-chat.persist-session-lifecycle.runtime.ts
  *

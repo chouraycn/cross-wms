@@ -19,12 +19,12 @@ export function resolveEmbeddedRunSkillEntries(params: {
   skillEntries: SkillEntry[];
 } {
   const shouldLoadSkillEntries = !params.skillsSnapshot || !params.skillsSnapshot.resolvedSkills;
-  const config = resolveSkillRuntimeConfig(params.config as any);
+  const config = resolveSkillRuntimeConfig(params.config as unknown);
 
   return {
     shouldLoadSkillEntries,
     skillEntries: shouldLoadSkillEntries
-      ? (loadWorkspaceSkills(params.workspaceDir) as any)
+      ? (loadWorkspaceSkills(params.workspaceDir) as unknown)
       : [],
   };
 }

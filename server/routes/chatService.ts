@@ -265,7 +265,7 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
             api: '',
             provider: '',
             model: '',
-            usage: evt.usage as any,
+            usage: evt.usage as unknown,
             stopReason: 'stop',
             timestamp: Date.now(),
           };
@@ -344,16 +344,16 @@ interface QueueExecuteParams {
   assistantId: string;
   preset: typeof MODEL_PRESETS[string] | null;
   executionMode?: string;
-  conversationHistory?: any[];
+  conversationHistory?: unknown[];
   skillContext?: string;
   skillId?: string;
-  attachments?: any[];
+  attachments?: unknown[];
   autoReason?: string;
   autoReasonType?: string;
   message: string;
   modelsConfig: ModelsFile;
   toolProfile?: string;
-  compaction?: any;
+  compaction?: unknown;
 }
 
 /**
@@ -544,7 +544,7 @@ async function executeQueuedMessage(
       estimatedToolsCount: 30,
       fromQueue: true,
       callbacks,
-      toolProfile: params.toolProfile as any,
+      toolProfile: params.toolProfile as unknown,
       compaction: params.compaction,
     });
 
@@ -687,13 +687,13 @@ export async function handleChat(req: import('express').Request, res: import('ex
       const hasImg = hasImageAttachment(attachments);
       try {
         // v1.7.162: 传入完整 ScoringInput，启用 5 维度评分（上下文长度 + 工具调用加分）
-        const historyMsgs: ApiMessage[] = (conversationHistory || []).map((m: any) => ({
+        const historyMsgs: ApiMessage[] = (conversationHistory || []).map((m: unknown) => ({
           role: m.role || 'user',
           content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content || ''),
         }));
         const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
-        const toolCallCount = (conversationHistory || []).filter((m: any) =>
-          m.tool_calls || (Array.isArray(m.content) && m.content.some((c: any) => c.type === 'tool_use' || c.type === 'tool_result'))
+        const toolCallCount = (conversationHistory || []).filter((m: unknown) =>
+          m.tool_calls || (Array.isArray(m.content) && m.content.some((c: unknown) => c.type === 'tool_use' || c.type === 'tool_result'))
         ).length;
         const scoringInput: Partial<ScoringInput> = {
           contextTokenCount,
@@ -708,7 +708,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
         autoSemanticMethod = autoResult.semanticIntent?.method;
         autoSemanticConfidence = autoResult.semanticIntent?.confidence;
         reqLog.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
-      } catch (autoErr: any) {
+      } catch (autoErr: unknown) {
         const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
         // 直接写入 SSE 错误事件
         try {

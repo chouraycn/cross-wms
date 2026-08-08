@@ -95,7 +95,7 @@ const sessionId = generateSessionId();
 
 function getMemoryInfo(): PerformanceSnapshot['memory'] {
   try {
-    const mem = (performance as any).memory;
+    const mem = (performance as unknown).memory;
     if (!mem) return undefined;
     return {
       usedJSHeapSize: mem.usedJSHeapSize,
@@ -157,7 +157,7 @@ function observeWebVital(entryType: string, name: WebVitalMetric['name'], extrac
   try {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        const value = extractValue ? extractValue(entry) : (entry as any).startTime ?? entry.duration;
+        const value = extractValue ? extractValue(entry) : (entry as unknown).startTime ?? entry.duration;
         webVitals.push({
           name,
           value,
@@ -167,7 +167,7 @@ function observeWebVital(entryType: string, name: WebVitalMetric['name'], extrac
         if (webVitals.length > 50) webVitals.shift();
       }
     });
-    observer.observe({ type: entryType as any, buffered: true });
+    observer.observe({ type: entryType as unknown, buffered: true });
   } catch {
     // Ignore unsupported entry types
   }
@@ -179,8 +179,8 @@ function observeLayoutShift() {
     let clsValue = 0;
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        if (!(entry as unknown).hadRecentInput) {
+          clsValue += (entry as unknown).value;
         }
       }
       webVitals.push({
@@ -204,7 +204,7 @@ function observeEventTiming() {
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       for (const entry of entries) {
-        const duration = (entry as any).duration ?? 0;
+        const duration = (entry as unknown).duration ?? 0;
         if (duration > inpValue) inpValue = duration;
       }
       webVitals.push({
@@ -215,7 +215,7 @@ function observeEventTiming() {
       });
       if (webVitals.length > 50) webVitals.shift();
     });
-    observer.observe({ type: 'event', buffered: true, durationThreshold: 0 } as any);
+    observer.observe({ type: 'event', buffered: true, durationThreshold: 0 } as unknown);
   } catch {
     // Ignore unsupported
   }

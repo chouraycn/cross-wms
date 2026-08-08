@@ -120,14 +120,14 @@ function getDb(): Database.Database {
 /** row -> ChannelBindingRead（含挂载员工、config_json 扁平化到顶层已知字段） */
 function buildBindingRead(
   db: Database.Database,
-  row: any,
+  row: unknown,
 ): Record<string, unknown> {
   const config = parseJson(row.config_json);
   const agentRows = db
     .prepare(
       'SELECT * FROM sd_channel_binding_agents WHERE binding_id = ? ORDER BY sort_order ASC',
     )
-    .all(row.id) as any[];
+    .all(row.id) as unknown[];
   const agents = agentRows.map((a) => ({
     agent_id: a.agent_id,
     name: a.name || a.agent_id,
@@ -191,7 +191,7 @@ router.get('/', (req: Request, res: Response) => {
   const db = getDb();
   const rows = db
     .prepare('SELECT * FROM sd_channel_bindings WHERE tenant_id = ? ORDER BY created_at ASC')
-    .all(tenantId) as any[];
+    .all(tenantId) as unknown[];
   ok(res, rows.map((row) => buildBindingRead(db, row)));
 });
 
@@ -252,7 +252,7 @@ router.get('/my-identity-bindings', (req: Request, res: Response) => {
     .prepare(
       'SELECT * FROM sd_channel_identities WHERE tenant_id = ? AND staffdeck_user_id = ? ORDER BY channel ASC',
     )
-    .all(tenantId, 'default-user') as any[];
+    .all(tenantId, 'default-user') as unknown[];
   ok(
     res,
     rows.map((r) => ({
@@ -291,7 +291,7 @@ router.get('/:bindingId/agents', (req: Request, res: Response) => {
   }
   const agentRows = db
     .prepare('SELECT * FROM sd_channel_binding_agents WHERE binding_id = ? ORDER BY sort_order ASC')
-    .all(bindingId) as any[];
+    .all(bindingId) as unknown[];
   ok(
     res,
     agentRows.map((a) => ({
@@ -320,7 +320,7 @@ router.put('/:bindingId', (req: Request, res: Response) => {
     fail(res, 404, '渠道绑定不存在');
     return;
   }
-  const config = parseJson((binding as any).config_json);
+  const config = parseJson((binding as unknown).config_json);
   if (agents !== undefined) {
     if (!agents.length) {
       fail(res, 400, '挂载员工列表不能为空');
@@ -399,7 +399,7 @@ function activateBindingLocal(
   bindingId: string,
   extraConfig: Record<string, unknown>,
 ): Record<string, unknown> {
-  const binding = db.prepare('SELECT * FROM sd_channel_bindings WHERE id = ?').get(bindingId) as any;
+  const binding = db.prepare('SELECT * FROM sd_channel_bindings WHERE id = ?').get(bindingId) as unknown;
   const config = { ...parseJson(binding.config_json), ...extraConfig };
   config.session_expired = false;
   config.bound_at = isoFromUnix(nowUnix());
@@ -440,7 +440,7 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
 } {
   const tenantId = opts.tenantId || DEFAULT_TENANT_ID;
   const db = getDb();
-  let binding: any = null;
+  let binding: unknown = null;
   if (opts.bindingId) {
     binding = db
       .prepare('SELECT * FROM sd_channel_bindings WHERE id = ? AND tenant_id = ?')
@@ -450,7 +450,7 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
       .prepare(
         "SELECT * FROM sd_channel_bindings WHERE tenant_id = ? AND channel = ? AND status = 'active' ORDER BY updated_at DESC",
       )
-      .all(tenantId, opts.channel) as any[];
+      .all(tenantId, opts.channel) as unknown[];
     if (opts.agentId) rows = rows.filter((r) => r.agent_id === opts.agentId);
     if (rows.length) binding = rows[0];
   }
@@ -481,7 +481,7 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
     t,
     t,
   );
-  const row = db.prepare('SELECT * FROM sd_channel_deliveries WHERE id = ?').get(id) as any;
+  const row = db.prepare('SELECT * FROM sd_channel_deliveries WHERE id = ?').get(id) as unknown;
   return {
     ok: true,
     delivery: {
@@ -645,8 +645,8 @@ router.get('/:bindingId/deliveries', (req: Request, res: Response) => {
     .prepare(
       'SELECT * FROM sd_channel_deliveries WHERE binding_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
     )
-    .all(bindingId, limit, offset) as any[];
-  const total = (db.prepare('SELECT COUNT(*) AS c FROM sd_channel_deliveries WHERE binding_id = ?').get(bindingId) as any)
+    .all(bindingId, limit, offset) as unknown[];
+  const total = (db.prepare('SELECT COUNT(*) AS c FROM sd_channel_deliveries WHERE binding_id = ?').get(bindingId) as unknown)
     .c;
   ok(res, {
     items: rows.map((r) => ({

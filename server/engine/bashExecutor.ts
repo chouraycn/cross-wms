@@ -591,7 +591,7 @@ async function handleProcessPoll(
     }
 
     // 等待新输出
-    // eslint-disable-next-line prefer-const
+     
     let timer: NodeJS.Timeout;
     let resolved = false;
 

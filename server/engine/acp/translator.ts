@@ -374,7 +374,7 @@ export class AcpTranslator {
       sessionId: params.sessionId,
       sessionKey: params.sessionKey,
       runId: params.runId,
-      update: params.update as any,
+      update: params.update as unknown,
     });
   }
 

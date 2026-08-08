@@ -425,7 +425,7 @@ export function createWikiCreateToolHandler(): ToolHandler {
         title,
         content,
         summary,
-        source: source as any,
+        source: source as unknown,
         sourcePath,
         metadata,
         autoExtractTags: true,

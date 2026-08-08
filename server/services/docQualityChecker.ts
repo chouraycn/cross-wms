@@ -316,7 +316,7 @@ function checkParameters(body: string, frontmatter: Record<string, unknown>): Do
   if (!inputs || inputs.length === 0) {
     suggestions.push('建议在 metadata.openclaw.inputs 中声明输入参数');
   } else {
-    const inputsWithNoDesc = inputs.filter((i: any) => !i.description || String(i.description).trim() === '');
+    const inputsWithNoDesc = inputs.filter((i: unknown) => !i.description || String(i.description).trim() === '');
     if (inputsWithNoDesc.length > 0) {
       issues.push({
         code: 'PARAMS_MISSING_DESC',
@@ -326,7 +326,7 @@ function checkParameters(body: string, frontmatter: Record<string, unknown>): Do
       });
     }
 
-    const inputsWithNoType = inputs.filter((i: any) => !i.type);
+    const inputsWithNoType = inputs.filter((i: unknown) => !i.type);
     if (inputsWithNoType.length > 0) {
       issues.push({
         code: 'PARAMS_MISSING_TYPE',

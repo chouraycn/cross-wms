@@ -1084,7 +1084,7 @@ export function exportTodos(sessionId: string): { data: Array<{
               FROM todo_items WHERE session_id = ? ORDER BY order_index`)
     .all(sessionId);
 
-  return { data: todos as any[] };
+  return { data: todos as unknown[] };
 }
 
 export function exportAllTodos(): { data: Array<{
@@ -1102,7 +1102,7 @@ export function exportAllTodos(): { data: Array<{
               FROM todo_items ORDER BY session_id, order_index`)
     .all();
 
-  return { data: todos as any[] };
+  return { data: todos as unknown[] };
 }
 
 export function exportArtifacts(sessionId: string): { data: Array<{
@@ -1119,7 +1119,7 @@ export function exportArtifacts(sessionId: string): { data: Array<{
               FROM artifacts WHERE session_id = ? ORDER BY created_at DESC`)
     .all(sessionId);
 
-  return { data: artifacts as any[] };
+  return { data: artifacts as unknown[] };
 }
 
 export function exportToolCalls(sessionId: string): { data: Array<{
@@ -1136,7 +1136,7 @@ export function exportToolCalls(sessionId: string): { data: Array<{
               FROM tool_calls WHERE session_id = ? ORDER BY started_at DESC`)
     .all(sessionId);
 
-  return { data: toolCalls as any[] };
+  return { data: toolCalls as unknown[] };
 }
 
 export function exportTrajectory(sessionId: string): { data: Array<{
@@ -1152,7 +1152,7 @@ export function exportTrajectory(sessionId: string): { data: Array<{
               FROM trajectory_events WHERE session_id = ? ORDER BY seq`)
     .all(sessionId);
 
-  return { data: events.map((e: any) => ({ ...e, data: e.data ? JSON.parse(e.data) : null })) };
+  return { data: events.map((e: unknown) => ({ ...e, data: e.data ? JSON.parse(e.data) : null })) };
 }
 
 // ===================== Task Flow Orchestration =====================

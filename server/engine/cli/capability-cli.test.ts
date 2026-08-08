@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
   resolveApiKeyForProvider: vi.fn(),
   resolveAgentDir: vi.fn((_cfg: unknown, agentId: string) => `/tmp/agent-${agentId}`),
   updateAuthProfileStoreWithLock: vi.fn(
-    async ({ updater }: { updater: (store: any) => boolean }) => {
+    async ({ updater }: { updater: (store: unknown) => boolean }) => {
       const store = {
         version: 1,
         profiles: {},
@@ -469,7 +469,7 @@ describe("capability cli", () => {
     mocks.setRuntimeConfigSnapshot.mockClear();
     mocks.updateAuthProfileStoreWithLock
       .mockReset()
-      .mockImplementation(async ({ updater }: { updater: (store: any) => boolean }) => {
+      .mockImplementation(async ({ updater }: { updater: (store: unknown) => boolean }) => {
         const store = {
           version: 1,
           profiles: {},
@@ -2695,9 +2695,9 @@ describe("capability cli", () => {
     } as never);
     mocks.listProfilesForProvider.mockReturnValue(["openai:default", "openai:secondary"] as never);
 
-    let updatedStore: Record<string, any> | null = null;
+    let updatedStore: Record<string, unknown> | null = null;
     mocks.updateAuthProfileStoreWithLock.mockImplementationOnce(
-      async ({ updater }: { updater: (store: any) => boolean }) => {
+      async ({ updater }: { updater: (store: unknown) => boolean }) => {
         const store = {
           version: 1,
           profiles: {
@@ -2727,7 +2727,7 @@ describe("capability cli", () => {
     if (updatedStore === null) {
       throw new Error("expected updated auth store");
     }
-    const storeSnapshot = updatedStore as unknown as Record<string, any>;
+    const storeSnapshot = updatedStore as unknown as Record<string, unknown>;
     expect(storeSnapshot.profiles).toEqual({
       "anthropic:default": { id: "anthropic:default" },
     });

@@ -96,6 +96,6 @@ describe('Warehouses Routes', () => {
 
     const res = await request(app).delete('/api/warehouses/1');
     expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
+    expect(res.body.data.ok).toBe(true);
   });
 });

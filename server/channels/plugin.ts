@@ -30,7 +30,7 @@ export interface ChannelAuthAdapter {
 }
 
 /** Adapter for channel security policy. */
-export interface ChannelSecurityAdapter<TAccount = any> {
+export interface ChannelSecurityAdapter<TAccount = unknown> {
   checkSecurity?(account: TAccount, config: AppConfig): Promise<boolean>;
 }
 
@@ -46,7 +46,7 @@ export interface ChannelAuditInfo {
 }
 
 /** Adapter for channel status monitoring. */
-export interface ChannelStatusAdapter<TAccount = any, TProbe = unknown, TAudit = unknown> {
+export interface ChannelStatusAdapter<TAccount = unknown, TProbe = unknown, TAudit = unknown> {
   probe?(account: TAccount, config: AppConfig): Promise<TProbe>;
   audit?(account: TAccount, config: AppConfig): Promise<TAudit>;
 }
@@ -69,7 +69,7 @@ export type ChannelAgentToolFactory = (params: { cfg?: AppConfig }) => ChannelAg
 
 /** Full capability contract for a channel plugin. */
 export interface ChannelPlugin<
-  TAccount = any,
+  TAccount = unknown,
   TProbe = unknown,
   TAudit = unknown,
 > {

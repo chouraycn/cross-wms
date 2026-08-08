@@ -22,7 +22,7 @@ class FrozenTime {
   freeze(): void {
     if (this.enabled) return;
     this.enabled = true;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+     
     const _this = this;
 
     const FrozenDate = function (this: Date, ...args: unknown[]) {
@@ -86,7 +86,7 @@ export function freezeTime(options: FrozenTimeOptions = {}): {
 export function advanceTime(ms: number): void {
   const now = Date.now();
   const newDate = new Date(now + ms);
-  const frozenDate = globalThis.Date as any;
+  const frozenDate = globalThis.Date as unknown;
   if (frozenDate._frozenMs !== undefined) {
     frozenDate._frozenMs = newDate.getTime();
   }

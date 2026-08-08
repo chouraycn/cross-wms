@@ -52,7 +52,7 @@ describe("promptChannelAllowlist", () => {
     });
 
     const result = await promptChannelAllowlist({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Test",
       currentEntries: ["alpha", "beta"],
     });
@@ -73,7 +73,7 @@ describe("promptChannelAccessPolicy", () => {
     });
 
     const result = await promptChannelAccessPolicy({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Discord",
       currentPolicy: "allowlist",
     });
@@ -93,7 +93,7 @@ describe("promptChannelAccessConfig policy-only entries", () => {
     });
 
     const result = await promptChannelAccessConfig({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Twitch chat",
       skipAllowlistEntries: true,
     });
@@ -109,7 +109,7 @@ describe("promptChannelAccessConfig skip flow", () => {
     });
 
     const result = await promptChannelAccessConfig({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Slack",
     });
 
@@ -124,7 +124,7 @@ describe("promptChannelAccessConfig skip flow", () => {
     });
 
     const result = await promptChannelAccessConfig({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Slack",
     });
 
@@ -141,7 +141,7 @@ describe("promptChannelAccessConfig skip flow", () => {
     });
 
     const result = await promptChannelAccessConfig({
-      prompter: prompter as any,
+      prompter: prompter as unknown,
       label: "Slack",
       allowDisabled: true,
     });

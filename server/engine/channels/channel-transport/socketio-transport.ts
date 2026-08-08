@@ -7,7 +7,7 @@ export class SocketIoTransport implements ChannelTransport {
   config: TransportConfig;
   status: TransportStatus = "disconnected";
 
-  private socket: any = null;
+  private socket: unknown = null;
   private isServer = false;
 
   private stats: TransportStats = {

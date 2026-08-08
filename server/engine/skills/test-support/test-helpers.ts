@@ -33,7 +33,7 @@ export function createCanonicalFixtureSkill(params: {
     filePath: params.filePath,
     baseDir: params.baseDir,
     promptVersion: params.promptVersion,
-    source: params.source as any,
+    source: params.source as unknown,
     disableModelInvocation: params.disableModelInvocation ?? false,
   };
 }

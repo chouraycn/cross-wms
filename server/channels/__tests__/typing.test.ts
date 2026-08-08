@@ -139,7 +139,7 @@ describe("TypingCallbacks 模块单元测试", () => {
       const indicator = new TypingIndicator("ch-1", "user-1", -1); // 已过期
 
       // 手动注入过期指示器
-      (tc as any).indicators.set("ch-1", new Map([["user-1", indicator]]));
+      (tc as unknown).indicators.set("ch-1", new Map([["user-1", indicator]]));
 
       expect(tc.getActiveTypers("ch-1")).toHaveLength(0);
       tc.dispose();
@@ -151,11 +151,11 @@ describe("TypingCallbacks 模块单元测试", () => {
       tc.addCallback(cb);
 
       const indicator = new TypingIndicator("ch-1", "user-1", -1);
-      (tc as any).indicators.set("ch-1", new Map([["user-1", indicator]]));
+      (tc as unknown).indicators.set("ch-1", new Map([["user-1", indicator]]));
 
       tc.cleanupExpired();
       expect(cb.onTypingStop).toHaveBeenCalledWith("ch-1", "user-1");
-      expect((tc as any).indicators.has("ch-1")).toBe(false);
+      expect((tc as unknown).indicators.has("ch-1")).toBe(false);
       tc.dispose();
     });
   });
@@ -166,8 +166,8 @@ describe("TypingCallbacks 模块单元测试", () => {
       tc.onTypingStart("ch-1", "user-1");
       tc.dispose();
 
-      expect((tc as any).indicators.size).toBe(0);
-      expect((tc as any).cleanupTimer).toBeUndefined();
+      expect((tc as unknown).indicators.size).toBe(0);
+      expect((tc as unknown).cleanupTimer).toBeUndefined();
     });
   });
 });

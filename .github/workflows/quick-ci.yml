@@ -57,10 +57,14 @@ jobs:
       - name: Run ci-quick-check
         id: quick
         # The script self-times and emits pass/fail; we tee to a log so the
-        # next step can pick it up as an artifact.
+        # next step can pick it up as an artifact. Ubuntu hosted runners are
+        # throttled vs. local dev machines so we bump per-step timeout to
+        # 180s; the global workflow timeout still caps this at 5 minutes.
+        env:
+          TIMEOUT_SECS: '180'
         run: |
           set -o pipefail
-          bash scripts/ci-quick-check.sh 2>&1 | tee ci-quick-check.log
+          bash scripts/ci-quick-check.sh --timeout 180 2>&1 | tee ci-quick-check.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT || true
 
       - name: Run package-summary (for artifact)

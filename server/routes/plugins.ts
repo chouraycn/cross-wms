@@ -78,7 +78,7 @@ router.post('/install', async (req, res) => {
     ensurePluginUploadsDir();
 
     // 使用自定义 multipart 解析器
-    const parsed = await parseMultipartFormData(req as any);
+    const parsed = await parseMultipartFormData(req as unknown);
     if (!parsed) {
       return res.status(400).json({ error: '未找到插件包文件或请求格式错误' });
     }

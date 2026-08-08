@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { logger } from '../logger.js';
+import { ok, created, fail, notFound, serverError, BizCode } from './_shared/respond.js';
 import {
   generateInventoryReport,
   generateInboundReport,
@@ -42,11 +43,11 @@ function generateByType(
 router.get('/', (_req: Request, res: Response) => {
   try {
     const reports = getReportList();
-    res.json({ success: true, data: reports, total: reports.length });
+    return ok(res, { data: reports, total: reports.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 获取报表列表失败:', message);
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -64,13 +65,11 @@ router.post('/', (req: Request, res: Response) => {
     };
 
     if (!type || !['inventory', 'inbound', 'outbound'].includes(type)) {
-      res.status(400).json({ error: 'type is required and must be one of inventory|inbound|outbound' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'type is required and must be one of inventory|inbound|outbound', 400);
     }
 
     const filePath = generateByType(type, warehouseId, startDate, endDate);
-    res.status(201).json({
-      success: true,
+    return created(res, {
       data: {
         type,
         warehouseId: warehouseId ?? null,
@@ -81,7 +80,7 @@ router.post('/', (req: Request, res: Response) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 生成报表失败:', message);
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -95,21 +94,19 @@ router.get('/:id', (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
-      res.status(400).json({ error: 'Invalid report id' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Invalid report id', 400);
     }
 
     const report = getReportById(id);
     if (!report) {
-      res.status(404).json({ error: 'Report not found' });
-      return;
+      return notFound(res, 'Report not found');
     }
 
-    res.json({ success: true, data: report });
+    return ok(res, { data: report });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 获取报表详情失败:', message);
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -121,21 +118,19 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
-      res.status(400).json({ error: 'Invalid report id' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Invalid report id', 400);
     }
 
-    const ok = deleteReport(id);
-    if (!ok) {
-      res.status(404).json({ error: 'Report not found' });
-      return;
+    const deleted = deleteReport(id);
+    if (!deleted) {
+      return notFound(res, 'Report not found');
     }
 
-    res.json({ success: true });
+    return ok(res, { success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 删除报表失败:', message);
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 

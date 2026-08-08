@@ -25,7 +25,7 @@ describe("path prepend helpers", () => {
 
   it("normalizes prepend lists by trimming, skipping blanks, and deduping", () => {
     expect(
-      normalizePathPrepend([" /custom/bin ", "", " /custom/bin ", "/opt/bin", 42 as any]),
+      normalizePathPrepend([" /custom/bin ", "", " /custom/bin ", "/opt/bin", 42 as unknown]),
     ).toEqual(["/custom/bin", "/opt/bin"]);
     expect(normalizePathPrepend()).toStrictEqual([]);
   });

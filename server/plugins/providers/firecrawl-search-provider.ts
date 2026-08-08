@@ -111,7 +111,7 @@ async function performSearch(
 function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
-  const items = (data as any).data;
+  const items = (data as unknown).data;
   if (!Array.isArray(items)) {
     return results;
   }

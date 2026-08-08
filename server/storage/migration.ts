@@ -43,14 +43,14 @@ export function migrateSessionsToJsonl(db: Database.Database): void {
   }
 
   // 读取所有 sessions
-  const sessions = db.prepare('SELECT * FROM sessions').all() as any[];
+  const sessions = db.prepare('SELECT * FROM sessions').all() as unknown[];
   let migratedCount = 0;
 
   for (const session of sessions) {
     // 读取该 session 的所有 messages
     const messages = db.prepare(
       'SELECT * FROM messages WHERE sessionId = ? ORDER BY timestamp ASC'
-    ).all(session.id) as any[];
+    ).all(session.id) as unknown[];
 
     // 写入 JSONL
     const sessionData = { session, messages };

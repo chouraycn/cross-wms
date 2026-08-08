@@ -61,7 +61,7 @@ describe('modelProviderRegistry', () => {
 
     it('应该能动态注册新提供商', () => {
       const customProvider: ProviderInfo = {
-        id: 'custom-test' as any,
+        id: 'custom-test' as unknown,
         name: 'Custom Test Provider',
         baseUrl: 'https://custom.example.com/v1',
         authType: 'bearer',

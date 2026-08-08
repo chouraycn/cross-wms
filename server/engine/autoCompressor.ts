@@ -327,7 +327,7 @@ export class AutoCompressor {
           plan,
           shouldProceed: true,
           providerResult: result,
-        } as any;
+        } as unknown;
       } catch (err) {
         logger.warn(`[AutoCompressor] Provider compression failed, falling back to plan-only:`, err);
       }

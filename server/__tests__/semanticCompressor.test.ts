@@ -94,7 +94,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      const result = await compressor.compress(observations, '', {} as any);
+      const result = await compressor.compress(observations, '', {} as unknown);
 
       expect(result.strategy).toBe('extractive');
       expect(result.compressed).toBeDefined();
@@ -106,7 +106,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件，查询成功'),
       ];
-      const result = await compressor.compress(observations, '', {} as any);
+      const result = await compressor.compress(observations, '', {} as unknown);
 
       expect(result.strategy).toBe('extractive');
       expect(result.preservedEntities.length).toBeGreaterThan(0);
@@ -116,7 +116,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('system_info', 'plain english text with no key info'),
       ];
-      const result = await compressor.compress(observations, '', {} as any);
+      const result = await compressor.compress(observations, '', {} as unknown);
 
       expect(result.strategy).toBe('extractive');
       expect(result.compressed).toBeDefined();
@@ -128,7 +128,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      const result = await compressor.compress(observations, '已有摘要', {} as any);
+      const result = await compressor.compress(observations, '已有摘要', {} as unknown);
 
       expect(result).toHaveProperty('compressed');
       expect(result).toHaveProperty('strategy');
@@ -143,7 +143,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      const result = await compressor.compress(observations, '', {} as any);
+      const result = await compressor.compress(observations, '', {} as unknown);
 
       expect(result.ratio).toBe(result.compressedLength / result.originalLength);
     });
@@ -154,7 +154,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      const result = await compressor.compress(observations, '旧摘要内容', {} as any);
+      const result = await compressor.compress(observations, '旧摘要内容', {} as unknown);
 
       // 输入长度应大于0，验证输入构建成功
       expect(result.originalLength).toBeGreaterThan(0);
@@ -165,7 +165,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', longResult),
       ];
-      const result = await compressor.compress(observations, '', {} as any);
+      const result = await compressor.compress(observations, '', {} as unknown);
 
       expect(result.originalLength).toBeGreaterThan(0);
       // 验证没有崩溃即可
@@ -181,7 +181,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      await compressor.compress(observations, '', {} as any);
+      await compressor.compress(observations, '', {} as unknown);
       expect(compressor.getLastStrategy()).toBe('extractive');
     });
   });
@@ -191,7 +191,7 @@ describe('SemanticCompressor', () => {
       const observations = [
         createObservation('wms_inventory', '仓库A仓库存200件'),
       ];
-      await compressor.compress(observations, '', {} as any);
+      await compressor.compress(observations, '', {} as unknown);
       expect(compressor.getLastStrategy()).toBe('extractive');
 
       compressor.reset();

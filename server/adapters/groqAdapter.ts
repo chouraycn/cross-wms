@@ -36,7 +36,7 @@ function resolveGroqReasoningEffort(modelId: string, thinkingLevel?: string | nu
   }
   if (GROQ_GPT_OSS_REASONING_IDS.has(normalized)) {
     const normalizedLevel = thinkingLevel?.toLowerCase().trim();
-    if (GROQ_GPT_OSS_REASONING_EFFORTS.includes(normalizedLevel as any)) {
+    if (GROQ_GPT_OSS_REASONING_EFFORTS.includes(normalizedLevel as unknown)) {
       return normalizedLevel;
     }
     return "medium";

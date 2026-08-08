@@ -657,7 +657,7 @@ const SettingsSecrets: React.FC = () => {
               <Select
                 value={formData.provider}
                 label="存储方式"
-                onChange={(e) => setFormData({ ...formData, provider: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, provider: e.target.value as unknown })}
                 disabled={isEditing}
               >
                 <MenuItem value="encrypted">加密存储（推荐）</MenuItem>
@@ -691,7 +691,7 @@ const SettingsSecrets: React.FC = () => {
               <Select
                 value={formData.type}
                 label="密钥类型"
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as unknown })}
               >
                 <MenuItem value="api_key">API Key</MenuItem>
                 <MenuItem value="password">密码</MenuItem>

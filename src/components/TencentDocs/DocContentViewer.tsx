@@ -50,12 +50,12 @@ const renderCellValue = (cell: SheetCell): string => {
   return cell.cellValue?.text ?? '';
 };
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 const DocContentViewer: React.FC<DocContentViewerProps> = ({
   viewMode, activeDocTitle, activeDocSource, docMarkdown,
   sheetRows, sheetHeaders, errorMsg, onBackToList, onOpenInBrowser,
 }) => {
-/* eslint-enable @typescript-eslint/no-unused-vars */
+ 
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);

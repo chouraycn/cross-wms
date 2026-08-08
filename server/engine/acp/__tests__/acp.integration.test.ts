@@ -77,7 +77,7 @@ describe("ACP 端到端集成测试", () => {
         status: "pending",
         requestedAt: Date.now(),
         scope: "single",
-      } as any);
+      } as unknown);
       expect(riskAssessment.risk.level).toBeDefined();
 
       const request = permissionRelay.createRequest(sessionId, toolName, toolArgs, policyResult);
@@ -125,7 +125,7 @@ describe("ACP 端到端集成测试", () => {
         status: "pending",
         requestedAt: Date.now(),
         scope: "single",
-      } as any);
+      } as unknown);
       expect(["high", "critical"]).toContain(riskAssessment.risk.level);
     });
   });

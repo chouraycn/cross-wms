@@ -43,7 +43,7 @@ interface PredictionAlertItem {
   status: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';

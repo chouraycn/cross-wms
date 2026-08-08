@@ -29,6 +29,7 @@ import {
 } from '../engine/channelSystem.js';
 import { randomBytes } from 'node:crypto';
 import { logger } from '../logger.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router: Router = Router();
 
@@ -52,7 +53,7 @@ const SUPPORTED_CHANNEL_TYPES: Array<{
  * 返回支持的通道类型列表
  */
 router.get('/types', (_req, res) => {
-  res.json({ types: SUPPORTED_CHANNEL_TYPES });
+  return ok(res, { types: SUPPORTED_CHANNEL_TYPES });
 });
 
 /**
@@ -67,10 +68,10 @@ router.get('/', (_req, res) => {
       status: manager.getChannelStatus(config.name) as ChannelStatus,
       accountCount: manager.listAccounts(config.name).length,
     }));
-    res.json({ channels });
+    return ok(res, { channels });
   } catch (err) {
     logger.error('[ChannelsRoute] GET / failed:', err);
-    res.status(500).json({ error: 'Failed to list channels' });
+    return serverError(res, 'Failed to list channels');
   }
 });
 
@@ -83,34 +84,30 @@ router.post('/', async (req, res) => {
   try {
     const config = req.body as ChannelConfig;
     if (!config || !config.name || !config.type) {
-      res.status(400).json({ error: 'Missing required fields: name, type' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Missing required fields: name, type', 400);
     }
 
     const supported = SUPPORTED_CHANNEL_TYPES.some(t => t.type === config.type);
     if (!supported) {
-      res.status(400).json({ error: `Unsupported channel type: ${config.type}` });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, `Unsupported channel type: ${config.type}`, 400);
     }
 
     const manager = getChannelManager();
     const existing = manager.getChannels().find(c => c.name === config.name);
     if (existing) {
-      res.status(409).json({ error: `Channel with name '${config.name}' already exists` });
-      return;
+      return fail(res, BizCode.CONFLICT, `Channel with name '${config.name}' already exists`, 409);
     }
 
-    const ok = await manager.addChannel(config);
-    if (!ok) {
-      res.status(500).json({ error: 'Failed to add channel' });
-      return;
+    const added = await manager.addChannel(config);
+    if (!added) {
+      return serverError(res, 'Failed to add channel');
     }
 
     logger.info(`[ChannelsRoute] Channel added: ${config.name} (${config.type})`);
-    res.status(201).json({ channel: config, status: manager.getChannelStatus(config.name) });
+    return created(res, { channel: config, status: manager.getChannelStatus(config.name) });
   } catch (err) {
     logger.error('[ChannelsRoute] POST / failed:', err);
-    res.status(500).json({ error: 'Failed to add channel' });
+    return serverError(res, 'Failed to add channel');
   }
 });
 
@@ -125,17 +122,16 @@ router.get('/:name', (req, res) => {
     const channels = manager.getChannels();
     const config = channels.find(c => c.name === name);
     if (!config) {
-      res.status(404).json({ error: `Channel '${name}' not found` });
-      return;
+    return notFound(res, `Channel '${name}' not found`);
     }
-    res.json({
+    return ok(res, {
       ...config,
       status: manager.getChannelStatus(name),
       accounts: manager.listAccounts(name),
     });
   } catch (err) {
     logger.error('[ChannelsRoute] GET /:name failed:', err);
-    res.status(500).json({ error: 'Failed to get channel' });
+    return serverError(res, 'Failed to get channel');
   }
 });
 
@@ -151,23 +147,21 @@ router.put('/:name', async (req, res) => {
     const channels = manager.getChannels();
     const existing = channels.find(c => c.name === name);
     if (!existing) {
-      res.status(404).json({ error: `Channel '${name}' not found` });
-      return;
+    return notFound(res, `Channel '${name}' not found`);
     }
 
     // 先移除再添加（ChannelManager 暂无 update 方法）
     await manager.removeChannel(name);
     const merged: ChannelConfig = { ...existing, ...updates };
-    const ok = await manager.addChannel(merged);
-    if (!ok) {
-      res.status(500).json({ error: 'Failed to re-add channel after update' });
-      return;
+    const added = await manager.addChannel(merged);
+    if (!added) {
+      return serverError(res, 'Failed to re-add channel after update');
     }
     logger.info(`[ChannelsRoute] Channel updated: ${name}`);
-    res.json({ channel: merged, status: manager.getChannelStatus(name) });
+    return ok(res, { channel: merged, status: manager.getChannelStatus(name) });
   } catch (err) {
     logger.error('[ChannelsRoute] PUT /:name failed:', err);
-    res.status(500).json({ error: 'Failed to update channel' });
+    return serverError(res, 'Failed to update channel');
   }
 });
 
@@ -182,15 +176,14 @@ router.delete('/:name', async (req, res) => {
     const channels = manager.getChannels();
     const existing = channels.find(c => c.name === name);
     if (!existing) {
-      res.status(404).json({ error: `Channel '${name}' not found` });
-      return;
+    return notFound(res, `Channel '${name}' not found`);
     }
     await manager.removeChannel(name);
     logger.info(`[ChannelsRoute] Channel removed: ${name}`);
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (err) {
     logger.error('[ChannelsRoute] DELETE /:name failed:', err);
-    res.status(500).json({ error: 'Failed to remove channel' });
+    return serverError(res, 'Failed to remove channel');
   }
 });
 
@@ -205,14 +198,13 @@ router.post('/:name/enable', async (req, res) => {
     const channels = manager.getChannels();
     const existing = channels.find(c => c.name === name);
     if (!existing) {
-      res.status(404).json({ error: `Channel '${name}' not found` });
-      return;
+    return notFound(res, `Channel '${name}' not found`);
     }
     existing.enabled = true;
-    res.json({ ok: true, status: manager.getChannelStatus(name) });
+    return ok(res, { ok: true, status: manager.getChannelStatus(name) });
   } catch (err) {
     logger.error('[ChannelsRoute] POST /:name/enable failed:', err);
-    res.status(500).json({ error: 'Failed to enable channel' });
+    return serverError(res, 'Failed to enable channel');
   }
 });
 
@@ -227,14 +219,13 @@ router.post('/:name/disable', async (req, res) => {
     const channels = manager.getChannels();
     const existing = channels.find(c => c.name === name);
     if (!existing) {
-      res.status(404).json({ error: `Channel '${name}' not found` });
-      return;
+    return notFound(res, `Channel '${name}' not found`);
     }
     existing.enabled = false;
-    res.json({ ok: true, status: manager.getChannelStatus(name) });
+    return ok(res, { ok: true, status: manager.getChannelStatus(name) });
   } catch (err) {
     logger.error('[ChannelsRoute] POST /:name/disable failed:', err);
-    res.status(500).json({ error: 'Failed to disable channel' });
+    return serverError(res, 'Failed to disable channel');
   }
 });
 
@@ -247,10 +238,10 @@ router.get('/:name/status', (req, res) => {
     const { name } = req.params;
     const manager = getChannelManager();
     const status = manager.getChannelStatus(name);
-    res.json({ name, status });
+    return ok(res, { name, status });
   } catch (err) {
     logger.error('[ChannelsRoute] GET /:name/status failed:', err);
-    res.status(500).json({ error: 'Failed to get channel status' });
+    return serverError(res, 'Failed to get channel status');
   }
 });
 
@@ -264,15 +255,14 @@ router.post('/:name/send', async (req, res) => {
     const { name } = req.params;
     const { content, contentType } = req.body as { content: string; contentType?: 'text' | 'markdown' | 'json' };
     if (!content) {
-      res.status(400).json({ error: 'Missing required field: content' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Missing required field: content', 400);
     }
     const manager = getChannelManager();
-    const ok = await manager.sendMessage(name, content, contentType);
-    res.json({ ok, channelName: name });
+    const sent = await manager.sendMessage(name, content, contentType);
+    return ok(res, { ok: sent, channelName: name });
   } catch (err) {
     logger.error('[ChannelsRoute] POST /:name/send failed:', err);
-    res.status(500).json({ error: 'Failed to send message' });
+    return serverError(res, 'Failed to send message');
   }
 });
 
@@ -285,10 +275,10 @@ router.get('/:name/accounts', (req, res) => {
     const { name } = req.params;
     const manager = getChannelManager();
     const accounts = manager.listAccounts(name);
-    res.json({ accounts });
+    return ok(res, { accounts });
   } catch (err) {
     logger.error('[ChannelsRoute] GET /:name/accounts failed:', err);
-    res.status(500).json({ error: 'Failed to list accounts' });
+    return serverError(res, 'Failed to list accounts');
   }
 });
 
@@ -301,8 +291,7 @@ router.post('/:name/accounts', (req, res) => {
     const { name } = req.params;
     const account = req.body;
     if (!account || !account.accountId || !account.accountName) {
-      res.status(400).json({ error: 'Missing required fields: accountId, accountName' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Missing required fields: accountId, accountName', 400);
     }
     const manager = getChannelManager();
     const accountId = manager.addAccount(name, {
@@ -314,10 +303,10 @@ router.post('/:name/accounts', (req, res) => {
       lastUsedAt: undefined,
     });
     logger.info(`[ChannelsRoute] Account added to channel '${name}': ${accountId}`);
-    res.status(201).json({ accountId });
+    return created(res, { accountId });
   } catch (err) {
     logger.error('[ChannelsRoute] POST /:name/accounts failed:', err);
-    res.status(500).json({ error: 'Failed to add account' });
+    return serverError(res, 'Failed to add account');
   }
 });
 
@@ -329,16 +318,15 @@ router.delete('/:name/accounts/:accountId', (req, res) => {
   try {
     const { name, accountId } = req.params;
     const manager = getChannelManager();
-    const ok = manager.removeAccount(name, accountId);
-    if (!ok) {
-      res.status(404).json({ error: `Account '${accountId}' not found in channel '${name}'` });
-      return;
+    const removed = manager.removeAccount(name, accountId);
+    if (!removed) {
+      return notFound(res, `Account '${accountId}' not found in channel '${name}'`);
     }
     logger.info(`[ChannelsRoute] Account removed: ${accountId} from channel '${name}'`);
-    res.json({ ok: true });
+    return ok(res, { ok: true });
   } catch (err) {
     logger.error('[ChannelsRoute] DELETE /:name/accounts/:accountId failed:', err);
-    res.status(500).json({ error: 'Failed to remove account' });
+    return serverError(res, 'Failed to remove account');
   }
 });
 
@@ -394,8 +382,7 @@ router.get('/:name/wechat/qrcode', (req, res) => {
     const { name } = req.params;
     const channel = findWechatChannel(name);
     if (!channel) {
-      res.status(404).json({ error: `WeChat channel '${name}' not found` });
-      return;
+      return notFound(res, `WeChat channel '${name}' not found`);
     }
     const now = Date.now();
     purgeExpiredWechatSessions(now);
@@ -410,10 +397,10 @@ router.get('/:name/wechat/qrcode', (req, res) => {
       status: 'wait',
     });
     logger.info(`[ChannelsRoute] WeChat bind qrcode issued for channel '${name}' (token=${token.slice(0, 8)}…)`);
-    res.json({ qrcode: token, qrcode_img_content: content, qrcode_img_url: null });
+    return ok(res, { qrcode: token, qrcode_img_content: content, qrcode_img_url: null });
   } catch (err) {
     logger.error('[ChannelsRoute] GET /:name/wechat/qrcode failed:', err);
-    res.status(500).json({ error: 'Failed to issue WeChat bind qrcode' });
+    return serverError(res, 'Failed to issue WeChat bind qrcode');
   }
 });
 
@@ -427,17 +414,16 @@ router.get('/:name/wechat/qrcode-status', (req, res) => {
     const qrcode = String(req.query.qrcode || '');
     const session = wechatBindSessions.get(qrcode);
     if (!session || session.channelName !== name) {
-      res.status(404).json({ error: 'Invalid or unknown qrcode' });
-      return;
+    return notFound(res, 'Invalid or unknown qrcode');
     }
     const now = Date.now();
     if (session.status === 'wait' && now > session.expiresAt) {
       session.status = 'expired';
     }
-    res.json({ status: session.status });
+    return ok(res, { status: session.status });
   } catch (err) {
     logger.error('[ChannelsRoute] GET /:name/wechat/qrcode-status failed:', err);
-    res.status(500).json({ error: 'Failed to query WeChat bind status' });
+    return serverError(res, 'Failed to query WeChat bind status');
   }
 });
 
@@ -452,19 +438,17 @@ router.post('/:name/wechat/qrcode-confirm', (req, res) => {
     const qrcode = String(req.query.qrcode || '');
     const session = wechatBindSessions.get(qrcode);
     if (!session || session.channelName !== name) {
-      res.status(404).json({ error: 'Invalid or unknown qrcode' });
-      return;
+    return notFound(res, 'Invalid or unknown qrcode');
     }
     if (session.status === 'expired') {
-      res.status(409).json({ error: 'Qrcode expired, please refresh' });
-      return;
+      return fail(res, BizCode.CONFLICT, 'Qrcode expired, please refresh', 409);
     }
     session.status = 'confirmed';
     logger.info(`[ChannelsRoute] WeChat bind confirmed for channel '${name}' (token=${qrcode.slice(0, 8)}…)`);
-    res.json({ ok: true, status: 'confirmed' });
+    return ok(res, { ok: true, status: 'confirmed' });
   } catch (err) {
     logger.error('[ChannelsRoute] POST /:name/wechat/qrcode-confirm failed:', err);
-    res.status(500).json({ error: 'Failed to confirm WeChat bind' });
+    return serverError(res, 'Failed to confirm WeChat bind');
   }
 });
 

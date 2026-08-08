@@ -73,10 +73,10 @@ describe('Channels 路由', () => {
       const res = await request(app).get('/api/channels/types');
 
       expect(res.status).toBe(200);
-      expect(res.body.types).toBeInstanceOf(Array);
-      expect(res.body.types.length).toBe(6);
+      expect(res.body.data.types).toBeInstanceOf(Array);
+      expect(res.body.data.types.length).toBe(6);
 
-      const types = res.body.types.map((t: any) => t.type);
+      const types = res.body.data.types.map((t: unknown) => t.type);
       expect(types).toContain('webhook');
       expect(types).toContain('feishu');
       expect(types).toContain('dingtalk');
@@ -86,7 +86,7 @@ describe('Channels 路由', () => {
 
     it('每个类型应包含 label 和 description', async () => {
       const res = await request(app).get('/api/channels/types');
-      const first = res.body.types[0];
+      const first = res.body.data.types[0];
 
       expect(first).toHaveProperty('type');
       expect(first).toHaveProperty('label');
@@ -104,10 +104,10 @@ describe('Channels 路由', () => {
       const res = await request(app).get('/api/channels');
 
       expect(res.status).toBe(200);
-      expect(res.body.channels).toHaveLength(1);
-      expect(res.body.channels[0].name).toBe('ch1');
-      expect(res.body.channels[0]).toHaveProperty('status');
-      expect(res.body.channels[0]).toHaveProperty('accountCount');
+      expect(res.body.data.channels).toHaveLength(1);
+      expect(res.body.data.channels[0].name).toBe('ch1');
+      expect(res.body.data.channels[0]).toHaveProperty('status');
+      expect(res.body.data.channels[0]).toHaveProperty('accountCount');
     });
   });
 
@@ -180,9 +180,9 @@ describe('Channels 路由', () => {
       const res = await request(app).get('/api/channels/detail-ch');
 
       expect(res.status).toBe(200);
-      expect(res.body.name).toBe('detail-ch');
-      expect(res.body).toHaveProperty('status');
-      expect(res.body).toHaveProperty('accounts');
+      expect(res.body.data.name).toBe('detail-ch');
+      expect(res.body.data).toHaveProperty('status');
+      expect(res.body.data).toHaveProperty('accounts');
     });
 
     it('通道不存在时应返回 404', async () => {
@@ -225,7 +225,7 @@ describe('Channels 路由', () => {
       const res = await request(app).post('/api/channels/en-ch/enable');
 
       expect(res.status).toBe(200);
-      expect(res.body.ok).toBe(true);
+      expect(res.body.data.ok).toBe(true);
     });
 
     it('通道不存在时应返回 404', async () => {
@@ -258,7 +258,7 @@ describe('Channels 路由', () => {
         .send({ content: 'hello', contentType: 'text' });
 
       expect(res.status).toBe(200);
-      expect(res.body.ok).toBe(true);
+      expect(res.body.data.ok).toBe(true);
       expect(mockSendMessage).toHaveBeenCalledWith('send-ch', 'hello', 'text');
     });
 
@@ -280,7 +280,7 @@ describe('Channels 路由', () => {
       const res = await request(app).get('/api/channels/acct-ch/accounts');
 
       expect(res.status).toBe(200);
-      expect(res.body.accounts).toHaveLength(1);
+      expect(res.body.data.accounts).toHaveLength(1);
     });
 
     it('POST /:name/accounts 应能添加账户', async () => {
@@ -297,7 +297,7 @@ describe('Channels 路由', () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.accountId).toBe('acct_new_123');
+      expect(res.body.data.accountId).toBe('acct_new_123');
     });
 
     it('POST /:name/accounts 缺少必填字段时应返回 400', async () => {

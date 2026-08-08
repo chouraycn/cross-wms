@@ -1150,7 +1150,7 @@ const WikiPanel: React.FC = () => {
                 <Select
                   value={editingEntry.source || 'manual'}
                   label="来源"
-                  onChange={(e) => setEditingEntry({ ...editingEntry, source: e.target.value as any })}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, source: e.target.value as unknown })}
                 >
                   <MenuItem value="manual">手动创建</MenuItem>
                   <MenuItem value="markdown">Markdown 导入</MenuItem>

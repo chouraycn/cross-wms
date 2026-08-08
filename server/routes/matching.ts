@@ -28,6 +28,7 @@ import {
 } from '../services/matchingService.js';
 import { getAllEmbeddings } from '../services/embeddingService.js';
 import { logger } from '../logger.js';
+import { ok, created, fail, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -60,17 +61,12 @@ router.post('/match', async (req: Request, res: Response) => {
 
     // 参数校验
     if (!query || typeof query !== 'string' || !query.trim()) {
-      res.status(400).json({ success: false, error: 'query is required and must be a non-empty string' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'query is required and must be a non-empty string', 400);
     }
 
     const validModes: MatchMode[] = ['semantic', 'keyword', 'hybrid', 'context'];
     if (!matchMode || !validModes.includes(matchMode)) {
-      res.status(400).json({
-        success: false,
-        error: `matchMode is required and must be one of: ${validModes.join(', ')}`,
-      });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, `matchMode is required and must be one of: ${validModes.join(', ')}`, 400);
     }
 
     const matchQuery: MatchQuery = {
@@ -84,10 +80,10 @@ router.post('/match', async (req: Request, res: Response) => {
 
     const results = await match(matchQuery, contextMessages);
 
-    res.json({ success: true, data: results });
+    return ok(res, results);
   } catch (e) {
     logger.error('[Matching API] match error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -99,10 +95,10 @@ router.post('/match', async (req: Request, res: Response) => {
 router.get('/config', (_req: Request, res: Response) => {
   try {
     const config = getRuntimeConfig();
-    res.json({ success: true, data: config });
+    return ok(res, config);
   } catch (e) {
     logger.error('[Matching API] get config error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -119,27 +115,23 @@ router.put('/config', (req: Request, res: Response) => {
 
     // 参数校验
     if (updates.semanticWeight !== undefined && (updates.semanticWeight < 0 || updates.semanticWeight > 1)) {
-      res.status(400).json({ success: false, error: 'semanticWeight must be between 0 and 1' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'semanticWeight must be between 0 and 1', 400);
     }
     if (updates.keywordWeight !== undefined && (updates.keywordWeight < 0 || updates.keywordWeight > 1)) {
-      res.status(400).json({ success: false, error: 'keywordWeight must be between 0 and 1' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'keywordWeight must be between 0 and 1', 400);
     }
     if (updates.defaultThreshold !== undefined && (updates.defaultThreshold < 0 || updates.defaultThreshold > 1)) {
-      res.status(400).json({ success: false, error: 'defaultThreshold must be between 0 and 1' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'defaultThreshold must be between 0 and 1', 400);
     }
     if (updates.defaultTopK !== undefined && (updates.defaultTopK < 1 || updates.defaultTopK > 100)) {
-      res.status(400).json({ success: false, error: 'defaultTopK must be between 1 and 100' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'defaultTopK must be between 1 and 100', 400);
     }
 
     const config = updateRuntimeConfig(updates);
-    res.json({ success: true, data: config });
+    return ok(res, config);
   } catch (e) {
     logger.error('[Matching API] update config error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -151,10 +143,10 @@ router.put('/config', (req: Request, res: Response) => {
 router.post('/config/reset', (_req: Request, res: Response) => {
   try {
     const config = resetConfig();
-    res.json({ success: true, data: config });
+    return ok(res, config);
   } catch (e) {
     logger.error('[Matching API] reset config error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -177,24 +169,19 @@ router.post('/feedback', (req: Request, res: Response) => {
     const { query, skillId, matchMode, matchScore, isRelevant, userFeedback } = req.body;
 
     if (!query || typeof query !== 'string') {
-      res.status(400).json({ success: false, error: 'query is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'query is required', 400);
     }
     if (!skillId || typeof skillId !== 'string') {
-      res.status(400).json({ success: false, error: 'skillId is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'skillId is required', 400);
     }
     if (!matchMode || typeof matchMode !== 'string') {
-      res.status(400).json({ success: false, error: 'matchMode is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'matchMode is required', 400);
     }
     if (typeof matchScore !== 'number') {
-      res.status(400).json({ success: false, error: 'matchScore is required and must be a number' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'matchScore is required and must be a number', 400);
     }
     if (typeof isRelevant !== 'boolean') {
-      res.status(400).json({ success: false, error: 'isRelevant is required and must be a boolean' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'isRelevant is required and must be a boolean', 400);
     }
 
     const id = recordFeedback(
@@ -206,10 +193,10 @@ router.post('/feedback', (req: Request, res: Response) => {
       userFeedback
     );
 
-    res.status(201).json({ success: true, data: { id } });
+    return created(res, { id });
   } catch (e) {
     logger.error('[Matching API] feedback error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -235,10 +222,10 @@ router.get('/feedback', (req: Request, res: Response) => {
       limit,
     });
 
-    res.json({ success: true, data: feedback });
+    return ok(res, feedback);
   } catch (e) {
     logger.error('[Matching API] get feedback error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -250,10 +237,10 @@ router.get('/feedback', (req: Request, res: Response) => {
 router.post('/embeddings/rebuild', async (_req: Request, res: Response) => {
   try {
     const stats = await rebuildAllEmbeddings();
-    res.json({ success: true, data: stats });
+    return ok(res, stats);
   } catch (e) {
     logger.error('[Matching API] rebuild embeddings error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -268,26 +255,23 @@ router.get('/status', (_req: Request, res: Response) => {
     const embeddings = getAllEmbeddings();
     const config = getRuntimeConfig();
 
-    res.json({
-      success: true,
-      data: {
-        embeddingCount: embeddings.size,
-        modelName: 'all-MiniLM-L6-v2',
-        dimensions: 384,
-        engineMode: 'mock', // v1.3.0 使用 mock，v1.3.1 切换为 onnx
-        config: {
-          semanticWeight: config.semanticWeight,
-          keywordWeight: config.keywordWeight,
-          defaultThreshold: config.defaultThreshold,
-          defaultTopK: config.defaultTopK,
-          enableFeedbackLearning: config.enableFeedbackLearning,
-          contextWindowSize: config.contextWindowSize,
-        },
+    return ok(res, {
+      embeddingCount: embeddings.size,
+      modelName: 'all-MiniLM-L6-v2',
+      dimensions: 384,
+      engineMode: 'mock', // v1.3.0 使用 mock，v1.3.1 切换为 onnx
+      config: {
+        semanticWeight: config.semanticWeight,
+        keywordWeight: config.keywordWeight,
+        defaultThreshold: config.defaultThreshold,
+        defaultTopK: config.defaultTopK,
+        enableFeedbackLearning: config.enableFeedbackLearning,
+        contextWindowSize: config.contextWindowSize,
       },
     });
   } catch (e) {
     logger.error('[Matching API] status error:', e);
-    res.status(500).json({ success: false, error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 

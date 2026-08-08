@@ -76,7 +76,7 @@ function highlightSyntax(content: string, ext: string): SyntaxToken[] {
     const functionRegex = /\b([a-zA-Z_$][\w$]*)\s*\(/g;
     const propertyRegex = /\b([a-zA-Z_$][\w$]*)\s*:/g;
 
-    let lastIndex = 0; // eslint-disable-line prefer-const
+    let lastIndex = 0;  
 
     const findNextToken = () => {
       const matches: Array<{ start: number; end: number; type: SyntaxToken['type']; value: string }> = [];
@@ -148,7 +148,7 @@ function highlightSyntax(content: string, ext: string): SyntaxToken[] {
     const stringRegex = /(['"`])(?:(?!\1)[^\\]|\\.)*\1/g;
     const numberRegex = /\b\d+\.?\d*%?\b/g;
 
-    let lastIndex = 0; // eslint-disable-line prefer-const
+    let lastIndex = 0;  
     let match;
 
     while ((match = commentRegex.exec(content)) !== null) {
@@ -201,7 +201,7 @@ function highlightSyntax(content: string, ext: string): SyntaxToken[] {
     const nullRegex = /\bnull\b/g;
     const keyRegex = /(["'])([a-zA-Z_$][\w$]*)\1(?=\s*:)/g;
 
-    let lastIndex = 0; // eslint-disable-line prefer-const
+    let lastIndex = 0;  
     let match;
 
     while ((match = keyRegex.exec(content)) !== null) {
@@ -257,7 +257,7 @@ function highlightSyntax(content: string, ext: string): SyntaxToken[] {
     const codeRegex = /(`+)([^`]+)\1/g;
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
-    let lastIndex = 0; // eslint-disable-line prefer-const
+    let lastIndex = 0;  
     let match;
 
     while ((match = headingRegex.exec(content)) !== null) {

@@ -15,6 +15,7 @@
  */
 import { Router, type Request, type Response } from 'express';
 import * as partnerDao from '../dao/partnerDao.js';
+import { ok, created, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -28,20 +29,15 @@ router.get('/', (req: Request, res: Response) => {
 
   // 校验 type 参数
   if (type && type !== 'supplier' && type !== 'customer') {
-    res.status(400).json({ code: 400, data: null, message: 'type 必须是 supplier 或 customer' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'type 必须是 supplier 或 customer', 400);
   }
 
   const result = partnerDao.listPartners(type, search, page, pageSize);
-  res.json({
-    code: 0,
-    data: {
-      items: result.items,
-      total: result.total,
-      page,
-      pageSize,
-    },
-    message: 'ok',
+  return ok(res, {
+    items: result.items,
+    total: result.total,
+    page,
+    pageSize,
   });
 });
 
@@ -52,12 +48,11 @@ router.get('/all', (req: Request, res: Response) => {
   const type = req.query.type as 'supplier' | 'customer' | undefined;
 
   if (type && type !== 'supplier' && type !== 'customer') {
-    res.status(400).json({ code: 400, data: null, message: 'type 必须是 supplier 或 customer' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'type 必须是 supplier 或 customer', 400);
   }
 
   const data = partnerDao.getAllPartnersByType(type);
-  res.json({ code: 0, data, message: 'ok' });
+  return ok(res, data);
 });
 
 // ===================== POST /api/partners/quick-create — 快速创建 =====================
@@ -68,18 +63,16 @@ router.post('/quick-create', (req: Request, res: Response) => {
 
   // 校验 name
   if (!name || typeof name !== 'string' || name.trim() === '') {
-    res.status(400).json({ code: 400, data: null, message: '名称不能为空' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '名称不能为空', 400);
   }
 
   // 校验 type
   if (!type || (type !== 'supplier' && type !== 'customer')) {
-    res.status(400).json({ code: 400, data: null, message: '类型必须是 supplier 或 customer' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '类型必须是 supplier 或 customer', 400);
   }
 
   const data = partnerDao.quickCreatePartner(name.trim(), type as 'supplier' | 'customer');
-  res.status(201).json({ code: 0, data, message: 'ok' });
+  return created(res, data);
 });
 
 // ===================== GET /api/partners/:id — 单个客商详情 =====================
@@ -87,10 +80,9 @@ router.post('/quick-create', (req: Request, res: Response) => {
 router.get('/:id', (req: Request, res: Response) => {
   const data = partnerDao.getPartnerById(req.params.id);
   if (!data) {
-    res.status(404).json({ code: 404, data: null, message: '客商不存在' });
-    return;
+    return notFound(res, '客商不存在');
   }
-  res.json({ code: 0, data, message: 'ok' });
+  return ok(res, data);
 });
 
 // ===================== POST /api/partners — 创建客商 =====================
@@ -100,14 +92,12 @@ router.post('/', (req: Request, res: Response) => {
 
   // 校验 name
   if (!name || typeof name !== 'string' || name.trim() === '') {
-    res.status(400).json({ code: 400, data: null, message: '名称不能为空' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '名称不能为空', 400);
   }
 
   // 校验 type
   if (!type || (type !== 'supplier' && type !== 'customer')) {
-    res.status(400).json({ code: 400, data: null, message: '类型必须是 supplier 或 customer' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '类型必须是 supplier 或 customer', 400);
   }
 
   // 名称唯一性校验（同 type 下不可重复）
@@ -115,8 +105,7 @@ router.post('/', (req: Request, res: Response) => {
   const allOfType = partnerDao.getAllPartnersByType(type as 'supplier' | 'customer');
   const duplicate = allOfType.find((p) => p.name === trimmedName);
   if (duplicate) {
-    res.status(409).json({ code: 409, data: null, message: '该名称已存在' });
-    return;
+    return fail(res, BizCode.CONFLICT, '该名称已存在', 409);
   }
 
   try {
@@ -128,15 +117,14 @@ router.post('/', (req: Request, res: Response) => {
       address: typeof address === 'string' ? address : '',
       remark: typeof remark === 'string' ? remark : '',
     });
-    res.status(201).json({ code: 0, data, message: 'ok' });
+    return created(res, data);
   } catch (e) {
     const message = (e as Error).message;
     // 防御性处理 UNIQUE 约束冲突（如并发场景）
     if (message.includes('UNIQUE constraint')) {
-      res.status(409).json({ code: 409, data: null, message: '该名称已存在' });
-      return;
+      return fail(res, BizCode.CONFLICT, '该名称已存在', 409);
     }
-    res.status(400).json({ code: 400, data: null, message });
+    return fail(res, BizCode.BAD_REQUEST, message, 400);
   }
 });
 
@@ -147,14 +135,12 @@ router.put('/:id', (req: Request, res: Response) => {
 
   // 校验 type（如果传入）
   if (type !== undefined && type !== 'supplier' && type !== 'customer') {
-    res.status(400).json({ code: 400, data: null, message: '类型必须是 supplier 或 customer' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '类型必须是 supplier 或 customer', 400);
   }
 
   // 校验 name（如果传入）
   if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-    res.status(400).json({ code: 400, data: null, message: '名称不能为空' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, '名称不能为空', 400);
   }
 
   // 构建更新对象（仅包含传入的非 undefined 字段）
@@ -169,17 +155,15 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const data = partnerDao.updatePartner(req.params.id, updates as Parameters<typeof partnerDao.updatePartner>[1]);
     if (!data) {
-      res.status(404).json({ code: 404, data: null, message: '客商不存在' });
-      return;
+      return notFound(res, '客商不存在');
     }
-    res.json({ code: 0, data, message: 'ok' });
+    return ok(res, data);
   } catch (e) {
     const message = (e as Error).message;
     if (message.includes('UNIQUE constraint')) {
-      res.status(409).json({ code: 409, data: null, message: '该名称已存在' });
-      return;
+      return fail(res, BizCode.CONFLICT, '该名称已存在', 409);
     }
-    res.status(400).json({ code: 400, data: null, message });
+    return fail(res, BizCode.BAD_REQUEST, message, 400);
   }
 });
 
@@ -190,14 +174,13 @@ router.delete('/:id', (req: Request, res: Response) => {
 
   if (!result.success) {
     if (result.message === '客商不存在') {
-      res.status(404).json({ code: 404, data: null, message: result.message! });
+      return notFound(res, result.message!);
     } else {
-      res.status(409).json({ code: 409, data: null, message: result.message! });
+      return fail(res, BizCode.CONFLICT, result.message!, 409);
     }
-    return;
   }
 
-  res.json({ code: 0, data: null, message: 'ok' });
+  return ok(res, null);
 });
 
 export default router;

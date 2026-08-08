@@ -22,7 +22,7 @@ function normalizeOptionalLowercaseString(value: unknown): string | undefined {
 // 内联降级实现：仅输出到 log.warn，避免引入完整 logger 依赖。
 const log = {
   warn(message: string): void {
-    // eslint-disable-next-line no-console
+     
     log.warn(`[openai-text-verbosity] ${message}`);
   },
 };

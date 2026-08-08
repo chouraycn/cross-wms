@@ -136,7 +136,7 @@ describe('存储模块', () => {
       createSecret({ provider: 'encrypted', key: PREFIX + 'no-cipher', value: 'v' });
       const list = listSecrets();
       for (const item of list) {
-        expect((item as any).valueEncrypted).toBeUndefined();
+        expect((item as unknown).valueEncrypted).toBeUndefined();
       }
     });
   });

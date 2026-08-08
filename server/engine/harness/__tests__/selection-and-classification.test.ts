@@ -261,7 +261,7 @@ describe('Result Classification — 结果分类', () => {
     // 18
     it('自定义 classify 返回 undefined 应回退到默认逻辑', () => {
       const customHarness = createMockHarness('custom', {
-        classify: () => undefined as any,
+        classify: () => undefined as unknown,
       });
 
       const result: HarnessAttemptResult = { text: 'success' };

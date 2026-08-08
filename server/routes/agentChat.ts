@@ -289,7 +289,7 @@ export async function handleAgentChat(req: Request, res: Response) {
       stream: 'error',
       ts: Date.now(),
       data: {
-        code: (error as any).code || 'SERVER_ERROR',
+        code: (error as unknown).code || 'SERVER_ERROR',
         message: (error as Error).message || '服务器内部错误',
       },
       sessionKey,

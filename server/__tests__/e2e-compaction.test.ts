@@ -17,8 +17,8 @@ import {
 import { AutoCompressor } from '../engine/autoCompressor.js';
 
 // 生成测试消息
-function makeMessages(count: number): Array<{ role: string; content: string; tool_calls?: any[]; tool_call_id?: string }> {
-  const messages: any[] = [];
+function makeMessages(count: number): Array<{ role: string; content: string; tool_calls?: unknown[]; tool_call_id?: string }> {
+  const messages: unknown[] = [];
   for (let i = 0; i < count; i++) {
     messages.push(
       { role: 'user', content: `用户消息 #${i + 1}：查询关于订单 ORDER_${i + 1} 的状态，SKU_CODE_${i + 1} 的库存是多少？` },
@@ -126,7 +126,7 @@ describe('E2E: 上下文压缩系统', () => {
         },
       });
 
-      const result = await compactionProviderRegistry.compress(messages as any, 'custom-provider');
+      const result = await compactionProviderRegistry.compress(messages as unknown, 'custom-provider');
       expect(result.providerId).toBe('custom-provider');
       expect(result.compressedTokenCount).toBe(10);
       expect(result.summary).toContain('Custom');
@@ -145,7 +145,7 @@ describe('E2E: 上下文压缩系统', () => {
       });
       compactionProviderRegistry.setDefault('default-p');
 
-      const result = await compactionProviderRegistry.compress(messages as any);
+      const result = await compactionProviderRegistry.compress(messages as unknown);
       expect(result.providerId).toBe('default-p');
     });
   });
@@ -169,7 +169,7 @@ describe('E2E: 上下文压缩系统', () => {
       const provider = compactionProviderRegistry.get('builtin-summarize')!;
       const messages = makeMessages(20);
 
-      const result = await provider.compress(messages as any, {});
+      const result = await provider.compress(messages as unknown, {});
       expect(result.summary).toBeDefined();
       expect(result.summary.length).toBeGreaterThan(0);
       expect(result.originalTokenCount).toBeGreaterThan(0);
@@ -184,7 +184,7 @@ describe('E2E: 上下文压缩系统', () => {
         { role: 'assistant', content: '订单 ORDER_12345 已发货，SKU_CODE_999 库存 50 件' },
       ];
 
-      const result = await provider.compress(messages as any, { identifierPolicy: 'strict' });
+      const result = await provider.compress(messages as unknown, { identifierPolicy: 'strict' });
       // 摘要应该保留关键标识符
       expect(result.summary).toContain('ORDER_12345');
       expect(result.summary).toContain('SKU_CODE_999');
@@ -198,7 +198,7 @@ describe('E2E: 上下文压缩系统', () => {
         { role: 'assistant', content: 'ORDER_002 也已处理完毕' },
       ];
 
-      const result = await provider.compress(newMessages as any, {
+      const result = await provider.compress(newMessages as unknown, {
         previousSummary: oldSummary,
         identifierPolicy: 'strict',
       });
@@ -212,7 +212,7 @@ describe('E2E: 上下文压缩系统', () => {
       const provider = compactionProviderRegistry.get('builtin-summarize')!;
       const messages = makeMessages(20);
 
-      const result = await provider.compress(messages as any, { preserveRecent: 2 });
+      const result = await provider.compress(messages as unknown, { preserveRecent: 2 });
       // 最近 2 条消息应保留在摘要中或以较高优先级保留
       expect(result.originalTokenCount).toBeGreaterThan(0);
       expect(result.compressedTokenCount).toBeGreaterThan(0);
@@ -223,7 +223,7 @@ describe('E2E: 上下文压缩系统', () => {
       const provider = compactionProviderRegistry.get('builtin-summarize')!;
       const messages = makeMessages(3);
 
-      const result = await provider.compress(messages as any, {
+      const result = await provider.compress(messages as unknown, {
         identifierPolicy: 'custom',
         customIdentifierInstructions: '请保留所有 SKU_ 开头的代码',
       });
@@ -251,7 +251,7 @@ describe('E2E: 上下文压缩系统', () => {
       });
       const messages = makeMessages(20);
 
-      const result = await compressor.useCompactionProvider(messages as any);
+      const result = await compressor.useCompactionProvider(messages as unknown);
       expect(result.summary).toBeDefined();
       expect(result.providerId).toBe('builtin-summarize');
       expect(result.originalTokenCount).toBeGreaterThan(result.compressedTokenCount);
@@ -259,7 +259,7 @@ describe('E2E: 上下文压缩系统', () => {
 
     it('onCompressed 回调应被触发', async () => {
       let callbackCalled = false;
-      let callbackData: any = null;
+      let callbackData: unknown = null;
 
       const compressor = new AutoCompressor({
         trigger: 'manual',
@@ -271,7 +271,7 @@ describe('E2E: 上下文压缩系统', () => {
       });
       const messages = makeMessages(20);
 
-      await compressor.useCompactionProvider(messages as any);
+      await compressor.useCompactionProvider(messages as unknown);
       expect(callbackCalled).toBe(true);
       expect(callbackData.originalTokens).toBeGreaterThan(0);
       expect(callbackData.compressedTokens).toBeGreaterThan(0);
@@ -287,7 +287,7 @@ describe('E2E: 上下文压缩系统', () => {
       });
       const messages = makeMessages(8);
 
-      const result = await compressor.executeCompression(messages as any, 2);
+      const result = await compressor.executeCompression(messages as unknown, 2);
       // 配置了 provider 时，返回的 plan 中应有 providerResult
       expect(result.plan).toBeDefined();
       expect(result.shouldProceed).toBe(true);
@@ -300,7 +300,7 @@ describe('E2E: 上下文压缩系统', () => {
       });
       const messages = makeMessages(10);
 
-      const result = await compressor.executeCompression(messages as any, 2);
+      const result = await compressor.executeCompression(messages as unknown, 2);
       expect(result.plan).toBeDefined();
       expect(result.plan.items.length).toBeGreaterThan(0);
     });
@@ -324,7 +324,7 @@ describe('E2E: 上下文压缩系统', () => {
       const messages = makeMessages(5);
 
       // 失败时应降级为 plan-only
-      const result = await compressor.executeCompression(messages as any, 1);
+      const result = await compressor.executeCompression(messages as unknown, 1);
       expect(result.plan).toBeDefined();
       expect(result.shouldProceed).toBe(true); // 降级后仍返回 true
     });
@@ -361,12 +361,12 @@ describe('E2E: 上下文压缩系统', () => {
       const messages = makeMessages(3);
 
       // 使用快速 provider
-      const fastResult = await compactionProviderRegistry.compress(messages as any, 'fast-provider');
+      const fastResult = await compactionProviderRegistry.compress(messages as unknown, 'fast-provider');
       expect(fastResult.summary).toContain('FAST');
       expect(fastResult.compressedTokenCount).toBe(10);
 
       // 使用高质量 provider
-      const qualityResult = await compactionProviderRegistry.compress(messages as any, 'quality-provider');
+      const qualityResult = await compactionProviderRegistry.compress(messages as unknown, 'quality-provider');
       expect(qualityResult.summary).toContain('QUALITY');
       expect(qualityResult.compressedTokenCount).toBe(30);
     });

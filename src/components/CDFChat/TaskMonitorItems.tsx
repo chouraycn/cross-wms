@@ -289,13 +289,13 @@ export const TodoItem: React.FC<TodoItemProps> = React.memo(({
         </Tooltip>
       )}
       <Checkbox
-        checked={doneStatuses.includes(todo.status as any)}
+        checked={doneStatuses.includes(todo.status as unknown)}
         onChange={(e) => { e.stopPropagation(); onToggleTodo(todo.id); }}
         size="small"
-        sx={{ padding: 0.25, color: doneStatuses.includes(todo.status as any) ? '#22c55e' : gs.textMuted, '& .MuiSvgIcon-root': { fontSize: 16 }, transition: 'transform 0.2s', transform: isCompleting ? 'scale(1.2)' : 'scale(1)' }}
+        sx={{ padding: 0.25, color: doneStatuses.includes(todo.status as unknown) ? '#22c55e' : gs.textMuted, '& .MuiSvgIcon-root': { fontSize: 16 }, transition: 'transform 0.2s', transform: isCompleting ? 'scale(1.2)' : 'scale(1)' }}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: '0.7rem', lineHeight: 1.4, color: doneStatuses.includes(todo.status as any) ? gs.textMuted : gs.textPrimary, textDecoration: doneStatuses.includes(todo.status as any) ? 'line-through' : 'none', wordBreak: 'break-word', mt: 0.25, transition: 'all 0.2s' }}>
+        <Typography sx={{ fontSize: '0.7rem', lineHeight: 1.4, color: doneStatuses.includes(todo.status as unknown) ? gs.textMuted : gs.textPrimary, textDecoration: doneStatuses.includes(todo.status as unknown) ? 'line-through' : 'none', wordBreak: 'break-word', mt: 0.25, transition: 'all 0.2s' }}>
           {todo.text}
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.25, mt: 0.25, flexWrap: 'wrap' }}>

@@ -89,8 +89,8 @@ export function isRetryableError(error: unknown): boolean {
     }
 
     // HTTP status codes that are retryable
-    if ('status' in error && typeof (error as any).status === 'number') {
-      const status = (error as any).status;
+    if ('status' in error && typeof (error as unknown).status === 'number') {
+      const status = (error as unknown).status;
       if (status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
         return true;
       }
@@ -238,7 +238,7 @@ export function createChannelRetryConfig(): RetryConfig {
         return true;
       }
       if (typeof error === 'object' && error !== null) {
-        const status = (error as any).status || (error as any).statusCode;
+        const status = (error as unknown).status || (error as unknown).statusCode;
         if (typeof status === 'number' && (status === 429 || status === 502 || status === 503)) {
           return true;
         }
