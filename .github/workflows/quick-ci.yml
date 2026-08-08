@@ -6,9 +6,16 @@ name: quick-ci
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, 'refactor/*', 'feat/*', 'feature/*', 'fix/*', 'hotfix/*']
   pull_request:
     branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      runner-label:
+        description: 'Runner label for jobs (default ubuntu-latest)'
+        required: false
+        default: 'ubuntu-latest'
+        type: string
 
 permissions:
   contents: read

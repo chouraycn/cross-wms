@@ -7,6 +7,14 @@ on:
       - 'v*'
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      skip-dmg:
+        description: 'Skip the macOS DMG build job (quality-gate only)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 permissions:
   contents: write
