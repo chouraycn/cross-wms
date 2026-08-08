@@ -156,7 +156,7 @@ export function resolveCurrentChannelMessageToolDiscoveryAdapter(channel?: strin
   if (!channelId) {
     return null;
   }
-  const loadedPlugin = getLoadedChannelPlugin(channelId as Parameters<typeof getChannelPlugin>[0]);
+  const loadedPlugin = getLoadedChannelPlugin(channelId as Parameters<typeof getChannelPlugin>[0]) as any;
   if (loadedPlugin?.actions) {
     return {
       pluginId: loadedPlugin.id,
@@ -170,7 +170,7 @@ export function resolveCurrentChannelMessageToolDiscoveryAdapter(channel?: strin
       actions: bundledActions,
     };
   }
-  const plugin = getChannelPlugin(channelId as Parameters<typeof getChannelPlugin>[0]);
+  const plugin = getChannelPlugin(channelId as Parameters<typeof getChannelPlugin>[0]) as any;
   if (!plugin?.actions) {
     return null;
   }

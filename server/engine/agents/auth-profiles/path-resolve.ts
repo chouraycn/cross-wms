@@ -16,19 +16,19 @@ import { resolveAuthProfileDatabasePath } from "./sqlite.js";
 
 /** Resolve the persisted auth profile store path for an agent dir. */
 export function resolveAuthStorePath(agentDir?: string): string {
-  const resolved = resolveUserPath(agentDir ?? resolveDefaultAgentDir({}));
+  const resolved = resolveUserPath((agentDir ?? resolveDefaultAgentDir({})) as string);
   return path.join(resolved, AUTH_PROFILE_FILENAME);
 }
 
 /** Resolve the legacy auth store path used by migration code. */
 export function resolveLegacyAuthStorePath(agentDir?: string): string {
-  const resolved = resolveUserPath(agentDir ?? resolveDefaultAgentDir({}));
+  const resolved = resolveUserPath((agentDir ?? resolveDefaultAgentDir({})) as string);
   return path.join(resolved, LEGACY_AUTH_FILENAME);
 }
 
 /** Resolve the auth-state sidecar path for usage/cooldown metadata. */
 export function resolveAuthStatePath(agentDir?: string): string {
-  const resolved = resolveUserPath(agentDir ?? resolveDefaultAgentDir({}));
+  const resolved = resolveUserPath((agentDir ?? resolveDefaultAgentDir({})) as string);
   return path.join(resolved, AUTH_STATE_FILENAME);
 }
 

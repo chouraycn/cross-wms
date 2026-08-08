@@ -9,7 +9,7 @@ function resolvePluginDebounce(channelKey: string | undefined): number | undefin
   if (!channelKey) {
     return undefined;
   }
-  const plugin = getLoadedChannelPlugin(channelKey);
+  const plugin = getLoadedChannelPlugin(channelKey) as any;
   const value = plugin?.defaults?.queue?.debounceMs;
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : undefined;
 }

@@ -1083,7 +1083,7 @@ export async function callAIModelStreamWithAdapter(
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     if (signal?.aborted) {
-      throw new AIAPIError('请求已取消', 'any');
+      throw new AIAPIError('请求已取消', 'unknown');
     }
 
     try {
@@ -1276,7 +1276,7 @@ export async function callAIModelStream(
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     if (signal?.aborted) {
-      throw new AIAPIError('请求已取消', 'any');
+      throw new AIAPIError('请求已取消', 'unknown');
     }
 
     try {
@@ -1516,14 +1516,17 @@ export async function callAIModelWithFailover(
       // 注意：非 AIAPIError 的 e.category 字段类型未知，保留原行为（透传字符串到 recordFailure）
       const fallbackCategory = (e as { category?: any })?.category;
       const fallbackStr = typeof fallbackCategory === 'string' ? fallbackCategory : '';
-      const errorCategory: AIAPIError['category'] =
+      const errorCategoryAI: AIAPIError['category'] =
         (e instanceof AIAPIError && e.category) ||
         (fallbackStr as AIAPIError['category'] || 'unknown');
-      failoverManager.recordFailure(currentModel.id || '', errMessage, errorCategory);
+      // 映射分类：AIAPIError 使用 'unknown'，modelFailover 使用 'any'
+      const mapCategory = (c: AIAPIError['category']) =>
+        c === 'unknown' ? 'any' : c;
+      failoverManager.recordFailure(currentModel.id || '', errMessage, mapCategory(errorCategoryAI));
 
       const nextModel = failoverManager.getNextModel(
         currentModel.id || '',
-        errorCategory,
+        mapCategory(errorCategoryAI),
         options?.requiredCapabilities as Parameters<typeof failoverManager.getNextModel>[2],
       );
 
@@ -1531,7 +1534,7 @@ export async function callAIModelWithFailover(
         break;
       }
 
-      options?.onModelSwitch?.(currentModel.id || '', nextModel.id || '', errorCategory);
+      options?.onModelSwitch?.(currentModel.id || '', nextModel.id || '', errorCategoryAI);
       currentModel = nextModel as unknown as ModelCallConfig;
     }
   }
