@@ -7,6 +7,7 @@ import {
   deleteProject,
   getProjectTasks,
 } from '../dao/projectDao.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -17,10 +18,10 @@ const router = Router();
 router.get('/', (_req: Request, res: Response) => {
   try {
     const projects = getAllProjects();
-    res.json({ data: projects, total: projects.length });
+    return ok(res, { data: projects, total: projects.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -32,8 +33,7 @@ router.post('/', (req: Request, res: Response) => {
   try {
     const { name, description, status, category, agentId } = req.body;
     if (!name) {
-      res.status(400).json({ error: 'name is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'name is required', 400);
     }
 
     const project = createProject({
@@ -44,10 +44,10 @@ router.post('/', (req: Request, res: Response) => {
       agent_id: agentId || null,
     });
 
-    res.status(201).json(project);
+    return created(res, project);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -59,13 +59,12 @@ router.get('/:id', (req: Request, res: Response) => {
   try {
     const project = getProjectById(req.params.id);
     if (!project) {
-      res.status(404).json({ error: 'Project not found' });
-      return;
+      return notFound(res, 'Project not found');
     }
-    res.json(project);
+    return ok(res, project);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -77,8 +76,7 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const existing = getProjectById(req.params.id);
     if (!existing) {
-      res.status(404).json({ error: 'Project not found' });
-      return;
+      return notFound(res, 'Project not found');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -90,14 +88,13 @@ router.put('/:id', (req: Request, res: Response) => {
 
     const updated = updateProject(req.params.id, updateData);
     if (!updated) {
-      res.status(404).json({ error: 'Project not found after update' });
-      return;
+      return notFound(res, 'Project not found after update');
     }
 
-    res.json(updated);
+    return ok(res, updated);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -109,20 +106,18 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     const project = getProjectById(req.params.id);
     if (!project) {
-      res.status(404).json({ error: 'Project not found' });
-      return;
+      return notFound(res, 'Project not found');
     }
 
     const deleted = deleteProject(req.params.id);
     if (!deleted) {
-      res.status(404).json({ error: 'Project not found' });
-      return;
+      return notFound(res, 'Project not found');
     }
 
-    res.json({ success: true });
+    return ok(res, { success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -134,15 +129,14 @@ router.get('/:id/tasks', (req: Request, res: Response) => {
   try {
     const project = getProjectById(req.params.id);
     if (!project) {
-      res.status(404).json({ error: 'Project not found' });
-      return;
+      return notFound(res, 'Project not found');
     }
 
     const tasks = getProjectTasks(req.params.id);
-    res.json({ data: tasks, total: tasks.length });
+    return ok(res, { data: tasks, total: tasks.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 

@@ -28,6 +28,7 @@ import {
   touchSession,
   sessionLifecycleManager,
 } from '../engine/sessions/index.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get('/', (req, res) => {
       const result = q
         ? searchArchivedSessionsPaged(q, limit, offset)
         : getArchivedSessionsPaged(limit, offset);
-      return res.json(result);
+      return ok(res, result);
     }
     const sessions = q ? searchArchivedSessions(q) : getArchivedSessions();
     return res.json({ sessions });
@@ -57,7 +58,7 @@ router.get('/', (req, res) => {
       const result = q
         ? searchSessionsPaged(q, limit, offset)
         : getSessionsPaged(limit, offset);
-      return res.json(result);
+      return ok(res, result);
     }
     const sessions = getActiveSessions();
     return res.json({ sessions });
@@ -75,7 +76,7 @@ router.get('/', (req, res) => {
     return res.json(result);
   }
   const sessions = q ? searchSessions(q) : getSessions();
-  res.json({ sessions });
+  return ok(res, { sessions });
 });
 
 // 创建会话
@@ -89,7 +90,7 @@ router.post('/', (req, res) => {
   }
 
   const session = createSession(uuidv4(), title || '新对话', model || 'auto', agentId, undefined, undefined, tags);
-  res.json({ session });
+  return ok(res, { session });
 });
 
 // 分页获取会话消息（懒加载）
@@ -145,7 +146,7 @@ router.get('/:id/messages', (req, res) => {
     return { ...m, attachments, toolCalls, generatedFiles };
   });
 
-  res.json({ messages: parsed, hasMore, totalCount });
+  return ok(res, { messages: parsed, hasMore, totalCount });
 });
 
 // 获取会话消息（全量，向后兼容）
@@ -199,7 +200,7 @@ router.get('/:id', (req, res) => {
 
     return { ...m, attachments, toolCalls, generatedFiles };
   });
-  res.json({ messages: parsed });
+  return ok(res, { messages: parsed });
 });
 
 // 删除会话
@@ -207,11 +208,11 @@ router.delete('/:id', (req, res) => {
   const { permanent } = req.query;
   // v6.0: 归档会话可永久删除
   if (permanent === 'true') {
-    const ok = deleteArchivedSession(req.params.id);
-    return res.json({ ok });
+    const deleted = deleteArchivedSession(req.params.id);
+    return ok(res, { ok: deleted });
   }
   deleteSession(req.params.id);
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // 更新会话标题
@@ -230,14 +231,14 @@ router.patch('/:id', (req, res) => {
     updateSession(req.params.id, updates);
   }
 
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // 移动会话到文件夹
 router.post('/:id/move', (req, res) => {
   const { folderId } = req.body;
   moveSessionToFolder(req.params.id, folderId || null);
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // ===================== v6.0: 生命周期 API =====================
@@ -245,37 +246,37 @@ router.post('/:id/move', (req, res) => {
 // 归档会话
 router.post('/:id/archive', (req, res) => {
   const { summary } = req.body;
-  const ok = archiveSession(req.params.id, summary);
-  if (!ok) {
-    return res.status(404).json({ error: '会话不存在或已归档' });
+  const archived = archiveSession(req.params.id, summary);
+  if (!archived) {
+    return notFound(res, '会话不存在或已归档');
   }
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // 恢复归档会话
 router.post('/:id/restore', (req, res) => {
-  const ok = restoreSession(req.params.id);
-  if (!ok) {
-    return res.status(404).json({ error: '会话不存在或未归档' });
+  const restored = restoreSession(req.params.id);
+  if (!restored) {
+    return notFound(res, '会话不存在或未归档');
   }
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // 更新最后活跃时间（心跳）
 router.post('/:id/touch', (req, res) => {
   touchSession(req.params.id);
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // 获取子会话
 router.get('/:id/sub-sessions', (req, res) => {
   const subSessions = getSubSessions(req.params.id);
-  res.json({ sessions: subSessions });
+  return ok(res, { sessions: subSessions });
 });
 
 // 获取生命周期管理器状态
 router.get('/_lifecycle/status', (req, res) => {
-  res.json(sessionLifecycleManager.getStatus());
+  return ok(res, sessionLifecycleManager.getStatus());
 });
 
 export default router;

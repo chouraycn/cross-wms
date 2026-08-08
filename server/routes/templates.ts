@@ -13,6 +13,7 @@ import {
   seedBuiltinTemplates,
   type TemplateFilter,
 } from '../engine/workflow/templates.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -43,10 +44,10 @@ router.get('/', (req: Request, res: Response) => {
     }
 
     const templates = getTemplates(filter);
-    res.json({ data: templates, total: templates.length });
+    return ok(res, { data: templates, total: templates.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -59,10 +60,10 @@ router.get('/', (req: Request, res: Response) => {
 router.get('/categories', (_req: Request, res: Response) => {
   try {
     const categories = getTemplateCategories();
-    res.json({ data: categories });
+    return ok(res, categories);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -79,15 +80,14 @@ router.get('/search', (req: Request, res: Response) => {
   try {
     const query = req.query.q as string;
     if (!query) {
-      res.status(400).json({ error: 'Search query is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Search query is required', 400);
     }
 
     const templates = searchTemplates(query);
-    res.json({ data: templates, total: templates.length });
+    return ok(res, { data: templates, total: templates.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -101,13 +101,12 @@ router.get('/:id', (req: Request, res: Response) => {
   try {
     const template = getTemplateById(req.params.id);
     if (!template) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
+      return notFound(res, 'Template not found');
     }
-    res.json(template);
+    return ok(res, template);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -121,13 +120,12 @@ router.post('/:id/install', (req: Request, res: Response) => {
   try {
     const workflow = installTemplate(req.params.id);
     if (!workflow) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
+      return notFound(res, 'Template not found');
     }
-    res.json({ success: true, workflow });
+    return ok(res, { success: true, workflow });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 
@@ -143,19 +141,17 @@ router.post('/:id/rate', (req: Request, res: Response) => {
   try {
     const { rating } = req.body;
     if (typeof rating !== 'number' || rating < 0 || rating > 5) {
-      res.status(400).json({ error: 'Rating must be a number between 0 and 5' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'Rating must be a number between 0 and 5', 400);
     }
 
     const success = updateTemplateRating(req.params.id, rating);
     if (!success) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
+      return notFound(res, 'Template not found');
     }
-    res.json({ success: true });
+    return ok(res, { success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
+    return serverError(res, message);
   }
 });
 

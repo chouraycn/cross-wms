@@ -44,6 +44,7 @@ import { dependencyChecker, DependencyCheckResult } from '../services/openclaw/d
 import { SkillIndex, SkillLifecycle, auditAllSkills, checkSkillDependencies, getRequiresFromSkillMd, getInstallStepsFromSkillMd, generateInstallCommands } from '../services/openclaw/index.js';
 import { auditDocQuality, batchAuditDocQuality } from '../services/docQualityChecker.js';
 import { generateRecommendations } from '../services/skillRecommender.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 // ===================== SKILL.md 解析工具（基于 js-yaml） =====================
 
@@ -247,17 +248,16 @@ const router = Router();
 // GET /api/user-skills
 router.get('/user-skills', (_req: Request, res: Response) => {
   const data = dbGetSkills();
-  res.json({ data });
+  return ok(res, data);
 });
 
 // GET /api/user-skills/:id
 router.get('/user-skills/:id', (req: Request, res: Response) => {
   const data = dbGetSkillById(req.params.id);
   if (!data) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
+    return notFound(res, 'Skill not found');
   }
-  res.json({ data });
+  return ok(res, data);
 });
 
 // POST /api/user-skills
@@ -266,9 +266,9 @@ router.post('/user-skills', (req: Request, res: Response) => {
     const data = dbCreateSkill(req.body as Record<string, unknown>);
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
     syncSkillMdToDisk(data.id as string, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
-    res.status(201).json({ data });
+    return created(res, data);
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 
@@ -277,14 +277,13 @@ router.put('/user-skills/:id', (req: Request, res: Response) => {
   try {
     const data = dbUpdateSkill(req.params.id, req.body);
     if (!data) {
-      res.status(404).json({ error: 'Skill not found' });
-      return;
+      return notFound(res, 'Skill not found');
     }
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
     syncSkillMdToDisk(req.params.id, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
-    res.json({ data });
+    return ok(res, data);
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 
@@ -293,20 +292,17 @@ router.delete('/user-skills/:id', (req: Request, res: Response) => {
   const existing = dbGetSkillById(req.params.id);
   // 内置技能不在 user_skills 表中，如果 existing 为空说明 ID 无效或是内置技能
   if (!existing) {
-    res.status(404).json({ error: 'Skill not found', code: 'NOT_FOUND' });
-    return;
+    return notFound(res, 'Skill not found');
   }
   // 二次防御：即使记录在表中，也校验 source
   if (existing.source === 'builtin') {
-    res.status(403).json({ error: 'Cannot delete builtin skill', code: 'FORBIDDEN' });
-    return;
+    return fail(res, BizCode.FORBIDDEN, 'Cannot delete builtin skill', 403);
   }
-  const ok = dbDeleteSkill(req.params.id);
-  if (!ok) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
+  const deleted = dbDeleteSkill(req.params.id);
+  if (!deleted) {
+    return notFound(res, 'Skill not found');
   }
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // ===================== Builtin Status Patches =====================
@@ -314,28 +310,26 @@ router.delete('/user-skills/:id', (req: Request, res: Response) => {
 // GET /api/builtin-status-patches
 router.get('/builtin-status-patches', (_req: Request, res: Response) => {
   const data = dbGetPatches();
-  res.json({ data });
+  return ok(res, data);
 });
 
 // PUT /api/builtin-status-patches (body: { skillId, status })
 router.put('/builtin-status-patches', (req: Request, res: Response) => {
   const { skillId, status } = req.body;
   if (!skillId || !status) {
-    res.status(400).json({ error: 'skillId and status are required' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'skillId and status are required', 400);
   }
   dbSetPatch(skillId, status);
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // DELETE /api/builtin-status-patches/:skillId
 router.delete('/builtin-status-patches/:skillId', (req: Request, res: Response) => {
-  const ok = dbRemovePatch(req.params.skillId);
-  if (!ok) {
-    res.status(404).json({ error: 'Patch not found' });
-    return;
+  const removed = dbRemovePatch(req.params.skillId);
+  if (!removed) {
+    return notFound(res, 'Patch not found');
   }
-  res.json({ ok: true });
+  return ok(res, { ok: true });
 });
 
 // ===================== SKILL.md Scan =====================
@@ -347,7 +341,7 @@ router.get('/skill-md-scan', (_req: Request, res: Response) => {
   const available = scanned
     .filter((s) => s.hasSkillMd)
     .map(({ body: _b, ...rest }) => rest);
-  res.json({ data: available });
+  return ok(res, available);
 });
 
 // GET /api/skill-md-read/:dirName — 读取指定技能的完整 body（导入时调用）
@@ -358,8 +352,7 @@ router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
 
   // 安全检查：防止路径遍历
   if (!dirPath.startsWith(skillsDir) || !fs.existsSync(dirPath)) {
-    res.status(404).json({ error: 'Skill directory not found' });
-    return;
+    return notFound(res, 'Skill directory not found');
   }
 
   const skillMdPath = path.join(dirPath, 'SKILL.md');
@@ -372,24 +365,21 @@ router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
   }
 
   if (!mdPath) {
-    res.status(404).json({ error: 'SKILL.md not found' });
-    return;
+    return notFound(res, 'SKILL.md not found');
   }
 
   try {
     const content = fs.readFileSync(mdPath, 'utf-8');
     const { frontmatter, body } = parseSkillMd(content);
-    res.json({
-      data: {
-        dirName,
-        name: frontmatter.name || dirName,
-        description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
-        body,
-        hasSkillMd: true,
-      },
+    return ok(res, {
+      dirName,
+      name: frontmatter.name || dirName,
+      description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
+      body,
+      hasSkillMd: true,
     });
   } catch {
-    res.status(500).json({ error: 'Failed to read SKILL.md' });
+    return serverError(res, 'Failed to read SKILL.md');
   }
 });
 
@@ -549,7 +539,7 @@ router.get('/skill-usage-stats', (req: Request, res: Response) => {
   if (skillId) {
     // 查询单个技能
     const stats = dbGetSkillUsageStats(skillId);
-    res.json({ data: { [skillId]: stats } });
+    return ok(res, { [skillId]: stats });
   } else {
     // 批量查询所有技能（从 user_skills 表中获取所有技能 ID）
     const allSkills = dbGetSkills();
@@ -559,7 +549,7 @@ router.get('/skill-usage-stats', (req: Request, res: Response) => {
     for (const [id, stats] of statsMap.entries()) {
       result[id] = stats;
     }
-    res.json({ data: result });
+    return ok(res, result);
   }
 });
 
@@ -568,8 +558,7 @@ router.post('/skill-conflict-check', async (req: Request, res: Response) => {
   const { name, trigger, tags, desc } = req.body;
 
   if (!name && !trigger && (!tags || !Array.isArray(tags) || tags.length === 0)) {
-    res.status(400).json({ error: 'At least one of name, trigger, or tags must be provided' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'At least one of name, trigger, or tags must be provided', 400);
   }
 
   // 获取所有现有技能
@@ -607,11 +596,9 @@ router.post('/skill-conflict-check', async (req: Request, res: Response) => {
 
   const isHighRisk = conflicts.length > 0 && conflicts[0].score >= 0.65;
 
-  res.json({
-    data: {
-      conflicts,
-      isHighRisk,
-    },
+  return ok(res, {
+    conflicts,
+    isHighRisk,
   });
 });
 
@@ -621,9 +608,9 @@ router.post('/skill-conflict-check', async (req: Request, res: Response) => {
 router.get('/skill-audits/:skillId', (req: Request, res: Response) => {
   try {
     const audit = dbGetLatestAudit(req.params.skillId);
-    res.json({ data: toCamelAudit(audit) });
+    return ok(res, toCamelAudit(audit));
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -631,9 +618,9 @@ router.get('/skill-audits/:skillId', (req: Request, res: Response) => {
 router.get('/skill-audits/:skillId/history', (req: Request, res: Response) => {
   try {
     const history = dbGetAuditHistory(req.params.skillId);
-    res.json({ data: history.map(toCamelAudit) });
+    return ok(res, history.map(toCamelAudit));
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -642,8 +629,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
   try {
     const { skillId, skillPath, force } = req.body;
     if (!skillId) {
-      res.status(400).json({ error: 'skillId is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'skillId is required', 400);
     }
 
     // Resolve SKILL.md path or promptTemplate from DB
@@ -677,8 +663,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
           mdPath = upperPath; // 写入 SKILL.md（大写）
           fs.writeFileSync(mdPath, content, 'utf-8');
         } else {
-          res.status(404).json({ error: `SKILL.md not found for skill: ${skillId}` });
-          return;
+        return notFound(res, `SKILL.md not found for skill: ${skillId}`);
         }
       }
     }
@@ -689,7 +674,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
     if (!force) {
       const existing = dbGetLatestAudit(skillId);
       if (existing && existing.skill_version === version) {
-        return res.json({ data: toCamelAudit(existing) });
+        return ok(res, toCamelAudit(existing));
       }
     }
 
@@ -711,9 +696,9 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
     });
 
     const audit = dbGetLatestAudit(skillId);
-    res.json({ data: toCamelAudit(audit) });
+    return ok(res, toCamelAudit(audit));
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -722,8 +707,7 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
   try {
     const { skillIds } = req.body;
     if (!Array.isArray(skillIds) || skillIds.length === 0) {
-      res.status(400).json({ error: 'skillIds array is required' });
-      return;
+      return fail(res, BizCode.BAD_REQUEST, 'skillIds array is required', 400);
     }
 
     const results: Array<{ skillId: string; score: number; level: string; error?: string }> = [];
@@ -782,9 +766,9 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ data: { results } });
+    return ok(res, { results });
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -820,7 +804,7 @@ router.post('/skills/dependency-check', async (req: Request, res: Response) => {
     }
   }
 
-  res.json({ data: results });
+  return ok(res, results);
 });
 
 // Backward-compatible aliases for old audit route paths
@@ -828,9 +812,9 @@ router.post('/skills/dependency-check', async (req: Request, res: Response) => {
 router.get('/skills/:id/audit', (req: Request, res: Response) => {
   try {
     const audit = dbGetLatestAudit(req.params.id);
-    res.json({ data: toCamelAudit(audit) });
+    return ok(res, toCamelAudit(audit));
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -838,9 +822,9 @@ router.get('/skills/:id/audit', (req: Request, res: Response) => {
 router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
   try {
     const history = dbGetAuditHistory(req.params.id);
-    res.json({ data: history.map(toCamelAudit) });
+    return ok(res, history.map(toCamelAudit));
   } catch (e) {
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -851,8 +835,7 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     const skillDir = path.join(skillsDir, req.params.id);
 
     if (!fs.existsSync(skillDir)) {
-      res.status(404).json({ error: 'Skill directory not found' });
-      return;
+      return notFound(res, 'Skill directory not found');
     }
 
     // Try to get skill name from DB (user skills), fall back to directory name (built-in skills)
@@ -878,12 +861,12 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
       await execAsync(`cd "${skillDir}" && zip -r "${zipFilePath}" .`);
     } catch (zipError) {
       logger.error('[Export] ZIP creation failed:', zipError);
-      res.status(500).json({ error: 'Failed to create ZIP file' });
+      return serverError(res, 'Failed to create ZIP file');
       return;
     }
 
     if (!fs.existsSync(zipFilePath)) {
-      res.status(500).json({ error: 'ZIP file was not created' });
+      return serverError(res, 'ZIP file was not created');
       return;
     }
 
@@ -903,7 +886,7 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     });
   } catch (e) {
     logger.error('[Export] Export failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -913,8 +896,7 @@ router.post('/skills/:id/audit-export', async (req: Request, res: Response) => {
     const { format } = req.body;
     const audit = dbGetLatestAudit(req.params.id);
     if (!audit) {
-      res.status(404).json({ error: 'No audit found for this skill' });
-      return;
+    return notFound(res, 'No audit found for this skill');
     }
     // Use pre-generated markdown if available
     if (audit.report_markdown) {
@@ -932,10 +914,10 @@ router.post('/skills/:id/audit-export', async (req: Request, res: Response) => {
       res.send(md);
       return;
     }
-    res.status(500).json({ error: 'No report data available' });
+    return serverError(res, 'No report data available');
   } catch (e) {
     logger.error('[Audit Export] Failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -968,28 +950,28 @@ router.get('/openclaw/skills/search', (req: Request, res: Response) => {
   const query = (req.query.q as string) || '';
   const index = getSkillIndex();
   const result = index.search(query);
-  res.json({ data: result });
+  return ok(res, result);
 });
 
 // GET /api/openclaw/skills/list — 列出所有技能（含元数据）
 router.get('/openclaw/skills/list', (req: Request, res: Response) => {
   const index = getSkillIndex();
   const entries = index.getAll();
-  res.json({ data: { entries, total: entries.length } });
+  return ok(res, { entries, total: entries.length });
 });
 
 // GET /api/openclaw/skills/categories — 获取所有分类
 router.get('/openclaw/skills/categories', (_req: Request, res: Response) => {
   const index = getSkillIndex();
   const categories = index.getCategories();
-  res.json({ data: categories });
+  return ok(res, categories);
 });
 
 // GET /api/openclaw/skills/tags — 获取所有标签
 router.get('/openclaw/skills/tags', (_req: Request, res: Response) => {
   const index = getSkillIndex();
   const tags = index.getTags();
-  res.json({ data: tags });
+  return ok(res, tags);
 });
 
 // GET /api/openclaw/skills/:id — 获取单个技能详情
@@ -997,10 +979,9 @@ router.get('/openclaw/skills/:id', (req: Request, res: Response) => {
   const index = getSkillIndex();
   const entry = index.getById(req.params.id);
   if (!entry) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
+    return notFound(res, 'Skill not found');
   }
-  res.json({ data: entry });
+  return ok(res, entry);
 });
 
 // POST /api/openclaw/skills/filter — 多条件过滤
@@ -1016,23 +997,22 @@ router.post('/openclaw/skills/filter', (req: Request, res: Response) => {
     userInvocable: options.userInvocable as boolean | undefined,
     hasMd: options.hasMd as boolean | undefined,
   });
-  res.json({ data: { entries, total: entries.length } });
+  return ok(res, { entries, total: entries.length });
 });
 
 // POST /api/openclaw/skills/install — 安装技能
 router.post('/openclaw/skills/install', async (req: Request, res: Response) => {
   const { sourceDir, overwrite = false, skipDependencies = false, runAudit = false } = req.body;
   if (!sourceDir) {
-    res.status(400).json({ error: 'sourceDir is required' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'sourceDir is required', 400);
   }
   const lifecycle = getSkillLifecycle();
   const result = await lifecycle.install(sourceDir, { overwrite, skipDependencies, runAudit });
   if (result.success) {
     refreshSkillIndex();
-    res.json({ data: result });
+    return ok(res, result);
   } else {
-    res.status(400).json({ error: result.error, data: result });
+    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
   }
 });
 
@@ -1042,9 +1022,9 @@ router.delete('/openclaw/skills/uninstall/:id', (req: Request, res: Response) =>
   const result = lifecycle.uninstall(req.params.id);
   if (result.success) {
     refreshSkillIndex();
-    res.json({ data: result });
+    return ok(res, result);
   } else {
-    res.status(400).json({ error: result.error, data: result });
+    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
   }
 });
 
@@ -1052,16 +1032,15 @@ router.delete('/openclaw/skills/uninstall/:id', (req: Request, res: Response) =>
 router.post('/openclaw/skills/update/:id', async (req: Request, res: Response) => {
   const { sourceDir } = req.body;
   if (!sourceDir) {
-    res.status(400).json({ error: 'sourceDir is required' });
-    return;
+    return fail(res, BizCode.BAD_REQUEST, 'sourceDir is required', 400);
   }
   const lifecycle = getSkillLifecycle();
   const result = await lifecycle.update(req.params.id, sourceDir);
   if (result.success) {
     refreshSkillIndex();
-    res.json({ data: result });
+    return ok(res, result);
   } else {
-    res.status(400).json({ error: result.error, data: result });
+    return fail(res, BizCode.BAD_REQUEST, result.error, 400);
   }
 });
 
@@ -1069,30 +1048,29 @@ router.post('/openclaw/skills/update/:id', async (req: Request, res: Response) =
 router.get('/openclaw/skills/lifecycle/list', (_req: Request, res: Response) => {
   const lifecycle = getSkillLifecycle();
   const installed = lifecycle.list();
-  res.json({ data: { installed, total: installed.length } });
+  return ok(res, { installed, total: installed.length });
 });
 
 // GET /api/openclaw/skills/lifecycle/exists/:id — 检查技能是否存在
 router.get('/openclaw/skills/lifecycle/exists/:id', (req: Request, res: Response) => {
   const lifecycle = getSkillLifecycle();
   const exists = lifecycle.exists(req.params.id);
-  res.json({ data: { skillId: req.params.id, exists } });
+  return ok(res, { skillId: req.params.id, exists });
 });
 
 // GET /api/openclaw/skills/audit/all — 审计所有技能
 router.get('/openclaw/skills/audit/all', (_req: Request, res: Response) => {
   const audits = auditAllSkills(AppPaths.skillsDir);
-  res.json({ data: audits });
+  return ok(res, audits);
 });
 
 // GET /api/openclaw/skills/audit/:id — 审计单个技能
 router.get('/openclaw/skills/audit/:id', (req: Request, res: Response) => {
   const audit = auditAllSkills(AppPaths.skillsDir).find(a => a.skillId === req.params.id);
   if (!audit) {
-    res.status(404).json({ error: 'Skill not found' });
-    return;
+    return notFound(res, 'Skill not found');
   }
-  res.json({ data: audit });
+  return ok(res, audit);
 });
 
 // GET /api/openclaw/skills/dependencies/:id — 检查单个技能依赖
@@ -1104,8 +1082,7 @@ router.get('/openclaw/skills/dependencies/:id', async (req: Request, res: Respon
   const skillMdLowerPath = path.join(skillDir, 'skill.md');
 
   if (!fs.existsSync(skillMdPath) && !fs.existsSync(skillMdLowerPath)) {
-    res.status(404).json({ error: 'SKILL.md not found' });
-    return;
+    return notFound(res, 'SKILL.md not found');
   }
 
   const mdPath = fs.existsSync(skillMdPath) ? skillMdPath : skillMdLowerPath;
@@ -1115,7 +1092,7 @@ router.get('/openclaw/skills/dependencies/:id', async (req: Request, res: Respon
   const skillName = skillId;
 
   const result = await checkSkillDependencies(skillId, skillName, requires, installSteps);
-  res.json({ data: { ...result, installCommands: generateInstallCommands(installSteps) } });
+  return ok(res, { ...result, installCommands: generateInstallCommands(installSteps) });
 });
 
 // POST /api/openclaw/skills/dependencies/batch — 批量检查技能依赖
@@ -1143,14 +1120,14 @@ router.post('/openclaw/skills/dependencies/batch', async (req: Request, res: Res
     results[skillId] = { ...result, installCommands: generateInstallCommands(installSteps) };
   }
 
-  res.json({ data: results });
+  return ok(res, results);
 });
 
 // POST /api/openclaw/skills/refresh — 刷新技能索引
 router.post('/openclaw/skills/refresh', (_req: Request, res: Response) => {
   refreshSkillIndex();
   const index = getSkillIndex();
-  res.json({ data: { refreshed: true, total: index.count() } });
+  return ok(res, { refreshed: true, total: index.count() });
 });
 
 // ============================================================================
@@ -1257,10 +1234,10 @@ router.get('/skills/dependency-graph', (_req: Request, res: Response) => {
       }
     }
 
-    res.json({ data: { nodes, edges } });
+    return ok(res, { nodes, edges });
   } catch (e) {
     logger.error('[Skills] dependency-graph failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1276,8 +1253,7 @@ router.get('/skills/:id/skill-dependencies', (req: Request, res: Response) => {
 
     const target = skillMap.get(skillId);
     if (!target) {
-      res.status(404).json({ error: 'Skill not found' });
-      return;
+      return notFound(res, 'Skill not found');
     }
 
     const { frontmatter } = parseSkillMd(target.body);
@@ -1408,10 +1384,10 @@ router.get('/skills/:id/skill-dependencies', (req: Request, res: Response) => {
       info.cycles = cycles;
     }
 
-    res.json({ data: info });
+    return ok(res, info);
   } catch (e) {
     logger.error('[Skills] skill-dependencies failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1565,20 +1541,18 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
       else statusBreakdown.unknown++;
     }
 
-    res.json({
-      data: {
-        days,
-        total: allSkills.length,
-        totalUses: allSkills.reduce((sum, s) => sum + s.count, 0),
-        topSkills,
-        trend: dayBuckets.map((d) => ({ date: d, count: trend[d] ?? 0 })),
-        topCoOccurrence,
-        statusBreakdown,
-      },
+    return ok(res, {
+      days,
+      total: allSkills.length,
+      totalUses: allSkills.reduce((sum, s) => sum + s.count, 0),
+      topSkills,
+      trend: dayBuckets.map((d) => ({ date: d, count: trend[d] ?? 0 })),
+      topCoOccurrence,
+      statusBreakdown,
     });
   } catch (e) {
     logger.error('[Skills] usage-analytics failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1679,10 +1653,10 @@ router.get('/skills/health-check', (_req: Request, res: Response) => {
       avgScore: results.length > 0 ? Math.round(results.reduce((sum, r) => sum + r.overallScore, 0) / results.length) : 0,
     };
 
-    res.json({ data: { summary, skills: results.sort((a, b) => a.overallScore - b.overallScore) } });
+    return ok(res, { summary, skills: results.sort((a, b) => a.overallScore - b.overallScore) });
   } catch (e) {
     logger.error('[Skills] health-check failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1708,10 +1682,10 @@ router.get('/skills/doc-quality-check', (_req: Request, res: Response) => {
       avgScore: results.length > 0 ? Math.round(results.reduce((sum, r) => sum + r.overallScore, 0) / results.length) : 0,
     };
 
-    res.json({ data: { summary, skills: results.sort((a, b) => a.overallScore - b.overallScore) } });
+    return ok(res, { summary, skills: results.sort((a, b) => a.overallScore - b.overallScore) });
   } catch (e) {
     logger.error('[Skills] doc-quality-check failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1722,14 +1696,13 @@ router.get('/skills/:id/doc-quality-check', (req: Request, res: Response) => {
     const scanned = scanWorkbuddySkills();
     const skill = scanned.find((s) => s.dirName === skillId);
     if (!skill) {
-      res.status(404).json({ error: 'Skill not found' });
-      return;
+      return notFound(res, 'Skill not found');
     }
     const result = auditDocQuality(skillId, skill.name, skill.body);
-    res.json({ data: result });
+    return ok(res, result);
   } catch (e) {
     logger.error('[Skills] doc-quality-check single failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 
@@ -1745,10 +1718,10 @@ router.get('/skills/recommendations', (req: Request, res: Response) => {
     const days = Math.max(1, Math.min(90, parseInt(String(req.query.days ?? '30'), 10) || 30));
 
     const result = generateRecommendations(skillId, { topN, days });
-    res.json({ data: result });
+    return ok(res, result);
   } catch (e) {
     logger.error('[Skills] recommendations failed:', e);
-    res.status(500).json({ error: (e as Error).message });
+    return serverError(res, (e as Error).message);
   }
 });
 

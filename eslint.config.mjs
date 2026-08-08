@@ -38,13 +38,7 @@ export default [
     },
     rules: {
       // ==== P2-a: console 日志规范（渐进 warn，codemod 批量迁移后升级 error） ====
-      'no-console': [
-        'warn',
-        {
-          // 允许 CLI 入口层保留 console；engine/dao/routes 必须走 logger
-          allow: [],
-        },
-      ],
+      'no-console': 'warn',
 
       // ==== P2-b: 空 catch 兜底 ====
       'no-empty': [

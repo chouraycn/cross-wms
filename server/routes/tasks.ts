@@ -19,6 +19,7 @@ import {
   deleteTask as daoDeleteTask,
   migrateTasksToDb,
 } from '../engine/tasks/index.js';
+import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
 const router = express.Router();
 
@@ -27,9 +28,9 @@ router.get('/', (_req, res) => {
   try {
     const projectId = _req.query.projectId as string | undefined;
     const tasks = findAllTasks(projectId);
-    res.json({ data: tasks });
+    return ok(res, tasks);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 
@@ -37,10 +38,10 @@ router.get('/', (_req, res) => {
 router.get('/:id', (req, res) => {
   try {
     const task = findTaskById(req.params.id);
-    if (!task) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: task });
+    if (!task) return notFound(res, '任务不存在');
+    return ok(res, task);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 
@@ -48,8 +49,8 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const { title, description, status, priority, assignee, tags, dueDate, projectId } = req.body;
-    if (!title) return res.status(400).json({ error: 'title 不能为空' });
-    if (!projectId) return res.status(400).json({ error: 'projectId 不能为空' });
+    if (!title) return fail(res, BizCode.BAD_REQUEST, 'title 不能为空', 400);
+    if (!projectId) return fail(res, BizCode.BAD_REQUEST, 'projectId 不能为空', 400);
     const task = daoCreateTask({
       title,
       description: description || '',
@@ -60,9 +61,9 @@ router.post('/', (req, res) => {
       dueDate: dueDate || '',
       projectId,
     });
-    res.json({ data: task });
+    return ok(res, task);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 
@@ -79,10 +80,10 @@ router.put('/:id', (req, res) => {
       ...(tags !== undefined && { tags }),
       ...(dueDate !== undefined && { dueDate }),
     });
-    if (!task) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: task });
+    if (!task) return notFound(res, '任务不存在');
+    return ok(res, task);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 
@@ -90,10 +91,10 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     const ok = daoDeleteTask(req.params.id);
-    if (!ok) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: { success: true } });
+    if (!ok) return notFound(res, '任务不存在');
+    return ok(res, { success: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 
@@ -101,11 +102,11 @@ router.delete('/:id', (req, res) => {
 router.post('/migrate', (req, res) => {
   try {
     const { tasks } = req.body;
-    if (!Array.isArray(tasks)) return res.status(400).json({ error: 'tasks 必须是数组' });
+    if (!Array.isArray(tasks)) return fail(res, BizCode.BAD_REQUEST, 'tasks 必须是数组', 400);
     const result = migrateTasksToDb(tasks);
-    res.json({ data: result });
+    return ok(res, result);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    return serverError(res, (err as Error).message);
   }
 });
 

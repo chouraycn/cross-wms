@@ -9,7 +9,7 @@ import {
   updateInventoryItem as dbUpdate,
   deleteInventoryItem as dbDelete,
 } from '../dao/warehouse.js';
-import { ok, fail, notFound } from './_shared/respond.js';
+import { ok, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
@@ -32,7 +32,7 @@ router.post('/', (req: Request, res: Response) => {
     res.status(201);
     return ok(res, data);
   } catch (e) {
-    return fail(res, 400, (e as Error).message);
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message);
   }
 });
 
@@ -43,7 +43,7 @@ router.put('/:id', (req: Request, res: Response) => {
     if (!data) return notFound(res, 'Inventory item not found');
     ok(res, data);
   } catch (e) {
-    return fail(res, 400, (e as Error).message);
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message);
   }
 });
 
