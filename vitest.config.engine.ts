@@ -50,6 +50,14 @@ function externalizeMissingPackages(): Plugin {
  * 这是「engine 测试拆分」的安全前置步骤：先把重测试从默认套件中**可隔离运行**，
  * 待测得覆盖率基线后，再决定是否把 engine 从默认 include 中移除（届时需要配套门禁，
  * 否则会静默丢失 engine 覆盖率）。
+ *
+ * 解析前置依赖（已补齐 / 待 CI）：
+ *  1. engine 测试经相对路径 `../test/helpers/*.js` 引用共享 helper（openclaw 上游
+ *     `openclaw/test/helpers/`），fork 时未带入本仓库。已用别名重定向到已检出的
+ *     openclaw 子模块，Vite 的 `.js`→`.ts` 回退解析到 .ts 源。
+ *  2. 另有 294 个 engine 测试 import `openclaw/plugin-sdk/test-fixtures` 等，其映射
+ *     到 `openclaw/dist/plugin-sdk/*.js`（构建产物）。本仓库未构建 openclaw 子模块，
+ *     此类测试需在 CI 中先 `build` openclaw（生成 dist）后，`test:engine` 方可全绿。
  */
 export default defineConfig({
   plugins: [react(), externalizeNodeBuiltins(), externalizeMissingPackages()],
@@ -94,44 +102,53 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@src': path.resolve(__dirname, './src'),
-      '@openclaw/media-core/constants': path.resolve(__dirname, './packages/media-core/src/constants.ts'),
-      '@openclaw/media-core/content-length': path.resolve(__dirname, './packages/media-core/src/content-length.ts'),
-      '@openclaw/media-core/file-name': path.resolve(__dirname, './packages/media-core/src/file-name.ts'),
-      '@openclaw/media-core/mime': path.resolve(__dirname, './packages/media-core/src/mime.ts'),
-      '@openclaw/media-core/read-response-with-limit': path.resolve(__dirname, './packages/media-core/src/read-response-with-limit.ts'),
-      '@openclaw/media-core/inbound-path-policy': path.resolve(__dirname, './packages/media-core/src/inbound-path-policy.ts'),
-      '@openclaw/media-core/base64': path.resolve(__dirname, './packages/media-core/src/base64.ts'),
-      '@openclaw/media-core': path.resolve(__dirname, './packages/media-core/src/index.ts'),
-      '@openclaw/normalization-core/string-coerce': path.resolve(__dirname, './packages/normalization-core/src/string-coerce.ts'),
-      '@openclaw/normalization-core/string-normalization': path.resolve(__dirname, './packages/normalization-core/src/string-normalization.ts'),
-      '@openclaw/normalization-core/number-coercion': path.resolve(__dirname, './packages/normalization-core/src/number-coercion.ts'),
-      '@openclaw/normalization-core/record-coerce': path.resolve(__dirname, './packages/normalization-core/src/record-coerce.ts'),
-      '@openclaw/normalization-core': path.resolve(__dirname, './packages/normalization-core/src/index.ts'),
-      '@openclaw/net-policy/ip': path.resolve(__dirname, './packages/net-policy/src/ip.ts'),
-      '@openclaw/net-policy': path.resolve(__dirname, './packages/net-policy/src/index.ts'),
-      '@openclaw/acp-core/runtime/types': path.resolve(__dirname, './packages/acp-core/src/runtime/types.ts'),
-      '@openclaw/acp-core': path.resolve(__dirname, './packages/acp-core/src/index.ts'),
-      '@openclaw/model-catalog-core/provider-id': path.resolve(__dirname, './packages/model-catalog-core/src/provider-id.ts'),
-      '@openclaw/model-catalog-core': path.resolve(__dirname, './packages/model-catalog-core/src/index.ts'),
-      '@openclaw/terminal-core': path.resolve(__dirname, './packages/terminal-core/src/index.ts'),
-      '@openclaw/gateway-protocol': path.resolve(__dirname, './packages/gateway-protocol/src/index.ts'),
-      '@openclaw/llm-core': path.resolve(__dirname, './packages/llm-core/src/index.ts'),
-      '@openclaw/llm-runtime': path.resolve(__dirname, './packages/llm-runtime/src/index.ts'),
-      '@openclaw/gateway-client': path.resolve(__dirname, './packages/gateway-client/src/index.ts'),
-      '@openclaw/markdown-core': path.resolve(__dirname, './packages/markdown-core/src/index.ts'),
-      '@openclaw/media-generation-core': path.resolve(__dirname, './packages/media-generation-core/src/index.ts'),
-      '@openclaw/media-understanding-common': path.resolve(__dirname, './packages/media-understanding-common/src/index.ts'),
-      '@openclaw/speech-core': path.resolve(__dirname, './packages/speech-core/src/index.ts'),
-      '@openclaw/agent-core': path.resolve(__dirname, './packages/agent-core/src/index.ts'),
-      '@openclaw/tool-call-repair': path.resolve(__dirname, './packages/tool-call-repair/src/index.ts'),
-      '@openclaw/sdk': path.resolve(__dirname, './packages/sdk/src/index.ts'),
-      '@openclaw/memory-host-sdk': path.resolve(__dirname, './packages/memory-host-sdk/src/index.ts'),
-      '@openclaw/web-content-core': path.resolve(__dirname, './packages/web-content-core/src/index.ts'),
-      '@openclaw/proxyline': path.resolve(__dirname, './packages/net-policy/src/proxyline.ts'),
-    },
+    alias: [
+      // engine 测试通过相对路径 `../test/helpers/*.js` 引用共享测试 helper，
+      // 这些 helper 源自 openclaw 上游（openclaw/test/helpers/），fork 时未带入
+      // 本仓库的 server/test/helpers/。直接 vendoring 会因 helper 内部相对引用
+      // `../../src/...` 错位而坏；故用别名把该段重定向到已检出的 openclaw 子模块，
+      // Vite 的 `.js`→`.ts` 回退会解析到 .ts 源文件。仅作用于 engine 隔离配置。
+      {
+        find: /(\.\.\/)+test\/helpers\//,
+        replacement: path.resolve(__dirname, './openclaw/test/helpers') + '/',
+      },
+      ['@', path.resolve(__dirname, './src')],
+      ['@src', path.resolve(__dirname, './src')],
+      ['@openclaw/media-core/constants', path.resolve(__dirname, './packages/media-core/src/constants.ts')],
+      ['@openclaw/media-core/content-length', path.resolve(__dirname, './packages/media-core/src/content-length.ts')],
+      ['@openclaw/media-core/file-name', path.resolve(__dirname, './packages/media-core/src/file-name.ts')],
+      ['@openclaw/media-core/mime', path.resolve(__dirname, './packages/media-core/src/mime.ts')],
+      ['@openclaw/media-core/read-response-with-limit', path.resolve(__dirname, './packages/media-core/src/read-response-with-limit.ts')],
+      ['@openclaw/media-core/inbound-path-policy', path.resolve(__dirname, './packages/media-core/src/inbound-path-policy.ts')],
+      ['@openclaw/media-core/base64', path.resolve(__dirname, './packages/media-core/src/base64.ts')],
+      ['@openclaw/media-core', path.resolve(__dirname, './packages/media-core/src/index.ts')],
+      ['@openclaw/normalization-core/string-coerce', path.resolve(__dirname, './packages/normalization-core/src/string-coerce.ts')],
+      ['@openclaw/normalization-core/string-normalization', path.resolve(__dirname, './packages/normalization-core/src/string-normalization.ts')],
+      ['@openclaw/normalization-core/number-coercion', path.resolve(__dirname, './packages/normalization-core/src/number-coercion.ts')],
+      ['@openclaw/normalization-core/record-coerce', path.resolve(__dirname, './packages/normalization-core/src/record-coerce.ts')],
+      ['@openclaw/normalization-core', path.resolve(__dirname, './packages/normalization-core/src/index.ts')],
+      ['@openclaw/net-policy/ip', path.resolve(__dirname, './packages/net-policy/src/ip.ts')],
+      ['@openclaw/net-policy', path.resolve(__dirname, './packages/net-policy/src/index.ts')],
+      ['@openclaw/acp-core/runtime/types', path.resolve(__dirname, './packages/acp-core/src/runtime/types.ts')],
+      ['@openclaw/acp-core', path.resolve(__dirname, './packages/acp-core/src/index.ts')],
+      ['@openclaw/model-catalog-core/provider-id', path.resolve(__dirname, './packages/model-catalog-core/src/provider-id.ts')],
+      ['@openclaw/model-catalog-core', path.resolve(__dirname, './packages/model-catalog-core/src/index.ts')],
+      ['@openclaw/terminal-core', path.resolve(__dirname, './packages/terminal-core/src/index.ts')],
+      ['@openclaw/gateway-protocol', path.resolve(__dirname, './packages/gateway-protocol/src/index.ts')],
+      ['@openclaw/llm-core', path.resolve(__dirname, './packages/llm-core/src/index.ts')],
+      ['@openclaw/llm-runtime', path.resolve(__dirname, './packages/llm-runtime/src/index.ts')],
+      ['@openclaw/gateway-client', path.resolve(__dirname, './packages/gateway-client/src/index.ts')],
+      ['@openclaw/markdown-core', path.resolve(__dirname, './packages/markdown-core/src/index.ts')],
+      ['@openclaw/media-generation-core', path.resolve(__dirname, './packages/media-generation-core/src/index.ts')],
+      ['@openclaw/media-understanding-common', path.resolve(__dirname, './packages/media-understanding-common/src/index.ts')],
+      ['@openclaw/speech-core', path.resolve(__dirname, './packages/speech-core/src/index.ts')],
+      ['@openclaw/agent-core', path.resolve(__dirname, './packages/agent-core/src/index.ts')],
+      ['@openclaw/tool-call-repair', path.resolve(__dirname, './packages/tool-call-repair/src/index.ts')],
+      ['@openclaw/sdk', path.resolve(__dirname, './packages/sdk/src/index.ts')],
+      ['@openclaw/memory-host-sdk', path.resolve(__dirname, './packages/memory-host-sdk/src/index.ts')],
+      ['@openclaw/web-content-core', path.resolve(__dirname, './packages/web-content-core/src/index.ts')],
+      ['@openclaw/proxyline', path.resolve(__dirname, './packages/net-policy/src/proxyline.ts')],
+    ],
     conditions: ['node'],
   },
   ssr: {
