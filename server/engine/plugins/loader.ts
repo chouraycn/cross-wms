@@ -357,9 +357,9 @@ export function logLoadOrder(order: string[]): void {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveCompatibleRuntimePluginRegistry: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
-export const resolvePluginRegistryLoadCacheKey: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
-export const resolveRuntimePluginRegistry: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveCompatibleRuntimePluginRegistry: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
+export const resolvePluginRegistryLoadCacheKey: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
+export const resolveRuntimePluginRegistry: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
 
 // 降级类型桩：对应 openclaw 中 loader.ts 的完整类型/函数
 export type PluginLoadOptions = {

@@ -145,7 +145,7 @@ export class ProcessErrorHandler {
     }
 
     return {
-      category: 'any',
+      category: 'unknown',
       message: 'process ended with no error and zero exit code',
       exitCode: exitCode ?? 0,
       suggestedReason: 'exit',

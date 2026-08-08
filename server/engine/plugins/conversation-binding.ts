@@ -186,7 +186,7 @@ function toConversationRef(params: PluginBindingConversation): ConversationRef {
   const normalized = normalizeConversation(params);
   const channelId = normalizeChannelId(normalized.channel);
   const resolvedConversationRef = channelId
-    ? getChannelPlugin(channelId)?.conversationBindings?.resolveConversationRef?.({
+    ? (getChannelPlugin(channelId) as any)?.conversationBindings?.resolveConversationRef?.({
         accountId: normalized.accountId,
         conversationId: normalized.conversationId,
         parentConversationId: normalized.parentConversationId,

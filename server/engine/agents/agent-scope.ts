@@ -175,7 +175,7 @@ export function clearScopes(): void {
 logger.debug('[Agents:AgentScope] Module loaded');
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveAgentWorkspaceDir: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
-export const resolveDefaultAgentId: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
-export const resolveAgentDir: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
-export const resolveSessionAgentIds: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveAgentWorkspaceDir: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
+export const resolveDefaultAgentId: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
+export const resolveAgentDir: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;
+export const resolveSessionAgentIds: (...args: any[]) => any = undefined as unknown as (...args: any[]) => any;

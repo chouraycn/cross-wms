@@ -442,7 +442,7 @@ export function extractReplayableSignaturesFromHistory(
   const signatures: string[] = [];
 
   for (const block of historyBlocks) {
-    if (block.thinkingSignature && canReplaySignature(block.thinkingSignature, 'any')) {
+    if (block.thinkingSignature && canReplaySignature(block.thinkingSignature, 'unknown')) {
       signatures.push(block.thinkingSignature);
     }
   }

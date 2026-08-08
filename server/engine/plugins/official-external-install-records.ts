@@ -13,7 +13,7 @@ function resolveNpmSpecPackageName(spec: string | undefined): string | undefined
 }
 
 function resolveClawHubSpecPackageName(spec: string | undefined): string | undefined {
-  return spec ? parseClawHubPluginSpec(spec)?.name : undefined;
+  return spec ? (parseClawHubPluginSpec(spec) as any)?.name : undefined;
 }
 
 function resolveOfficialPackageNames(params: {

@@ -24,7 +24,7 @@ import type { SecretInputMode } from "./provider-auth-types.js";
 type UpsertAuthProfileParams = Parameters<typeof upsertAuthProfileWithLock>[0];
 
 const resolveAuthAgentDir = (agentDir?: string, config?: OpenClawConfig) =>
-  agentDir ?? resolveDefaultAgentDir(config ?? {});
+  (agentDir ?? resolveDefaultAgentDir(config ?? {})) as string | undefined;
 
 export type ApiKeyStorageOptions = {
   secretInputMode?: SecretInputMode;
@@ -294,7 +294,7 @@ export async function writeOAuthCredentials(
     providerId: provider,
     profileName: options?.profileName ?? email,
   });
-  const resolvedAgentDir = path.resolve(resolveAuthAgentDir(agentDir));
+  const resolvedAgentDir = path.resolve((resolveAuthAgentDir(agentDir) as any));
   const targetAgentDirs = options?.syncSiblingAgents
     ? resolveSiblingAgentDirs(resolvedAgentDir)
     : [resolvedAgentDir];

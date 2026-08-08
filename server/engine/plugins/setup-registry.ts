@@ -224,7 +224,7 @@ function resolveRegister(mod: OpenClawPluginModule): {
   register?: (api: ReturnType<typeof buildPluginApi>) => void | Promise<void>;
 } {
   if (typeof mod === "function") {
-    return { register: mod };
+    return { register: mod as any };
   }
   if (mod && typeof mod === "object" && typeof mod.register === "function") {
     return {

@@ -516,14 +516,14 @@ export function createQaDockerRuntime(params: {
       : params.commandTimeoutMs;
 
   const fetchHealthUrl = async (url: string): Promise<{ ok: boolean }> => {
-    const { response, release } = await fetchWithSsrFGuard({
+    const { response, release } = (await fetchWithSsrFGuard({
       url,
       init: {
         signal: AbortSignal.timeout(2_000),
       },
       policy: { allowPrivateNetwork: true },
       auditContext: params.auditContext,
-    });
+    })) as any;
     try {
       return { ok: response.ok };
     } finally {

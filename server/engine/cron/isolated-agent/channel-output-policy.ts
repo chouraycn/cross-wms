@@ -26,7 +26,7 @@ export async function resolveCronChannelOutputPolicy(
   const { getChannelPlugin } = await loadChannelPluginRuntime();
   return {
     preferFinalAssistantVisibleText:
-      getChannelPlugin(channelId)?.outbound?.preferFinalAssistantVisibleText === true,
+      (getChannelPlugin(channelId) as any)?.outbound?.preferFinalAssistantVisibleText === true,
   };
 }
 
@@ -45,7 +45,7 @@ export async function resolveCurrentChannelTarget(params: {
   }
   const { getChannelPlugin } = await loadChannelPluginRuntime();
   return (
-    getChannelPlugin(channelId)?.threading?.resolveCurrentChannelId?.({
+    (getChannelPlugin(channelId) as any)?.threading?.resolveCurrentChannelId?.({
       to: params.to,
       threadId: params.threadId,
     }) ?? params.to

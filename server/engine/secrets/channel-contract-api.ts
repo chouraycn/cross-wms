@@ -169,7 +169,7 @@ function listChannelSecretContractRecords(params: {
     params.config,
     resolveDefaultAgentId(params.config),
     params.env,
-  );
+  ) as string | undefined;
   const snapshot = loadPluginMetadataSnapshot({
     config: params.config,
     workspaceDir,

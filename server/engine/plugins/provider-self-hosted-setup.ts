@@ -120,14 +120,14 @@ async function discoverLlamaCppRuntimeContextTokens(params: {
   }
   try {
     const trimmedApiKey = normalizeOptionalString(params.apiKey);
-    const { response, release } = await fetchWithSsrFGuard({
+    const { response, release } = (await fetchWithSsrFGuard({
       url,
       init: {
         headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
       },
       policy: buildSelfHostedBaseUrlSsrFPolicy(params.baseUrl),
       timeoutMs: 2500,
-    });
+    })) as any;
     try {
       if (!response.ok) {
         await cancelUnreadResponseBody(response);
@@ -164,14 +164,14 @@ export async function discoverOpenAICompatibleLocalModels(params: {
 
   try {
     const trimmedApiKey = normalizeOptionalString(params.apiKey);
-    const { response, release } = await fetchWithSsrFGuard({
+    const { response, release } = (await fetchWithSsrFGuard({
       url,
       init: {
         headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
       },
       policy: buildSelfHostedBaseUrlSsrFPolicy(trimmedBaseUrl),
       timeoutMs: 5000,
-    });
+    })) as any;
     try {
       if (!response.ok) {
         await cancelUnreadResponseBody(response);

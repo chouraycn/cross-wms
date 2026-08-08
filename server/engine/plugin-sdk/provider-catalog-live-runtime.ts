@@ -159,7 +159,7 @@ export async function fetchLiveProviderModelRows(
 ): Promise<readonly any[]> {
   const fetchGuard = params.fetchGuard ?? fetchWithSsrFGuard;
   const timeoutMs = params.timeoutMs ?? 5_000;
-  const { response, release } = await fetchGuard({
+  const { response, release } = (await fetchGuard({
     url: params.endpoint,
     init: {
       headers: buildHeaders(params),
@@ -170,7 +170,7 @@ export async function fetchLiveProviderModelRows(
     ...(params.lookupFn ? { lookupFn: params.lookupFn } : {}),
     ...(params.requireHttps !== undefined ? { requireHttps: params.requireHttps } : {}),
     auditContext: params.auditContext ?? `${params.providerId}-model-discovery`,
-  });
+  })) as any;
   try {
     if (!response.ok) {
       await cancelUnreadResponseBody(response);

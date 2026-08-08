@@ -65,7 +65,7 @@ function isCrossContextTarget(params: {
 }): boolean {
   if (
     params.toolContext &&
-    getChannelPlugin(params.channel)?.threading?.matchesToolContextTarget?.({
+    (getChannelPlugin(params.channel) as any)?.threading?.matchesToolContextTarget?.({
       target: params.target,
       toolContext: params.toolContext,
     })
@@ -185,7 +185,7 @@ export async function buildCrossContextDecoration(params: {
   const suffixTemplate: string = markerConfig?.suffix ?? "";
   const prefix = prefixTemplate.replaceAll("{channel}", originLabel as string);
   const suffix = suffixTemplate.replaceAll("{channel}", originLabel as string);
-  const buildPresentation = getChannelPlugin(params.channel)?.messaging?.buildCrossContextPresentation;
+  const buildPresentation = (getChannelPlugin(params.channel) as any)?.messaging?.buildCrossContextPresentation;
   const presentationBuilder = buildPresentation
     ? (message: string) => buildPresentation({ originLabel, message, cfg: params.cfg, accountId: params.accountId ?? undefined })
     : undefined;

@@ -104,7 +104,7 @@ async function validatePackageExtensionEntry(params: {
       rootPath: params.packageDir,
       boundaryLabel: "plugin package directory",
     });
-    if (!resolved.exists) {
+    if (!(resolved as any).exists) {
       return params.requireExisting
         ? { ok: false, error: `${params.label} not found: ${params.entry}` }
         : { ok: true, exists: false };

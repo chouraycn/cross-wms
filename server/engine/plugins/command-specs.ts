@@ -58,7 +58,7 @@ function pluginNativeCommandsEnabled(
       })
     : undefined;
   return (
-    (getLoadedChannelPlugin(providerName)?.commands ?? commandDefaults)
+    ((getLoadedChannelPlugin(providerName) as any)?.commands ?? commandDefaults)
       ?.nativeCommandsAutoEnabled === true
   );
 }

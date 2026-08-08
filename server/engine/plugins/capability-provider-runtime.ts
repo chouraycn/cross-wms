@@ -481,11 +481,11 @@ function loadCapabilityProviderEntries<K extends CapabilityProviderRegistryKey>(
     workspaceDir: params.loadOptions.workspaceDir,
     requiredPluginIds: params.loadOptions.onlyPluginIds,
   });
-  const loadedEntries = loadedRegistry?.[params.key] ?? [];
+  const loadedEntries = (loadedRegistry as any)?.[params.key] ?? [];
   const coldRegistry = loadedRegistry
     ? undefined
     : resolveRuntimePluginRegistry(params.loadOptions);
-  const coldEntries = coldRegistry?.[params.key] ?? [];
+  const coldEntries = (coldRegistry as any)?.[params.key] ?? [];
   const entries =
     loadedEntries.length > 0 && coldEntries.length > 0
       ? mergeCapabilityProviderEntries(loadedEntries, coldEntries)

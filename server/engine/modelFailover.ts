@@ -114,6 +114,7 @@ export type ErrorCategory =
   | 'server'
   | 'model_not_supported'
   | 'context_overflow'
+  | 'unknown'
   | 'any';
 
 /**
@@ -134,6 +135,7 @@ const COOLDOWN_MULTIPLIER: Record<ErrorCategory, number> = {
   model_not_supported: 6,
   context_overflow: 0,
   unknown: 1,
+  any: 1,
 };
 
 /** 根据错误类型计算冷却时间 */
